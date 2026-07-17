@@ -6,6 +6,10 @@
 .nvmrc text eol=lf
 .npmrc text eol=lf
 **/.npmrc text eol=lf
+.prettierignore text eol=lf
+**/.prettierignore text eol=lf
+.gitkeep text eol=lf
+**/.gitkeep text eol=lf
 .env.example text eol=lf
 **/.env.example text eol=lf
 
