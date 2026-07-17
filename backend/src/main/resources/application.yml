@@ -1,0 +1,88 @@
+spring:
+  config:
+    import:
+      - "optional:file:.env[.properties]"
+      - "optional:file:../.env[.properties]"
+  application:
+    name: hiresemble-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/hiresemble}
+    username: ${DATABASE_USERNAME:hiresemble}
+    password: ${DATABASE_PASSWORD:hiresemble-local-password}
+  flyway:
+    enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  session:
+    jdbc:
+      initialize-schema: always
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+  ai:
+    model:
+      chat: ${AI_CHAT_MODEL_PROVIDER:none}
+      embedding: ${AI_EMBEDDING_MODEL_PROVIDER:none}
+    openai:
+      api-key: ${AI_PROVIDER_API_KEY:local-not-configured}
+      chat:
+        options:
+          model: ${AI_MODEL_BALANCED:gpt-5-mini}
+      embedding:
+        options:
+          model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+    vectorstore:
+      type: ${AI_VECTOR_STORE_PROVIDER:none}
+      pgvector:
+        initialize-schema: false
+
+server:
+  port: ${BACKEND_PORT:8080}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+hiresemble:
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  object-storage:
+    endpoint: ${OBJECT_STORAGE_ENDPOINT:http://localhost:9000}
+    access-key: ${OBJECT_STORAGE_ACCESS_KEY:hiresemble}
+    secret-key: ${OBJECT_STORAGE_SECRET_KEY:hiresemble-local-secret}
+    bucket: ${OBJECT_STORAGE_BUCKET:hiresemble}
+  ai:
+    provider: ${AI_PROVIDER:openai}
+    model-low-cost: ${AI_MODEL_LOW_COST:}
+    model-balanced: ${AI_MODEL_BALANCED:gpt-5-mini}
+    model-high-quality: ${AI_MODEL_HIGH_QUALITY:}
+    embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+    daily-budget-usd: ${AI_DAILY_BUDGET_USD:2.00}
+    run-max-cost-usd: ${AI_RUN_MAX_COST_USD:0.30}
+  search:
+    tavily-api-key: ${TAVILY_API_KEY:}
