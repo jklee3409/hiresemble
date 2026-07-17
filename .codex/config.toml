@@ -1,0 +1,11 @@
+# Shared, repository-scoped Codex settings.
+# This layer is loaded only when Codex trusts the project.
+
+# Leave room for future nested AGENTS.md files without truncating the root rules.
+project_doc_max_bytes = 65536
+
+# Stop project discovery at this repository's Git root.
+project_root_markers = [".git"]
+
+# AGENTS.md is the single canonical instruction filename for this repository.
+project_doc_fallback_filenames = []
