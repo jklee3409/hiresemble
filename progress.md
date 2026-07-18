@@ -7,6 +7,31 @@
 - 실제 비즈니스 Controller, 도메인 모델, 공통 응답·예외 처리 코드는 아직 구현되지 않았다.
 - Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 23개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
 
+## [2026-07-18] Session Summary (P0 계약 결정 제안과 구현 차단 항목 정리)
+
+- What was done:
+  - 필수 작업 규칙·기준 명세·설계·구현 계획과 현재 backend/frontend/infrastructure bootstrap을 확인하고, D-01–D-18과 Gate A–C의 승인 전 계약 제안서를 작성했다.
+  - backend·ai_workflow·frontend의 읽기 전용 병렬 분석을 통합해 상태·enum, 전체 API projection, tenant·수명주기, AI runtime, route·UX 기준선과 제품 질문 6개를 확정 제안으로 정리했다.
+  - 설계 index·progress와 루트·docs progress를 갱신하고 기존 설계 문서의 링크, 깨진 소유권 표와 범위 표기를 정리했다.
+
+- Key decisions:
+  - D-01~D-18은 `RECOMMENDED` 11개, `OWNER_DECISION_REQUIRED` 7개이며 사용자 승인 전 P0는 미완료 상태다.
+  - 단일 Spring Boot·PostgreSQL·S3 호환 storage, REST snapshot 원천, 유한 AI workflow, 사용자 복합 소유권과 provenance·중복 비용 방지를 유지한다.
+  - 회원 탈퇴 삭제 task는 Agent Run·user FK에서 분리하고, 공개 품질·내부 모델 tier·검색 품질은 별도 타입으로 고정했다.
+
+- Issues encountered:
+  - 1차 validator의 4개 계약 차단점은 1회 보정 뒤 2차 validator가 해소를 확인했다.
+  - 2차 validator가 추가 DTO 상한·연구 출처 enum·path 표기 불일치를 발견해 `NEEDS_CHANGES`로 종료했으며, 루트가 해당 불일치를 최종 정합화했다.
+  - 동일 역할 검증 상한에 따라 세 번째 validator를 실행하지 않았으므로 마지막 루트 보정분은 독립 validator 미검증으로 남는다.
+
+- Validation:
+  - 세 분석 에이전트는 모두 `DONE`·파일 변경 없음, validator는 두 번 모두 read-only·파일 변경 없음으로 종료했다.
+  - 최종 루트 검사에서 D 18행(11/7), Gate A~C, 기준 API 95개 누락 0, 필수 타입 18개, 질문 6개, Markdown 표·링크, Prettier와 `git diff --check`를 통과시켰다.
+  - 비즈니스 코드·테스트·dependency·migration·설정, `docs/spec/**`를 변경하지 않았고 commit·push·배포·외부 유료 API 호출을 수행하지 않았다.
+
+- Next steps:
+  - 제품 소유자가 6개 질문과 제안 전체를 승인·수정한 후 기준 명세를 동기화하고, 독립 계약 검증을 다시 통과시킨 뒤 P1 구현을 시작한다.
+
 ## [2026-07-18] Session Summary (Hiresemble 전체 시스템 설계와 단계별 구현 계획 수립)
 
 - What was done:

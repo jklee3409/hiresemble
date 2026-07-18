@@ -2,7 +2,33 @@
 
 ## Overview
 
-다섯 기준 명세를 연결한 전체 시스템 설계와 단계별 구현 계획이 작성되어 있다. 이 문서는 목표 구조와 미결 계약을 추적하며 실제 비즈니스 기능 구현 완료를 의미하지 않는다.
+다섯 기준 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 전 P0 계약 결정 제안서가 작성되어 있다. 이 문서는 목표 구조와 미결 계약을 추적하며 실제 비즈니스 기능 구현 완료나 P0 승인을 의미하지 않는다.
+
+## [2026-07-18] Session Summary (P0 계약 결정 제안과 구현 차단 기준선 작성)
+
+- What was done:
+  - `system-architecture.md`의 D-01–D-18과 Gate A–C를 기능·API·DB·페이지·기술 명세 및 현재 bootstrap 코드와 대조해 `p0-contract-decision-proposal.md`를 작성했다.
+  - canonical enum·상태 전이, 95개 기존 endpoint와 2개 제안 endpoint의 DTO·validation·오류·동기/비동기 계약, 데이터 수명주기·migration 책임, 고정 AI workflow, route·projection과 제품 승인 질문 6개를 구체화했다.
+  - `index.md`와 설계·계획 문서에 제안서 링크를 추가하고 `implementation-plan.md`의 파일 소유권 표, `system-architecture.md`의 Gate·AC 범위 표기를 수정했다.
+
+- Key decisions:
+  - D 항목은 `RECOMMENDED` 11개와 `OWNER_DECISION_REQUIRED` 7개로 분류했으며, 사용자 승인 전에는 P0를 완료하거나 기준 명세·코드·migration에 적용하지 않는다.
+  - PostgreSQL과 REST snapshot을 상태 원천으로 유지하고 SSE는 전달 수단으로만 사용하며, tenant 복합 FK·provenance·idempotency·outbox·lease/cancel·비용 reserve/settle을 구현 기준선으로 제안했다.
+  - 회원 탈퇴는 Agent Run이 아닌 user FK 없는 durable deletion task와 receipt로 추적하고, AI는 8개 `WorkflowType`의 유한 step registry로만 실행한다.
+
+- Issues encountered:
+  - 1차 validator가 중첩 DTO, 면접 준비 품질 allowlist, 회원 삭제 run 소유권, 취소 후 resource 상태 4건을 `NEEDS_CHANGES`로 판정해 허용된 1회 보정과 동일 validator 재검증을 수행했다.
+  - 2차 validator는 앞선 4건 해소를 확인했지만 request/response 문자열 상한, `JobSummaryDto` 필드 타입, `ResearchSourceType`, reparse placeholder를 새 `NEEDS_CHANGES`로 지적했다.
+  - 루트 관리자가 마지막 지적을 명세와 같은 상한·enum·path로 정합화했으며, 오케스트레이션 상한에 따라 세 번째 validator는 실행하지 않았다. 따라서 최종 루트 보정분은 독립 validator 미검증 상태다.
+
+- Validation:
+  - backend·ai_workflow·frontend 분석 에이전트는 모두 `DONE`, 파일 변경 없음으로 종료했고 루트가 결과를 원문·diff와 대조했다.
+  - validator는 두 번 모두 read-only·파일 변경 없음으로 전체 matrix를 검사했으며 두 번째 판정은 `DONE/NEEDS_CHANGES`였다.
+  - 최종 루트 검사에서 D 18행(11/7), 기준 endpoint 95개 누락 0, 필수 타입 18개, 제품 질문 6개, Markdown 표 열 수, 로컬 링크, Prettier와 `git diff --check`가 통과했다.
+  - 비즈니스 코드·테스트·dependency·migration·설정과 `docs/spec/**`는 변경하지 않았다.
+
+- Next steps:
+  - 제품 소유자가 6개 질문과 나머지 권장안을 승인·수정한 뒤 다섯 기준 명세를 한 번에 동기화하고, P1 착수 전에 최종 제안서의 독립 계약 검증을 다시 수행한다.
 
 ## [2026-07-18] Session Summary (전체 시스템 설계와 구현 계획 기준선 작성)
 

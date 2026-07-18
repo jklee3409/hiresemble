@@ -4,6 +4,7 @@
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
 - 현재 구현 상태: 백엔드·프론트엔드 부트스트랩과 로컬 인프라만 존재하며 비즈니스 기능은 미구현
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
+- P0 승인 전 결정안: [P0 계약 결정 제안서](p0-contract-decision-proposal.md)
 
 이 문서는 다섯 기준 명세를 구현 구조로 연결한 파생 설계다. 명세를 대체하거나 변경하지 않으며, 충돌·누락이 있는 계약은 권장안과 보류 범위를 분리한다.
 
@@ -637,7 +638,7 @@ frontend/src/
 | Workflow   | 단계 순서, tool allowlist, 재시도, 비용, 재시작, 취소, partial success, idempotent apply |
 | Security   | 두 사용자 fixture, SSRF, prompt injection 경계, 로그 원문 부재                           |
 | Frontend   | form, route guard, typed error, 상태 표시, editor version, cache/draft 격리, SSE 복구    |
-| E2E        | 명세 시나리오 A~~C와 AC-01~~13, 실패 수동 보완, 다른 사용자 404                          |
+| E2E        | 명세 시나리오 A–C와 AC-01–AC-13, 실패 수동 보완, 다른 사용자 404                         |
 
 CI 기본 검증은 실제 유료 AI·검색 API를 호출하지 않는다.
 

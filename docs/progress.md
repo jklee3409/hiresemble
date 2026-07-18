@@ -2,7 +2,28 @@
 
 ## Overview
 
-제품 명세 5종, 전체 시스템 설계·구현 계획, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
+제품 명세 5종, 전체 시스템 설계·구현 계획·승인 전 P0 계약 제안서, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
+
+## [2026-07-18] Session Summary (P0 계약 결정 제안서 통합)
+
+- What was done:
+  - 설계의 D-01–D-18과 Gate A–C를 다섯 기준 명세에 연결한 `design/p0-contract-decision-proposal.md`를 만들고, 설계 index·진행 기록·링크와 기존 Markdown 표·범위 표기를 정리했다.
+  - API·DB·AI runtime·route projection의 구현 전 기준선과 제품 소유자 질문 6개를 작성했다.
+
+- Key decisions:
+  - 11개 기술 항목은 단일 권장안, 제품 경험·보존·비용 선택이 필요한 7개 항목은 승인 필요로 분류했다.
+  - 이 제안서는 기준 명세가 아니며 사용자 승인과 명세 동기화 전에는 P0 완료나 구현 근거로 확정하지 않는다.
+
+- Issues encountered:
+  - read-only validator의 두 차례 판정은 모두 `NEEDS_CHANGES`였고, 첫 4개 차단점은 재검증에서 해소 확인됐다.
+  - 두 번째에 새로 발견된 DTO 상한·출처 enum·path 불일치는 루트가 정합화했으나 규칙상 세 번째 validator를 실행하지 않아 최종 보정분은 독립 미검증이다.
+
+- Validation:
+  - 최종 루트 검사에서 D 18행, Gate A~C, 기준 endpoint 95개, 필수 타입 18개, 제품 질문 6개, 표 열 수·링크·Prettier·`git diff --check`를 확인했다.
+  - 코드·테스트·dependency·migration·설정과 `spec/**`는 변경하지 않았다.
+
+- Next steps:
+  - 제품 승인 후 `spec/**`를 동기화하고 독립 계약 검증을 통과시킨 다음 구현 단계로 이동한다.
 
 ## [2026-07-18] Session Summary (명세 기반 전체 시스템 설계와 구현 계획 작성)
 
