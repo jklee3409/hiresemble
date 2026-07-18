@@ -1,11 +1,14 @@
 # P0 계약 결정 제안서
 
-- 문서 상태: 제품 소유자 검토 준비(`READY_FOR_OWNER_REVIEW`)
+- 문서 상태: `APPROVED_DECISION_RECORD`
 - 기준일: 2026-07-18
 - 기준 설계: [전체 시스템 설계](system-architecture.md), [구현 계획](implementation-plan.md)
 - 기준 명세: [기능](../spec/functional.md), [API](../spec/api.md), [DB](../spec/db.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
 
-이 문서는 구현자가 추측하지 않도록 P0 계약의 권장 기준선을 제안한다. 제품 소유자 승인 전에는 아래 내용을 확정 계약으로 보지 않으며, `docs/spec/**`, 비즈니스 코드, migration, 설정, API와 UI에 반영하지 않는다. 승인된 결정은 기준 명세에 한 번만 반영하고 계약 검증을 다시 통과시킨다. 명세 동기화가 끝나면 이 문서는 구현 기준선이 아니라 결정 기록 또는 archived proposal로 관리한다.
+> 이 문서는 P0 결정 과정과 승인 근거를 보존하는 기록이다.
+> 현재 활성 제품 계약은 `docs/spec/**`이며, 충돌 시 `docs/spec/**`가 우선한다.
+
+2026-07-18 제품 소유자는 D-01–D-18의 모든 권장안과 8개 제품 정책을 승인했고, 결과는 다섯 기준 명세에 동기화되어 독립 validator `PASS`를 받았다. 아래 `RECOMMENDED`와 `OWNER_DECISION_REQUIRED` 표기는 승인 전 분류와 선택 근거를 보존하는 역사적 상태이며 현재 구현 계약 상태가 아니다. P0 계약 확정은 코드·migration·설정·API·UI 구현 완료를 의미하지 않는다.
 
 ## 1. 작업 범위와 판단 기준
 
@@ -34,7 +37,7 @@ P0는 공개 HTTP, DB 무결성·수명주기, AI runtime, route·projection의 
 
 ### 1.4 승인 경계
 
-이 문서의 `RECOMMENDED`도 승인 전에는 제안이다. 제품 소유자는 8장의 질문을 결정하고 나머지 권장안을 함께 승인하거나 수정해야 한다. 승인 후 별도 작업에서 다섯 기준 명세를 먼저 동기화하고, 그 다음 OpenAPI·migration·코드·UI를 구현한다. 이번 문서 작성만으로 P0를 완료 처리하지 않는다.
+승인 당시 경계는 8장의 질문과 나머지 권장안을 함께 결정한 뒤 다섯 기준 명세를 먼저 동기화하고 그 다음 구현을 시작하는 것이었다. 이 순서에 따라 명세 동기화와 계약 검증까지 완료됐으며, 활성 계약의 상세 조항과 향후 변경은 `docs/spec/**`에서만 관리한다. P1 코드·migration·API·UI 구현은 아직 시작되지 않았다.
 
 ## 2. D-01~D-18 결정 표
 
@@ -785,7 +788,7 @@ job child route는 `overview|analysis|cover-letter|interview`만 허용한다. 4
 
 ## 8. 제품 소유자 승인 항목
 
-아래 8개만 제품 소유자 결정이 필요하다. 선택 전에도 구현자는 권장안의 구조와 대안 영향을 평가할 수 있지만 관련 공개 계약·migration은 만들지 않는다.
+아래 8개는 2026-07-18 제품 소유자가 모두 결정했다. 각 code block은 승인 전 권장안·대안·영향을 원문 그대로 보존하며, 승인된 최종 값은 이번 사용자 결정과 동기화된 `docs/spec/**`가 정의한다. 특히 비용 reset zone 등 권장안과 최종 승인값이 달라진 항목은 활성 명세가 우선한다.
 
 ### 8.1 삭제·보존 정책
 
@@ -875,16 +878,11 @@ job child route는 `overview|analysis|cover-letter|interview`만 허용한다. 4
 선택에 따른 구현 영향: provider 설정, model policy, vector typmod, embedding generation/backfill과 index migration이 달라진다.
 ```
 
-## 9. 승인 후 적용 순서와 구현 차단
+## 9. 승인 적용 결과와 다음 경계
 
-1. 제품 소유자가 8장의 8개 항목과 나머지 권장안을 승인·수정한다.
-2. 한 작업에서 `functional/api/db/page/tech_stack`을 같은 의미로 갱신하고 canonical matrix를 다시 검증한다.
-3. OpenAPI·DB migration 목록을 확정한 뒤 P1부터 구현한다.
-4. 승인 전에는 이 문서의 enum·DTO·table을 코드나 migration으로 선행 생성하지 않는다.
+1. 제품 소유자가 8개 정책과 D-01–D-18의 권장안을 승인했다.
+2. `functional/api/db/page/tech_stack`을 같은 의미로 갱신하고 canonical matrix를 독립 검증했다.
+3. Gate A 6개, Gate B 5개, Gate C 5개가 모두 닫혔다.
+4. 현재 활성 제품 계약은 `docs/spec/**`로 단일화됐다.
 
-현재 구현 차단 항목:
-
-- Gate A: owner 선택이 필요한 cover finalization/archive, account response policy, mock 비용 경계.
-- Gate B: 삭제 tombstone·탈퇴 보존 선택.
-- Gate C: 비용 상한과 fit rubric, 동기 mock 상한.
-- 나머지 Gate 항목은 이 제안서에서 단일 권장안으로 닫혔지만 전체 제안 승인 전에는 구현하지 않는다.
+P0 계약 기준선은 완료됐지만 P1은 시작되지 않았다. OpenAPI 코드 생성, Flyway migration, Java·TypeScript·Vue 구현, dependency·설정 변경은 이후 구현 단계에서 활성 명세와 단계별 검증 조건을 따라 수행한다.

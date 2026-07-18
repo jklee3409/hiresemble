@@ -2,7 +2,28 @@
 
 ## Overview
 
-제품 명세 5종, 전체 시스템 설계·구현 계획·승인 전 P0 계약 제안서, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0 계약은 확정됐고 P1 구현은 시작되지 않았다.
+
+## [2026-07-18] Session Summary (P0 제품 계약 문서 기준선 확정)
+
+- What was done:
+  - 제품 소유자 승인을 다섯 기준 명세에 동기화하고 spec 결정 추적, 설계 승인 상태와 구현 계획을 한 문서 계층으로 정렬했다.
+  - proposal은 승인 근거 기록으로 전환하고 활성 계약이 `spec/`에만 존재하도록 책임 경계를 갱신했다.
+
+- Key decisions:
+  - 기능·API·DB·페이지·기술 계약의 P0 기준선은 문서 버전 1.1이며 D-01–D-18과 Gate A–C가 모두 닫혔다.
+  - 문서 기준선 확정과 코드 구현 완료를 분리하고 P1은 공통 HTTP·인증 기반부터 시작한다.
+
+- Issues encountered:
+  - 기존 설계와 proposal에는 승인 전 충돌·권장 문구가 남아 있어 활성 계약과 역사 기록의 precedence를 명시해야 했다.
+  - 명세 간 조건부 응답, 상태 복구, 공개/내부 필드 경계를 정규화했지만 비즈니스 파일이나 기존 V1 migration은 수정하지 않았다.
+
+- Validation:
+  - 전문 분석 3개는 읽기 전용 `DONE`, 독립 validator는 다섯 명세의 정책·Gate·상태·API·DB·페이지 정합성을 `PASS`로 반환했다.
+  - Markdown 표·링크·enum·endpoint·field bound·quality·idempotency와 Prettier·`git diff --check`를 검사했다. 문서 전용이라 backend/frontend build는 실행하지 않았다.
+
+- Next steps:
+  - P1 구현 작업에서 OpenAPI·migration·code를 활성 명세와 대조하고 Fake 기반 테스트로 공통 기반을 먼저 고정한다.
 
 ## [2026-07-18] Session Summary (P0 계약 제안서 최종 감사)
 

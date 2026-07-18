@@ -3,9 +3,31 @@
 ## Overview
 
 - 초기 프론트엔드, 백엔드, Docker Compose, CI 환경이 구성되어 있다.
-- 제품 기능·API·DB·화면·기술 명세는 `docs/spec/`에 존재한다.
+- 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
 - 실제 비즈니스 Controller, 도메인 모델, 공통 응답·예외 처리 코드는 아직 구현되지 않았다.
 - Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 23개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
+
+## [2026-07-18] Session Summary (P0 제품 계약 기준선 승인 반영 완료)
+
+- What was done:
+  - 승인된 8개 제품 정책과 제안서의 D-01–D-18을 다섯 기준 명세에 통합하고 설계·계획·진행 문서의 상태를 동기화했다.
+  - backend·ai_workflow·frontend의 읽기 전용 분석을 루트에서 통합하고 새로운 read-only validator로 계약 기준선을 독립 검증했다.
+
+- Key decisions:
+  - `docs/spec/**`만 활성 제품 계약이며 proposal은 `APPROVED_DECISION_RECORD`로 승인 과정과 근거를 보존한다.
+  - P0 계약 기준선은 완료됐지만 P1은 미착수다. Java·TypeScript·Vue, Flyway, dependency·설정·Compose 구현은 이번 범위에 포함하지 않았다.
+
+- Issues encountered:
+  - 공고 수동 본문의 동기/비동기 응답 분기, mock 실패 replay, evidence tombstone read-only, Agent retry identity와 DB 상한을 명세 전체에서 일치시켜야 했다.
+  - `index.md` 범위 기호가 Markdown 취소선으로 포맷되는 문제는 en dash로 교체해 해결했다.
+
+- Validation:
+  - validator가 승인 정책 8개, D 18개, Gate 16개, canonical enum, 97 endpoint, owner·idempotency·quality·embedding과 공개 DTO 경계를 `PASS`로 판정했다.
+  - Markdown 표·상대 링크·enum·endpoint·field bound·상태 전이·allowlist 검사와 Prettier, `git diff --check`, 변경 범위 검사를 수행했다.
+  - 문서 전용 작업이라 backend/frontend build를 실행하지 않았고 외부 유료 API, commit, push, 배포를 수행하지 않았다.
+
+- Next steps:
+  - P1에서 공통 HTTP 오류·Session·CSRF·request ID·idempotency와 테스트 기반을 구현하고, 목표 DB 계약은 새 Flyway migration으로 단계적으로 검증한다.
 
 ## [2026-07-18] Session Summary (P0 계약 제안서 제품 검토 준비 전환)
 

@@ -2,9 +2,31 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 기준 명세가 문서 버전 1.0으로 존재한다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 기준 명세가 P0 승인 문서 버전 1.1로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 백엔드는 애플리케이션 부트스트랩과 pgvector 확장 migration만, 프론트엔드는 빈 route table을 포함한 초기 환경만 구성되어 있다.
+
+## [2026-07-18] Session Summary (P0 승인 계약 다섯 기준 명세 동기화)
+
+- What was done:
+  - 제품 소유자가 승인한 8개 정책과 D-01–D-18을 기능·API·DB·페이지·기술 명세에 함께 반영하고 `index.md`에 결정·Gate 추적표를 추가했다.
+  - 상태·DTO·validation·pagination·owner·idempotency·Agent Run·budget·embedding·route·draft 계약을 하나의 P0 구현 기준선으로 정규화했다.
+
+- Key decisions:
+  - 활성 제품 계약의 원천은 다섯 `docs/spec/**` 명세이며 P0 결정 기록은 계약 원천으로 사용하지 않는다.
+  - 문서 계약 버전은 1.1이고 P0 계약 기준선만 완료됐다. 비즈니스 코드·Flyway migration·API·UI·설정 구현은 완료되지 않았다.
+
+- Issues encountered:
+  - 수동 공고 본문의 201/202 분기, mock terminal 실패 replay, `SOURCE_DELETED` mutation 금지, retry successor cardinality처럼 명세 사이에 숨은 경계가 있어 같은 의미로 재정렬했다.
+  - 추적표의 `~` 범위 표기가 Markdown 취소선으로 바뀌어 en dash로 교체했으며 사용자 변경이나 코드 파일은 건드리지 않았다.
+
+- Validation:
+  - backend·ai_workflow·frontend 읽기 전용 분석을 통합했고 새 read-only validator가 8개 정책, D 18개, Gate 16개와 다섯 명세 matrix를 `PASS`로 판정했다.
+  - Markdown 표 37개·97 endpoint·enum parity·상한·nullability·idempotency 15개·quality allowlist·상대 링크를 검사하고 Prettier와 `git diff --check`를 통과시켰다.
+  - 문서 전용 변경이므로 backend/frontend build는 실행하지 않았고 외부 유료 provider도 호출하지 않았다.
+
+- Next steps:
+  - P1에서 활성 명세를 기준으로 공통 HTTP·Session·CSRF·오류·idempotency 기반부터 구현한다. V1 migration은 수정하지 않고 새 Flyway 파일은 해당 구현 단계에서 작성·검증한다.
 
 ## [2026-07-18] Session Summary (전체 구현 설계를 위한 명세 교차 검증)
 

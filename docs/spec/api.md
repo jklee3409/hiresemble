@@ -1,844 +1,426 @@
-#  API 명세서
+# API 명세서
 
-- 문서 버전: 1.0
+- 문서 버전: 1.1 (P0 승인 기준선)
+- 기준일: 2026-07-18
 - Base URL: `/api/v1`
-- 인증: Spring Session Cookie
-- Content-Type: `application/json`
-- 파일 업로드: `multipart/form-data`
+- 인증: Spring Session Cookie + CSRF
 - 시간: ISO-8601 UTC
 - ID: UUID
-- 장기 작업: `202 Accepted` + `agentRunId`
-- 페이지네이션: `page`, `size`, `sort`
+- 파일 업로드: `multipart/form-data`
 
----
+이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다.
 
-## 1. 공통 규칙
+## 1. 공통 HTTP 계약
 
-### 1.1 인증
+### 1.1 Session·CSRF·소유권
 
-- 세션 쿠키는 HttpOnly
-- 상태 변경 요청은 CSRF 토큰 필요
-- `GET /auth/csrf`에서 토큰 조회
-- 미인증: `401`
-- 다른 사용자의 리소스: 존재 여부를 숨기기 위해 `404`
+- `GET /auth/csrf`는 익명 접근을 허용하고 anonymous session을 초기화한다.
+- signup과 login을 포함한 모든 mutation은 CSRF token이 필요하다.
+- signup/login 성공은 Session ID를 rotate하고 응답의 새 CSRF token으로 client 상태를 교체한다.
+- 비밀번호 변경은 다른 Session을 모두 폐기하고 현재 Session만 rotate한다. 204를 받은 client는 다음 mutation 전에 `GET /auth/csrf`로 새 token을 받는다.
+- logout·탈퇴·401 auth reset 뒤에는 client cache·draft·SSE를 폐기한다.
+- 모든 root·child·SSE·Object resource는 인증 사용자 소유권을 검증한다. 타 사용자 resource는 `404 RESOURCE_NOT_FOUND`로 존재를 숨긴다.
 
-### 1.2 공통 성공 응답
+### 1.2 성공·페이지네이션
 
-단일 리소스는 직접 반환한다.
+- 생성은 `201`, 비동기 접수는 `202`, 본문 없는 성공은 `204`를 사용한다.
+- 장기 작업 접수는 `RunAcceptedDto`, domain별 preallocated ID가 필요하면 명시된 accepted DTO를 반환한다.
+- 목록은 `PageResponse<T>{items:T[],page:int >=0,size:int 1..100,totalElements:long >=0,totalPages:int >=0}`다.
+- `page` 기본 0·최소 0, `size` 기본 20·범위 1..100이다. mock message 목록만 기본 100이다.
+- 각 endpoint의 sort allowlist는 `field,direction` 전체 값을 나열하며 생략 시 첫 번째 값이 기본이다.
+- filter 이름에 `?`가 붙은 값만 선택 입력이다. 공통 `page`, `size`, `sort`는 항상 선택 입력이고 위 기본값을 쓴다. 두 날짜 범위는 둘 다 있으면 `from<=to`이고, 상대 기간 filter와 절대 날짜 범위는 함께 보낼 수 없다.
+- endpoint allowlist에 없는 sort·filter 값은 `400 VALIDATION_ERROR`다.
+
+### 1.3 문자열·배열·version
+
+- `?`로 표시한 field만 nullable이다. 생략 가능한 nullable field와 명시적 `null`은 같은 의미다.
+- 이름·제목은 trim하고 NUL·제어문자·경로 구분자를 거부한다. 본문은 의미 있는 공백을 보존한다.
+- 배열은 명시한 최대 개수와 element 상한을 모두 검증하고 `unique` 표시는 중복을 거부한다.
+- 동시 편집 aggregate command는 `version >= 0`을 필수로 받고 충돌 시 `409 RESOURCE_VERSION_CONFLICT`다.
+- delete는 `?version=n`, append-only answer 저장은 `parentVersionId` 또는 명시된 current CAS를 사용한다.
+- signup/login/logout, display-name/password와 탈퇴는 version 예외다.
+- 409 mutation은 client가 자동 재시도하지 않는다.
+
+### 1.4 오류 응답
+
+모든 Controller와 Security 오류는 다음 field set을 반환한다.
+
+`ErrorResponseDto`는 `timestamp:Instant`, `status:int 400..599`, `code:string 1..100`, `message:string 1..500`, `fieldErrors:FieldErrorDto[0..100]`, `requestId:UUID`다. `FieldErrorDto`는 `field:string 1..200`, `reason:string 1..100`이다.
 
 ```json
 {
-  "id": "uuid",
-  "createdAt": "2026-07-17T08:00:00Z"
-}
-```
-
-목록:
-
-```json
-{
-  "items": [],
-  "page": 0,
-  "size": 20,
-  "totalElements": 0,
-  "totalPages": 0
-}
-```
-
-### 1.3 오류 응답
-
-```json
-{
-  "timestamp": "2026-07-17T08:00:00Z",
-  "status": 400,
-  "code": "VALIDATION_ERROR",
-  "message": "입력값을 확인해 주세요.",
-  "fieldErrors": [
-    {"field": "deadlineAt", "reason": "INVALID_DATE"}
-  ],
+  "timestamp": "2026-07-18T08:00:00Z",
+  "status": 409,
+  "code": "RESOURCE_VERSION_CONFLICT",
+  "message": "최신 내용을 확인한 뒤 다시 적용해 주세요.",
+  "fieldErrors": [{ "field": "version", "reason": "STALE" }],
   "requestId": "uuid"
 }
 ```
 
-### 1.4 낙관적 잠금
-
-편집 API는 필요한 경우 `version` 필드를 전달한다. 충돌 시 `409 RESOURCE_VERSION_CONFLICT`.
-
-### 1.5 장기 작업
-
-```json
-{
-  "agentRunId": "uuid",
-  "status": "QUEUED",
-  "resourceId": "uuid"
-}
-```
-
-진행 조회:
-
-- `GET /agent-runs/{agentRunId}`
-- `GET /agent-runs/{agentRunId}/events` (`text/event-stream`)
-
----
-
-# 2. 인증
-
-## POST /auth/signup
-
-회원 가입.
-
-```json
-{
-  "email": "user@example.com",
-  "password": "strong-password",
-  "displayName": "지원자",
-  "termsAgreed": true,
-  "aiConsent": true
-}
-```
-
-응답 `201`.
-
-## POST /auth/login
-
-```json
-{
-  "email": "user@example.com",
-  "password": "strong-password"
-}
-```
-
-응답 `200`, 세션 쿠키 발급.
-
-## POST /auth/logout
-
-현재 세션 무효화. 응답 `204`.
-
-## GET /auth/me
-
-```json
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "displayName": "지원자",
-  "profileCompleted": false
-}
-```
-
-## GET /auth/csrf
-
-```json
-{
-  "headerName": "X-CSRF-TOKEN",
-  "parameterName": "_csrf",
-  "token": "..."
-}
-```
-
-## PATCH /account/display-name
-
-```json
-{
-  "displayName": "지원자"
-}
-```
-
-## PATCH /account/password
-
-현재 비밀번호 확인 후 변경한다.
-
-```json
-{
-  "currentPassword": "current-password",
-  "newPassword": "new-strong-password"
-}
-```
-
-## DELETE /account
-
-회원 탈퇴 요청. 현재 비밀번호 재확인 후 세션을 종료하고 비동기 데이터 삭제를 시작한다.
-
----
-
-# 3. 사용자 프로필
-
-## GET /profile
-
-기본 프로필 조회.
-
-## PUT /profile
-
-```json
-{
-  "legalName": "홍길동",
-  "introduction": "백엔드 개발자 지망생",
-  "desiredRoles": ["BACKEND", "AI_SERVICE"],
-  "desiredIndustries": ["FINANCE"],
-  "desiredLocations": ["SEOUL"],
-  "expectedGraduationDate": "2026-08-20",
-  "version": 1
-}
-```
-
-## 학력
-
-- `GET /profile/educations`
-- `POST /profile/educations`
-- `PUT /profile/educations/{educationId}`
-- `DELETE /profile/educations/{educationId}`
-
-POST 예시:
-
-```json
-{
-  "schoolName": "대학교",
-  "major": "컴퓨터공학",
-  "degree": "BACHELOR",
-  "educationStatus": "EXPECTED_GRADUATION",
-  "admissionDate": "2020-03-01",
-  "graduationDate": "2026-08-20",
-  "gpa": 3.94,
-  "gpaScale": 4.5,
-  "isPrimary": true
-}
-```
-
-## 자격증
-
-- `GET /profile/certifications`
-- `POST /profile/certifications`
-- `PUT /profile/certifications/{certificationId}`
-- `DELETE /profile/certifications/{certificationId}`
-
-## 어학 성적
-
-- `GET /profile/language-scores`
-- `POST /profile/language-scores`
-- `PUT /profile/language-scores/{languageScoreId}`
-- `DELETE /profile/language-scores/{languageScoreId}`
-
-## 수상
-
-- `GET /profile/awards`
-- `POST /profile/awards`
-- `PUT /profile/awards/{awardId}`
-- `DELETE /profile/awards/{awardId}`
-
-## 경력
-
-- `GET /profile/careers`
-- `POST /profile/careers`
-- `PUT /profile/careers/{careerId}`
-- `DELETE /profile/careers/{careerId}`
-
----
-
-# 4. 문서·근거
-
-## POST /documents
-
-`multipart/form-data`
-
-| 필드 | 필수 | 설명 |
-|---|---:|---|
-| file | Y | PDF/DOCX/TXT |
-| documentType | Y | RESUME, PORTFOLIO, CAREER_DESCRIPTION, CERTIFICATE, TRANSCRIPT, OTHER |
-| displayName | N | 표시명 |
-
-응답 `202`:
-
-```json
-{
-  "documentId": "uuid",
-  "parseStatus": "UPLOADED",
-  "agentRunId": "uuid"
-}
-```
-
-## GET /documents
-
-Query:
-
-- `documentType`
-- `parseStatus`
-- `page`
-- `size`
-
-## GET /documents/{documentId}
-
-메타데이터와 파싱 상태 조회. 원문 전체는 기본 반환하지 않는다.
-
-## GET /documents/{documentId}/text
-
-추출 텍스트 조회. 사용자 편집 화면에서만 사용.
-
-## PUT /documents/{documentId}/manual-text
-
-파싱 실패·텍스트 부족 시 수동 텍스트 저장 후 재처리.
-
-```json
-{
-  "text": "..."
-}
-```
-
-응답 `202` + `agentRunId`.
-
-## POST /documents/{documentId}/reparse
-
-응답 `202`.
-
-## POST /documents/{documentId}/download-url
-
-단기 다운로드 URL 발급.
-
-## DELETE /documents/{documentId}
-
-원본과 파생 데이터 삭제. 응답 `204`.
-
-## GET /profile/evidence
-
-Query:
-
-- `verificationStatus`
-- `evidenceCategory`
-- `documentId`
-- `page`, `size`
-
-## PUT /profile/evidence/{evidenceId}
-
-내용 수정.
-
-```json
-{
-  "title": "입찰 성능 개선",
-  "content": "TPS를 14.35에서 91.58로 개선",
-  "metadata": {"before": 14.35, "after": 91.58},
-  "version": 1
-}
-```
-
-## PATCH /profile/evidence/{evidenceId}/verification
-
-```json
-{
-  "status": "VERIFIED"
-}
-```
-
-허용: `VERIFIED`, `REJECTED`.
-
----
-
-# 5. 채용 공고
-
-## POST /jobs
-
-공고 URL 등록. 응답 `202`.
-
-```json
-{
-  "sourceUrl": "https://company.example/jobs/123",
-  "companyName": null,
-  "positionName": null,
-  "descriptionText": null,
-  "deadlineAt": "2026-07-31T14:59:59Z"
-}
-```
-
-응답:
-
-```json
-{
-  "jobId": "uuid",
-  "status": "IN_PROGRESS",
-  "extractionStatus": "QUEUED",
-  "agentRunId": "uuid"
-}
-```
-
-`descriptionText`가 제공되면 URL 추출 실패 시 해당 본문을 사용한다.
-
-## GET /jobs
-
-Query:
-
-- `status=IN_PROGRESS|SUBMITTED|CLOSED`
-- `query`
-- `deadlineFrom`
-- `deadlineTo`
-- `sort=createdAt,desc|deadlineAt,asc|updatedAt,desc`
-- `page`, `size`
-
-## GET /jobs/{jobId}
-
-공고 상세, 최신 분석 요약, 자기소개서·면접 준비 링크를 반환.
-
-## PUT /jobs/{jobId}
-
-회사·직무·본문·마감일 수정.
-
-```json
-{
-  "companyName": "회사",
-  "title": "신입 개발자 채용",
-  "positionName": "백엔드 개발",
-  "descriptionText": "...",
-  "deadlineAt": "2026-08-01T14:59:59Z",
-  "version": 2
-}
-```
-
-사용자 입력 마감일은 `deadlineSource=USER_ENTERED`.
-
-## PATCH /jobs/{jobId}/status
-
-```json
-{
-  "status": "SUBMITTED"
-}
-```
-
-허용 전이:
-
-- `IN_PROGRESS → SUBMITTED`
-- `IN_PROGRESS → CLOSED`
-- `SUBMITTED → CLOSED`
-- `CLOSED → IN_PROGRESS`
-- `CLOSED → SUBMITTED`
-
-`SUBMITTED` 최초 진입 시 `submittedAt` 저장. `CLOSED` 전환 시에도 보존.
-
-## POST /jobs/{jobId}/retry-extraction
-
-URL 추출 재실행. 응답 `202`.
-
-## POST /jobs/{jobId}/analysis
-
-공고 분석과 사용자 적합도 분석. 응답 `202`.
-
-```json
-{
-  "qualityMode": "BALANCED",
-  "forceReanalyze": false
-}
-```
-
-## GET /jobs/{jobId}/analyses
-
-분석 버전 목록.
-
-## GET /jobs/{jobId}/analyses/latest
-
-최신 분석 상세.
-
-## DELETE /jobs/{jobId}
-
-공고 soft delete. 응답 `204`.
-
----
-
-# 6. 자기소개서
-
-## POST /jobs/{jobId}/cover-letter
-
-해당 공고 자기소개서 생성.
-
-```json
-{
-  "title": "2026 신입 백엔드 지원서"
-}
-```
-
-응답 `201`.
-
-## GET /cover-letters
-
-Query: `jobId`, `status`, `page`, `size`.
-
-## GET /cover-letters/{coverLetterId}
-
-문항, 현재 답변 버전, 최신 검증 상태를 반환.
-
-## PUT /cover-letters/{coverLetterId}
-
-제목·상태 수정. `FINALIZED`는 필수 문항 존재와 검증 조건 확인.
-
-## POST /cover-letters/{coverLetterId}/questions
-
-```json
-{
-  "questionOrder": 1,
-  "questionText": "지원 동기와 커리어 계획을 작성해 주세요.",
-  "maxLength": 1000,
-  "memo": null
-}
-```
-
-## PUT /cover-letters/{coverLetterId}/questions/{questionId}
-
-문항 수정.
-
-## DELETE /cover-letters/{coverLetterId}/questions/{questionId}
-
-문항 삭제 후 순서 재정렬 가능.
-
-## PATCH /cover-letters/{coverLetterId}/questions/order
-
-```json
-{
-  "questionIds": ["uuid-1", "uuid-2"]
-}
-```
-
-## POST /cover-letters/{coverLetterId}/generate
-
-선택 문항 AI 생성. 응답 `202`.
-
-```json
-{
-  "questionIds": ["uuid"],
-  "preferredEvidenceIds": ["uuid"],
-  "qualityMode": "BALANCED",
-  "avoidExperienceDuplication": true
-}
-```
-
-## GET /cover-letter-questions/{questionId}/versions
-
-문항 답변 버전 목록.
-
-## POST /cover-letter-questions/{questionId}/versions
-
-사용자 수정본 저장.
-
-```json
-{
-  "content": "수정된 자기소개서...",
-  "sourceType": "USER_EDITED",
-  "parentVersionId": "uuid"
-}
-```
-
-응답 `201`; 새 버전이 current가 된다. 자기소개서가 `FINALIZED`였다면 `DRAFT`로 되돌린다.
-
-## POST /cover-letter-questions/{questionId}/versions/{versionId}/restore
-
-선택 버전을 복원한 새 `RESTORED` 버전 생성.
-
-## POST /cover-letter-answer-versions/{versionId}/verify
-
-응답 `202`.
-
-```json
-{
-  "qualityMode": "BALANCED"
-}
-```
-
-## GET /cover-letter-answer-versions/{versionId}/verifications
-
-검증 이력.
-
-## POST /cover-letters/{coverLetterId}/finalize
-
-상태를 `FINALIZED`로 변경. 응답 `200`.
-
-## POST /cover-letters/{coverLetterId}/archive
-
-상태를 `ARCHIVED`로 변경.
-
----
-
-# 7. 면접 준비와 조사
-
-## POST /jobs/{jobId}/interview-preparations
-
-회사·유사 직무 면접 조사와 질문 세트 생성을 시작. 응답 `202`.
-
-```json
-{
-  "coverLetterId": "uuid",
-  "researchQuality": "BASIC",
-  "questionTypes": [
-    "RESUME",
-    "TECHNICAL",
-    "BEHAVIORAL",
-    "COMPANY"
-  ],
-  "questionCount": 20
-}
-```
-
-응답:
-
-```json
-{
-  "questionSetId": "uuid",
-  "researchRunId": "uuid",
-  "agentRunId": "uuid"
-}
-```
-
-## GET /interview-question-sets
-
-Query: `jobId`, `coverLetterId`, `page`, `size`.
-
-## GET /interview-question-sets/{questionSetId}
-
-질문 세트와 조사 요약.
-
-## GET /research-runs/{researchRunId}
-
-조사 상태와 요약.
-
-## GET /research-runs/{researchRunId}/sources
-
-출처 목록. URL, 제목, 유형, 발행일, 조회일, 스니펫 반환.
-
-## POST /research-runs/{researchRunId}/retry
-
-조사 재시도. 응답 `202`.
-
-## GET /interview-questions/{questionId}
-
-질문 의도, 평가 포인트, 답변 가이드, 꼬리 질문.
-
-## GET /interview-questions/{questionId}/answer-versions
-
-답변 버전 목록.
-
-## POST /interview-questions/{questionId}/answer-versions
-
-```json
-{
-  "content": "제가 해당 문제를 해결할 때...",
-  "sourceType": "USER_EDITED",
-  "parentVersionId": null
-}
-```
-
-## POST /interview-answer-versions/{versionId}/feedback
-
-응답 `202`.
-
-```json
-{
-  "qualityMode": "BALANCED"
-}
-```
-
-## GET /interview-answer-versions/{versionId}/feedbacks
-
-피드백 이력.
-
----
-
-# 8. 대화형 모의 면접
-
-## POST /mock-interview-sessions
-
-```json
-{
-  "jobId": "uuid",
-  "coverLetterId": "uuid",
-  "questionSetId": "uuid",
-  "interviewType": "TECHNICAL_AND_BEHAVIORAL",
-  "difficulty": "NORMAL",
-  "targetQuestionCount": 10,
-  "feedbackTiming": "END_ONLY",
-  "pressureMode": false
-}
-```
-
-응답 `201`, 상태 `READY`.
-
-## POST /mock-interview-sessions/{sessionId}/start
-
-첫 면접관 질문 생성. 응답 `200`.
-
-```json
-{
-  "sessionStatus": "IN_PROGRESS",
-  "interviewerMessage": {
-    "id": "uuid",
-    "sequenceNo": 1,
-    "role": "INTERVIEWER",
-    "content": "자기소개를 해주세요."
-  }
-}
-```
-
-## POST /mock-interview-sessions/{sessionId}/messages
-
-사용자 답변 저장 후 다음 질문 또는 꼬리 질문 반환.
-
-```json
-{
-  "content": "저는 ..."
-}
-```
-
-응답:
-
-```json
-{
-  "userMessageId": "uuid",
-  "interviewerMessage": {
-    "id": "uuid",
-    "sequenceNo": 3,
-    "role": "INTERVIEWER",
-    "content": "그 성능 개선에서 본인의 역할을 더 설명해 주세요."
-  },
-  "immediateFeedback": null,
-  "sessionStatus": "IN_PROGRESS"
-}
-```
-
-`feedbackTiming=AFTER_EACH`이면 `immediateFeedback` 포함.
-
-## POST /mock-interview-sessions/{sessionId}/complete
-
-세션을 `COMPLETED`로 전환하고 종합 피드백 생성 작업을 시작한다. 항상 `202 + agentRunId`를 반환한다.
-
-## POST /mock-interview-sessions/{sessionId}/cancel
-
-상태 `CANCELLED`.
-
-## GET /mock-interview-sessions
-
-Query: `jobId`, `status`, `page`, `size`.
-
-## GET /mock-interview-sessions/{sessionId}
-
-세션 설정과 요약.
-
-## GET /mock-interview-sessions/{sessionId}/messages
-
-전체 대화 조회.
-
-## GET /mock-interview-sessions/{sessionId}/feedbacks
-
-메시지별·세션 종합 피드백 조회.
-
----
-
-# 9. Agent Run
-
-## GET /agent-runs
-
-Query: `workflowType`, `status`, `page`, `size`.
-
-## GET /agent-runs/{agentRunId}
-
-```json
-{
-  "id": "uuid",
-  "workflowType": "COVER_LETTER_GENERATION",
-  "status": "RUNNING",
-  "currentStep": "FACT_CHECK",
-  "progressPercent": 80,
-  "actualCostUsd": 0.04,
-  "steps": [
-    {
-      "stepKey": "QUESTION_ANALYSIS",
-      "status": "SUCCEEDED",
-      "attempt": 1
-    }
-  ]
-}
-```
-
-## GET /agent-runs/{agentRunId}/events
-
-SSE Event:
-
-```text
-event: progress
-data: {"status":"RUNNING","currentStep":"FACT_CHECK","progressPercent":80}
-```
-
-## POST /agent-runs/{agentRunId}/retry
-
-`FAILED` 또는 `INTERRUPTED` 실행을 실패 단계부터 재실행. 응답 `202`.
-
-## POST /agent-runs/{agentRunId}/cancel
-
-아직 종료되지 않은 실행 취소 요청.
-
----
-
-# 10. 주요 상태 코드
-
-| 상황 | HTTP |
-|---|---:|
-| 생성 완료 | 201 |
-| 비동기 작업 접수 | 202 |
-| 성공, 본문 없음 | 204 |
-| 입력 오류 | 400 |
-| 인증 필요 | 401 |
-| CSRF/권한 오류 | 403 |
-| 소유하지 않은 리소스 | 404 |
-| 중복 URL·이메일 | 409 |
-| 낙관적 잠금 충돌 | 409 |
-| 지원하지 않는 파일 | 415 |
-| 파일 크기 초과 | 413 |
-| 비용 한도 초과 | 429 |
-| 외부 검색·LLM 일시 장애 | 503 |
-
----
-
-# 11. 멱등성과 중복 방지
-
-다음 POST는 `Idempotency-Key` 헤더를 지원한다.
-
-- `/documents`
-- `/jobs`
-- `/jobs/{jobId}/analysis`
-- `/cover-letters/{id}/generate`
-- `/jobs/{jobId}/interview-preparations`
-- `/agent-runs/{id}/retry`
-
-같은 사용자·키·요청 본문이면 기존 결과를 반환한다.
-
-
----
-
-# 12. 사용자 설정
-
-## GET /settings/ai
-
-```json
-{
-  "defaultQualityMode": "BALANCED",
-  "highQualityEnabled": false,
-  "dailyBudgetUsd": 1.00,
-  "systemMaxDailyBudgetUsd": 2.00
-}
-```
-
-## PUT /settings/ai
-
-```json
-{
-  "defaultQualityMode": "ECONOMY",
-  "highQualityEnabled": false,
-  "dailyBudgetUsd": 0.50
-}
-```
-
-사용자 설정은 시스템 상한을 초과할 수 없다.
-
-## GET /settings/privacy
-
-개인정보와 AI 처리 상태를 반환한다.
-
-```json
-{
-  "termsAgreedAt": "2026-07-17T08:00:00Z",
-  "aiConsentAt": "2026-07-17T08:00:00Z",
-  "storedDocumentCount": 3,
-  "storedDocumentBytes": 10485760,
-  "promptBodyLoggingEnabled": false
-}
-```
+| HTTP | code                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `QUALITY_MODE_NOT_SUPPORTED`, `DOCUMENT_TEXT_TOO_SHORT`                                                                                                                                                                                                                                                                                                  |
+|  401 | `AUTHENTICATION_REQUIRED`, `INVALID_CREDENTIALS`                                                                                                                                                                                                                                                                                                                                                  |
+|  403 | `CSRF_INVALID`, `ACCESS_DENIED`                                                                                                                                                                                                                                                                                                                                                                   |
+|  404 | `RESOURCE_NOT_FOUND`, `JOB_ANALYSIS_NOT_FOUND`                                                                                                                                                                                                                                                                                                                                                    |
+|  409 | `RESOURCE_VERSION_CONFLICT`, `RESOURCE_STATE_CONFLICT`, `DUPLICATE_RESOURCE`, `EMAIL_ALREADY_REGISTERED`, `DUPLICATE_JOB_URL`, `IDEMPOTENCY_REQUEST_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED`, `ACTIVE_COVER_LETTER_EXISTS`, `COVER_LETTER_NOT_FINALIZABLE`, `COVER_LETTER_ARCHIVED`, `EVIDENCE_SOURCE_DELETED`, `INSUFFICIENT_JOB_DATA`, `MOCK_TURN_IN_PROGRESS`, `AGENT_RUN_RETRY_ALREADY_CREATED` |
+|  413 | `PAYLOAD_TOO_LARGE`                                                                                                                                                                                                                                                                                                                                                                               |
+|  415 | `UNSUPPORTED_MEDIA_TYPE`                                                                                                                                                                                                                                                                                                                                                                          |
+|  429 | `RATE_OR_BUDGET_LIMIT_EXCEEDED`                                                                                                                                                                                                                                                                                                                                                                   |
+|  503 | `EXTERNAL_SERVICE_UNAVAILABLE`, `MOCK_TURN_TIMEOUT`, `MOCK_TURN_INVALID_OUTPUT`                                                                                                                                                                                                                                                                                                                   |
+|  500 | `INTERNAL_ERROR`                                                                                                                                                                                                                                                                                                                                                                                  |
+
+`fieldErrors`는 해당 없으면 빈 배열이다. rejected value, 내부 exception·SQL·path, 원문, prompt, provider detail을 반환하지 않는다.
+
+### 1.5 `Idempotency-Key`
+
+- 적용 endpoint는 아래 표의 `I`이며 ASCII `[A-Za-z0-9._:-]{8,128}` header가 필수다.
+- scope는 사용자+HTTP method+route template+target aggregate다. canonical request/upload SHA-256 hash가 같은 완료 요청은 원래 status·DTO를 재생하고 `Idempotency-Replayed: true`를 반환한다.
+- 같은 key가 처리 중이면 `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`, 다른 hash면 `409 IDEMPOTENCY_KEY_REUSED`다.
+- 완료 record TTL은 24시간이다. validation·owner 실패는 record를 만들기 전에 반환한다.
+- 적용 범위: document upload/manual/reparse, job create/extraction retry/analysis, cover letter create/generate/verify, interview preparation/research retry/answer feedback, mock session create/complete, Agent Run retry.
+- 회원 탈퇴는 성공 transaction에서 모든 Session을 폐기해 인증 replay가 불가능하므로 지원하지 않는다.
+- mock start/message는 header 대신 `clientRequestId` 계약을 사용한다.
+
+### 1.6 품질 모드
+
+공개 `AiQualityMode`는 `ECONOMY|BALANCED|HIGH_QUALITY`다. `HIGH_QUALITY`는 사용자 설정 활성화, 요청별 명시 선택과 비용 예약 성공을 모두 요구한다.
+
+| workflow                               | request DTO와 유효 모드                                       |
+| -------------------------------------- | ------------------------------------------------------------- |
+| 자기소개서 생성·검증, 면접 답변 피드백 | `qualityMode` 필수; `ECONOMY`, `BALANCED`, `HIGH_QUALITY`     |
+| 공고 분석, 면접 준비                   | `qualityMode` 필수; `ECONOMY`, `BALANCED`                     |
+| 문서·공고 추출                         | 공개 `qualityMode` 없음; 내부 정책은 `ECONOMY\|BALANCED` 범위 |
+| 모의 면접 종합 feedback                | 공개 `qualityMode` 없음; `BALANCED` 고정                      |
+
+허용하지 않는 선택은 `400 QUALITY_MODE_NOT_SUPPORTED`다. provider/model 실명은 일반 API에 노출하지 않는다.
+
+모든 `actualCostUsd`는 provider invoice가 아니라 해당 요청 접수 시 고정한 immutable price catalog version으로 계산한 billable estimate다.
+
+## 2. Canonical enum과 상태
+
+| 타입                           | 값                                                                                                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `JobStatus`                    | `IN_PROGRESS`, `SUBMITTED`, `CLOSED`                                                                                                                                                                    |
+| `JobExtractionStatus`          | `QUEUED`, `EXTRACTING`, `EXTRACTED`, `MANUAL_INPUT_PROVIDED`, `NEEDS_MANUAL_INPUT`, `FAILED`                                                                                                            |
+| `DocumentParseStatus`          | `UPLOADED`, `PARSING`, `PARSED`, `NEEDS_MANUAL_TEXT`, `FAILED`                                                                                                                                          |
+| `EvidenceExtractionStatus`     | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
+| `EvidenceVerificationStatus`   | `PENDING`, `VERIFIED`, `REJECTED`, `SOURCE_DELETED`                                                                                                                                                     |
+| `CoverLetterStatus`            | `DRAFT`, `FINALIZED`, `ARCHIVED`                                                                                                                                                                        |
+| `CoverLetterVersionSource`     | `AI_GENERATED`, `USER_EDITED`, `AI_REVISED`, `RESTORED`                                                                                                                                                 |
+| `InterviewAnswerVersionSource` | `USER_EDITED`                                                                                                                                                                                           |
+| `VerificationStatus`           | `PENDING`, `PASSED`, `WARNING`, `FAILED`                                                                                                                                                                |
+| `ResearchQuality`              | `BASIC`, `ADVANCED`                                                                                                                                                                                     |
+| `ResearchRunStatus`            | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                                 |
+| `SourceCoverage`               | `SUFFICIENT`, `LIMITED`, `NONE`                                                                                                                                                                         |
+| `InterviewQuestionType`        | `COVER_LETTER`, `RESUME`, `PORTFOLIO`, `TECHNICAL`, `PROJECT_DEEP_DIVE`, `BEHAVIORAL`, `COMPANY_MOTIVATION`, `FOLLOW_UP`                                                                                |
+| `MockInterviewStatus`          | `READY`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`                                                                                                                                                        |
+| `MockFeedbackStatus`           | `NOT_REQUESTED`, `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                |
+| `AgentRunStatus`               | `QUEUED`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `INTERRUPTED`                                                                                                                  |
+| `AgentStepStatus`              | `PENDING`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `SKIPPED`, `REUSED`, `CANCELLED`, `INTERRUPTED`                                                                                            |
+| `AiQualityMode`                | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
+| `ModelTier`                    | `LOW_COST`, `BALANCED`, `HIGH_QUALITY` (읽기 전용)                                                                                                                                                      |
+| `WorkflowType`                 | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
+
+보조 enum:
+
+- `DocumentType`: `RESUME|PORTFOLIO|CAREER_DESCRIPTION|CERTIFICATE|TRANSCRIPT|OTHER`
+- `EvidenceSourceType`: `EDUCATION|CERTIFICATION|LANGUAGE_SCORE|AWARD|CAREER|DOCUMENT_CHUNK|MANUAL`
+- `DeadlineSource`: `USER_ENTERED|AUTO_EXTRACTED|UNKNOWN`
+- `ClosedReason`: `DEADLINE_PASSED|USER_CLOSED|URL_INACTIVE`
+- `JobDescriptionSource`: `AUTO_EXTRACTED|USER_ENTERED`
+- `Eligibility`: `ELIGIBLE|CONDITIONAL|INELIGIBLE|UNKNOWN`
+- `OutdatedReason`: `JOB_CONTENT_CHANGED|PROFILE_CHANGED|EVIDENCE_CHANGED`
+- `FitCriterionCategory`: `REQUIRED_QUALIFICATION|CORE_RESPONSIBILITY_OR_SKILL|PREFERRED_QUALIFICATION|RELATED_EXPERIENCE_OR_DOMAIN|EDUCATION_CERTIFICATION_LANGUAGE`
+- `MatchLevel`: `MATCHED|PARTIAL|MISSING|UNKNOWN`
+- `ResearchTopic`: `COMPANY|INTERVIEW_PROCESS|ROLE_TECHNICAL`
+- `ResearchSourceType`: `OFFICIAL|TECH_BLOG|NEWS|INTERVIEW_REVIEW|COMMUNITY|OTHER`
+- `MockInterviewType`: `TECHNICAL|BEHAVIORAL|TECHNICAL_AND_BEHAVIORAL`
+- `MockDifficulty`: `EASY|NORMAL|HARD`
+- `MockFeedbackTiming`: `AFTER_EACH|END_ONLY`
+- `MockMessageRole`: `USER|INTERVIEWER`
+- `ProfileCompletionItem`: `LEGAL_NAME|DESIRED_ROLE|DESIRED_INDUSTRY|DESIRED_LOCATION|PRIMARY_EDUCATION`
+- `RequiredUserActionType`: `PROVIDE_DOCUMENT_TEXT|PROVIDE_JOB_TEXT|ENABLE_HIGH_QUALITY|INCREASE_BUDGET`
+- `VerificationIssueCode`: `UNVERIFIED_CLAIM|CONTRADICTION|REQUIREMENT_MISSING|LENGTH_VIOLATION|SOURCE_DELETED|OTHER`
+- `IssueSeverity`: `WARNING|ERROR`
+- `MockFeedbackCategory`: `CONTENT|STRUCTURE|EVIDENCE_USE|COMMUNICATION|OVERALL`
+- `EducationStatus`: `ENROLLED|LEAVE_OF_ABSENCE|EXPECTED_GRADUATION|GRADUATED|WITHDRAWN`
+- `AnswerCreatedBy`: `USER|AI`
+
+Client는 server 지정 source·role·tier·상태를 request body에 보내지 않는다.
+
+## 3. 공개 DTO catalog
+
+`?`만 nullable이다. 배열의 `[min..max]`는 element 개수다.
+
+### 3.1 공통 element DTO
+
+| DTO                     | 완전한 field set                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SafeErrorDto`          | `code:string 1..100`, `message:string 1..500`                                                                                                                                                                |
+| `ResourceRefDto`        | `resourceType:string 1..50`, `resourceId:UUID`, `displayLabel:string? <=200`                                                                                                                                 |
+| `JobRefDto`             | `id:UUID`, `companyName:string? <=200`, `positionName:string? <=300`, `title:string? <=300`                                                                                                                  |
+| `CoverLetterRefDto`     | `id:UUID`, `title:string 1..300`, `status:CoverLetterStatus`                                                                                                                                                 |
+| `QuestionSetRefDto`     | `id:UUID`, `title:string 1..300`                                                                                                                                                                             |
+| `AgentRunRefDto`        | `id:UUID`, `status:AgentRunStatus`, `currentStep:string? <=100`, `progressPercent:int 0..100`                                                                                                                |
+| `EvidenceRefDto`        | `id:UUID`, `title:string 1..250`, `evidenceCategory:string 1..80`, `verificationStatus:EvidenceVerificationStatus`, `sourceType:EvidenceSourceType`, `sourceDeleted:boolean`                                 |
+| `ResearchSourceRefDto`  | `id:UUID`, `topic:ResearchTopic`, `title:string? <=500`, `sourceUrl:string 1..2000`, `sourceType:ResearchSourceType`, `retrievedAt:Instant`                                                                  |
+| `RequirementItemDto`    | `category:FitCriterionCategory`, `text:string 1..2000`, `required:boolean`, `sourceLocation:string? <=500`                                                                                                   |
+| `ScoreCriterionDto`     | `category:FitCriterionCategory`, `criterion:string 1..2000`, `weight:decimal 0..100`, `matchLevel:MatchLevel`, `score:decimal 0..weight`, `evidenceRefs:EvidenceRefDto[0..20]`, `explanation:string 1..2000` |
+| `VerificationIssueDto`  | `code:VerificationIssueCode`, `severity:IssueSeverity`, `message:string 1..1000`, `relatedText:string? <=1000`, `evidenceRefs:EvidenceRefDto[0..20]`                                                         |
+| `VerifiedClaimDto`      | `claim:string 1..2000`, `supported:boolean`, `evidenceRefs:EvidenceRefDto[0..20]`                                                                                                                            |
+| `FeedbackScoreDto`      | `criterion:string 1..100`, `score:decimal 0..100`, `explanation:string? <=1000`                                                                                                                              |
+| `ImmediateFeedbackDto`  | `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `suggestedAnswer:string? <=5000`                                                                       |
+| `MockFeedbackItemDto`   | `category:MockFeedbackCategory`, `relatedMessageSequenceNo:long? >=1`, `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `recommendation:string? <=2000` |
+| `RequiredUserActionDto` | `type:RequiredUserActionType`, `resource:ResourceRefDto?`, `route:string? 1..500` same-origin allowlist, `message:string 1..500`                                                                             |
+| `PartialResultDto`      | `succeededScopeKeys:string[0..100]` 각 1..100, `failedScopeKeys:string[0..100]` 각 1..100, `resultRefs:ResourceRefDto[0..200]`                                                                               |
+
+TipTap 공개 schema:
+
+- `TipTapMarkDto`: `type`은 `bold` 또는 `italic`이다.
+- `TipTapNodeDto`: `type`, `text:string? 1..20000`, `marks:TipTapMarkDto[0..2]`, `content:TipTapNodeDto[0..1000]`를 가진다.
+- `TipTapDocumentDto`: `type=doc`, `content:TipTapNodeDto[0..1000]`, 파생 plain text 최대 20,000 Unicode code point.
+- node type은 `paragraph|text|hardBreak|bulletList|orderedList|listItem`, mark는 `bold|italic`만 허용한다.
+- text node만 `text:string 1..20000`와 mark 최대 2개를 가지며 container node만 content 최대 1000개를 가진다.
+- HTML, image, embed, script, 임의 link를 거부한다.
+
+### 3.2 Resource DTO
+
+| DTO                               | 완전한 field set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CsrfDto`                         | `headerName:string 1..100`, `parameterName:string 1..100`, `token:string nonblank`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `CurrentUserDto`                  | `id:UUID`, `email:string 3..320`, `displayName:string 1..100`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `AuthSessionDto`                  | `user:CurrentUserDto`, `csrf:CsrfDto`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `AccountDeletionAcceptedDto`      | `deletionRequestId:UUID`, `status=QUEUED`, `requestedAt:Instant`, `purgeBy:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `RunAcceptedDto`                  | `agentRunId:UUID`, `status`는 `QUEUED` 또는 `WAITING_USER`, `resourceType:string 1..50`, `resourceId:UUID`, `replayed:boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `DocumentUploadAcceptedDto`       | `documentId:UUID`, `parseStatus=UPLOADED`, `evidenceExtractionStatus=NOT_STARTED`, `agentRunId:UUID`, `status=QUEUED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `JobCreationAcceptedDto`          | `jobId:UUID`, `status=IN_PROGRESS`, `extractionStatus`는 `QUEUED` 또는 `MANUAL_INPUT_PROVIDED`, `agentRunId:UUID?`; `QUEUED`일 때만 agentRunId가 non-null                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `InterviewPreparationAcceptedDto` | `questionSetId:UUID`, `researchRunId:UUID`, `agentRunId:UUID`, `status=QUEUED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `ResearchRetryAcceptedDto`        | `questionSetId:UUID`, `researchRunId:UUID`, `agentRunId:UUID`, `retryOfResearchRunId:UUID`, `status=QUEUED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `MockFeedbackAcceptedDto`         | `sessionId:UUID`, `sessionStatus=COMPLETED`, `feedbackStatus=QUEUED`, `agentRunId:UUID`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `ProfileDto`                      | `legalName:string? 1..100`, `introduction:string? <=2000`, `desiredRoles:string[0..10]`, `desiredIndustries:string[0..10]`, `desiredLocations:string[0..10]` 각 항목 1..100, `expectedGraduationDate:LocalDate?`, `profileCompleted:boolean`, `missingCompletionItems:ProfileCompletionItem[0..5]`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                    |
+| `EducationDto`                    | `id:UUID`, `schoolName:string 1..200`, `major:string? <=200`, `degree:string? <=100`, `educationStatus:EducationStatus`, `admissionDate:LocalDate?`, `graduationDate:LocalDate?`, `gpa:decimal? 0..10`, `gpaScale:decimal? 0.01..10`, `isPrimary:boolean`, `description:string? <=5000`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                               |
+| `CertificationDto`                | `id:UUID`, `name:string 1..200`, `issuer:string? <=200`, `credentialNumber:string? <=200`, `acquiredDate:LocalDate?`, `expiresAt:LocalDate?`, `description:string? <=5000`, `evidenceDocumentId:UUID?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                |
+| `LanguageScoreDto`                | `id:UUID`, `testName:string 1..100`, `score:string 1..100`, `grade:string? <=100`, `testedAt:LocalDate?`, `expiresAt:LocalDate?`, `evidenceDocumentId:UUID?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `AwardDto`                        | `id:UUID`, `name:string 1..200`, `organizer:string? <=200`, `awardedAt:LocalDate?`, `description:string? <=5000`, `evidenceDocumentId:UUID?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `CareerDto`                       | `id:UUID`, `organization:string 1..200`, `position:string? <=200`, `employmentType:string? <=50`, `startedAt:LocalDate?`, `endedAt:LocalDate?`, `isCurrent:boolean`, `responsibilities:string? <=20000`, `achievements:string? <=20000`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                               |
+| `DocumentSummaryDto`              | `id:UUID`, `documentType:DocumentType`, `displayName:string 1..255`, `mimeType:string 1..100`, `fileSizeBytes:long 1..20MiB`, `parseStatus:DocumentParseStatus`, `evidenceExtractionStatus:EvidenceExtractionStatus`, `manualTextProvided:boolean`, `safeError:SafeErrorDto?`, `latestAgentRunId:UUID?`, `version:long`, `uploadedAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                              |
+| `DocumentDetailDto`               | `DocumentSummaryDto` + `pageCount:int? >=1`, `characterCount:int? >=0`, `parsedAt:Instant?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `DocumentTextDto`                 | `documentId:UUID`, `text:string 0..500000`, `characterCount:int >=0`, `manualTextProvided:boolean`, `version:long`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `DownloadUrlDto`                  | `url:string 1..4096`, `expiresAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `EvidenceDto`                     | `id:UUID`, `sourceType:EvidenceSourceType`, `sourceEntityId:UUID?`, `documentId:UUID?`, `sourceDeletedAt:Instant?`, `evidenceCategory:string 1..80`, `title:string 1..250`, `content:string 1..20000`, `metadata:Record<string,string\|number\|boolean\|null> <=16KiB`, `confidence:decimal? 0..1`, `verificationStatus:EvidenceVerificationStatus`, `verifiedAt:Instant?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                            |
+| `JobSummaryDto`                   | `id:UUID`, `companyName:string? <=200`, `title:string? <=300`, `positionName:string? <=300`, `status:JobStatus`, `extractionStatus:JobExtractionStatus`, `submittedAt:Instant?`, `deadlineAt:Instant?`, `deadlineSource:DeadlineSource`, `latestFitScore:decimal? 0..100`, `analysisOutdated:boolean`, `outdatedReasons:OutdatedReason[0..3]`, `coverLetterStatus:CoverLetterStatus?`, `interviewPreparationCount:int >=0`, `version:long`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                            |
+| `JobDetailDto`                    | `JobSummaryDto` + `sourceUrl:string 1..2000`, `canonicalUrl:string 1..2000`, `roleCategory:string? <=100`, `employmentType:string? <=100`, `location:string? <=200`, `descriptionText:string? <=200000`, `descriptionSource:JobDescriptionSource?`, `extractionError:SafeErrorDto?`, `closedAt:Instant?`, `closedReason:ClosedReason?`, `latestAnalysis:JobAnalysisSummaryDto?`, `coverLetterId:UUID?`, `latestQuestionSetId:UUID?`, `latestMockSessionId:UUID?`                                                                                                                                                                                                |
+| `JobAnalysisSummaryDto`           | `id:UUID`, `analysisVersion:int >=1`, `eligibility:Eligibility`, `fitScore:decimal? 0..100`, `analysisOutdated:boolean`, `outdatedReasons:OutdatedReason[0..3]`, `createdAt:Instant`, `agentRunId:UUID`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `JobAnalysisDetailDto`            | `JobAnalysisSummaryDto` + `scoreBreakdown:ScoreCriterionDto[0..100]`, `requiredQualifications:RequirementItemDto[0..100]`, `preferredQualifications:RequirementItemDto[0..100]`, `responsibilities:RequirementItemDto[0..100]`, `strengths:string[0..20]` 각 1..1000, `gaps:string[0..20]` 각 1..1000, `matchedEvidenceRefs:EvidenceRefDto[0..100]`, `analysisSummary:string? <=10000`                                                                                                                                                                                                                                                                          |
+| `CoverLetterSummaryDto`           | `id:UUID`, `job:JobRefDto`, `title:string 1..300`, `status:CoverLetterStatus`, `questionCount:int 0..20`, `answeredQuestionCount:int 0..20`, `latestVerificationStatus:VerificationStatus?`, `warningCount:int >=0`, `canEdit:boolean`, `canArchive:boolean`, `canUnarchive:boolean`, `canFinalize:boolean`, `version:long`, `finalizedAt:Instant?`, `archivedAt:Instant?`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                            |
+| `CoverLetterQuestionDto`          | `id:UUID`, `questionOrder:int 1..20`, `questionText:string 1..2000`, `maxLength:int? 1..10000`, `memo:string? <=2000`, `currentAnswer:CoverLetterAnswerVersionDto?`, `latestVerification:VerificationDto?`, `version:long`, `deletedAt:Instant?`                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `CoverLetterAnswerVersionDto`     | `id:UUID`, `questionId:UUID`, `parentVersionId:UUID?`, `restoredFromVersionId:UUID?`, `versionNo:int >=1`, `contentJson:TipTapDocumentDto`, `plainText:string 0..20000`, `characterCount:int 0..20000`, `sourceType:CoverLetterVersionSource`, `isCurrent:boolean`, `createdBy:AnswerCreatedBy`, `createdAt:Instant`                                                                                                                                                                                                                                                                                                                                            |
+| `VerificationDto`                 | `id:UUID`, `answerVersionId:UUID`, `status:VerificationStatus`, `issues:VerificationIssueDto[0..100]`, `suggestions:string[0..20]` 각 1..1000, `verifiedClaims:VerifiedClaimDto[0..100]`, `evidenceRefs:EvidenceRefDto[0..100]`, `agentRunId:UUID?`, `createdAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                        |
+| `CoverLetterDetailDto`            | `CoverLetterSummaryDto` + `questions:CoverLetterQuestionDto[0..20]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `ResearchRunDto`                  | `id:UUID`, `retryOfResearchRunId:UUID?`, `researchQuality:ResearchQuality`, `status:ResearchRunStatus`, `sourceCoverage:SourceCoverage?`, `missingCoverageTopics:string[0..20]` 각 1..200, `summary:string? <=10000`, `agentRunId:UUID`, `retryable:boolean`, `safeError:SafeErrorDto?`, `createdAt:Instant`, `startedAt:Instant?`, `completedAt:Instant?`                                                                                                                                                                                                                                                                                                      |
+| `ResearchSourceDto`               | `id:UUID`, `topic:ResearchTopic`, `sourceUrl:string 1..2000`, `title:string? <=500`, `sourceType:ResearchSourceType`, `publishedAt:Instant?`, `retrievedAt:Instant`, `snippet:string? <=2000`, `reliabilityNotice:string 1..500`                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `QuestionSetSummaryDto`           | `id:UUID`, `job:JobRefDto`, `coverLetter:CoverLetterRefDto`, `title:string 1..300`, `questionCount:int 0..20`, `researchRunId:UUID`, `sourceCoverage:SourceCoverage?`, `agentRun:AgentRunRefDto`, `createdAt:Instant`, `updatedAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `InterviewQuestionDto`            | `id:UUID`, `questionOrder:int 1..20`, `questionType:InterviewQuestionType`, `questionText:string 1..2000`, `intent:string? <=2000`, `evaluationPoints:string[0..20]` 각 1..500, `answerGuide:string? <=10000`, `followUpQuestions:string[0..10]` 각 1..2000, `relatedEvidenceRefs:EvidenceRefDto[0..20]`, `sourceRefs:ResearchSourceRefDto[0..50]`, `sourceBased:boolean`, `currentAnswer:InterviewAnswerVersionDto?`, `latestFeedback:InterviewFeedbackDto?`                                                                                                                                                                                                   |
+| `QuestionSetDetailDto`            | `QuestionSetSummaryDto` + `research:ResearchRunDto`, `questions:InterviewQuestionDto[0..20]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `InterviewAnswerVersionDto`       | `id:UUID`, `questionId:UUID`, `parentVersionId:UUID?`, `versionNo:int >=1`, `content:string 1..20000`, `sourceType:InterviewAnswerVersionSource`, `isCurrent:boolean`, `createdAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `InterviewFeedbackDto`            | `id:UUID`, `answerVersionId:UUID`, `scores:FeedbackScoreDto[1..20]`, `strengths:string[0..20]` 각 1..1000, `weaknesses:string[0..20]` 각 1..1000, `suggestions:string[0..20]` 각 1..1000, `revisedExample:string? <=10000`, `agentRunId:UUID`, `createdAt:Instant`; 성공한 feedback만 존재                                                                                                                                                                                                                                                                                                                                                                      |
+| `MockSessionSummaryDto`           | `id:UUID`, `job:JobRefDto`, `coverLetter:CoverLetterRefDto`, `questionSet:QuestionSetRefDto?`, `status:MockInterviewStatus`, `feedbackStatus:MockFeedbackStatus`, `interviewType:MockInterviewType`, `difficulty:MockDifficulty`, `targetQuestionCount:int 1..20`, `currentQuestionCount:int 0..20`, `feedbackTiming:MockFeedbackTiming`, `pressureMode:boolean`, `preferredEvidenceIds:UUID[0..5]`, `version:long`, `actualCostUsd:decimal >=0`, `feedbackAgentRunId:UUID?`, `canStart:boolean`, `canSend:boolean`, `canComplete:boolean`, `canCancel:boolean`, `feedbackRetryable:boolean`, `startedAt:Instant?`, `completedAt:Instant?`, `createdAt:Instant` |
+| `MockMessageDto`                  | `id:UUID`, `sequenceNo:long >=1`, `role:MockMessageRole`, `content:string 1..5000`, `relatedQuestionId:UUID?`, `createdAt:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `MockTurnResponseDto`             | `clientRequestId:UUID`, `userMessageId:UUID?`, `interviewerMessage:MockMessageDto`, `immediateFeedback:ImmediateFeedbackDto?`, `sessionStatus:MockInterviewStatus`, `feedbackStatus:MockFeedbackStatus`, `sessionVersion:long`, `actualCostUsd:decimal >=0`                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `MockFeedbackDto`                 | `status:MockFeedbackStatus`, `agentRunId:UUID?`, `items:MockFeedbackItemDto[0..100]`, `sessionSummary:string? <=10000`, `safeError:SafeErrorDto?`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `AgentStepDto`                    | `id:UUID`, `stepKey:string 1..100`, `scopeKey:string? <=100`, `stepOrder:int >=1`, `status:AgentStepStatus`, `attempt:int 1..maxAttempts`, `maxAttempts:int 1..3`, `startedAt:Instant?`, `completedAt:Instant?`, `safeError:SafeErrorDto?`                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `AgentRunSummaryDto`              | `id:UUID`, `workflowType:WorkflowType`, `resourceType:string? 1..50`, `resourceId:UUID?`(두 field는 함께 null/non-null), `status:AgentRunStatus`, `currentStep:string? 1..100`, `progressPercent:int 0..100`, `requestedQualityMode:AiQualityMode?`, `highestModelTierUsed:ModelTier?`, `estimatedCostUsd:decimal >=0`, `reservedCostUsd:decimal >=0`, `actualCostUsd:decimal >=0`, `retryable:boolean`, `cancellable:boolean`, `requiredUserAction:RequiredUserActionDto?`, `stateVersion:long`, `queuedAt:Instant`, `updatedAt:Instant`                                                                                                                       |
+| `AgentRunDetailDto`               | `AgentRunSummaryDto` + `retryOfRunId:UUID?`, `rootRunId:UUID`, `runAttemptNo:int >=1`, `durationMs:long? >=0`, `startedAt:Instant?`, `completedAt:Instant?`, `safeError:SafeErrorDto?`, `partialResult:PartialResultDto?`, `steps:AgentStepDto[0..200]`                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `DashboardDto`                    | `generatedAt:Instant`, `profile:{completed:boolean,completionPercent:int 0..100,missingItems:ProfileCompletionItem[0..5]}`, `documents:{processingCount:int >=0,needsActionCount:int >=0}`, `jobs:{inProgressCount:int >=0,submittedCount:int >=0,closingSoon:JobSummaryDto[0..5]}`, `coverLetters:{warningCount:int >=0,recent:CoverLetterSummaryDto[0..5]}`, `mockInterviews:{recent:MockSessionSummaryDto[0..5]}`, `agentRuns:{activeCount:int >=0,recent:AgentRunSummaryDto[0..5]}`                                                                                                                                                                         |
+| `AiSettingsDto`                   | `defaultQualityMode`은 `ECONOMY` 또는 `BALANCED`, `highQualityEnabled:boolean`, `allowedQualityModes:AiQualityMode[1..3]`, `highQualityDisabledReason:string? <=500`, `dailyBudgetUsd:decimal >=0`, `systemMaxDailyBudgetUsd:decimal >=0`, `budgetResetZone:string 1..50` 값은 `Asia/Seoul`, `version:long`                                                                                                                                                                                                                                                                                                                                                     |
+| `PrivacySettingsDto`              | `termsAgreedAt:Instant`, `aiConsentAt:Instant`, `storedDocumentCount:int >=0`, `storedDocumentBytes:long >=0`, `promptBodyLoggingEnabled:false`, `documentDeletionPolicy:string 1..500`, `accountDeletionPolicy:string 1..500`                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+
+## 4. 인증·계정·Dashboard
+
+| Method·path                   | request                                                                                                   | version/I | 성공                                                             | 주요 오류       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------- | --------------- |
+| `GET /auth/csrf`              | 없음                                                                                                      | 없음      | 200 `CsrfDto` + anonymous Session Cookie                         | 500             |
+| `POST /auth/signup`           | `email 3..320`, `password 10..72 UTF-8 bytes`, `displayName 1..100`, `termsAgreed=true`, `aiConsent=true` | 없음      | 201 `AuthSessionDto`; user+profile+Session                       | 400/409 email   |
+| `POST /auth/login`            | `email 3..320`, `password 1..72 bytes`                                                                    | 없음      | 200 `AuthSessionDto`                                             | 400/401         |
+| `POST /auth/logout`           | 없음                                                                                                      | 없음      | 204                                                              | 401/403         |
+| `GET /auth/me`                | 없음                                                                                                      | 없음      | 200 `CurrentUserDto`                                             | 401             |
+| `PATCH /account/display-name` | `displayName 1..100`                                                                                      | 없음      | 200 `CurrentUserDto`                                             | 400/401/403     |
+| `PATCH /account/password`     | `currentPassword 1..72 bytes`, `newPassword 10..72 bytes`, 서로 다름                                      | 없음      | 204                                                              | 400/401/403/409 |
+| `DELETE /account`             | JSON `currentPassword 1..72 bytes`; Idempotency-Key 금지                                                  | 없음      | 202 `AccountDeletionAcceptedDto`, 즉시 WITHDRAWN·전 Session 폐기 | 400/401/403/409 |
+| `GET /dashboard`              | 없음                                                                                                      | 없음      | 200 `DashboardDto`                                               | 401             |
+
+signup은 `/onboarding`으로 이동한다. 이후 route는 `profileCompleted=false`만으로 차단하지 않는다.
+
+## 5. 프로필
+
+공통 write schema:
+
+- `ProfileWrite`: `legalName:string? 1..100`, `introduction:string? <=2000`, 세 희망 배열 `string[0..10]` 각 항목 1..100·중복 금지, `expectedGraduationDate:LocalDate?`, `version:long`.
+- `EducationWrite`: `schoolName`, `major`, `degree`, `educationStatus`, 두 날짜, `gpa`, `gpaScale`, `isPrimary`, `description`를 `EducationDto`와 같은 nullability·상한으로 받고 날짜 순서와 `gpa<=gpaScale`을 검증한다.
+- `CertificationWrite`: `name`, `issuer`, `credentialNumber`, `acquiredDate`, `expiresAt`, `description`, `evidenceDocumentId`를 `CertificationDto`와 같은 nullability·상한으로 받는다.
+- `LanguageScoreWrite`: `testName`, `score`, `grade`, `testedAt`, `expiresAt`, `evidenceDocumentId`를 `LanguageScoreDto`와 같은 nullability·상한으로 받는다.
+- `AwardWrite`: `name`, `organizer`, `awardedAt`, `description`, `evidenceDocumentId`를 `AwardDto`와 같은 nullability·상한으로 받는다.
+- `CareerWrite`: `organization`, `position`, `employmentType`, `startedAt`, `endedAt`, `isCurrent`, `responsibilities`, `achievements`를 `CareerDto`와 같은 nullability·상한으로 받으며 current이면 `endedAt=null`이다.
+- 생성 request에는 version이 없고 수정 request에는 `version:long >=0`이 추가된다.
+- 연결 `evidenceDocumentId`는 같은 사용자 문서만 허용한다.
+
+| Method·path                                         | request·filter                                              | version       | 성공                                 | 주요 오류       |
+| --------------------------------------------------- | ----------------------------------------------------------- | ------------- | ------------------------------------ | --------------- |
+| `GET /profile`                                      | 없음                                                        | 없음          | 200 `ProfileDto`                     | 401             |
+| `PUT /profile`                                      | `ProfileWrite`                                              | body version  | 200 `ProfileDto`                     | 400/401/403/409 |
+| `GET /profile/educations`                           | page,size; sort `createdAt,desc` 또는 `graduationDate,desc` | 없음          | 200 `PageResponse<EducationDto>`     | 400/401         |
+| `POST /profile/educations`                          | `EducationWrite`                                            | 없음          | 201 `EducationDto`                   | 400/401/403/409 |
+| `PUT /profile/educations/{educationId}`             | `EducationWrite`                                            | body version  | 200 `EducationDto`                   | 400/404/409     |
+| `DELETE /profile/educations/{educationId}`          | 없음                                                        | query version | 204                                  | 404/409         |
+| `GET /profile/certifications`                       | page,size; sort `acquiredDate,desc` 또는 `createdAt,desc`   | 없음          | 200 `PageResponse<CertificationDto>` | 400/401         |
+| `POST /profile/certifications`                      | `CertificationWrite`                                        | 없음          | 201 `CertificationDto`               | 400/404         |
+| `PUT /profile/certifications/{certificationId}`     | `CertificationWrite`                                        | body version  | 200 `CertificationDto`               | 400/404/409     |
+| `DELETE /profile/certifications/{certificationId}`  | 없음                                                        | query version | 204                                  | 404/409         |
+| `GET /profile/language-scores`                      | page,size; sort `testedAt,desc` 또는 `createdAt,desc`       | 없음          | 200 `PageResponse<LanguageScoreDto>` | 400/401         |
+| `POST /profile/language-scores`                     | `LanguageScoreWrite`                                        | 없음          | 201 `LanguageScoreDto`               | 400/404         |
+| `PUT /profile/language-scores/{languageScoreId}`    | `LanguageScoreWrite`                                        | body version  | 200 `LanguageScoreDto`               | 400/404/409     |
+| `DELETE /profile/language-scores/{languageScoreId}` | 없음                                                        | query version | 204                                  | 404/409         |
+| `GET /profile/awards`                               | page,size; sort `awardedAt,desc` 또는 `createdAt,desc`      | 없음          | 200 `PageResponse<AwardDto>`         | 400/401         |
+| `POST /profile/awards`                              | `AwardWrite`                                                | 없음          | 201 `AwardDto`                       | 400/404         |
+| `PUT /profile/awards/{awardId}`                     | `AwardWrite`                                                | body version  | 200 `AwardDto`                       | 400/404/409     |
+| `DELETE /profile/awards/{awardId}`                  | 없음                                                        | query version | 204                                  | 404/409         |
+| `GET /profile/careers`                              | page,size; sort `startedAt,desc` 또는 `createdAt,desc`      | 없음          | 200 `PageResponse<CareerDto>`        | 400/401         |
+| `POST /profile/careers`                             | `CareerWrite`                                               | 없음          | 201 `CareerDto`                      | 400             |
+| `PUT /profile/careers/{careerId}`                   | `CareerWrite`                                               | body version  | 200 `CareerDto`                      | 400/404/409     |
+| `DELETE /profile/careers/{careerId}`                | 없음                                                        | query version | 204                                  | 404/409         |
+
+구조화 row 생성·수정·삭제와 직접 입력 evidence 동기화는 한 transaction이다.
+
+## 6. 문서·근거
+
+| Method·path                                 | request·filter                                                                                                                                                                  | version/I      | 성공                                       | 주요 오류                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------------------ | ------------------------------------- |
+| `POST /documents`                           | multipart file 1 byte..20MiB PDF/DOCX/TXT, `documentType`, `displayName? 1..255`                                                                                                | I              | 202 `DocumentUploadAcceptedDto`            | 400/413/415/429/503                   |
+| `GET /documents`                            | `documentType?:DocumentType`, `parseStatus?:DocumentParseStatus`, `evidenceExtractionStatus?:EvidenceExtractionStatus`, page,size; sort `uploadedAt,desc` 또는 `updatedAt,desc` | 없음           | 200 `PageResponse<DocumentSummaryDto>`     | 400/401                               |
+| `GET /documents/{id}`                       | 없음                                                                                                                                                                            | 없음           | 200 `DocumentDetailDto`                    | 404                                   |
+| `GET /documents/{id}/text`                  | 없음                                                                                                                                                                            | 없음           | 200 `DocumentTextDto`                      | 404/409 unavailable                   |
+| `PUT /documents/{id}/manual-text`           | `text:string` 정규화 뒤 비공백 code point 100..500000, `version:long`                                                                                                           | body version+I | 202 `RunAcceptedDto`; waiting이면 같은 run | 400/404/409/429                       |
+| `POST /documents/{id}/reparse`              | `version:long`                                                                                                                                                                  | body version+I | 202 새 `RunAcceptedDto`                    | 404/409/429                           |
+| `POST /documents/{id}/download-url`         | 없음                                                                                                                                                                            | 없음           | 200 `DownloadUrlDto`, TTL 5분              | 404/409/503                           |
+| `DELETE /documents/{id}`                    | version query                                                                                                                                                                   | query version  | 204, 즉시 404                              | 404/409                               |
+| `GET /profile/evidence`                     | `verificationStatus?:EvidenceVerificationStatus`, `evidenceCategory?:string 1..80`, `documentId?:UUID`, page,size; sort `updatedAt,desc` 또는 `confidence,desc`                 | 없음           | 200 `PageResponse<EvidenceDto>`            | 400/401/404                           |
+| `PUT /profile/evidence/{id}`                | `title:string 1..250`, `content:string 1..20000`, `metadata:object <=16KiB`, `version:long`                                                                                     | body version   | 200 `EvidenceDto`                          | 400/404/409 `EVIDENCE_SOURCE_DELETED` |
+| `PATCH /profile/evidence/{id}/verification` | `status`는 `VERIFIED` 또는 `REJECTED`, `version:long`                                                                                                                           | body version   | 200 `EvidenceDto`                          | 400/404/409 `EVIDENCE_SOURCE_DELETED` |
+
+`PARSED + evidenceExtractionStatus=FAILED`는 text를 유지한다. document 또는 구조화 profile source 삭제로 tombstone이 된 `SOURCE_DELETED` evidence는 읽기 전용이며 수정·승인·거절할 수 없다. document 삭제는 metadata를 즉시 숨기고 Object/text/chunk/embedding 삭제를 시작하며 보존 provenance는 `SOURCE_DELETED`만 반환한다.
+
+## 7. 채용 공고
+
+| Method·path                        | request·filter                                                                                                                                                                                                                             | version/I      | 성공                                                                                                                     | 주요 오류                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| `POST /jobs`                       | `sourceUrl:string` absolute HTTP(S) 1..2000, `companyName:string? <=200`, `positionName:string? <=300`, `descriptionText:string? 1..200000`, `deadlineAt:Instant?`                                                                         | I              | manual 본문 있음: 201 `JobCreationAcceptedDto`=`MANUAL_INPUT_PROVIDED`; 없음: 202 DTO=`QUEUED`                           | 400/409; queued branch 429/503              |
+| `GET /jobs`                        | `status?:JobStatus`, `extractionStatus?:JobExtractionStatus`, `query?:string <=200`, `deadlineFrom?:Instant`, `deadlineTo?:Instant`, `deadlineWithinDays?:int 1..30`, page,size; sort `createdAt,desc`, `deadlineAt,asc`, `updatedAt,desc` | 없음           | 200 `PageResponse<JobSummaryDto>`                                                                                        | 400/401                                     |
+| `GET /jobs/{id}`                   | 없음                                                                                                                                                                                                                                       | 없음           | 200 `JobDetailDto`                                                                                                       | 404                                         |
+| `PUT /jobs/{id}`                   | `companyName:string? <=200`, `title:string? <=300`, `positionName:string? <=300`, `descriptionText:string? <=200000`, `deadlineAt:Instant?`, `version:long`                                                                                | body version   | 200 `JobDetailDto`; 수동 본문은 `MANUAL_INPUT_PROVIDED`, 연결 extraction이 `WAITING_USER`면 같은 run을 `QUEUED`로 resume | 400/404/409                                 |
+| `PATCH /jobs/{id}/status`          | `status:JobStatus`, `version:long`                                                                                                                                                                                                         | body version   | 200 `JobDetailDto`                                                                                                       | 400/404/409                                 |
+| `POST /jobs/{id}/retry-extraction` | version                                                                                                                                                                                                                                    | body version+I | 202 `RunAcceptedDto`; waiting same run 또는 terminal 새 run                                                              | 404/409/429/503                             |
+| `POST /jobs/{id}/analysis`         | `qualityMode`은 `ECONOMY` 또는 `BALANCED`, `forceReanalyze:boolean`, `jobVersion:long`                                                                                                                                                     | body version+I | 202 `RunAcceptedDto`                                                                                                     | 400/404/409 `INSUFFICIENT_JOB_DATA`/429/503 |
+| `GET /jobs/{id}/analyses`          | page,size; sort `analysisVersion,desc` 또는 `createdAt,desc`                                                                                                                                                                               | 없음           | 200 `PageResponse<JobAnalysisSummaryDto>`                                                                                | 404                                         |
+| `GET /jobs/{id}/analyses/latest`   | 없음                                                                                                                                                                                                                                       | 없음           | 200 `JobAnalysisDetailDto`                                                                                               | 404 job/analysis                            |
+| `DELETE /jobs/{id}`                | version query                                                                                                                                                                                                                              | query version  | 204 soft delete                                                                                                          | 404/409                                     |
+
+canonical URL은 접수 전 non-null로 계산한다. 알고리즘은 scheme·host lowercase와 IDNA 정규화, fragment·default port 제거, dot segment·중복 slash를 포함한 path 정규화, 알려진 tracking query 제거, 나머지 query key/value 정렬 순서다. 이 versioned 규칙의 같은 결과로 `DUPLICATE_JOB_URL`을 판정한다. `analysisOutdated`와 이유는 hash 비교 projection이며 기존 결과는 보존한다. `Eligibility`와 0.00..100.00 `fitScore`는 별도다.
+
+## 8. 자기소개서
+
+TipTap plain text는 CRLF→LF, NBSP→space, Unicode NFC 뒤 code point로 계산한다. 공백·줄바꿈은 포함하고 markup·zero-width는 제외하며 server count가 최종이다.
+
+| Method·path                                                      | request·filter                                                                                                                                                                     | version/I         | 성공                                               | 주요 오류               |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------- | ----------------------- |
+| `POST /jobs/{jobId}/cover-letter`                                | `title:string 1..300`                                                                                                                                                              | I                 | 201 `CoverLetterDetailDto` with DRAFT              | 404/409 active          |
+| `GET /cover-letters`                                             | `jobId?:UUID`, `status?:CoverLetterStatus`, `query?:string <=200`, page,size; sort `updatedAt,desc`, `createdAt,desc`, `title,asc`                                                 | 없음              | 200 `PageResponse<CoverLetterSummaryDto>`          | 400/401                 |
+| `GET /cover-letters/{id}`                                        | 없음                                                                                                                                                                               | 없음              | 200 `CoverLetterDetailDto`                         | 404                     |
+| `PUT /cover-letters/{id}`                                        | `title:string 1..300`, `version:long`; status 입력 금지                                                                                                                            | body version      | 200 `CoverLetterDetailDto`                         | 400/404/409/archive     |
+| `POST /cover-letters/{id}/questions`                             | `questionOrder:int 1..20`, `questionText:string 1..2000`, `maxLength:int? 1..10000`, `memo:string? <=2000`, `coverLetterVersion:long`                                              | aggregate version | 201 `CoverLetterQuestionDto`                       | 400/404/409             |
+| `PUT /cover-letters/{id}/questions/{questionId}`                 | 생성 field + `version:long`(question)                                                                                                                                              | body version      | 200 `CoverLetterQuestionDto`                       | 400/404/409             |
+| `DELETE /cover-letters/{id}/questions/{questionId}`              | version query                                                                                                                                                                      | question version  | 204 soft delete                                    | 404/409                 |
+| `PATCH /cover-letters/{id}/questions/order`                      | 전체 active `questionIds:UUID[1..20]`, `version:long`(cover letter)                                                                                                                | aggregate version | 200 `CoverLetterDetailDto`                         | 400/404/409             |
+| `POST /cover-letters/{id}/generate`                              | `questionIds:UUID[1..20]` unique, `preferredEvidenceIds:UUID[0..50]` unique VERIFIED, `qualityMode:AiQualityMode`, `avoidExperienceDuplication:boolean`, `coverLetterVersion:long` | body version+I    | 202 `RunAcceptedDto`                               | 400/404/409/429/503     |
+| `GET /cover-letter-questions/{id}/versions`                      | page,size; sort `versionNo,desc` 또는 `createdAt,desc`                                                                                                                             | 없음              | 200 `PageResponse<CoverLetterAnswerVersionDto>`    | 404                     |
+| `POST /cover-letter-questions/{id}/versions`                     | `contentJson:TipTapDocumentDto`, `parentVersionId:UUID?`(현재와 일치, 최초만 null)                                                                                                 | current CAS       | 201 `CoverLetterAnswerVersionDto` with USER_EDITED | 400/404/409/maxLength   |
+| `POST /cover-letter-questions/{id}/versions/{versionId}/restore` | `expectedCurrentVersionId:UUID?`                                                                                                                                                   | current CAS       | 201 `CoverLetterAnswerVersionDto` with RESTORED    | 404/409                 |
+| `POST /cover-letter-answer-versions/{id}/verify`                 | `qualityMode:AiQualityMode`                                                                                                                                                        | I                 | 202 `RunAcceptedDto`                               | 404/429/503             |
+| `GET /cover-letter-answer-versions/{id}/verifications`           | page,size; sort `createdAt,desc`                                                                                                                                                   | 없음              | 200 `PageResponse<VerificationDto>`                | 404                     |
+| `POST /cover-letters/{id}/finalize`                              | `version:long`, `acknowledgedWarningVerificationIds:UUID[0..20]`                                                                                                                   | body version      | 200 `CoverLetterDetailDto` with FINALIZED          | 404/409 not finalizable |
+| `POST /cover-letters/{id}/archive`                               | `version:long`                                                                                                                                                                     | body version      | 200 `CoverLetterDetailDto` with ARCHIVED           | 404/409                 |
+| `POST /cover-letters/{id}/unarchive`                             | `version:long`                                                                                                                                                                     | body version      | 200 `CoverLetterDetailDto` with DRAFT              | 404/409 active          |
+
+`ARCHIVED` mutation은 `409 COVER_LETTER_ARCHIVED`다. 질문별 generation partial success를 보존하고 run partialResult로 scope를 공개한다. 최종화는 모든 active 질문의 current answer와 fresh verification을 요구한다. `PENDING|FAILED`는 금지, `WARNING`은 정확한 verification ID 확인 시에만 허용한다.
+
+## 9. 면접 준비·조사·답변 피드백
+
+| Method·path                                      | request·filter                                                                                                                                                                                   | version/I   | 성공                                                       | 주요 오류           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------------------------------------------------------- | ------------------- |
+| `POST /jobs/{jobId}/interview-preparations`      | `coverLetterId:UUID`, `researchQuality:ResearchQuality`, `qualityMode`은 `ECONOMY` 또는 `BALANCED`, `questionTypes:InterviewQuestionType[1..7]` unique·FOLLOW_UP 금지, `questionCount:int 1..20` | I           | 202 `InterviewPreparationAcceptedDto`                      | 400/404/409/429/503 |
+| `GET /interview-question-sets`                   | `jobId?:UUID`, `coverLetterId?:UUID`, `query?:string <=200`, `sourceCoverage?:SourceCoverage`, `researchStatus?:ResearchRunStatus`, page,size; sort `updatedAt,desc` 또는 `createdAt,desc`       | 없음        | 200 `PageResponse<QuestionSetSummaryDto>`                  | 400/401/404         |
+| `GET /interview-question-sets/{id}`              | 없음                                                                                                                                                                                             | 없음        | 200 `QuestionSetDetailDto`                                 | 404                 |
+| `GET /research-runs/{id}`                        | 없음                                                                                                                                                                                             | 없음        | 200 `ResearchRunDto`                                       | 404                 |
+| `GET /research-runs/{id}/sources`                | `topic?:ResearchTopic`, `sourceType?:ResearchSourceType`, page,size; sort `providerRank,asc` 또는 `retrievedAt,desc`                                                                             | 없음        | 200 `PageResponse<ResearchSourceDto>`; providerRank 비노출 | 400/404             |
+| `POST /research-runs/{id}/retry`                 | `researchQuality:ResearchQuality?`, `qualityMode`은 `ECONOMY` 또는 `BALANCED`이며 생략하면 기존 값                                                                                               | I           | 202 `ResearchRetryAcceptedDto`                             | 400/404/409/429/503 |
+| `GET /interview-questions/{id}`                  | 없음                                                                                                                                                                                             | 없음        | 200 `InterviewQuestionDto`                                 | 404                 |
+| `GET /interview-questions/{id}/answer-versions`  | page,size; sort `versionNo,desc` 또는 `createdAt,desc`                                                                                                                                           | 없음        | 200 `PageResponse<InterviewAnswerVersionDto>`              | 404                 |
+| `POST /interview-questions/{id}/answer-versions` | `content:string 1..20000`, `parentVersionId:UUID?`(current CAS)                                                                                                                                  | current CAS | 201 `InterviewAnswerVersionDto` with USER_EDITED           | 400/404/409         |
+| `POST /interview-answer-versions/{id}/feedback`  | `qualityMode:AiQualityMode`                                                                                                                                                                      | I           | 202 `RunAcceptedDto`                                       | 404/429/503         |
+| `GET /interview-answer-versions/{id}/feedbacks`  | page,size; sort `createdAt,desc`                                                                                                                                                                 | 없음        | 200 `PageResponse<InterviewFeedbackDto>`; 성공 feedback만  | 404                 |
+
+preparation은 최신 job analysis와 active 질문·current answer 최소 1개가 필요하다. `LIMITED|NONE` source coverage도 성공 가능하다. feedback 실패·취소 시 PENDING row를 만들지 않고 상태는 Agent Run에서 조회한다.
+
+## 10. 모의 면접
+
+canonical 생성 route는 `/jobs/:jobId/interview/mock/new`다. preferred project는 같은 사용자의 VERIFIED evidence ID 최대 5개다.
+
+| Method·path                                   | request·filter                                                                                                                                                                                                                                                             | version/I     | 성공                                       | 주요 오류           |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------ | ------------------- |
+| `POST /mock-interview-sessions`               | `jobId:UUID`, `coverLetterId:UUID`, `questionSetId:UUID?`, `interviewType:MockInterviewType`, `difficulty:MockDifficulty`, `targetQuestionCount:int 1..20`, `feedbackTiming:MockFeedbackTiming`, `pressureMode:boolean`, `preferredEvidenceIds:UUID[0..5]` unique VERIFIED | I             | 201 `MockSessionSummaryDto` with READY     | 400/404/409         |
+| `POST /mock-interview-sessions/{id}/start`    | `clientRequestId:UUID`, `version:long`                                                                                                                                                                                                                                     | client ID+CAS | 200 `MockTurnResponseDto`                  | 404/409/429/503     |
+| `POST /mock-interview-sessions/{id}/messages` | `clientRequestId:UUID`, `content:string 1..5000`, `version:long`                                                                                                                                                                                                           | client ID+CAS | 200 `MockTurnResponseDto` or replay        | 400/404/409/429/503 |
+| `POST /mock-interview-sessions/{id}/complete` | `version:long`                                                                                                                                                                                                                                                             | version+I     | 202 `MockFeedbackAcceptedDto`              | 404/409             |
+| `POST /mock-interview-sessions/{id}/cancel`   | `version:long`                                                                                                                                                                                                                                                             | version       | 200 `MockSessionSummaryDto` with CANCELLED | 404/409             |
+| `GET /mock-interview-sessions`                | `jobId?:UUID`, `query?:string <=200`, `status?:MockInterviewStatus`, `feedbackStatus?:MockFeedbackStatus`, page,size; sort `createdAt,desc`, `completedAt,desc`, `updatedAt,desc`                                                                                          | 없음          | 200 `PageResponse<MockSessionSummaryDto>`  | 400/401             |
+| `GET /mock-interview-sessions/{id}`           | 없음                                                                                                                                                                                                                                                                       | 없음          | 200 `MockSessionSummaryDto`                | 404                 |
+| `GET /mock-interview-sessions/{id}/messages`  | page,size(기본 100, 최대 100); sort `sequenceNo,asc`                                                                                                                                                                                                                       | 없음          | 200 `PageResponse<MockMessageDto>`         | 404                 |
+| `GET /mock-interview-sessions/{id}/feedbacks` | 없음                                                                                                                                                                                                                                                                       | 없음          | 200 `MockFeedbackDto` pending 포함         | 404                 |
+
+start/message는 HTTP deadline 20초, chat 최대 1회, search/embedding 0회, turn USD 0.03, session 동기 turn 합계 USD 0.30이다. timeout·structured output 실패는 자동 재호출하지 않는다. 동일 clientRequestId/hash는 `PENDING`이면 `409 MOCK_TURN_IN_PROGRESS`, terminal이면 성공 또는 실패의 원래 HTTP status와 안전한 응답을 그대로 replay한다. 실패 replay도 모델을 다시 호출하지 않으며 새 ID만 새 유료 호출을 허용한다. 동기 turn은 Agent Run을 만들지 않는다.
+
+## 11. Agent Run과 SSE
+
+| Method·path                    | request·filter                                                                                                                                                                                                         | version/I | 성공                                          | 주요 오류   |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------- | ----------- |
+| `GET /agent-runs`              | repeatable `workflowType?:WorkflowType`, repeatable `status?:AgentRunStatus`, `resourceType?:string 1..50`·`resourceId?:UUID`는 함께 사용, `retryable?:boolean`, page,size; sort `queuedAt,desc` 또는 `updatedAt,desc` | 없음      | 200 `PageResponse<AgentRunSummaryDto>`        | 400/401/404 |
+| `GET /agent-runs/{id}`         | 없음                                                                                                                                                                                                                   | 없음      | 200 `AgentRunDetailDto`                       | 404         |
+| `GET /agent-runs/{id}/events`  | `Accept:text/event-stream`; Last-Event-ID replay 없음                                                                                                                                                                  | 없음      | 200 SSE, snapshot-first                       | 401/404     |
+| `POST /agent-runs/{id}/retry`  | body 없음; FAILED/INTERRUPTED+retryable                                                                                                                                                                                | I         | 202 새 `RunAcceptedDto`                       | 404/409/429 |
+| `POST /agent-runs/{id}/cancel` | `stateVersion:long`                                                                                                                                                                                                    | CAS       | 202 `AgentRunDetailDto` with cancel requested | 404/409     |
+
+resource별 retry는 품질 등 option을 바꿀 수 있고 범용 Agent Run retry는 원 요청 snapshot을 그대로 쓴다. 모든 진입점은 같은 retry service와 `(userId, predecessorRunId)` unique claim을 사용한다. 최초 command만 successor를 만들며 호환되는 후속 요청은 같은 successor를 202로 반환하고, 이미 생성된 successor와 option이 충돌하면 `409 AGENT_RUN_RETRY_ALREADY_CREATED`다. research처럼 새 domain output이 필요한 workflow도 successor 하나당 새 resource set을 정확히 하나만 만들고 같은 lineage를 사용한다.
+
+SSE event:
+
+| event          | payload                                                                                                                |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `snapshot`     | `{agentRunId,stateVersion,occurredAt,run:AgentRunDetailDto}`                                                           |
+| `progress`     | `{agentRunId,stateVersion,occurredAt,status,currentStep,progressPercent,actualCostUsd}`                                |
+| `step`         | `{agentRunId,stateVersion,occurredAt,step:AgentStepDto}`                                                               |
+| `waiting_user` | `{agentRunId,stateVersion,occurredAt,requiredUserAction}`                                                              |
+| `heartbeat`    | `{agentRunId,stateVersion,occurredAt,serverTime,status}`                                                               |
+| `terminal`     | `{agentRunId,stateVersion,occurredAt,status,completedAt,actualCostUsd,retryable,safeError?,resourceType?,resourceId?}` |
+
+commit마다 stateVersion을 증가시키고 event ID로 사용한다. heartbeat는 15초다. durable replay는 제공하지 않는다. client는 낮거나 같은 version을 무시하고 1/2/5/10/30초 backoff, 3회 실패 뒤 5초 polling을 사용한다. terminal snapshot 뒤 stream을 닫는다.
+
+## 12. 설정
+
+| Method·path             | request                                                                                                                             | version      | 성공                     | 오류    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------ | ------- |
+| `GET /settings/ai`      | 없음                                                                                                                                | 없음         | 200 `AiSettingsDto`      | 401     |
+| `PUT /settings/ai`      | `defaultQualityMode`는 `ECONOMY` 또는 `BALANCED`, `highQualityEnabled:boolean`, `dailyBudgetUsd:decimal 0.00..2.00`, `version:long` | body version | 200 `AiSettingsDto`      | 400/409 |
+| `GET /settings/privacy` | 없음                                                                                                                                | 없음         | 200 `PrivacySettingsDto` | 401     |
+
+초기 운영값은 사용자 기본 일일 USD 1.00, 시스템 사용자별 최대 USD 2.00, 비동기 run 최대 USD 0.30, reset zone `Asia/Seoul`이다. 외부 provider 단가는 API에 공개하지 않는다.
