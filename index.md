@@ -6,18 +6,18 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                           | 역할                                            |
-| ------------------------------ | ----------------------------------------------- |
-| [`AGENTS.md`](AGENTS.md)       | Codex가 모든 작업 전에 읽어야 하는 최상위 지침  |
-| [`.codex/`](.codex/)           | 저장소 범위 Codex 설정                          |
-| [`.github/`](.github/)         | CI와 Dependabot 설정                            |
-| [`backend/`](backend/)         | Java/Spring Boot 모듈                           |
-| [`frontend/`](frontend/)       | Vue/TypeScript SPA 모듈                         |
-| [`docs/`](docs/)               | 제품 명세와 에이전트 세부 규칙                  |
-| [`compose.yaml`](compose.yaml) | PostgreSQL/pgvector, MinIO, 선택적 Mailpit 구성 |
-| [`.env.example`](.env.example) | 로컬 환경 변수의 안전한 예시                    |
-| [`README.md`](README.md)       | 개발 환경 실행과 검증 안내                      |
-| [`progress.md`](progress.md)   | 프로젝트 전체 진행 상황과 검증 이력             |
+| 경로                           | 역할                                             |
+| ------------------------------ | ------------------------------------------------ |
+| [`AGENTS.md`](AGENTS.md)       | Codex가 모든 작업 전에 읽어야 하는 최상위 지침   |
+| [`.codex/`](.codex/)           | 저장소 범위 Codex 설정과 전문 서브 에이전트 역할 |
+| [`.github/`](.github/)         | CI와 Dependabot 설정                             |
+| [`backend/`](backend/)         | Java/Spring Boot 모듈                            |
+| [`frontend/`](frontend/)       | Vue/TypeScript SPA 모듈                          |
+| [`docs/`](docs/)               | 제품 명세와 에이전트 세부 규칙                   |
+| [`compose.yaml`](compose.yaml) | PostgreSQL/pgvector, MinIO, 선택적 Mailpit 구성  |
+| [`.env.example`](.env.example) | 로컬 환경 변수의 안전한 예시                     |
+| [`README.md`](README.md)       | 개발 환경 실행과 검증 안내                       |
+| [`progress.md`](progress.md)   | 프로젝트 전체 진행 상황과 검증 이력              |
 
 ## 구성 요소 관계
 
@@ -27,13 +27,14 @@ backend  -- JDBC/Flyway -----------------> PostgreSQL + pgvector
 backend  -- S3 API ----------------------> MinIO (local)
 backend  -- optional SMTP ---------------> Mailpit (local)
 docs/spec -------------------------------> API·DB·화면·기술 계약
-AGENTS.md + docs/agent-rules ------------> Codex 작업 절차
+AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/compose 검증
 ```
 
 ## 변경 시 주의사항
 
 - 제품 계약은 [`docs/spec/`](docs/spec/)을 기준으로 하고, 실제 상태는 모듈별 `progress.md`와 코드에서 확인한다.
+- 루트 Codex 스레드가 관리자 역할을 맡고 `.codex/agents/*.toml`은 직접 위임받은 전문 역할로만 사용한다.
 - 루트 설정 변경은 백엔드, 프론트엔드, 인프라와 CI에 미치는 영향을 함께 확인한다.
 - `.env`와 비밀값은 커밋하지 않는다. 예시는 `.env.example`에만 안전한 값으로 관리한다.
 - `.git`, `.idea`, `.vscode`, `node_modules`, `build`, `dist`, `target`, `.gradle`, cache/temp, 자동 생성 코드와 외부 의존성 디렉터리는 문서 관리 대상에서 제외한다.

@@ -9,3 +9,8 @@ project_root_markers = [".git"]
 
 # AGENTS.md is the single canonical instruction filename for this repository.
 project_doc_fallback_filenames = []
+
+# Keep delegation bounded to direct specialist agents.
+[agents]
+max_threads = 4
+max_depth = 1
