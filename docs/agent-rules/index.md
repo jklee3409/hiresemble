@@ -8,8 +8,8 @@
 
 | 파일                                                             | 역할                                                |
 | ---------------------------------------------------------------- | --------------------------------------------------- |
-| [`workflow.md`](workflow.md)                                     | 모든 변경에 공통인 사전 확인, 구현, 검증, 완료 절차 |
-| [`documentation-tracking.md`](documentation-tracking.md)         | 디렉터리별 `index.md`와 `progress.md` 관리 방식     |
+| [`workflow.md`](workflow.md)                                     | 역할별 제한 컨텍스트, 구현, 검증, 통합 완료 절차    |
+| [`documentation-tracking.md`](documentation-tracking.md)         | `index.md` 책임과 Session 기반 `progress.md` 규칙   |
 | [`backend-development.md`](backend-development.md)               | Spring 서버 설계·코딩·테스트 규칙                   |
 | [`backend-response-exception.md`](backend-response-exception.md) | 레퍼런스 분석과 현재 프로젝트의 응답·예외 적용 규칙 |
 | [`frontend-development.md`](frontend-development.md)             | Vue/TypeScript 프론트엔드 규칙                      |
@@ -25,6 +25,7 @@
 ## 변경 시 주의사항
 
 - 동일한 공통 규칙을 여러 파일에 복제하지 말고 `workflow.md` 또는 `documentation-tracking.md`로 연결한다.
+- 작업 이력은 관련 문서의 최신 Session 5개만 기본 조회하고 과거 이력은 근거가 있는 제한 검색으로 확인한다.
 - 기술 스택이 바뀌면 해당 규칙과 `docs/spec/tech_stack.md`, 모듈 문서를 함께 검토한다.
 - 레퍼런스 분석 결과와 현재 프로젝트에 실제 적용할 정책을 명확히 구분한다.
 - 자동 로드되는 문서는 루트 `AGENTS.md`뿐이므로 새 규칙은 반드시 그 라우팅 표에 연결한다.
