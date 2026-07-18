@@ -2,7 +2,30 @@
 
 ## Overview
 
-제품 명세 5종, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
+제품 명세 5종, 전체 시스템 설계·구현 계획, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
+
+## [2026-07-18] Session Summary (명세 기반 전체 시스템 설계와 구현 계획 작성)
+
+- What was done:
+  - `docs/design/`을 만들고 전체 architecture·도메인·DB/API/page 연결, 주요 업무·AI workflow와 보안·비동기 설계를 작성했다.
+  - 계약 결정부터 AC-01~~13까지의 P0~~P10 구현 순서, 단계별 완료 조건과 개발·검증 에이전트 파일 소유권을 작성했다.
+  - `docs/index.md`와 상위 저장소 안내를 갱신해 기준 명세, 파생 설계, 작업 규칙의 책임을 분리했다.
+
+- Key decisions:
+  - 기준 계약은 `spec/`, 파생 구현 구조는 `design/`, Codex 작업 절차는 `agent-rules/`에서 관리한다.
+  - 명세 충돌·누락은 권장안과 구현 보류 범위를 함께 기록하고 P0 승인 전 확정 사실로 취급하지 않는다.
+
+- Issues encountered:
+  - 독립 validator가 최초 설계에서 자기소개서 목록·`ARCHIVED`, 조사 재시도, 면접 준비 목록의 직접 추적 누락과 Markdown format 차이를 발견했다.
+  - 세 보조 MVP 흐름을 한 차례 보완하고 format을 적용했다.
+
+- Validation:
+  - 세 전문 분석 에이전트와 독립 validator가 모든 `docs/spec/*.md`와 설계 문서를 읽기 전용으로 교차 검증했다.
+  - 정적 재검사에서 AC 13개, 필수 5필드를 가진 이슈 18개, 변경 문서 상대 링크와 `git diff --check`가 통과했다.
+  - 변경 Markdown의 Prettier 검사가 통과했고 비즈니스 코드·dependency·migration·API·UI는 변경하지 않았다.
+
+- Next steps:
+  - 구현 전에 설계의 P0 결정 게이트를 사용자 승인으로 닫고 영향받는 명세를 일관되게 갱신한다.
 
 ## [2026-07-17] Session Summary (Session 기반 작업 이력 문서 체계 표준화)
 

@@ -5,7 +5,33 @@
 - 초기 프론트엔드, 백엔드, Docker Compose, CI 환경이 구성되어 있다.
 - 제품 기능·API·DB·화면·기술 명세는 `docs/spec/`에 존재한다.
 - 실제 비즈니스 Controller, 도메인 모델, 공통 응답·예외 처리 코드는 아직 구현되지 않았다.
-- Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 22개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
+- Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 23개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
+
+## [2026-07-18] Session Summary (Hiresemble 전체 시스템 설계와 단계별 구현 계획 수립)
+
+- What was done:
+  - `AGENTS.md`와 `docs/spec/`의 Markdown 7개를 모두 읽고 프로젝트 목적, MVP, 모듈·도메인 의존, 기능·DB·API·페이지 연결을 통합했다.
+  - 문서·공고·자기소개서·면접과 Agent Orchestrator·Model Router·Context Builder·Budget Guard의 실행 흐름, 인증·격리·개인정보와 비동기·복구·SSE 설계를 작성했다.
+  - `docs/design/`의 전체 시스템 설계, 구현 계획과 추적 문서를 만들고 루트·문서 영역 인덱스를 갱신했다.
+  - P0~P10 구현 순서, 완료 조건과 backend·AI workflow·frontend·validator의 단일 파일 소유권을 정리했다.
+
+- Key decisions:
+  - 다섯 제품 명세를 변경하지 않고 파생 설계와 권장 해결안을 별도 문서로 관리한다.
+  - 공개 계약·데이터 수명주기·AI 운영 정책의 미결 항목은 P0 결정 게이트 전 migration이나 API/UI로 구현하지 않는다.
+  - 백엔드는 도메인·HTTP·persistence, AI workflow는 context·model·prompt·workflow, frontend는 UI·API consumer를 소유한다.
+
+- Issues encountered:
+  - 공고 상태 축, 품질·version·질문 enum, tenant DB 제약, 삭제·provenance, 멱등성·Agent Run 복구·SSE, 자기소개서 최종화·보관, 조사·모의 면접 lifecycle 등 18개 이슈 그룹을 확인했다.
+  - 독립 validator가 보조 MVP 직접 추적 3건과 상위 진행 문서·format 보완을 요구해 허용된 한 차례 수정에 통합했다.
+
+- Validation:
+  - backend·AI workflow·frontend 분석 에이전트가 모두 `DONE`, 파일 변경 없음으로 종료했다.
+  - 독립 validator는 사용자 요구 1~~15, AC-01~~13, 사용자 격리, 동기·비동기, 역할 경계와 링크를 통과시키고 세 보완점을 반환했다.
+  - 보완 후 정적 검사에서 AC 13개, 필수 5필드를 가진 이슈 18개, 상대 링크와 `git diff --check`가 통과했다.
+  - 변경 Markdown의 Prettier 검사가 통과했다. 비즈니스 코드·dependency·migration·API·UI를 변경하지 않아 backend/frontend build test는 실행하지 않았다.
+
+- Next steps:
+  - 구현 시작 전에 P0의 공개 API·상태, 데이터 수명주기, AI 비용·복구 정책을 사용자 승인으로 확정한다.
 
 ## [2026-07-18] Session Summary (Codex 멀티 에이전트 종료 안전성 보완 및 런타임 재검증)
 

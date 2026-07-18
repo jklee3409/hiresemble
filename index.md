@@ -13,7 +13,7 @@
 | [`.github/`](.github/)         | CI와 Dependabot 설정                             |
 | [`backend/`](backend/)         | Java/Spring Boot 모듈                            |
 | [`frontend/`](frontend/)       | Vue/TypeScript SPA 모듈                          |
-| [`docs/`](docs/)               | 제품 명세와 에이전트 세부 규칙                   |
+| [`docs/`](docs/)               | 제품 명세, 전체 구현 설계와 에이전트 세부 규칙   |
 | [`compose.yaml`](compose.yaml) | PostgreSQL/pgvector, MinIO, 선택적 Mailpit 구성  |
 | [`.env.example`](.env.example) | 로컬 환경 변수의 안전한 예시                     |
 | [`README.md`](README.md)       | 개발 환경 실행과 검증 안내                       |
@@ -27,6 +27,7 @@ backend  -- JDBC/Flyway -----------------> PostgreSQL + pgvector
 backend  -- S3 API ----------------------> MinIO (local)
 backend  -- optional SMTP ---------------> Mailpit (local)
 docs/spec -------------------------------> API·DB·화면·기술 계약
+docs/design -----------------------------> 명세 기반 전체 설계·구현 순서·파일 소유권
 AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/compose 검증
 ```
@@ -46,4 +47,6 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 - [문서 추적 규칙](docs/agent-rules/documentation-tracking.md)
 - [개발 작업 절차](docs/agent-rules/workflow.md)
 - [기술 스택 명세](docs/spec/tech_stack.md)
+- [전체 시스템 설계](docs/design/system-architecture.md)
+- [단계별 구현 계획](docs/design/implementation-plan.md)
 - [프로젝트 진행 상황](progress.md)

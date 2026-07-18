@@ -6,6 +6,28 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 백엔드는 애플리케이션 부트스트랩과 pgvector 확장 migration만, 프론트엔드는 빈 route table을 포함한 초기 환경만 구성되어 있다.
 
+## [2026-07-18] Session Summary (전체 구현 설계를 위한 명세 교차 검증)
+
+- What was done:
+  - 기능·DB·API·페이지·기술 명세 전부를 읽고 AC-01~13과 주요 상태·workflow를 교차 검증했다.
+  - 명세를 변경하지 않고 파생 결과를 [전체 시스템 설계](../design/system-architecture.md)와 [구현 계획](../design/implementation-plan.md)에 분리했다.
+
+- Key decisions:
+  - 현재 다섯 명세를 계속 기준 계약으로 유지하고, 불일치·누락은 사용자 승인 전 확정하거나 migration·공개 DTO로 구현하지 않는다.
+  - 구현은 공개 계약·데이터 수명주기·AI 운영 정책을 먼저 결정한 뒤 승인 근거→공고→자기소개서→면접 순으로 진행한다.
+
+- Issues encountered:
+  - 공고 상태 축, 품질·version·질문 enum, 사용자 소유 DB 제약, 삭제·provenance, 멱등성·비동기 복구·SSE, 자기소개서 최종화·보관과 면접 lifecycle 등 결정 항목이 확인됐다.
+  - 전체 문제, 영향, 권장안과 설계 보류 범위는 전체 시스템 설계의 이슈 목록에 기록했다.
+
+- Validation:
+  - backend·AI workflow·frontend 에이전트가 각 관점의 읽기 전용 분석을 `DONE`으로 반환했다.
+  - 독립 validator와 루트 정적 재검사가 AC-01~13 추적, 이슈 18개의 필수 형식, 상대 링크와 무수정 명세 범위를 확인했다.
+  - 실제 API·DB·UI 구현은 없으므로 구현 test는 실행하지 않았다.
+
+- Next steps:
+  - P0 결정 게이트에서 이슈별 계약을 승인한 뒤 영향받는 다섯 명세를 함께 갱신하고 문서 version 정책을 확정한다.
+
 ## [2026-07-17] Session Summary (MVP 제품 계약 기준선 작성)
 
 - What was done:
