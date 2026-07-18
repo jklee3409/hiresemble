@@ -7,6 +7,28 @@
 - 실제 비즈니스 Controller, 도메인 모델, 공통 응답·예외 처리 코드는 아직 구현되지 않았다.
 - Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 23개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
 
+## [2026-07-18] Session Summary (P0 계약 제안서 제품 검토 준비 전환)
+
+- What was done:
+  - 승인 전 P0 제안서를 수정 전·후 독립 validator로 감사하고, 구현자가 추측하거나 미승인 정책을 확정하지 않도록 계약을 정합화했다.
+  - 최종 의미 검증 `PASS`에 따라 상태를 `READY_FOR_OWNER_REVIEW`로 변경하고 설계·문서·루트 추적 기록을 갱신했다.
+
+- Key decisions:
+  - D 항목은 권장 10개·제품 승인 필요 8개이며 제품 질문도 8개다.
+  - 회원 탈퇴 replay 제거, mock feedback 품질 고정, 성공 feedback만 저장, embedding과 profile 완료의 승인 전 구현 차단을 채택했다.
+  - P0는 아직 승인·완료가 아니며 승인 후 `docs/spec/**` 동기화와 재검증이 필요하다.
+
+- Issues encountered:
+  - 최초 validator는 4 BLOCKER와 URL·memo·source·취소·공개 DTO 경계 등 MAJOR를 포함해 `NEEDS_CHANGES`로 판정했다.
+  - 한 차례 보정 후 새 validator가 승인 차단 충돌 없음으로 `PASS`했다.
+
+- Validation:
+  - D-01~~D-18과 Gate A~~C, enum/상태, request-response-DB 상한, quality/idempotency, cancel/retry, 사용자 격리·provenance를 의미·기계적으로 검사했다.
+  - Markdown Prettier와 `git diff --check`를 실행했다. 코드·migration·설정·`docs/spec/**`는 변경하지 않았고 문서 전용이라 backend/frontend build를 실행하지 않았다.
+
+- Next steps:
+  - 제품 소유자가 8개 승인 질문을 검토한 뒤 승인된 결정을 기준 명세에 반영하고 P0 완료 여부를 판단한다.
+
 ## [2026-07-18] Session Summary (P0 계약 결정 제안과 구현 차단 항목 정리)
 
 - What was done:

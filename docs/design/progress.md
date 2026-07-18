@@ -4,6 +4,30 @@
 
 다섯 기준 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 전 P0 계약 결정 제안서가 작성되어 있다. 이 문서는 목표 구조와 미결 계약을 추적하며 실제 비즈니스 기능 구현 완료나 P0 승인을 의미하지 않는다.
 
+## [2026-07-18] Session Summary (P0 계약 결정 제안서 최종 정합성 감사 및 보정)
+
+- What was done:
+  - 기존 `PROPOSAL`을 기준 명세·설계와 다시 대조하고 수정 전·후 별도 read-only validator로 의미 기반 계약 감사를 수행했다.
+  - URL·memo 상한, 면접 답변 source, mock feedback 품질, 탈퇴 idempotency, embedding 선택, feedback 취소, 공개 DTO 경계와 프로필 완료 정책을 최소 보정했다.
+  - 최종 validator `PASS` 뒤 문서 상태를 `READY_FOR_OWNER_REVIEW`로 변경했다.
+
+- Key decisions:
+  - D-01~D-18은 `RECOMMENDED` 10개와 `OWNER_DECISION_REQUIRED` 8개이며, embedding과 프로필 완료를 포함한 제품 질문 8개를 검토 대상으로 둔다.
+  - 회원 탈퇴에는 replay 불가능한 idempotency를 적용하지 않고, mock feedback은 `BALANCED` 고정, 면접 답변 feedback은 성공 row만 생성한다.
+  - 승인 후 기준 명세를 동기화하고 이 제안서는 결정 기록 또는 archived proposal로 전환한다.
+
+- Issues encountered:
+  - 최초 validator는 embedding 차원 고정, mock HIGH_QUALITY, 탈퇴 replay, profile hard gate 4개 BLOCKER와 URL·memo·source·취소·DTO 경계 등의 MAJOR를 확인해 `NEEDS_CHANGES`로 판정했다.
+  - 보정 중 기준 명세나 코드로 범위를 확장하지 않았고, 공개 DTO에서 내부 checksum·hash·prompt/model·step reuse 정보를 제거했다.
+
+- Validation:
+  - 최종 validator는 D 18개, Gate A 6개·B 5개·C 5개, enum·DTO·quality·idempotency·cancel/retry·제품 분류·변경 경로를 의미 기반으로 검사해 `PASS`했다.
+  - Markdown 표 열 수, 상대 링크, 중복 endpoint·enum/field, 상한·nullability, quality allowlist, 상태 전이를 정적으로 검사하고 Prettier·`git diff --check`를 실행했다.
+  - 문서 전용 작업이므로 backend/frontend build는 실행하지 않았다.
+
+- Next steps:
+  - 제품 소유자가 8개 질문과 나머지 권장안을 승인·수정한 뒤 `docs/spec/**`을 한 작업에서 동기화하고 P0 완료 여부를 다시 판정한다.
+
 ## [2026-07-18] Session Summary (P0 계약 결정 제안과 구현 차단 기준선 작성)
 
 - What was done:

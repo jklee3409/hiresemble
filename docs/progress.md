@@ -4,6 +4,27 @@
 
 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 전 P0 계약 제안서, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다.
 
+## [2026-07-18] Session Summary (P0 계약 제안서 최종 감사)
+
+- What was done:
+  - `design/p0-contract-decision-proposal.md`의 공개 계약·DB 수명주기·AI runtime·route projection을 기준 명세와 의미 기반으로 재감사하고 차단 계약만 보정했다.
+  - 수정 전 validator `NEEDS_CHANGES`, 보정 후 새 validator `PASS`를 확인해 제안서를 `READY_FOR_OWNER_REVIEW`로 전환했다.
+
+- Key decisions:
+  - URL과 memo 상한을 각각 2000자로 통일하고, 면접 답변 source를 `USER_EDITED` 전용 타입으로 분리했다.
+  - 탈퇴 idempotency를 제거하고 embedding model·dimension 및 profile 완료 정책을 제품 승인 항목으로 분리했다.
+
+- Issues encountered:
+  - 최초 감사에서 품질 request 부재, session 폐기 뒤 replay 불가, 근거 없는 vector 차원, 취소 후 PENDING과 내부 DTO 노출이 승인 차단 문제로 확인됐다.
+  - 기준 명세·코드·migration·설정은 수정하지 않고 제안서 안에서만 해소했다.
+
+- Validation:
+  - 최종 validator가 D-01~~D-18, Gate A~~C, 상태·enum·DTO·API·DB·제품 결정과 변경 경로를 `PASS`했다.
+  - Markdown 표·링크·중복·상한·allowlist·상태 전이, Prettier와 `git diff --check`를 검사했다. 문서 작업이라 build는 생략했다.
+
+- Next steps:
+  - 제품 소유자 승인 후 다섯 기준 명세를 동기화하고 proposal을 결정 기록으로 전환한다.
+
 ## [2026-07-18] Session Summary (P0 계약 결정 제안서 통합)
 
 - What was done:
