@@ -4,6 +4,28 @@
 
 프로젝트 문서 탐색 설정, 직접 위임 깊이와 네 전문 커스텀 에이전트가 구성되어 있다. 명령 실행 정책과 프로젝트 전용 Skill·MCP·Hook은 구성하지 않았다.
 
+## [2026-07-18] Session Summary (유한 오케스트레이션 정책과 read-only 런타임 재검증)
+
+- What was done:
+  - 기존 `max_threads=4`, `max_depth=1`을 유지하고 루트 지침에 라운드·역할별 생성·재시도·종료 상한을 추가했다.
+  - 지원되는 `codex exec --sandbox read-only --strict-config`로 fresh 부모 세션 두 개를 실행해 네 역할을 총 4회 생성했다.
+
+- Key decisions:
+  - 유한 실행 정책은 지원되지 않는 임의 config 키를 만들지 않고 루트 오케스트레이션 지침으로 통제한다.
+  - 프로젝트 config, Agent 파일명과 trust 설정은 유효하므로 변경하지 않았다.
+
+- Issues encountered:
+  - Spawn 메타데이터의 역할 경로는 확인됐지만 전용 마커가 반환되지 않아 custom developer instruction 주입은 확인하지 못했다.
+  - Doctor의 설치 경로 불일치와 rollout 경고는 프로젝트 config load와 별개의 로컬 환경 문제로 남아 있다.
+
+- Validation:
+  - TOML 정적 파싱, 필수 필드·이름·마커 중복 검사, 위험 반복 문구 검색이 통과했다.
+  - 두 부모 세션 모두 read-only를 보고했고 전체 2개 라운드, Agent 4개, 하위 생성 0, 재시도 0으로 종료했다.
+  - 스모크 전후 Git 변경 목록과 diff hash가 동일했다.
+
+- Next steps:
+  - 현재 Surface가 custom Agent 활성 profile 또는 developer instruction 출처를 노출할 때 마커 기반 인식을 다시 확인한다.
+
 ## [2026-07-17] Session Summary (프로젝트 커스텀 에이전트와 Trust 로드 구성)
 
 - What was done:
