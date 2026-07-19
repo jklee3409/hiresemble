@@ -2,7 +2,7 @@
 
 Hiresemble은 사용자의 검증된 경력 근거를 바탕으로 채용 공고 분석, 자기소개서 작성·검증, 면접 준비와 모의 면접을 지원하는 개인 맞춤형 AI 취업 준비 서비스입니다.
 
-현재 저장소는 기능 구현 전 **초기 개발 환경**만 제공합니다. 상세 요구사항은 [`docs/spec`](docs/spec)에서 확인할 수 있습니다.
+현재 저장소는 초기 개발 환경과 **P1 공통 HTTP·Session 인증·테스트 기반**을 제공합니다. 상세 요구사항과 이후 단계는 [`docs/spec`](docs/spec)과 [`docs/design/implementation-plan.md`](docs/design/implementation-plan.md)에서 확인할 수 있습니다.
 
 ## 구성
 
@@ -77,7 +77,9 @@ cd backend
 sh ./gradlew bootRun
 ```
 
-기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. 현재는 기능 API와 도메인 모델을 구현하지 않았습니다.
+기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. P1 공개 API는 `/api/v1/auth/csrf`, `signup`, `login`, `logout`, `me` 다섯 개이며 Spring Session Cookie와 CSRF를 사용합니다. 사용자·기본 프로필·Spring Session·idempotency 기반 schema는 Flyway가 관리합니다.
+
+`.env.example`의 `IDEMPOTENCY_HMAC_KEY`는 의도적으로 비어 있습니다. P1 인증 API에는 Idempotency-Key를 적용하지 않으며, 후속 idempotent endpoint를 활성화하기 전에 versioned 운영 secret을 설정해야 합니다.
 
 유료 외부 호출 없이 로컬 부팅이 가능하도록 Spring AI 모델과 VectorStore 자동 구성은 기본적으로 꺼져 있습니다. AI 연동 개발을 시작할 때 `.env`에서 API 키를 입력하고 다음 값을 명시적으로 활성화합니다.
 
@@ -104,6 +106,8 @@ corepack pnpm dev
 
 기본 주소는 `http://localhost:5173`입니다. Vite는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
 
+익명 사용자는 `/login` 또는 `/signup`, 인증 사용자는 보호된 `/dashboard`와 `/onboarding` shell을 사용할 수 있습니다. 온보딩 실제 프로필 입력과 Dashboard 데이터는 P2 이후 범위입니다.
+
 검증 명령:
 
 ```shell
@@ -125,11 +129,11 @@ docker compose --profile mail down
 
 Named volume의 개발 데이터를 함께 삭제하려면 의도적으로 `docker compose down --volumes`를 실행해야 합니다.
 
-## 이번 초기화에서 제외한 범위
+## P1에서 제외한 범위
 
-- 화면과 사용자 여정 구현
-- REST Controller와 인증 흐름 구현
-- 도메인 엔터티 및 업무 테이블 마이그레이션
+- 계정 변경·탈퇴, 프로필 CRUD와 실제 온보딩 데이터 저장
+- Dashboard 집계 API·카드와 문서·공고·자기소개서·면접 기능
+- P2 이후 업무 테이블·API·UI
 - AI Agent, 프롬프트, 외부 API 연동 구현
 - 운영 배포 구성
 

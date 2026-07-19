@@ -4,8 +4,40 @@
 
 - 초기 프론트엔드, 백엔드, Docker Compose, CI 환경이 구성되어 있다.
 - 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
-- 실제 비즈니스 Controller, 도메인 모델, 공통 응답·예외 처리 코드는 아직 구현되지 않았다.
-- Codex 관리자·전문 서브 에이전트 설정, 작업 규칙과 23개 관리 대상 디렉터리의 Session 기반 문서 계층이 구성되어 있다.
+- P1 범위의 공통 HTTP 오류, request ID, Session·CSRF 인증, 사용자 가입·로그인·로그아웃·현재 사용자 조회와 durable idempotency 기반이 구현되어 있다.
+- 프론트엔드는 인증 상태와 공통 client, 인증 Form, route guard, `/onboarding`·`/dashboard` shell을 제공하며 P2 제품 기능은 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P1 공통 HTTP·인증·테스트 기반 구현)
+
+- What was done:
+  - 백엔드에 공통 오류 계약과 request ID, Spring Security Session·CSRF, 사용자·기본 프로필, 정확히 다섯 인증 API와 durable idempotency 기반을 구현했다.
+  - 프론트엔드에 typed API client, 세 단계 인증 상태, signup·login·logout 흐름, 안전한 `returnTo`, public-only/auth-required guard와 shell route를 구현했다.
+  - P1 schema를 새 V2 Flyway migration으로 추가하고 백엔드 26개 및 프론트엔드 35개 테스트로 계약을 검증했다.
+
+- Key decisions:
+  - 성공 응답 envelope와 미래 endpoint·DTO·table은 만들지 않고 P1의 다섯 인증 endpoint와 `users`, `user_profiles`, JDBC Session, `idempotency_records`만 구현했다.
+  - 인증 API에는 Idempotency-Key를 적용하지 않았고, 만료 row의 원자 reclaim과 linked IN_PROGRESS 보호를 포함한 최소 저장·hash·replay 구조를 test-source fixture로 검증했다.
+  - Spring Session JDBC는 공식 named transaction extension을 `REQUIRED`, flush mode를 `IMMEDIATE`로 구성해 signup의 user·profile·Session SQL을 같은 transaction에 참여시킨다.
+  - `/onboarding`과 `/dashboard`는 route·layout 검증용 shell로 제한하고 프로필 저장·대시보드 집계·AI provider 연동을 포함하지 않았다.
+
+- Issues encountered:
+  - Spring Boot 4.1의 Jackson 3 타입, 기본 XOR CSRF handler와 raw token 응답, PostgreSQL의 시간 타입 추론 문제를 실제 통합 테스트에서 확인해 호환되는 설정과 타입으로 보정했다.
+  - 서버 오류 후 disabled 입력에 focus하려던 프론트엔드 Form 문제를 component test로 발견해 제출 상태 해제 후 focus하도록 수정했다.
+  - 사전 점검 시 Docker daemon이 정지 상태여서 Docker Desktop을 숨김 실행한 뒤 Compose와 Testcontainers 검증을 진행했다.
+  - 1차 validator는 idempotency TTL이 만료 동작을 수행하지 않고 signup Session 저장이 JPA transaction과 분리된 두 문제를 MAJOR로 판정해 `FAIL`했다.
+  - 허용된 한 차례 보정에서 조건부 upsert와 Session transaction 참여·실패 시 재저장 차단을 구현했고, 보정 중 테스트 실패나 추가 자동 수정은 없었다.
+
+- Validation:
+  - 보정 에이전트와 루트에서 `backend\\gradlew.bat check`가 최종 31개 테스트와 함께, 구현 에이전트와 루트에서 `corepack pnpm check`가 7개 파일 35개 Vitest 및 production build와 함께 통과했다.
+  - 빈 DB V1→V2 전체 적용, V1-only DB upgrade, constraint·index·unique와 JPA validate가 Testcontainers 기반 migration test에서 통과했다.
+  - 만료 replay 차단·동시 reclaim·linked IN_PROGRESS 보호와 Session 저장 실패·deferred commit 실패의 원자성 회귀 테스트가 통과했다.
+  - Compose 해석, `git diff --check`, V1 hash, 관리 문서·상대 링크 정적 검사가 통과했고, 2차 독립 validator가 두 MAJOR 해소와 전체 P1 회귀를 BLOCKER·MAJOR·MINOR 없이 `PASS`로 판정했다.
+  - 실제 외부 유료 provider 호출, commit, push, 배포는 수행하지 않았다.
+
+- Next steps:
+  - P2 착수 전 운영 환경의 Session Cookie 속성과 idempotency HMAC secret을 안전하게 주입하고, 첫 실제 idempotent resource endpoint에서 transaction 경계를 연결한다.
+  - 실제 resource owner 404, 프로필 온보딩 저장과 Dashboard 데이터는 승인된 P2 범위에서 구현한다.
+  - P2 profile mutation 전에 `user_profiles` JSON 배열의 최대 10개·중복 금지·항목 길이 DB 제약을 새 forward migration으로 추가한다.
 
 ## [2026-07-18] Session Summary (P0 제품 계약 기준선 승인 반영 완료)
 
