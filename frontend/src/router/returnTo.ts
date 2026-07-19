@@ -9,8 +9,11 @@ const AUTH_REQUIRED_PATHS = new Set([
   '/profile/awards',
   '/profile/careers',
   '/profile/evidence',
+  '/agent-runs',
 ])
 const ENCODED_UNSAFE_CHARACTER = /%(?:0a|0d|5c)/i
+const AGENT_RUN_DETAIL_PATH =
+  /^\/agent-runs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function safeReturnTo(value: unknown, origin = currentOrigin()): string | null {
   if (typeof value !== 'string' || value.length === 0) {
@@ -33,7 +36,7 @@ export function safeReturnTo(value: unknown, origin = currentOrigin()): string |
     if (
       target.origin !== origin ||
       rawPath !== target.pathname ||
-      !AUTH_REQUIRED_PATHS.has(target.pathname)
+      !isAuthRequiredPath(target.pathname)
     ) {
       return null
     }
@@ -42,6 +45,10 @@ export function safeReturnTo(value: unknown, origin = currentOrigin()): string |
   } catch {
     return null
   }
+}
+
+function isAuthRequiredPath(path: string): boolean {
+  return AUTH_REQUIRED_PATHS.has(path) || AGENT_RUN_DETAIL_PATH.test(path)
 }
 
 function currentOrigin(): string {

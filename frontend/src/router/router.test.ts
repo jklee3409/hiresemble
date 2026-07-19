@@ -11,7 +11,7 @@ import { ApiClientError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 import * as profileApi from '@/shared/api/profileApi'
 
-import { createAppRouter } from './index'
+import { createAppRouter, routes } from './index'
 
 vi.mock('@/shared/api/authApi', () => ({
   getCurrentUser: vi.fn(),
@@ -153,6 +153,29 @@ describe('authentication route policy', () => {
 
     expect(router.currentRoute.value.name).toBe('profile-basic')
     expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
+  })
+
+  it('adds only lazy Agent Run pages while preserving P1 and P2 routes', () => {
+    const protectedShell = routes.find(
+      (route) => route.path === '/' && route.meta?.requiresAuth === true,
+    )
+    const children = protectedShell?.children ?? []
+    const listRoute = children.find((route) => route.name === 'agent-runs')
+    const detailRoute = children.find((route) => route.name === 'agent-run-detail')
+
+    expect(typeof listRoute?.component).toBe('function')
+    expect(typeof detailRoute?.component).toBe('function')
+    expect(children.map((route) => route.name)).toEqual(
+      expect.arrayContaining([
+        'onboarding',
+        'dashboard',
+        'profile-basic',
+        'profile-education',
+        'profile-evidence',
+        'agent-runs',
+        'agent-run-detail',
+      ]),
+    )
   })
 })
 

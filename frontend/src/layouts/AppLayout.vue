@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
@@ -11,6 +11,9 @@ const router = useRouter()
 const isLoggingOut = ref(false)
 const logoutError = ref('')
 const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
+const AgentRunProgressDrawer = defineAsyncComponent(
+  () => import('@/features/agent-runs/AgentRunProgressDrawer.vue'),
+)
 
 async function logout(): Promise<void> {
   isLoggingOut.value = true
@@ -36,6 +39,7 @@ async function logout(): Promise<void> {
           <h1 class="mt-1 text-xl font-semibold">{{ pageTitle }}</h1>
         </div>
         <div class="flex items-center gap-3">
+          <AgentRunProgressDrawer />
           <span class="text-sm text-slate-700">{{ authStore.currentUser?.displayName }}</span>
           <button
             type="button"
@@ -56,6 +60,9 @@ async function logout(): Promise<void> {
         </RouterLink>
         <RouterLink class="text-sm font-medium text-indigo-700" to="/profile/basic">
           내 프로필
+        </RouterLink>
+        <RouterLink class="text-sm font-medium text-indigo-700" to="/agent-runs">
+          작업 기록
         </RouterLink>
       </nav>
     </header>

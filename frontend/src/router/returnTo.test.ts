@@ -12,6 +12,17 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo(candidate, 'https://hiresemble.example')).toBe(expected)
   })
 
+  it('accepts Agent Run list and UUID detail routes', () => {
+    expect(safeReturnTo('/agent-runs', 'https://hiresemble.example')).toBe('/agent-runs')
+    expect(
+      safeReturnTo(
+        '/agent-runs/10000000-0000-4000-8000-000000000001',
+        'https://hiresemble.example',
+      ),
+    ).toBe('/agent-runs/10000000-0000-4000-8000-000000000001')
+    expect(safeReturnTo('/agent-runs/not-a-uuid', 'https://hiresemble.example')).toBeNull()
+  })
+
   it.each([
     'https://evil.example/dashboard',
     '//evil.example/dashboard',

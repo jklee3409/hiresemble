@@ -124,6 +124,18 @@ export const routes: RouteRecordRaw[] = [
         component: ProfileEvidencePage,
         meta: { title: '직접 입력 근거', profileRecommended: true },
       },
+      {
+        path: 'agent-runs',
+        name: 'agent-runs',
+        component: () => import('@/pages/AgentRunListPage.vue'),
+        meta: { title: '작업 기록' },
+      },
+      {
+        path: 'agent-runs/:agentRunId',
+        name: 'agent-run-detail',
+        component: () => import('@/pages/AgentRunDetailPage.vue'),
+        meta: { title: 'Agent Run 상세' },
+      },
     ],
   },
   {
