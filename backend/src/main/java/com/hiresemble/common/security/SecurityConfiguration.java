@@ -1,9 +1,6 @@
 package com.hiresemble.common.security;
 
 import com.hiresemble.common.exception.ErrorCode;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,11 +24,6 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration(proxyBeanMethods = false)
-@SecurityScheme(
-        name = "sessionCookie",
-        type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.COOKIE,
-        paramName = "SESSION")
 public class SecurityConfiguration {
 
     @Bean
