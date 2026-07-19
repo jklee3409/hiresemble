@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반 구현은 아직 시작되지 않았다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다.
 
 ## 범위
 
@@ -19,8 +19,8 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 ## 실행 체크리스트
 
 - [x] P0에서 상태·enum·DTO·수명주기·AI 정책 결정 게이트를 닫는다.
-- [ ] 공통 HTTP 오류, Security/Session/CSRF, request ID와 테스트 기반을 구현한다.
-- [ ] 사용자·프로필·직접 입력 근거를 구현해 AC-01~02를 고정한다.
+- [x] 공통 HTTP 오류, Security/Session/CSRF, request ID와 테스트 기반을 구현한다.
+- [x] 사용자·프로필·직접 입력 근거를 구현해 AC-01~02를 고정한다.
 - [ ] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
 - [ ] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
 - [ ] 공고 등록·수동 보완·상태·Scheduler·분석을 구현해 AC-04~07을 고정한다.
@@ -29,7 +29,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0 계약 기준선만 완료. P1–P10의 코드·migration·API·UI 구현은 모두 미착수다.
+현재 단계: P0·P1·P2 완료. P3–P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -80,7 +80,7 @@ P0 계약 기준선
 - 우선순위: 최우선, 모든 구현의 차단 조건
 - 담당: 루트 관리자 주도, backend·AI workflow·frontend 분석, validator 승인
 - 코드 변경: 없음
-- 상태: 완료(2026-07-18). 다섯 기준 명세 동기화와 독립 validator `PASS`; P1 미착수
+- 상태: 완료(2026-07-18). 다섯 기준 명세 동기화와 독립 validator `PASS`
 
 ### 3.1 결정 대상
 
@@ -132,6 +132,7 @@ P0 계약 기준선
 - AC: AC-01의 가입·로그인·격리 기반
 - 선행: P0
 - 주 담당: backend, frontend
+- 상태: 완료(2026-07-19). 공통 HTTP·Session 인증·CSRF·request ID·idempotency 기반과 Backend·Frontend 회귀 검증, 최종 validator `PASS`
 
 ### 4.1 Backend
 
@@ -180,6 +181,7 @@ P0 계약 기준선
 - AC: AC-02
 - 선행: P1
 - 주 담당: backend, frontend
+- 상태: 완료(2026-07-19). Backend·Frontend·실제 Chromium 검증과 read-only validator `PASS`
 
 ### 5.1 Backend
 
@@ -709,9 +711,9 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
 | 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
 
-## P1 구현 전 확인할 위험
+## P3 착수 전 확인할 위험
 
-- 공개 계약의 제품 결정은 완료됐지만 OpenAPI snapshot, Java·TypeScript enum과 validation 구현은 아직 없으므로 P1에서 생성 결과를 활성 API 명세와 대조해야 한다.
-- DB 계약은 목표 schema이며 Flyway migration은 아직 없다. 적용 이력인 V1은 수정하지 않고 owner 복합 FK·partial unique·outbox·lease·budget·embedding 순서를 새 migration으로 설계해야 한다.
-- 실제 provider 가격·모델 가용성과 운영 설정은 versioned catalog/policy에 주입해야 하며 local/CI에서 유료 provider를 비활성화한 상태로 Fake 기반 검증을 먼저 통과해야 한다.
-- P1은 공통 HTTP·Session·CSRF·오류·idempotency 기반부터 시작하며 이후 phase의 도메인·AI·UI 기능을 선행 구현하지 않는다.
+- P2의 nullable document 연결 field에는 아직 `documents` table과 복합 owner FK가 없다. P4 migration에서 실제 document aggregate와 함께 추가하고 그 전에는 non-null 입력·filter를 404로 유지한다.
+- P3 Agent Run·AI runtime은 현재 존재하지 않는다. 실제 provider 가격·모델 가용성과 운영 설정은 versioned catalog/policy에 주입하고 local/CI에서는 유료 provider를 비활성화한 Fake 기반 검증을 먼저 통과해야 한다.
+- V1~V3는 적용 이력으로 보존하며 P3 이후 outbox·lease·budget·embedding schema는 새 forward migration으로만 추가한다.
+- P3 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

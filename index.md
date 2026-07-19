@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선과 P1 공통 HTTP·Session 인증·테스트 기반이 구현됐으며 P2 이후 제품 기능은 아직 구현되지 않았다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선, P1 공통 HTTP·Session 인증·테스트 기반과 P2 프로필·직접 입력 근거가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -32,7 +32,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/compose 검증
 ```
 
-P1의 공개 HTTP 범위는 다섯 인증 endpoint로 제한되며, Frontend의 `/onboarding`과 `/dashboard`는 route·layout 검증용 shell이다.
+공개 HTTP 범위는 P1 인증 5개와 P2 프로필·direct evidence 25개 operation이며, Frontend의 `/onboarding`과 `/profile/**`는 실제 P2 흐름이고 `/dashboard`는 아직 shell이다.
 
 ## 변경 시 주의사항
 

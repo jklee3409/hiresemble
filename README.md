@@ -2,7 +2,7 @@
 
 Hiresemble은 사용자의 검증된 경력 근거를 바탕으로 채용 공고 분석, 자기소개서 작성·검증, 면접 준비와 모의 면접을 지원하는 개인 맞춤형 AI 취업 준비 서비스입니다.
 
-현재 저장소는 초기 개발 환경과 **P1 공통 HTTP·Session 인증·테스트 기반**을 제공합니다. 상세 요구사항과 이후 단계는 [`docs/spec`](docs/spec)과 [`docs/design/implementation-plan.md`](docs/design/implementation-plan.md)에서 확인할 수 있습니다.
+현재 저장소는 **P1 공통 HTTP·Session 인증·테스트 기반**과 **P2 프로필·직접 입력 근거**를 제공합니다. 상세 요구사항과 이후 단계는 [`docs/spec`](docs/spec)과 [`docs/design/implementation-plan.md`](docs/design/implementation-plan.md)에서 확인할 수 있습니다.
 
 ## 구성
 
@@ -77,7 +77,7 @@ cd backend
 sh ./gradlew bootRun
 ```
 
-기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. P1 공개 API는 `/api/v1/auth/csrf`, `signup`, `login`, `logout`, `me` 다섯 개이며 Spring Session Cookie와 CSRF를 사용합니다. 사용자·기본 프로필·Spring Session·idempotency 기반 schema는 Flyway가 관리합니다.
+기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. 공개 API는 인증 5개와 `/api/v1/profile` 하위 프로필·direct evidence 25개 operation이며 Spring Session Cookie와 CSRF를 사용합니다. 사용자·Session·idempotency, 기본·구조화 프로필과 direct evidence schema는 Flyway V1~V3가 관리합니다.
 
 `.env.example`의 `IDEMPOTENCY_HMAC_KEY`는 의도적으로 비어 있습니다. P1 인증 API에는 Idempotency-Key를 적용하지 않으며, 후속 idempotent endpoint를 활성화하기 전에 versioned 운영 secret을 설정해야 합니다.
 
@@ -106,7 +106,7 @@ corepack pnpm dev
 
 기본 주소는 `http://localhost:5173`입니다. Vite는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
 
-익명 사용자는 `/login` 또는 `/signup`, 인증 사용자는 보호된 `/dashboard`와 `/onboarding` shell을 사용할 수 있습니다. 온보딩 실제 프로필 입력과 Dashboard 데이터는 P2 이후 범위입니다.
+익명 사용자는 `/login` 또는 `/signup`, 인증 사용자는 보호된 `/onboarding`, `/profile/**`와 `/dashboard`를 사용할 수 있습니다. 온보딩과 프로필은 실제 P2 데이터를 저장하며 Dashboard는 아직 shell입니다.
 
 검증 명령:
 
@@ -121,6 +121,13 @@ Playwright 브라우저는 E2E 테스트를 작성하는 단계에서 다음 명
 corepack pnpm exec playwright install --with-deps chromium
 ```
 
+Backend를 실행한 상태에서 P2 실제 브라우저 여정은 다음처럼 별도로 검증합니다.
+
+```shell
+cd frontend
+corepack pnpm exec playwright test e2e/profile.spec.ts --project=chromium --workers=1
+```
+
 ## 인프라 종료
 
 ```shell
@@ -129,11 +136,12 @@ docker compose --profile mail down
 
 Named volume의 개발 데이터를 함께 삭제하려면 의도적으로 `docker compose down --volumes`를 실행해야 합니다.
 
-## P1에서 제외한 범위
+## P2에서 제외한 범위
 
-- 계정 변경·탈퇴, 프로필 CRUD와 실제 온보딩 데이터 저장
-- Dashboard 집계 API·카드와 문서·공고·자기소개서·면접 기능
-- P2 이후 업무 테이블·API·UI
+- 계정 변경·탈퇴와 Dashboard 집계 API·카드
+- 문서 연결·업로드·파싱과 AI 추출 근거
+- 공고·자기소개서·면접 기능
+- P3 이후 업무 테이블·API·UI
 - AI Agent, 프롬프트, 외부 API 연동 구현
 - 운영 배포 구성
 

@@ -4,9 +4,36 @@
 
 - 초기 프론트엔드, 백엔드, Docker Compose, CI 환경이 구성되어 있다.
 - 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
-- P1 범위의 공통 HTTP 오류, request ID, Session·CSRF 인증, 사용자 가입·로그인·로그아웃·현재 사용자 조회와 durable idempotency 기반이 구현되어 있다.
-- 프론트엔드는 인증 상태와 공통 client, 인증 Form, route guard, `/onboarding`·`/dashboard` shell을 제공하며 P2 제품 기능은 구현하지 않았다.
-- Backend의 현재 다섯 인증 API는 Swagger UI에서 Session Cookie와 CSRF header 흐름으로 시험할 수 있다.
+- P1 공통 HTTP·Session·CSRF·인증·idempotency 기반과 P2 사용자 소유 프로필·direct evidence가 구현되어 있다.
+- 프론트엔드는 P2 onboarding, 기본·구조화 프로필, evidence와 user-scoped cache·409 UX를 제공하며 Dashboard·문서·AI 기능은 아직 없다.
+- 공개 Spring mapping은 인증 5개와 프로필·direct evidence 25개, 총 30개 operation으로 제한된다.
+
+## [2026-07-19] Session Summary (P2 프로필·직접 입력 근거 통합 구현)
+
+- What was done:
+  - Backend V3 migration, `profile` 4계층, 25개 operation과 54개 전체 테스트를 구현했다.
+  - Frontend profile typed API·feature·page·route·onboarding과 57개 전체 테스트, 실제 Chromium E2E를 구현했다.
+  - 구현 계획을 P0·P1 완료, P2 검증 진행, P3–P10 미착수의 실제 상태로 보정했다.
+
+- Key decisions:
+  - completion 다섯 항목은 서버 원천이고 각 20%이며 profile incomplete는 hard gate가 아니다.
+  - 구조화 source와 direct evidence는 같은 transaction에서 1:1·owner 일치로 동기화하고 source 수정 결과가 evidence 별도 편집보다 우선한다.
+  - P2 document ID field·nullable column은 유지하지만 documents table·FK·UI는 만들지 않고 non-null 입력·filter는 404로 처리한다.
+
+- Issues encountered:
+  - Backend migration test의 PostgreSQL 제약 message 기대를 실제 발생 순서에 맞춰 보정했다.
+  - 기존 개발 DB의 Flyway 이력 불일치 때문에 기존 데이터를 건드리지 않고 E2E 전용 빈 DB를 생성·검증 후 제거했다.
+  - Playwright 시작 전 Windows pnpm 탐색과 첫 실제 실행의 중복 text locator를 각각 최소 보정했다.
+  - 첫 최종 Frontend check가 Playwright spec을 Vitest로 수집해 실패해 Vitest 기본 exclude에 `e2e/**`를 추가했다.
+
+- Validation:
+  - P1 기준선에서 Backend 33개, Frontend 35개 test와 Compose 검증이 먼저 통과했다.
+  - P2 Backend check 54개 test, Frontend check 57개 test, Compose, 빈 DB/V1/V2 upgrade와 실제 Chromium E2E 1개가 통과했다.
+  - V1·V2 Git blob과 SHA-256은 수정 전 기준선과 일치하며 실제 유료 AI·검색 provider는 비활성 상태다.
+  - 최종 read-only validator가 BLOCKER·MAJOR·MINOR 없이 `PASS`로 판정했다. validator 전후 135개 파일의 status·content snapshot SHA-256 `33b4b8df02524ce56c1ba73dec519f78bd6d1c3fe7fb8ab0c9512b51c80314ee`가 일치했다.
+
+- Next steps:
+  - P2는 완료 상태다. P3 착수 전 P4 document FK 이관 경계와 P3–P10 미착수 상태를 유지한다.
 
 ## [2026-07-19] Session Summary (인증 Controller Swagger UI와 향후 OpenAPI 규칙 보강)
 
