@@ -1,4 +1,7 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
   config:
     import:
       - "optional:file:.env[.properties]"
@@ -20,8 +23,10 @@ spring:
         jdbc:
           time_zone: UTC
   session:
+    timeout: ${SESSION_TIMEOUT:30m}
     jdbc:
-      initialize-schema: always
+      flush-mode: immediate
+      initialize-schema: never
   servlet:
     multipart:
       max-file-size: 20MB
@@ -49,9 +54,10 @@ server:
   servlet:
     session:
       cookie:
-        http-only: true
+        name: ${SESSION_COOKIE_NAME:SESSION}
+        http-only: ${SESSION_COOKIE_HTTP_ONLY:true}
         secure: ${SESSION_COOKIE_SECURE:false}
-        same-site: lax
+        same-site: ${SESSION_COOKIE_SAME_SITE:lax}
 
 management:
   endpoints:
@@ -71,6 +77,11 @@ springdoc:
 
 hiresemble:
   frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  idempotency:
+    current-hash-key-version: ${IDEMPOTENCY_HASH_KEY_VERSION:1}
+    hmac-keys:
+      1: ${IDEMPOTENCY_HMAC_KEY:}
+    ttl: 24h
   object-storage:
     endpoint: ${OBJECT_STORAGE_ENDPOINT:http://localhost:9000}
     access-key: ${OBJECT_STORAGE_ACCESS_KEY:hiresemble}

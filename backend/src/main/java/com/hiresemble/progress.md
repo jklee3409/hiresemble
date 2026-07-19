@@ -2,9 +2,34 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)만 구현되어 Spring Boot를 시작한다.
-- Controller, Service, Domain, Repository, Security 설정과 업무 도메인 package는 아직 없다.
-- `BaseResponseDto`, `ErrorResponseDto`, `ErrorCode`, `BusinessException`, `GlobalExceptionHandler`도 현재 존재하지 않는다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 실제 P1 책임을 가진 `common`, `auth` package가 구현되어 있다.
+- 공통 오류·request ID·validation·idempotency와 Session·CSRF 인증, 사용자·프로필 영속성을 제공한다.
+- 성공 응답용 `BaseResponseDto`와 P2 도메인 package는 존재하지 않는다.
+
+## [2026-07-19] Session Summary (P1 common·auth Java 구현)
+
+- What was done:
+  - `common`에 동일 오류 field set을 만드는 DTO·factory·handler·Security writer와 request ID, UTF-8 byte validator, idempotency 기반을 구현했다.
+  - `auth`에 다섯 API, application service, JPA entity·repository, 인증 principal과 Security 구성을 구현했다.
+
+- Key decisions:
+  - Entity는 API로 반환하지 않고 `AuthSessionDto`, `CurrentUserDto`, `CsrfTokenDto` projection을 사용한다.
+  - 외부 request ID는 신뢰하지 않고 서버 UUID를 응답 header·오류 body·MDC 상관키로 공유한다.
+  - P1에서 실제 사용하는 오류 code만 정의하고 로그인 오류는 `INVALID_CREDENTIALS`로 통일한다.
+  - 만료 idempotency row는 DB에서 원자 reclaim하고 signup Session SQL은 user/profile과 같은 transaction에 참여시킨다.
+
+- Issues encountered:
+  - signup의 사용자 저장 오류 변환이 프로필 실패까지 삼키지 않도록 예외 처리 범위를 좁혀 transaction rollback을 보장했다.
+  - raw CSRF token을 응답·header에서 일관되게 쓰도록 non-XOR request handler를 명시했다.
+
+- Validation:
+  - Auth 15개, OpenAPI 2개, ErrorCode 1개, idempotency 8개, validation 2개, migration 3개 테스트가 모두 통과했다.
+  - 오류 field set·Security parity·request ID·민감정보 비노출·두 사용자 Session 분리를 MockMvc와 단위 테스트로 검증했다.
+  - Session·DB 양방향 실패 원자성과 만료 record 동시 reclaim을 PostgreSQL 통합 테스트로 검증했다.
+
+- Next steps:
+  - P2 resource owner 404와 프로필 use case는 인증 principal에서 현재 사용자 ID만 받아 구현한다.
+  - 실제 idempotency 적용 시 현재 최소 service를 transaction 경계에 연결한다.
 
 ## [2026-07-17] Session Summary (Hiresemble 실행 패키지 및 응답 예외 기준 준비)
 

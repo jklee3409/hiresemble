@@ -3,7 +3,29 @@
 ## Overview
 
 - Flyway 기본 경로인 `migration` 하위 디렉터리만 존재한다.
-- 업무 schema나 별도 seed/fixture 리소스는 없다.
+- V1 extension과 P1 identity·Session·idempotency V2 schema가 있으며 별도 운영 seed·fixture 리소스는 없다.
+
+## [2026-07-19] Session Summary (P1 Flyway DB 리소스 확장)
+
+- What was done:
+  - Flyway 기본 경로에 `V2__create_identity_session_idempotency.sql`을 추가했다.
+  - 운영 migration과 test-source fixture를 분리하고 P1 밖 table을 생성하지 않았다.
+
+- Key decisions:
+  - 적용 이력이 있는 V1은 수정하지 않고 모든 schema 변경을 새 V2 파일로 표현했다.
+  - JDBC Session runtime 자동 생성을 사용하지 않고 application과 Flyway의 schema ownership을 단일화했다.
+
+- Issues encountered:
+  - V1-only upgrade 경로와 빈 DB 전체 적용을 서로 다른 Testcontainers scenario로 검증해야 했다.
+  - DB 리소스 Markdown의 classpath 포함은 기존 상위 추적 이슈로 남아 있다.
+
+- Validation:
+  - migration 3개 테스트가 빈 DB V1→V2, V1-only upgrade, constraint·index·unique와 JPA validate를 확인하고 통과했다.
+  - V1 Git blob과 SHA-256 hash가 작업 전 값과 동일함을 확인했다.
+
+- Next steps:
+  - P2 schema는 승인된 use case별 새 버전 migration으로만 추가한다.
+  - 운영 적용 전 backup·rollback 전략과 실제 배포 DB 권한을 별도로 검증한다.
 
 ## [2026-07-17] Session Summary (Flyway DB 리소스 경계 구성)
 

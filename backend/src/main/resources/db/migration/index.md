@@ -6,16 +6,18 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                                     | 역할                                            |
-| -------------------------------------------------------- | ----------------------------------------------- |
-| [`V1__enable_extensions.sql`](V1__enable_extensions.sql) | pgvector의 `vector` PostgreSQL extension 활성화 |
+| 경로                                                                                         | 역할                                                 |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [`V1__enable_extensions.sql`](V1__enable_extensions.sql)                                     | pgvector의 `vector` PostgreSQL extension 활성화      |
+| [`V2__create_identity_session_idempotency.sql`](V2__create_identity_session_idempotency.sql) | users·기본 profile·Spring Session·idempotency schema |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
 ## 구성 요소 역할
 
-- V1은 `CREATE EXTENSION IF NOT EXISTS vector`만 실행한다.
-- 향후 V2 이상은 DB 명세와 구현 순서에 맞춰 table, constraint, index와 필요한 vector column을 추가한다.
+- V1은 `CREATE EXTENSION IF NOT EXISTS vector`만 실행하며 P1에서도 byte 단위로 보존한다.
+- V2는 P1에 필요한 users, user_profiles, Spring Session과 idempotency_records만 추가한다.
+- P2 이후 업무 table은 후속 migration에서만 추가한다.
 
 ## 다른 디렉터리와의 의존 관계
 

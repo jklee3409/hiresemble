@@ -2,19 +2,19 @@
 
 ## 디렉터리 목적
 
-`backend/src/`는 Gradle source set을 구성하는 프로젝트 소스의 상위 경계다. 현재는 운영 애플리케이션용 [`main/`](main/)만 존재한다.
+`backend/src/`는 Gradle source set을 구성하는 프로젝트 소스의 상위 경계다. 운영 애플리케이션용 [`main/`](main/)과 P1 JUnit·통합 검증용 [`test/`](test/)를 분리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로             | 역할                                                              |
-| ---------------- | ----------------------------------------------------------------- |
-| [`main/`](main/) | 배포 대상 Java 소스와 classpath 리소스                            |
-| `test/`          | 향후 단위·통합 테스트를 둘 표준 source set이며 현재 존재하지 않음 |
+| 경로             | 역할                                              |
+| ---------------- | ------------------------------------------------- |
+| [`main/`](main/) | 배포 대상 Java 소스와 classpath 리소스            |
+| [`test/`](test/) | JUnit, MockMvc와 PostgreSQL Testcontainers 테스트 |
 
 ## 구성 요소 역할
 
 - `main`은 애플리케이션 실행과 운영 설정의 실제 구현을 관리한다.
-- 향후 `test`는 운영 코드와 분리된 JUnit, MockMvc, Testcontainers 테스트를 관리한다.
+- `test`는 운영 코드와 분리된 JUnit, MockMvc, Testcontainers 테스트를 관리한다.
 
 ## 다른 디렉터리와의 의존 관계
 

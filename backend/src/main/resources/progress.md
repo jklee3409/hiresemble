@@ -4,7 +4,34 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- DB 리소스에는 pgvector 확장 활성화 migration만 있고 업무 table schema는 없다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V2 migration이 사용자·기본 프로필·Session·idempotency P1 schema를 관리한다.
+
+## [2026-07-19] Session Summary (P1 Session·Cookie·Flyway 설정 구현)
+
+- What was done:
+  - Session timeout·Cookie name/httpOnly/secure/sameSite와 idempotency key version·HMAC secret의 환경 설정 경계를 추가했다.
+  - `spring.session.jdbc.initialize-schema`를 `never`로 변경해 Flyway가 JDBC Session table을 독점 관리하도록 했다.
+  - JDBC Session `flush-mode`를 `immediate`로 설정해 인증 Session SQL이 application transaction 안에서 실행되도록 했다.
+  - V2 P1 migration과 OpenAPI P1 path 설정을 운영 리소스에 반영했다.
+
+- Key decisions:
+  - 개발 기본 Cookie는 안전한 예시로 제어하고 운영 Secure 여부와 비밀 HMAC key는 환경에서 주입한다.
+  - HMAC key는 아직 인증 endpoint에 사용하지 않으며 첫 idempotent endpoint 전까지 빈 기본값을 허용한다.
+  - AI provider 비활성 기본값과 JPA `ddl-auto=validate`를 유지한다.
+
+- Issues encountered:
+  - 기존 runtime Session schema 자동 생성 설정은 Flyway ownership 계약과 충돌해 `never`로 수정했다.
+  - Spring Session JDBC 4.1 기본 transaction propagation이 `REQUIRES_NEW`여서 named operations를 Java 설정에서 `REQUIRED`로 보정했다.
+  - resources 계층의 Markdown이 classpath에 포함되는 기존 추적 이슈는 이번 P1 기능 범위 밖이라 유지된다.
+
+- Validation:
+  - `Set-Location backend; .\\gradlew.bat check`에서 설정 로딩, JPA validate와 Session·CSRF 통합 테스트가 통과했다.
+  - Session persistence 실패와 인증 Session 변경 뒤 deferred DB commit 실패를 주입해 같은 transaction rollback을 검증했다.
+  - Testcontainers migration test로 빈 DB와 V1-only upgrade를 검증했다.
+
+- Next steps:
+  - 운영 환경에서 Secure Cookie, SameSite와 reverse proxy HTTPS 전달 설정을 실제 배포 topology에 맞춰 검증한다.
+  - 첫 idempotent endpoint 전에 비어 있지 않은 HMAC secret을 운영 secret manager에서 제공한다.
 
 ## [2026-07-17] Session Summary (Spring 설정 및 DB 리소스 기반 구성)
 

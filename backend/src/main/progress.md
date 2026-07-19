@@ -2,9 +2,32 @@
 
 ## Overview
 
-- Java 영역에는 `HiresembleApplication` 하나만 존재한다.
-- resources 영역에는 `application.yml`과 pgvector 확장용 V1 Flyway migration이 존재한다.
-- Controller, Service, Domain, Repository와 공통 오류 처리 구조는 구현되지 않았다.
+- Java 영역에는 애플리케이션 진입점과 P1 `common`·`auth` package가 있다.
+- resources 영역에는 P1 Session·Cookie·idempotency 설정과 V1·V2 Flyway migration이 있다.
+- P2 도메인·AI workflow와 책임 없는 미래 package는 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P1 운영 Java·리소스 구현)
+
+- What was done:
+  - 공통 오류·request ID·validation·idempotency와 인증 API·application·domain·infrastructure·security 구현을 추가했다.
+  - 런타임 JDBC Session 자동 schema 생성을 비활성화하고 Flyway V2가 P1 schema를 관리하도록 설정했다.
+
+- Key decisions:
+  - 공개 API는 P1의 다섯 `/api/v1/auth` endpoint에 한정하고 성공 DTO를 직접 반환한다.
+  - package는 실제 책임과 호출부가 있는 `common`과 `auth`만 추가했다.
+  - Spring Session JDBC는 즉시 flush와 REQUIRED transaction operations로 JPA transaction에 참여시킨다.
+
+- Issues encountered:
+  - Spring Boot 4.1 구성 요소의 Jackson 3 및 Security CSRF 기본 동작을 명시적으로 맞춰야 했다.
+  - 유료 provider 자동 구성은 기존처럼 비활성 기본값을 유지했다.
+
+- Validation:
+  - `Set-Location backend; .\\gradlew.bat check`가 운영 소스 compile, 설정 로딩, 31개 테스트와 함께 통과했다.
+  - OpenAPI test가 정확히 다섯 auth path와 공통 오류 schema만 생성되는지 확인했다.
+
+- Next steps:
+  - P2에서는 명세 우선순위와 실제 use case에 따라 package·migration을 단계적으로 추가한다.
+  - Session·Cookie 운영 속성은 배포 환경의 HTTPS·proxy 구성과 함께 검증한다.
 
 ## [2026-07-17] Session Summary (Spring Boot 운영 소스 최소 구조 구성)
 

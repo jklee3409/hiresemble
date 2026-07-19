@@ -6,10 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                       | 역할                                   |
-| -------------------------- | -------------------------------------- |
-| [`java/`](java/)           | Spring Boot 진입점과 향후 업무 package |
-| [`resources/`](resources/) | 애플리케이션 설정과 Flyway migration   |
+| 경로                       | 역할                                        |
+| -------------------------- | ------------------------------------------- |
+| [`java/`](java/)           | Spring Boot 진입점과 P1 common·auth package |
+| [`resources/`](resources/) | Session·idempotency 설정과 Flyway migration |
 
 ## 구성 요소 역할
 

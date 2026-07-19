@@ -3,7 +3,31 @@
 ## Overview
 
 - `V1__enable_extensions.sql` 하나만 존재하며 pgvector `vector` extension을 idempotent하게 활성화한다.
-- 사용자, 문서, 공고, 자기소개서, 면접과 Agent Run 업무 table은 아직 구현되지 않았다.
+- `V2__create_identity_session_idempotency.sql`은 P1의 `users`, 기본 `user_profiles`, JDBC Session, `idempotency_records`만 생성한다.
+- `account_deletion_tasks`와 문서·공고·자기소개서·면접·Agent Run 등 P2 이후 table은 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P1 identity·Session·idempotency V2 migration)
+
+- What was done:
+  - 사용자 UUID·정규화 email unique·역할 USER·상태 ACTIVE와 기본 프로필을 위한 schema를 추가했다.
+  - Spring Session JDBC table·index와 scope/state/HMAC request hash/response replay/24시간 TTL을 저장하는 idempotency table을 추가했다.
+
+- Key decisions:
+  - V1은 변경하지 않고 V2에서 필요한 enum constraint·foreign key·unique·조회 index를 선언했다.
+  - idempotency에는 요청 원문·비밀번호를 저장하지 않고 hash와 replay용 status·JSON만 저장한다.
+  - P1 제외 table과 미래 migration placeholder를 만들지 않았다.
+
+- Issues encountered:
+  - PostgreSQL 시간 값의 JDBC 타입 추론은 repository에서 UTC `OffsetDateTime`으로 명시해 해결했다.
+  - extension 권한이 필요한 V1을 포함하므로 pgvector PostgreSQL Testcontainers image로 실제 적용했다.
+
+- Validation:
+  - 빈 DB V1부터 전체 적용, V1만 적용된 DB의 V2 upgrade, schema constraint·index·unique와 JPA validate가 모두 통과했다.
+  - V1은 Git blob `0aa0fc22558644b6dec3f8f24e90d6523c8d12a6`, SHA-256 `9e9b2cfec47519f49ee73cb533c459e22f8ca54fe5ba1cbec59f3d5883fe191c`로 작업 전과 동일하다.
+
+- Next steps:
+  - P2 실제 idempotent endpoint에서는 validation·인증·소유권 통과 뒤에만 record를 생성하도록 현재 service를 사용한다.
+  - 이후 schema는 기존 migration을 수정하지 않고 새 Flyway version으로 확장한다.
 
 ## [2026-07-17] Session Summary (pgvector 확장 V1 migration 구성)
 

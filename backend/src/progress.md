@@ -2,9 +2,32 @@
 
 ## Overview
 
-- `src/main` source set만 존재한다.
-- 운영 소스에는 애플리케이션 진입점과 설정·migration만 있으며 비즈니스 기능은 구현되지 않았다.
-- `src/test` source set은 아직 생성되지 않았다.
+- `src/main`에는 P1 `common`·`auth` 운영 코드와 설정·Flyway migration이 있다.
+- `src/test`에는 인증·오류·validation·idempotency·migration의 단위 및 통합 테스트와 test-only fixture가 있다.
+- 운영·테스트 source set은 분리되며 production 공개 test endpoint는 없다.
+
+## [2026-07-19] Session Summary (P1 운영·테스트 source set 구현)
+
+- What was done:
+  - `src/main`에 P1 공통 HTTP·인증·영속성·Security·migration 코드를 추가했다.
+  - `src/test/java`에 MockMvc, Testcontainers, migration, 민감정보 비노출과 idempotency fixture 테스트를 추가했다.
+
+- Key decisions:
+  - 동시성·replay 검증을 위한 fixture Controller는 test source에만 두고 운영 OpenAPI와 production path에는 노출하지 않는다.
+  - 실제 PostgreSQL 동작이 필요한 repository·Flyway 검증은 운영 DB 대신 Testcontainers를 사용한다.
+
+- Issues encountered:
+  - 통합 테스트에서 드러난 CSRF token 처리와 JDBC 시간 바인딩 차이를 운영 설정·repository에서 보정했다.
+  - 1차 validator의 TTL·Session transaction 지적을 조건부 upsert, 즉시 Session flush와 REQUIRED transaction 참여로 보정했다.
+  - `src/test/resources`는 필요하지 않아 선행 생성하지 않았다.
+
+- Validation:
+  - 최종 `Set-Location backend; .\\gradlew.bat check`가 총 31개 테스트와 함께 통과했다.
+  - production source와 test fixture 경계를 파일·OpenAPI path test로 확인했다.
+
+- Next steps:
+  - P2 기능은 실제 수직 use case와 함께 운영·테스트 source를 같은 작업에서 추가한다.
+  - 외부 연동이 생기면 Fake 또는 WireMock을 사용하고 유료 provider를 테스트에서 호출하지 않는다.
 
 ## [2026-07-17] Session Summary (Gradle 백엔드 소스 구조 구성)
 
