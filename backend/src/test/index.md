@@ -2,11 +2,12 @@
 
 ## 디렉터리 목적
 
-P1·P2 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+P1~P3 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`java/`](java/index.md): Java 단위·통합·migration 계약 테스트
+- [`resources/`](resources/index.md): P3 test-only AI prompt fixture
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

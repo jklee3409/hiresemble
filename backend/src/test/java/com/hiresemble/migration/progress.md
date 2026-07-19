@@ -2,7 +2,26 @@
 
 ## Overview
 
-Flyway V1·V2 보존과 V3 P2 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway V1~V3 보존과 V4 P3 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-07-19] Session Summary (P3 V4 migration·불변식 검증)
+
+- What was done:
+  - 빈 DB V1→V4와 V1/V2/V3-only upgrade, 11개 table과 P4 table 부재를 검증했다.
+  - V1~V3 Git blob 기준 SHA-256과 owner·retry·step·ledger·preference unique를 고정했다.
+  - V4에 선언된 71개 CHECK constraint가 실제 PostgreSQL schema에 모두 설치되는지 대조했다.
+
+- Key decisions:
+  - 실제 PostgreSQL과 test fixture price version을 사용한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - P3 migration 8 tests가 전체 check에서 통과했다.
+
+- Next steps:
+  - V5 이후에도 V1~V4를 수정하지 않는다.
 
 ## [2026-07-19] Session Summary (P2 V3 migration·불변식 검증)
 

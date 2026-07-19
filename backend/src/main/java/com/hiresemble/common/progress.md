@@ -2,7 +2,25 @@
 
 ## Overview
 
-P1·P2 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
+P1~P3 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run 공통 오류·OpenAPI·idempotency 확장)
+
+- What was done:
+  - budget 429와 retry conflict 오류, Agent Run OpenAPI tag·CSRF security를 추가했다.
+  - idempotency completion에 safe resource·agentRun metadata를 저장하도록 확장했다.
+
+- Key decisions:
+  - 기존 공통 오류 6개 field와 실제 HTTP status를 유지한다.
+
+- Issues encountered:
+  - V4 owner FK에 맞춰 idempotency integration fixture를 보정했다.
+
+- Validation:
+  - OpenAPI 35 operation/24 path와 기존 P1·P2 오류 회귀가 통과했다.
+
+- Next steps:
+  - 후속 idempotent domain mutation도 동일 metadata 경계를 사용한다.
 
 ## [2026-07-19] Session Summary (P2 profile 공통 오류·OpenAPI 확장)
 

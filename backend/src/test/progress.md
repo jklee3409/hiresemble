@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1·P2 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+P1~P3 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run·AI test source 확장)
+
+- What was done:
+  - Agent Run·AI runtime Java tests와 test-only Fake prompt resource를 추가했다.
+
+- Key decisions:
+  - production endpoint·Fake bean 없이 내부 port와 Testcontainers를 사용한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - Backend 전체 243 tests가 통과했다.
+
+- Next steps:
+  - 후속 external adapter는 Fake/WireMock으로 검증한다.
 
 ## [2026-07-19] Session Summary (P2 profile·migration 테스트 확장)
 

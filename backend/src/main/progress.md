@@ -2,9 +2,26 @@
 
 ## Overview
 
-- Java 영역에는 애플리케이션 진입점과 P1 `common`·`auth`, P2 `profile` package가 있다.
-- resources 영역에는 Session·Cookie·idempotency 설정과 V1~V3 Flyway migration이 있다.
-- P3 Agent Run·AI workflow와 책임 없는 미래 package는 구현하지 않았다.
+- Java 영역에는 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai` package가 있다.
+- resources 영역에는 Session·Agent worker 설정과 V1~V4 Flyway migration이 있다.
+- P4 이후 책임 없는 미래 package와 production Fake workflow는 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P3 Agent Run·AI 운영 source 추가)
+
+- What was done:
+  - Java에 durable Agent runtime과 fixed AI workflow 기반을, resources에 V4와 worker 설정을 추가했다.
+
+- Key decisions:
+  - provider 기본값은 `none`이며 실제 executable contribution은 test scope에만 있다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - Backend 243 tests와 provider/network 정적 검색이 통과했다.
+
+- Next steps:
+  - P4 이후 package는 실제 domain vertical slice와 함께 추가한다.
 
 ## [2026-07-19] Session Summary (P2 profile 운영 소스·V3 추가)
 

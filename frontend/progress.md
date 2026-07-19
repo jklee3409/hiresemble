@@ -3,9 +3,32 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 typed auth·Session 기반과 P2 profile typed client, user-scoped Vue Query, Zod·409 UX가 구현되어 있다.
-- `/profile` redirect와 7개 profile route, P2 onboarding, 기본·구조화·evidence 화면이 AppLayout에 연결되어 있다.
-- Vitest unit/component test 57개와 실제 Chromium profile E2E 1개가 구현되어 있다. Dashboard와 document 연결은 아직 없다.
+- P1 auth, P2 profile과 P3 Agent Run typed client·Vue Query·SSE 복구가 구현되어 있다.
+- `/agent-runs` 목록·상세는 lazy route이며 AppLayout에는 lazy Progress Drawer가 연결되어 있다.
+- Vitest 20 files/78 tests, profile E2E 1개와 Agent Run fixture E2E 2개가 있다. Dashboard·문서·AI 설정은 아직 없다.
+
+## [2026-07-19] Session Summary (P3 Agent Run 목록·상세·SSE Frontend 구현)
+
+- What was done:
+  - exact enum·nullable DTO, repeatable filter·pagination·sort client와 retry·cancel mutation을 구현했다.
+  - lazy list/detail page, 안전한 단계·비용 projection과 최근 active Run Drawer를 구현했다.
+  - snapshot-first SSE, reconnect·polling과 session boundary cleanup을 구현했다.
+
+- Key decisions:
+  - reconnect는 1/2/5초 총 3회 뒤 5초 REST polling이며 10/30초 값은 이번 threshold에서 사용하지 않는다.
+  - 실제 비용은 고정 catalog 기반 billable estimate로 안내하며 provider/model/prompt 내부값을 표시하지 않는다.
+  - Header count는 같은 owner-scoped 목록 query의 `totalElements`를 사용하고 Drawer 목록만 최근 5개로 제한해 Dashboard 집계처럼 추정하지 않는다.
+
+- Issues encountered:
+  - 첫 E2E의 중복 progress locator와 첫 전체 check의 repeatable query expectation을 보정했다.
+
+- Validation:
+  - `corepack pnpm check`에서 78 tests와 production build가 통과했고 Chromium Agent Run fixture 2/2가 통과했다.
+  - main JS는 508.47 kB/gzip 140.83 kB, CSS는 18.52/4.44 kB이며 Agent Run UI는 별도 lazy chunk다.
+  - 최종 read-only Validator가 reconnect·polling·session cleanup과 lazy route 회귀를 포함해 `PASS`로 판정했다.
+
+- Next steps:
+  - P4 이후 typed resource deep link·query invalidation을 실제 domain route와 연결한다.
 
 ## [2026-07-19] Session Summary (P2 프로필·온보딩·evidence Frontend 구현)
 

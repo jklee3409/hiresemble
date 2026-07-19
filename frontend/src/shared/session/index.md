@@ -12,7 +12,7 @@ logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 
 
 ## 구성 요소 역할
 
-- 실제 SSE·draft 기능 없이 향후 resource가 등록할 수 있는 최소 close/reset/purge port를 제공한다.
+- P3 Agent Run SSE controller와 향후 resource가 등록할 수 있는 close/reset/purge port를 제공한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -21,7 +21,7 @@ logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 
 
 ## 변경 시 주의사항
 
-- P1에서 미래 resource별 draft schema나 EventSource client를 만들지 않는다.
+- cleanup 순서와 QueryClient clear를 유지하고 user boundary를 넘는 EventSource·cache를 남기지 않는다.
 
 ## 관련 규칙 및 문서
 

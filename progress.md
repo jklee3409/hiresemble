@@ -5,8 +5,42 @@
 - 초기 프론트엔드, 백엔드, Docker Compose, CI 환경이 구성되어 있다.
 - 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
 - P1 공통 HTTP·Session·CSRF·인증·idempotency 기반과 P2 사용자 소유 프로필·direct evidence가 구현되어 있다.
-- 프론트엔드는 P2 onboarding, 기본·구조화 프로필, evidence와 user-scoped cache·409 UX를 제공하며 Dashboard·문서·AI 기능은 아직 없다.
-- 공개 Spring mapping은 인증 5개와 프로필·direct evidence 25개, 총 30개 operation으로 제한된다.
+- P3 PostgreSQL Agent Run 수명주기, 고정 Fake workflow, 비용 예약·정산, SSE와 Frontend 복구 기반이 최종 validator `PASS`로 완료됐다.
+- 프론트엔드는 P2 프로필과 P3 Agent Run 목록·상세·진행 drawer를 제공하며 Dashboard·문서·공고·실제 AI 기능은 없다.
+- 공개 Spring mapping은 인증 5개, 프로필·direct evidence 25개와 Agent Run 5개인 총 35 operation·24 path로 제한된다.
+
+## [2026-07-19] Session Summary (P3 Agent Run·AI runtime 기반 통합 구현)
+
+- What was done:
+  - V1·V2·V3를 보존하고 Agent Run·Step, immutable AI 정책·가격, 사용자 preference, budget ledger·reservation·usage의 11개 table을 단일 V4 migration으로 추가했다.
+  - Backend에 owner-scoped 5개 Agent Run API, 상태 전이, 내부 launcher·checkpoint·apply 경계, DB claim·lease·reconciliation, bounded executor, retry·cancel·비용·SSE 기반을 구현했다.
+  - AI 모듈에 canonical 8개 workflow definition과 실행 contribution 분리, 고정 orchestrator, Context/Model/Prompt/Structured Output 계약, disabled gateway와 test-scope Fake 3-step workflow를 구현했다.
+  - Frontend에 lazy Agent Run 목록·상세 route, repeatable filter, 상태 timeline, retry·cancel, progress drawer와 snapshot-first SSE·1/2/5초 재연결·5초 polling 복구를 구현했다.
+
+- Key decisions:
+  - PostgreSQL과 REST snapshot을 상태 원천으로 유지하고 SSE는 commit 뒤 전달되는 비영속 projection으로만 사용한다.
+  - P3에는 실제 resource table이나 generic FK를 만들지 않아 Fake Run의 resource pair는 모두 null이며 typed resource link와 실제 domain apply는 P4 이후 forward migration으로 넘긴다.
+  - 외부 가격은 migration에 고정하지 않고 테스트 fixture의 immutable price version/item으로 비용 동시성·정산을 검증하며 production gateway는 `none`으로 비활성화한다.
+  - 명세의 reconnect 값은 1초·2초·5초의 총 3회 재연결 뒤 5초 REST polling으로 해석하고, 이번 threshold에서는 10초·30초 값을 사용하지 않는다.
+  - P3는 AC-13의 공통 기반만 완료하며 Dashboard·공개 설정·전체 운영 hardening은 P10에 남긴다.
+
+- Issues encountered:
+  - 기존 개발 DB에는 Spring Session table과 불일치하는 Flyway history가 남아 있어 repair·drop·volume 삭제 없이 유지했고 P3 migration·동시성 검증은 Testcontainers의 격리 PostgreSQL에서 수행했다.
+  - AI workflow 구현 에이전트의 첫 실행이 장시간 진전 없이 멈춰 같은 에이전트를 중단·범위 보정 후 허용된 두 번째 라운드로 완료했으며 추가 역할 재생성은 하지 않았다.
+  - 최초 read-only Validator는 SSE 타 사용자 404의 빈 본문과 blocking gateway 호출 중 주기 heartbeat 부재를 MAJOR로 판정했다. 허용된 한 차례 보정에서 공통 6-field JSON 404와 별도 scheduler 기반 호출 중 lease 갱신을 추가했다.
+  - P3 브라우저 흐름은 production 실행 endpoint를 만들지 않고 Playwright test-local REST/SSE fixture로 검증했다. 실제 typed resource를 포함한 cross-stack retry/apply는 P4 경계다.
+
+- Validation:
+  - 수정 전 P2 gate에서 Backend 54개, Frontend 57개 test, Compose와 격리 PostgreSQL 기반 실제 Chromium P2 E2E 1개가 통과했다.
+  - 통합 Backend `check --rerun-tasks`가 21 suite·243개 test, 실패·오류·skip 0으로 통과했고 OpenAPI는 35 operation·24 path다.
+  - Frontend `check`가 20 test file·78개 test로 통과했고 P3 Playwright test-local REST/SSE 2개 Chromium 시나리오가 통과했다.
+  - V1·V2·V3 blob·SHA-256은 기준선과 같고 실제 AI·검색·embedding provider 호출, production Fake 실행 endpoint, P4 이후 table·endpoint는 없다.
+  - 보정 후 전체 재실행에서 Backend `check --rerun-tasks` 243개 test, Frontend `check` 78개 test·production build, P3 Chromium 2개 시나리오, Compose와 `git diff --check`가 모두 통과했다. read-only 재판정만 남아 있다.
+  - 두 Validator 보완의 직접 통합 테스트는 실제 PostgreSQL에서 통과했고 전체 Backend 수는 21 suite·243 tests로 확정됐다.
+  - 한 차례 read-only 재검증은 BLOCKER·MAJOR·MINOR 없이 `PASS`였고, 전후 81개 status line과 258개 content file snapshot SHA-256이 각각 `2bc29bc68cd65fdb3d21a5b0e8bfb621ec339d077a47be45e999884ec321a21b`, `1b5d49a25888bbcb660b1582760c8223ff0c7f0243935ba7fbf69ee45c34369d`로 일치했다.
+
+- Next steps:
+  - P3는 완료됐으며 P4·P5에서 typed Agent Run resource FK, 실제 resource owner resolution·domain apply와 provider별 timeout을 각 aggregate의 forward migration·workflow에서 검증한다.
 
 ## [2026-07-19] Session Summary (P2 프로필·직접 입력 근거 통합 구현)
 

@@ -2,7 +2,24 @@
 
 ## Overview
 
-여러 화면이 공유하는 P1 인증·P2 프로필 HTTP 계약과 Session cleanup port를 관리한다.
+여러 화면이 공유하는 P1 인증·P2 프로필·P3 Agent Run HTTP 계약과 Session cleanup port를 관리한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run 공용 API·Session 경계 연결)
+
+- What was done:
+  - Agent Run DTO/client를 추가하고 SSE controller를 기존 Session cleanup port에 연결했다.
+
+- Key decisions:
+  - transport와 lifecycle만 shared에 두고 화면 상태는 feature/page가 소유한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - typed API와 logout·401·사용자 전환 cleanup tests가 통과했다.
+
+- Next steps:
+  - 후속 resource API도 user-scoped query key를 사용한다.
 
 ## [2026-07-19] Session Summary (P2 profile 공용 API 확장)
 

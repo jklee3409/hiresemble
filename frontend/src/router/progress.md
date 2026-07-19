@@ -3,8 +3,26 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, dashboard, `/profile` redirect와 7개 profile page 및 전용 404 route가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path만 허용하며 profile incomplete는 hard gate가 아니다.
+- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run list/detail 및 전용 404 route가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run detail만 허용한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run lazy route·returnTo 추가)
+
+- What was done:
+  - `/agent-runs`, `/agent-runs/:agentRunId`를 dynamic import로 추가했다.
+  - 두 보호 path의 안전한 login returnTo를 허용했다.
+
+- Key decisions:
+  - Agent Run feature/page는 initial bundle에 static import하지 않는다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - lazy component function과 P1·P2 route·guard 회귀 테스트가 통과했다.
+
+- Next steps:
+  - P4 route는 해당 page 구현과 함께 추가한다.
 
 ## [2026-07-19] Session Summary (P2 profile route·returnTo 확장)
 

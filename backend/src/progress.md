@@ -2,9 +2,26 @@
 
 ## Overview
 
-- `src/main`에는 P1 `common`·`auth` 운영 코드와 설정·Flyway migration이 있다.
-- `src/test`에는 인증·오류·validation·idempotency·migration의 단위 및 통합 테스트와 test-only fixture가 있다.
+- `src/main`에는 P1 auth, P2 profile과 P3 Agent Run·AI runtime 운영 코드 및 V1~V4 migration이 있다.
+- `src/test`에는 인증·프로필·Agent Run·AI·migration 단위·통합 테스트와 test-only prompt fixture가 있다.
 - 운영·테스트 source set은 분리되며 production 공개 test endpoint는 없다.
+
+## [2026-07-19] Session Summary (P3 운영·테스트 source 확장)
+
+- What was done:
+  - main에 agentrun·ai와 V4를, test에 PostgreSQL runtime·Fake workflow와 prompt resource를 추가했다.
+
+- Key decisions:
+  - production과 test contribution·fixture 경계를 source set으로 고정한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - production HTTP mapping 35개와 test-only Fake endpoint 0개를 정적으로 확인했다.
+
+- Next steps:
+  - P4 기능도 운영·테스트 source를 같은 수직 단계에서 추가한다.
 
 ## [2026-07-19] Session Summary (P1 운영·테스트 source set 구현)
 

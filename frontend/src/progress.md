@@ -4,8 +4,25 @@
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query, PrimeVue를 초기화한다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
-- P1 `app`, auth, layout, Session 기반과 P2 `features/profile`, profile API·page·route 구현·테스트가 있다.
-- 실제 프로필 Form·onboarding·evidence 화면이 있으며 Dashboard·문서·AI 기능은 아직 없다.
+- P1 auth·Session, P2 profile과 P3 `features/agent-runs`, Agent Run API·page·lazy route 구현·테스트가 있다.
+- 실제 profile과 Agent Run 화면이 있으며 Dashboard 집계·문서·AI 설정 기능은 아직 없다.
+
+## [2026-07-19] Session Summary (P3 Agent Run Vue source 추가)
+
+- What was done:
+  - shared API, agent-runs feature, lazy pages·routes와 AppLayout drawer를 추가했다.
+
+- Key decisions:
+  - 새 page와 drawer를 dynamic import해 기존 경고가 있는 initial bundle의 정적 의존을 막는다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - lint·Prettier·typecheck·78 tests·production build가 통과했다.
+
+- Next steps:
+  - P4 이후 기능은 실제 Backend 계약이 고정된 뒤 추가한다.
 
 ## [2026-07-19] Session Summary (P2 프로필 Vue 애플리케이션 구현)
 

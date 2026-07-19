@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 핵심 사용자 여정을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 P2 Cookie·CSRF·프로필·owner 격리 시나리오가 구현되어 있다.
+이 디렉터리는 Hiresemble의 핵심 사용자 여정을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 P2 profile cross-stack과 P3 test-local Agent Run REST/SSE 시나리오가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -10,11 +10,12 @@
 | ---------------------------------------------------- | ---------------------------------------------------------------------- |
 | [`.gitkeep`](.gitkeep)                               | 초기 디렉터리 추적용 placeholder로 보존                                |
 | [`profile.spec.ts`](profile.spec.ts)                 | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                  |
+| [`agent-runs.spec.ts`](agent-runs.spec.ts)           | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture      |
 | [`index.md`](index.md)                               | E2E 영역의 책임과 의존 관계 설명                                       |
 | [`progress.md`](progress.md)                         | E2E 구현 상태와 검증 이력 추적                                         |
 | [`../playwright.config.ts`](../playwright.config.ts) | test directory, Chromium project, Vite web server와 artifact 정책 설정 |
 
-현재 하위 디렉터리는 없고 P2 `profile.spec.ts` 한 개를 관리한다.
+현재 하위 디렉터리는 없고 P2 profile과 P3 Agent Run spec을 관리한다.
 
 ## 구성 요소 역할
 

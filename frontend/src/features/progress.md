@@ -2,7 +2,24 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth와 P2 profile feature가 구현되어 있다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth, P2 profile과 P3 agent-runs feature가 구현되어 있다.
+
+## [2026-07-19] Session Summary (P3 agent-runs feature 추가)
+
+- What was done:
+  - filter·query·presentation·SSE controller와 detail panel·Progress Drawer를 추가했다.
+
+- Key decisions:
+  - Run 상태는 server projection만 사용하고 연결 상태를 별도 UI 안내로 관리한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - feature contract·stream·query·component tests가 전체 check에서 통과했다.
+
+- Next steps:
+  - resource-specific 동작은 후속 domain feature에 둔다.
 
 ## [2026-07-19] Session Summary (P2 profile feature 경계 추가)
 

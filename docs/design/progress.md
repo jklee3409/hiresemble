@@ -2,7 +2,32 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0 계약 기준선은 완료됐고 P1 구현은 시작되지 않았으며, 이 디렉터리는 실제 비즈니스 기능 구현 완료를 선언하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0·P1·P2·P3는 완료됐고 P3 Agent Run·AI runtime 기반의 최종 validator 판정은 `PASS`다. P4–P10은 미착수이며 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-07-19] Session Summary (P3 구현 상태와 후속 migration 경계 반영)
+
+- What was done:
+  - 구현 계획의 P3를 실제 Agent Run·AI runtime·Frontend 복구 기반 구현과 최종 validator `PASS` 상태로 동기화했다.
+  - P4·P5 착수 전에 남은 typed resource FK, 실제 provider·장시간 heartbeat, resource-linked retry/apply와 AC-13 잔여 범위를 명시했다.
+
+- Key decisions:
+  - P3는 AC-13 전체가 아니라 PostgreSQL Agent Run, 고정 workflow, 예산과 SSE 복구의 공통 기반만 담당한다.
+  - resource가 없는 P3 Fake Run을 위해 generic UUID FK나 미래 domain table을 만들지 않고 typed owner 복합 FK는 실제 aggregate가 생기는 forward migration에서 추가한다.
+  - Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 계획대로 P10에 남긴다.
+
+- Issues encountered:
+  - 구현 계획에는 P3 미착수 문구가 남아 있어 코드·모듈 진행 문서와 맞지 않았고 최종 validator 전 실제 상태로 보정했다.
+  - 실제 provider가 없는 P3와 P4 이후 provider 연동 위험을 혼동하지 않도록 disabled production gateway와 향후 heartbeat·price policy 검증 경계를 분리했다.
+  - 최초 read-only Validator는 SSE owner 404 공통 오류 본문과 gateway 호출 중 주기 heartbeat 부재를 `NEEDS_CHANGES`로 판정했고, 허용된 한 차례 보정 범위를 두 항목과 직접 회귀 테스트로 제한했다.
+
+- Validation:
+  - P3의 35 operation·24 path, 단일 V4, Fake workflow·비용·SSE·Frontend 복구 구현과 P4 이후 endpoint·table 부재를 코드 및 하위 진행 문서와 대조했다.
+  - 보정 후 Backend 243개·Frontend 78개 test, production build, P3 Chromium 2개, Compose와 diff 검증이 재실행에서도 통과했다.
+  - 최초 `NEEDS_CHANGES`의 두 MAJOR를 제한 보정한 뒤 한 차례 read-only 재검증이 BLOCKER·MAJOR·MINOR 없이 `PASS`했다.
+  - Validator 전후 status·content snapshot이 각각 81 line·258 file로 일치했다.
+
+- Next steps:
+  - P3는 완료됐으며 P4–P10 미착수 상태에서 다음 phase의 typed resource·provider 경계를 유지한다.
 
 ## [2026-07-18] Session Summary (P0 승인 결정 기록과 설계 기준선 전환)
 

@@ -2,7 +2,25 @@
 
 ## Overview
 
-P1 인증·보호 shell과 P2 onboarding·profile page 및 전용 404를 관리한다.
+P1 인증·보호 shell, P2 profile과 P3 Agent Run list/detail page 및 전용 404를 관리한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run 목록·상세 Page 구현)
+
+- What was done:
+  - workflow/status/retryable filter, pagination·sort 목록과 URL canonicalization을 구현했다.
+  - REST detail 뒤 SSE controller를 연결하고 retry successor 이동과 cancel CAS를 조정했다.
+
+- Key decisions:
+  - WAITING_USER action·FAILED retry·active cancel은 server boolean과 상태를 함께 사용한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - list page·detail panel component와 browser fixture가 통과했다.
+
+- Next steps:
+  - Dashboard 집계나 AI 설정 page는 P10까지 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P2 프로필·온보딩·evidence Page 구현)
 

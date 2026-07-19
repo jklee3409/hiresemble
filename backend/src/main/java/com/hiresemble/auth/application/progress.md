@@ -2,7 +2,24 @@
 
 ## Overview
 
-가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정하고 가입 기본 프로필 등록을 profile service에 위임한다.
+가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정하고 기본 profile·AI preference 등록을 각 service에 위임한다.
+
+## [2026-07-19] Session Summary (가입 transaction의 AI preference 등록 위임)
+
+- What was done:
+  - `AuthService`가 사용자·profile 생성 뒤 `AiPreferenceRegistrationService`를 호출한다.
+
+- Key decisions:
+  - preference 생성과 Session 저장은 기존 가입 transaction 원자성을 공유한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - preference 실패 trigger에서 user/profile/session/preference 잔여 row가 없음을 검증했다.
+
+- Next steps:
+  - 사용자 preference 조회·수정 API는 P10 설정 단계에 남긴다.
 
 ## [2026-07-19] Session Summary (가입 transaction의 profile 등록 위임)
 

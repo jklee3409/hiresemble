@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선, P1 공통 HTTP·Session 인증·테스트 기반과 P2 프로필·직접 입력 근거가 구현되어 있다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선, P1 인증, P2 프로필과 P3 Agent Run·AI runtime 기반이 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -24,6 +24,7 @@
 ```text
 frontend -- /api/v1, Session Cookie/CSRF --> backend
 backend  -- JDBC/Flyway -----------------> PostgreSQL + pgvector
+backend  -- fixed workflow ports --------> disabled AI gateways (P3)
 backend  -- S3 API ----------------------> MinIO (local)
 backend  -- optional SMTP ---------------> Mailpit (local)
 docs/spec -------------------------------> API·DB·화면·기술 계약
@@ -32,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/compose 검증
 ```
 
-공개 HTTP 범위는 P1 인증 5개와 P2 프로필·direct evidence 25개 operation이며, Frontend의 `/onboarding`과 `/profile/**`는 실제 P2 흐름이고 `/dashboard`는 아직 shell이다.
+공개 HTTP 범위는 P1 인증 5개, P2 프로필·direct evidence 25개와 P3 Agent Run 5개로 총 35 operation이다. Frontend에는 `/agent-runs` 목록·상세와 복구 가능한 SSE UI가 있으며 `/dashboard`는 여전히 shell이다.
 
 ## 변경 시 주의사항
 

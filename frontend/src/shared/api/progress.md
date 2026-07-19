@@ -2,7 +2,25 @@
 
 ## Overview
 
-Backend P1·P2 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P3 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run typed contract·client 구현)
+
+- What was done:
+  - Run·Step enum, nullable DTO와 6종 SSE payload를 Zod로 고정했다.
+  - 목록·상세, retry Idempotency-Key와 cancel stateVersion API client를 추가했다.
+
+- Key decisions:
+  - unknown server field는 runtime parsing에서 제거해 내부 field가 UI로 전파되지 않는다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - enum parity·nullability·repeatable query·mutation header/body tests가 통과했다.
+
+- Next steps:
+  - 공개 Run 생성 API는 만들지 않고 domain workflow가 내부 launcher를 사용한다.
 
 ## [2026-07-19] Session Summary (P2 profile typed client 구현)
 

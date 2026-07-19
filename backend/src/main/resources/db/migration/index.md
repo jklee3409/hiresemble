@@ -11,6 +11,7 @@
 | [`V1__enable_extensions.sql`](V1__enable_extensions.sql)                                                           | pgvector의 `vector` PostgreSQL extension 활성화      |
 | [`V2__create_identity_session_idempotency.sql`](V2__create_identity_session_idempotency.sql)                       | users·기본 profile·Spring Session·idempotency schema |
 | [`V3__create_structured_profiles_and_direct_evidence.sql`](V3__create_structured_profiles_and_direct_evidence.sql) | P2 기본·구조화 프로필과 직접 근거 schema·불변식      |
+| [`V4__create_agent_runtime_and_ai_budget.sql`](V4__create_agent_runtime_and_ai_budget.sql)                         | P3 Run·Step, AI policy·price·budget·usage schema     |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -19,6 +20,7 @@
 - V1은 `CREATE EXTENSION IF NOT EXISTS vector`만 실행하며 P1에서도 byte 단위로 보존한다.
 - V2는 P1에 필요한 users, user_profiles, Spring Session과 idempotency_records만 추가한다.
 - V3는 `user_profiles` JSON·owner 제약을 보강하고 다섯 구조화 source와 `profile_evidence`를 추가한다.
+- V4는 Agent Run·Step과 immutable model·embedding·budget·price version, preference, ledger·reservation·usage 11개 table을 추가한다.
 - 문서 aggregate와 `documents` table·복합 FK는 P4 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

@@ -2,7 +2,24 @@
 
 ## Overview
 
-향후 비용·생성 mutation이 사용할 DB 기반 HMAC reservation과 원 응답 replay의 최소 기반을 제공한다. 현재 P1 구현과 검증 상태만 기록한다.
+비용·생성 mutation이 사용하는 DB 기반 HMAC reservation, 원 응답 replay와 P3 Agent Run successor metadata를 제공한다.
+
+## [2026-07-19] Session Summary (Agent Run retry idempotency metadata 연결)
+
+- What was done:
+  - COMPLETED record에 nullable resource pair와 agentRunId를 원자 저장하고 replay가 successor를 반환하도록 연결했다.
+
+- Key decisions:
+  - retry 요청 body는 없으므로 canonical body hash는 `{}`이고 predecessor unique가 다른 key 경쟁도 제한한다.
+
+- Issues encountered:
+  - owner FK 때문에 기존 가상 agentRunId fixture를 실제 owner Run으로 변경했다.
+
+- Validation:
+  - replay, generic hash mismatch, concurrent retry와 predecessor당 successor 하나가 통과했다.
+
+- Next steps:
+  - typed resource metadata는 해당 domain phase에서 연결한다.
 
 ## [2026-07-19] Session Summary (Durable idempotency 저장·hash·replay 기반 구현)
 

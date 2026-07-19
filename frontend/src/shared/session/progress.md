@@ -2,7 +2,24 @@
 
 ## Overview
 
-logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 최소 확장 port를 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 P3 Agent Run EventSource 등록을 관리한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run EventSource cleanup 연결)
+
+- What was done:
+  - AgentRunStreamController가 실제 source·reconnect timer·polling을 cleanup coordinator에 등록한다.
+
+- Key decisions:
+  - logout·401·사용자 변경은 EventSource 종료 뒤 query cancel·cache clear 순서를 유지한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - stream unit test와 logout Playwright fixture, 기존 queryClient clear 회귀가 통과했다.
+
+- Next steps:
+  - 후속 SSE 기능도 동일 coordinator에 등록한다.
 
 ## [2026-07-19] Session Summary (인증 경계 cleanup port 구현)
 

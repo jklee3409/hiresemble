@@ -2,9 +2,27 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile` package가 구현되어 있다.
-- 공통 오류·request ID·validation·idempotency, Session·CSRF 인증과 owner-scoped 프로필·direct evidence를 제공한다.
-- 성공 응답용 `BaseResponseDto`와 P3 이후 도메인 package는 존재하지 않는다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai` package가 구현되어 있다.
+- 공통 오류·인증·프로필과 durable Run·Step, fixed workflow·disabled gateway를 제공한다.
+- 성공 응답용 `BaseResponseDto`와 P4 이후 domain package는 존재하지 않는다.
+
+## [2026-07-19] Session Summary (P3 agentrun·ai Java 영역 추가)
+
+- What was done:
+  - `agentrun` api/application/domain/infrastructure와 `ai` runtime package를 실제 책임별로 추가했다.
+  - auth signup과 공통 idempotency·OpenAPI를 P3 preference·retry metadata에 연결했다.
+
+- Key decisions:
+  - AI가 repository를 직접 참조하지 않고 application port만 소비한다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - package boundary 정적 검색과 Backend 243 tests가 통과했다.
+
+- Next steps:
+  - P4 이후 package는 실제 기능 계약이 준비될 때만 생성한다.
 
 ## [2026-07-19] Session Summary (P2 profile Java 영역 추가)
 

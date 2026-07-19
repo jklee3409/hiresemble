@@ -3,9 +3,34 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 공통 HTTP·Session·CSRF·인증 5개 API와 P2 프로필·direct evidence 25개 API가 `common`·`auth`·`profile` 영역에 구현되어 있다.
-- V1·V2를 보존한 V3 migration이 기본·구조화 프로필과 direct evidence DB 불변식을 추가한다.
-- 생성 OpenAPI는 정확히 30개 operation이며 문서·공고·Agent Run 등 P3 이후 endpoint는 없다.
+- P1 인증 5개, P2 profile 25개와 P3 Agent Run 5개 API가 구현되어 있다.
+- V1~V3를 보존한 V4 migration이 Run·Step, AI policy·price·budget·usage DB 불변식을 추가한다.
+- 생성 OpenAPI는 정확히 35 operation/24 path이며 document·job·설정 등 P4 이후 endpoint는 없다.
+
+## [2026-07-19] Session Summary (P3 Agent Run·AI runtime Backend 구현)
+
+- What was done:
+  - Agent Run·Step domain과 application port, V4 11개 table, claim·lease·reconciliation·bounded executor를 구현했다.
+  - budget reserve·top-up·settle·release, retry lineage·idempotency, cancel·compensation과 owner-scoped API·SSE를 구현했다.
+  - canonical workflow registry, no-network gateway와 test-only Fake 3-step orchestration을 추가했다.
+
+- Key decisions:
+  - PostgreSQL을 상태 원천으로 두고 AI workflow는 Agent Run repository를 직접 참조하지 않는다.
+  - 실제 provider·가격 seed·production Fake endpoint를 만들지 않고 provider 기본값을 `none`으로 유지한다.
+  - typed resource FK와 실제 domain apply는 P4 이후 forward migration 경계다.
+
+- Issues encountered:
+  - 기존 개발 DB는 Flyway 이력 없이 Session table이 남은 상태라 수정하지 않고 Testcontainers만 사용했다.
+  - SSE owner 404 content negotiation과 V4 owner FK를 반영하지 않은 기존 test fixture를 안전하게 보정했다.
+  - 최초 read-only Validator는 SSE owner 404 공통 오류 본문과 장시간 gateway 호출 중 heartbeat 부재를 MAJOR로 판정했다. 허용된 한 차례 보정에서 6-field JSON 404와 별도 scheduler 기반 주기 lease 갱신을 추가했다.
+
+- Validation:
+  - 루트 강제 `check --rerun-tasks`에서 21 suites/243 tests가 failure·error·skip 0으로 통과했다.
+  - V1~V3 hash 불변, V4 빈 DB·V1/V2/V3 upgrade, OpenAPI 35/24와 provider 호출 부재를 검증했다.
+  - 한 차례 read-only 재검증은 SSE 공통 404와 호출 중 heartbeat 보정을 확인하고 BLOCKER·MAJOR·MINOR 없이 `PASS`했다.
+
+- Next steps:
+  - P3는 완료됐으며 P4/P5에서 실제 resource owner·typed FK·workflow contribution과 provider별 timeout을 연결한다.
 
 ## [2026-07-19] Session Summary (P2 프로필·직접 입력 근거 Backend 구현)
 

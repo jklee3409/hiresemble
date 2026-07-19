@@ -4,8 +4,27 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V3 migration이 사용자·Session·idempotency와 P2 프로필 schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V4 migration이 사용자·프로필과 P3 Agent runtime schema를 관리한다.
+- Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-07-19] Session Summary (P3 V4와 Agent runtime 설정 추가)
+
+- What was done:
+  - V4 Agent Run·AI policy·budget migration과 worker timing·capacity 설정을 추가했다.
+  - Spring AI chat·embedding·vector 자동 구성을 `none`으로 유지하고 P3 gateway도 disabled로 고정했다.
+
+- Key decisions:
+  - 환경 변수는 non-secret override만 제공하고 실제 provider key를 요구하지 않는다.
+
+- Issues encountered:
+  - 루트 `.env.example`의 legacy `AI_PROVIDER=openai`를 `none`으로 정정했다.
+
+- Validation:
+  - Backend boot·check와 `docker compose config --quiet`가 통과했다.
+
+- Next steps:
+  - 실제 provider를 도입할 때만 secret과 가격·model policy adapter를 연결한다.
 
 ## [2026-07-19] Session Summary (P2 V3 profile migration 추가)
 

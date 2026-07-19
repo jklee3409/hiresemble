@@ -2,8 +2,25 @@
 
 ## Overview
 
-- `com.hiresemble.HiresembleApplication`만 존재하는 최소 Java 구조다.
-- 비즈니스 package, 공통 API 오류 package, Controller와 테스트 대상 Java 구현은 아직 없다.
+- `com.hiresemble` 아래 P1 common·auth, P2 profile과 P3 agentrun·ai package가 구현되어 있다.
+- 공개 Controller는 인증 5, profile 25, Agent Run 5 operation만 제공한다.
+
+## [2026-07-19] Session Summary (P1~P3 Java package 구현 상태 반영)
+
+- What was done:
+  - 공통 HTTP·인증, profile과 Agent Run·AI runtime package의 실제 상태를 문서에 반영했다.
+
+- Key decisions:
+  - 업무 구현은 계속 `com.hiresemble` 하위 책임 package에 둔다.
+
+- Issues encountered:
+  - 이 상위 progress가 초기 상태로 남아 있어 P3 통합 시 현재 코드와 맞게 갱신했다.
+
+- Validation:
+  - production Java 파일·HTTP mapping과 package tree를 정적으로 확인했다.
+
+- Next steps:
+  - 새 package 추가 시 상위 namespace 상태도 함께 갱신한다.
 
 ## [2026-07-17] Session Summary (Java 기본 패키지 및 진입점 구성)
 

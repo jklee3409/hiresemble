@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1·P2 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+P1~P3 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+
+## [2026-07-19] Session Summary (P3 runtime table cleanup 확장)
+
+- What was done:
+  - usage·reservation·ledger·step·run·preference·policy·price table을 FK 역순으로 정리하도록 확장했다.
+
+- Key decisions:
+  - 각 test는 격리된 PostgreSQL row를 사용하며 운영·개발 DB를 참조하지 않는다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - 전체 Backend integration suite가 반복 실행에서 통과했다.
+
+- Next steps:
+  - 새 migration table은 FK 역순 cleanup에 함께 추가한다.
 
 ## [2026-07-19] Session Summary (P2 table 통합 테스트 cleanup 확장)
 

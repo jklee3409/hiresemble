@@ -3,8 +3,27 @@
 ## Overview
 
 - `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
+- `agent-runs.spec.ts`가 test-local REST/SSE fixture로 P3 reconnect·polling·action cleanup을 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
-- 테스트는 외부 provider와 운영 데이터 없이 격리된 PostgreSQL DB에서 실행한다.
+- 테스트는 외부 provider와 운영 데이터 없이 격리 DB 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run REST·SSE 브라우저 fixture 검증)
+
+- What was done:
+  - RUNNING snapshot·progress·step 뒤 강제 단절, 1/2/5초 재연결 실패와 polling terminal 복구를 구현했다.
+  - WAITING deep link, FAILED retry header, active cancel version과 logout EventSource 종료를 검증했다.
+
+- Key decisions:
+  - fixture는 Playwright route interception에만 있고 production endpoint·bundle에는 포함되지 않는다.
+
+- Issues encountered:
+  - 중복 progress text locator를 `progressbar[value]` assertion으로 좁혔다.
+
+- Validation:
+  - Chromium workers=1 실행에서 2/2 scenarios가 통과했다.
+
+- Next steps:
+  - P4 typed resource가 준비되면 실제 Backend cross-stack Agent Run 여정을 추가한다.
 
 ## [2026-07-19] Session Summary (P2 실제 브라우저 Cookie·CSRF 통합 검증)
 

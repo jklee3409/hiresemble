@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다. P3 Agent Run·AI runtime 기반도 구현·표준 검증과 최종 read-only validator `PASS`로 완료됐다.
 
 ## 범위
 
@@ -21,7 +21,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] P0에서 상태·enum·DTO·수명주기·AI 정책 결정 게이트를 닫는다.
 - [x] 공통 HTTP 오류, Security/Session/CSRF, request ID와 테스트 기반을 구현한다.
 - [x] 사용자·프로필·직접 입력 근거를 구현해 AC-01~02를 고정한다.
-- [ ] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
+- [x] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
 - [ ] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
 - [ ] 공고 등록·수동 보완·상태·Scheduler·분석을 구현해 AC-04~07을 고정한다.
 - [ ] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
@@ -29,7 +29,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0·P1·P2 완료. P3–P10은 미착수다.
+현재 단계: P0·P1·P2·P3 완료. P4–P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -223,6 +223,7 @@ P0 계약 기준선
 - AC: AC-13의 공통 기반
 - 선행: P1, P0의 async·품질·예산 결정
 - 주 담당: backend 후 ai_workflow, frontend
+- 상태: 완료(2026-07-19). Backend 243 tests, Frontend 78 tests·production build, Chromium fixture 2개와 최종 read-only validator `PASS`
 
 ### 6.1 Backend 선행
 
@@ -256,6 +257,7 @@ P0 계약 기준선
 - 동일 input success step 재사용과 다른 input 미재사용
 - 두 동시 run budget reserve
 - SSE 다른 사용자 404, reconnect snapshot, terminal close
+- lease보다 긴 blocking gateway 호출 중 주기 heartbeat와 reconciliation 경쟁
 - 전체 prompt/response·user content 로그 부재
 
 ### 6.5 완료 조건
@@ -711,9 +713,11 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
 | 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
 
-## P3 착수 전 확인할 위험
+## P4·P5 착수 전 남은 위험
 
-- P2의 nullable document 연결 field에는 아직 `documents` table과 복합 owner FK가 없다. P4 migration에서 실제 document aggregate와 함께 추가하고 그 전에는 non-null 입력·filter를 404로 유지한다.
-- P3 Agent Run·AI runtime은 현재 존재하지 않는다. 실제 provider 가격·모델 가용성과 운영 설정은 versioned catalog/policy에 주입하고 local/CI에서는 유료 provider를 비활성화한 Fake 기반 검증을 먼저 통과해야 한다.
-- V1~V3는 적용 이력으로 보존하며 P3 이후 outbox·lease·budget·embedding schema는 새 forward migration으로만 추가한다.
-- P3 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.
+- P2의 nullable document 연결 field와 P3의 generic resource projection에는 아직 `documents`·`job_postings` table 또는 typed Agent Run resource FK가 없다. P4·P5 forward migration에서 실제 aggregate와 함께 owner 복합 FK를 추가하고, 그 전에는 resource 없는 Fake Run과 resource filter 404 경계만 유지한다.
+- P3 production provider adapter는 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 immutable price item과 model policy를 먼저 등록하고, P3의 주기적 heartbeat port를 유지하면서 provider별 timeout·network failure 분류를 해당 phase에서 검증해야 한다.
+- V1~V3는 적용 이력으로 보존했고 P3 schema는 단일 V4 forward migration으로 추가했다. P4 이후 resource link·domain result·embedding schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
+- P3 retry의 lineage·idempotency는 resource 없는 내부 launcher로 검증했다. typed resource owner resolution, 실제 domain apply와 resource-linked end-to-end retry는 P4 이후 해당 aggregate가 생길 때 최종 검증한다.
+- P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 P10 범위로 남긴다.
+- P4 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

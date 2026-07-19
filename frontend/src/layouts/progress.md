@@ -2,7 +2,24 @@
 
 ## Overview
 
-익명 인증 화면과 보호 화면의 공통 shell을 분리하고 구현된 profile navigation을 제공한다.
+익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile navigation과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-19] Session Summary (P3 Agent Run Progress Drawer 추가)
+
+- What was done:
+  - AppLayout header에 dynamic import Drawer와 작업 기록 navigation을 추가했다.
+
+- Key decisions:
+  - count는 owner-scoped active Agent Run 목록의 `totalElements`를 그대로 사용하고 최근 항목만 최대 5개로 제한해 Dashboard 집계처럼 추정하지 않는다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - production build에서 Drawer가 2.33 kB/gzip 1.30 kB lazy chunk로 분리됐다.
+
+- Next steps:
+  - 전체 system count가 필요하면 P10 Dashboard API 계약 뒤 구현한다.
 
 ## [2026-07-19] Session Summary (AppLayout profile navigation 추가)
 

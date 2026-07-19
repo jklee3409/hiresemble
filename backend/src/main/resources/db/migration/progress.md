@@ -5,7 +5,29 @@
 - `V1__enable_extensions.sql`은 pgvector `vector` extension을 idempotent하게 활성화한다.
 - `V2__create_identity_session_idempotency.sql`은 P1의 `users`, 기본 `user_profiles`, JDBC Session, `idempotency_records`를 생성한다.
 - `V3__create_structured_profiles_and_direct_evidence.sql`은 P2의 프로필 5종과 direct evidence 및 DB 불변식을 생성한다.
-- documents·공고·자기소개서·면접·Agent Run 등 P3 이후 table은 구현하지 않았다.
+- `V4__create_agent_runtime_and_ai_budget.sql`은 P3 Run·Step과 AI policy·price·budget·usage 11개 table을 생성한다.
+- documents·공고·자기소개서·면접 등 P4 이후 table은 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P3 Agent runtime·AI budget V4 migration)
+
+- What was done:
+  - `agent_runs`, `agent_steps`, immutable policy·price, preference, ledger·reservation·usage 11개 table과 제약·trigger를 추가했다.
+  - 기존 사용자 preference를 ECONOMY·1.00 USD·high quality false로 backfill했다.
+
+- Key decisions:
+  - V1·V2·V3는 수정하지 않고 V4 단일 forward migration만 추가했다.
+  - 실제 provider 가격은 seed하지 않고 Fake 가격은 test fixture에서만 만든다.
+  - document/job typed resource link와 FK는 해당 phase로 이관한다.
+
+- Issues encountered:
+  - 기존 개발 DB Flyway history 불일치를 수정하지 않고 격리 PostgreSQL upgrade만 수행했다.
+
+- Validation:
+  - 빈 DB와 V1/V2/V3-only upgrade, V4의 71개 CHECK 설치, owner FK·unique·immutability·음수 거부·P4 table 부재가 통과했다.
+  - 최종 read-only Validator가 V1·V2·V3 불변과 단일 V4 범위를 `PASS`로 판정했다.
+
+- Next steps:
+  - P4에서 documents와 typed Agent Run link를 새 migration으로 추가한다.
 
 ## [2026-07-19] Session Summary (P2 구조화 프로필·direct evidence V3 migration)
 

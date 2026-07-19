@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1의 사용자 가입, Session 인증과 현재 사용자 projection을 구성하며 가입 기본 프로필은 P2 profile 경계에 위임한다.
+P1의 사용자 가입, Session 인증과 현재 사용자 projection을 구성하며 가입 기본 프로필과 P3 AI preference 생성을 각 application 경계에 위임한다.
+
+## [2026-07-19] Session Summary (가입 기본 AI preference transaction 연결)
+
+- What was done:
+  - 가입 transaction에서 사용자·기본 profile 뒤 active budget policy 기반 기본 AI preference를 생성한다.
+
+- Key decisions:
+  - preference 생성 실패는 사용자·profile·Session과 함께 rollback 또는 폐기된다.
+
+- Issues encountered:
+  - None.
+
+- Validation:
+  - 실패 주입을 포함한 Auth integration tests가 통과했다.
+
+- Next steps:
+  - 공개 `/settings/ai`는 P10 전까지 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (가입 기본 프로필 책임을 profile 경계로 이동)
 
