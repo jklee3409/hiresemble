@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1 실제 오류 code, 비즈니스 예외와 MVC 전역 오류 변환을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1·P2 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+
+## [2026-07-19] Session Summary (P2 resource·version 오류 변환 추가)
+
+- What was done:
+  - `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`와 profile DB 불변식 충돌의 안전한 변환을 추가했다.
+
+- Key decisions:
+  - constraint 이름·SQL message·rejected value는 공개 응답에 포함하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - API 테스트에서 owner 404, version·대표 학력 409와 내부 정보 비노출을 검증했다.
+
+- Next steps:
+  - 후속 domain code는 활성 API 명세에 실제 사용처가 생길 때만 추가한다.
 
 ## [2026-07-19] Session Summary (P1 ErrorCode와 전역 예외 변환 구현)
 

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+P1·P2 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 

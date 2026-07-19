@@ -2,7 +2,24 @@
 
 ## Overview
 
-가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정한다. 현재 P1 구현과 검증 상태만 기록한다.
+가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정하고 가입 기본 프로필 등록을 profile service에 위임한다.
+
+## [2026-07-19] Session Summary (가입 transaction의 profile 등록 위임)
+
+- What was done:
+  - `AuthService`가 사용자 저장 뒤 `ProfileRegistrationService`를 호출하도록 연결했다.
+
+- Key decisions:
+  - 사용자·기본 프로필·Session SQL은 기존과 같이 하나의 가입 transaction에서 원자적으로 처리한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - 가입 성공·중복·profile/Session 실패 rollback 회귀가 Backend check에서 통과했다.
+
+- Next steps:
+  - 프로필 세부 use case를 auth service로 되돌려 중복하지 않는다.
 
 ## [2026-07-19] Session Summary (인증 use case와 Session 전이 구현)
 

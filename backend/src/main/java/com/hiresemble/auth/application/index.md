@@ -6,18 +6,19 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`AuthService.java`](AuthService.java): 사용자 생성·검증, transaction 참여 Session 인증과 실패 정리
+- [`AuthService.java`](AuthService.java): 사용자 생성·검증, 프로필 등록 위임, transaction 참여 Session 인증과 실패 정리
 - [`CsrfTokenService.java`](CsrfTokenService.java): 현재 token projection과 성공 후 token 교체
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- JPA 저장, password 검증, Session ID rotation과 SecurityContext 저장의 순서를 명시적으로 관리한다.
+- 사용자 JPA 저장, 프로필 등록 위임, password 검증, Session ID rotation과 SecurityContext 저장의 순서를 명시적으로 관리한다.
 - Session 저장 실패 시 in-memory 인증 상태를 폐기해 request-end 재저장을 차단한다.
 
 ## 다른 디렉터리와의 의존 관계
 
 - 상위 [`auth/`](../index.md)의 책임 경계 안에서 동작한다.
+- 가입 기본 프로필은 [`../../profile/application/ProfileRegistrationService.java`](../../profile/application/ProfileRegistrationService.java)에 위임한다.
 - 공개 HTTP·화면 계약은 [`docs/spec/api.md`](../../../../../../../../docs/spec/api.md)와 [`docs/spec/page.md`](../../../../../../../../docs/spec/page.md)를 따른다.
 
 ## 변경 시 주의사항

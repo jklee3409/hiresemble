@@ -1,0 +1,40 @@
+# 프로필·직접 근거 영역 안내
+
+## 디렉터리 목적
+
+P2 기본 프로필, 학력·자격증·어학·수상·경력과 구조화 source에서 동기화되는 직접 입력 근거를 사용자 소유 resource로 관리한다.
+
+## 주요 파일 및 하위 디렉터리
+
+- [`api/`](api/index.md): 프로필 25개 HTTP operation과 request·response 변환
+- [`application/`](application/index.md): 인증 사용자 use case, transaction, owner·version·document 경계
+- [`domain/`](domain/index.md): 완료도·날짜·GPA·대표 학력·evidence 동기화 규칙
+- [`infrastructure/`](infrastructure/index.md): owner-scoped JDBC 조회·변경과 soft delete
+- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+
+## 구성 요소 역할
+
+- 기본 프로필 완료 항목 다섯 개는 서버가 계산하며 미완료 상태는 route hard gate가 아니다.
+- 다섯 구조화 source는 생성·수정·삭제 때 연결된 direct evidence와 같은 transaction에서 동기화된다.
+- 모든 단건 조회와 mutation은 Session principal의 사용자 ID를 함께 사용한다.
+
+## 다른 디렉터리와의 의존 관계
+
+- 인증 사용자 ID는 [`../auth/`](../auth/index.md)의 Session principal에서 받는다.
+- DB 불변식은 [`../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql)에 의존한다.
+- 공개 계약은 [`../../../../../../../docs/spec/api.md`](../../../../../../../docs/spec/api.md)와 [`../../../../../../../docs/spec/db.md`](../../../../../../../docs/spec/db.md)를 따른다.
+
+## 변경 시 주의사항
+
+- `documents` table과 document FK는 P4 범위다. P2의 non-null `evidenceDocumentId`와 evidence `documentId` filter는 소유 문서가 없으므로 404다.
+- source는 soft delete하고 P2에서는 downstream provenance가 없으므로 연결 direct evidence를 삭제한다.
+- 직접 evidence 생성·삭제 API, `SOURCE_DELETED` 생성, override layer를 추가하지 않는다.
+- version 충돌을 자동 재시도하지 않고 `RESOURCE_VERSION_CONFLICT` 409로 반환한다.
+
+## 관련 규칙 및 문서
+
+- [최상위 작업 지침](../../../../../../../AGENTS.md)
+- [백엔드 개발 규칙](../../../../../../../docs/agent-rules/backend-development.md)
+- [응답·예외 처리 규칙](../../../../../../../docs/agent-rules/backend-response-exception.md)
+- [API 명세](../../../../../../../docs/spec/api.md)
+- [영역 진행 상황](progress.md)

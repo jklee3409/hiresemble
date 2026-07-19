@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1에서 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1·P2 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
+
+## [2026-07-19] Session Summary (P2 profile 공통 오류·OpenAPI 확장)
+
+- What was done:
+  - profile resource·version 오류와 P2 OpenAPI schema를 공통 기반에 연결했다.
+
+- Key decisions:
+  - P1 여섯 field 오류·Session·CSRF 계약을 변경하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - P1 회귀와 30-operation OpenAPI 테스트가 통과했다.
+
+- Next steps:
+  - 도메인 정책은 각 기능 영역에 유지한다.
 
 ## [2026-07-19] Session Summary (공통 OpenAPI·Swagger 보안 scheme 추가)
 

@@ -2,7 +2,24 @@
 
 ## Overview
 
-ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 공통 OpenAPI metadata를 소유한다. 현재 P1 구현과 검증 상태만 기록한다.
+ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 P1·P2 공통 OpenAPI metadata를 소유한다.
+
+## [2026-07-19] Session Summary (P2 프로필 OpenAPI schema 보강)
+
+- What was done:
+  - 프로필 enum·schema와 Session·CSRF 요구를 생성 OpenAPI에 반영했다.
+
+- Key decisions:
+  - P1 성공 DTO 직접 반환과 여섯 field 오류 envelope 계약을 그대로 유지한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - 생성 OpenAPI에서 인증 5개와 프로필 25개, 총 30개 operation 및 금지 경로 부재를 검증했다.
+
+- Next steps:
+  - P3 이후 operation은 실제 구현 phase에서만 추가한다.
 
 ## [2026-07-19] Session Summary (공통 OpenAPI·Swagger security 설정 추가)
 

@@ -2,12 +2,12 @@
 
 ## 디렉터리 목적
 
-P1 다섯 인증 endpoint와 OpenAPI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint 회귀와 P1·P2 OpenAPI의 실제 Spring 통합 계약을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`AuthIntegrationTest.java`](AuthIntegrationTest.java): 가입·로그인·CSRF·Session·오류·Request ID 통합
-- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 다섯 path, DTO schema, operation metadata·security requirement와 Swagger UI 접근
+- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 30개 operation, DTO·enum·nullability, 금지 경로 부재와 Swagger UI 접근
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

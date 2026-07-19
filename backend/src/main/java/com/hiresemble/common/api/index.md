@@ -2,14 +2,14 @@
 
 ## 디렉터리 목적
 
-ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 애플리케이션 공통 OpenAPI metadata를 소유한다.
+ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 P1·P2 애플리케이션 공통 OpenAPI metadata를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`ErrorResponseDto.java`](ErrorResponseDto.java): 여섯 필드 공통 오류 응답
 - [`FieldErrorDto.java`](FieldErrorDto.java): rejected value 없는 field 오류
 - [`ErrorResponseFactory.java`](ErrorResponseFactory.java): ErrorCode와 서버 Request ID 기반 응답 생성
-- [`OpenApiConfiguration.java`](OpenApiConfiguration.java): API info, Session·CSRF security scheme와 복합 requirement
+- [`OpenApiConfiguration.java`](OpenApiConfiguration.java): API info, Session·CSRF security scheme, 프로필 enum·schema와 복합 requirement
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

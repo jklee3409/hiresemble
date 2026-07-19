@@ -2,9 +2,29 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 실제 P1 책임을 가진 `common`, `auth` package가 구현되어 있다.
-- 공통 오류·request ID·validation·idempotency와 Session·CSRF 인증, 사용자·프로필 영속성을 제공한다.
-- 성공 응답용 `BaseResponseDto`와 P2 도메인 package는 존재하지 않는다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile` package가 구현되어 있다.
+- 공통 오류·request ID·validation·idempotency, Session·CSRF 인증과 owner-scoped 프로필·direct evidence를 제공한다.
+- 성공 응답용 `BaseResponseDto`와 P3 이후 도메인 package는 존재하지 않는다.
+
+## [2026-07-19] Session Summary (P2 profile Java 영역 추가)
+
+- What was done:
+  - 기본·구조화 프로필과 direct evidence를 api/application/domain/infrastructure 경계로 구현했다.
+  - 가입 기본 프로필 소유권을 auth JPA에서 profile 등록 service와 JDBC store로 이동했다.
+
+- Key decisions:
+  - 사용자 ID는 Session principal에서만 받고 모든 resource query에 owner를 포함한다.
+  - P2 document 연결은 nullable field만 유지하고 table·FK·성공 경로를 선행하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Backend 전체 check 54개 test와 실제 브라우저 두 사용자 owner 404 흐름이 통과했다.
+  - 최종 read-only validator가 P2 package 경계를 `PASS`로 판정했다.
+
+- Next steps:
+  - P2는 완료 상태이며 P3 이전 package는 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P1 common·auth Java 구현)
 

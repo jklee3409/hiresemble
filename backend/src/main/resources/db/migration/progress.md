@@ -2,9 +2,29 @@
 
 ## Overview
 
-- `V1__enable_extensions.sql` 하나만 존재하며 pgvector `vector` extension을 idempotent하게 활성화한다.
-- `V2__create_identity_session_idempotency.sql`은 P1의 `users`, 기본 `user_profiles`, JDBC Session, `idempotency_records`만 생성한다.
-- `account_deletion_tasks`와 문서·공고·자기소개서·면접·Agent Run 등 P2 이후 table은 구현하지 않았다.
+- `V1__enable_extensions.sql`은 pgvector `vector` extension을 idempotent하게 활성화한다.
+- `V2__create_identity_session_idempotency.sql`은 P1의 `users`, 기본 `user_profiles`, JDBC Session, `idempotency_records`를 생성한다.
+- `V3__create_structured_profiles_and_direct_evidence.sql`은 P2의 프로필 5종과 direct evidence 및 DB 불변식을 생성한다.
+- documents·공고·자기소개서·면접·Agent Run 등 P3 이후 table은 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P2 구조화 프로필·direct evidence V3 migration)
+
+- What was done:
+  - `user_profiles` JSON·owner 제약을 보강하고 educations·certifications·language_scores·awards·careers·profile_evidence를 추가했다.
+  - 배열 canonical helper, 대표 학력 partial unique, 날짜·GPA·metadata와 source/evidence owner·1:1 trigger를 추가했다.
+
+- Key decisions:
+  - V1·V2는 byte 단위로 보존하고 V3 forward migration만 추가했다.
+  - nullable document column은 유지하되 documents table과 복합 FK는 P4로 이관했다.
+
+- Issues encountered:
+  - 로컬 기존 DB는 Flyway 이력과 Session table이 불일치해 실제 E2E는 별도 빈 DB에서 수행했다.
+
+- Validation:
+  - 빈 DB·V1-only·V2-only upgrade와 모든 P2 CHECK·unique·cross-user·rollback 경계를 PostgreSQL 18에서 통과했다.
+
+- Next steps:
+  - P4 document migration에서 owner 복합 FK를 새 version으로 추가한다.
 
 ## [2026-07-19] Session Summary (P1 identity·Session·idempotency V2 migration)
 

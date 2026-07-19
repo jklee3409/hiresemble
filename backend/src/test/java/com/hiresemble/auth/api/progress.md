@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint와 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1 다섯 인증 endpoint 회귀와 P1·P2 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-07-19] Session Summary (P2 포함 30-operation OpenAPI 검증)
+
+- What was done:
+  - exact operation 수를 30으로 확장하고 프로필 path·schema·enum·nullability와 P2 밖 endpoint 부재를 검증했다.
+
+- Key decisions:
+  - 인증 공개 endpoint는 기존 5개로 고정하고 프로필·direct evidence 25개만 추가한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - OpenAPI contract test와 Swagger UI 회귀가 Backend check에서 통과했다.
+
+- Next steps:
+  - 후속 phase 공개 operation은 해당 계약·Controller가 함께 구현될 때만 snapshot에 추가한다.
 
 ## [2026-07-19] Session Summary (Swagger metadata·security·UI 계약 테스트 보강)
 

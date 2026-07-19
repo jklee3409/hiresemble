@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1·P2 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+
+## [2026-07-19] Session Summary (P2 profile·migration 테스트 확장)
+
+- What was done:
+  - P2 domain·API·migration 테스트와 공유 table cleanup을 추가했다.
+
+- Key decisions:
+  - 운영 DB·유료 외부 provider 없이 PostgreSQL Testcontainers를 사용한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Backend check 54개 test가 통과했다.
+
+- Next steps:
+  - 후속 phase 테스트는 해당 운영 code와 함께 추가한다.
 
 ## [2026-07-19] Session Summary (P1 백엔드 테스트 source set 구성)
 

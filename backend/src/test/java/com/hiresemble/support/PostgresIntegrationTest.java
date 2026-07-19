@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -33,13 +35,22 @@ public abstract class PostgresIntegrationTest {
     }
 
     @Autowired protected JdbcTemplate jdbcTemplate;
+    @Autowired private PlatformTransactionManager transactionManager;
 
     @BeforeEach
-    void cleanP1Tables() {
-        jdbcTemplate.update("DELETE FROM spring_session_attributes");
-        jdbcTemplate.update("DELETE FROM spring_session");
-        jdbcTemplate.update("DELETE FROM idempotency_records");
-        jdbcTemplate.update("DELETE FROM user_profiles");
-        jdbcTemplate.update("DELETE FROM users");
+    void cleanApplicationTables() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM spring_session_attributes");
+            jdbcTemplate.update("DELETE FROM spring_session");
+            jdbcTemplate.update("DELETE FROM idempotency_records");
+            jdbcTemplate.update("DELETE FROM profile_evidence");
+            jdbcTemplate.update("DELETE FROM careers");
+            jdbcTemplate.update("DELETE FROM awards");
+            jdbcTemplate.update("DELETE FROM language_scores");
+            jdbcTemplate.update("DELETE FROM certifications");
+            jdbcTemplate.update("DELETE FROM educations");
+            jdbcTemplate.update("DELETE FROM user_profiles");
+            jdbcTemplate.update("DELETE FROM users");
+        });
     }
 }

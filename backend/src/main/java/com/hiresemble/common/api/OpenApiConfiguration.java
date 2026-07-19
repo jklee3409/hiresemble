@@ -7,6 +7,12 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem.HttpMethod;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import java.util.List;
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -17,18 +23,23 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.1",
-                description = "P1 authentication API. Successful DTOs are returned directly without an envelope."),
-        tags = @Tag(
-                name = "Authentication",
-                description = """
-                        Browser Session and CSRF authentication. In the same-origin Swagger UI, first call
-                        GET /api/v1/auth/csrf so the browser stores the anonymous SESSION cookie. Copy the
-                        JSON token into Authorize > csrfToken, then run a mutation. After signup or login,
-                        keep the browser-managed rotated SESSION cookie and replace csrfToken with the new
-                        csrf.token from AuthSessionDto. Swagger UI cookie/local-storage CSRF automation is
-                        intentionally not enabled because this API returns its token in JSON.
-                        """))
+                version = "1.2",
+                description = "P2 authentication and profile APIs. Successful DTOs are returned directly without an envelope."),
+        tags = {
+            @Tag(
+                    name = "Authentication",
+                    description = """
+                            Browser Session and CSRF authentication. In the same-origin Swagger UI, first call
+                            GET /api/v1/auth/csrf so the browser stores the anonymous SESSION cookie. Copy the
+                            JSON token into Authorize > csrfToken, then run a mutation. After signup or login,
+                            keep the browser-managed rotated SESSION cookie and replace csrfToken with the new
+                            csrf.token from AuthSessionDto. Swagger UI cookie/local-storage CSRF automation is
+                            intentionally not enabled because this API returns its token in JSON.
+                            """),
+            @Tag(
+                    name = "Profile",
+                    description = "Authenticated profile, structured profile resources, and direct evidence.")
+        })
 @SecuritySchemes({
     @SecurityScheme(
             name = "sessionCookie",
@@ -52,12 +63,67 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfiguration {
 
     @Bean
-    OpenApiCustomizer authenticationSecurityRequirements() {
-        return openApi -> openApi.getPaths()
-                .get("/api/v1/auth/logout")
-                .getPost()
-                .setSecurity(List.of(new SecurityRequirement()
-                        .addList("sessionCookie")
-                        .addList("csrfToken")));
+    OpenApiCustomizer mutationSecurityRequirements() {
+        return openApi -> openApi.getPaths().forEach((path, pathItem) -> pathItem.readOperationsMap()
+                .forEach((method, operation) -> {
+                    boolean protectedMutation = path.equals("/api/v1/auth/logout")
+                            || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"));
+                    if (protectedMutation) {
+                        operation.setSecurity(List.of(new SecurityRequirement()
+                                .addList("sessionCookie")
+                                .addList("csrfToken")));
+                    }
+                    if (path.startsWith("/api/v1/profile")) {
+                        addProfileErrorResponses(path, method, operation);
+                    }
+                }));
+    }
+
+    private void addProfileErrorResponses(
+            String path, HttpMethod method, Operation operation) {
+        addError(operation, "401");
+        if (method != HttpMethod.GET) {
+            addError(operation, "403");
+        }
+
+        boolean profileRoot = path.equals("/api/v1/profile");
+        boolean evidenceCollection = path.equals("/api/v1/profile/evidence");
+        boolean deferredDocumentCollection = path.equals("/api/v1/profile/certifications")
+                || path.equals("/api/v1/profile/language-scores")
+                || path.equals("/api/v1/profile/awards");
+        if (method == HttpMethod.GET && !profileRoot) {
+            addError(operation, "400");
+            if (evidenceCollection) {
+                addError(operation, "404");
+            }
+        } else if (method == HttpMethod.POST) {
+            addError(operation, "400");
+            if (deferredDocumentCollection) {
+                addError(operation, "404");
+            }
+            if (path.equals("/api/v1/profile/educations")) {
+                addError(operation, "409");
+            }
+        } else if (method == HttpMethod.PUT || method == HttpMethod.PATCH) {
+            addError(operation, "400");
+            addError(operation, "409");
+            if (!profileRoot) {
+                addError(operation, "404");
+            }
+        } else if (method == HttpMethod.DELETE) {
+            addError(operation, "404");
+            addError(operation, "409");
+        }
+    }
+
+    private void addError(Operation operation, String status) {
+        operation.getResponses().addApiResponse(
+                status,
+                new ApiResponse()
+                        .description("Error response")
+                        .content(new Content().addMediaType(
+                                org.springframework.http.MediaType.APPLICATION_JSON_VALUE,
+                                new MediaType().schema(new Schema<>()
+                                        .$ref("#/components/schemas/ErrorResponseDto")))));
     }
 }

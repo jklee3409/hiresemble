@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1의 사용자 가입, Session 인증과 현재 사용자 projection을 도메인 경계별로 구성한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1의 사용자 가입, Session 인증과 현재 사용자 projection을 구성하며 가입 기본 프로필은 P2 profile 경계에 위임한다.
+
+## [2026-07-19] Session Summary (가입 기본 프로필 책임을 profile 경계로 이동)
+
+- What was done:
+  - 인증 공개 API 5개를 유지하면서 가입 transaction이 profile 등록 service를 호출하도록 연결했다.
+
+- Key decisions:
+  - auth는 credential·Session만 소유하고 `user_profiles` CRUD·영속성은 profile 영역이 소유한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - P1 인증·Session·CSRF 회귀와 가입 profile rollback 테스트가 Backend check에서 통과했다.
+
+- Next steps:
+  - 계정 설정·탈퇴는 해당 phase 전까지 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P1 Session 인증과 사용자 기반 구현)
 

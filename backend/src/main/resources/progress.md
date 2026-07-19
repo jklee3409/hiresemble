@@ -4,8 +4,25 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V2 migration이 사용자·기본 프로필·Session·idempotency P1 schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V3 migration이 사용자·Session·idempotency와 P2 프로필 schema를 관리한다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-07-19] Session Summary (P2 V3 profile migration 추가)
+
+- What was done:
+  - Flyway classpath에 P2 구조화 프로필·direct evidence V3 migration을 추가했다.
+
+- Key decisions:
+  - AI provider 기본 비활성과 P1 Session 설정은 변경하지 않고 V1·V2를 보존했다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Backend check와 격리 빈 DB boot에서 V1→V2→V3가 순서대로 적용됐다.
+
+- Next steps:
+  - documents FK는 P4 새 migration에서 추가한다.
 
 ## [2026-07-19] Session Summary (Swagger UI Try It Out 설정 명시)
 

@@ -46,7 +46,7 @@ class P1MigrationTest {
 
     @Test
     void emptyDatabaseMigratesFromV1ThroughTheP1Schema() throws Exception {
-        Flyway flyway = flyway(null);
+        Flyway flyway = flyway("2");
         assertThat(flyway.migrate().success).isTrue();
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -87,9 +87,9 @@ class P1MigrationTest {
         assertThat(v1.migrate().success).isTrue();
         assertThat(publicTables()).contains("flyway_schema_history").doesNotContain("users");
 
-        Flyway latest = flyway(null);
-        assertThat(latest.migrate().success).isTrue();
-        assertThat(latest.validateWithResult().validationSuccessful).isTrue();
+        Flyway p1 = flyway("2");
+        assertThat(p1.migrate().success).isTrue();
+        assertThat(p1.validateWithResult().validationSuccessful).isTrue();
         assertThat(publicTables())
                 .contains("users", "user_profiles", "spring_session", "idempotency_records");
         assertThat(appliedVersions()).containsExactly("1", "2");
@@ -103,6 +103,18 @@ class P1MigrationTest {
             String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.readAllBytes()));
             assertThat(digest)
                     .isEqualTo("9e9b2cfec47519f49ee73cb533c459e22f8ca54fe5ba1cbec59f3d5883fe191c");
+        }
+    }
+
+    @Test
+    void v2IdentityMigrationBytesRemainUnchanged() throws Exception {
+        try (InputStream input = new ClassPathResource(
+                        "db/migration/V2__create_identity_session_idempotency.sql")
+                .getInputStream()) {
+            String digest = HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(input.readAllBytes()));
+            assertThat(digest)
+                    .isEqualTo("c43f2d9a65426e6952d2b47f2908fb2c17c9b6093223f9c8b55ca346f9b21dcf");
         }
     }
 

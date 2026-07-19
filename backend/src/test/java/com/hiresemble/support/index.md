@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-P1 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+P1·P2 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`PostgresIntegrationTest.java`](PostgresIntegrationTest.java): 동적 datasource·HMAC test 설정과 P1 table 정리
+- [`PostgresIntegrationTest.java`](PostgresIntegrationTest.java): 동적 datasource·HMAC test 설정과 P1·P2 table 정리
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

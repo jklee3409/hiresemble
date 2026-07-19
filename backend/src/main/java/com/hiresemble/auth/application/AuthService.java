@@ -5,12 +5,11 @@ import com.hiresemble.auth.api.LoginRequest;
 import com.hiresemble.auth.api.SignupRequest;
 import com.hiresemble.auth.domain.UserStatus;
 import com.hiresemble.auth.infrastructure.UserEntity;
-import com.hiresemble.auth.infrastructure.UserProfileEntity;
-import com.hiresemble.auth.infrastructure.UserProfileRepository;
 import com.hiresemble.auth.infrastructure.UserRepository;
 import com.hiresemble.auth.security.AuthenticatedUser;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
+import com.hiresemble.profile.application.ProfileRegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -32,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
+    private final ProfileRegistrationService profileRegistrationService;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenService csrfTokenService;
@@ -40,12 +39,12 @@ public class AuthService {
 
     public AuthService(
             UserRepository userRepository,
-            UserProfileRepository userProfileRepository,
+            ProfileRegistrationService profileRegistrationService,
             PasswordEncoder passwordEncoder,
             SecurityContextRepository securityContextRepository,
             CsrfTokenService csrfTokenService) {
         this.userRepository = userRepository;
-        this.userProfileRepository = userProfileRepository;
+        this.profileRegistrationService = profileRegistrationService;
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenService = csrfTokenService;
@@ -74,7 +73,7 @@ public class AuthService {
         } catch (DataIntegrityViolationException exception) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_REGISTERED, exception);
         }
-        userProfileRepository.saveAndFlush(UserProfileEntity.create(UUID.randomUUID(), user, now));
+        profileRegistrationService.createDefaultProfile(user.id(), now);
 
         return establishAuthenticatedSession(user, request, response);
     }

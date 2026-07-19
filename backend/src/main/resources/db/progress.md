@@ -3,7 +3,24 @@
 ## Overview
 
 - Flyway 기본 경로인 `migration` 하위 디렉터리만 존재한다.
-- V1 extension과 P1 identity·Session·idempotency V2 schema가 있으며 별도 운영 seed·fixture 리소스는 없다.
+- V1 extension, P1 identity·Session·idempotency V2와 P2 profile·direct evidence V3가 있으며 별도 운영 seed·fixture 리소스는 없다.
+
+## [2026-07-19] Session Summary (P2 V3 DB 리소스 추가)
+
+- What was done:
+  - migration 경로에 V3 profile schema를 추가했다.
+
+- Key decisions:
+  - 운영 seed·fixture나 임의 SQL 실행 경로는 추가하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Flyway migration·hash·upgrade 테스트와 Compose 설정 검증이 통과했다.
+
+- Next steps:
+  - 후속 schema 변경은 versioned migration만 사용한다.
 
 ## [2026-07-19] Session Summary (P1 Flyway DB 리소스 확장)
 

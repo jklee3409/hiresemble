@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 공통 오류·Request ID·Session/CSRF, 다섯 인증 API와 idempotency·PostgreSQL 테스트 기반이 구현되어 있다.
+`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 공통 HTTP·인증 기반과 P2 사용자 소유 프로필·직접 입력 근거가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,16 +16,16 @@
 
 ## 구성 요소 역할
 
-- [`src/main/java/`](src/main/java/)는 실행 진입점과 P1 `common`·`auth` 운영 코드를 소유한다.
-- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1·V2 Flyway migration을 소유한다.
-- [`src/test/`](src/test/)는 PostgreSQL Testcontainers 기반 인증·migration·idempotency 검증을 소유한다.
+- [`src/main/java/`](src/main/java/)는 실행 진입점과 `common`·`auth`·`profile` 운영 코드를 소유한다.
+- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V3 Flyway migration을 소유한다.
+- [`src/test/`](src/test/)는 PostgreSQL Testcontainers 기반 인증·프로필·migration·idempotency 검증을 소유한다.
 - `build/`와 `.gradle/`은 재생성 가능한 빌드·캐시 영역이므로 소스나 추적 문서를 두지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
 - API·DB 계약은 [`../docs/spec/`](../docs/spec/)을 기준으로 한다.
 - 로컬 PostgreSQL/pgvector와 Object Storage는 루트 [`../compose.yaml`](../compose.yaml)에서 제공한다.
-- 프론트엔드는 이 모듈의 P1 `/api/v1/auth/**` 직접 DTO와 Session Cookie/CSRF 정책에 의존한다.
+- 프론트엔드는 이 모듈의 인증 5개와 프로필·직접 근거 25개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다.
 - CI는 `.\gradlew.bat check`에 대응하는 백엔드 검증을 실행한다.
 
 ## 변경 시 주의사항

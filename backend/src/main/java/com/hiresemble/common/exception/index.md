@@ -2,18 +2,18 @@
 
 ## 디렉터리 목적
 
-P1 실제 오류 code, 비즈니스 예외와 MVC 전역 오류 변환을 관리한다.
+P1·P2 실제 오류 code, 비즈니스 예외와 MVC 전역 오류 변환을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ErrorCode.java`](ErrorCode.java): P1에서 사용하는 안정적 오류 code와 HTTP status
+- [`ErrorCode.java`](ErrorCode.java): 인증·validation·resource·version 충돌의 안정적 오류 code와 HTTP status
 - [`BusinessException.java`](BusinessException.java): 안전한 code·context 운반
 - [`GlobalExceptionHandler.java`](GlobalExceptionHandler.java): validation·JSON·type·예상 밖 오류 변환
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- Service 예외와 Spring MVC 예외를 공통 오류 DTO로 변환하고 안전한 상관 로그를 남긴다.
+- Service·DB 불변식 예외와 Spring MVC 예외를 공통 오류 DTO로 변환하고 안전한 상관 로그를 남긴다.
 
 ## 다른 디렉터리와의 의존 관계
 

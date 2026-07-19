@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
             BusinessException exception, HttpServletRequest request) {
         ErrorCode code = exception.errorCode();
         LOGGER.warn("business request failed code={} context={}", code.code(), exception.safeContext());
-        return response(code, List.of(), request);
+        return response(code, safeFieldErrors(exception), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -121,6 +121,15 @@ public class GlobalExceptionHandler {
                 .sorted(Comparator.comparing(FieldErrorDto::field).thenComparing(FieldErrorDto::reason))
                 .limit(100)
                 .toList();
+    }
+
+    private List<FieldErrorDto> safeFieldErrors(BusinessException exception) {
+        String field = exception.safeContext().get("field");
+        String reason = exception.safeContext().get("reason");
+        if (field == null || reason == null) {
+            return List.of();
+        }
+        return List.of(new FieldErrorDto(field, reason));
     }
 
     private String reason(String validationCode) {

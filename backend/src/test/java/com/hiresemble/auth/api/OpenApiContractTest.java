@@ -30,14 +30,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
 
     @Test
-    void generatedOpenApiHasStableMetadataTagOperationsAndExactlyFiveP1Paths()
+    void generatedOpenApiHasStableMetadataAndExactlyThirtyP1AndP2Operations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.1");
-        assertThat(document.at("/tags/0/name").asText()).isEqualTo("Authentication");
-        assertThat(document.at("/tags/0/description").asText())
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.2");
+        assertThat(fieldValues(document.get("tags"), "name"))
+                .containsExactlyInAnyOrder("Authentication", "Profile");
+        assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
                         "Authorize > csrfToken",
@@ -50,7 +51,22 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/auth/signup",
                         "/api/v1/auth/login",
                         "/api/v1/auth/logout",
-                        "/api/v1/auth/me");
+                        "/api/v1/auth/me",
+                        "/api/v1/profile",
+                        "/api/v1/profile/educations",
+                        "/api/v1/profile/educations/{educationId}",
+                        "/api/v1/profile/certifications",
+                        "/api/v1/profile/certifications/{certificationId}",
+                        "/api/v1/profile/language-scores",
+                        "/api/v1/profile/language-scores/{languageScoreId}",
+                        "/api/v1/profile/awards",
+                        "/api/v1/profile/awards/{awardId}",
+                        "/api/v1/profile/careers",
+                        "/api/v1/profile/careers/{careerId}",
+                        "/api/v1/profile/evidence",
+                        "/api/v1/profile/evidence/{evidenceId}",
+                        "/api/v1/profile/evidence/{evidenceId}/verification");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(30);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -62,6 +78,39 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseCodes(document.at(LOGIN_PATH), "200", "400", "401", "403");
         assertResponseCodes(document.at(LOGOUT_PATH), "204", "401", "403");
         assertResponseCodes(document.at(ME_PATH), "200", "401");
+
+        assertProfileOperation(document, "/api/v1/profile", "get", "getProfile");
+        assertProfileOperation(document, "/api/v1/profile", "put", "updateProfile");
+        assertProfileOperation(document, "/api/v1/profile/educations", "get", "listEducations");
+        assertProfileOperation(document, "/api/v1/profile/educations", "post", "createEducation");
+        assertProfileOperation(document, "/api/v1/profile/educations/{educationId}", "put", "updateEducation");
+        assertProfileOperation(document, "/api/v1/profile/educations/{educationId}", "delete", "deleteEducation");
+        assertProfileOperation(document, "/api/v1/profile/certifications", "get", "listCertifications");
+        assertProfileOperation(document, "/api/v1/profile/certifications", "post", "createCertification");
+        assertProfileOperation(document, "/api/v1/profile/certifications/{certificationId}", "put", "updateCertification");
+        assertProfileOperation(document, "/api/v1/profile/certifications/{certificationId}", "delete", "deleteCertification");
+        assertProfileOperation(document, "/api/v1/profile/language-scores", "get", "listLanguageScores");
+        assertProfileOperation(document, "/api/v1/profile/language-scores", "post", "createLanguageScore");
+        assertProfileOperation(document, "/api/v1/profile/language-scores/{languageScoreId}", "put", "updateLanguageScore");
+        assertProfileOperation(document, "/api/v1/profile/language-scores/{languageScoreId}", "delete", "deleteLanguageScore");
+        assertProfileOperation(document, "/api/v1/profile/awards", "get", "listAwards");
+        assertProfileOperation(document, "/api/v1/profile/awards", "post", "createAward");
+        assertProfileOperation(document, "/api/v1/profile/awards/{awardId}", "put", "updateAward");
+        assertProfileOperation(document, "/api/v1/profile/awards/{awardId}", "delete", "deleteAward");
+        assertProfileOperation(document, "/api/v1/profile/careers", "get", "listCareers");
+        assertProfileOperation(document, "/api/v1/profile/careers", "post", "createCareer");
+        assertProfileOperation(document, "/api/v1/profile/careers/{careerId}", "put", "updateCareer");
+        assertProfileOperation(document, "/api/v1/profile/careers/{careerId}", "delete", "deleteCareer");
+        assertProfileOperation(document, "/api/v1/profile/evidence", "get", "listProfileEvidence");
+        assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}", "put", "updateProfileEvidence");
+        assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}/verification", "patch", "verifyProfileEvidence");
+
+        assertThat(document.at("/paths/~1api~1v1~1profile~1educations/post/responses/201")
+                        .isMissingNode())
+                .isFalse();
+        assertThat(document.at("/paths/~1api~1v1~1profile~1educations~1{educationId}/delete/responses/204")
+                        .isMissingNode())
+                .isFalse();
     }
 
     @Test
@@ -83,6 +132,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertSingleSecurityRequirement(document.at(SIGNUP_PATH), "csrfToken");
         assertSingleSecurityRequirement(document.at(LOGIN_PATH), "csrfToken");
         assertSingleSecurityRequirement(document.at(ME_PATH), "sessionCookie");
+        assertSingleSecurityRequirement(
+                document.at("/paths/~1api~1v1~1profile/get"), "sessionCookie");
 
         JsonNode logoutSecurity = document.at(LOGOUT_PATH).get("security");
         assertThat(logoutSecurity).isNotNull();
@@ -92,6 +143,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .isEqualTo(1);
         assertThat(fieldNames(logoutSecurity.get(0)))
                 .as("sessionCookie and csrfToken must share one requirement object for AND")
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        JsonNode profileMutationSecurity =
+                document.at("/paths/~1api~1v1~1profile~1educations/post/security");
+        assertThat(profileMutationSecurity).hasSize(1);
+        assertThat(fieldNames(profileMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
     }
 
@@ -113,6 +169,31 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(schemas.at("/FieldErrorDto/properties")))
                 .containsExactlyInAnyOrder("field", "reason");
         assertThat(fieldNames(schemas)).doesNotContain("BaseResponseDto", "DashboardDto");
+
+        assertThat(fieldNames(schemas.at("/ProfileDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "legalName",
+                        "introduction",
+                        "desiredRoles",
+                        "desiredIndustries",
+                        "desiredLocations",
+                        "expectedGraduationDate",
+                        "profileCompleted",
+                        "missingCompletionItems",
+                        "version",
+                        "createdAt",
+                        "updatedAt");
+        assertThat(schemas.at("/ProfileDto/properties/profileCompleted/readOnly").asBoolean())
+                .isTrue();
+        assertThat(schemas.at("/ProfileDto/properties/missingCompletionItems/readOnly").asBoolean())
+                .isTrue();
+        assertThat(fieldNames(schemas.at("/EducationStatus/enum"))).isEmpty();
+        assertThat(document.toString())
+                .doesNotContain("/api/v1/documents")
+                .doesNotContain("/api/v1/jobs")
+                .doesNotContain("/api/v1/dashboard")
+                .doesNotContain("createProfileEvidence")
+                .doesNotContain("deleteProfileEvidence");
 
         assertResponseSchema(document, CSRF_PATH, "200", "CsrfDto");
         assertResponseSchema(document, CSRF_PATH, "500", "ErrorResponseDto");
@@ -196,6 +277,28 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.at("/tags/0").asText()).isEqualTo("Authentication");
     }
 
+    private void assertProfileOperation(
+            JsonNode document, String path, String method, String operationId) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
+        assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo("Profile");
+    }
+
+    private int operationCount(JsonNode paths) {
+        int count = 0;
+        for (JsonNode path : paths) {
+            for (String method : Set.of("get", "post", "put", "patch", "delete")) {
+                if (path.has(method)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     private void assertResponseCodes(JsonNode operation, String... expectedCodes) {
         assertThat(fieldNames(operation.get("responses")))
                 .containsExactlyInAnyOrder(expectedCodes);
@@ -237,5 +340,22 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         Set<String> names = new LinkedHashSet<>();
         names.addAll(node.propertyNames());
         return names;
+    }
+
+    private Set<String> fieldValues(JsonNode nodes, String field) {
+        Set<String> values = new LinkedHashSet<>();
+        for (JsonNode node : nodes) {
+            values.add(node.get(field).asText());
+        }
+        return values;
+    }
+
+    private JsonNode findTag(JsonNode tags, String name) {
+        for (JsonNode tag : tags) {
+            if (tag.get("name").asText().equals(name)) {
+                return tag;
+            }
+        }
+        throw new AssertionError("OpenAPI tag not found: " + name);
     }
 }

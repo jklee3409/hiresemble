@@ -2,9 +2,26 @@
 
 ## Overview
 
-- Java 영역에는 애플리케이션 진입점과 P1 `common`·`auth` package가 있다.
-- resources 영역에는 P1 Session·Cookie·idempotency 설정과 V1·V2 Flyway migration이 있다.
-- P2 도메인·AI workflow와 책임 없는 미래 package는 구현하지 않았다.
+- Java 영역에는 애플리케이션 진입점과 P1 `common`·`auth`, P2 `profile` package가 있다.
+- resources 영역에는 Session·Cookie·idempotency 설정과 V1~V3 Flyway migration이 있다.
+- P3 Agent Run·AI workflow와 책임 없는 미래 package는 구현하지 않았다.
+
+## [2026-07-19] Session Summary (P2 profile 운영 소스·V3 추가)
+
+- What was done:
+  - 운영 Java source에 profile 4계층을, resources에 V3 profile migration을 추가했다.
+
+- Key decisions:
+  - P2 document aggregate와 P3 이후 package·table은 선행하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Backend check와 빈 DB V1→V2→V3 boot가 통과했다.
+
+- Next steps:
+  - 후속 source는 구현 계획 phase 순서에 맞춰 추가한다.
 
 ## [2026-07-19] Session Summary (P1 운영 Java·리소스 구현)
 

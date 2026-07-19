@@ -2,7 +2,24 @@
 
 ## Overview
 
-P1 인증 HTTP와 생성 OpenAPI 계약 테스트의 상위 경계를 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1 인증 HTTP 회귀와 P1·P2 생성 OpenAPI 계약 테스트의 상위 경계를 관리한다.
+
+## [2026-07-19] Session Summary (P2 포함 OpenAPI 테스트 경계 확장)
+
+- What was done:
+  - 인증 API 동작은 그대로 유지하고 생성 OpenAPI 검증 범위를 profile operation까지 확장했다.
+
+- Key decisions:
+  - profile 업무 동작 테스트는 별도 profile package가 소유한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - 인증 회귀와 exact 30-operation OpenAPI 테스트가 통과했다.
+
+- Next steps:
+  - 계정·Dashboard fixture는 실제 phase 전까지 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (인증 통합 테스트 영역 구성)
 

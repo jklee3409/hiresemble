@@ -3,9 +3,35 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 공통 HTTP 오류·request ID, Session·CSRF 인증과 정확히 다섯 인증 API가 `common`과 `auth` 영역에 구현되어 있다.
-- V2 migration은 사용자·기본 프로필·JDBC Session·idempotency 저장소만 추가하며 성공 응답 envelope와 P2 기능은 없다.
-- 현재 인증 API는 생성 OpenAPI와 Swagger UI의 같은-origin Session·CSRF Try It Out 흐름으로 검증할 수 있다.
+- P1 공통 HTTP·Session·CSRF·인증 5개 API와 P2 프로필·direct evidence 25개 API가 `common`·`auth`·`profile` 영역에 구현되어 있다.
+- V1·V2를 보존한 V3 migration이 기본·구조화 프로필과 direct evidence DB 불변식을 추가한다.
+- 생성 OpenAPI는 정확히 30개 operation이며 문서·공고·Agent Run 등 P3 이후 endpoint는 없다.
+
+## [2026-07-19] Session Summary (P2 프로필·직접 입력 근거 Backend 구현)
+
+- What was done:
+  - 기본 프로필, 학력·자격증·어학·수상·경력 CRUD와 direct evidence 조회·편집·검토 API를 구현했다.
+  - owner-scoped JDBC, optimistic version, 대표 학력·날짜·GPA·배열·metadata 불변식과 source/evidence transaction 동기화를 구현했다.
+  - V3 migration과 domain·API·migration PostgreSQL 테스트를 추가하고 P1 인증·Session·idempotency 회귀를 유지했다.
+
+- Key decisions:
+  - profile completion 다섯 항목은 서버가 read 시 계산하며 미완료 상태를 기능 차단에 사용하지 않는다.
+  - 구조화 source를 source of truth로 두고 수정 시 direct evidence를 재생성·`VERIFIED`로 되돌리며 삭제 시 source soft delete와 evidence delete를 같은 transaction으로 수행한다.
+  - P2에서는 document DTO·nullable column만 유지하고 non-null 입력·filter는 404로 처리한다. documents table·복합 FK는 P4로 이관한다.
+
+- Issues encountered:
+  - migration test의 초기 PostgreSQL constraint message 기대 두 건을 실제 먼저 발생하는 제약에 맞춰 보정했다.
+  - 기존 compose 개발 DB는 Flyway 이력 없이 Session table이 남아 있어 E2E boot가 실패했다. 기존 DB를 수정하지 않고 별도 빈 DB를 사용했다.
+
+- Validation:
+  - `Set-Location backend; .\\gradlew.bat check`에서 9개 test class, 54개 test가 failure·error·skip 0으로 통과했다.
+  - 빈 DB V1→V2→V3, V1-only·V2-only upgrade, V1·V2 hash와 P2 CHECK·unique·owner·rollback을 검증했다.
+  - 실제 Chromium 흐름에서 가입·프로필 지속성·두 사용자 404·로그아웃/로그인을 통과했다.
+  - 최종 read-only validator가 Backend 계약과 P1 회귀를 BLOCKER·MAJOR·MINOR 없이 `PASS`로 판정했다.
+
+- Next steps:
+  - P2는 완료 상태다.
+  - P4에서 documents table과 owner 복합 FK를 새 forward migration으로 추가한다.
 
 ## [2026-07-19] Session Summary (P1 인증 API Swagger 문서·UI 시험 보강)
 
