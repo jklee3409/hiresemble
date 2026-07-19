@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.2",
-                description = "P2 authentication and profile APIs. Successful DTOs are returned directly without an envelope."),
+                version = "1.3",
+                description = "P3 authentication, profile, and durable Agent Run APIs. Successful DTOs are returned directly without an envelope."),
         tags = {
             @Tag(
                     name = "Authentication",
@@ -38,7 +38,10 @@ import org.springframework.context.annotation.Configuration;
                             """),
             @Tag(
                     name = "Profile",
-                    description = "Authenticated profile, structured profile resources, and direct evidence.")
+                    description = "Authenticated profile, structured profile resources, and direct evidence."),
+            @Tag(
+                    name = "Agent Runs",
+                    description = "Durable Agent Run status, retry, cancellation, and progress events.")
         })
 @SecuritySchemes({
     @SecurityScheme(
@@ -67,7 +70,8 @@ public class OpenApiConfiguration {
         return openApi -> openApi.getPaths().forEach((path, pathItem) -> pathItem.readOperationsMap()
                 .forEach((method, operation) -> {
                     boolean protectedMutation = path.equals("/api/v1/auth/logout")
-                            || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"));
+                            || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"))
+                            || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST);
                     if (protectedMutation) {
                         operation.setSecurity(List.of(new SecurityRequirement()
                                 .addList("sessionCookie")

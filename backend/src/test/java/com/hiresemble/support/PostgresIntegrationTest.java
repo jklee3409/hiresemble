@@ -42,7 +42,13 @@ public abstract class PostgresIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             jdbcTemplate.update("DELETE FROM spring_session_attributes");
             jdbcTemplate.update("DELETE FROM spring_session");
+            jdbcTemplate.update("DELETE FROM ai_usage_records");
+            jdbcTemplate.update("DELETE FROM ai_budget_reservations");
+            jdbcTemplate.update("DELETE FROM ai_budget_ledgers");
+            jdbcTemplate.update("DELETE FROM agent_steps");
             jdbcTemplate.update("DELETE FROM idempotency_records");
+            jdbcTemplate.update("DELETE FROM agent_runs");
+            jdbcTemplate.update("DELETE FROM user_ai_preferences");
             jdbcTemplate.update("DELETE FROM profile_evidence");
             jdbcTemplate.update("DELETE FROM careers");
             jdbcTemplate.update("DELETE FROM awards");

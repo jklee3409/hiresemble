@@ -101,19 +101,32 @@ public class IdempotencyRepository {
     }
 
     void complete(
-            UUID id, int responseStatus, String responseJson, Instant completedAt, Instant expiresAt) {
+            UUID id,
+            int responseStatus,
+            String responseJson,
+            String resourceType,
+            UUID resourceId,
+            UUID agentRunId,
+            Instant completedAt,
+            Instant expiresAt) {
         int updated = jdbcClient
                 .sql("""
                         UPDATE idempotency_records
                         SET state = 'COMPLETED',
                             response_status = :responseStatus,
                             response_json = CAST(:responseJson AS jsonb),
+                            resource_type = :resourceType,
+                            resource_id = :resourceId,
+                            agent_run_id = :agentRunId,
                             completed_at = :completedAt,
                             expires_at = :expiresAt
                         WHERE id = :id AND state = 'IN_PROGRESS'
                         """)
                 .param("responseStatus", responseStatus)
                 .param("responseJson", responseJson)
+                .param("resourceType", resourceType)
+                .param("resourceId", resourceId)
+                .param("agentRunId", agentRunId)
                 .param("completedAt", utc(completedAt))
                 .param("expiresAt", utc(expiresAt))
                 .param("id", id)

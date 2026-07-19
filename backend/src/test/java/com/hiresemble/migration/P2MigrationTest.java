@@ -355,9 +355,7 @@ class P2MigrationTest {
         var configuration = Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .cleanDisabled(false);
-        if (target != null) {
-            configuration.target(target);
-        }
+        configuration.target(target == null ? "3" : target);
         return configuration.load();
     }
 

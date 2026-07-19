@@ -96,6 +96,12 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT role || ':' || status FROM users WHERE id = ?", String.class, userId))
                 .isEqualTo("USER:ACTIVE");
+        assertThat(jdbcTemplate.queryForObject("""
+                        SELECT default_quality_mode || ':' || high_quality_enabled || ':'
+                               || daily_budget_usd || ':' || active || ':' || version
+                        FROM user_ai_preferences WHERE user_id = ?
+                        """, String.class, userId))
+                .isEqualTo("ECONOMY:false:1.000000:true:0");
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT principal_name FROM spring_session", String.class))
                 .isEqualTo(userId.toString())
@@ -136,6 +142,43 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
             jdbcTemplate.execute(
                     "DROP TRIGGER IF EXISTS reject_user_profile_fixture_trigger ON user_profiles");
             jdbcTemplate.execute("DROP FUNCTION IF EXISTS reject_user_profile_fixture()");
+        }
+    }
+
+    @Test
+    void signupRollsBackUserProfileSessionAndPreferenceWhenPreferenceCreationFails()
+            throws Exception {
+        CsrfSession anonymous = csrfSession();
+        jdbcTemplate.execute("""
+                CREATE FUNCTION reject_ai_preference_fixture() RETURNS trigger
+                LANGUAGE plpgsql AS $$
+                BEGIN
+                    RAISE EXCEPTION 'test-only AI preference insert failure';
+                END;
+                $$
+                """);
+        jdbcTemplate.execute("""
+                CREATE TRIGGER reject_ai_preference_fixture_trigger
+                BEFORE INSERT ON user_ai_preferences
+                FOR EACH ROW EXECUTE FUNCTION reject_ai_preference_fixture()
+                """);
+        try {
+            MvcResult result = signup(
+                    anonymous,
+                    "preference-failure@example.com",
+                    "password-123",
+                    "Preference Failure",
+                    500);
+
+            assertThat(json(result).get("code").asText()).isEqualTo("INTERNAL_ERROR");
+            assertThat(result.getResponse().getContentAsString())
+                    .doesNotContain("AI preference insert failure");
+            assertFailedSignupLeftOnlySafeAnonymousSession(anonymous);
+        } finally {
+            jdbcTemplate.execute(
+                    "DROP TRIGGER IF EXISTS reject_ai_preference_fixture_trigger "
+                            + "ON user_ai_preferences");
+            jdbcTemplate.execute("DROP FUNCTION IF EXISTS reject_ai_preference_fixture()");
         }
     }
 
@@ -533,6 +576,9 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
             throws Exception {
         assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM users", Long.class)).isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM user_profiles", Long.class))
+                .isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM user_ai_preferences", Long.class))
                 .isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM spring_session", Long.class))
                 .isEqualTo(1L);

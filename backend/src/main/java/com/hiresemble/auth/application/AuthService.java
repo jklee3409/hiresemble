@@ -7,6 +7,7 @@ import com.hiresemble.auth.domain.UserStatus;
 import com.hiresemble.auth.infrastructure.UserEntity;
 import com.hiresemble.auth.infrastructure.UserRepository;
 import com.hiresemble.auth.security.AuthenticatedUser;
+import com.hiresemble.agentrun.application.AiPreferenceRegistrationService;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.profile.application.ProfileRegistrationService;
@@ -32,6 +33,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final ProfileRegistrationService profileRegistrationService;
+    private final AiPreferenceRegistrationService aiPreferenceRegistrationService;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenService csrfTokenService;
@@ -40,11 +42,13 @@ public class AuthService {
     public AuthService(
             UserRepository userRepository,
             ProfileRegistrationService profileRegistrationService,
+            AiPreferenceRegistrationService aiPreferenceRegistrationService,
             PasswordEncoder passwordEncoder,
             SecurityContextRepository securityContextRepository,
             CsrfTokenService csrfTokenService) {
         this.userRepository = userRepository;
         this.profileRegistrationService = profileRegistrationService;
+        this.aiPreferenceRegistrationService = aiPreferenceRegistrationService;
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenService = csrfTokenService;
@@ -74,6 +78,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_REGISTERED, exception);
         }
         profileRegistrationService.createDefaultProfile(user.id(), now);
+        aiPreferenceRegistrationService.createDefaultPreference(user.id(), now);
 
         return establishAuthenticatedSession(user, request, response);
     }

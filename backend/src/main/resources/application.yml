@@ -89,12 +89,21 @@ hiresemble:
     secret-key: ${OBJECT_STORAGE_SECRET_KEY:hiresemble-local-secret}
     bucket: ${OBJECT_STORAGE_BUCKET:hiresemble}
   ai:
-    provider: ${AI_PROVIDER:openai}
+    provider: ${AI_PROVIDER:none}
     model-low-cost: ${AI_MODEL_LOW_COST:}
     model-balanced: ${AI_MODEL_BALANCED:gpt-5-mini}
     model-high-quality: ${AI_MODEL_HIGH_QUALITY:}
     embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
     daily-budget-usd: ${AI_DAILY_BUDGET_USD:2.00}
     run-max-cost-usd: ${AI_RUN_MAX_COST_USD:0.30}
+  agent-runtime:
+    heartbeat-interval: ${AGENT_HEARTBEAT_INTERVAL:15s}
+    lease-duration: ${AGENT_LEASE_DURATION:60s}
+    reconciliation-interval: ${AGENT_RECONCILIATION_INTERVAL:30s}
+    dispatch-interval: ${AGENT_DISPATCH_INTERVAL:1s}
+    worker-threads: ${AGENT_WORKER_THREADS:2}
+    queue-capacity: ${AGENT_QUEUE_CAPACITY:32}
+    reconciliation-batch-size: ${AGENT_RECONCILIATION_BATCH_SIZE:50}
+    worker-id: ${AGENT_WORKER_ID:local-worker}
   search:
     tavily-api-key: ${TAVILY_API_KEY:}

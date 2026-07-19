@@ -80,6 +80,9 @@ public class IdempotencyService {
                 recordId,
                 original.status(),
                 responseJson,
+                original.resourceType(),
+                original.resourceId(),
+                original.agentRunId(),
                 completedAt,
                 completedAt.plus(properties.getTtl())));
         return new IdempotentResponse<>(original.status(), original.body(), false);

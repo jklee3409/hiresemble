@@ -195,6 +195,17 @@ class IdempotencyIntegrationTest extends PostgresIntegrationTest {
                 "SELECT id FROM idempotency_records WHERE idempotency_key = ?",
                 UUID.class,
                 KEY);
+        UUID linkedRunId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO agent_runs (
+                    id,user_id,workflow_type,status,progress_percent,workflow_version,
+                    canonical_input_hash,input_reference_snapshot,budget_policy_version,
+                    price_version,requested_quality_mode,estimated_cost_usd,reserved_cost_usd,
+                    actual_cost_usd,root_run_id,run_attempt_no,retryable_failure,state_version,
+                    queued_at,updated_at
+                ) VALUES (? ,?,'JOB_ANALYSIS','QUEUED',0,'fixture-v1',repeat('a',64),'{}',
+                    1,NULL,'ECONOMY',0,0,0,?,1,false,0,now(),now())
+                """, linkedRunId, USER_ID, linkedRunId);
         jdbcTemplate.update(
                 """
                 UPDATE idempotency_records
@@ -207,7 +218,7 @@ class IdempotencyIntegrationTest extends PostgresIntegrationTest {
                     expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
                 WHERE idempotency_key = ?
                 """,
-                UUID.randomUUID(),
+                linkedRunId,
                 KEY);
 
         assertThatThrownBy(() -> service.execute(

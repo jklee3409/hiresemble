@@ -30,14 +30,14 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyThirtyP1AndP2Operations()
+    void generatedOpenApiHasStableMetadataAndExactlyThirtyFiveP1P2AndP3Operations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.2");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.3");
         assertThat(fieldValues(document.get("tags"), "name"))
-                .containsExactlyInAnyOrder("Authentication", "Profile");
+                .containsExactlyInAnyOrder("Authentication", "Profile", "Agent Runs");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -65,8 +65,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/profile/careers/{careerId}",
                         "/api/v1/profile/evidence",
                         "/api/v1/profile/evidence/{evidenceId}",
-                        "/api/v1/profile/evidence/{evidenceId}/verification");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(30);
+                        "/api/v1/profile/evidence/{evidenceId}/verification",
+                        "/api/v1/agent-runs",
+                        "/api/v1/agent-runs/{agentRunId}",
+                        "/api/v1/agent-runs/{agentRunId}/events",
+                        "/api/v1/agent-runs/{agentRunId}/retry",
+                        "/api/v1/agent-runs/{agentRunId}/cancel");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(35);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -104,6 +109,21 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/evidence", "get", "listProfileEvidence");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}", "put", "updateProfileEvidence");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}/verification", "patch", "verifyProfileEvidence");
+        assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "get", "getAgentRun");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/events", "get", "streamAgentRunEvents");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/retry", "post", "retryAgentRun");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/cancel", "post", "cancelAgentRun");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs/get"),
+                "200", "400", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/get"),
+                "200", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1events/get"),
+                "200", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1retry/post"),
+                "202", "400", "401", "403", "404", "409", "429");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1cancel/post"),
+                "202", "400", "401", "403", "404", "409");
 
         assertThat(document.at("/paths/~1api~1v1~1profile~1educations/post/responses/201")
                         .isMissingNode())
@@ -149,6 +169,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(profileMutationSecurity).hasSize(1);
         assertThat(fieldNames(profileMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        JsonNode agentRunMutationSecurity =
+                document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1cancel/post/security");
+        assertThat(agentRunMutationSecurity).hasSize(1);
+        assertThat(fieldNames(agentRunMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
     }
 
     @Test
@@ -169,6 +194,19 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(schemas.at("/FieldErrorDto/properties")))
                 .containsExactlyInAnyOrder("field", "reason");
         assertThat(fieldNames(schemas)).doesNotContain("BaseResponseDto", "DashboardDto");
+        assertThat(fieldNames(schemas.at("/AgentRunDetailDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "workflowType", "resourceType", "resourceId", "status",
+                        "currentStep", "progressPercent", "requestedQualityMode",
+                        "highestModelTierUsed", "estimatedCostUsd", "reservedCostUsd",
+                        "actualCostUsd", "retryable", "cancellable", "requiredUserAction",
+                        "stateVersion", "queuedAt", "updatedAt", "retryOfRunId", "rootRunId",
+                        "runAttemptNo", "durationMs", "startedAt", "completedAt", "safeError",
+                        "partialResult", "steps")
+                .doesNotContain(
+                        "claimToken", "claimedBy", "leaseExpiresAt", "heartbeatAt",
+                        "canonicalInputHash", "inputReferenceSnapshot", "priceVersion",
+                        "provider", "model", "promptVersion", "reusedStepId", "outputJson");
 
         assertThat(fieldNames(schemas.at("/ProfileDto/properties")))
                 .containsExactlyInAnyOrder(
@@ -192,6 +230,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .doesNotContain("/api/v1/documents")
                 .doesNotContain("/api/v1/jobs")
                 .doesNotContain("/api/v1/dashboard")
+                .doesNotContain("/api/v1/settings/ai")
                 .doesNotContain("createProfileEvidence")
                 .doesNotContain("deleteProfileEvidence");
 
@@ -285,6 +324,16 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.get("description").asText()).isNotBlank();
         assertThat(operation.at("/tags/0").asText()).isEqualTo("Profile");
+    }
+
+    private void assertAgentRunOperation(
+            JsonNode document, String path, String method, String operationId) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
+        assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo("Agent Runs");
     }
 
     private int operationCount(JsonNode paths) {
