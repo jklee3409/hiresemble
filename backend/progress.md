@@ -5,6 +5,28 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 공통 HTTP 오류·request ID, Session·CSRF 인증과 정확히 다섯 인증 API가 `common`과 `auth` 영역에 구현되어 있다.
 - V2 migration은 사용자·기본 프로필·JDBC Session·idempotency 저장소만 추가하며 성공 응답 envelope와 P2 기능은 없다.
+- 현재 인증 API는 생성 OpenAPI와 Swagger UI의 같은-origin Session·CSRF Try It Out 흐름으로 검증할 수 있다.
+
+## [2026-07-19] Session Summary (P1 인증 API Swagger 문서·UI 시험 보강)
+
+- What was done:
+  - 인증 Controller·DTO의 Swagger operation metadata, 안전한 example과 응답 schema를 보강했다.
+  - 공통 OpenAPI 설정과 `sessionCookie`·`csrfToken` scheme, Swagger UI Try It Out 설정을 추가했다.
+  - 생성 OpenAPI metadata·security 의미와 익명 Swagger UI 접근을 통합 테스트로 확장했다.
+
+- Key decisions:
+  - production Controller는 기존 다섯 개만 유지하고 API·DB·Session·CSRF runtime 계약은 변경하지 않았다.
+  - logout의 Session+CSRF는 한 security requirement 객체의 AND이고 signup/login은 CSRF, me는 Session requirement만 사용한다.
+
+- Issues encountered:
+  - annotation을 개별 나열하면 security requirement가 OR 배열로 생성될 수 있어 logout에 최소 customizer를 사용했다.
+
+- Validation:
+  - `Set-Location backend; .\gradlew.bat check`가 33 tests, failure/error/skip 0으로 통과했다.
+  - `git diff --check -- backend`, 정확히 다섯 production mapping과 migration 무변경 검사가 통과했다.
+
+- Next steps:
+  - 새 Controller를 추가할 때 OpenAPI operationId·status·schema·security와 Swagger UI 회귀 테스트를 같은 변경에 포함한다.
 
 ## [2026-07-19] Session Summary (P1 백엔드 인증·공통 HTTP 기반 구현)
 

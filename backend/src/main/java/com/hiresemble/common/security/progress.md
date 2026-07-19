@@ -4,6 +4,23 @@
 
 Request ID, Spring Security Session·CSRF 정책과 Security 오류 JSON 작성을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
 
+## [2026-07-19] Session Summary (Swagger 문서 책임을 공통 API 설정으로 분리)
+
+- What was done:
+  - `SecurityConfiguration`에 있던 Swagger security scheme annotation을 공통 OpenAPI 설정으로 이동했다.
+
+- Key decisions:
+  - runtime SecurityFilterChain의 Swagger/OpenAPI 익명 허용과 Session·CSRF 동작은 그대로 유지한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - Swagger UI 익명 접근과 기존 인증·CSRF 회귀를 포함한 Backend check 33개 테스트가 통과했다.
+
+- Next steps:
+  - 운영 Swagger 노출 제어가 필요하면 runtime Security와 springdoc enabled 설정을 같은 배포 정책으로 검토한다.
+
 ## [2026-07-19] Session Summary (Request ID와 Session Security 기반 구현)
 
 - What was done:

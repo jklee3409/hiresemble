@@ -2,7 +2,27 @@
 
 ## Overview
 
-ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO와 생성 규칙을 소유한다. 현재 P1 구현과 검증 상태만 기록한다.
+ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 공통 OpenAPI metadata를 소유한다. 현재 P1 구현과 검증 상태만 기록한다.
+
+## [2026-07-19] Session Summary (공통 OpenAPI·Swagger security 설정 추가)
+
+- What was done:
+  - `OpenApiConfiguration`에 API info, Authentication tag와 `sessionCookie`·`csrfToken` scheme를 추가했다.
+  - 같은-origin Swagger UI의 CSRF bootstrap, Authorize 입력, Session rotation 뒤 token 교체 절차를 tag 설명에 기록했다.
+
+- Key decisions:
+  - logout의 Session Cookie와 CSRF header는 같은 security requirement 객체의 AND로 생성한다.
+  - JSON CSRF token 계약과 맞지 않는 Springdoc 내장 Cookie·storage 자동화는 활성화하지 않는다.
+
+- Issues encountered:
+  - 두 annotation이 별도 security 배열 항목으로 생성되면 OR 의미가 되므로 최소 customizer로 AND를 명시했다.
+
+- Validation:
+  - 생성 JSON에서 두 scheme와 logout 단일 AND requirement를 확인하는 통합 테스트가 통과했다.
+  - 전체 Backend check 33개 테스트가 통과했다.
+
+- Next steps:
+  - 새 인증 방식이나 Cookie/header 이름 변경 시 configuration·Controller requirement·contract test를 함께 갱신한다.
 
 ## [2026-07-19] Session Summary (공통 오류 DTO와 factory 구현)
 

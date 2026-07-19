@@ -1,19 +1,21 @@
-# 공통 오류 API 안내
+# 공통 HTTP·OpenAPI 안내
 
 ## 디렉터리 목적
 
-ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO와 생성 규칙을 소유한다.
+ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 애플리케이션 공통 OpenAPI metadata를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`ErrorResponseDto.java`](ErrorResponseDto.java): 여섯 필드 공통 오류 응답
 - [`FieldErrorDto.java`](FieldErrorDto.java): rejected value 없는 field 오류
 - [`ErrorResponseFactory.java`](ErrorResponseFactory.java): ErrorCode와 서버 Request ID 기반 응답 생성
+- [`OpenApiConfiguration.java`](OpenApiConfiguration.java): API info, Session·CSRF security scheme와 복합 requirement
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
 - 오류 field set과 request correlation을 한 곳에서 생성해 MVC와 Security 응답을 일치시킨다.
+- OpenAPI 공통 설정은 같은-origin Swagger UI에서 브라우저 Session Cookie와 `X-CSRF-TOKEN`을 사용해 실제 API를 시험하는 방법을 정의한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -23,6 +25,7 @@ ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO와 생성 
 ## 변경 시 주의사항
 
 - 내부 예외 message, SQL, stack trace, rejected value를 DTO에 추가하지 않는다.
+- Session과 CSRF가 함께 필요한 operation은 OpenAPI security 배열의 OR가 아니라 같은 requirement 객체의 AND로 표현한다.
 
 ## 관련 규칙 및 문서
 

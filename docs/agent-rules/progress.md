@@ -2,7 +2,28 @@
 
 ## Overview
 
-저장소 공통, Session 기반 문서 추적, 백엔드, 응답·예외, 프론트엔드, 인프라 규칙과 Codex 역할 위임 절차가 문서화되어 있다. 규칙은 루트 `AGENTS.md`의 라우팅 표를 통해 사용한다.
+저장소 공통, Session 기반 문서 추적, 백엔드·Controller OpenAPI/Swagger, 응답·예외, 프론트엔드, 인프라 규칙과 Codex 역할 위임 절차가 문서화되어 있다. 규칙은 루트 `AGENTS.md`의 라우팅 표를 통해 사용한다.
+
+## [2026-07-19] Session Summary (Controller Swagger 문서·API 시험 규칙 추가)
+
+- What was done:
+  - `backend-development.md`에 Controller tag·operationId·response schema·Session/CSRF requirement와 안전한 example 규칙을 추가했다.
+  - Swagger UI에서 anonymous CSRF bootstrap, `csrfToken` Authorize, mutation과 Session rotation 뒤 token 교체 순서를 정의했다.
+  - 규칙 인덱스가 백엔드 규칙의 Controller OpenAPI·Swagger UI 테스트 책임을 명시하도록 갱신했다.
+
+- Key decisions:
+  - 모든 Spring 서버 작업이 이미 `backend-development.md`를 필수로 읽으므로 같은 내용을 루트 `AGENTS.md`에 중복하지 않는다.
+  - Session+CSRF는 OpenAPI의 같은 requirement 객체로 AND를 표현하고 test fixture Controller는 production 문서에서 제외한다.
+
+- Issues encountered:
+  - Swagger security 배열의 OR/AND 의미와 JSON CSRF token 계약을 향후 구현자가 놓치지 않도록 명시 규칙이 필요했다.
+
+- Validation:
+  - 실제 Controller/OpenAPI 구현과 33개 Backend test가 새 규칙을 충족하는지 대조했다.
+  - 변경 Markdown의 Prettier와 상대 링크 검사를 통과했다.
+
+- Next steps:
+  - 후속 Controller 변경에서 반복 누락이 확인되면 OpenAPI lint 또는 공통 contract test로 자동화한다.
 
 ## [2026-07-17] Session Summary (진행 이력 조회와 서브 에이전트 통합 규칙 정비)
 

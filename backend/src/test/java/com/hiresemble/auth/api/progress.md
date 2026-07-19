@@ -2,7 +2,26 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint와 OpenAPI의 실제 Spring 통합 계약을 검증한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1 다섯 인증 endpoint와 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다. 현재 P1 구현과 검증 상태만 기록한다.
+
+## [2026-07-19] Session Summary (Swagger metadata·security·UI 계약 테스트 보강)
+
+- What was done:
+  - OpenAPI info/tag, stable operationId, response code/schema, 안전한 request example과 hidden framework parameter를 검증했다.
+  - 두 security scheme와 endpoint별 requirement, logout의 단일 AND 객체를 검증했다.
+  - 익명 Swagger UI redirect·HTML과 swagger-config의 Try It Out 설정을 검증했다.
+
+- Key decisions:
+  - exact five-path와 직접 DTO/no-envelope assertion을 유지하면서 문서·UI 계약을 같은 integration class에 확장했다.
+
+- Issues encountered:
+  - logout security 배열이 여러 객체면 OR라는 의미 오류를 명시적 assertion으로 차단했다.
+
+- Validation:
+  - `OpenApiContractTest` 4개와 Backend 전체 33개 테스트가 통과했다.
+
+- Next steps:
+  - 후속 Controller 추가 시 path·operation·schema·security·UI 계약을 함께 확장한다.
 
 ## [2026-07-19] Session Summary (P1 인증·OpenAPI 통합 테스트 구현)
 

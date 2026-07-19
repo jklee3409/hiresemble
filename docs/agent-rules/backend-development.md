@@ -40,6 +40,21 @@
 - 클라이언트 메시지와 운영 로그를 분리하고 stack trace는 서버 로그에만 둔다.
 - Request ID와 안전한 error code를 상관관계에 사용한다.
 
+## Controller OpenAPI·Swagger 규칙
+
+- 모든 production Controller는 업무 책임 단위의 `@Tag`를 갖고, 공개 endpoint마다 안정적이고 유일한 `operationId`, `summary`, 필요한 `description`을 `@Operation`으로 선언한다.
+- `@ApiResponses`에는 명세에 있는 실제 HTTP status와 직접 성공 DTO·공통 `ErrorResponseDto` schema를 기록한다. 성공 envelope를 가정하거나 아직 구현하지 않은 미래 응답을 Swagger에 선행 노출하지 않는다.
+- Session 인증 endpoint는 `sessionCookie`, CSRF가 필요한 mutation은 `csrfToken` security requirement를 선언한다. 두 인증 요소가 모두 필요한 endpoint는 OpenAPI의 같은 security requirement 객체에 넣어 AND로 표현하고, 별도 배열 항목의 OR로 잘못 생성하지 않는다. `csrfToken`은 `X-CSRF-TOKEN` header API key이고, 브라우저가 관리하는 `SESSION` Cookie를 request body·query parameter로 문서화하지 않는다.
+- `HttpServletRequest`, `HttpServletResponse`, `CsrfToken`, 인증 principal처럼 framework가 주입하는 인자는 Swagger 사용자 입력에서 숨긴다.
+- request example은 Bean Validation과 API 계약을 실제로 통과하는 가짜 값만 사용한다. 실제 이메일·비밀번호·Session·CSRF token·운영 secret이나 개인정보를 annotation과 문서에 넣지 않는다.
+- 로컬 Swagger UI는 `/swagger-ui.html`, OpenAPI JSON은 `/v3/api-docs`를 사용한다. Swagger UI의 API 시험은 다음 순서를 따른다.
+  1. `GET /api/v1/auth/csrf`를 실행해 같은 origin 브라우저에 anonymous `SESSION` Cookie를 만들고 응답의 `token`을 확인한다.
+  2. Swagger UI `Authorize`에서 `csrfToken` 값으로 해당 token을 입력한다. `SESSION` Cookie는 브라우저가 자동 전송하므로 임의 Cookie 값을 입력하거나 복사하지 않는다.
+  3. signup/login/logout 같은 mutation을 실행한다. signup/login 성공으로 Session이 rotate되면 성공 응답의 새 `csrf.token`으로 `csrfToken` 값을 즉시 교체한다.
+  4. 실제 운영 계정·데이터로 Swagger UI를 시험하지 않으며, 운영 환경의 문서 노출 여부는 별도 배포 보안 결정 없이 확대하지 않는다.
+- Controller나 DTO 계약을 변경하면 생성 OpenAPI의 path·operationId·status·schema·security requirement와 Swagger UI 접근을 통합 테스트로 검증하고, frontend 소비 타입과 관련 명세를 함께 대조한다.
+- test fixture Controller는 production OpenAPI와 Swagger UI에 노출하지 않는다.
+
 ## 테스트
 
 - Domain: JUnit 5로 불변식과 상태 전이

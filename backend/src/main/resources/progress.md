@@ -5,6 +5,26 @@
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
 - JDBC Session runtime schema 초기화는 꺼져 있고 V2 migration이 사용자·기본 프로필·Session·idempotency P1 schema를 관리한다.
+- Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-07-19] Session Summary (Swagger UI Try It Out 설정 명시)
+
+- What was done:
+  - `springdoc.swagger-ui.try-it-out-enabled`를 `true`로 명시했다.
+
+- Key decisions:
+  - 기존 `/v3/api-docs`와 `/swagger-ui.html` 경로 및 runtime Security 허용 범위는 유지한다.
+  - CSRF token은 Cookie가 아니라 API JSON 응답에서 얻으므로 Springdoc CSRF 자동화 설정을 추가하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - `/v3/api-docs/swagger-config`에서 `tryItOutEnabled=true`와 `csrf` 설정 부재를 통합 테스트로 확인했다.
+  - Backend 전체 check가 통과했다.
+
+- Next steps:
+  - 운영 노출 여부는 배포 topology와 인증 정책을 승인한 뒤 별도 profile 또는 환경 설정으로 제어한다.
 
 ## [2026-07-19] Session Summary (P1 Session·Cookie·Flyway 설정 구현)
 

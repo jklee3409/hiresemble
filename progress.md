@@ -6,6 +6,33 @@
 - 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
 - P1 범위의 공통 HTTP 오류, request ID, Session·CSRF 인증, 사용자 가입·로그인·로그아웃·현재 사용자 조회와 durable idempotency 기반이 구현되어 있다.
 - 프론트엔드는 인증 상태와 공통 client, 인증 Form, route guard, `/onboarding`·`/dashboard` shell을 제공하며 P2 제품 기능은 구현하지 않았다.
+- Backend의 현재 다섯 인증 API는 Swagger UI에서 Session Cookie와 CSRF header 흐름으로 시험할 수 있다.
+
+## [2026-07-19] Session Summary (인증 Controller Swagger UI와 향후 OpenAPI 규칙 보강)
+
+- What was done:
+  - 인증 Controller와 DTO에 안정적 operationId, 응답 schema, Session·CSRF requirement와 validation을 통과하는 가짜 example을 추가했다.
+  - 공통 OpenAPI 설정에 API info와 `sessionCookie`·`csrfToken` scheme를 정의하고 Swagger UI Try It Out을 활성화했다.
+  - 향후 Controller가 같은 Swagger 문서·시험 계약을 유지하도록 백엔드 개발 규칙과 규칙 인덱스를 갱신했다.
+
+- Key decisions:
+  - 기존 다섯 API의 path·status·DTO·인증 runtime은 바꾸지 않고 문서 metadata와 계약 테스트만 확장했다.
+  - logout의 Session과 CSRF는 OpenAPI의 같은 security requirement 객체에 넣어 AND로 표현한다.
+  - 현재 CSRF token은 JSON으로 반환되므로 Springdoc의 Cookie·storage 기반 CSRF 자동화는 켜지 않고, UI에서 bootstrap 응답 token을 `csrfToken` Authorize 값으로 입력한다.
+
+- Issues encountered:
+  - OpenAPI security 배열의 별도 requirement 객체는 AND가 아니라 OR이므로 annotation 두 개 나열만으로 logout 계약을 표현할 수 없었다.
+  - 최소 OpenAPI customizer로 logout의 두 scheme를 한 객체에 합치고 생성 JSON을 테스트로 고정했다.
+
+- Validation:
+  - `Set-Location backend; .\gradlew.bat check`가 33개 테스트, 실패·오류·skip 0으로 통과했다.
+  - OpenAPI가 정확히 다섯 path, 두 security scheme, operation별 requirement와 직접 DTO schema만 생성하는지 검증했다.
+  - 익명 `/swagger-ui.html` 접근, HTML 로딩, `tryItOutEnabled=true`와 내장 CSRF 자동화 미설정을 통합 테스트로 확인했다.
+  - read-only validator가 BLOCKER·MAJOR 없이 `PASS`로 판정했고 validator 전후 23개 변경 파일 snapshot이 일치했다.
+
+- Next steps:
+  - 후속 Controller는 `backend-development.md`의 operationId·response·security·example·Swagger UI 회귀 규칙을 함께 적용한다.
+  - 운영 환경에서 Swagger/OpenAPI 노출 여부는 배포 보안 정책을 승인한 뒤 별도로 제어한다.
 
 ## [2026-07-19] Session Summary (P1 공통 HTTP·인증·테스트 기반 구현)
 

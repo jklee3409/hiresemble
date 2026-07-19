@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-P1에서 여러 HTTP 기능이 공유하는 오류, 보안, validation과 idempotency 기반을 관리한다.
+P1에서 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): 공통 오류 DTO와 factory
+- [`api/`](api/index.md): 공통 오류 DTO·factory와 Controller OpenAPI 설정
 - [`exception/`](exception/index.md): 오류 code·예외·전역 변환
 - [`security/`](security/index.md): Request ID, Security 오류와 Session/CSRF 설정
 - [`validation/`](validation/index.md): UTF-8 byte validation
@@ -16,6 +16,7 @@ P1에서 여러 HTTP 기능이 공유하는 오류, 보안, validation과 idempo
 ## 구성 요소 역할
 
 - 도메인별 정책을 흡수하지 않고 두 곳 이상에서 재사용되는 P1 공통 책임만 제공한다.
+- 공개 Controller의 공통 OpenAPI 정보와 Session·CSRF 보안 scheme를 한 곳에서 정의한다.
 
 ## 다른 디렉터리와의 의존 관계
 

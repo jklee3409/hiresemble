@@ -7,12 +7,12 @@ P1 다섯 인증 endpoint와 OpenAPI의 실제 Spring 통합 계약을 검증한
 ## 주요 파일 및 하위 디렉터리
 
 - [`AuthIntegrationTest.java`](AuthIntegrationTest.java): 가입·로그인·CSRF·Session·오류·Request ID 통합
-- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 다섯 path와 DTO schema
+- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 다섯 path, DTO schema, operation metadata·security requirement와 Swagger UI 접근
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- MockMvc와 PostgreSQL을 함께 사용해 Cookie·Session DB·응답 JSON을 검증한다.
+- MockMvc와 PostgreSQL을 함께 사용해 Cookie·Session DB·응답 JSON 및 실제 생성 OpenAPI와 Swagger UI 진입 경로를 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 
