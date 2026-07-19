@@ -144,7 +144,7 @@ export const agentRunPageSchema = z.object({
 export const runAcceptedSchema = z
   .object({
     agentRunId: uuidSchema,
-    status: z.enum(AGENT_RUN_STATUSES),
+    status: z.enum(['QUEUED', 'WAITING_USER']),
     resourceType: z.string().min(1).max(50).nullable(),
     resourceId: nullableUuidSchema,
     replayed: z.boolean(),

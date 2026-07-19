@@ -20,6 +20,7 @@ import com.hiresemble.agentrun.application.WorkflowExecutionPort;
 import com.hiresemble.agentrun.domain.AgentRunStatus;
 import com.hiresemble.agentrun.domain.AgentStepStatus;
 import com.hiresemble.agentrun.domain.ModelTier;
+import com.hiresemble.agentrun.domain.PartialResult;
 import com.hiresemble.agentrun.domain.SafeError;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
@@ -86,6 +87,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     private final BudgetGuard budgetGuard;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final List<WorkflowFailureHandler> failureHandlers;
 
     public AgentOrchestrator(
             WorkflowRegistry workflowRegistry,
@@ -106,6 +108,33 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             BudgetGuard budgetGuard,
             ObjectMapper objectMapper,
             Clock clock) {
+        this(
+                workflowRegistry, contextBuilder, modelRouter, promptRegistry, outputValidator,
+                chatGateway, embeddingGateway, webSearchGateway, runQueryPort, runStatePort,
+                stepCheckpointPort, usageRecorderPort, domainResultApplyPort, cancellationPort,
+                leaseHeartbeatPort, budgetGuard, objectMapper, clock, List.of());
+    }
+
+    public AgentOrchestrator(
+            WorkflowRegistry workflowRegistry,
+            ContextBuilder contextBuilder,
+            ModelRouter modelRouter,
+            PromptRegistry promptRegistry,
+            StructuredOutputValidator outputValidator,
+            ChatGateway chatGateway,
+            EmbeddingGateway embeddingGateway,
+            WebSearchGateway webSearchGateway,
+            AgentRunQueryPort runQueryPort,
+            AgentRunStatePort runStatePort,
+            AgentStepCheckpointPort stepCheckpointPort,
+            UsageRecorderPort usageRecorderPort,
+            DomainResultApplyPort domainResultApplyPort,
+            AgentRunCancellationPort cancellationPort,
+            AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
+            BudgetGuard budgetGuard,
+            ObjectMapper objectMapper,
+            Clock clock,
+            List<WorkflowFailureHandler> failureHandlers) {
         this.workflowRegistry = workflowRegistry;
         this.contextBuilder = contextBuilder;
         this.modelRouter = modelRouter;
@@ -124,6 +153,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         this.budgetGuard = budgetGuard;
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.failureHandlers = failureHandlers == null ? List.of() : List.copyOf(failureHandlers);
     }
 
     @Override
@@ -176,7 +206,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             ExecutableWorkflowContribution contribution,
             ContextSnapshot context) {
         Map<String, JsonNode> upstreamOutputs = new HashMap<>();
+        Map<String, Object> ephemeralOutputs = new HashMap<>();
         BigDecimal completedWeight = BigDecimal.ZERO;
+        PartialResult partialResult = null;
         List<StepDefinition> definitions = definition.steps();
 
         for (int index = 0; index < definitions.size(); index++) {
@@ -190,17 +222,21 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
 
             StepDefinition stepDefinition = definitions.get(index);
             ExecutableWorkflowStep executableStep = contribution.steps().get(index);
-            StepExecutionContext executionContext = new StepExecutionContext(run, context, upstreamOutputs);
+            StepExecutionContext executionContext =
+                    new StepExecutionContext(run, context, upstreamOutputs, ephemeralOutputs);
             StepInput input = executableStep.executor().prepare(executionContext);
             PromptDefinition prompt = promptRegistry.require(
                     run.workflowType(), run.workflowVersion(), stepDefinition.stepKey());
             validatePromptContract(stepDefinition, prompt);
             String inputHash = inputHash(run, context, stepDefinition, prompt, input);
 
-            Optional<ReusableStepSnapshot> reusable = runQueryPort.findReusableStep(
-                    run.userId(), stepDefinition.stepKey(), input.scopeKey(), inputHash,
-                    run.requestedQualityMode());
-            Optional<AgentStepSnapshot> completedInThisRun = latestStep(run, stepDefinition.stepKey())
+            Optional<ReusableStepSnapshot> reusable = executableStep.executor().reusable()
+                    ? runQueryPort.findReusableStep(
+                            run.userId(), stepDefinition.stepKey(), input.scopeKey(), inputHash,
+                            run.requestedQualityMode())
+                    : Optional.empty();
+            Optional<AgentStepSnapshot> completedInThisRun =
+                    latestStep(run, stepDefinition.stepKey(), input.scopeKey())
                     .filter(step -> step.status() == AgentStepStatus.SUCCEEDED
                             || step.status() == AgentStepStatus.REUSED);
             if (completedInThisRun.isPresent()) {
@@ -210,6 +246,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                                 "AI_STEP_CHECKPOINT_INCOMPLETE",
                                 "저장된 AI 단계 결과를 복구하지 못했습니다."));
                 upstreamOutputs.put(stepDefinition.stepKey(), output.minimalOutput());
+                ephemeralOutputs.put(
+                        stepDefinition.stepKey(),
+                        executableStep.executor().ephemeralOutputFromMinimal(output.minimalOutput()));
                 completedWeight = completedWeight.add(stepDefinition.progressWeight());
                 continue;
             }
@@ -222,6 +261,10 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 applyReused(executableStep.executor(), reusable.get().minimalOutput(), executionContext,
                         run, reused, inputHash);
                 upstreamOutputs.put(stepDefinition.stepKey(), reusable.get().minimalOutput());
+                ephemeralOutputs.put(
+                        stepDefinition.stepKey(),
+                        executableStep.executor().ephemeralOutputFromMinimal(
+                                reusable.get().minimalOutput()));
                 completedWeight = completedWeight.add(stepDefinition.progressWeight());
                 updateProgress(run.userId(), run.id(), claimed.claimToken(), stepDefinition.stepKey(),
                         completedWeight.intValue());
@@ -251,7 +294,21 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     claimed, definition, stepDefinition, executableStep.executor(),
                     prompt, input, inputHash, executionContext);
             if (result.cancelledOrTerminal()) return;
+            if (result.requiredUserAction() != null) {
+                AgentRunSnapshot beforeWaiting = current(run.userId(), run.id());
+                budgetGuard.releaseUnused(beforeWaiting, clock.instant());
+                AgentRunSnapshot released = current(run.userId(), run.id());
+                runStatePort.transition(new AgentRunTransitionCommand(
+                        released.userId(), released.id(), claimed.claimToken(),
+                        released.stateVersion(), AgentRunStatus.WAITING_USER,
+                        stepDefinition.stepKey(), completedWeight.intValue(),
+                        released.highestModelTierUsed(), released.actualCostUsd(), false,
+                        result.requiredUserAction(), null, partialResult, clock.instant()));
+                return;
+            }
             upstreamOutputs.put(stepDefinition.stepKey(), result.minimalOutput());
+            ephemeralOutputs.put(stepDefinition.stepKey(), result.ephemeralOutput());
+            if (result.partialResult() != null) partialResult = result.partialResult();
             completedWeight = completedWeight.add(stepDefinition.progressWeight());
             updateProgress(run.userId(), run.id(), claimed.claimToken(), stepDefinition.stepKey(),
                     completedWeight.intValue());
@@ -264,7 +321,8 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 completed.userId(), completed.id(), claimed.claimToken(), completed.stateVersion(),
                 AgentRunStatus.SUCCEEDED, completed.currentStep(), 100,
                 completed.highestModelTierUsed(), completed.actualCostUsd(), false,
-                null, null, completed.partialResult(), clock.instant()));
+                null, null, partialResult == null ? completed.partialResult() : partialResult,
+                clock.instant()));
     }
 
     private StepResult executeWithAttempts(
@@ -277,7 +335,10 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             String inputHash,
             StepExecutionContext executionContext) {
         AgentRunSnapshot run = current(claimed.run().userId(), claimed.run().id());
-        int firstAttempt = nextAttempt(run, stepDefinition.stepKey());
+        skipStalePending(
+                run, claimed.claimToken(), stepDefinition.stepKey(), input.scopeKey());
+        run = current(run.userId(), run.id());
+        int firstAttempt = nextAttempt(run, stepDefinition.stepKey(), input.scopeKey());
         ModelTier previousTier = null;
         FailureKind previousFailure = null;
 
@@ -300,13 +361,27 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 AiGatewayResponse response = leaseHeartbeatPort.maintain(
                         run.userId(), run.id(), claimed.claimToken(),
                         () -> executor.invoke(new GatewayInvocation(
-                                input, route, prompt, chatGateway, embeddingGateway, webSearchGateway)));
+                                input, route, prompt, chatGateway, embeddingGateway, webSearchGateway,
+                                executionContext)));
                 recordUsageIfPresent(run, claimed.claimToken(), step, route, response.usage());
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
-                Object validated = validate(executor, response.rawJson());
+                Object validated = validate(executor, response.rawJson(), executionContext);
                 JsonNode minimalOutput = minimalOutput(executor, validated);
+                Optional<com.hiresemble.agentrun.domain.RequiredUserAction> requiredAction =
+                        executorRequiredUserAction(executor, validated, minimalOutput, executionContext);
+                if (requiredAction.isPresent()) {
+                    stepCheckpointPort.checkpoint(new StepCheckpointCommand(
+                            run.userId(), run.id(), step.id(), claimed.claimToken(),
+                            AgentStepStatus.WAITING_USER, sha256(minimalOutput.toString()),
+                            minimalOutput, route.tier(), null, null, clock.instant()));
+                    activeStep = false;
+                    return StepResult.waiting(
+                            minimalOutput,
+                            executorEphemeralOutput(executor, validated),
+                            requiredAction.get());
+                }
                 stepCheckpointPort.checkpoint(new StepCheckpointCommand(
                         run.userId(), run.id(), step.id(), claimed.claimToken(), AgentStepStatus.SUCCEEDED,
                         sha256(minimalOutput.toString()), minimalOutput, route.tier(), null, null,
@@ -316,7 +391,13 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     return StepResult.terminal();
                 }
                 applyFresh(executor, validated, minimalOutput, executionContext, run, step, inputHash);
-                return new StepResult(minimalOutput, false);
+                return new StepResult(
+                        minimalOutput,
+                        executorEphemeralOutput(executor, validated),
+                        executorPartialResult(executor, validated, minimalOutput, executionContext)
+                                .orElse(null),
+                        null,
+                        false);
             } catch (AiExecutionException exception) {
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
@@ -345,7 +426,8 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             String inputHash,
             long modelPolicyVersion,
             int attempt) {
-        Optional<AgentStepSnapshot> pending = latestStep(run, definition.stepKey())
+        Optional<AgentStepSnapshot> pending =
+                latestStep(run, definition.stepKey(), input.scopeKey())
                 .filter(step -> step.status() == AgentStepStatus.PENDING && step.attempt() == attempt);
         if (pending.isPresent()) {
             return stepCheckpointPort.checkpoint(new StepCheckpointCommand(
@@ -381,17 +463,34 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         throw new WorkflowConfigurationException("AI_WORKFLOW_STEP_ORDER_MISSING");
     }
 
-    private int nextAttempt(AgentRunSnapshot run, String stepKey) {
-        Optional<AgentStepSnapshot> pending = latestStep(run, stepKey)
+    private int nextAttempt(AgentRunSnapshot run, String stepKey, String scopeKey) {
+        Optional<AgentStepSnapshot> pending = latestStep(run, stepKey, scopeKey)
                 .filter(step -> step.status() == AgentStepStatus.PENDING);
         if (pending.isPresent()) return pending.get().attempt();
-        return run.steps().stream().filter(step -> step.stepKey().equals(stepKey))
+        return run.steps().stream().filter(step -> step.stepKey().equals(stepKey)
+                        && java.util.Objects.equals(step.scopeKey(), scopeKey))
                 .mapToInt(AgentStepSnapshot::attempt).max().orElse(0) + 1;
     }
 
-    private Optional<AgentStepSnapshot> latestStep(AgentRunSnapshot run, String stepKey) {
-        return run.steps().stream().filter(step -> step.stepKey().equals(stepKey))
+    private Optional<AgentStepSnapshot> latestStep(
+            AgentRunSnapshot run, String stepKey, String scopeKey) {
+        return run.steps().stream().filter(step -> step.stepKey().equals(stepKey)
+                        && java.util.Objects.equals(step.scopeKey(), scopeKey))
                 .max(java.util.Comparator.comparingInt(AgentStepSnapshot::attempt));
+    }
+
+    private void skipStalePending(
+            AgentRunSnapshot run, UUID claimToken, String stepKey, String scopeKey) {
+        for (AgentStepSnapshot step : run.steps()) {
+            if (step.status() != AgentStepStatus.PENDING
+                    || !step.stepKey().equals(stepKey)
+                    || java.util.Objects.equals(step.scopeKey(), scopeKey)) {
+                continue;
+            }
+            stepCheckpointPort.checkpoint(new StepCheckpointCommand(
+                    run.userId(), run.id(), step.id(), claimToken, AgentStepStatus.SKIPPED,
+                    null, null, null, null, null, clock.instant()));
+        }
     }
 
     private void recordUsageIfPresent(
@@ -441,6 +540,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         if (run.status() != AgentRunStatus.RUNNING || !claimToken.equals(run.claimToken())) return;
         if (completeCancellationIfRequested(run, claimToken)) return;
         try {
+            applyFailureHandlers(run, failure);
             budgetGuard.releaseUnused(run, clock.instant());
             run = current(userId, runId);
             runStatePort.transition(new AgentRunTransitionCommand(
@@ -456,6 +556,12 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     private void interruptRun(UUID userId, UUID runId, UUID claimToken) {
         AgentRunSnapshot run = current(userId, runId);
         try {
+            applyFailureHandlers(
+                    run,
+                    AiExecutionException.nonRetryable(
+                            FailureKind.INTERRUPTION,
+                            "AI_WORKER_INTERRUPTED",
+                            "AI 실행 작업이 중단되었습니다."));
             budgetGuard.releaseUnused(run, clock.instant());
             run = current(userId, runId);
             runStatePort.transition(new AgentRunTransitionCommand(
@@ -521,8 +627,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Object validate(WorkflowStepExecutor executor, String rawJson) {
-        return outputValidator.validate(rawJson, executor.outputContract());
+    private Object validate(
+            WorkflowStepExecutor executor, String rawJson, StepExecutionContext context) {
+        return outputValidator.validate(rawJson, executor.outputContract(context));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -544,6 +651,40 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             JsonNode minimalOutput,
             StepExecutionContext context) {
         return executor.domainApply(value, minimalOutput, context);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object executorEphemeralOutput(WorkflowStepExecutor executor, Object value) {
+        return executor.ephemeralOutput(value);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Optional<com.hiresemble.agentrun.domain.RequiredUserAction> executorRequiredUserAction(
+            WorkflowStepExecutor executor,
+            Object value,
+            JsonNode minimalOutput,
+            StepExecutionContext context) {
+        return executor.requiredUserAction(value, minimalOutput, context);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Optional<PartialResult> executorPartialResult(
+            WorkflowStepExecutor executor,
+            Object value,
+            JsonNode minimalOutput,
+            StepExecutionContext context) {
+        return executor.partialResult(value, minimalOutput, context);
+    }
+
+    private void applyFailureHandlers(AgentRunSnapshot run, AiExecutionException failure) {
+        for (WorkflowFailureHandler handler : failureHandlers) {
+            if (!handler.supports(run)) continue;
+            try {
+                handler.onFailure(run, failure);
+            } catch (RuntimeException ignored) {
+                // The Run still needs a safe terminal transition; reconciliation owns final repair.
+            }
+        }
     }
 
     private AgentRunSnapshot current(UUID userId, UUID runId) {
@@ -611,9 +752,21 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 "AI 결과를 현재 리소스에 적용할 수 없습니다.");
     }
 
-    private record StepResult(JsonNode minimalOutput, boolean cancelledOrTerminal) {
+    private record StepResult(
+            JsonNode minimalOutput,
+            Object ephemeralOutput,
+            PartialResult partialResult,
+            com.hiresemble.agentrun.domain.RequiredUserAction requiredUserAction,
+            boolean cancelledOrTerminal) {
         private static StepResult terminal() {
-            return new StepResult(null, true);
+            return new StepResult(null, null, null, null, true);
+        }
+
+        private static StepResult waiting(
+                JsonNode minimalOutput,
+                Object ephemeralOutput,
+                com.hiresemble.agentrun.domain.RequiredUserAction requiredUserAction) {
+            return new StepResult(minimalOutput, ephemeralOutput, null, requiredUserAction, false);
         }
     }
 }

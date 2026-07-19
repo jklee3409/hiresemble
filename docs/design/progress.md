@@ -2,7 +2,21 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0·P1·P2·P3는 완료됐고 P3 Agent Run·AI runtime 기반의 최종 validator 판정은 `PASS`다. P4–P10은 미착수이며 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0·P1·P2·P3·P4는 최종 validator `PASS`로 완료됐고 P5–P10은 미착수이며 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-07-19] Session Summary (P4 완료 상태와 P5·P6 경계 반영)
+
+- What was done:
+  - 구현 계획의 P4 체크리스트·상태·완료 조건을 실제 Document·Fake AI·Browser E2E 결과에 맞췄다.
+- Key decisions:
+  - P4는 AC-03만 완료하며 P6 전체 RAG와 실제 provider 연결은 후속 범위로 유지한다.
+- Issues encountered:
+  - 최초 P4 Validator가 Agent Run Document resource filter의 application 예약 404를 `NEEDS_CHANGES`로 판정해 owner resolver 경계만 한 차례 보정했다.
+- Validation:
+  - 계획의 43 operations/30 paths, 단일 V5와 P5–P10 미착수 상태를 코드·테스트와 대조했다.
+  - 보정 후 read-only 재검증이 `PASS`했고 status·content snapshot 207개가 각각 기준 SHA-256과 일치했다.
+- Next steps:
+  - P4는 AC-03 완료 상태이며 P5–P10은 각 선행 조건에 따라 착수한다.
 
 ## [2026-07-19] Session Summary (P3 구현 상태와 후속 migration 경계 반영)
 

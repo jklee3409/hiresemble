@@ -104,7 +104,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) LocalDate acquiredDate,
             @Schema(nullable = true) LocalDate expiresAt,
             @Schema(nullable = true) @Size(max = 5000) String description,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId)
             implements CertificationFields {}
 
@@ -116,7 +116,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) LocalDate acquiredDate,
             @Schema(nullable = true) LocalDate expiresAt,
             @Schema(nullable = true) @Size(max = 5000) String description,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId,
             @NotNull @PositiveOrZero Long version)
             implements CertificationFields {}
@@ -142,7 +142,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) @Size(max = 100) String grade,
             @Schema(nullable = true) LocalDate testedAt,
             @Schema(nullable = true) LocalDate expiresAt,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId)
             implements LanguageScoreFields {}
 
@@ -153,7 +153,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) @Size(max = 100) String grade,
             @Schema(nullable = true) LocalDate testedAt,
             @Schema(nullable = true) LocalDate expiresAt,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId,
             @NotNull @PositiveOrZero Long version)
             implements LanguageScoreFields {}
@@ -176,7 +176,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) @Size(max = 200) String organizer,
             @Schema(nullable = true) LocalDate awardedAt,
             @Schema(nullable = true) @Size(max = 5000) String description,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId)
             implements AwardFields {}
 
@@ -186,7 +186,7 @@ public final class ProfileRequests {
             @Schema(nullable = true) @Size(max = 200) String organizer,
             @Schema(nullable = true) LocalDate awardedAt,
             @Schema(nullable = true) @Size(max = 5000) String description,
-            @Schema(nullable = true, description = "Non-null values return RESOURCE_NOT_FOUND until P4.")
+            @Schema(nullable = true, description = "Must reference an active document owned by the current user.")
                     UUID evidenceDocumentId,
             @NotNull @PositiveOrZero Long version)
             implements AwardFields {}

@@ -1,8 +1,8 @@
-# P1~P3 Layout 안내
+# P1~P4 Layout 안내
 
 ## 디렉터리 목적
 
-익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile navigation과 lazy Agent Run Progress Drawer를 제공한다.
+익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile·documents navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -21,7 +21,7 @@
 
 ## 변경 시 주의사항
 
-- 미구현 문서·공고 메뉴와 Dashboard 집계 카드를 선행 추가하지 않는다. Header count는 owner-scoped active 목록의 `totalElements`, Drawer 항목은 최근 5개로 표시한다.
+- 미구현 공고 메뉴와 Dashboard 집계 카드를 선행 추가하지 않는다. Header count는 owner-scoped active 목록의 `totalElements`, Drawer 항목은 최근 5개로 표시한다.
 
 ## 관련 규칙 및 문서
 

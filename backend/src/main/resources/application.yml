@@ -88,12 +88,28 @@ hiresemble:
     access-key: ${OBJECT_STORAGE_ACCESS_KEY:hiresemble}
     secret-key: ${OBJECT_STORAGE_SECRET_KEY:hiresemble-local-secret}
     bucket: ${OBJECT_STORAGE_BUCKET:hiresemble}
+    region: ${OBJECT_STORAGE_REGION:us-east-1}
+  document:
+    ai-cost:
+      estimated-cost-usd: ${DOCUMENT_AI_ESTIMATED_COST_USD:0.000000}
+      price-version: ${DOCUMENT_AI_PRICE_VERSION:0}
+    parser:
+      timeout: ${DOCUMENT_PARSER_TIMEOUT:15s}
+      max-pages: ${DOCUMENT_PARSER_MAX_PAGES:500}
+      max-zip-entries: ${DOCUMENT_PARSER_MAX_ZIP_ENTRIES:5000}
+      max-uncompressed-bytes: ${DOCUMENT_PARSER_MAX_UNCOMPRESSED_BYTES:104857600}
+  object-deletion-outbox:
+    scan-interval: ${OBJECT_DELETION_SCAN_INTERVAL:30s}
+    lease-duration: ${OBJECT_DELETION_LEASE_DURATION:2m}
+    batch-size: ${OBJECT_DELETION_BATCH_SIZE:20}
   ai:
     provider: ${AI_PROVIDER:none}
     model-low-cost: ${AI_MODEL_LOW_COST:}
     model-balanced: ${AI_MODEL_BALANCED:gpt-5-mini}
     model-high-quality: ${AI_MODEL_HIGH_QUALITY:}
     embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+    embedding:
+      dimension: ${AI_EMBEDDING_DIMENSION:1536}
     daily-budget-usd: ${AI_DAILY_BUDGET_USD:2.00}
     run-max-cost-usd: ${AI_RUN_MAX_COST_USD:0.30}
   agent-runtime:

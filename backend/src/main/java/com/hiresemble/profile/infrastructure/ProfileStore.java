@@ -690,6 +690,7 @@ public class ProfileStore {
             UUID userId,
             EvidenceVerificationStatus status,
             String category,
+            UUID documentId,
             int page,
             int size,
             String sort) {
@@ -700,12 +701,16 @@ public class ProfileStore {
         };
         String statusValue = status == null ? "" : status.name();
         String categoryValue = category == null ? "" : category;
-        String where = "user_id=:userId AND (:status='' OR verification_status=:status) AND (:category='' OR evidence_category=:category)";
+        String documentValue = documentId == null ? "" : documentId.toString();
+        String where = "user_id=:userId AND (:status='' OR verification_status=:status) "
+                + "AND (:category='' OR evidence_category=:category) "
+                + "AND (:documentId='' OR (source_type='DOCUMENT_CHUNK' AND document_id=CAST(:documentId AS uuid)))";
         List<EvidenceRecord> items = jdbcClient
                 .sql("SELECT *, metadata::text AS metadata_text FROM profile_evidence WHERE %s ORDER BY %s LIMIT :size OFFSET :offset".formatted(where, order))
                 .param("userId", userId)
                 .param("status", statusValue)
                 .param("category", categoryValue)
+                .param("documentId", documentValue)
                 .param("size", size)
                 .param("offset", (long) page * size)
                 .query(this::evidence)
@@ -715,9 +720,91 @@ public class ProfileStore {
                 .param("userId", userId)
                 .param("status", statusValue)
                 .param("category", categoryValue)
+                .param("documentId", documentValue)
                 .query(Long.class)
                 .single();
         return page(items, page, size, count);
+    }
+
+    public EvidenceRecord createDocumentEvidence(
+            UUID id,
+            UUID userId,
+            UUID documentId,
+            UUID sourceChunkId,
+            String category,
+            String title,
+            String content,
+            Map<String, Object> metadata,
+            java.math.BigDecimal confidence,
+            Instant now) {
+        return jdbcClient.sql("""
+                        INSERT INTO profile_evidence (
+                            id,user_id,source_type,source_entity_id,document_id,evidence_category,
+                            title,content,metadata,confidence,verification_status,verified_at,
+                            source_deleted_at,version,created_at,updated_at
+                        ) VALUES (
+                            :id,:userId,'DOCUMENT_CHUNK',:sourceChunkId,:documentId,:category,
+                            :title,:content,CAST(:metadata AS jsonb),:confidence,'PENDING',NULL,
+                            NULL,0,:now,:now
+                        ) RETURNING *,metadata::text AS metadata_text
+                        """)
+                .param("id", id).param("userId", userId).param("sourceChunkId", sourceChunkId)
+                .param("documentId", documentId).param("category", category).param("title", title)
+                .param("content", content).param("metadata", json(metadata)).param("confidence", confidence)
+                .param("now", utc(now)).query(this::evidence).single();
+    }
+
+    public List<EvidenceRecord> findDocumentEvidence(UUID userId, UUID documentId) {
+        return jdbcClient.sql("""
+                        SELECT *,metadata::text AS metadata_text FROM profile_evidence
+                        WHERE user_id=:userId AND source_type='DOCUMENT_CHUNK' AND document_id=:documentId
+                        ORDER BY created_at,id
+                        """)
+                .param("userId", userId).param("documentId", documentId)
+                .query(this::evidence).list();
+    }
+
+    public boolean documentChunkExists(
+            UUID userId, UUID documentId, long sourceRevision, UUID chunkId) {
+        return jdbcClient.sql("""
+                        SELECT EXISTS(
+                            SELECT 1 FROM document_chunks
+                            WHERE user_id=:userId AND document_id=:documentId
+                              AND source_revision=:revision AND id=:chunkId
+                        )
+                        """)
+                .param("userId", userId).param("documentId", documentId)
+                .param("revision", sourceRevision).param("chunkId", chunkId)
+                .query(Boolean.class).single();
+    }
+
+    public String documentChunkContent(
+            UUID userId, UUID documentId, long sourceRevision, UUID chunkId) {
+        return jdbcClient.sql("""
+                        SELECT content FROM document_chunks
+                        WHERE user_id=:userId AND document_id=:documentId
+                          AND source_revision=:revision AND id=:chunkId
+                        """)
+                .param("userId", userId).param("documentId", documentId)
+                .param("revision", sourceRevision).param("chunkId", chunkId)
+                .query(String.class).single();
+    }
+
+    public void deleteEvidence(UUID userId, UUID evidenceId) {
+        jdbcClient.sql("DELETE FROM profile_evidence WHERE user_id=:userId AND id=:evidenceId")
+                .param("userId", userId).param("evidenceId", evidenceId).update();
+    }
+
+    public void tombstoneEvidence(UUID userId, UUID evidenceId, Instant now) {
+        jdbcClient.sql("""
+                        UPDATE profile_evidence SET source_entity_id=NULL,document_id=NULL,
+                            title='[삭제된 문서 근거]',content='[원본 문서가 삭제되었습니다.]',
+                            metadata='{}'::jsonb,confidence=NULL,verification_status='SOURCE_DELETED',
+                            verified_at=NULL,source_deleted_at=:now,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:evidenceId
+                        """)
+                .param("now", utc(now)).param("userId", userId).param("evidenceId", evidenceId)
+                .update();
     }
 
     private long countActive(String table, UUID userId) {

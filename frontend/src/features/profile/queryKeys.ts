@@ -20,6 +20,9 @@ export const profileQueryKeys = {
     return ['user', userId, 'profile', 'careers', filters] as const
   },
   evidence(userId: string, filters: EvidenceListParams) {
-    return ['user', userId, 'profile', 'evidence', filters] as const
+    return ['user', userId, 'evidence', filters] as const
+  },
+  evidenceRoot(userId: string) {
+    return ['user', userId, 'evidence'] as const
   },
 }

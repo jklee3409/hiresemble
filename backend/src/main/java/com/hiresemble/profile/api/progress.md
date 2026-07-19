@@ -4,6 +4,19 @@
 
 P2 공개 프로필·direct evidence 25개 operation과 DTO·validation 경계가 구현되어 있다.
 
+## [2026-07-19] Session Summary (P4 document evidence filter 활성화)
+
+- What was done:
+  - 기존 evidence 3개 operation에 real `documentId` filter와 document source edit·approve·reject를 연결했다.
+- Key decisions:
+  - 타 사용자·삭제 document filter는 404, `SOURCE_DELETED` mutation은 409다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 기존 operation 수를 늘리지 않고 OpenAPI 전체 43/30과 API 통합 테스트가 통과했다.
+- Next steps:
+  - evidence create/delete endpoint는 추가하지 않는다.
+
 ## [2026-07-19] Session Summary (P2 프로필 HTTP·OpenAPI 계약 구현)
 
 - What was done:

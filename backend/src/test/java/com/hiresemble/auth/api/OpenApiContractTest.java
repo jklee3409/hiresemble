@@ -10,10 +10,12 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -28,16 +30,40 @@ class OpenApiContractTest extends PostgresIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyThirtyFiveP1P2AndP3Operations()
+    void liveSpringMappingsHaveExactlyFortyThreeP1ThroughP4OperationsAndThirtyPaths() {
+        Set<String> paths = new LinkedHashSet<>();
+        int[] operations = {0};
+
+        handlerMapping.getHandlerMethods().forEach((mapping, method) -> {
+            Set<String> apiPaths = new LinkedHashSet<>();
+            for (String path : mapping.getPatternValues()) {
+                if (path.startsWith("/api/v1/")) apiPaths.add(path);
+            }
+            if (apiPaths.isEmpty()) return;
+            int methodCount = mapping.getMethodsCondition().getMethods().size();
+            assertThat(methodCount).as(method.toString()).isGreaterThan(0);
+            paths.addAll(apiPaths);
+            operations[0] += apiPaths.size() * methodCount;
+        });
+
+        assertThat(paths).hasSize(30);
+        assertThat(operations[0]).isEqualTo(43);
+    }
+
+    @Test
+    void generatedOpenApiHasStableMetadataAndExactlyFortyThreeP1ThroughP4Operations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.3");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.4");
         assertThat(fieldValues(document.get("tags"), "name"))
-                .containsExactlyInAnyOrder("Authentication", "Profile", "Agent Runs");
+                .containsExactlyInAnyOrder("Authentication", "Profile", "Agent Runs", "Documents");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -70,8 +96,14 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/agent-runs/{agentRunId}",
                         "/api/v1/agent-runs/{agentRunId}/events",
                         "/api/v1/agent-runs/{agentRunId}/retry",
-                        "/api/v1/agent-runs/{agentRunId}/cancel");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(35);
+                        "/api/v1/agent-runs/{agentRunId}/cancel",
+                        "/api/v1/documents",
+                        "/api/v1/documents/{documentId}",
+                        "/api/v1/documents/{documentId}/text",
+                        "/api/v1/documents/{documentId}/manual-text",
+                        "/api/v1/documents/{documentId}/reparse",
+                        "/api/v1/documents/{documentId}/download-url");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(43);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -114,6 +146,14 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/events", "get", "streamAgentRunEvents");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/retry", "post", "retryAgentRun");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/cancel", "post", "cancelAgentRun");
+        assertThat(document.at("/paths/~1api~1v1~1documents/post/operationId").asText())
+                .isEqualTo("uploadDocument");
+        assertThat(document.at("/paths/~1api~1v1~1documents/get/operationId").asText())
+                .isEqualTo("listDocuments");
+        assertThat(document.at("/paths/~1api~1v1~1documents~1{documentId}/get/operationId").asText())
+                .isEqualTo("getDocument");
+        assertThat(document.at("/paths/~1api~1v1~1documents~1{documentId}/delete/operationId").asText())
+                .isEqualTo("deleteDocument");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs/get"),
                 "200", "400", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/get"),
@@ -226,13 +266,24 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(schemas.at("/ProfileDto/properties/missingCompletionItems/readOnly").asBoolean())
                 .isTrue();
         assertThat(fieldNames(schemas.at("/EducationStatus/enum"))).isEmpty();
+        assertThat(fieldNames(schemas.at("/DocumentSummaryDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "documentType", "displayName", "mimeType", "fileSizeBytes",
+                        "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
+                        "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt");
+        assertThat(fieldNames(schemas.at("/DocumentDetailDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "documentType", "displayName", "mimeType", "fileSizeBytes",
+                        "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
+                        "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt",
+                        "pageCount", "characterCount", "parsedAt");
         assertThat(document.toString())
-                .doesNotContain("/api/v1/documents")
                 .doesNotContain("/api/v1/jobs")
                 .doesNotContain("/api/v1/dashboard")
                 .doesNotContain("/api/v1/settings/ai")
                 .doesNotContain("createProfileEvidence")
-                .doesNotContain("deleteProfileEvidence");
+                .doesNotContain("deleteProfileEvidence")
+                .doesNotContain("storageKey", "checksumSha256", "parserName", "embeddingProvider");
 
         assertResponseSchema(document, CSRF_PATH, "200", "CsrfDto");
         assertResponseSchema(document, CSRF_PATH, "500", "ErrorResponseDto");

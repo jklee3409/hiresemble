@@ -4,6 +4,19 @@
 
 P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply 경계가 구현됐다.
 
+## [2026-07-19] Session Summary (Document failure handler·resource 실행 연결)
+
+- What was done:
+  - workflow별 failure handler와 Document stable compensation을 orchestrator에 연결했다.
+- Key decisions:
+  - terminal Run은 다시 열지 않고 WAITING_USER active Run만 비용 재예약 뒤 resume한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - retry lineage, cancel stable mapping, resource-linked generic retry와 P3 회귀가 통과했다.
+- Next steps:
+  - 자유 loop나 resource repository 직접 접근을 추가하지 않는다.
+
 ## [2026-07-19] Session Summary (bounded AgentOrchestrator 구현)
 
 - What was done:

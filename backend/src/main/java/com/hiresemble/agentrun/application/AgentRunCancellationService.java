@@ -72,10 +72,10 @@ public class AgentRunCancellationService implements AgentRunCancellationPort {
         if (run.resourceType() == null) {
             return;
         }
-        ResourceCompensationPort compensationPort = compensationPorts.getIfAvailable();
-        if (compensationPort == null) {
-            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
-        }
+        ResourceCompensationPort compensationPort = compensationPorts.orderedStream()
+                .filter(port -> port.supports(run.resourceType()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT));
         compensationPort.compensate(
                 run.userId(), run.id(), run.resourceType(), run.resourceId());
     }

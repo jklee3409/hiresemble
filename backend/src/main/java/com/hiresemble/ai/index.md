@@ -15,16 +15,16 @@
 
 ## 구성 요소 역할
 
-registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. 자유 agent loop와 production Fake workflow는 없다.
+registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. P4 `DOCUMENT_INGESTION`은 Document application port에 연결되며 자유 agent loop와 production Fake workflow는 없다.
 
 ## 다른 디렉터리와의 의존 관계
 
-- [`../agentrun/application/`](../agentrun/application/index.md)의 port만 소비하며 repository를 직접 참조하지 않는다.
+- [`../agentrun/application/`](../agentrun/application/index.md)과 [`../document/application/`](../document/application/index.md)의 port만 소비하며 repository를 직접 참조하지 않는다.
 - test-only Fake 3-step은 [`../../../../../test/java/com/hiresemble/ai/`](../../../../../test/java/com/hiresemble/ai/index.md)에만 있다.
 
 ## 변경 시 주의사항
 
-사용자 원문, 전체 prompt와 provider response를 저장·로그하지 않는다. 실제 provider adapter와 executable contribution은 해당 domain phase에서 가격·policy·heartbeat 계약과 함께 추가한다.
+사용자 원문, 전체 prompt와 provider response를 저장·로그하지 않는다. 실제 provider adapter는 해당 phase에서 가격·policy·heartbeat 계약과 함께 추가하며 P4 기본값은 계속 `none`이다.
 
 ## 관련 규칙 및 문서
 

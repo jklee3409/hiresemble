@@ -4,6 +4,7 @@ import { computed, reactive, ref } from 'vue'
 
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
+import { useDocumentListQuery } from '@/features/documents/queries'
 import { isVersionConflict } from '@/features/profile/conflict'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import {
@@ -63,6 +64,12 @@ const page = ref(0)
 const size = ref(20)
 const sort = ref(defaultSort(props.kind))
 const filters = computed(() => ({ page: page.value, size: size.value, sort: sort.value }))
+const documentLinkable = computed(() => ['certification', 'language', 'award'].includes(props.kind))
+const selectableDocuments = useDocumentListQuery(
+  userId,
+  { page: 0, size: 100, sort: 'updatedAt,desc' },
+  documentLinkable,
+)
 const queryKey = computed(() => resourceQueryKey(props.kind, userId.value, filters.value))
 const form = reactive<FormModel>(emptyForm())
 const editingId = ref<string | null>(null)
@@ -284,6 +291,7 @@ function emptyForm(): FormModel {
     gpaScale: '',
     isPrimary: false,
     description: '',
+    evidenceDocumentId: '',
     name: '',
     issuer: '',
     credentialNumber: '',
@@ -484,6 +492,7 @@ function resourceToForm(kind: ResourceKind, item: StructuredProfileDto): Partial
         acquiredDate: value.acquiredDate ?? '',
         expiresAt: value.expiresAt ?? '',
         description: value.description ?? '',
+        evidenceDocumentId: value.evidenceDocumentId ?? '',
       }
     }
     case 'language': {
@@ -494,6 +503,7 @@ function resourceToForm(kind: ResourceKind, item: StructuredProfileDto): Partial
         grade: value.grade ?? '',
         testedAt: value.testedAt ?? '',
         expiresAt: value.expiresAt ?? '',
+        evidenceDocumentId: value.evidenceDocumentId ?? '',
       }
     }
     case 'award': {
@@ -503,6 +513,7 @@ function resourceToForm(kind: ResourceKind, item: StructuredProfileDto): Partial
         organizer: value.organizer ?? '',
         awardedAt: value.awardedAt ?? '',
         description: value.description ?? '',
+        evidenceDocumentId: value.evidenceDocumentId ?? '',
       }
     }
     case 'career': {
@@ -542,6 +553,7 @@ function fieldsForKind(kind: ResourceKind): Array<{ key: string; label: string }
       { key: 'acquiredDate', label: '취득일' },
       { key: 'expiresAt', label: '만료일' },
       { key: 'description', label: '설명' },
+      { key: 'evidenceDocumentId', label: '증빙 문서' },
     ],
     language: [
       { key: 'testName', label: '시험명' },
@@ -549,12 +561,14 @@ function fieldsForKind(kind: ResourceKind): Array<{ key: string; label: string }
       { key: 'grade', label: '등급' },
       { key: 'testedAt', label: '응시일' },
       { key: 'expiresAt', label: '만료일' },
+      { key: 'evidenceDocumentId', label: '증빙 문서' },
     ],
     award: [
       { key: 'name', label: '수상명' },
       { key: 'organizer', label: '주최 기관' },
       { key: 'awardedAt', label: '수상일' },
       { key: 'description', label: '설명' },
+      { key: 'evidenceDocumentId', label: '증빙 문서' },
     ],
     career: [
       { key: 'organization', label: '회사·기관' },
@@ -644,12 +658,8 @@ const resourceLabels: Record<
       </button>
     </div>
 
-    <p
-      v-if="kind === 'certification' || kind === 'language' || kind === 'award'"
-      class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900"
-    >
-      증빙 문서 연결은 문서 기능이 제공되는 P4에서 사용할 수 있습니다. 현재는 직접 입력만
-      저장됩니다.
+    <p v-if="documentLinkable" class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+      현재 로그인 사용자의 삭제되지 않은 문서만 증빙으로 연결할 수 있습니다.
     </p>
 
     <div class="mt-5 flex items-center gap-2">
@@ -951,6 +961,28 @@ const resourceLabels: Record<
             />
           </label>
         </template>
+
+        <label v-if="documentLinkable" class="md:col-span-2 text-sm font-medium">
+          증빙 문서
+          <select
+            :id="`${kind}-evidenceDocumentId`"
+            v-model="form.evidenceDocumentId"
+            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            :disabled="selectableDocuments.isPending.value || selectableDocuments.isError.value"
+          >
+            <option value="">연결하지 않음</option>
+            <option
+              v-for="candidate in selectableDocuments.data.value?.items"
+              :key="candidate.id"
+              :value="candidate.id"
+            >
+              {{ candidate.displayName }}
+            </option>
+          </select>
+          <span v-if="selectableDocuments.isError.value" class="mt-1 block text-red-700">
+            문서 목록을 불러오지 못했습니다.
+          </span>
+        </label>
 
         <p v-if="generalError" class="md:col-span-2 text-sm text-red-700" role="alert">
           {{ generalError }}

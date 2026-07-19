@@ -2,18 +2,21 @@
 
 ## 디렉터리 목적
 
-인증 사용자 기준 P2 프로필 use case, transaction, owner·version·document 경계를 조정한다.
+인증 사용자 기준 P2 프로필 use case와 P4 document evidence command/query, transaction, owner·version 경계를 조정한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`ProfileApplicationService.java`](ProfileApplicationService.java): 프로필 CRUD·direct evidence use case
 - [`ProfileRegistrationService.java`](ProfileRegistrationService.java): signup transaction의 빈 기본 프로필 등록
+- `DocumentEvidenceCommandPort`, `DocumentEvidenceService`: AI candidate 적용과 삭제·tombstone
+- `EvidenceReferenceQueryPort`: 후속 provenance 참조 contributor 경계
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
 - mutation마다 expected version을 확인하고 source와 evidence 변경을 하나의 transaction에서 수행한다.
-- 다른 사용자·없는 ID·P2 non-null document ID를 구분하지 않는 404로 변환한다.
+- 다른 사용자·없는·삭제 Document를 구분하지 않는 404로 변환한다.
+- 성공한 document candidate는 PENDING으로 적용하고 `SOURCE_DELETED` evidence는 수정하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

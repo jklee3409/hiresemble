@@ -4,6 +4,19 @@
 
 ControllerAdvice와 Security가 함께 사용하는 공개 오류 DTO·생성 규칙 및 P1·P2 공통 OpenAPI metadata를 소유한다.
 
+## [2026-07-19] Session Summary (P4 Document OpenAPI 보강)
+
+- What was done:
+  - Document multipart·202·상태·DTO와 upload/download/delete 오류 response를 OpenAPI에 반영했다.
+- Key decisions:
+  - 정확한 공개 8 operations만 추가한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 생성 OpenAPI 43 operations/30 paths와 DTO 완전성이 통과했다.
+- Next steps:
+  - P5 이후 path를 선행 노출하지 않는다.
+
 ## [2026-07-19] Session Summary (P2 프로필 OpenAPI schema 보강)
 
 - What was done:

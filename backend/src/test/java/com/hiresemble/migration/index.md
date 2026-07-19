@@ -1,14 +1,15 @@
-# P1~P3 Migration 테스트 안내
+# P1~P4 Migration 테스트 안내
 
 ## 디렉터리 목적
 
-Flyway V1~V3 보존과 V4 P3 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway V1~V4 보존과 V5 P4 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`P1MigrationTest.java`](P1MigrationTest.java): V1→V2, V1-only upgrade, constraint·index·V1 hash
 - [`P2MigrationTest.java`](P2MigrationTest.java): 빈 DB·V1·V2 upgrade, V1·V2 hash, P2 DB 불변식과 transaction rollback
 - [`P3MigrationTest.java`](P3MigrationTest.java): 빈 DB·V1/V2/V3 upgrade, V1~V3 hash와 P3 constraint·범위
+- [`P4MigrationTest.java`](P4MigrationTest.java): 빈 DB·V1/V2/V3/V4 upgrade, V1~V4 hash와 P4 constraint·범위
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -22,7 +23,7 @@ Flyway V1~V3 보존과 V4 P3 schema의 빈 DB·upgrade 경로를 실제 PostgreS
 
 ## 변경 시 주의사항
 
-- 적용 이력 V1·V2·V3를 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
+- 적용 이력 V1·V2·V3·V4를 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
 
 ## 관련 규칙 및 문서
 

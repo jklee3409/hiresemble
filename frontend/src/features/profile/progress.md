@@ -4,6 +4,19 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-19] Session Summary (P4 증빙 문서 selector 활성화)
+
+- What was done:
+  - 자격증·어학·수상 active document selector와 evidence document filter schema·query key를 활성화했다.
+- Key decisions:
+  - 선택 후보는 같은 사용자 active document 목록만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - schema·query key·page component와 owner filter E2E가 통과했다.
+- Next steps:
+  - deleted document는 selector cache에서 즉시 제거한다.
+
 ## [2026-07-19] Session Summary (P2 프로필 feature 규칙 구현)
 
 - What was done:

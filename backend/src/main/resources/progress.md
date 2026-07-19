@@ -8,6 +8,19 @@
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
 
+## [2026-07-19] Session Summary (P4 V5·Document runtime 설정 추가)
+
+- What was done:
+  - V5와 parser·Object Storage·outbox·Document Fake cost configuration을 추가했다.
+- Key decisions:
+  - 기본 AI provider와 Document estimated cost는 `none`·0이며 양수 비용에는 price version이 필요하다.
+- Issues encountered:
+  - None.
+- Validation:
+  - application context, dimension fail-fast, Compose와 Backend check가 통과했다.
+- Next steps:
+  - 실제 key나 provider 가격을 기본 설정에 넣지 않는다.
+
 ## [2026-07-19] Session Summary (P3 V4와 Agent runtime 설정 추가)
 
 - What was done:

@@ -306,7 +306,7 @@ public class ProfileController {
     }
 
     @GetMapping("/evidence")
-    @Operation(operationId = "listProfileEvidence", summary = "List profile evidence", description = "Lists direct evidence with optional status and category filters. Document filtering is deferred to P4.")
+    @Operation(operationId = "listProfileEvidence", summary = "List profile evidence", description = "Lists owner-scoped evidence. A document filter returns only DOCUMENT_CHUNK evidence for that active document.")
     public PageResponse<EvidenceDto> listEvidence(
             @RequestParam(required = false) EvidenceVerificationStatus verificationStatus,
             @RequestParam(required = false) @Size(min = 1, max = 80) String evidenceCategory,

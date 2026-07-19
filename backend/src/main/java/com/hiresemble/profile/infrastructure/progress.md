@@ -4,6 +4,19 @@
 
 P2 프로필·direct evidence의 owner-scoped JDBC 영속성과 optimistic mutation이 구현되어 있다.
 
+## [2026-07-19] Session Summary (P4 document evidence JDBC 연결)
+
+- What was done:
+  - owner-scoped document filter·candidate apply·delete/tombstone와 structured profile document FK 조회를 추가했다.
+- Key decisions:
+  - source chunk는 같은 user·document·revision이어야 하고 deleted source content는 tombstone에서 제거한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - cross-user, invalid chunk, metadata/confidence, unreferenced delete와 referenced tombstone가 통과했다.
+- Next steps:
+  - P5 provenance store는 실제 schema가 생긴 뒤 contributor로 추가한다.
+
 ## [2026-07-19] Session Summary (P2 프로필 JDBC 영속성 구현)
 
 - What was done:

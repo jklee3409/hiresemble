@@ -4,6 +4,19 @@
 
 익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-19] Session Summary (Documents navigation 추가)
+
+- What was done:
+  - 보호 layout navigation에 문서 목록 진입점을 추가했다.
+- Key decisions:
+  - 기존 Progress Drawer와 auth cleanup 경계를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - route·layout component 회귀와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - P5 이후 navigation은 해당 page 구현 뒤 추가한다.
+
 ## [2026-07-19] Session Summary (P3 Agent Run Progress Drawer 추가)
 
 - What was done:

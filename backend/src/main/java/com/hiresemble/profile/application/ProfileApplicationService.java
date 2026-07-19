@@ -2,6 +2,7 @@ package com.hiresemble.profile.application;
 
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
+import com.hiresemble.document.application.DocumentWorkflowQueryPort;
 import com.hiresemble.profile.domain.DirectEvidenceData;
 import com.hiresemble.profile.domain.DirectEvidenceFactory;
 import com.hiresemble.profile.domain.EvidenceSourceType;
@@ -55,10 +56,15 @@ public class ProfileApplicationService {
 
     private final ProfileStore store;
     private final ObjectMapper objectMapper;
+    private final DocumentWorkflowQueryPort documentQueryPort;
 
-    public ProfileApplicationService(ProfileStore store, ObjectMapper objectMapper) {
+    public ProfileApplicationService(
+            ProfileStore store,
+            ObjectMapper objectMapper,
+            DocumentWorkflowQueryPort documentQueryPort) {
         this.store = store;
         this.objectMapper = objectMapper;
+        this.documentQueryPort = documentQueryPort;
     }
 
     @Transactional(readOnly = true)
@@ -160,7 +166,7 @@ public class ProfileApplicationService {
     @Transactional
     public CertificationRecord createCertification(UUID userId, CertificationWrite input) {
         CertificationWrite command = certification(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
         CertificationRecord created = store.createCertification(id, userId, command, now);
@@ -172,7 +178,7 @@ public class ProfileApplicationService {
     public CertificationRecord updateCertification(
             UUID userId, UUID id, CertificationWrite input, long version) {
         CertificationWrite command = certification(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         CertificationRecord current = store.findCertification(userId, id).orElseThrow(this::notFound);
         requireVersion(current.version(), version);
         Instant now = Instant.now();
@@ -199,7 +205,7 @@ public class ProfileApplicationService {
     @Transactional
     public LanguageScoreRecord createLanguageScore(UUID userId, LanguageScoreWrite input) {
         LanguageScoreWrite command = languageScore(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
         LanguageScoreRecord created = store.createLanguageScore(id, userId, command, now);
@@ -211,7 +217,7 @@ public class ProfileApplicationService {
     public LanguageScoreRecord updateLanguageScore(
             UUID userId, UUID id, LanguageScoreWrite input, long version) {
         LanguageScoreWrite command = languageScore(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         LanguageScoreRecord current = store.findLanguageScore(userId, id).orElseThrow(this::notFound);
         requireVersion(current.version(), version);
         Instant now = Instant.now();
@@ -236,7 +242,7 @@ public class ProfileApplicationService {
     @Transactional
     public AwardRecord createAward(UUID userId, AwardWrite input) {
         AwardWrite command = award(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
         AwardRecord created = store.createAward(id, userId, command, now);
@@ -247,7 +253,7 @@ public class ProfileApplicationService {
     @Transactional
     public AwardRecord updateAward(UUID userId, UUID id, AwardWrite input, long version) {
         AwardWrite command = award(input);
-        rejectDeferredDocument(command.evidenceDocumentId());
+        requireActiveDocument(userId, command.evidenceDocumentId());
         AwardRecord current = store.findAward(userId, id).orElseThrow(this::notFound);
         requireVersion(current.version(), version);
         Instant now = Instant.now();
@@ -308,12 +314,13 @@ public class ProfileApplicationService {
             int page,
             int size,
             String sort) {
-        rejectDeferredDocument(documentId);
+        requireActiveDocument(userId, documentId);
         String normalizedCategory = category == null ? null : ProfilePolicy.requiredLabel(category, 80);
         return store.listEvidence(
                 userId,
                 status,
                 normalizedCategory,
+                documentId,
                 page,
                 size,
                 sort(sort, EVIDENCE_SORTS, "updatedAt,desc"));
@@ -459,10 +466,8 @@ public class ProfileApplicationService {
                 value.endedAt(), value.current(), value.responsibilities(), value.achievements());
     }
 
-    private void rejectDeferredDocument(UUID documentId) {
-        if (documentId != null) {
-            throw notFound();
-        }
+    private void requireActiveDocument(UUID userId, UUID documentId) {
+        if (documentId != null) documentQueryPort.snapshot(userId, documentId);
     }
 
     private String sort(String requested, Set<String> allowed, String defaultValue) {

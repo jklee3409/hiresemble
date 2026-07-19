@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-여러 화면이 공유하는 P1 인증·P2 프로필·P3 Agent Run HTTP 계약과 Session cleanup port를 관리한다.
+여러 화면이 공유하는 P1 인증·P2 프로필·P3 Agent Run·P4 Document HTTP 계약과 Session cleanup port를 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): typed Axios·CSRF·오류·인증·프로필·Agent Run API
+- [`api/`](api/index.md): typed Axios·CSRF·오류·인증·프로필·Agent Run·Document API
 - [`session/`](session/index.md): logout·401·사용자 전환 cleanup 순서
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
@@ -21,7 +21,7 @@
 
 ## 변경 시 주의사항
 
-- P4 이후 resource API client·draft 구조를 선행 생성하지 않는다. EventSource는 Session cleanup에 반드시 등록한다.
+- P5 이후 resource API client·draft 구조를 선행 생성하지 않는다. EventSource는 Session cleanup에 반드시 등록한다.
 
 ## 관련 규칙 및 문서
 

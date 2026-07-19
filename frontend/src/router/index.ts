@@ -125,6 +125,18 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '직접 입력 근거', profileRecommended: true },
       },
       {
+        path: 'documents',
+        name: 'documents',
+        component: () => import('@/pages/DocumentListPage.vue'),
+        meta: { title: '문서·근거' },
+      },
+      {
+        path: 'documents/:documentId',
+        name: 'document-detail',
+        component: () => import('@/pages/DocumentDetailPage.vue'),
+        meta: { title: '문서 상세' },
+      },
+      {
         path: 'agent-runs',
         name: 'agent-runs',
         component: () => import('@/pages/AgentRunListPage.vue'),

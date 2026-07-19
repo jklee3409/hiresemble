@@ -4,6 +4,19 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth, P2 profile과 P3 agent-runs feature가 구현되어 있다.
 
+## [2026-07-19] Session Summary (P4 documents feature 추가)
+
+- What was done:
+  - user-scoped document query key, filter canonicalization, upload·manual·reparse·delete와 Run monitor를 추가했다.
+- Key decisions:
+  - SSE disconnect는 실패가 아니며 terminal·WAITING_USER event는 REST query invalidation만 유도한다.
+- Issues encountered:
+  - WAITING_USER race를 detail invalidation으로 보정했다.
+- Validation:
+  - targeted 9 tests와 Frontend 전체 95 tests가 통과했다.
+- Next steps:
+  - P6 retrieval feature는 별도 phase로 남긴다.
+
 ## [2026-07-19] Session Summary (P3 agent-runs feature 추가)
 
 - What was done:

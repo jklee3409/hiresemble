@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, optimistic conflict 비교·재적용과 입력 UI를 관리한다.
+P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, optimistic conflict 비교·재적용과 P4 증빙 문서 선택 규칙을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -29,7 +29,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 
 - Backend owner·완료도 규칙을 UI에서 권한 판단으로 중복하지 않는다.
 - 409에서 자동 overwrite·mutation 재시도를 하지 않고 사용자 입력을 유지한다.
-- document 선택·filter UI는 P4 전까지 활성화하지 않는다.
+- document 선택·filter는 같은 사용자 active Document query만 사용하고 삭제 뒤 cache에서 제거한다.
 
 ## 관련 규칙 및 문서
 

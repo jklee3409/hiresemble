@@ -94,6 +94,10 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 .param("resourceId", resourceId)
                 .param("queuedAt", utc(queuedAt))
                 .update();
+        if (command.resource() != null && "DOCUMENT".equals(command.resource().resourceType())) {
+            insertDocumentLink(
+                    command.userId(), agentRunId, command.resource().resourceId(), queuedAt);
+        }
         return findByOwner(command.userId(), agentRunId).orElseThrow();
     }
 
@@ -143,6 +147,39 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                     .param("queuedAt", utc(queuedAt))
                     .update();
         if (inserted == 1) {
+            if ("DOCUMENT".equals(predecessor.resourceType())) {
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,document_id,primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,document_id,true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='DOCUMENT' AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException("document retry is missing its typed resource link");
+                }
+                int attached = jdbcClient.sql("""
+                                UPDATE documents SET latest_agent_run_id=:successorId,
+                                    version=version+1,updated_at=:updatedAt
+                                WHERE user_id=:userId AND id=:documentId AND deleted_at IS NULL
+                                """)
+                        .param("successorId", successorId)
+                        .param("updatedAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("documentId", predecessor.resourceId())
+                        .update();
+                if (attached != 1) {
+                    throw new IllegalStateException("document retry resource is not active");
+                }
+            }
             return findByOwner(predecessor.userId(), successorId).orElseThrow();
         }
         AgentRunSnapshot existing = jdbcClient.sql("SELECT " + AgentRunJdbcMapper.RUN_COLUMNS
@@ -281,6 +318,24 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 && successor.requestedQualityMode() == predecessor.requestedQualityMode()
                 && java.util.Objects.equals(successor.resourceType(), predecessor.resourceType())
                 && java.util.Objects.equals(successor.resourceId(), predecessor.resourceId());
+    }
+
+    private void insertDocumentLink(
+            UUID userId, UUID runId, UUID documentId, Instant createdAt) {
+        int inserted = jdbcClient.sql("""
+                        INSERT INTO agent_run_resource_links (
+                            id,user_id,agent_run_id,resource_kind,document_id,primary_resource,created_at
+                        ) VALUES (:id,:userId,:runId,'DOCUMENT',:documentId,true,:createdAt)
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("userId", userId)
+                .param("runId", runId)
+                .param("documentId", documentId)
+                .param("createdAt", utc(createdAt))
+                .update();
+        if (inserted != 1) {
+            throw new IllegalStateException("typed document resource link was not created");
+        }
     }
 
     private String where(AgentRunListCriteria criteria, Map<String, Object> parameters) {

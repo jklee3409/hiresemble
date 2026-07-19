@@ -4,6 +4,19 @@
 
 P1·P2 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
 
+## [2026-07-19] Session Summary (P4 upload·storage 안전 오류 추가)
+
+- What was done:
+  - payload too large, unsupported media, parser·storage unavailable와 safe document 오류 변환을 추가했다.
+- Key decisions:
+  - parser/provider exception 원문과 storage key는 client에 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 413·415·429·503, auth 401·CSRF 403·owner 404가 공통 6-field JSON 계약으로 통과했다.
+- Next steps:
+  - 내부 exception message를 공개 error detail로 사용하지 않는다.
+
 ## [2026-07-19] Session Summary (P2 resource·version 오류 변환 추가)
 
 - What was done:

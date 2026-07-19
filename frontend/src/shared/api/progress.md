@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P3 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P4 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-19] Session Summary (P4 Document typed contract·client 구현)
+
+- What was done:
+  - 공개 DTO·enum Zod parity와 multipart·idempotency·version·download client를 추가했다.
+- Key decisions:
+  - storage key·checksum·parser·embedding·provider 내부 field는 type에도 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - DTO parity·multipart header·오류 parsing 테스트와 Backend OpenAPI 43/30이 통과했다.
+- Next steps:
+  - P5 이후 client를 미리 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run typed contract·client 구현)
 

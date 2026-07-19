@@ -4,6 +4,23 @@
 
 P1~P3 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
 
+## [2026-07-19] Session Summary (P4 prepared idempotency transaction 확장)
+
+- What was done:
+  - Document Object preparation과 DB mutation 사이에 atomic idempotency completion·compensation 경계를 추가했다.
+
+- Key decisions:
+  - 기존 호출자 계약을 바꾸지 않고 P4 upload가 명시적으로 선택하는 별도 실행 경계로 한정했다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - 전체 Backend 30 suites/287 tests와 실제 Browser E2E 4/4가 통과했다.
+
+- Next steps:
+  - P5 이후 외부 side effect mutation은 적용 전 보상 가능성을 별도로 검토한다.
+
 ## [2026-07-19] Session Summary (P3 Agent Run 공통 오류·OpenAPI·idempotency 확장)
 
 - What was done:

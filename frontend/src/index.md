@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Vue 애플리케이션의 실행 코드와 타입 선언을 관리한다. P1 인증, P2 typed profile과 P3 Agent Run API·route·SSE 상호작용을 책임별 디렉터리로 구성한다.
+이 디렉터리는 Vue 애플리케이션의 실행 코드와 타입 선언을 관리한다. P1 인증, P2 typed profile, P3 Agent Run과 P4 Document API·route·SSE 상호작용을 책임별 디렉터리로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -14,10 +14,10 @@
 | [`router/`](router/)         | browser history와 route/guard 구성 영역                  |
 | [`styles/`](styles/)         | Tailwind 진입점과 제한된 전역 style 영역                 |
 | [`app/`](app/)               | Pinia·QueryClient bootstrap                              |
-| [`features/`](features/)     | auth·profile과 Agent Run query·SSE·표현 규칙             |
+| [`features/`](features/)     | auth·profile·Agent Run·Document query·SSE·표현 규칙      |
 | [`layouts/`](layouts/)       | PublicLayout·AppLayout와 lazy Progress Drawer            |
-| [`pages/`](pages/)           | 인증·profile·Agent Run page, 보호 shell와 404            |
-| [`shared/`](shared/)         | typed 인증·profile·Agent Run API와 Session cleanup       |
+| [`pages/`](pages/)           | 인증·profile·Agent Run·Document page, 보호 shell와 404   |
+| [`shared/`](shared/)         | typed 인증·profile·Agent Run·Document API와 cleanup      |
 | [`stores/`](stores/)         | auth 상태와 사용자 경계 reset                            |
 | [`progress.md`](progress.md) | 소스 영역의 구현 상태와 검증 이력                        |
 
@@ -26,7 +26,7 @@
 - `main.ts`는 Pinia, Vue Router, Vue Query와 PrimeVue Aura theme을 한 곳에서 조립한다.
 - `App.vue`는 route component가 표시될 최상위 outlet만 소유한다.
 - `env.d.ts`는 `VITE_API_BASE_URL`과 선택적 proxy target의 접근 타입을 고정한다.
-- 세부 책임은 각 하위 디렉터리의 `index.md`에서 관리하며 P4 이후 빈 기능 계층은 만들지 않는다.
+- 세부 책임은 각 하위 디렉터리의 `index.md`에서 관리하며 P5 이후 빈 기능 계층은 만들지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

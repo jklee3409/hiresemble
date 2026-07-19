@@ -155,14 +155,18 @@ describe('authentication route policy', () => {
     expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
   })
 
-  it('adds only lazy Agent Run pages while preserving P1 and P2 routes', () => {
+  it('adds lazy Document and Agent Run pages while preserving P1 and P2 routes', () => {
     const protectedShell = routes.find(
       (route) => route.path === '/' && route.meta?.requiresAuth === true,
     )
     const children = protectedShell?.children ?? []
     const listRoute = children.find((route) => route.name === 'agent-runs')
     const detailRoute = children.find((route) => route.name === 'agent-run-detail')
+    const documentsRoute = children.find((route) => route.name === 'documents')
+    const documentDetailRoute = children.find((route) => route.name === 'document-detail')
 
+    expect(typeof documentsRoute?.component).toBe('function')
+    expect(typeof documentDetailRoute?.component).toBe('function')
     expect(typeof listRoute?.component).toBe('function')
     expect(typeof detailRoute?.component).toBe('function')
     expect(children.map((route) => route.name)).toEqual(
@@ -172,6 +176,8 @@ describe('authentication route policy', () => {
         'profile-basic',
         'profile-education',
         'profile-evidence',
+        'documents',
+        'document-detail',
         'agent-runs',
         'agent-run-detail',
       ]),

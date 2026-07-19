@@ -4,6 +4,21 @@
 
 P3 workflow launch, state, checkpoint, budget, retry·cancel·resume와 domain apply port가 구현됐다.
 
+## [2026-07-19] Session Summary (P4 typed Document resource 연결)
+
+- What was done:
+  - Document owner resolution, display label, deletion check와 cancel compensation 경계를 연결했다.
+  - Agent Run 목록의 `DOCUMENT` resource filter가 active owner resolver를 통과한 뒤 typed resource criteria를 repository에 전달하도록 연결했다.
+- Key decisions:
+  - typed link가 공개 `resourceType/resourceId`의 원천이며 resource-linked retry도 owner를 다시 검증한다.
+- Issues encountered:
+  - 최초 P4 Validator가 application의 P3 예약 404 때문에 Document resource filter repository가 도달 불가능한 점을 MAJOR로 발견했다.
+- Validation:
+  - active owner Document 성공, 타 사용자·없는·삭제 Document 404, upload typed link, generic retry lineage와 delete cancel이 통과했다.
+  - 허용된 한 차례 보정 뒤 최종 read-only Validator 판정은 `PASS`다.
+- Next steps:
+  - P5 Job typed link는 실제 aggregate와 함께 추가한다.
+
 ## [2026-07-19] Session Summary (Agent Run application port와 transaction 구현)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 snapshot-first SSE 복구 기반이 구현됐다.
 
+## [2026-07-19] Session Summary (Document resource stream 재사용)
+
+- What was done:
+  - Document Run deep link, terminal·WAITING_USER invalidation과 document별 stream close를 추가했다.
+- Key decisions:
+  - REST Document 상태를 최종 원천으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - P3 Playwright 2/2와 P4 실제 SSE 시나리오가 통과했다.
+- Next steps:
+  - 다른 resource stream도 같은 cleanup 경계를 재사용한다.
+
 ## [2026-07-19] Session Summary (Agent Run UI와 SSE 복구 구현)
 
 - What was done:

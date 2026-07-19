@@ -3,9 +3,30 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth, P2 profile과 P3 Agent Run typed client·Vue Query·SSE 복구가 구현되어 있다.
-- `/agent-runs` 목록·상세는 lazy route이며 AppLayout에는 lazy Progress Drawer가 연결되어 있다.
-- Vitest 20 files/78 tests, profile E2E 1개와 Agent Run fixture E2E 2개가 있다. Dashboard·문서·AI 설정은 아직 없다.
+- P1 auth, P2 profile, P3 Agent Run과 P4 Document typed client·Vue Query·SSE 복구가 구현되어 있다.
+- `/agent-runs`와 `/documents` 목록·상세는 lazy route이며 AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 26 files/95 tests, profile E2E 1개, Agent Run fixture 2개와 실제 Document E2E 4개가 있다. Dashboard·공고·AI 설정은 아직 없다.
+
+## [2026-07-19] Session Summary (P4 Documents 화면·실제 E2E 구현)
+
+- What was done:
+  - Document DTO/API, user-scoped query key, lazy 목록·상세 route와 upload·manual·reparse·download·delete UI를 구현했다.
+  - 두 상태 축과 partial success, evidence 편집·승인·거절·SOURCE_DELETED read-only, P2 증빙 문서 selector를 연결했다.
+
+- Key decisions:
+  - SSE는 invalidation 신호이며 REST Document 상태가 최종 원천이다. logout·401·사용자 전환·delete에는 cache와 EventSource를 정리한다.
+
+- Issues encountered:
+  - 빠른 WAITING_USER 전이에서 detail이 stale일 수 있어 해당 SSE event에도 document query invalidation을 추가했다.
+
+- Validation:
+  - `corepack pnpm check`가 26 test files/95 tests와 production build를 통과했다.
+  - main bundle은 517.24 kB(gzip 143.50 kB), 기준선 대비 +8.77 kB(+2.67 kB gzip)이고 Document route는 lazy chunk다.
+  - P3 Playwright 2/2와 실제 Backend P4 Playwright 4/4가 통과했다.
+  - 최종 read-only Validator가 상태 UI·owner cache·SSE cleanup과 실제 E2E 근거를 포함해 `PASS`했다.
+
+- Next steps:
+  - P4 Frontend는 완료됐으며 P5 이후 화면과 Dashboard·AI settings는 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run 목록·상세·SSE Frontend 구현)
 

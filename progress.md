@@ -6,8 +6,37 @@
 - 제품 기능·API·DB·화면·기술 명세는 P0 승인 기준선으로 `docs/spec/`에 존재한다.
 - P1 공통 HTTP·Session·CSRF·인증·idempotency 기반과 P2 사용자 소유 프로필·direct evidence가 구현되어 있다.
 - P3 PostgreSQL Agent Run 수명주기, 고정 Fake workflow, 비용 예약·정산, SSE와 Frontend 복구 기반이 최종 validator `PASS`로 완료됐다.
-- 프론트엔드는 P2 프로필과 P3 Agent Run 목록·상세·진행 drawer를 제공하며 Dashboard·문서·공고·실제 AI 기능은 없다.
-- 공개 Spring mapping은 인증 5개, 프로필·direct evidence 25개와 Agent Run 5개인 총 35 operation·24 path로 제한된다.
+- P4 Document upload·parse·storage·Fake AI 근거 pipeline과 Frontend 목록·상세·검토가 최종 validator `PASS`로 완료됐다.
+- 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개인 총 43 operations·30 paths다.
+- Dashboard·공고·P6 전체 RAG와 실제 provider는 아직 없다.
+
+## [2026-07-19] Session Summary (P4 문서·근거 Pipeline 통합 구현)
+
+- What was done:
+  - 단일 V5, Document 공개 API 8개, parser·masker·chunker, MinIO 호환 Object Storage와 deletion outbox를 구현했다.
+  - P3 Agent Run에 authoritative typed Document link를 연결하고 Fake 1536 embedding·structured evidence extraction의 고정 8단계 workflow를 구현했다.
+  - Frontend `/documents` 목록·상세, P2 증빙 문서 selector, SSE invalidation과 실제 Backend Playwright 4개 시나리오를 연결했다.
+
+- Key decisions:
+  - parse와 evidence extraction 상태를 분리하고 parser 성공 뒤 AI 실패에는 text·chunk와 `PARSED`를 보존한다.
+  - `agent_run_resource_links`를 authoritative source로 사용하되 V4 legacy projection parity를 deferred DB trigger로 강제한다.
+  - production provider 기본값은 계속 `none`이며 Fake embedding·Chat·price catalog는 test scope에만 존재한다.
+  - Object 준비 뒤 Document·Run·budget·typed link·idempotency 완료 응답은 한 DB transaction에서 커밋하고 실패 시 Object를 보상한다.
+
+- Issues encountered:
+  - 격리 Browser E2E의 Frontend 고정 port와 Vite 인자 전달을 random validated port로 바꿨다.
+  - Fake usage의 불완전한 price pair 때문에 AI 단계가 안전 실패한 문제를 immutable Chat·Embedding price item seed와 참조로 해결했다.
+  - 기존 개발 DB에는 Flyway V1과 과거 Spring Session table만 있어 수정·repair·삭제하지 않고 모든 migration/E2E를 격리 DB에서 수행했다.
+  - 최초 read-only Validator가 Agent Run 목록의 Document resource filter가 P3 예약 404에 막힌 점을 `NEEDS_CHANGES`로 판정해 active owner resolver와 실제 Document 성공·격리·삭제 테스트를 허용된 한 차례 보정했다.
+
+- Validation:
+  - Backend 30 suites/287 tests, Frontend 26 files/95 tests와 production build, Compose, 실제 P4 Playwright 4/4가 통과했다.
+  - OpenAPI 43 operations/30 paths, V1–V4 SHA-256 불변, 단일 V5·`vector(1536)`·HNSW/P5 table 부재를 검증했다.
+  - 최초 read-only Validator는 Document resource filter를 `NEEDS_CHANGES`로 판정했고 한 차례 보정 후 최종 판정은 finding 없이 `PASS`다.
+  - 최종 Validator 전후 status/content 207개 snapshot SHA-256은 각각 `18e76431e70324441471d5e126bc64b377486791c3d901ac232ac9f581ef1648`, `3c30406c5bbc475e85cc96e5e0b5759e6725207d957fa9f5fe3bc7d2a7b82597`로 일치했다.
+
+- Next steps:
+  - P4는 AC-03 완료다. P5–P10은 미착수이며 P6 전체 RAG와 실제 provider는 P4에 포함하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run·AI runtime 기반 통합 구현)
 

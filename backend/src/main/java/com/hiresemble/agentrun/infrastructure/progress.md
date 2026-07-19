@@ -4,6 +4,19 @@
 
 P3 PostgreSQL persistence, bounded worker, claim·heartbeat·lease와 reconciliation이 구현됐다.
 
+## [2026-07-19] Session Summary (typed Document link projection 적용)
+
+- What was done:
+  - Agent Run 조회가 authoritative `agent_run_resource_links`에서 Document resource를 계산하도록 확장했다.
+- Key decisions:
+  - V4 legacy projection과 typed link parity는 V5 deferred trigger로 강제한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - same-user composite FK, run당 primary Document unique와 retry projection이 통과했다.
+- Next steps:
+  - 미래 resource column을 미리 만들지 않는다.
+
 ## [2026-07-19] Session Summary (DB claim과 worker 복구 구현)
 
 - What was done:

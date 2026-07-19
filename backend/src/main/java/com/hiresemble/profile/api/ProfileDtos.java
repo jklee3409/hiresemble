@@ -64,7 +64,7 @@ public final class ProfileDtos {
             @Schema(nullable = true) LocalDate acquiredDate,
             @Schema(nullable = true) LocalDate expiresAt,
             @Schema(nullable = true, maxLength = 5000) String description,
-            @Schema(nullable = true, description = "Document linkage is deferred until P4.")
+            @Schema(nullable = true, description = "Active evidence document owned by the current user.")
                     UUID evidenceDocumentId,
             long version,
             Instant createdAt,
@@ -78,7 +78,7 @@ public final class ProfileDtos {
             @Schema(nullable = true, maxLength = 100) String grade,
             @Schema(nullable = true) LocalDate testedAt,
             @Schema(nullable = true) LocalDate expiresAt,
-            @Schema(nullable = true, description = "Document linkage is deferred until P4.")
+            @Schema(nullable = true, description = "Active evidence document owned by the current user.")
                     UUID evidenceDocumentId,
             long version,
             Instant createdAt,
@@ -91,7 +91,7 @@ public final class ProfileDtos {
             @Schema(nullable = true, maxLength = 200) String organizer,
             @Schema(nullable = true) LocalDate awardedAt,
             @Schema(nullable = true, maxLength = 5000) String description,
-            @Schema(nullable = true, description = "Document linkage is deferred until P4.")
+            @Schema(nullable = true, description = "Active evidence document owned by the current user.")
                     UUID evidenceDocumentId,
             long version,
             Instant createdAt,
@@ -117,7 +117,7 @@ public final class ProfileDtos {
             UUID id,
             EvidenceSourceType sourceType,
             @Schema(nullable = true) UUID sourceEntityId,
-            @Schema(nullable = true, description = "Document linkage is deferred until P4.")
+            @Schema(nullable = true, description = "Document source when the evidence was extracted from a document.")
                     UUID documentId,
             @Schema(nullable = true) Instant sourceDeletedAt,
             @Schema(minLength = 1, maxLength = 80) String evidenceCategory,

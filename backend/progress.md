@@ -3,9 +3,32 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증 5개, P2 profile 25개와 P3 Agent Run 5개 API가 구현되어 있다.
-- V1~V3를 보존한 V4 migration이 Run·Step, AI policy·price·budget·usage DB 불변식을 추가한다.
-- 생성 OpenAPI는 정확히 35 operation/24 path이며 document·job·설정 등 P4 이후 endpoint는 없다.
+- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개와 P4 Document 8개 API가 구현되어 있다.
+- V1~V4를 보존한 V5 migration이 Document·text·chunk·typed Run link·Object outbox DB 불변식을 추가한다.
+- 생성 OpenAPI는 정확히 43 operations/30 paths이며 job·설정 등 P5 이후 endpoint는 없다.
+
+## [2026-07-19] Session Summary (P4 Document Backend·AI pipeline 구현)
+
+- What was done:
+  - V5 Document schema, 8개 API, parser·storage·outbox·embedding query와 profile evidence document FK를 구현했다.
+  - `DOCUMENT_INGESTION` 고정 workflow, masked-only Fake AI, manual same-run resume와 resource-linked retry를 연결했다.
+
+- Key decisions:
+  - 외부 Object 저장 뒤 DB 실패에는 즉시 보상 삭제하고 그마저 실패하면 document FK 없는 orphan cleanup outbox를 남긴다.
+  - Object 준비는 transaction 밖에 두고 Document·Run·budget·typed link·idempotency 완료 응답은 한 transaction으로 커밋한다.
+  - embedding active policy는 OpenAI/text-embedding-3-small/1536/cosine/generation 1 metadata지만 실제 provider는 활성화하지 않는다.
+
+- Issues encountered:
+  - 양수 budget reservation과 Fake usage price pair를 test-scope immutable price catalog에 맞게 보정했다.
+  - 최초 read-only Validator가 Agent Run 목록의 Document filter가 application 예약 404에 막힌 점을 MAJOR로 판정해 active owner resolver와 성공·격리·삭제 테스트를 한 차례 보정했다.
+
+- Validation:
+  - `backend\\gradlew.bat check` 30 suites/287 tests, 별도 `p4BrowserE2eTest`에서 Playwright 4/4가 통과했다.
+  - 빈 DB와 V1/V2/V3/V4-only upgrade, 실제 MinIO와 OpenAPI 43/30을 검증했다.
+  - 최초 Validator `NEEDS_CHANGES`의 Document resource filter를 한 차례 보정한 뒤 최종 read-only 판정은 `PASS`다.
+
+- Next steps:
+  - P4 Backend는 완료됐으며 P5 이후 domain과 P6 전체 RAG를 선행 구현하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run·AI runtime Backend 구현)
 

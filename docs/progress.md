@@ -2,7 +2,21 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0 계약은 확정됐고 P1 구현은 시작되지 않았다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P4가 완료됐고 P5–P10은 미착수다.
+
+## [2026-07-19] Session Summary (P4 구현 계획·추적 문서 동기화)
+
+- What was done:
+  - P4 실제 구현 범위와 Document·AI·Frontend·migration·E2E 추적 문서를 상호 링크했다.
+- Key decisions:
+  - 활성 `docs/spec/**`는 계약 충돌이 없어 수정하지 않고 구현 계획과 상태 문서만 갱신했다.
+- Issues encountered:
+  - 최초 Validator의 Agent Run Document filter MAJOR를 owner resolver와 직접 회귀 테스트로 한 차례 보정했다.
+- Validation:
+  - 상대 링크·progress 표준 필드·P5 이후 미착수 표현을 최종 문서 감사 대상으로 포함했다.
+  - 최종 read-only Validator가 문서와 실제 상태를 포함해 `PASS`했다.
+- Next steps:
+  - P5/P6 착수 시 P4의 typed resource·masked-only·forward migration 경계를 보존한다.
 
 ## [2026-07-18] Session Summary (P0 제품 계약 문서 기준선 확정)
 

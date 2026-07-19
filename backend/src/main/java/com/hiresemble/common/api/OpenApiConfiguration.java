@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.3",
-                description = "P3 authentication, profile, and durable Agent Run APIs. Successful DTOs are returned directly without an envelope."),
+                version = "1.4",
+                description = "P4 authentication, profile, Agent Run, and document APIs. Successful DTOs are returned directly without an envelope."),
         tags = {
             @Tag(
                     name = "Authentication",
@@ -41,7 +41,10 @@ import org.springframework.context.annotation.Configuration;
                     description = "Authenticated profile, structured profile resources, and direct evidence."),
             @Tag(
                     name = "Agent Runs",
-                    description = "Durable Agent Run status, retry, cancellation, and progress events.")
+                    description = "Durable Agent Run status, retry, cancellation, and progress events."),
+            @Tag(
+                    name = "Documents",
+                    description = "Owner-scoped upload, parsing, text, download, and deletion pipeline.")
         })
 @SecuritySchemes({
     @SecurityScheme(
@@ -71,7 +74,8 @@ public class OpenApiConfiguration {
                 .forEach((method, operation) -> {
                     boolean protectedMutation = path.equals("/api/v1/auth/logout")
                             || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"))
-                            || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST);
+                            || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST)
+                            || (path.startsWith("/api/v1/documents") && method != HttpMethod.GET);
                     if (protectedMutation) {
                         operation.setSecurity(List.of(new SecurityRequirement()
                                 .addList("sessionCookie")
@@ -80,7 +84,38 @@ public class OpenApiConfiguration {
                     if (path.startsWith("/api/v1/profile")) {
                         addProfileErrorResponses(path, method, operation);
                     }
+                    if (path.startsWith("/api/v1/documents")) {
+                        addDocumentErrorResponses(path, method, operation);
+                    }
                 }));
+    }
+
+    private void addDocumentErrorResponses(
+            String path, HttpMethod method, Operation operation) {
+        addError(operation, "401");
+        if (method != HttpMethod.GET) addError(operation, "403");
+        if (method == HttpMethod.GET && path.equals("/api/v1/documents")) {
+            addError(operation, "400");
+            return;
+        }
+        if (!path.equals("/api/v1/documents")) addError(operation, "404");
+        if (path.endsWith("/text") || path.endsWith("/manual-text")
+                || path.endsWith("/reparse") || path.endsWith("/download-url")
+                || method == HttpMethod.DELETE) {
+            addError(operation, "409");
+        }
+        if (path.equals("/api/v1/documents") && method == HttpMethod.POST) {
+            addError(operation, "400");
+            addError(operation, "413");
+            addError(operation, "415");
+            addError(operation, "429");
+            addError(operation, "503");
+        }
+        if (path.endsWith("/manual-text") || path.endsWith("/reparse")) {
+            addError(operation, "400");
+            addError(operation, "429");
+        }
+        if (path.endsWith("/download-url")) addError(operation, "503");
     }
 
     private void addProfileErrorResponses(

@@ -1,6 +1,7 @@
 package com.hiresemble.ai.workflow;
 
 import com.hiresemble.agentrun.application.AgentRunSnapshot;
+import com.hiresemble.agentrun.domain.PartialResult;
 import com.hiresemble.agentrun.domain.RequiredUserAction;
 import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
 import com.hiresemble.ai.model.ModelRouter.ModelRoute;
@@ -26,6 +27,10 @@ public interface WorkflowStepExecutor<T> {
 
     Contract<T> outputContract();
 
+    default Contract<T> outputContract(StepExecutionContext context) {
+        return outputContract();
+    }
+
     JsonNode minimalOutput(T validatedOutput, ObjectMapper objectMapper);
 
     default Optional<DomainApplyPlan> domainApply(
@@ -38,14 +43,52 @@ public interface WorkflowStepExecutor<T> {
         return Optional.empty();
     }
 
+    /**
+     * Full validated values may be handed to the immediately following fixed step in memory only.
+     * They are never part of an Agent Step checkpoint. A step that needs this handoff must disable
+     * persisted reuse because a process restart cannot reconstruct the value from minimal output.
+     */
+    default Object ephemeralOutput(T validatedOutput) {
+        return validatedOutput;
+    }
+
+    default Object ephemeralOutputFromMinimal(JsonNode minimalOutput) {
+        return minimalOutput;
+    }
+
+    default boolean reusable() {
+        return true;
+    }
+
+    /** Allows deterministic inspection to request user input discovered during the step. */
+    default Optional<RequiredUserAction> requiredUserAction(
+            T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {
+        return Optional.empty();
+    }
+
+    /** Supplies a safe, reference-only partial result for the terminal Run projection. */
+    default Optional<PartialResult> partialResult(
+            T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {
+        return Optional.empty();
+    }
+
     record StepExecutionContext(
             AgentRunSnapshot run,
             ContextSnapshot contextSnapshot,
-            Map<String, JsonNode> upstreamOutputs) {
+            Map<String, JsonNode> upstreamOutputs,
+            Map<String, Object> ephemeralOutputs) {
         public StepExecutionContext {
             Objects.requireNonNull(run, "run");
             Objects.requireNonNull(contextSnapshot, "contextSnapshot");
             upstreamOutputs = upstreamOutputs == null ? Map.of() : Map.copyOf(upstreamOutputs);
+            ephemeralOutputs = ephemeralOutputs == null ? Map.of() : Map.copyOf(ephemeralOutputs);
+        }
+
+        public StepExecutionContext(
+                AgentRunSnapshot run,
+                ContextSnapshot contextSnapshot,
+                Map<String, JsonNode> upstreamOutputs) {
+            this(run, contextSnapshot, upstreamOutputs, Map.of());
         }
     }
 
@@ -78,7 +121,8 @@ public interface WorkflowStepExecutor<T> {
             PromptDefinition prompt,
             ChatGateway chatGateway,
             EmbeddingGateway embeddingGateway,
-            WebSearchGateway webSearchGateway) {
+            WebSearchGateway webSearchGateway,
+            StepExecutionContext executionContext) {
         public GatewayInvocation {
             Objects.requireNonNull(input, "input");
             Objects.requireNonNull(modelRoute, "modelRoute");
@@ -86,6 +130,7 @@ public interface WorkflowStepExecutor<T> {
             Objects.requireNonNull(chatGateway, "chatGateway");
             Objects.requireNonNull(embeddingGateway, "embeddingGateway");
             Objects.requireNonNull(webSearchGateway, "webSearchGateway");
+            Objects.requireNonNull(executionContext, "executionContext");
         }
     }
 

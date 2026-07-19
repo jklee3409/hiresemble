@@ -15,11 +15,11 @@ workflow type+version+step key로 정확한 prompt contract를 찾는다.
 
 ## 다른 디렉터리와의 의존 관계
 
-[`../orchestration/`](../orchestration/index.md)이 실행 전에 조회한다. P3 실제 prompt는 test resources에만 있다.
+[`../orchestration/`](../orchestration/index.md)이 실행 전에 조회한다. P4 Document structured prompt metadata는 production registry에 있고 provider 본문 fixture는 test scope에 있다.
 
 ## 변경 시 주의사항
 
-P4 이후 빈 production prompt를 미리 만들지 않고 전체 prompt 내용을 로그·DB에 저장하지 않는다.
+P5 이후 빈 production prompt를 미리 만들지 않고 전체 prompt 내용을 로그·DB에 저장하지 않는다.
 
 ## 관련 규칙 및 문서
 

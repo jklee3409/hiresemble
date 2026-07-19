@@ -9,6 +9,7 @@ import ProfileEvidencePage from '@/pages/ProfileEvidencePage.vue'
 import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
 import type { EducationDto, EvidenceDto, PageResponse, ProfileDto } from '@/shared/api/contracts'
 import { ApiClientError } from '@/shared/api/errors'
+import * as documentApi from '@/shared/api/documentApi'
 import * as profileApi from '@/shared/api/profileApi'
 import { useAuthStore } from '@/stores/auth'
 
@@ -40,9 +41,14 @@ vi.mock('@/shared/api/profileApi', () => ({
   verifyEvidence: vi.fn(),
 }))
 
+vi.mock('@/shared/api/documentApi', () => ({
+  listDocuments: vi.fn(),
+}))
+
 describe('P2 profile pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(documentApi.listDocuments).mockResolvedValue(pageOf([]))
   })
 
   it('fetches and saves the basic profile, showing server completion and missing items without blocking', async () => {
@@ -174,7 +180,53 @@ describe('P2 profile pages', () => {
     expect(profileApi.deleteEducation).toHaveBeenCalledWith(item.id, item.version)
   })
 
-  it('filters, edits, verifies, and renders SOURCE_DELETED evidence read-only without document UI', async () => {
+  it('links certification, language, and award forms to an active owner document', async () => {
+    const documentId = '00000000-0000-4000-8000-000000000101'
+    vi.mocked(documentApi.listDocuments).mockResolvedValue(
+      pageOf([
+        {
+          id: documentId,
+          documentType: 'CERTIFICATE',
+          displayName: '자격 증빙.pdf',
+          mimeType: 'application/pdf',
+          fileSizeBytes: 100,
+          parseStatus: 'PARSED',
+          evidenceExtractionStatus: 'SUCCEEDED',
+          manualTextProvided: false,
+          safeError: null,
+          latestAgentRunId: null,
+          version: 1,
+          uploadedAt: '2026-07-19T00:00:00Z',
+          updatedAt: '2026-07-19T00:00:00Z',
+        },
+      ]),
+    )
+    vi.mocked(profileApi.listCertifications).mockResolvedValue(pageOf([]))
+    vi.mocked(profileApi.createCertification).mockResolvedValue({
+      id: 'certification-id',
+      name: '정보처리기사',
+      issuer: null,
+      credentialNumber: null,
+      acquiredDate: null,
+      expiresAt: null,
+      description: null,
+      evidenceDocumentId: documentId,
+      version: 0,
+      createdAt: '2026-07-19T00:00:00Z',
+      updatedAt: '2026-07-19T00:00:00Z',
+    })
+    const wrapper = await mountPage(StructuredProfilePage, { kind: 'certification' })
+    await wrapper.get('button').trigger('click')
+    await wrapper.get('#certification-name').setValue('정보처리기사')
+    await wrapper.get('#certification-evidenceDocumentId').setValue(documentId)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(profileApi.createCertification).toHaveBeenCalledWith(
+      expect.objectContaining({ name: '정보처리기사', evidenceDocumentId: documentId }),
+    )
+  })
+
+  it('filters by document, edits, verifies, and renders SOURCE_DELETED evidence read-only', async () => {
     const active = evidence()
     const deleted = {
       ...evidence(),
@@ -193,12 +245,34 @@ describe('P2 profile pages', () => {
       verificationStatus: 'REJECTED',
       version: 2,
     })
+    vi.mocked(documentApi.listDocuments).mockResolvedValue(
+      pageOf([
+        {
+          id: '00000000-0000-4000-8000-000000000101',
+          documentType: 'RESUME',
+          displayName: '이력서.txt',
+          mimeType: 'text/plain',
+          fileSizeBytes: 100,
+          parseStatus: 'PARSED',
+          evidenceExtractionStatus: 'SUCCEEDED',
+          manualTextProvided: false,
+          safeError: null,
+          latestAgentRunId: null,
+          version: 1,
+          uploadedAt: '2026-07-19T00:00:00Z',
+          updatedAt: '2026-07-19T00:00:00Z',
+        },
+      ]),
+    )
     const wrapper = await mountPage(ProfileEvidencePage)
 
-    expect(wrapper.text()).toContain('문서 근거와 출처 문서 필터는 P4')
-    expect(
-      wrapper.get('button[aria-describedby="document-filter-help"]').attributes('disabled'),
-    ).toBeDefined()
+    expect(wrapper.text()).toContain('직접 입력 근거와 문서에서 추출된 근거')
+    await wrapper.get('#evidence-document-filter').setValue('00000000-0000-4000-8000-000000000101')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(profileApi.listEvidence).toHaveBeenLastCalledWith(
+      expect.objectContaining({ documentId: '00000000-0000-4000-8000-000000000101' }),
+    )
     expect(wrapper.text()).toContain('원본이 삭제되어 읽기 전용입니다.')
     const deletedCard = wrapper
       .findAll('li')

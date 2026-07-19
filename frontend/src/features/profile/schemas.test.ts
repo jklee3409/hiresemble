@@ -83,6 +83,7 @@ describe('P2 profile Zod schemas', () => {
         acquiredDate: '2026-02-01',
         expiresAt: '2026-01-01',
         description: '',
+        evidenceDocumentId: '',
       }).fieldErrors.expiresAt,
     ).toBeDefined()
     expect(
@@ -92,6 +93,7 @@ describe('P2 profile Zod schemas', () => {
         grade: '',
         testedAt: '2026-02-01',
         expiresAt: '2026-01-01',
+        evidenceDocumentId: '',
       }).fieldErrors.expiresAt,
     ).toBeDefined()
   })

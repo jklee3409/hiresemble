@@ -33,6 +33,7 @@ export interface PageParams {
 export interface EvidenceListParams extends PageParams {
   verificationStatus?: EvidenceVerificationStatus
   evidenceCategory?: string
+  documentId?: string
 }
 
 function query<T extends object>(params: T): { params: T } {

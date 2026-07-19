@@ -45,6 +45,7 @@ export interface CertificationFormValues {
   acquiredDate: string
   expiresAt: string
   description: string
+  evidenceDocumentId: string
 }
 
 export interface LanguageScoreFormValues {
@@ -53,6 +54,7 @@ export interface LanguageScoreFormValues {
   grade: string
   testedAt: string
   expiresAt: string
+  evidenceDocumentId: string
 }
 
 export interface AwardFormValues {
@@ -60,6 +62,7 @@ export interface AwardFormValues {
   organizer: string
   awardedAt: string
   description: string
+  evidenceDocumentId: string
 }
 
 export interface CareerFormValues {
@@ -163,6 +166,7 @@ const certificationSchema = z
     acquiredDate: optionalDate,
     expiresAt: optionalDate,
     description: optionalText(5000),
+    evidenceDocumentId: z.union([z.literal(''), z.uuid()]),
   })
   .superRefine((value, context) =>
     validateDateOrder(value.acquiredDate, value.expiresAt, 'expiresAt', context),
@@ -175,6 +179,7 @@ const languageSchema = z
     grade: optionalText(100),
     testedAt: optionalDate,
     expiresAt: optionalDate,
+    evidenceDocumentId: z.union([z.literal(''), z.uuid()]),
   })
   .superRefine((value, context) =>
     validateDateOrder(value.testedAt, value.expiresAt, 'expiresAt', context),
@@ -185,6 +190,7 @@ const awardSchema = z.object({
   organizer: optionalText(200),
   awardedAt: optionalDate,
   description: optionalText(5000),
+  evidenceDocumentId: z.union([z.literal(''), z.uuid()]),
 })
 
 const careerSchema = z
@@ -262,7 +268,7 @@ export function validateCertificationForm(
       acquiredDate: nullable(parsed.data.acquiredDate),
       expiresAt: nullable(parsed.data.expiresAt),
       description: nullable(parsed.data.description),
-      evidenceDocumentId: null,
+      evidenceDocumentId: nullable(parsed.data.evidenceDocumentId),
     },
   }
 }
@@ -280,7 +286,7 @@ export function validateLanguageScoreForm(
       grade: nullable(parsed.data.grade),
       testedAt: nullable(parsed.data.testedAt),
       expiresAt: nullable(parsed.data.expiresAt),
-      evidenceDocumentId: null,
+      evidenceDocumentId: nullable(parsed.data.evidenceDocumentId),
     },
   }
 }
@@ -295,7 +301,7 @@ export function validateAwardForm(values: AwardFormValues): ValidationResult<Awa
       organizer: nullable(parsed.data.organizer),
       awardedAt: nullable(parsed.data.awardedAt),
       description: nullable(parsed.data.description),
-      evidenceDocumentId: null,
+      evidenceDocumentId: nullable(parsed.data.evidenceDocumentId),
     },
   }
 }

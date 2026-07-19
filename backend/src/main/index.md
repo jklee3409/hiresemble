@@ -6,10 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                       | 역할                                                |
-| -------------------------- | --------------------------------------------------- |
-| [`java/`](java/)           | P1 auth, P2 profile과 P3 agentrun·ai 운영 package   |
-| [`resources/`](resources/) | Session·Agent runtime 설정과 V1~V4 Flyway migration |
+| 경로                       | 역할                                                      |
+| -------------------------- | --------------------------------------------------------- |
+| [`java/`](java/)           | P1 auth, P2 profile, P3 agentrun·ai와 P4 document package |
+| [`resources/`](resources/) | Session·AI·Document 설정과 V1~V5 Flyway migration         |
 
 ## 구성 요소 역할
 

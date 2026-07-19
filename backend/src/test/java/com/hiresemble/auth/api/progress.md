@@ -4,6 +4,19 @@
 
 P1 다섯 인증 endpoint 회귀와 P1·P2 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
 
+## [2026-07-19] Session Summary (P4 포함 43-operation OpenAPI 검증)
+
+- What was done:
+  - 문서 8개를 포함한 실제 Spring mapping과 생성 OpenAPI의 전체 path·operationId·security·response·DTO 계약을 고정했다.
+- Key decisions:
+  - 기존 auth 5·profile 25·Agent Run 5 operation을 유지한다.
+- Issues encountered:
+  - MVC와 actuator mapping bean이 함께 있어 기본 `requestMappingHandlerMapping`을 qualifier로 명시했다.
+- Validation:
+  - 실제 Spring mapping과 생성 OpenAPI가 각각 정확히 43 operations/30 paths로 통과했다.
+- Next steps:
+  - P5 전에는 operation 수를 늘리지 않는다.
+
 ## [2026-07-19] Session Summary (P2 포함 30-operation OpenAPI 검증)
 
 - What was done:

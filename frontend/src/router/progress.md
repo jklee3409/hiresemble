@@ -6,6 +6,19 @@
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run list/detail 및 전용 404 route가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run detail만 허용한다.
 
+## [2026-07-19] Session Summary (P4 Document lazy route 추가)
+
+- What was done:
+  - `/documents`와 `/documents/:documentId` lazy route 및 safe returnTo를 추가했다.
+- Key decisions:
+  - Document route는 main bundle과 분리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - route import·guard·404·returnTo 테스트와 bundle build가 통과했다.
+- Next steps:
+  - 미구현 P5 path를 allowlist에 추가하지 않는다.
+
 ## [2026-07-19] Session Summary (P3 Agent Run lazy route·returnTo 추가)
 
 - What was done:

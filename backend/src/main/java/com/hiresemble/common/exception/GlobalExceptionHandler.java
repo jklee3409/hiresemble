@@ -20,6 +20,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -93,6 +94,12 @@ public class GlobalExceptionHandler {
     ResponseEntity<ErrorResponseDto> handleUnsupportedMediaType(
             HttpMediaTypeNotSupportedException exception, HttpServletRequest request) {
         return response(ErrorCode.UNSUPPORTED_MEDIA_TYPE, List.of(), request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorResponseDto> handlePayloadTooLarge(
+            MaxUploadSizeExceededException exception, HttpServletRequest request) {
+        return response(ErrorCode.PAYLOAD_TOO_LARGE, List.of(), request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

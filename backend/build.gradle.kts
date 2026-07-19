@@ -79,3 +79,16 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     systemProperty("user.timezone", "UTC")
 }
+
+tasks.named<Test>("test") {
+    exclude("**/P4BrowserE2eTest.class")
+}
+
+tasks.register<Test>("p4BrowserE2eTest") {
+    group = "verification"
+    description = "Runs the isolated P4 Spring, PostgreSQL, MinIO, Vue, SSE, and Chromium E2E."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/P4BrowserE2eTest.class")
+    shouldRunAfter(tasks.named("test"))
+}

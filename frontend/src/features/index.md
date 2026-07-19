@@ -9,6 +9,7 @@
 - [`auth/`](auth/index.md): P1 인증 Form 입력 schema와 byte validation
 - [`profile/`](profile/index.md): P2 프로필 Zod·query key·version 충돌·공용 입력 UI
 - [`agent-runs/`](agent-runs/index.md): P3 목록·상세 projection, SSE 복구와 Progress Drawer
+- [`documents/`](documents/index.md): P4 문서 upload·query·상태·SSE invalidation과 delete cleanup
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -16,6 +17,7 @@
 - 실제 구현된 기능 규칙만 하위 feature에 두고 빈 미래 기능 계층을 만들지 않는다.
 - profile feature는 서버 상태를 소유하지 않고 page가 Vue Query로 사용하는 schema·key·상호작용만 제공한다.
 - Agent Run feature는 DB snapshot을 반영한 Vue Query cache와 연결 복구 상태를 분리한다.
+- Documents feature는 user-scoped REST 상태를 원천으로 삼고 Agent Run stream을 query invalidation 신호로만 사용한다.
 
 ## 다른 디렉터리와의 의존 관계
 

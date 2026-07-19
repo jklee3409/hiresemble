@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+import { useDocumentListQuery } from '@/features/documents/queries'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
@@ -17,15 +19,20 @@ import * as profileApi from '@/shared/api/profileApi'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const status = ref<'' | EvidenceVerificationStatus>('')
 const category = ref('')
 const page = ref(0)
 const size = ref(20)
 const sort = ref('updatedAt,desc')
+const documentId = ref(typeof route.query.documentId === 'string' ? route.query.documentId : '')
+const documents = useDocumentListQuery(userId, { page: 0, size: 100, sort: 'updatedAt,desc' })
 const filters = computed<profileApi.EvidenceListParams>(() => ({
   verificationStatus: status.value || undefined,
   evidenceCategory: category.value.trim() || undefined,
+  documentId: documentId.value || undefined,
   page: page.value,
   size: size.value,
   sort: sort.value,
@@ -62,6 +69,11 @@ const verificationMutation = useMutation({
 
 function applyFilters(): void {
   page.value = 0
+  void router.replace({
+    query: {
+      ...(documentId.value ? { documentId: documentId.value } : {}),
+    },
+  })
 }
 
 function openEdit(evidence: EvidenceDto): void {
@@ -211,8 +223,7 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
     <h2 id="evidence-heading" class="text-2xl font-bold">직접 입력 근거</h2>
     <p class="mt-2 text-slate-600">구조화 프로필에서 동기화된 근거를 검토하고 편집합니다.</p>
     <p class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
-      문서 근거와 출처 문서 필터는 P4에서 제공됩니다. 현재 문서 선택이나 가짜 문서 연결은 사용할 수
-      없습니다.
+      직접 입력 근거와 문서에서 추출된 근거를 함께 검토합니다. 삭제된 원천은 읽기 전용입니다.
     </p>
 
     <form
@@ -250,17 +261,26 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
       <button type="submit" class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white">
         필터 적용
       </button>
-      <button
-        type="button"
-        class="cursor-not-allowed rounded-lg border border-slate-200 px-4 py-2 text-slate-400"
-        disabled
-        aria-describedby="document-filter-help"
+      <label class="text-sm font-medium"
+        >출처 문서<select
+          id="evidence-document-filter"
+          v-model="documentId"
+          class="mt-1 block max-w-72 rounded-lg border border-slate-300 px-3 py-2"
+          :disabled="documents.isPending.value || documents.isError.value"
+        >
+          <option value="">전체</option>
+          <option
+            v-for="candidate in documents.data.value?.items"
+            :key="candidate.id"
+            :value="candidate.id"
+          >
+            {{ candidate.displayName }}
+          </option>
+        </select></label
       >
-        문서 필터 (P4)
-      </button>
     </form>
-    <p id="document-filter-help" class="mt-1 text-xs text-slate-500">
-      문서 기능 구현 전에는 비활성화됩니다.
+    <p v-if="documents.isError.value" class="mt-1 text-xs text-red-700" role="alert">
+      출처 문서 목록을 불러오지 못했습니다.
     </p>
 
     <p v-if="message" class="mt-4 text-sm text-emerald-700" role="status">{{ message }}</p>

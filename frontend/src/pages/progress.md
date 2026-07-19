@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·보호 shell, P2 profile과 P3 Agent Run list/detail page 및 전용 404를 관리한다.
+P1 인증·보호 shell, P2 profile, P3 Agent Run과 P4 Document list/detail page 및 전용 404를 관리한다.
+
+## [2026-07-19] Session Summary (P4 Document 목록·상세 Page 구현)
+
+- What was done:
+  - upload·filter·pagination·sort 목록과 metadata·text·manual·reparse·download·delete·evidence 상세를 구현했다.
+- Key decisions:
+  - `PARSED + evidence FAILED`는 업로드 실패가 아니라 text preview를 유지하는 partial success로 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - page component tests와 실제 성공·manual·failure·isolation Browser 시나리오가 통과했다.
+- Next steps:
+  - Dashboard와 P5 이후 pages는 미착수다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run 목록·상세 Page 구현)
 

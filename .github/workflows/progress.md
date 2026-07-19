@@ -4,8 +4,22 @@
 
 - `ci.yml` 하나가 `main` push와 pull request를 대상으로 등록되어 있다.
 - Backend job은 Java 21에서 Gradle `check`, Frontend job은 `.nvmrc`와 frozen pnpm lockfile을 사용한 `pnpm check`, Docker Compose job은 `docker compose config --quiet`를 실행한다.
-- 세 job은 서로 독립적이며 workflow 전체 권한은 `contents: read`다.
+- P4 Browser E2E job은 Java 21·Node·Chromium과 Testcontainers로 실제 Document pipeline을 격리 실행한다.
+- 네 job은 서로 독립적이며 workflow 전체 권한은 `contents: read`다.
 - 실제 GitHub-hosted runner 실행 상태는 아직 확인되지 않았다.
+
+## [2026-07-19] Session Summary (P4 실제 Browser E2E CI 추가)
+
+- What was done:
+  - frozen Frontend dependency와 Chromium을 준비하고 `p4BrowserE2eTest`를 실행하는 독립 job을 추가했다.
+- Key decisions:
+  - API key·운영 인프라 없이 Testcontainers PostgreSQL·MinIO와 test-scope Fake AI만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 동일 Gradle task가 Windows 로컬 격리 환경에서 Playwright 4/4로 통과했다. GitHub-hosted runner 실행은 commit·push 금지로 미실행이다.
+- Next steps:
+  - 첫 push/PR에서 Ubuntu Docker·Chromium 설치와 20분 timeout을 확인한다.
 
 ## [2026-07-17] Session Summary (모듈별 CI 워크플로 구성)
 

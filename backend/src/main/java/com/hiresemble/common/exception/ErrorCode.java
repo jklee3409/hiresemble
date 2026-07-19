@@ -17,8 +17,10 @@ public enum ErrorCode {
     IDEMPOTENCY_REQUEST_IN_PROGRESS(HttpStatus.CONFLICT, "같은 요청이 처리 중입니다."),
     IDEMPOTENCY_KEY_REUSED(HttpStatus.CONFLICT, "같은 키가 다른 요청에 사용되었습니다."),
     AGENT_RUN_RETRY_ALREADY_CREATED(HttpStatus.CONFLICT, "이 실행의 재시도가 이미 생성되었습니다."),
+    PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기는 20MB 이하여야 합니다."),
     RATE_OR_BUDGET_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "사용 가능한 AI 예산을 확인해 주세요."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 요청 형식입니다."),
+    EXTERNAL_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "외부 저장소를 일시적으로 사용할 수 없습니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "요청을 처리하지 못했습니다.");
 
     private final HttpStatus httpStatus;

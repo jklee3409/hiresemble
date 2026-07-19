@@ -43,6 +43,7 @@ export function useAgentRunDetailQuery(
   return useQuery({
     queryKey: computed(() => agentRunQueryKeys.detail(toValue(userId), toValue(agentRunId))),
     queryFn: () => getAgentRun(toValue(agentRunId)),
+    enabled: computed(() => toValue(userId) !== '' && toValue(agentRunId) !== ''),
   })
 }
 

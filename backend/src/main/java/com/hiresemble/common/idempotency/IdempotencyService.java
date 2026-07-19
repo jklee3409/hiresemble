@@ -7,6 +7,8 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
@@ -98,6 +100,77 @@ public class IdempotencyService {
                 canonicalRequest.getBytes(StandardCharsets.UTF_8),
                 responseType,
                 operation);
+    }
+
+    /**
+     * Reserves the key before external preparation, then commits the business operation and
+     * idempotent response in one short transaction. Preparation is compensated when that
+     * transaction fails. Existing callers keep the original execution boundary.
+     */
+    public <P, T> IdempotentResponse<T> executePrepared(
+            IdempotencyScope scope,
+            String canonicalRequest,
+            Class<T> responseType,
+            Supplier<P> preparation,
+            Function<P, OriginalResponse<T>> operation,
+            Consumer<P> compensation) {
+        validate(scope);
+        byte[] canonicalBytes = canonicalRequest.getBytes(StandardCharsets.UTF_8);
+        int currentVersion = hasher.currentVersion();
+        String currentHash = hasher.hash(currentVersion, scope, canonicalBytes);
+        UUID recordId = UUID.randomUUID();
+        Instant now = Instant.now();
+        boolean inserted = Boolean.TRUE.equals(requiresNew.execute(status -> repository.tryReserve(
+                recordId,
+                scope,
+                currentHash,
+                currentVersion,
+                now,
+                now.plus(properties.getTtl()))));
+
+        if (!inserted) {
+            IdempotencyRecord existing = requiresNew.execute(status -> repository.find(scope)
+                    .orElseThrow(() -> new IllegalStateException("Conflicting record disappeared")));
+            String comparableHash = hasher.hash(existing.hashKeyVersion(), scope, canonicalBytes);
+            if (!hashesEqual(existing.requestHash(), comparableHash)) {
+                throw new BusinessException(ErrorCode.IDEMPOTENCY_KEY_REUSED);
+            }
+            if (!existing.completed()) {
+                throw new BusinessException(ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS);
+            }
+            return new IdempotentResponse<>(
+                    existing.responseStatus(), read(existing.responseJson(), responseType), true);
+        }
+
+        P prepared = preparation.get();
+        try {
+            IdempotentResponse<T> response = requiresNew.execute(status -> {
+                OriginalResponse<T> original = operation.apply(prepared);
+                String responseJson = write(original.body());
+                Instant completedAt = Instant.now();
+                repository.complete(
+                        recordId,
+                        original.status(),
+                        responseJson,
+                        original.resourceType(),
+                        original.resourceId(),
+                        original.agentRunId(),
+                        completedAt,
+                        completedAt.plus(properties.getTtl()));
+                return new IdempotentResponse<>(original.status(), original.body(), false);
+            });
+            if (response == null) {
+                throw new IllegalStateException("Prepared idempotent transaction returned no response");
+            }
+            return response;
+        } catch (RuntimeException failure) {
+            try {
+                compensation.accept(prepared);
+            } catch (RuntimeException compensationFailure) {
+                failure.addSuppressed(compensationFailure);
+            }
+            throw failure;
+        }
     }
 
     private void validate(IdempotencyScope scope) {

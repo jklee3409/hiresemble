@@ -2,9 +2,22 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai` package가 구현되어 있다.
-- 공통 오류·인증·프로필과 durable Run·Step, fixed workflow·disabled gateway를 제공한다.
-- 성공 응답용 `BaseResponseDto`와 P4 이후 domain package는 존재하지 않는다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document` package가 구현되어 있다.
+- 공통 오류·인증·프로필, durable Run·Step, fixed workflow·disabled gateway와 Document pipeline을 제공한다.
+- 성공 응답용 `BaseResponseDto`와 P5 이후 domain package는 존재하지 않는다.
+
+## [2026-07-19] Session Summary (P4 document Java 영역 추가)
+
+- What was done:
+  - `document/{api,application,domain,infrastructure}`와 AI Document ingestion contribution을 추가하고 profile·agentrun 경계를 연결했다.
+- Key decisions:
+  - Document repository는 AI에 공개하지 않고 typed application port만 제공한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 30 suites/287 tests와 실제 E2E가 통과했다.
+- Next steps:
+  - P5 이후 package는 미리 생성하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 agentrun·ai Java 영역 추가)
 

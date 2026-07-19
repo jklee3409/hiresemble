@@ -14,5 +14,11 @@ describe('profile query keys', () => {
     expect(profileQueryKeys.awards('user-1', filters)[1]).toBe('user-1')
     expect(profileQueryKeys.careers('user-1', filters)[1]).toBe('user-1')
     expect(profileQueryKeys.evidence('user-1', filters)[1]).toBe('user-1')
+    expect(profileQueryKeys.evidence('user-1', filters)).toEqual([
+      'user',
+      'user-1',
+      'evidence',
+      filters,
+    ])
   })
 })

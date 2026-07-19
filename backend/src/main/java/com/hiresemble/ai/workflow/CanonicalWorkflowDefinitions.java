@@ -90,6 +90,9 @@ public final class CanonicalWorkflowDefinitions {
     }
 
     private static boolean isModelStep(String key) {
+        if (key.equals("EXTRACT_OR_ACCEPT_TEXT")) {
+            return false;
+        }
         return key.contains("EXTRACT_")
                 || key.contains("ANALYZE_")
                 || key.contains("ASSESS_")

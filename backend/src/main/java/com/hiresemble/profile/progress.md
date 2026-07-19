@@ -2,7 +2,21 @@
 
 ## Overview
 
-P2 기본·구조화 프로필과 direct evidence를 owner-scoped transaction 경계로 구현했다. 문서 aggregate와 AI 추출 근거는 아직 없다.
+P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했다.
+
+## [2026-07-19] Session Summary (P4 Document evidence·증빙 문서 연결)
+
+- What was done:
+  - evidence document filter, document candidate PENDING 적용과 자격증·어학·수상 owner document 연결을 활성화했다.
+- Key decisions:
+  - 참조 없는 document evidence는 삭제하고 참조가 있으면 같은 ID의 `SOURCE_DELETED` tombstone으로 전환한다.
+- Issues encountered:
+  - P5 이후 provenance table 없이 Fake `EvidenceReferenceQueryPort` contributor로 tombstone branch를 검증했다.
+- Validation:
+  - active document owner 404, evidence edit·VERIFIED·REJECTED와 tombstone mutation 409가 통과했다.
+  - 최종 read-only Validator가 document filter·증빙 FK·SOURCE_DELETED 정책을 포함해 `PASS`했다.
+- Next steps:
+  - 실제 downstream provenance contributor는 해당 domain phase에 추가한다.
 
 ## [2026-07-19] Session Summary (P2 프로필·직접 입력 근거 구현)
 

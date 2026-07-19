@@ -4,6 +4,19 @@
 
 Flyway V1~V3 보존과 V4 P3 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
 
+## [2026-07-19] Session Summary (P4 V5 migration·불변식 검증)
+
+- What was done:
+  - 빈 DB와 V1/V2/V3/V4-only upgrade, V5 table·CHECK·FK·trigger·policy metadata를 검증했다.
+- Key decisions:
+  - V1–V4 hash와 단일 V5, HNSW/P5 table 부재를 명시적으로 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `P4MigrationTest`와 전체 Backend check가 PostgreSQL 18+pgvector에서 통과했다.
+- Next steps:
+  - 이후 migration 테스트도 기존 hash 불변을 누적 검증한다.
+
 ## [2026-07-19] Session Summary (P3 V4 migration·불변식 검증)
 
 - What was done:

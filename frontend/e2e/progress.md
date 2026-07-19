@@ -4,8 +4,22 @@
 
 - `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
 - `agent-runs.spec.ts`가 test-local REST/SSE fixture로 P3 reconnect·polling·action cleanup을 검증한다.
+- `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
-- 테스트는 외부 provider와 운영 데이터 없이 격리 DB 또는 Playwright route fixture를 사용한다.
+- 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-19] Session Summary (P4 실제 Document pipeline 브라우저 검증)
+
+- What was done:
+  - 실제 Backend 202·SSE·parse·mask·chunk·Fake embedding·evidence·검토·download·delete를 연결한 4개 시나리오를 추가했다.
+- Key decisions:
+  - `P4_E2E_ENABLED=true`와 Backend 주도 격리 환경에서만 actual spec을 실행한다.
+- Issues encountered:
+  - Frontend port 충돌을 validated random port와 `strictPort`로 제거했다.
+- Validation:
+  - P4 Chromium 4/4, 기존 P3 Chromium 2/2와 전체 7 scenario discovery가 통과했다.
+- Next steps:
+  - CI remote 실행 결과는 첫 push/PR에서 확인한다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run REST·SSE 브라우저 fixture 검증)
 

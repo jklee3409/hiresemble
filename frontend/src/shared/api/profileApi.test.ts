@@ -101,10 +101,11 @@ describe('P2 profile API contract', () => {
     })
   })
 
-  it('uses only the three approved evidence operations and omits documentId when not supplied', async () => {
+  it('uses only the three approved evidence operations and activates documentId filter', async () => {
     await profileApi.listEvidence({
       verificationStatus: 'VERIFIED',
       evidenceCategory: 'CAREER',
+      documentId: 'document-id',
       page: 0,
       size: 20,
       sort: 'updatedAt,desc',
@@ -121,6 +122,7 @@ describe('P2 profile API contract', () => {
       params: {
         verificationStatus: 'VERIFIED',
         evidenceCategory: 'CAREER',
+        documentId: 'document-id',
         page: 0,
         size: 20,
         sort: 'updatedAt,desc',

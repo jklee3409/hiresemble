@@ -4,8 +4,21 @@
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query, PrimeVue를 초기화한다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
-- P1 auth·Session, P2 profile과 P3 `features/agent-runs`, Agent Run API·page·lazy route 구현·테스트가 있다.
-- 실제 profile과 Agent Run 화면이 있으며 Dashboard 집계·문서·AI 설정 기능은 아직 없다.
+- P1 auth·Session, P2 profile, P3 `features/agent-runs`와 P4 `features/documents`, API·page·lazy route 구현·테스트가 있다.
+- 실제 profile·Agent Run·Document 화면이 있으며 Dashboard 집계·공고·AI 설정 기능은 아직 없다.
+
+## [2026-07-19] Session Summary (P4 Document Vue source 추가)
+
+- What was done:
+  - document shared API·feature·lazy pages·routes와 P2 evidence document selector를 추가했다.
+- Key decisions:
+  - server state는 Vue Query, stream 수명주기는 기존 Agent Run feature를 재사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 95 tests·production build와 실제 Backend Playwright 4/4가 통과했다.
+- Next steps:
+  - P5 이후 source directory를 선행 생성하지 않는다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run Vue source 추가)
 

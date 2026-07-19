@@ -8,6 +8,7 @@ import {
   AGENT_RUN_POLL_INTERVAL_MS,
   AGENT_RUN_RECONNECT_DELAYS_MS,
   AgentRunStreamController,
+  closeAgentRunStreamsForResource,
   mergeAgentRunEvent,
   type AgentRunConnectionState,
   type EventSourceFactory,
@@ -182,6 +183,50 @@ describe('AgentRunStreamController', () => {
     expect(sources[0]?.closed).toBe(true)
     expect(cancelQueries).toHaveBeenCalledOnce()
     expect(clear).toHaveBeenCalledOnce()
+  })
+
+  it('invalidates every document projection on terminal and can close only the deleted resource stream', () => {
+    const documentId = '00000000-0000-4000-8000-000000000010'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({ resourceType: 'DOCUMENT', resourceId: documentId })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    closeAgentRunStreamsForResource('user-2', 'DOCUMENT', documentId)
+    expect(sources[0]?.closed).toBe(false)
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('waiting_user', waitingEvent(2))
+    expect(invalidations).toContainEqual(['user', 'user-1', 'documents'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'document', documentId])
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(3, 'SUCCEEDED'),
+      resourceType: 'DOCUMENT',
+      resourceId: documentId,
+    })
+
+    expect(invalidations).toContainEqual(['user', 'user-1', 'documents'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'document', documentId])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'documentText', documentId])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'evidence'])
+    expect(sources[0]?.closed).toBe(true)
+
+    const secondSources: FakeEventSource[] = []
+    const second = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(secondSources),
+    })
+    second.start()
+    closeAgentRunStreamsForResource('user-1', 'DOCUMENT', documentId)
+    expect(secondSources[0]?.closed).toBe(true)
   })
 })
 

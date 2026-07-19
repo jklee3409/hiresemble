@@ -13,6 +13,8 @@ import {
   type AgentStepDto,
 } from '@/shared/api/agentRunContracts'
 import { getAgentRun } from '@/shared/api/agentRunApi'
+import { documentQueryKeys } from '@/features/documents/queries'
+import { profileQueryKeys } from '@/features/profile/queryKeys'
 import {
   sessionCleanup,
   type EventSourceCleanupPort,
@@ -23,6 +25,7 @@ import { agentRunQueryKeys } from './queries'
 
 export const AGENT_RUN_RECONNECT_DELAYS_MS = [1_000, 2_000, 5_000] as const
 export const AGENT_RUN_POLL_INTERVAL_MS = 5_000
+const activeStreams = new Set<AgentRunStreamController>()
 
 export type AgentRunConnectionState =
   'connecting' | 'connected' | 'reconnecting' | 'polling' | 'closed'
@@ -81,6 +84,7 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
 
   start(): void {
     if (this.stopped || this.source !== null || this.timer !== null) return
+    activeStreams.add(this)
     this.unregisterCleanup = this.cleanup.registerEventSource(this)
     if (isTerminal(this.currentRun.status)) {
       this.finish(this.currentRun)
@@ -92,6 +96,7 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
   close(): void {
     if (this.stopped) return
     this.stopped = true
+    activeStreams.delete(this)
     this.stopTransport()
     this.unregisterCleanup?.()
     this.unregisterCleanup = null
@@ -214,12 +219,25 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
       agentRunQueryKeys.detail(this.options.userId, this.options.agentRunId),
       run,
     )
+    if (
+      run.status === 'WAITING_USER' &&
+      run.resourceType === 'DOCUMENT' &&
+      run.resourceId !== null
+    ) {
+      void this.options.cache.invalidateQueries({
+        queryKey: documentQueryKeys.root(this.options.userId),
+      })
+      void this.options.cache.invalidateQueries({
+        queryKey: documentQueryKeys.detail(this.options.userId, run.resourceId),
+      })
+    }
   }
 
   private finish(run: AgentRunDetailDto): void {
     if (!isTerminal(run.status)) return
     this.currentRun = run
     this.stopped = true
+    activeStreams.delete(this)
     this.stopTransport()
     this.unregisterCleanup?.()
     this.unregisterCleanup = null
@@ -236,7 +254,29 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
           run.resourceId,
         ),
       })
+      if (run.resourceType === 'DOCUMENT') {
+        void this.options.cache.invalidateQueries({
+          queryKey: documentQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: documentQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: documentQueryKeys.text(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: profileQueryKeys.evidenceRoot(this.options.userId),
+        })
+      }
     }
+  }
+
+  matchesResource(userId: string, resourceType: string, resourceId: string): boolean {
+    return (
+      this.options.userId === userId &&
+      this.currentRun.resourceType === resourceType &&
+      this.currentRun.resourceId === resourceId
+    )
   }
 
   private stopTransport(): void {
@@ -250,6 +290,16 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
 
   private emitConnectionState(state: AgentRunConnectionState): void {
     this.options.onConnectionState?.(state)
+  }
+}
+
+export function closeAgentRunStreamsForResource(
+  userId: string,
+  resourceType: string,
+  resourceId: string,
+): void {
+  for (const stream of [...activeStreams]) {
+    if (stream.matchesResource(userId, resourceType, resourceId)) stream.close()
   }
 }
 

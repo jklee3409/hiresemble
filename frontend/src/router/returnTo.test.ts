@@ -8,6 +8,7 @@ describe('safeReturnTo', () => {
     ['/onboarding?step=welcome#intro', '/onboarding?step=welcome#intro'],
     ['/profile/basic', '/profile/basic'],
     ['/profile/education?page=1', '/profile/education?page=1'],
+    ['/documents?parseStatus=PARSED', '/documents?parseStatus=PARSED'],
   ])('accepts registered auth-required paths: %s', (candidate, expected) => {
     expect(safeReturnTo(candidate, 'https://hiresemble.example')).toBe(expected)
   })
@@ -21,6 +22,13 @@ describe('safeReturnTo', () => {
       ),
     ).toBe('/agent-runs/10000000-0000-4000-8000-000000000001')
     expect(safeReturnTo('/agent-runs/not-a-uuid', 'https://hiresemble.example')).toBeNull()
+  })
+
+  it('accepts only UUID document detail routes', () => {
+    expect(
+      safeReturnTo('/documents/10000000-0000-4000-8000-000000000001', 'https://hiresemble.example'),
+    ).toBe('/documents/10000000-0000-4000-8000-000000000001')
+    expect(safeReturnTo('/documents/not-a-uuid', 'https://hiresemble.example')).toBeNull()
   })
 
   it.each([

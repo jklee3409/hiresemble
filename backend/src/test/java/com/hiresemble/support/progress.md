@@ -4,6 +4,19 @@
 
 P1~P3 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
 
+## [2026-07-19] Session Summary (P4 Document table 격리 cleanup 확장)
+
+- What was done:
+  - V5 document·chunk·outbox·typed link와 Fake catalog fixture cleanup 순서를 추가했다.
+- Key decisions:
+  - 운영·기존 개발 datasource는 사용하지 않는다.
+- Issues encountered:
+  - immutable policy·price table은 TRUNCATE 기반 test 격리로 정리한다.
+- Validation:
+  - 전체 287 tests가 반복 가능한 Testcontainers 환경에서 통과했다.
+- Next steps:
+  - 새 migration table은 FK 역순으로 격리 cleanup에 반영한다.
+
 ## [2026-07-19] Session Summary (P3 runtime table cleanup 확장)
 
 - What was done:

@@ -7,6 +7,7 @@ canonical registry coverage와 metadata·contribution 불변식을 검증한다.
 ## 주요 파일 및 하위 디렉터리
 
 - `WorkflowRegistryTest`
+- [`document/`](document/index.md): P4 ingestion 성공·resume·partial failure 검증
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할

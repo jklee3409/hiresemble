@@ -4,6 +4,23 @@
 
 비용·생성 mutation이 사용하는 DB 기반 HMAC reservation, 원 응답 replay와 P3 Agent Run successor metadata를 제공한다.
 
+## [2026-07-19] Session Summary (Document prepared idempotency transaction 연결)
+
+- What was done:
+  - 외부 Object 준비 뒤 business mutation과 idempotency 완료 응답을 한 transaction에서 커밋하고 실패 시 준비 결과를 보상하는 `executePrepared` 경계를 추가했다.
+
+- Key decisions:
+  - P1~P3 기존 `execute` 동작은 유지하고 최초 실제 aggregate인 Document upload만 prepared 경계를 사용한다.
+
+- Issues encountered:
+  - Object 저장을 DB transaction 밖에 유지하면서 완료 응답 실패까지 보상하려면 preparation·operation·compensation을 분리해야 했다.
+
+- Validation:
+  - idempotency 완료 trigger 실패 시 Document·Run·budget rollback과 Object 삭제를 실제 PostgreSQL에서 검증했다.
+
+- Next steps:
+  - 후속 외부 side effect 기반 aggregate도 같은 prepared 경계를 재사용할지 각 phase에서 결정한다.
+
 ## [2026-07-19] Session Summary (Agent Run retry idempotency metadata 연결)
 
 - What was done:

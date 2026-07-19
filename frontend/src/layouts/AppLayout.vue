@@ -61,6 +61,9 @@ async function logout(): Promise<void> {
         <RouterLink class="text-sm font-medium text-indigo-700" to="/profile/basic">
           내 프로필
         </RouterLink>
+        <RouterLink class="text-sm font-medium text-indigo-700" to="/documents">
+          문서·근거
+        </RouterLink>
         <RouterLink class="text-sm font-medium text-indigo-700" to="/agent-runs">
           작업 기록
         </RouterLink>

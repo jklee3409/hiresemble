@@ -4,6 +4,19 @@
 
 P3 local/production 기본 gateway는 network-free disabled 상태다.
 
+## [2026-07-19] Session Summary (P4 runtime contribution 등록)
+
+- What was done:
+  - provider-independent Document contribution을 runtime에 등록하고 disabled gateway 기본값을 유지했다.
+- Key decisions:
+  - Fake embedding·Chat은 test configuration에서만 `@Primary`로 등록한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `AI_PROVIDER=none` production-like 안전 실패와 test-scope Fake E2E가 통과했다.
+- Next steps:
+  - 실제 network adapter를 자동 fallback으로 등록하지 않는다.
+
 ## [2026-07-19] Session Summary (실제 provider 기본 비활성화)
 
 - What was done:

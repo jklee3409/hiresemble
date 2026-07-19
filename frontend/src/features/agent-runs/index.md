@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-Agent Run 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 SSE 복구 상태 machine을 소유한다.
+Agent Run 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 Document resource SSE 복구 상태 machine을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,7 +16,7 @@ Agent Run 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 
 
 ## 구성 요소 역할
 
-Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다.
+Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다. P4 Document stream은 terminal·WAITING_USER에서 관련 REST query만 invalidate한다.
 
 ## 다른 디렉터리와의 의존 관계
 

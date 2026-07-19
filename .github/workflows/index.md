@@ -6,10 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                         | 역할                                                              |
-| ---------------------------- | ----------------------------------------------------------------- |
-| [`ci.yml`](ci.yml)           | 백엔드, 프론트엔드, Docker Compose 검증을 수행하는 CI workflow다. |
-| [`progress.md`](progress.md) | workflow 구성과 원격 실행 확인 상태를 추적한다.                   |
+| 경로                         | 역할                                                             |
+| ---------------------------- | ---------------------------------------------------------------- |
+| [`ci.yml`](ci.yml)           | 백엔드, 프론트엔드, P4 Browser E2E, Docker Compose 검증 workflow |
+| [`progress.md`](progress.md) | workflow 구성과 원격 실행 확인 상태를 추적한다.                  |
 
 현재 관리 대상 하위 디렉터리는 없다.
 
@@ -17,6 +17,7 @@
 
 - `backend` job은 Temurin Java 21과 Gradle 환경을 준비하고 `backend`에서 `./gradlew check --no-daemon`을 실행한다.
 - `frontend` job은 루트 `.nvmrc`의 Node.js를 준비하고 Corepack을 활성화한 뒤 `frontend`에서 frozen lockfile 설치와 `pnpm check`를 실행한다.
+- `p4-browser-e2e` job은 Java 21·Node·Chromium을 준비하고 격리 PostgreSQL·MinIO·Fake AI 기반 `p4BrowserE2eTest`를 실행한다.
 - `infrastructure` job은 루트에서 `docker compose config --quiet`를 실행해 Compose 구성을 검증한다.
 - workflow는 `main` push와 pull request를 감시하며 같은 workflow/ref 조합의 이전 실행을 취소한다.
 

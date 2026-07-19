@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime 계약과 no-network gateway 기반이 구현됐고 실제 business workflow·provider adapter는 없다.
 
+## [2026-07-19] Session Summary (P4 Document ingestion workflow 연결)
+
+- What was done:
+  - 실제 Document aggregate에 연결되는 고정 8단계 workflow와 failure compensation을 추가했다.
+- Key decisions:
+  - masked chunk만 gateway에 전달하고 checkpoint·Step output에는 reference와 safe summary만 남긴다.
+- Issues encountered:
+  - V5 active model policy seed를 추가해 production Agent Step FK와 일치시켰다.
+- Validation:
+  - 성공·WAITING_USER resume·partial failure와 P3 orchestrator 회귀가 전체 check에서 통과했다.
+- Next steps:
+  - production 기본 provider `none`과 network-free failure를 유지한다.
+
 ## [2026-07-19] Session Summary (P3 고정 AI workflow 기반 구현)
 
 - What was done:

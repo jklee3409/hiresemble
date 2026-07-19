@@ -7,6 +7,19 @@
 - workflow는 동일 ref의 이전 실행을 취소하는 concurrency 정책과 `contents: read` 최소 권한을 사용한다.
 - 설정 파일은 존재하지만 실제 GitHub 저장소의 workflow 실행 결과는 이 로컬 작업에서 확인하지 못했다.
 
+## [2026-07-19] Session Summary (P4 Browser E2E CI 확장)
+
+- What was done:
+  - workflow에 격리 Document Browser E2E job을 추가했다.
+- Key decisions:
+  - 권한은 `contents: read`를 유지하고 secret·실제 provider를 사용하지 않는다.
+- Issues encountered:
+  - GitHub-hosted runner 실행은 commit·push 금지로 확인하지 못했다.
+- Validation:
+  - 동일 task는 로컬 PostgreSQL·MinIO·Chromium에서 4/4 통과했다.
+- Next steps:
+  - 첫 원격 실행에서 action·Docker·Chromium 호환성을 확인한다.
+
 ## [2026-07-17] Session Summary (CI 및 Dependabot 초기 구성)
 
 - What was done:

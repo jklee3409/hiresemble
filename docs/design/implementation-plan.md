@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다. P3 Agent Run·AI runtime 기반도 구현·표준 검증과 최종 read-only validator `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다. P3 Agent Run·AI runtime 기반과 P4 Document·근거 pipeline도 최종 read-only validator `PASS`로 완료됐다.
 
 ## 범위
 
@@ -22,14 +22,14 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] 공통 HTTP 오류, Security/Session/CSRF, request ID와 테스트 기반을 구현한다.
 - [x] 사용자·프로필·직접 입력 근거를 구현해 AC-01~02를 고정한다.
 - [x] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
-- [ ] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
+- [x] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
 - [ ] 공고 등록·수동 보완·상태·Scheduler·분석을 구현해 AC-04~07을 고정한다.
 - [ ] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
 - [ ] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0·P1·P2·P3 완료. P4–P10은 미착수다.
+현재 단계: P0·P1·P2·P3·P4 완료. P5–P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -271,6 +271,7 @@ P0 계약 기준선
 - AC: AC-03
 - 선행: P2, P3
 - 주 담당: backend → ai_workflow → frontend
+- 상태: 완료(2026-07-19). Backend 287 tests, Frontend 95 tests, 실제 PostgreSQL·MinIO·Spring·Vue·Fake AI·Chromium E2E 4개와 최종 read-only Validator `PASS`
 
 ### 7.1 Backend
 
@@ -308,8 +309,13 @@ P0 계약 기준선
 
 ### 7.5 완료 조건
 
-- AC-03과 E2E 시나리오 A의 업로드→수동 보완→근거 검토 구간이 통과한다.
-- 삭제 뒤 과거 provenance가 승인된 계약대로 보존된다.
+- [x] AC-03과 E2E 시나리오 A의 업로드→수동 보완→근거 검토 구간이 통과한다.
+- [x] 삭제 뒤 현재 참조 없는 evidence 삭제와 Fake 참조 contributor의 `SOURCE_DELETED` tombstone branch가 통과한다.
+- [x] 공개 API는 문서 8개만 추가되어 전체 43 operations/30 paths다.
+- [x] 단일 V5가 빈 DB와 V1/V2/V3/V4-only upgrade를 통과하고 V1–V4는 불변이다.
+- [x] production 기본 provider는 `none`이고 Fake embedding·Chat·price catalog는 test scope에만 있다.
+- [x] parser 성공 뒤 AI 실패에도 text·chunk와 `PARSED` 상태를 보존한다.
+- [x] 최종 read-only Validator가 `PASS`를 반환한다.
 
 ## 8. P5 — 공고 등록·추출·상태·Scheduler
 
@@ -713,11 +719,12 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
 | 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
 
-## P4·P5 착수 전 남은 위험
+## P5·P6 착수 전 남은 위험
 
-- P2의 nullable document 연결 field와 P3의 generic resource projection에는 아직 `documents`·`job_postings` table 또는 typed Agent Run resource FK가 없다. P4·P5 forward migration에서 실제 aggregate와 함께 owner 복합 FK를 추가하고, 그 전에는 resource 없는 Fake Run과 resource filter 404 경계만 유지한다.
-- P3 production provider adapter는 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 immutable price item과 model policy를 먼저 등록하고, P3의 주기적 heartbeat port를 유지하면서 provider별 timeout·network failure 분류를 해당 phase에서 검증해야 한다.
-- V1~V3는 적용 이력으로 보존했고 P3 schema는 단일 V4 forward migration으로 추가했다. P4 이후 resource link·domain result·embedding schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
-- P3 retry의 lineage·idempotency는 resource 없는 내부 launcher로 검증했다. typed resource owner resolution, 실제 domain apply와 resource-linked end-to-end retry는 P4 이후 해당 aggregate가 생길 때 최종 검증한다.
+- P4는 Document typed Agent Run link와 profile evidence provenance 경계만 구현했다. P5 Job typed link는 실제 aggregate와 같은 forward migration에서 owner 복합 FK로 추가해야 한다.
+- production provider adapter는 계속 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 승인된 immutable price item과 model policy, timeout·network failure 분류와 heartbeat를 함께 검증해야 한다.
+- V1~V4는 적용 이력으로 보존했고 P4 schema는 단일 V5 forward migration으로 추가했다. P5 이후 resource link·domain result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
+- P4 exact cosine query는 owner·active document·model·dimension·generation 격리를 검증했지만 P6의 hybrid retrieval·RAG 전체 흐름과 ANN index는 아직 구현하지 않았다.
+- 현재 `EvidenceReferenceQueryPort` production contributor는 downstream 참조 없음이다. P5 이후 provenance table이 생기면 실제 참조 contributor와 tombstone 보존을 연결해야 한다.
 - P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 P10 범위로 남긴다.
-- P4 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.
+- P5 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

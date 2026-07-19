@@ -12,9 +12,13 @@ import org.springframework.stereotype.Service;
 public class AgentRunApplicationService {
 
     private final AgentRunQueryPort queryPort;
+    private final List<AgentRunResourceOwnerResolver> resourceResolvers;
 
-    public AgentRunApplicationService(AgentRunQueryPort queryPort) {
+    public AgentRunApplicationService(
+            AgentRunQueryPort queryPort,
+            List<AgentRunResourceOwnerResolver> resourceResolvers) {
         this.queryPort = queryPort;
+        this.resourceResolvers = List.copyOf(resourceResolvers);
     }
 
     public AgentRunPage list(
@@ -37,15 +41,18 @@ public class AgentRunApplicationService {
             default -> throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         };
         if (resourceType != null) {
-            // Typed document/job/etc. owner resolution is introduced with each resource table.
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            AgentRunResourceOwnerResolver resolver = resourceResolvers.stream()
+                    .filter(candidate -> candidate.supports(resourceType))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+            resolver.requireActiveOwner(userId, resourceId);
         }
         return queryPort.findPage(new AgentRunListCriteria(
                 userId,
                 workflowTypes == null ? List.of() : workflowTypes,
                 statuses == null ? List.of() : statuses,
-                null,
-                null,
+                resourceType,
+                resourceId,
                 retryable,
                 page,
                 size,

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·공통, P2 profile과 P3 Agent Run·AI runtime·migration 테스트를 기능별로 구성한다.
+P1 인증·공통, P2 profile, P3 Agent Run·AI runtime과 P4 Document·migration·실제 E2E 테스트를 기능별로 구성한다.
+
+## [2026-07-19] Session Summary (P4 Document·실제 E2E 테스트 추가)
+
+- What was done:
+  - migration·document·parser·storage·workflow·outbox와 Backend 주도 Browser E2E 테스트를 추가했다.
+- Key decisions:
+  - 기본 `test`와 비용이 큰 `p4BrowserE2eTest`를 분리하고 CI에서 둘 다 실행한다.
+- Issues encountered:
+  - random frontend port와 Fake price catalog로 격리 실행 안정성을 보정했다.
+- Validation:
+  - 기본 30 suites/287 tests와 실제 Playwright 4/4가 통과했다.
+- Next steps:
+  - GitHub-hosted runner 결과는 push/PR 뒤 확인한다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run·AI 테스트 추가)
 

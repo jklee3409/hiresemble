@@ -2,14 +2,14 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증, P2 프로필과 P3 Agent Run 목록·상세·SSE 복구 흐름이 구현되어 있다.
+이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증, P2 프로필, P3 Agent Run과 P4 Document 목록·상세·SSE 복구 흐름이 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
 | 경로                                           | 역할                                                        |
 | ---------------------------------------------- | ----------------------------------------------------------- |
 | [`src/`](src/)                                 | Vue 애플리케이션 진입점, 루트 컴포넌트, router와 전역 style |
-| [`e2e/`](e2e/)                                 | Playwright profile cross-stack와 Agent Run REST/SSE fixture |
+| [`e2e/`](e2e/)                                 | Playwright profile·Agent Run fixture와 실제 Document E2E    |
 | [`package.json`](package.json)                 | 의존성, Node/pnpm 요구 버전, 개발·검증 script               |
 | [`pnpm-lock.yaml`](pnpm-lock.yaml)             | 재현 가능한 의존성 버전 잠금                                |
 | [`vite.config.ts`](vite.config.ts)             | Vue/Tailwind plugin, alias, 개발 서버와 `/api` proxy 설정   |
@@ -24,8 +24,8 @@
 
 - `src/main.ts`가 공유 Pinia·QueryClient, Router, 401 reset과 PrimeVue를 조립한다.
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
-- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증 상태와 typed profile·Agent Run transport를 관리한다.
-- `src/layouts`, `src/features`, `src/pages`는 인증 shell, P2 profile과 P3 Agent Run·Progress Drawer를 제공한다.
+- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증 상태와 typed profile·Agent Run·Document transport를 관리한다.
+- `src/layouts`, `src/features`, `src/pages`는 인증 shell, profile, Agent Run·Progress Drawer와 Document 검토 흐름을 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 
@@ -38,7 +38,7 @@
 
 ## 변경 시 주의사항
 
-- Dashboard 집계, AI 설정, 문서 연결·업로드와 P4 이후 route는 아직 구현되지 않았으므로 shell을 제품 기능 완료로 기록하지 않는다.
+- Dashboard 집계, AI 설정, 공고와 P5 이후 route는 아직 구현되지 않았으므로 shell을 제품 기능 완료로 기록하지 않는다.
 - 서버 상태는 Vue Query, 꼭 필요한 클라이언트 전역 상태만 Pinia로 관리한다.
 - `pnpm-lock.yaml`을 직접 편집하지 않고 pnpm을 통해 갱신한다.
 - `frontend/` 아래 Markdown도 Prettier 검사 대상이 될 수 있으므로 문서 변경 후 `corepack pnpm check`를 확인한다.
