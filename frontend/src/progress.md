@@ -3,9 +3,33 @@
 ## Overview
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query, PrimeVue를 초기화한다.
-- `App.vue`는 `RouterView`만 제공하고 route 목록은 비어 있어 표시할 제품 화면이 없다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
-- 도메인 page, component, API client, query, store와 프론트엔드 테스트는 아직 없다.
+- P1 `app`, `features/auth`, `layouts`, `pages`, `shared/api`, `shared/session`, `stores`와 router 구현·테스트가 있다.
+- 표시 가능한 인증 Form과 onboarding/dashboard shell이 있으며 P2 도메인 page·client는 없다.
+
+## [2026-07-19] Session Summary (P1 Vue 인증 애플리케이션 구현)
+
+- What was done:
+  - 전역 Pinia·QueryClient bootstrap을 모듈화하고 auth store와 session cleanup port를 연결했다.
+  - typed 계약·오류·Axios auth client, signup/login 검증·Form, layout·page·router를 구현했다.
+  - store, client, validation, cleanup, route와 component 흐름 테스트를 추가했다.
+
+- Key decisions:
+  - auth 상태를 `unknown`, `authenticated`, `anonymous`로 명시하고 최초 guard가 `/auth/me` bootstrap 완료를 기다린다.
+  - 현재 사용자 전환 시 이전 query cache와 draft namespace를 지워 사용자 간 상태를 격리한다.
+  - `App.vue`는 기존처럼 root RouterView만 유지하고 layout은 route component에서 선택한다.
+
+- Issues encountered:
+  - async submit 중 접근성 focus 순서를 component test로 보정했다.
+  - Session 만료 시 store reset뿐 아니라 현재 보호 URL을 안전한 `returnTo`로 보존하는 router 연동이 필요했다.
+
+- Validation:
+  - `corepack pnpm check`가 lint, format, type check, 7개 파일 35개 test와 production build를 모두 통과했다.
+  - 두 사용자 인증 상태·cache 분리, logout cleanup과 typed field error 표시를 자동 테스트로 확인했다.
+
+- Next steps:
+  - P2 기능은 backend OpenAPI가 고정된 뒤 실제 feature 단위로 추가한다.
+  - EventSource 구현이 생기면 기존 cleanup port에 연결하고 사용자 namespace별 draft 저장을 도입한다.
 
 ## [2026-07-17] Session Summary (Vue 애플리케이션 부트스트랩 구성)
 

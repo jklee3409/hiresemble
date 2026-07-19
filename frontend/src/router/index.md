@@ -2,34 +2,38 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble SPA의 route table, browser history, route metadata와 navigation guard를 관리한다. 현재 router instance만 생성되어 있고 route는 등록되지 않았다.
+이 디렉터리는 Hiresemble SPA의 P1 route table, browser history, route metadata, navigation guard와 안전한 `returnTo` 검증을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                         | 역할                                                               |
-| ---------------------------- | ------------------------------------------------------------------ |
-| [`index.ts`](index.ts)       | `createWebHistory` 기반 Vue Router instance 생성과 route 배열 정의 |
-| [`index.md`](index.md)       | Router 영역의 구조와 변경 원칙 설명                                |
-| [`progress.md`](progress.md) | Route와 guard 구현 상태 추적                                       |
+| 경로                                   | 역할                                         |
+| -------------------------------------- | -------------------------------------------- |
+| [`index.ts`](index.ts)                 | P1 여섯 route 정책과 auth 상태 guard         |
+| [`returnTo.ts`](returnTo.ts)           | 등록된 보호 path만 허용하는 redirect 검증    |
+| [`router.test.ts`](router.test.ts)     | public-only·auth-required·401·shell·404 test |
+| [`returnTo.test.ts`](returnTo.test.ts) | scheme·host·control·미등록 path 거부 test    |
+| [`index.md`](index.md)                 | Router 영역의 구조와 변경 원칙 설명          |
+| [`progress.md`](progress.md)           | Route와 guard 구현 상태 추적                 |
 
-현재 route module이나 하위 디렉터리는 없다.
+현재 하위 디렉터리는 없다.
 
 ## 구성 요소 역할
 
-- `index.ts`는 Vite의 base URL을 사용하는 browser history를 만들고 앱에 export한다.
-- 향후 public-only, auth-required, profile-recommended route 정책을 metadata와 guard로 구분한다.
+- `index.ts`는 `/`, signup, login, onboarding, dashboard와 전용 404를 등록한다.
+- public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
+- `returnTo`는 dashboard·onboarding의 same-origin path만 허용한다.
 - route name, path, page import와 layout 경계를 한눈에 추적할 수 있는 진입점 역할을 한다.
 
 ## 다른 디렉터리와의 의존 관계
 
 - [`../main.ts`](../main.ts)가 router를 Vue plugin으로 등록하고 [`../App.vue`](../App.vue)의 `RouterView`가 일치한 component를 렌더링한다.
 - route path와 화면 구조는 [`../../../docs/spec/page.md`](../../../docs/spec/page.md)를 기준으로 한다.
-- 인증·CSRF 상태는 향후 API client 및 인증 store/query와 연결되지만 서버 인가 규칙을 대체하지 않는다.
+- 인증·CSRF 상태는 현재 auth store와 API client에 연결되지만 서버 인가 규칙을 대체하지 않는다.
 
 ## 변경 시 주의사항
 
-- 현재 `routes: []` 상태를 route 구현 완료로 기록하지 않는다.
-- 페이지 명세의 public/auth/profile 정책을 확인한 뒤 route와 guard를 추가한다.
+- onboarding·dashboard는 P1 shell이므로 실제 profile·집계 기능 완료로 기록하지 않는다.
+- P2 route는 화면과 API가 실제 구현될 때만 추가한다.
 - guard에서 도메인 데이터 조회나 서버 권한 판단을 중복 구현하지 않는다.
 - 사용자가 북마크하거나 외부에서 접근할 수 있는 path 변경은 호환성과 redirect 필요성을 검토한다.
 - route component가 늘어나면 초기 bundle 영향을 고려해 lazy import를 사용한다.

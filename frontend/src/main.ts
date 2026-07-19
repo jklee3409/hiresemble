@@ -1,18 +1,20 @@
 import './styles/main.css'
 
 import Aura from '@primeuix/themes/aura'
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import { createPinia } from 'pinia'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import PrimeVue from 'primevue/config'
 import { createApp } from 'vue'
 
+import { appPinia } from './app/pinia'
+import { queryClient } from './app/queryClient'
 import App from './App.vue'
 import router from './router'
+import { installUnauthorizedReset } from './stores/auth'
 
-const queryClient = new QueryClient()
+installUnauthorizedReset(appPinia)
 
 createApp(App)
-  .use(createPinia())
+  .use(appPinia)
   .use(router)
   .use(VueQueryPlugin, { queryClient })
   .use(PrimeVue, {

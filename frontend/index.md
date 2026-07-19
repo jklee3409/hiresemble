@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재는 애플리케이션 부트스트랩만 구성되어 있으며 제품 화면과 사용자 여정은 아직 구현되지 않았다.
+이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 typed 인증 client, Session lifecycle, signup/login과 보호 route shell이 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -22,8 +22,10 @@
 
 ## 구성 요소 역할
 
-- `src/main.ts`가 Vue 앱을 만들고 Pinia, Vue Router, TanStack Vue Query, PrimeVue를 등록한다.
-- `src/App.vue`는 현재 `RouterView`만 제공하는 최소 루트 컴포넌트다.
+- `src/main.ts`가 공유 Pinia·QueryClient, Router, 401 reset과 PrimeVue를 조립한다.
+- `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
+- `src/shared/api`와 `src/stores`가 P1 Session Cookie·CSRF와 인증 상태를 관리한다.
+- `src/layouts`와 `src/pages`는 public/app shell, signup/login과 onboarding/dashboard shell을 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 
@@ -36,7 +38,7 @@
 
 ## 변경 시 주의사항
 
-- route, 화면, store, query가 아직 구현되지 않았으므로 명세 존재를 구현 완료로 기록하지 않는다.
+- P1 밖 프로필 Form, Dashboard 집계, 문서·AI route는 아직 구현되지 않았으므로 shell을 제품 기능 완료로 기록하지 않는다.
 - 서버 상태는 Vue Query, 꼭 필요한 클라이언트 전역 상태만 Pinia로 관리한다.
 - `pnpm-lock.yaml`을 직접 편집하지 않고 pnpm을 통해 갱신한다.
 - `frontend/` 아래 Markdown도 Prettier 검사 대상이 될 수 있으므로 문서 변경 후 `corepack pnpm check`를 확인한다.

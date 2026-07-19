@@ -3,8 +3,32 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `routes` 배열은 비어 있고 route metadata, navigation guard, page import는 없다.
-- `main.ts`의 plugin 등록과 `App.vue`의 `RouterView` 연결만 완료되어 있다.
+- `/`, `/signup`, `/login`, `/onboarding`, `/dashboard`와 전용 404 route, public-only/auth-required metadata와 guard가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path만 허용하며 onboarding·dashboard component는 P1 shell이다.
+
+## [2026-07-19] Session Summary (P1 인증 route·guard 구현)
+
+- What was done:
+  - root 인증 분기, signup/login public-only, onboarding/dashboard auth-required와 catch-all 404 route를 등록했다.
+  - auth bootstrap을 기다리는 전역 guard와 로그인 성공·기인증 접근·Session 만료의 안전한 `returnTo` 처리를 구현했다.
+  - route table, guard, 안전한 returnTo와 page 흐름 테스트를 추가했다.
+
+- Key decisions:
+  - 허용 목적지는 등록된 auth-required path만이며 scheme·host·`//`·backslash·CR/LF·public route를 거부한다.
+  - `/`는 anonymous를 `/login`, authenticated를 `/dashboard`로 보내고 signup 성공은 `/onboarding`으로 이동한다.
+  - 클라이언트 guard는 UX 경계이며 서버 인증·인가를 대체하지 않는다.
+
+- Issues encountered:
+  - logout/401 뒤 현재 보호 route가 그대로 렌더링되지 않도록 store subscription과 router navigation을 연결했다.
+  - browser query는 Vue Router가 한 번 decode하므로 helper에 이중 인코딩 허용을 추가하지 않았다.
+
+- Validation:
+  - router·returnTo·auth flow 관련 테스트와 전체 `corepack pnpm check`가 통과했다.
+  - `/dashboard` 보호, `/onboarding` shell, public-only redirect, 잘못된 returnTo 거부와 404를 검증했다.
+
+- Next steps:
+  - P2 실제 profile/dashboard page 구현 시 현재 shell component만 교체하고 guard 계약은 유지한다.
+  - 실제 browser Cookie·history smoke test는 cross-stack 실행 환경에서 보강한다.
 
 ## [2026-07-17] Session Summary (Vue Router 기본 구성)
 
