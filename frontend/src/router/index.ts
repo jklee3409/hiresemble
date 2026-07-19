@@ -14,8 +14,11 @@ import DashboardPage from '@/pages/DashboardPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import OnboardingPage from '@/pages/OnboardingPage.vue'
+import ProfileBasicPage from '@/pages/ProfileBasicPage.vue'
+import ProfileEvidencePage from '@/pages/ProfileEvidencePage.vue'
 import RootRedirectPage from '@/pages/RootRedirectPage.vue'
 import SignupPage from '@/pages/SignupPage.vue'
+import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
 import { useAuthStore } from '@/stores/auth'
 
 import { safeReturnTo } from './returnTo'
@@ -24,6 +27,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     publicOnly?: boolean
     requiresAuth?: boolean
+    profileRecommended?: boolean
     title?: string
   }
 }
@@ -68,6 +72,57 @@ export const routes: RouteRecordRaw[] = [
         name: 'dashboard',
         component: DashboardPage,
         meta: { title: '대시보드' },
+      },
+      {
+        path: 'profile',
+        redirect: { name: 'profile-basic' },
+      },
+      {
+        path: 'profile/basic',
+        name: 'profile-basic',
+        component: ProfileBasicPage,
+        meta: { title: '기본 프로필', profileRecommended: true },
+      },
+      {
+        path: 'profile/education',
+        name: 'profile-education',
+        component: StructuredProfilePage,
+        props: { kind: 'education' },
+        meta: { title: '학력', profileRecommended: true },
+      },
+      {
+        path: 'profile/certifications',
+        name: 'profile-certifications',
+        component: StructuredProfilePage,
+        props: { kind: 'certification' },
+        meta: { title: '자격증', profileRecommended: true },
+      },
+      {
+        path: 'profile/languages',
+        name: 'profile-languages',
+        component: StructuredProfilePage,
+        props: { kind: 'language' },
+        meta: { title: '어학 성적', profileRecommended: true },
+      },
+      {
+        path: 'profile/awards',
+        name: 'profile-awards',
+        component: StructuredProfilePage,
+        props: { kind: 'award' },
+        meta: { title: '수상', profileRecommended: true },
+      },
+      {
+        path: 'profile/careers',
+        name: 'profile-careers',
+        component: StructuredProfilePage,
+        props: { kind: 'career' },
+        meta: { title: '경력', profileRecommended: true },
+      },
+      {
+        path: 'profile/evidence',
+        name: 'profile-evidence',
+        component: ProfileEvidencePage,
+        meta: { title: '직접 입력 근거', profileRecommended: true },
       },
     ],
   },

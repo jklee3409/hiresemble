@@ -7,11 +7,13 @@
 ## 주요 파일 및 하위 디렉터리
 
 - [`auth/`](auth/index.md): P1 인증 Form 입력 schema와 byte validation
+- [`profile/`](profile/index.md): P2 프로필 Zod·query key·version 충돌·공용 입력 UI
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
 - 실제 구현된 기능 규칙만 하위 feature에 두고 빈 미래 기능 계층을 만들지 않는다.
+- profile feature는 서버 상태를 소유하지 않고 page가 Vue Query로 사용하는 schema·key·상호작용만 제공한다.
 
 ## 다른 디렉터리와의 의존 관계
 

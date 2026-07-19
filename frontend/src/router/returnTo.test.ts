@@ -6,6 +6,8 @@ describe('safeReturnTo', () => {
   it.each([
     ['/dashboard', '/dashboard'],
     ['/onboarding?step=welcome#intro', '/onboarding?step=welcome#intro'],
+    ['/profile/basic', '/profile/basic'],
+    ['/profile/education?page=1', '/profile/education?page=1'],
   ])('accepts registered auth-required paths: %s', (candidate, expected) => {
     expect(safeReturnTo(candidate, 'https://hiresemble.example')).toBe(expected)
   })
@@ -20,7 +22,6 @@ describe('safeReturnTo', () => {
     '/login',
     '/signup',
     '/not-found',
-    '/profile/basic',
     '%2Fdashboard',
     '/%2e%2e/dashboard',
   ])('rejects unsafe, public, or unregistered input: %s', (candidate) => {

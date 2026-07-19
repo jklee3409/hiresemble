@@ -1,4 +1,15 @@
-const AUTH_REQUIRED_PATHS = new Set(['/dashboard', '/onboarding'])
+const AUTH_REQUIRED_PATHS = new Set([
+  '/dashboard',
+  '/onboarding',
+  '/profile',
+  '/profile/basic',
+  '/profile/education',
+  '/profile/certifications',
+  '/profile/languages',
+  '/profile/awards',
+  '/profile/careers',
+  '/profile/evidence',
+])
 const ENCODED_UNSAFE_CHARACTER = /%(?:0a|0d|5c)/i
 
 export function safeReturnTo(value: unknown, origin = currentOrigin()): string | null {

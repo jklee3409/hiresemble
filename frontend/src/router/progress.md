@@ -3,8 +3,26 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, `/signup`, `/login`, `/onboarding`, `/dashboard`와 전용 404 route, public-only/auth-required metadata와 guard가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path만 허용하며 onboarding·dashboard component는 P1 shell이다.
+- `/`, 인증, onboarding, dashboard, `/profile` redirect와 7개 profile page 및 전용 404 route가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path만 허용하며 profile incomplete는 hard gate가 아니다.
+
+## [2026-07-19] Session Summary (P2 profile route·returnTo 확장)
+
+- What was done:
+  - `/profile`→`/profile/basic`과 basic·education·certifications·languages·awards·careers·evidence route를 추가했다.
+  - profile path를 안전한 returnTo allowlist와 guard·404 회귀 테스트에 연결했다.
+
+- Key decisions:
+  - 기존 AppLayout·auth-required guard를 재사용하고 onboarding 완료 여부로 route를 차단하지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - redirect, 보호 route, 401, safe returnTo와 404 router 테스트가 통과했다.
+
+- Next steps:
+  - 후속 route는 실제 page·API가 함께 구현될 때만 등록한다.
 
 ## [2026-07-19] Session Summary (P1 인증 route·guard 구현)
 

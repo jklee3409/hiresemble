@@ -2,7 +2,25 @@
 
 ## Overview
 
-Backend P1 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다. 현재 P1 구현과 검증 상태만 기록한다.
+Backend P1·P2 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-19] Session Summary (P2 profile typed client 구현)
+
+- What was done:
+  - 프로필 enum·request·response·page type과 25개 profile/evidence API consumer를 추가했다.
+  - HTTP client에 typed PUT·PATCH·DELETE를 추가하고 기존 Cookie·CSRF·401 흐름을 재사용했다.
+
+- Key decisions:
+  - Backend 직접 DTO와 enum·nullability를 그대로 반영하고 성공 envelope를 만들지 않는다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - profile API path·method·payload 테스트와 TypeScript 전체 typecheck가 통과했다.
+
+- Next steps:
+  - document 연결 성공 type은 P4 Backend 계약 구현 뒤 활성화한다.
 
 ## [2026-07-19] Session Summary (P1 typed Axios·CSRF client 구현)
 

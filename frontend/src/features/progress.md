@@ -2,7 +2,24 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 구현과 검증 상태만 기록한다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth와 P2 profile feature가 구현되어 있다.
+
+## [2026-07-19] Session Summary (P2 profile feature 경계 추가)
+
+- What was done:
+  - profile Zod, query key, version conflict와 공용 입력 component를 실제 page 사용처와 함께 추가했다.
+
+- Key decisions:
+  - 서버 권한·완료도는 Backend 응답을 사용하고 UI feature는 form·cache·표현 규칙만 소유한다.
+
+- Issues encountered:
+  - None
+
+- Validation:
+  - schema·query key·conflict 테스트와 frontend 전체 check가 통과했다.
+
+- Next steps:
+  - P3 이후 feature는 실제 API·화면 구현 시점에만 추가한다.
 
 ## [2026-07-19] Session Summary (P1 auth feature 경계 구성)
 

@@ -1,8 +1,8 @@
-# P1 Layout 안내
+# P1·P2 Layout 안내
 
 ## 디렉터리 목적
 
-익명 인증 화면과 보호 화면의 공통 shell을 PublicLayout·AppLayout으로 분리한다.
+익명 인증 화면과 보호 화면의 공통 shell을 PublicLayout·AppLayout으로 분리하고 구현된 profile navigation을 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -12,7 +12,7 @@
 
 ## 구성 요소 역할
 
-- Layout은 공통 navigation과 logout만 제공하고 page별 데이터나 P2 기능을 소유하지 않는다.
+- Layout은 공통 navigation과 logout만 제공하고 page별 프로필 데이터나 form 상태를 소유하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -21,7 +21,7 @@
 
 ## 변경 시 주의사항
 
-- 미구현 메뉴·Dashboard 카드·Agent 상태 UI를 P1 shell에 선행 추가하지 않는다.
+- 미구현 문서·공고 메뉴, Dashboard 카드와 Agent 상태 UI를 선행 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -4,8 +4,29 @@
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query, PrimeVue를 초기화한다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
-- P1 `app`, `features/auth`, `layouts`, `pages`, `shared/api`, `shared/session`, `stores`와 router 구현·테스트가 있다.
-- 표시 가능한 인증 Form과 onboarding/dashboard shell이 있으며 P2 도메인 page·client는 없다.
+- P1 `app`, auth, layout, Session 기반과 P2 `features/profile`, profile API·page·route 구현·테스트가 있다.
+- 실제 프로필 Form·onboarding·evidence 화면이 있으며 Dashboard·문서·AI 기능은 아직 없다.
+
+## [2026-07-19] Session Summary (P2 프로필 Vue 애플리케이션 구현)
+
+- What was done:
+  - 사용자별 profile query, typed API, Zod, 기본·구조화·evidence page와 P2 onboarding·route를 구현했다.
+  - 409 비교·field 재적용, loading·empty·error·success·disabled 상태와 logout/401 cache cleanup을 연결했다.
+
+- Key decisions:
+  - 모든 profile query key에 user ID를 포함하고 서버 상태는 Vue Query, form draft는 local state로 유지한다.
+  - profile 미완료는 표시·권고만 하고 보호 route를 차단하지 않는다.
+
+- Issues encountered:
+  - 실제 E2E의 성공 메시지와 카드 제목이 같은 텍스트를 포함해 role·heading locator로 판정식을 좁혔다.
+
+- Validation:
+  - 13개 파일 57개 Vitest와 typecheck·lint·format·production build가 통과했다.
+  - 실제 Chromium P2 두 사용자 Cookie·CSRF·cache 격리 흐름 1개가 통과했다.
+  - 최종 read-only validator가 API/DB/TypeScript/Zod parity와 E2E 근거를 `PASS`로 판정했다.
+
+- Next steps:
+  - P2는 완료 상태이며 P4 전까지 document UI를 비활성으로 유지한다.
 
 ## [2026-07-19] Session Summary (P1 Vue 인증 애플리케이션 구현)
 

@@ -1,13 +1,15 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 
 import App from '@/App.vue'
 import * as authApi from '@/shared/api/authApi'
-import type { AuthSessionDto, ErrorResponseDto } from '@/shared/api/contracts'
+import type { AuthSessionDto, ErrorResponseDto, ProfileDto } from '@/shared/api/contracts'
 import { ApiClientError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
+import * as profileApi from '@/shared/api/profileApi'
 
 import { createAppRouter } from './index'
 
@@ -19,10 +21,19 @@ vi.mock('@/shared/api/authApi', () => ({
   logout: vi.fn(),
 }))
 
+vi.mock('@/shared/api/profileApi', () => ({
+  getProfile: vi.fn(),
+  updateProfile: vi.fn(),
+  listEducations: vi.fn(),
+  createEducation: vi.fn(),
+}))
+
 describe('authentication route policy', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.mocked(profileApi.getProfile).mockResolvedValue(emptyProfile())
+    vi.mocked(profileApi.listEducations).mockResolvedValue(emptyPage())
   })
 
   it('redirects the root according to the bootstrapped auth state', async () => {
@@ -113,17 +124,35 @@ describe('authentication route policy', () => {
     const router = createAppRouter({ history: createMemoryHistory(), pinia })
     await router.push('/dashboard')
     await router.isReady()
-    const wrapper = mount(App, { global: { plugins: [pinia, router] } })
+    const wrapper = mount(App, {
+      global: {
+        plugins: [pinia, router, [VueQueryPlugin, { queryClient: new QueryClient() }]],
+      },
+    })
 
     expect(wrapper.text()).toContain('대시보드 데이터는 다음 단계에서 연결됩니다.')
     await router.push('/onboarding')
     await flushPromises()
-    expect(wrapper.text()).toContain('프로필 입력은 다음 단계에서 제공됩니다.')
+    expect(wrapper.text()).toContain('필요한 정보를 단계별로 입력하세요.')
 
     await router.push('/missing-page')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
     expect(wrapper.text()).toContain('페이지를 찾을 수 없습니다')
+  })
+
+  it('redirects /profile to /profile/basic without gating an incomplete profile', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    vi.mocked(authApi.login).mockResolvedValueOnce(session('user-1'))
+    await useAuthStore(pinia).login({ email: 'one@example.com', password: 'password-123' })
+    const router = createAppRouter({ history: createMemoryHistory(), pinia })
+
+    await router.push('/profile')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('profile-basic')
+    expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
   })
 })
 
@@ -132,6 +161,32 @@ function session(id: string): AuthSessionDto {
     user: { id, email: `${id}@example.com`, displayName: id },
     csrf: { headerName: 'X-CSRF-TOKEN', parameterName: '_csrf', token: `csrf-${id}` },
   }
+}
+
+function emptyProfile(): ProfileDto {
+  return {
+    legalName: null,
+    introduction: null,
+    desiredRoles: [],
+    desiredIndustries: [],
+    desiredLocations: [],
+    expectedGraduationDate: null,
+    profileCompleted: false,
+    missingCompletionItems: [
+      'LEGAL_NAME',
+      'DESIRED_ROLE',
+      'DESIRED_INDUSTRY',
+      'DESIRED_LOCATION',
+      'PRIMARY_EDUCATION',
+    ],
+    version: 0,
+    createdAt: '2026-07-19T00:00:00Z',
+    updatedAt: '2026-07-19T00:00:00Z',
+  }
+}
+
+function emptyPage() {
+  return { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }
 }
 
 function authenticationRequired(): ApiClientError {

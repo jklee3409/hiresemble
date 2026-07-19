@@ -2,7 +2,26 @@
 
 ## Overview
 
-P1 route에 대응하는 인증 Form, 보호 shell page와 전용 404를 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1 인증·보호 shell과 P2 onboarding·profile page 및 전용 404를 관리한다.
+
+## [2026-07-19] Session Summary (P2 프로필·온보딩·evidence Page 구현)
+
+- What was done:
+  - 기본 프로필, 다섯 구조화 resource, evidence 목록·편집·검토와 4단계 onboarding을 구현했다.
+  - 완료·부족 항목, 대표 학력, timeline/list, pagination·sort, 삭제 확인과 409 재적용 UI를 연결했다.
+
+- Key decisions:
+  - `SOURCE_DELETED`는 read-only로 렌더링하되 P2 data에서는 생성하지 않는다.
+  - document 연결·filter는 후속 단계 안내만 표시하고 입력 control을 활성화하지 않는다.
+
+- Issues encountered:
+  - onboarding fetch 오류가 성공 단계로 진행되지 않도록 실패 상태를 테스트로 보정했다.
+
+- Validation:
+  - page component·onboarding flow와 frontend 전체 check, 실제 Chromium E2E가 통과했다.
+
+- Next steps:
+  - Dashboard는 P10 전까지 shell로 유지하고 document 업로드는 P4에서 구현한다.
 
 ## [2026-07-19] Session Summary (P1 인증 Page와 shell 구현)
 

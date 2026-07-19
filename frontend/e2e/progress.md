@@ -2,9 +2,31 @@
 
 ## Overview
 
-- `e2e/`에는 `.gitkeep`만 존재하고 Playwright test file은 없다.
-- `playwright.config.ts`는 이 디렉터리를 test directory로 지정하고 Chromium과 Vite web server를 구성한다.
-- 애플리케이션 route와 제품 화면도 아직 구현되지 않아 검증 가능한 사용자 여정이 없다.
+- `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
+- `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
+- 테스트는 외부 provider와 운영 데이터 없이 격리된 PostgreSQL DB에서 실행한다.
+
+## [2026-07-19] Session Summary (P2 실제 브라우저 Cookie·CSRF 통합 검증)
+
+- What was done:
+  - 가입→onboarding→기본 프로필·대표 학력·희망 조건→완료도→새로고침→학력 수정→두 사용자 owner 404→로그아웃·재로그인 흐름을 추가했다.
+  - 같은 browser context에서 사용자 전환 뒤 이전 profile cache가 노출되지 않음을 확인했다.
+
+- Key decisions:
+  - 기존 개발 DB를 보존하기 위해 V1→V2→V3를 적용한 P2 전용 임시 DB를 만들고 실행 뒤 제거했다.
+  - 실제 Cookie·CSRF 실패 순서를 검증해 두 번째 사용자의 CSRF 없는 mutation은 403, 유효 token의 타 사용자 UUID는 404로 확인했다.
+  - Playwright spec은 Vitest unit/component 수집 대상에서 명시적으로 제외한다.
+
+- Issues encountered:
+  - 첫 실행 전제에서 Windows child process가 `pnpm`을 찾지 못해 webServer 명령을 `corepack pnpm dev`로 보정했다.
+  - 첫 실제 E2E는 성공 메시지와 heading의 중복 text locator 때문에 실패해 정확한 heading role로 좁혔다.
+
+- Validation:
+  - `corepack pnpm exec playwright test e2e/profile.spec.ts --project=chromium --workers=1 --reporter=line`이 1개 test 통과로 종료됐다.
+  - 임시 backend port와 DB 제거를 재확인했으며 실제 외부 AI·검색 provider는 호출하지 않았다.
+
+- Next steps:
+  - 후속 phase 핵심 여정은 동일한 격리·실제 브라우저 원칙으로 추가한다.
 
 ## [2026-07-17] Session Summary (Playwright E2E 테스트 기반 구성)
 

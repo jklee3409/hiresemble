@@ -1,4 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia, type Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, type Router } from 'vue-router'
@@ -6,8 +7,9 @@ import { createMemoryHistory, type Router } from 'vue-router'
 import App from '@/App.vue'
 import { createAppRouter } from '@/router'
 import * as authApi from '@/shared/api/authApi'
-import type { AuthSessionDto, ErrorResponseDto } from '@/shared/api/contracts'
+import type { AuthSessionDto, ErrorResponseDto, ProfileDto } from '@/shared/api/contracts'
 import { ApiClientError } from '@/shared/api/errors'
+import * as profileApi from '@/shared/api/profileApi'
 
 vi.mock('@/shared/api/authApi', () => ({
   getCurrentUser: vi.fn(),
@@ -17,10 +19,19 @@ vi.mock('@/shared/api/authApi', () => ({
   logout: vi.fn(),
 }))
 
+vi.mock('@/shared/api/profileApi', () => ({
+  getProfile: vi.fn(),
+  updateProfile: vi.fn(),
+  listEducations: vi.fn(),
+  createEducation: vi.fn(),
+}))
+
 describe('P1 authentication forms', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(authApi.getCurrentUser).mockRejectedValue(authenticationRequired())
+    vi.mocked(profileApi.getProfile).mockResolvedValue(emptyProfile())
+    vi.mocked(profileApi.listEducations).mockResolvedValue(emptyPage())
   })
 
   afterEach(() => {
@@ -43,7 +54,7 @@ describe('P1 authentication forms', () => {
       aiConsent: true,
     })
     expect(router.currentRoute.value.name).toBe('onboarding')
-    expect(wrapper.text()).toContain('프로필 입력은 다음 단계에서 제공됩니다.')
+    expect(wrapper.text()).toContain('필요한 정보를 단계별로 입력하세요.')
   })
 
   it('uses a safe returnTo after login and rejects an external one', async () => {
@@ -101,9 +112,37 @@ async function mountAt(
   await router.isReady()
   const wrapper = mount(App, {
     attachTo: document.body,
-    global: { plugins: [pinia, router] },
+    global: {
+      plugins: [pinia, router, [VueQueryPlugin, { queryClient: new QueryClient() }]],
+    },
   })
   return { pinia, router, wrapper }
+}
+
+function emptyProfile(): ProfileDto {
+  return {
+    legalName: null,
+    introduction: null,
+    desiredRoles: [],
+    desiredIndustries: [],
+    desiredLocations: [],
+    expectedGraduationDate: null,
+    profileCompleted: false,
+    missingCompletionItems: [
+      'LEGAL_NAME',
+      'DESIRED_ROLE',
+      'DESIRED_INDUSTRY',
+      'DESIRED_LOCATION',
+      'PRIMARY_EDUCATION',
+    ],
+    version: 0,
+    createdAt: '2026-07-19T00:00:00Z',
+    updatedAt: '2026-07-19T00:00:00Z',
+  }
+}
+
+function emptyPage() {
+  return { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }
 }
 
 async function fillSignup(wrapper: VueWrapper): Promise<void> {

@@ -3,9 +3,35 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 typed auth client, QueryClient, 세 단계 인증 store, signup·login Form과 logout·cleanup 흐름이 구현되어 있다.
-- public/app layout과 `/`, `/signup`, `/login`, `/onboarding`, `/dashboard`, 전용 404 route가 있으며 onboarding·dashboard는 shell이다.
-- Vitest unit/component test는 35개이며 Playwright E2E와 P2 제품 UI·API는 아직 없다.
+- P1 typed auth·Session 기반과 P2 profile typed client, user-scoped Vue Query, Zod·409 UX가 구현되어 있다.
+- `/profile` redirect와 7개 profile route, P2 onboarding, 기본·구조화·evidence 화면이 AppLayout에 연결되어 있다.
+- Vitest unit/component test 57개와 실제 Chromium profile E2E 1개가 구현되어 있다. Dashboard와 document 연결은 아직 없다.
+
+## [2026-07-19] Session Summary (P2 프로필·온보딩·evidence Frontend 구현)
+
+- What was done:
+  - Backend 25개 profile operation의 TypeScript 계약·client와 모든 user-scoped query key를 구현했다.
+  - 기본 form, 프로필 5종 CRUD, 대표 학력, evidence filter·편집·검토, `SOURCE_DELETED` read-only와 409 비교·재적용 UI를 구현했다.
+  - P2 onboarding과 profile route·returnTo·404 회귀, document 기능 비활성 안내를 구현했다.
+
+- Key decisions:
+  - 서버 상태는 Vue Query, 인증 사용자·전역 reset만 Pinia, form draft는 component local state로 유지한다.
+  - profile incomplete는 경고·진행률 표시이며 route hard gate가 아니다.
+  - document 선택과 filter control은 P4 전까지 활성화하지 않는다.
+
+- Issues encountered:
+  - GPA conflict snapshot 변환과 onboarding fetch 오류 진행을 unit/component test로 보정했다.
+  - Playwright webServer의 Windows pnpm 탐색을 `corepack pnpm dev`로 고치고 중복 text locator를 정확한 heading으로 좁혔다.
+  - 첫 최종 `pnpm check`에서 Vitest가 `e2e/profile.spec.ts`를 수집해 실패했으므로 기본 exclude에 `e2e/**`를 추가했다.
+
+- Validation:
+  - `Set-Location frontend; corepack pnpm check`에서 lint·format·typecheck, 13개 파일 57개 Vitest와 production build가 통과했다.
+  - Playwright Chromium 1개 E2E가 가입→프로필→두 사용자 403/404→cache cleanup→재로그인 흐름으로 통과했다.
+  - 최종 read-only validator가 Frontend parity·cache·E2E 근거를 BLOCKER·MAJOR·MINOR 없이 `PASS`로 판정했다.
+
+- Next steps:
+  - P2는 완료 상태다.
+  - P4 Backend 문서 계약이 확정될 때 document 연결 UI를 활성화한다.
 
 ## [2026-07-19] Session Summary (P1 프론트엔드 인증·route 기반 구현)
 

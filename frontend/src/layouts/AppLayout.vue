@@ -47,12 +47,15 @@ async function logout(): Promise<void> {
           </button>
         </div>
       </div>
-      <nav class="mx-auto flex max-w-6xl gap-4 px-4 pb-3" aria-label="주요 메뉴">
+      <nav class="mx-auto flex max-w-6xl flex-wrap gap-4 px-4 pb-3" aria-label="주요 메뉴">
         <RouterLink class="text-sm font-medium text-indigo-700" to="/dashboard">
           대시보드
         </RouterLink>
         <RouterLink class="text-sm font-medium text-indigo-700" to="/onboarding">
           온보딩
+        </RouterLink>
+        <RouterLink class="text-sm font-medium text-indigo-700" to="/profile/basic">
+          내 프로필
         </RouterLink>
       </nav>
     </header>
