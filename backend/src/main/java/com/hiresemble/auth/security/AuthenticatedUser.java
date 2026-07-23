@@ -1,8 +1,8 @@
 package com.hiresemble.auth.security;
 
-import com.hiresemble.auth.api.CurrentUserDto;
-import com.hiresemble.auth.domain.UserRole;
-import com.hiresemble.auth.domain.UserStatus;
+import com.hiresemble.auth.api.dto.CurrentUserDto;
+import com.hiresemble.auth.domain.model.UserRole;
+import com.hiresemble.auth.domain.model.UserStatus;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;

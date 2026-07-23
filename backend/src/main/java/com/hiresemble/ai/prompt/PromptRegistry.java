@@ -1,6 +1,6 @@
 package com.hiresemble.ai.prompt;
 
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import java.util.LinkedHashMap;

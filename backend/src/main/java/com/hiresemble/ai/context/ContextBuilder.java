@@ -1,6 +1,6 @@
 package com.hiresemble.ai.context;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;

@@ -1,8 +1,8 @@
 package com.hiresemble.ai.model;
 
-import com.hiresemble.agentrun.domain.AiQualityMode;
-import com.hiresemble.agentrun.domain.ModelTier;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import java.util.Objects;
 import java.util.Set;

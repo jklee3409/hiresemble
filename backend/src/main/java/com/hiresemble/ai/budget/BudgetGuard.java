@@ -1,7 +1,7 @@
 package com.hiresemble.ai.budget;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.application.BudgetReservationPort;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import java.math.BigDecimal;
 import java.time.Instant;
 

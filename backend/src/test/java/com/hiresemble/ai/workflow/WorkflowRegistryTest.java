@@ -2,10 +2,9 @@ package com.hiresemble.ai.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import com.hiresemble.agentrun.domain.AiQualityMode;
-import com.hiresemble.agentrun.domain.ModelTier;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.StepDefinition;

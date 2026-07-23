@@ -1,8 +1,14 @@
 package com.hiresemble.profile.domain;
 
+import com.hiresemble.profile.domain.model.DirectEvidenceData;
+import com.hiresemble.profile.domain.model.EducationStatus;
+import com.hiresemble.profile.domain.model.EvidenceSourceType;
+import com.hiresemble.profile.domain.model.ProfileCompletion;
+import com.hiresemble.profile.domain.model.ProfileCompletionItem;
+import com.hiresemble.profile.domain.policy.ProfilePolicy;
+import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import com.hiresemble.common.exception.BusinessException;
 import java.math.BigDecimal;
 import java.time.LocalDate;

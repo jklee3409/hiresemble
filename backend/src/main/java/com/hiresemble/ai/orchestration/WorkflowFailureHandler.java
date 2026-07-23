@@ -1,6 +1,6 @@
 package com.hiresemble.ai.orchestration;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import com.hiresemble.ai.execution.AiExecutionException;
 
 /** Domain-port compensation invoked before a failed Run reaches its terminal state. */

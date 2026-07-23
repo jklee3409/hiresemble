@@ -7,15 +7,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.hiresemble.agentrun.application.AgentRunApplicationService;
-import com.hiresemble.agentrun.application.AgentRunStatePort;
-import com.hiresemble.agentrun.application.AgentRunTransitionCommand;
-import com.hiresemble.agentrun.application.BudgetReservationPort;
-import com.hiresemble.agentrun.application.ClaimedAgentRun;
-import com.hiresemble.agentrun.domain.AgentRunStatus;
-import com.hiresemble.auth.domain.UserRole;
-import com.hiresemble.auth.domain.UserStatus;
+import com.hiresemble.agentrun.application.service.AgentRunApplicationService;
+import com.hiresemble.agentrun.application.port.AgentRunStatePort;
+import com.hiresemble.agentrun.application.command.AgentRunTransitionCommand;
+import com.hiresemble.agentrun.application.port.BudgetReservationPort;
+import com.hiresemble.agentrun.application.model.ClaimedAgentRun;
+import com.hiresemble.agentrun.domain.model.AgentRunStatus;
+import com.hiresemble.auth.domain.model.UserRole;
+import com.hiresemble.auth.domain.model.UserStatus;
 import com.hiresemble.auth.security.AuthenticatedUser;
 import java.math.BigDecimal;
 import java.time.Duration;

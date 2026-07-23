@@ -1,8 +1,7 @@
 package com.hiresemble.ai.workflow.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;

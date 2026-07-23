@@ -1,9 +1,8 @@
 package com.hiresemble.common.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hiresemble.auth.api.LoginRequest;
-import com.hiresemble.auth.api.SignupRequest;
+import com.hiresemble.auth.api.dto.LoginRequest;
+import com.hiresemble.auth.api.dto.SignupRequest;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;

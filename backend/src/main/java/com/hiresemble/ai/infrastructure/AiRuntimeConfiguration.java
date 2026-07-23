@@ -1,13 +1,13 @@
 package com.hiresemble.ai.infrastructure;
 
-import com.hiresemble.agentrun.application.AgentRunCancellationPort;
-import com.hiresemble.agentrun.application.AgentRunLeaseHeartbeatPort;
-import com.hiresemble.agentrun.application.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.AgentRunStatePort;
-import com.hiresemble.agentrun.application.AgentStepCheckpointPort;
-import com.hiresemble.agentrun.application.DomainResultApplyPort;
-import com.hiresemble.agentrun.application.UsageRecorderPort;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.application.port.AgentRunCancellationPort;
+import com.hiresemble.agentrun.application.port.AgentRunLeaseHeartbeatPort;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.port.AgentRunStatePort;
+import com.hiresemble.agentrun.application.port.AgentStepCheckpointPort;
+import com.hiresemble.agentrun.application.port.DomainResultApplyPort;
+import com.hiresemble.agentrun.application.port.UsageRecorderPort;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
@@ -28,8 +28,8 @@ import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
-import com.hiresemble.document.application.DocumentWorkflowCommandPort;
-import com.hiresemble.document.application.DocumentWorkflowQueryPort;
+import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
+import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import java.time.Clock;
 import java.util.List;
 import java.util.Set;
@@ -100,7 +100,7 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
-    BudgetGuard budgetGuard(com.hiresemble.agentrun.application.BudgetReservationPort port) {
+    BudgetGuard budgetGuard(com.hiresemble.agentrun.application.port.BudgetReservationPort port) {
         return new BudgetGuard(port);
     }
 

@@ -1,25 +1,24 @@
 package com.hiresemble.ai.workflow.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hiresemble.agentrun.application.AgentRunDispatchPort;
-import com.hiresemble.agentrun.application.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.application.AgentRunStatePort;
-import com.hiresemble.agentrun.domain.AgentRunStatus;
-import com.hiresemble.agentrun.domain.UsageType;
+import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.port.AgentRunStatePort;
+import com.hiresemble.agentrun.domain.model.AgentRunStatus;
+import com.hiresemble.agentrun.domain.model.UsageType;
 import com.hiresemble.ai.orchestration.AgentOrchestrator;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
-import com.hiresemble.document.application.DocumentApplicationService;
-import com.hiresemble.document.application.ObjectStorageException;
-import com.hiresemble.document.application.ObjectStoragePort;
-import com.hiresemble.document.domain.DocumentParseStatus;
-import com.hiresemble.document.domain.DocumentType;
-import com.hiresemble.document.domain.EvidenceExtractionStatus;
-import com.hiresemble.profile.application.EvidenceReferenceQueryPort;
+import com.hiresemble.document.application.service.DocumentApplicationService;
+import com.hiresemble.document.application.port.ObjectStorageException;
+import com.hiresemble.document.application.port.ObjectStoragePort;
+import com.hiresemble.document.domain.model.DocumentParseStatus;
+import com.hiresemble.document.domain.model.DocumentType;
+import com.hiresemble.document.domain.model.EvidenceExtractionStatus;
+import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -200,7 +199,7 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         assertThat(embeddingGateway.calls.get()).isEqualTo(3);
     }
 
-    private com.hiresemble.document.application.DocumentApplicationResults.UploadAccepted upload(
+    private com.hiresemble.document.application.model.DocumentApplicationResults.UploadAccepted upload(
             String text, String key) {
         MockMultipartFile file = new MockMultipartFile(
                 "file",

@@ -1,11 +1,13 @@
 package com.hiresemble.document.infrastructure;
 
+import com.hiresemble.document.infrastructure.config.DocumentEmbeddingPolicyValidator;
+import com.hiresemble.document.infrastructure.config.DocumentEmbeddingProperties;
+import com.hiresemble.document.infrastructure.persistence.DocumentStore;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-
-import com.hiresemble.document.domain.DocumentRecords.EmbeddingPolicy;
+import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
 import org.junit.jupiter.api.Test;
 
 class DocumentEmbeddingPolicyValidatorTest {

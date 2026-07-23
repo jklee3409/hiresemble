@@ -1,12 +1,12 @@
 package com.hiresemble.agentrun;
 
-import com.hiresemble.agentrun.application.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.application.WorkflowLaunchCommand;
-import com.hiresemble.agentrun.application.WorkflowLaunchResult;
-import com.hiresemble.agentrun.application.WorkflowLauncher;
-import com.hiresemble.agentrun.domain.AiQualityMode;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.command.WorkflowLaunchCommand;
+import com.hiresemble.agentrun.application.model.WorkflowLaunchResult;
+import com.hiresemble.agentrun.application.port.WorkflowLauncher;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
 import java.time.Instant;

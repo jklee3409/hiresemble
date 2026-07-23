@@ -1,35 +1,34 @@
 package com.hiresemble.ai.orchestration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hiresemble.agentrun.application.AgentRunCancellationPort;
-import com.hiresemble.agentrun.application.AgentRunDispatchPort;
-import com.hiresemble.agentrun.application.AgentRunLeaseHeartbeatPort;
-import com.hiresemble.agentrun.application.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.AgentRunResumePort;
-import com.hiresemble.agentrun.application.AgentRunRetryPort;
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.application.AgentRunStatePort;
-import com.hiresemble.agentrun.application.AgentStepCheckpointPort;
-import com.hiresemble.agentrun.application.BudgetReservationPort;
-import com.hiresemble.agentrun.application.ClaimedAgentRun;
-import com.hiresemble.agentrun.application.DomainResultApplyPort;
-import com.hiresemble.agentrun.application.DomainResultCommand;
-import com.hiresemble.agentrun.application.UsageRecorderPort;
-import com.hiresemble.agentrun.application.WorkflowLaunchCommand;
-import com.hiresemble.agentrun.application.WorkflowLaunchResult;
-import com.hiresemble.agentrun.application.WorkflowLauncher;
-import com.hiresemble.agentrun.domain.AgentRunStatus;
-import com.hiresemble.agentrun.domain.AgentStepStatus;
-import com.hiresemble.agentrun.domain.AiQualityMode;
-import com.hiresemble.agentrun.domain.ModelTier;
-import com.hiresemble.agentrun.domain.RequiredUserAction;
-import com.hiresemble.agentrun.domain.RequiredUserActionType;
-import com.hiresemble.agentrun.domain.UsageType;
-import com.hiresemble.agentrun.domain.WorkflowType;
-import com.hiresemble.agentrun.infrastructure.AgentRunReconciler;
-import com.hiresemble.agentrun.infrastructure.AgentRuntimeProperties;
-import com.hiresemble.agentrun.infrastructure.ScheduledAgentRunLeaseHeartbeat;
+import com.hiresemble.agentrun.application.port.AgentRunCancellationPort;
+import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
+import com.hiresemble.agentrun.application.port.AgentRunLeaseHeartbeatPort;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.port.AgentRunResumePort;
+import com.hiresemble.agentrun.application.port.AgentRunRetryPort;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.port.AgentRunStatePort;
+import com.hiresemble.agentrun.application.port.AgentStepCheckpointPort;
+import com.hiresemble.agentrun.application.port.BudgetReservationPort;
+import com.hiresemble.agentrun.application.model.ClaimedAgentRun;
+import com.hiresemble.agentrun.application.port.DomainResultApplyPort;
+import com.hiresemble.agentrun.application.command.DomainResultCommand;
+import com.hiresemble.agentrun.application.port.UsageRecorderPort;
+import com.hiresemble.agentrun.application.command.WorkflowLaunchCommand;
+import com.hiresemble.agentrun.application.model.WorkflowLaunchResult;
+import com.hiresemble.agentrun.application.port.WorkflowLauncher;
+import com.hiresemble.agentrun.domain.model.AgentRunStatus;
+import com.hiresemble.agentrun.domain.model.AgentStepStatus;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.RequiredUserAction;
+import com.hiresemble.agentrun.domain.model.RequiredUserActionType;
+import com.hiresemble.agentrun.domain.model.UsageType;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
+import com.hiresemble.agentrun.infrastructure.worker.AgentRunReconciler;
+import com.hiresemble.agentrun.infrastructure.config.AgentRuntimeProperties;
+import com.hiresemble.agentrun.infrastructure.scheduling.ScheduledAgentRunLeaseHeartbeat;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
@@ -753,7 +752,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
     private record FixtureInput(String fixtureRef) {}
     private record FixtureOutput(String resultRef, String resultHash, boolean valid) {}
     private record AgentStepSnapshotView(int attempt, AgentStepStatus status) {
-        private static AgentStepSnapshotView from(com.hiresemble.agentrun.application.AgentStepSnapshot step) {
+        private static AgentStepSnapshotView from(com.hiresemble.agentrun.application.model.AgentStepSnapshot step) {
             return new AgentStepSnapshotView(step.attempt(), step.status());
         }
     }

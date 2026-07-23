@@ -1,6 +1,6 @@
 package com.hiresemble.ai.port;
 
-import com.hiresemble.agentrun.domain.UsageType;
+import com.hiresemble.agentrun.domain.model.UsageType;
 import java.math.BigDecimal;
 import java.util.UUID;
 

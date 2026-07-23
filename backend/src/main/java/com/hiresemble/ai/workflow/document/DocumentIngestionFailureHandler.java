@@ -1,13 +1,13 @@
 package com.hiresemble.ai.workflow.document;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.orchestration.WorkflowFailureHandler;
-import com.hiresemble.document.application.DocumentWorkflowCommandPort;
-import com.hiresemble.document.application.DocumentWorkflowQueryPort;
-import com.hiresemble.document.domain.DocumentParseStatus;
-import com.hiresemble.document.domain.EvidenceExtractionStatus;
+import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
+import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
+import com.hiresemble.document.domain.model.DocumentParseStatus;
+import com.hiresemble.document.domain.model.EvidenceExtractionStatus;
 
 /** Preserves deterministic parse results while safely failing the AI-only status axis. */
 public final class DocumentIngestionFailureHandler implements WorkflowFailureHandler {

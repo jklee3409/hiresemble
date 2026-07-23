@@ -1,27 +1,27 @@
 package com.hiresemble.ai.orchestration;
 
-import com.hiresemble.agentrun.application.AgentRunCancellationPort;
-import com.hiresemble.agentrun.application.AgentRunLeaseHeartbeatPort;
-import com.hiresemble.agentrun.application.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.application.AgentRunStatePort;
-import com.hiresemble.agentrun.application.AgentRunTransitionCommand;
-import com.hiresemble.agentrun.application.AgentStepCheckpointPort;
-import com.hiresemble.agentrun.application.AgentStepSnapshot;
-import com.hiresemble.agentrun.application.ClaimedAgentRun;
-import com.hiresemble.agentrun.application.DomainResultApplyPort;
-import com.hiresemble.agentrun.application.DomainResultCommand;
-import com.hiresemble.agentrun.application.ReusableStepSnapshot;
-import com.hiresemble.agentrun.application.StepCheckpointCommand;
-import com.hiresemble.agentrun.application.StepStartCommand;
-import com.hiresemble.agentrun.application.UsageRecordCommand;
-import com.hiresemble.agentrun.application.UsageRecorderPort;
-import com.hiresemble.agentrun.application.WorkflowExecutionPort;
-import com.hiresemble.agentrun.domain.AgentRunStatus;
-import com.hiresemble.agentrun.domain.AgentStepStatus;
-import com.hiresemble.agentrun.domain.ModelTier;
-import com.hiresemble.agentrun.domain.PartialResult;
-import com.hiresemble.agentrun.domain.SafeError;
+import com.hiresemble.agentrun.application.port.AgentRunCancellationPort;
+import com.hiresemble.agentrun.application.port.AgentRunLeaseHeartbeatPort;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.port.AgentRunStatePort;
+import com.hiresemble.agentrun.application.command.AgentRunTransitionCommand;
+import com.hiresemble.agentrun.application.port.AgentStepCheckpointPort;
+import com.hiresemble.agentrun.application.model.AgentStepSnapshot;
+import com.hiresemble.agentrun.application.model.ClaimedAgentRun;
+import com.hiresemble.agentrun.application.port.DomainResultApplyPort;
+import com.hiresemble.agentrun.application.command.DomainResultCommand;
+import com.hiresemble.agentrun.application.model.ReusableStepSnapshot;
+import com.hiresemble.agentrun.application.command.StepCheckpointCommand;
+import com.hiresemble.agentrun.application.command.StepStartCommand;
+import com.hiresemble.agentrun.application.command.UsageRecordCommand;
+import com.hiresemble.agentrun.application.port.UsageRecorderPort;
+import com.hiresemble.agentrun.application.port.WorkflowExecutionPort;
+import com.hiresemble.agentrun.domain.model.AgentRunStatus;
+import com.hiresemble.agentrun.domain.model.AgentStepStatus;
+import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.PartialResult;
+import com.hiresemble.agentrun.domain.model.SafeError;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.ContextBuilder.ContextRequest;
@@ -369,7 +369,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 }
                 Object validated = validate(executor, response.rawJson(), executionContext);
                 JsonNode minimalOutput = minimalOutput(executor, validated);
-                Optional<com.hiresemble.agentrun.domain.RequiredUserAction> requiredAction =
+                Optional<com.hiresemble.agentrun.domain.model.RequiredUserAction> requiredAction =
                         executorRequiredUserAction(executor, validated, minimalOutput, executionContext);
                 if (requiredAction.isPresent()) {
                     stepCheckpointPort.checkpoint(new StepCheckpointCommand(
@@ -659,7 +659,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Optional<com.hiresemble.agentrun.domain.RequiredUserAction> executorRequiredUserAction(
+    private Optional<com.hiresemble.agentrun.domain.model.RequiredUserAction> executorRequiredUserAction(
             WorkflowStepExecutor executor,
             Object value,
             JsonNode minimalOutput,
@@ -756,7 +756,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             JsonNode minimalOutput,
             Object ephemeralOutput,
             PartialResult partialResult,
-            com.hiresemble.agentrun.domain.RequiredUserAction requiredUserAction,
+            com.hiresemble.agentrun.domain.model.RequiredUserAction requiredUserAction,
             boolean cancelledOrTerminal) {
         private static StepResult terminal() {
             return new StepResult(null, null, null, null, true);
@@ -765,7 +765,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         private static StepResult waiting(
                 JsonNode minimalOutput,
                 Object ephemeralOutput,
-                com.hiresemble.agentrun.domain.RequiredUserAction requiredUserAction) {
+                com.hiresemble.agentrun.domain.model.RequiredUserAction requiredUserAction) {
             return new StepResult(minimalOutput, ephemeralOutput, null, requiredUserAction, false);
         }
     }

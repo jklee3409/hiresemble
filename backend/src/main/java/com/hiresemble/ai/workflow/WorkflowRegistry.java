@@ -1,8 +1,8 @@
 package com.hiresemble.ai.workflow;
 
-import com.hiresemble.agentrun.domain.AiQualityMode;
-import com.hiresemble.agentrun.domain.ModelTier;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;

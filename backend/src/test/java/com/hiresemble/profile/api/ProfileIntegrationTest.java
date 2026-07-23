@@ -8,8 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.hiresemble.auth.api.SignupRequest;
+import com.hiresemble.auth.api.dto.SignupRequest;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import java.util.UUID;

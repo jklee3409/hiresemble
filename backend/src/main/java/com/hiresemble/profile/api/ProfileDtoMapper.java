@@ -1,20 +1,21 @@
 package com.hiresemble.profile.api;
 
-import com.hiresemble.profile.api.ProfileDtos.AwardDto;
-import com.hiresemble.profile.api.ProfileDtos.CareerDto;
-import com.hiresemble.profile.api.ProfileDtos.CertificationDto;
-import com.hiresemble.profile.api.ProfileDtos.EducationDto;
-import com.hiresemble.profile.api.ProfileDtos.EvidenceDto;
-import com.hiresemble.profile.api.ProfileDtos.LanguageScoreDto;
-import com.hiresemble.profile.api.ProfileDtos.ProfileDto;
-import com.hiresemble.profile.domain.ProfileRecords.AwardRecord;
-import com.hiresemble.profile.domain.ProfileRecords.CareerRecord;
-import com.hiresemble.profile.domain.ProfileRecords.CertificationRecord;
-import com.hiresemble.profile.domain.ProfileRecords.EducationRecord;
-import com.hiresemble.profile.domain.ProfileRecords.EvidenceRecord;
-import com.hiresemble.profile.domain.ProfileRecords.LanguageScoreRecord;
-import com.hiresemble.profile.domain.ProfileRecords.PageSlice;
-import com.hiresemble.profile.domain.ProfileRecords.ProfileView;
+import com.hiresemble.profile.api.dto.PageResponse;
+import com.hiresemble.profile.api.dto.ProfileDtos.AwardDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.CareerDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.CertificationDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.EducationDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.EvidenceDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.LanguageScoreDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.ProfileDto;
+import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.LanguageScoreRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.PageSlice;
+import com.hiresemble.profile.domain.model.ProfileRecords.ProfileView;
 import java.util.function.Function;
 
 final class ProfileDtoMapper {

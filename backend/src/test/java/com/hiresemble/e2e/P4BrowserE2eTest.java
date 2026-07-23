@@ -1,8 +1,7 @@
 package com.hiresemble.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hiresemble.agentrun.domain.UsageType;
+import com.hiresemble.agentrun.domain.model.UsageType;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.ChatGateway;

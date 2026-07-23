@@ -1,7 +1,7 @@
 package com.hiresemble.ai.context;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.domain.WorkflowType;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.context.ContextBuilder.ContextRef;
 import com.hiresemble.ai.context.ContextBuilder.ContextRequest;
 import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
@@ -9,8 +9,8 @@ import com.hiresemble.ai.context.ContextBuilder.ResourceSnapshotRef;
 import com.hiresemble.ai.context.ContextBuilder.TruncationSummary;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
-import com.hiresemble.document.application.DocumentWorkflowQueryPort;
-import com.hiresemble.document.domain.DocumentRecords.DocumentRecord;
+import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
+import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;

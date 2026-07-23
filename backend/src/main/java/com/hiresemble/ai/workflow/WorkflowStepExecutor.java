@@ -1,8 +1,8 @@
 package com.hiresemble.ai.workflow;
 
-import com.hiresemble.agentrun.application.AgentRunSnapshot;
-import com.hiresemble.agentrun.domain.PartialResult;
-import com.hiresemble.agentrun.domain.RequiredUserAction;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.domain.model.PartialResult;
+import com.hiresemble.agentrun.domain.model.RequiredUserAction;
 import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
 import com.hiresemble.ai.model.ModelRouter.ModelRoute;
 import com.hiresemble.ai.port.AiGatewayResponse;
