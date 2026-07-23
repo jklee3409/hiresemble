@@ -6,10 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- `DocumentController`: owner-scoped 문서 HTTP 경계
-- `DocumentDtos`, `DocumentRequests`: 공개 응답과 version 입력
-- `DocumentApiMapper`: 내부 snapshot을 안전한 DTO로 변환
-- [`progress.md`](progress.md): API 구현 이력
+- [controller/](controller/index.md): HTTP endpoint
+- [dto/](dto/index.md): 공개 request·response DTO
+- [mapper/](mapper/index.md): 전송 DTO 변환
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

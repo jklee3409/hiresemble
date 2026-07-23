@@ -6,10 +6,11 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- `AgentRunController`: 정확한 5개 공개 operation
-- `AgentRunSseService`: snapshot-first subscriber와 heartbeat·terminal cleanup
-- `AgentRun*Dto`, event DTO: 공개 허용 field
-- [`progress.md`](progress.md): API 구현 상태
+- [controller/](controller/index.md): HTTP endpoint
+- [dto/](dto/index.md): 공개 request·response DTO
+- [mapper/](mapper/index.md): 전송 DTO 변환
+- [sse/](sse/index.md): SSE 전송
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

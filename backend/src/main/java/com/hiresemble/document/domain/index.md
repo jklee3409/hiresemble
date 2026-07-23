@@ -6,9 +6,8 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- `Document`, `DocumentSnapshot`: aggregate 상태와 optimistic version
-- document/parse/evidence/outbox enum
-- [`progress.md`](progress.md): domain 구현 이력
+- [model/](model/index.md): 해당 계층의 값·결과 모델
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

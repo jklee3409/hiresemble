@@ -19,7 +19,7 @@ P1 인증·공통 기반, P2 프로필, P3 Agent Run·AI runtime, P4 Document와
 
 ## 구성 요소 역할
 
-- 요구사항별 테스트를 운영 package 경계와 대응시켜 P1·P2 회귀와 AC-13 공통 기반을 추적한다.
+- 요구사항별 테스트를 운영 package 경계와 대응시키고 Document의 service·adapter·config·worker 책임별 회귀를 추적한다.
 
 ## 다른 디렉터리와의 의존 관계
 

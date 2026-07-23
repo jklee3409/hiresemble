@@ -10,6 +10,26 @@
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개인 총 43 operations·30 paths다.
 - Dashboard·공고·P6 전체 RAG와 실제 provider는 아직 없다.
 
+## [2026-07-23] Session Summary (backend package·디렉터리 구조 세분화)
+
+- What was done:
+  - 운영 Java 158개와 package-private 결합 테스트 4개를 44개 실제 책임 package로 이동하고 규칙·설계·계층형 추적 문서를 동기화했다.
+
+- Key decisions:
+  - `ProfileController`와 package-private `ProfileDtoMapper`는 접근 제한자를 바꾸지 않고 기존 package에 유지했다.
+  - `common`·`ai` 전문 경계와 P5 이후 미구현 상태, API·DB·workflow 계약을 유지했다.
+
+- Issues encountered:
+  - 중간 감사에서 한국어 literal/comment 19개의 인코딩 손상을 발견해 HEAD UTF-8 원문을 복원한 뒤 구조 변경만 재적용했다.
+
+- Validation:
+  - Java 237개의 package↔path, 내부 import, 구 FQCN, wildcard·중복 import, package-private 교차 참조 검사가 모두 0건으로 통과했다.
+  - 엄격한 UTF-8 decode·replacement 문자·BOM과 HEAD 대비 exact/semantic 본문 불일치가 모두 0건이며 `git diff --check HEAD`가 통과했다.
+  - Docker가 없어 지침에 따라 Gradle·Testcontainers·애플리케이션 실행은 하지 않았고 runtime은 `NOT_VERIFIED`다.
+
+- Next steps:
+  - Docker 사용 가능한 개발 또는 CI 환경에서 `Set-Location backend; .\gradlew.bat check`를 실행한다.
+
 ## [2026-07-19] Session Summary (P4 문서·근거 Pipeline 통합 구현)
 
 - What was done:

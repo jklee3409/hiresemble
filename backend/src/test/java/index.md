@@ -11,7 +11,7 @@ Gradle test Java package namespace의 상위 경계를 관리한다.
 
 ## 구성 요소 역할
 
-- JUnit source를 production source와 같은 package hierarchy로 정리한다.
+- JUnit source를 production source와 같은 package hierarchy와 package-private 협력 경계로 정리한다.
 
 ## 다른 디렉터리와의 의존 관계
 

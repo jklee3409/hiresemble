@@ -6,12 +6,10 @@ P2 프로필·직접 근거의 HTTP status, validation, DTO와 OpenAPI operation
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileController.java`](ProfileController.java): 인증된 프로필 25개 operation
-- [`ProfileRequests.java`](ProfileRequests.java): Bean Validation request 계약
-- [`ProfileDtos.java`](ProfileDtos.java): 공개 response DTO
-- [`ProfileDtoMapper.java`](ProfileDtoMapper.java): application record의 HTTP projection
-- [`PageResponse.java`](PageResponse.java): 목록 pagination 응답
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [dto/](dto/index.md): 공개 request·response DTO
+- [ProfileController.java](ProfileController.java): 프로필 공개 HTTP endpoint
+- [ProfileDtoMapper.java](ProfileDtoMapper.java): Controller와 package-private로 협력하는 DTO mapper
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
@@ -28,6 +26,7 @@ P2 프로필·직접 근거의 HTTP status, validation, DTO와 OpenAPI operation
 
 - 성공 envelope와 직접 evidence create/delete endpoint를 추가하지 않는다.
 - rejected value, SQL message와 내부 예외를 응답에 노출하지 않는다.
+- `ProfileController`와 package-private `ProfileDtoMapper`는 접근 제한자 변경 없이 협력해야 하므로 이 package에 함께 남긴다.
 
 ## 관련 규칙 및 문서
 

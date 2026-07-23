@@ -6,14 +6,13 @@ P1 users credential·상태의 JPA mapping 및 repository를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`UserEntity.java`](UserEntity.java): 사용자 credential·상태 영속 entity
-- [`UserRepository.java`](UserRepository.java): 정규화 이메일 조회와 저장
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [persistence/](persistence/index.md): JDBC/JPA 영속성 구현
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
 - Flyway V2 users schema와 일치하는 mapping만 제공하고 API projection은 auth API 계층에서 만든다.
-- `user_profiles`의 소유권과 등록은 [`../../profile/infrastructure/ProfileStore.java`](../../profile/infrastructure/ProfileStore.java)와 profile application 경계에 있다.
+- `user_profiles`의 소유권과 등록은 [`../../profile/infrastructure/persistence/ProfileStore.java`](../../profile/infrastructure/persistence/ProfileStore.java)와 profile application 경계에 있다.
 
 ## 다른 디렉터리와의 의존 관계
 

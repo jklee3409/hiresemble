@@ -6,13 +6,9 @@ P1 인증 Controller와 request·response DTO의 공개 HTTP 계약을 소유한
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`AuthController.java`](AuthController.java): csrf, signup, login, logout, me endpoint
-- [`SignupRequest.java`](SignupRequest.java): 가입 입력과 UTF-8 비밀번호 검증
-- [`LoginRequest.java`](LoginRequest.java): 로그인 입력 검증
-- [`AuthSessionDto.java`](AuthSessionDto.java): 현재 사용자와 교체 CSRF token
-- [`CurrentUserDto.java`](CurrentUserDto.java): Session 사용자의 공개 projection
-- [`CsrfDto.java`](CsrfDto.java): 동적 CSRF header·parameter·token
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [controller/](controller/index.md): HTTP endpoint
+- [dto/](dto/index.md): 공개 request·response DTO
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

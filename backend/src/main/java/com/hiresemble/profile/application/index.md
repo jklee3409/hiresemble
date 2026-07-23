@@ -6,11 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileApplicationService.java`](ProfileApplicationService.java): 프로필 CRUD·direct evidence use case
-- [`ProfileRegistrationService.java`](ProfileRegistrationService.java): signup transaction의 빈 기본 프로필 등록
-- `DocumentEvidenceCommandPort`, `DocumentEvidenceService`: AI candidate 적용과 삭제·tombstone
-- `EvidenceReferenceQueryPort`: 후속 provenance 참조 contributor 경계
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [config/](config/index.md): 해당 계층의 실행 설정
+- [port/](port/index.md): application port
+- [service/](service/index.md): use case·transaction 조정
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
@@ -21,7 +20,7 @@
 ## 다른 디렉터리와의 의존 관계
 
 - HTTP 입력은 [`../api/`](../api/index.md), 규칙은 [`../domain/`](../domain/index.md), SQL은 [`../infrastructure/`](../infrastructure/index.md)에 의존한다.
-- signup은 [`../../auth/application/AuthService.java`](../../auth/application/AuthService.java)에서 등록 경계를 호출한다.
+- signup은 [`../../auth/application/service/AuthService.java`](../../auth/application/service/AuthService.java)에서 등록 경계를 호출한다.
 
 ## 변경 시 주의사항
 

@@ -19,7 +19,7 @@
 ## 구성 요소 역할
 
 - `HiresembleApplication`은 Spring application context를 부트스트랩한다.
-- Controller는 HTTP 변환, Service/Application은 use case와 transaction, Domain은 안정적 상태 값을 담당한다.
+- Controller·DTO·mapper·SSE, service·port·command·query·model, domain model·policy·service, persistence·adapter·worker·scheduling·event는 각 책임별 하위 package에 둔다.
 - `common`은 P1~P4에서 실제 사용하는 오류·보안·validation·idempotency 책임만 제공한다.
 - `profile`은 HTTP 변환, use case transaction, 도메인 불변식, JDBC 영속성을 분리한다.
 - `agentrun`은 PostgreSQL 상태 원천과 application port를, `ai`는 repository 비의존 고정 orchestration을 소유한다.
@@ -34,6 +34,7 @@
 ## 변경 시 주의사항
 
 - `job`, `coverletter`, `research`, `interview` 등 P5 이후 package는 아직 없으며 명세 존재를 구현 완료로 오해하지 않는다.
+- `common`과 `ai`에는 기능 package의 계층 구조를 기계적으로 복제하지 않고, 실제 전문 책임과 파일이 없는 빈 package를 만들지 않는다.
 - API 성공 응답은 명세 DTO를 직접 반환하고, 생성·비동기·본문 없음 상태에 실제 201·202·204를 사용한다.
 - Service/Domain에서 HTTP DTO를 만들지 않으며, Security 오류도 ControllerAdvice가 처리한다고 가정하지 않는다.
 - Entity나 민감한 예외 원문을 API 또는 로그로 노출하지 않는다.

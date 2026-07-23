@@ -4,6 +4,26 @@
 
 저장소 공통, Session 기반 문서 추적, 백엔드·Controller OpenAPI/Swagger, 응답·예외, 프론트엔드, 인프라 규칙과 Codex 역할 위임 절차가 문서화되어 있다. 규칙은 루트 `AGENTS.md`의 라우팅 표를 통해 사용한다.
 
+## [2026-07-23] Session Summary (backend 책임별 package 규칙 정립)
+
+- What was done:
+  - `backend-development.md`에 계층별 허용 책임 package, 빈 package 금지와 package-private stop rule을 추가하고 규칙 index를 동기화했다.
+
+- Key decisions:
+  - 모든 백엔드 작업이 기존 라우팅으로 이 규칙을 읽으므로 루트 `AGENTS.md`에는 중복 규칙을 추가하지 않았다.
+  - `common`과 `ai`는 기능 package 계층을 기계적으로 복제하지 않고 전문 경계를 유지한다.
+
+- Issues encountered:
+  - 구현 완료 상태가 초기 bootstrap으로 남아 있던 오래된 문구를 P1~P4 실제 상태로 바로잡았다.
+
+- Validation:
+  - Java 237개의 package↔path, 내부 import, 구 FQCN, wildcard·중복 import, package-private 교차 참조 검사가 모두 0건으로 통과했다.
+  - 엄격한 UTF-8 decode·replacement 문자·BOM과 HEAD 대비 exact/semantic 본문 불일치가 모두 0건이며 `git diff --check HEAD`가 통과했다.
+  - Docker가 없어 지침에 따라 Gradle·Testcontainers·애플리케이션 실행은 하지 않았고 runtime은 `NOT_VERIFIED`다.
+
+- Next steps:
+  - Docker 사용 가능한 개발 또는 CI 환경에서 `Set-Location backend; .\gradlew.bat check`를 실행한다.
+
 ## [2026-07-19] Session Summary (Controller Swagger 문서·API 시험 규칙 추가)
 
 - What was done:

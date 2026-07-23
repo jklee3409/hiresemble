@@ -6,8 +6,8 @@ P2 기본·구조화 프로필과 direct evidence를 PostgreSQL에서 owner-scop
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileStore.java`](ProfileStore.java): JDBC mapping, pagination·sort, version mutation과 soft delete
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [persistence/](persistence/index.md): JDBC/JPA 영속성 구현
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

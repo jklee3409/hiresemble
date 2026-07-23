@@ -6,11 +6,11 @@ Document JDBC 영속화, Tika·PDFBox·POI parser, S3-compatible storage, exact 
 
 ## 주요 파일 및 하위 디렉터리
 
-- JDBC document/text/chunk/resource-link/outbox adapter
-- PDF·DOCX·TXT parser와 MIME·active content 검사
-- S3 Object Storage adapter와 5분 presign
-- embedding policy boot validator와 exact cosine query
-- [`progress.md`](progress.md): infrastructure 구현 이력
+- [adapter/](adapter/index.md): 외부 시스템 adapter
+- [config/](config/index.md): 해당 계층의 실행 설정
+- [persistence/](persistence/index.md): JDBC/JPA 영속성 구현
+- [worker/](worker/index.md): 비동기 작업 실행
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

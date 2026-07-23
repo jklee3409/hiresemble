@@ -6,11 +6,11 @@ P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): 프로필 25개 HTTP operation과 request·response 변환
-- [`application/`](application/index.md): 인증 사용자 use case, transaction, owner·version·document 경계
-- [`domain/`](domain/index.md): 완료도·날짜·GPA·대표 학력·evidence 동기화 규칙
-- [`infrastructure/`](infrastructure/index.md): owner-scoped JDBC 조회·변경과 soft delete
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [api/](api/index.md): HTTP 전송 계층
+- [application/](application/index.md): use case와 application 경계
+- [domain/](domain/index.md): 도메인 모델과 규칙
+- [infrastructure/](infrastructure/index.md): 영속성·외부 연동 구현
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

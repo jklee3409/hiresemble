@@ -1,12 +1,12 @@
 # Hiresemble 전체 시스템 설계
 
-- 문서 상태: P0 승인 계약을 연결한 구현 전 설계 기준선
+- 문서 상태: P0 승인 계약과 P1~P4 구현 구조를 연결한 설계 기준선
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
-- 현재 구현 상태: 백엔드·프론트엔드 부트스트랩과 로컬 인프라만 존재하며 비즈니스 기능은 미구현
+- 현재 구현 상태: P1 인증, P2 프로필, P3 Agent Run·AI runtime, P4 Document pipeline과 대응 frontend가 구현되어 있으며 P5 이후는 미구현
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
 - P0 승인 결정 기록: [P0 계약 결정 기록](p0-contract-decision-proposal.md)
 
-이 문서는 다섯 기준 명세를 구현 구조로 연결한 파생 설계다. 현재 활성 제품 계약의 원천은 `docs/spec/**`이며 이 문서와 결정 기록은 이를 대체하거나 병렬 계약 원천이 되지 않는다. P0 계약은 승인됐지만 비즈니스 코드·migration·API·UI 구현은 시작되지 않았다.
+이 문서는 다섯 기준 명세를 구현 구조로 연결한 파생 설계다. 현재 활성 제품 계약의 원천은 `docs/spec/**`이며 이 문서와 결정 기록은 이를 대체하거나 병렬 계약 원천이 되지 않는다. 실제 구현 여부는 코드와 각 `progress.md`를 기준으로 판단한다.
 
 ## 1. 해석 기준과 결정 상태
 
@@ -23,7 +23,7 @@
 | --------- | ------------------------------------------------ | ---------------------------------------------- |
 | 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨 | 구현·테스트의 유일한 제품 계약으로 사용        |
 | 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨   | 역사와 선택 이유 확인에만 사용                 |
-| 구현 상태 | P1 이후 비즈니스 코드·migration·API·UI는 미착수  | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
+| 구현 상태 | P1~P4 구현 완료, P5~P10 미착수                  | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
 
 ### 1.3 명시적 설계 가정
 
@@ -600,7 +600,38 @@ backend/src/main/java/com/hiresemble/
    └─ infrastructure/
 ```
 
-각 기능은 필요해질 때 `api/application/domain/infrastructure`를 추가한다. 빈 계층을 한 번에 생성하지 않는다.
+구현된 기능 package는 `api/application/domain/infrastructure` 계층 안에서 실제 책임에 따라 다음 하위 package를 사용한다.
+
+```text
+feature/
+├─ api/
+│  ├─ controller/
+│  ├─ dto/
+│  ├─ mapper/
+│  └─ sse/
+├─ application/
+│  ├─ service/
+│  ├─ port/
+│  ├─ command/
+│  ├─ query/
+│  ├─ model/
+│  └─ config/
+├─ domain/
+│  ├─ model/
+│  ├─ policy/
+│  ├─ service/
+│  ├─ repository/
+│  └─ event/
+└─ infrastructure/
+   ├─ persistence/
+   ├─ adapter/
+   ├─ config/
+   ├─ worker/
+   ├─ scheduling/
+   └─ event/
+```
+
+이 목록은 허용 책임의 분류 기준이며 모든 기능에 모든 하위 package를 만들라는 뜻이 아니다. 실제 파일이 있는 package만 생성하고, `common`과 `ai`는 전문 경계를 유지한다. package-private 협력 관계를 깨지 않고 분리할 수 없는 파일은 같은 package에 남긴다. 이 구조 세분화는 탐색성과 책임 가시성을 위한 것으로 API·DB·workflow 계약을 변경하지 않는다.
 
 ### 16.2 Frontend
 

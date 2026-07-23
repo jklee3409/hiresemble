@@ -25,7 +25,7 @@
 ## 변경 시 주의사항
 
 - 기본 package `com.hiresemble` 바깥에 애플리케이션 component를 두어 component scan에서 누락시키지 않는다.
-- 업무 책임 없이 namespace만 깊게 만들거나 generated 코드를 수동 관리하지 않는다.
+- `api/application/domain/infrastructure` 안에는 실제 파일이 있는 책임별 package만 만들고 업무 책임 없이 namespace만 깊게 만들지 않는다.
 - package 이동 시 import, component scan, JPA entity/repository scan과 테스트 영향을 함께 확인한다.
 
 ## 관련 규칙 및 문서

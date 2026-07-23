@@ -6,11 +6,11 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): 문서 공개 API 8개와 HTTP DTO
-- [`application/`](application/index.md): 문서 use case, workflow·storage·evidence port와 transaction 경계
-- [`domain/`](domain/index.md): 문서 두 상태 축과 입력·수명주기 불변식
-- [`infrastructure/`](infrastructure/index.md): JDBC, parser, S3 호환 storage, exact cosine, deletion outbox adapter
-- [`progress.md`](progress.md): P4 구현·검증 이력
+- [api/](api/index.md): HTTP 전송 계층
+- [application/](application/index.md): use case와 application 경계
+- [domain/](domain/index.md): 도메인 모델과 규칙
+- [infrastructure/](infrastructure/index.md): 영속성·외부 연동 구현
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

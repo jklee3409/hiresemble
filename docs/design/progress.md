@@ -4,6 +4,26 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0·P1·P2·P3·P4는 최종 validator `PASS`로 완료됐고 P5–P10은 미착수이며 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-07-23] Session Summary (책임별 backend 목표 구조 동기화)
+
+- What was done:
+  - `system-architecture.md`와 `implementation-plan.md`의 기능별 계층을 실제 책임 하위 package 구조와 P1~P4 구현 상태에 맞췄다.
+
+- Key decisions:
+  - 하위 package 목록은 허용 책임 기준이며 모든 기능에 빈 구조를 생성하는 목표가 아니다.
+  - 구조 세분화는 탐색성과 책임 가시성만 개선하고 제품 계약을 변경하지 않는다.
+
+- Issues encountered:
+  - 구현 전 기준선으로 남아 있던 설계 상태를 코드·progress 기준의 현재 상태로 수정했다.
+
+- Validation:
+  - Java 237개의 package↔path, 내부 import, 구 FQCN, wildcard·중복 import, package-private 교차 참조 검사가 모두 0건으로 통과했다.
+  - 엄격한 UTF-8 decode·replacement 문자·BOM과 HEAD 대비 exact/semantic 본문 불일치가 모두 0건이며 `git diff --check HEAD`가 통과했다.
+  - Docker가 없어 지침에 따라 Gradle·Testcontainers·애플리케이션 실행은 하지 않았고 runtime은 `NOT_VERIFIED`다.
+
+- Next steps:
+  - Docker 사용 가능한 개발 또는 CI 환경에서 `Set-Location backend; .\gradlew.bat check`를 실행한다.
+
 ## [2026-07-19] Session Summary (P4 완료 상태와 P5·P6 경계 반영)
 
 - What was done:

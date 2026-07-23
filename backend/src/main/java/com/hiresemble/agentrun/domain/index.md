@@ -6,11 +6,8 @@ Agent Run·Step 상태, 공개 품질 의도, 내부 model tier와 안전한 오
 
 ## 주요 파일 및 하위 디렉터리
 
-- `AgentRun`, `AgentStep`: 상태 전이와 불변식
-- `AgentRunStatus`, `AgentStepStatus`: canonical enum
-- `WorkflowType`, `AiQualityMode`, `ModelTier`, `UsageType`: runtime 분류
-- 안전한 `SafeError`, `RequiredUserAction`, `PartialResult`, `ResourceReference`
-- [`progress.md`](progress.md): domain 검증 상태
+- [model/](model/index.md): 해당 계층의 값·결과 모델
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

@@ -8,8 +8,15 @@
 
 - 기본 package는 `com.hiresemble`이다.
 - Spring Boot 단일 배포 단위 안에서 도메인별 경계를 가진 모듈러 모놀리스를 유지한다.
-- 기능 package는 필요해질 때 `auth`, `profile`, `document`, `job`, `coverletter`, `interview`, `agentrun`처럼 업무 책임을 기준으로 추가한다.
+- 기능 package는 필요해질 때 `auth`, `profile`, `document`, `job`, `coverletter`, `research`, `interview`, `agentrun`처럼 업무 책임을 기준으로 추가한다.
 - 여러 도메인이 실제로 공유하는 API 응답, 예외, 보안, 시간·ID 보조 기능만 `common`에 둔다.
+- 기능 package는 `api/application/domain/infrastructure` 계층을 유지하고, 실제 책임이 둘 이상 모인 계층은 다음 하위 package로 세분화한다.
+  - `api`: `controller`, `dto`, `mapper`, `sse`
+  - `application`: `service`, `port`, `command`, `query`, `model`, `config`
+  - `domain`: `model`, `policy`, `service`, `repository`, `event`
+  - `infrastructure`: `persistence`, `adapter`, `config`, `worker`, `scheduling`, `event`
+- 책임이 없는 빈 package나 미래 기능 package를 선행 생성하지 않는다. `common`과 `ai`는 각자의 전문 경계를 유지하며 기능 package의 계층 구조를 기계적으로 적용하지 않는다.
+- package-private 협력 관계는 접근 제한자를 넓혀 분리하지 않는다. 책임 분리가 접근 제한자 변경을 요구하면 함께 이동하거나 기존 package에 남기고 제한 사항을 추적한다.
 - Controller는 HTTP 입력·출력과 인증 context를 변환하고, Service/Application 계층은 use case와 transaction을 조정하며, Domain은 상태 전이와 불변식을 소유한다.
 - Repository 구현 세부사항이나 Spring HTTP 타입을 도메인 규칙으로 누출하지 않는다.
 
@@ -68,7 +75,7 @@
 
 ## 변경 시 주의사항
 
-- 현재는 초기 application class와 설정만 있으며 도메인 패키지는 아직 없다. 문서의 예상 구조를 구현 완료로 간주하지 않는다.
+- 현재 P1~P4의 `auth`, `profile`, `agentrun`, `document`가 구현되어 있다. P5 이후 `job`, `coverletter`, `research`, `interview`는 아직 없으며 문서의 목표 구조를 구현 완료로 간주하지 않는다.
 - 새 공통 추상화를 만들기 전에 실제 두 개 이상의 도메인 사용처를 확인한다.
 - Spring Boot 또는 Spring AI 버전 변경은 공식 호환성과 전체 test를 확인한다.
 - API, DB, Security 변경은 관련 `docs/spec/`과 모듈 `progress.md`를 함께 갱신한다.

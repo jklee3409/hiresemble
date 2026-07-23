@@ -6,12 +6,10 @@ P2 프로필 완료도, 구조화 resource 상태·날짜·GPA와 direct evidenc
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileCompletion.java`](ProfileCompletion.java), [`ProfileCompletionItem.java`](ProfileCompletionItem.java): 다섯 완료 항목 계산
-- [`ProfilePolicy.java`](ProfilePolicy.java): 배열 canonicalization과 날짜·GPA·current 규칙
-- [`DirectEvidenceFactory.java`](DirectEvidenceFactory.java), [`DirectEvidenceData.java`](DirectEvidenceData.java): source별 title·content·metadata 생성
-- [`ProfileCommands.java`](ProfileCommands.java), [`ProfileRecords.java`](ProfileRecords.java): application 입력·출력 record
-- enum 파일: 학력·source·verification canonical 상태
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [model/](model/index.md): 해당 계층의 값·결과 모델
+- [policy/](policy/index.md): 도메인 불변식 정책
+- [service/](service/index.md): use case·transaction 조정
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

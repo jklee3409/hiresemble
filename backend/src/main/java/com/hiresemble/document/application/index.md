@@ -6,11 +6,10 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- 문서 생성·조회·manual text·reparse·삭제 service
-- `DocumentWorkflowQueryPort`, `DocumentWorkflowCommandPort`: AI repository 비의존 경계와 Agent Run active owner resolution
-- `ObjectStoragePort`, `DocumentSourceReadPort`: S3 호환 Object 경계
-- text normalization·masking·chunk policy와 deletion outbox service
-- [`progress.md`](progress.md): application 구현 이력
+- [model/](model/index.md): 해당 계층의 값·결과 모델
+- [port/](port/index.md): application port
+- [service/](service/index.md): use case·transaction 조정
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

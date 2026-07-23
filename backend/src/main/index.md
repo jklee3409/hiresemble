@@ -8,12 +8,12 @@
 
 | 경로                       | 역할                                                      |
 | -------------------------- | --------------------------------------------------------- |
-| [`java/`](java/)           | P1 auth, P2 profile, P3 agentrun·ai와 P4 document package |
+| [`java/`](java/)           | P1~P4 도메인·계층·책임별 Java package                     |
 | [`resources/`](resources/) | Session·AI·Document 설정과 V1~V5 Flyway migration         |
 
 ## 구성 요소 역할
 
-- Java 코드는 HTTP, application/domain, persistence와 외부 연동 동작을 구현한다.
+- Java 코드는 HTTP, application/domain, persistence와 외부 연동 동작을 책임별 하위 package로 구현한다.
 - resources는 Java 코드가 런타임에 읽는 환경 설정과 DB schema 변경을 제공한다.
 
 ## 다른 디렉터리와의 의존 관계

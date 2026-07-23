@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 인증, P2 프로필, P3 durable Agent Run·AI runtime과 P4 Document pipeline이 구현되어 있다.
+`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 인증, P2 프로필, P3 durable Agent Run·AI runtime과 P4 Document pipeline이 도메인·계층·책임별 package로 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -31,6 +31,7 @@
 ## 변경 시 주의사항
 
 - 백엔드 파일 변경 전 [`../AGENTS.md`](../AGENTS.md)와 관련 에이전트 규칙, 대상 디렉터리의 추적 문서를 읽는다.
+- 기능 package는 `api/application/domain/infrastructure` 아래 실제 책임이 있는 하위 package만 만들고, `common`과 `ai`의 전문 경계를 유지한다.
 - 성공 응답을 임의의 공통 envelope로 감싸지 않고 API 명세의 실제 HTTP 상태와 DTO 계약을 유지한다.
 - 적용된 Flyway migration은 수정하지 않고 새 버전 파일을 추가한다.
 - `backend/gradle/`, `build/`, `.gradle/`은 외부 도구·생성물 영역이므로 `index.md`와 `progress.md`를 만들지 않는다.

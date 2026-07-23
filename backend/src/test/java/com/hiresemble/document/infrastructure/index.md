@@ -6,10 +6,11 @@ P4 parser 방어, embedding policy boot 검증과 실제 S3-compatible storage a
 
 ## 주요 파일 및 하위 디렉터리
 
-- `DocumentParserTest`: PDF·DOCX·TXT 및 위장·macro·암호화·손상·timeout·20 MiB
-- `DocumentEmbeddingPolicyValidatorTest`: 1536 dimension fail-fast
-- `S3ObjectStorageAdapterTest`: 실제 MinIO upload·metadata·presign·delete
-- [`progress.md`](progress.md): infrastructure 테스트 이력
+- [adapter/](adapter/index.md): 외부 시스템 adapter
+- [config/](config/index.md): infrastructure configuration 검증
+- [worker/](worker/index.md): 비동기 작업 실행
+- [DocumentEmbeddingPolicyValidatorTest.java](DocumentEmbeddingPolicyValidatorTest.java): 현재 package에 직접 남는 구현
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

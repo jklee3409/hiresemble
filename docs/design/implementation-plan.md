@@ -604,13 +604,34 @@ com.hiresemble/
 
 ```text
 feature/
-├─ api/                       Controller, HTTP DTO
-├─ application/               use case, transaction, public port
-├─ domain/                    aggregate, invariant, repository port
-└─ infrastructure/            JPA/JDBC/external adapter
+├─ api/
+│  ├─ controller/             HTTP endpoint
+│  ├─ dto/                    request/response contract
+│  ├─ mapper/                 HTTP DTO conversion
+│  └─ sse/                    SSE transport
+├─ application/
+│  ├─ service/                use case, transaction
+│  ├─ port/                   application boundary
+│  ├─ command/                mutation input
+│  ├─ query/                  read input
+│  ├─ model/                  application result/value
+│  └─ config/                 application execution configuration
+├─ domain/
+│  ├─ model/                  aggregate, value, state
+│  ├─ policy/                 invariant policy
+│  ├─ service/                cross-model domain rule
+│  ├─ repository/             domain repository port
+│  └─ event/                  domain event
+└─ infrastructure/
+   ├─ persistence/            JPA/JDBC implementation
+   ├─ adapter/                external adapter
+   ├─ config/                 infrastructure configuration
+   ├─ worker/                 background worker
+   ├─ scheduling/             scheduler
+   └─ event/                  infrastructure event bridge
 ```
 
-실제 책임이 없는 계층은 만들지 않는다.
+위 하위 package는 허용 책임의 분류 기준이다. 실제 책임과 파일이 있는 package만 생성하고 미래 phase나 빈 계층을 선행 생성하지 않는다. `common`과 `ai`는 기존 전문 경계를 유지하며, package-private 결합을 해소하려고 접근 제한자를 넓히지 않는다. P1~P4의 구조 세분화는 파일 경로와 `package`·`import`만 바꾸며 API·DB·workflow 동작을 유지한다.
 
 ### 14.2 AI
 

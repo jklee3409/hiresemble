@@ -10,7 +10,7 @@
 | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | [`workflow.md`](workflow.md)                                     | 역할별 제한 컨텍스트, 구현, 검증, 통합 완료 절차                |
 | [`documentation-tracking.md`](documentation-tracking.md)         | `index.md` 책임과 Session 기반 `progress.md` 규칙               |
-| [`backend-development.md`](backend-development.md)               | Spring 서버 설계·코딩·Controller OpenAPI·Swagger UI 테스트 규칙 |
+| [`backend-development.md`](backend-development.md)               | Spring 계층·책임별 package 경계, 코딩·OpenAPI·테스트 규칙       |
 | [`backend-response-exception.md`](backend-response-exception.md) | 레퍼런스 분석과 현재 프로젝트의 응답·예외 적용 규칙             |
 | [`frontend-development.md`](frontend-development.md)             | Vue/TypeScript 프론트엔드 규칙                                  |
 | [`infrastructure.md`](infrastructure.md)                         | Docker Compose, 환경 변수, DB migration, CI 규칙                |

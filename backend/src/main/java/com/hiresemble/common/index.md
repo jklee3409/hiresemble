@@ -2,16 +2,17 @@
 
 ## 디렉터리 목적
 
-P1·P2 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
+P1~P4 여러 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): 공통 오류 DTO·factory와 Controller OpenAPI 설정
-- [`exception/`](exception/index.md): 오류 code·예외·전역 변환
-- [`security/`](security/index.md): Request ID, Security 오류와 Session/CSRF 설정
-- [`validation/`](validation/index.md): UTF-8 byte validation
-- [`idempotency/`](idempotency/index.md): durable HMAC reservation·replay 기반
-- [`progress.md`](progress.md): 이 영역의 구현·검증 이력
+- [api/](api/index.md): HTTP 전송 계층
+- [exception/](exception/index.md): exception 책임
+- [idempotency/](idempotency/index.md): 멱등성 기반
+- [openapi/](openapi/index.md): OpenAPI metadata와 security scheme
+- [security/](security/index.md): 인증·인가와 Security 오류
+- [validation/](validation/index.md): 공통 입력 검증
+- [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 

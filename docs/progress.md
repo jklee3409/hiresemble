@@ -4,6 +4,26 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P4가 완료됐고 P5–P10은 미착수다.
 
+## [2026-07-23] Session Summary (backend package 문서 체계 동기화)
+
+- What was done:
+  - 백엔드 규칙·설계와 새 책임 package 44개의 `index.md`·`progress.md`를 실제 Java 구조에 맞춰 연결했다.
+
+- Key decisions:
+  - 새 source directory마다 책임·의존성·주의사항과 검증 이력을 기록하고 상위 문서에는 관계만 요약했다.
+  - 활성 `docs/spec/**` 계약은 변경되지 않아 수정하지 않았다.
+
+- Issues encountered:
+  - 새 디렉터리와 기존 상위 문서의 상대 링크를 함께 정리해야 했다.
+
+- Validation:
+  - Java 237개의 package↔path, 내부 import, 구 FQCN, wildcard·중복 import, package-private 교차 참조 검사가 모두 0건으로 통과했다.
+  - 엄격한 UTF-8 decode·replacement 문자·BOM과 HEAD 대비 exact/semantic 본문 불일치가 모두 0건이며 `git diff --check HEAD`가 통과했다.
+  - Docker가 없어 지침에 따라 Gradle·Testcontainers·애플리케이션 실행은 하지 않았고 runtime은 `NOT_VERIFIED`다.
+
+- Next steps:
+  - Docker 사용 가능한 개발 또는 CI 환경에서 `Set-Location backend; .\gradlew.bat check`를 실행한다.
+
 ## [2026-07-19] Session Summary (P4 구현 계획·추적 문서 동기화)
 
 - What was done:
