@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-28] Session Summary (B2C Brand Canvas·App Shell 재구성)
+
+- What was done:
+  - PublicLayout을 비대칭 form surface와 움직이는 node·orbit canvas로 바꾸고 AppLayout에 같은 mark·palette·AI 작업 용어를 적용했다.
+- Key decisions:
+  - 모바일은 form을 먼저 읽고 artwork를 compact section으로 유지하며 drawer focus trap·Escape·trigger 복원을 그대로 보존한다.
+- Issues encountered:
+  - desktop sidebar brand 이름이 좁아지는 문제를 After 캡처에서 확인해 lockup과 context를 세로로 분리했다.
+- Validation:
+  - layout component test, fixture Playwright 1440·1024·768·390px와 headed 로그인 1440·390px 검수가 통과했다.
+- Next steps:
+  - 실제 긴 사용자 이름·이메일은 cross-stack 데이터로 추가 시각 검수한다.
+
 ## [2026-07-27] Session Summary (Responsive 제품 App Shell 개선)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-07-28] Session Summary (문서 읽기·경력 정보 정리 표현 적용)
+
+- What was done:
+  - parse를 `문서 읽기`, evidence extraction을 `경력 정보 정리`로 표현하고 partial success·SOURCE_DELETED 안내와 action 문구를 재작성했다.
+- Key decisions:
+  - 두 상태 축과 REST 원천·SSE invalidation, upload·manual·reparse·download·delete 동작은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document presentation/page test와 AI 작업 fixture 흐름이 통과했다.
+- Next steps:
+  - 실제 storage pipeline E2E는 격리 서비스 환경에서 재실행한다.
+
 ## [2026-07-27] Session Summary (Document 상태·근거 표현 개선)
 
 - What was done:

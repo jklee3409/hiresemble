@@ -11,6 +11,24 @@
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
 - Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
 
+## [2026-07-28] Session Summary (Frontend B2C UX Writing·Brand Experience 재설계)
+
+- What was done:
+  - 현재 구현된 18개 사용자 route와 전용 404의 사용자 문구, 브랜드 palette, 인증·보호 shell과 motion을 B2C 취업 준비 서비스 관점으로 재설계했다.
+  - API·DTO·DB·route 범위와 P6 이후 미구현 기능은 변경하지 않았다.
+- Key decisions:
+  - electric cobalt, warm off-white, deep ink와 조립되는 H·연결 경로 motif를 사용하고 `AI 작업`, `경험 정보`, `이력서·자료`, `관심 공고`의 소비자 용어 체계를 적용한다.
+- Issues encountered:
+  - 필수 참고 사이트는 사용 가능한 in-app browser 세션이 없어 직접 열지 못했고, 공개 웹 페이지·공식 live site·시각 검색 결과를 대체 자료로 사용했다.
+  - Before 캡처용 임시 script가 lint 대상에 들어가 산출물 디렉터리에서 제거하고 캡처·감사 표만 보관했다.
+  - 최초 read-only validator의 내부 작업 key·인증 읽기 순서·문서 경계·대비·원시 형식 지적을 한 차례 보정하고 동일 검증을 재실행했다.
+  - 2차 validator의 metadata 무손실 보존 지적까지 수정했으나 규칙상 세 번째 독립 validator를 실행하지 않아 최종 독립 상태는 `NOT_VERIFIED`로 남긴다.
+- Validation:
+  - 변경 전 `corepack pnpm check`가 Vitest 35 files/128 tests와 production build까지 통과했다.
+  - 변경 후 전체 Frontend check, fixture Playwright, 전 route 1440·390px 직접 진입과 read-only validator 결과는 Frontend 기록에 상세히 남긴다.
+- Next steps:
+  - 격리 Backend·PostgreSQL·Object Storage 환경에서 profile·Document·Job actual E2E를 재실행한다.
+
 ## [2026-07-27] Session Summary (현재 Frontend route UI/UX 전면 개선)
 
 - What was done:

@@ -6,6 +6,20 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-07-28] Session Summary (Cobalt Brand Token·Motion System 재설계)
+
+- What was done:
+  - muted teal token을 electric cobalt, warm off-white, deep ink와 제한된 cyan·lime accent로 교체했다.
+  - button·control·section·skeleton·progress의 짧은 motion과 reduced-motion 대안을 정리했다.
+- Key decisions:
+  - 외부 font·image·dependency 없이 CSS custom property와 transform·opacity 기반 motion만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Prettier·production build와 390px overflow, focus indicator, reduced-motion E2E가 통과했다.
+- Next steps:
+  - 새 semantic color는 실제 상태 사용처와 접근성 label이 함께 생길 때만 추가한다.
+
 ## [2026-07-27] Session Summary (제품 Design Token과 공용 Style 구축)
 
 - What was done:

@@ -6,6 +6,19 @@
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail만 허용한다.
 
+## [2026-07-28] Session Summary (Route Meta 소비자 문구 정리)
+
+- What was done:
+  - route path·name·guard·redirect는 그대로 두고 header에 노출되는 meta title만 `오늘의 준비`, `경험 정보`, `이력서·자료`, `관심 공고`, `AI 작업`으로 정리했다.
+- Key decisions:
+  - route 범위는 24개 path record로 변경 전후 동일하며 P6 이후 path를 추가하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - before/after path 추출 비교가 24/24로 동일하고 router·returnTo test가 통과했다.
+- Next steps:
+  - 공개 URL 변경은 기능 구현과 별도 호환성 검토 없이는 수행하지 않는다.
+
 ## [2026-07-27] Session Summary (현재 Route 범위 UI 회귀 고정)
 
 - What was done:

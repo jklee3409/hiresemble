@@ -9,6 +9,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 - [`schemas.ts`](schemas.ts): 기본·구조화 프로필 날짜·GPA·배열 Zod schema
 - [`queryKeys.ts`](queryKeys.ts): 사용자 ID가 포함된 profile query key factory
 - [`conflict.ts`](conflict.ts): 미저장 값과 최신 snapshot의 field별 비교·재적용
+- [`evidenceMetadata.ts`](evidenceMetadata.ts): 경험 정보 primitive metadata를 key 손실 없이 항목형 편집 값으로 변환
 - [`ProfileTabs.vue`](ProfileTabs.vue): 구현된 profile route navigation
 - [`StringListInput.vue`](StringListInput.vue): 최대 10개 canonical 문자열 입력
 - [`VersionConflictPanel.vue`](VersionConflictPanel.vue): 취소·최신값·field 재적용·다시 저장 UI

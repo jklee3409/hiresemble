@@ -7,6 +7,20 @@
 - P1 auth·Session부터 P5 `features/jobs`, API·page·lazy route 구현·테스트가 있다.
 - 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job 화면과 공용 제품 UI 기반이 있으며 Dashboard 집계·P6 분석·AI 설정 기능은 아직 없다.
 
+## [2026-07-28] Session Summary (현재 Vue 화면 B2C 언어·브랜드 적용)
+
+- What was done:
+  - 현재 route의 Vue template, route meta, validation·error·status presentation과 aria 문구를 취업 준비생 중심의 자연스러운 한국어로 정리했다.
+  - 전역 token과 shell, page·feature 표현에 BrandMark와 motion system을 연결했다.
+- Key decisions:
+  - query·mutation·SSE·cleanup 구현은 유지하고 소비자에게 보이는 문자열과 시각 계층만 변경한다.
+- Issues encountered:
+  - 공용 copy 변경 뒤 기존 테스트의 사용자 의미를 동일한 새 문구로 갱신했으며 assertion 범위는 약화하지 않았다.
+- Validation:
+  - 전체 Frontend check와 fixture Playwright가 통과했고 기술 용어 노출·미구현 route 추가 여부를 정적 검사했다.
+- Next steps:
+  - 새 기능은 대응 API와 route가 실제 구현될 때 같은 용어·motion 체계를 확장한다.
+
 ## [2026-07-27] Session Summary (현재 Vue source 디자인 시스템 적용)
 
 - What was done:

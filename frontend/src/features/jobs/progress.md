@@ -4,6 +4,19 @@
 
 P5 Job filter·query·mutation·stream·version conflict feature가 구현됐다.
 
+## [2026-07-28] Session Summary (지원 상태·공고 불러오기 UX Writing 적용)
+
+- What was done:
+  - `업무 상태`를 `지원 상태`, extraction을 `공고 불러오기`로 표현하고 manual·failed·conflict guidance를 다음 행동 중심으로 바꿨다.
+- Key decisions:
+  - JobStatus와 JobExtractionStatus, 201/202·idempotency·retry·manual 입력 의미는 그대로 분리 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job presentation/conflict/page test와 관련 fixture E2E가 통과했다.
+- Next steps:
+  - P6 분석 label·route는 계약 구현 전 추가하지 않는다.
+
 ## [2026-07-27] Session Summary (Job 상태·충돌 UI 개선)
 
 - What was done:

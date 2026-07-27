@@ -4,6 +4,19 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P5 jobs feature까지 구현되어 있다.
 
+## [2026-07-28] Session Summary (Feature Presentation B2C 용어 통일)
+
+- What was done:
+  - auth, profile, documents, jobs, agent-runs의 validation·status·conflict·drawer 문구를 하나의 소비자 용어 체계로 연결했다.
+- Key decisions:
+  - domain enum·query·stream 상태 machine은 유지하고 label·guidance만 변경한다.
+- Issues encountered:
+  - API parser fallback에 남은 `Agent Run` 문구 두 곳을 루트 통합에서 copy-only로 정리했다.
+- Validation:
+  - feature unit/component test와 기술 용어 노출 정적 검사가 통과했다.
+- Next steps:
+  - P6 이후 feature는 실제 계약이 생길 때만 소비자 표현을 추가한다.
+
 ## [2026-07-27] Session Summary (현재 Feature 상태 표현 통일)
 
 - What was done:

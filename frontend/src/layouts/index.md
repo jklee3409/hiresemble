@@ -6,14 +6,15 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`PublicLayout.vue`](PublicLayout.vue): form 우선 mobile·2열 desktop signup/login shell
-- [`AppLayout.vue`](AppLayout.vue): desktop sidebar, mobile focus-trapped drawer, header·logout action
+- [`PublicLayout.vue`](PublicLayout.vue): 비대칭 brand canvas와 form 우선 mobile signup/login shell
+- [`AppLayout.vue`](AppLayout.vue): BrandMark를 공유하는 desktop sidebar, mobile focus-trapped drawer, header·logout action
 - [`JobDetailLayout.vue`](JobDetailLayout.vue): 현재 overview만 표시하는 Job detail outlet
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- Layout은 현재 구현 route의 active navigation, logout과 최근 active Run query 기반 drawer만 제공하고 page별 form 상태를 소유하지 않는다.
+- Layout은 현재 구현 route의 active navigation, logout과 최근 active Run query 기반 `AI 작업` drawer만 제공하고 page별 form 상태를 소유하지 않는다.
+- PublicLayout의 CSS node·orbit motion은 장식이며 `prefers-reduced-motion`에서 비활성화한다.
 
 ## 다른 디렉터리와의 의존 관계
 

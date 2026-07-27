@@ -10,6 +10,21 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-07-28] Session Summary (B2C Brand·Copy 반응형 브라우저 검증)
+
+- What was done:
+  - UI shell fixture의 accessible name을 새 소비자 용어로 갱신하고 password 표시, reduced-motion, 인증 1440·390px 검증을 보강했다.
+  - Playwright CLI로 Before/After 로그인·dashboard를 1440·390px 캡처하고 모든 보호 route와 404를 두 폭에서 직접 진입했다.
+- Key decisions:
+  - 캡처와 감사 표는 `output/playwright` 로컬 산출물로 보관하고 commit 대상에서 제외한다.
+- Issues encountered:
+  - 기존 browser session의 auth 상태가 route smoke와 충돌해 새 격리 session에서 mock route를 먼저 설치한 뒤 재실행했다.
+- Validation:
+  - `agent-runs.spec.ts`, `ui-shell.spec.ts` Chromium 4/4와 전체 route 1440·390px overflow smoke가 통과했다.
+  - 인증 DOM의 H1→H2 순서와 password 표시 버튼 44px touch target, AI 작업 화면의 원시 단계 key 미노출을 검증했다.
+- Next steps:
+  - profile·Document·Job actual spec은 Backend·PostgreSQL·Object Storage가 준비된 환경에서 재실행한다.
+
 ## [2026-07-27] Session Summary (Responsive UI Shell 브라우저 검증)
 
 - What was done:

@@ -4,6 +4,20 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-28] Session Summary (경험 정보·학력·충돌 문구 재설계)
+
+- What was done:
+  - profile navigation의 `직접 입력 근거`를 `경험 정보`로, 대표 학력을 `먼저 보여 줄 학력`으로 바꾸고 conflict·입력 helper를 자연화했다.
+  - 경험 정보 metadata를 기존 key와 string·number·boolean·null을 그대로 보존하는 항목형 편집기로 바꾸고 round-trip 경계를 테스트했다.
+- Key decisions:
+  - `SOURCE_DELETED` read-only와 409 field 재적용 동작은 그대로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - profile page·schema·conflict test와 actual E2E selector의 동일 행동 명칭을 갱신했다.
+- Next steps:
+  - 실제 경력 timeline의 긴 성과 내용은 Backend 환경에서 추가 검수한다.
+
 ## [2026-07-27] Session Summary (Profile navigation·입력·충돌 UX 개선)
 
 - What was done:

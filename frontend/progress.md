@@ -5,7 +5,27 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
 - `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 35 files/128 tests, UI shell·Agent Run fixture 4개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+- Vitest 36 files/134 tests, UI shell·Agent Run fixture 4개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-28] Session Summary (B2C UX Writing·Brand Experience 통합)
+
+- What was done:
+  - 인증, onboarding, dashboard, profile, documents, jobs, Agent Run과 404의 사용자 문구와 시각 언어를 현재 route 범위 안에서 전면 재설계했다.
+  - 공용 BrandMark, cobalt 중심 token, 비대칭 인증 canvas, 연결형 dashboard와 기능적인 motion을 추가했다.
+- Key decisions:
+  - 내부 route·타입은 유지하되 화면에서는 `AI 작업`, `작업 종류`, `예상 사용 비용`, `경험 정보`, `이력서·자료`, `지원 상태`, `공고 불러오기`를 일관되게 사용한다.
+  - 비밀번호 byte 검증은 보존하고 화면에는 길이 조정 행동만 안내한다.
+- Issues encountered:
+  - 실제 Backend 없이 수행한 headed 인증 검수에는 예상된 network 오류가 있었으며, 인증·AI 작업 상호작용은 fixture E2E로 별도 검증했다.
+  - 최초 read-only validator가 원시 작업 단계·JSON 편집기·MIME type 노출, 인증 DOM 순서, muted 대비와 touch target을 지적해 소비자용 표현과 접근성 기준으로 한 차례 보정했다.
+  - 2차 validator가 metadata key 무손실 보존과 빈 typed value 검증을 추가 지적해 임의 key 제한·trim을 제거하고 primitive round-trip 테스트를 추가했다. 저장소의 재검증 상한 때문에 이 최종 보정 뒤 세 번째 독립 검증은 실행하지 않았다.
+- Validation:
+  - `corepack pnpm check`가 lint·format·typecheck, Vitest 36 files/134 tests와 production build까지 통과했다.
+  - fixture Chromium 4/4와 1440·1024·768·390px shell, 1440·390px 인증 화면, heading 순서·44px password toggle·reduced-motion을 검증했다.
+  - main JS 377.15 kB(gzip 118.95 kB), entry CSS 61.58 kB(gzip 12.41 kB)이며 dependency 증가는 없다.
+  - 최종 보정 뒤 로컬 검증은 통과했지만 마지막 독립 validator 판정은 보정 전 `NEEDS_CHANGES`이므로 독립 최종 상태는 `NOT_VERIFIED`다.
+- Next steps:
+  - 실제 Backend 환경의 cross-stack E2E와 screen reader 실기 검수는 후속 수행한다.
 
 ## [2026-07-27] Session Summary (현재 구현 화면 제품 UI/UX 통합)
 

@@ -4,6 +4,21 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
 
+## [2026-07-28] Session Summary (AI 작업 소비자 경험 재설계)
+
+- What was done:
+  - 제품 화면의 Agent Run을 `AI 작업`, workflow를 `작업 종류`, 비용을 `예상 사용 비용`, timeline을 `진행 단계`로 통일했다.
+  - 작업 종류 label을 사용자의 실제 행동 결과로 다시 작성했다.
+  - `currentStep`, `stepKey`, scope key와 fallback resource type은 화면에서 숨기고 상태 문장·번호 단계·완료 개수로 표현했다.
+- Key decisions:
+  - SSE reconnect·polling은 `진행 상황을 다시 확인하는 중`으로만 안내하고 run business 상태와 계속 분리한다.
+- Issues encountered:
+  - 최초 validator가 fixture 내부 단계 key가 그대로 보이는 문제를 찾아 사용자 의미를 유지하는 표시 formatter로 보정했다.
+- Validation:
+  - detail/drawer component test와 reconnect·polling·retry·cancel·logout Chromium fixture가 통과했다.
+- Next steps:
+  - provider·model·prompt·hash 같은 내부 정보는 계속 노출하지 않는다.
+
 ## [2026-07-27] Session Summary (Agent Run 운영 기록 UI 개선)
 
 - What was done:

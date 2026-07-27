@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-07-28] Session Summary (조립형 Hiresemble BrandMark 추가)
+
+- What was done:
+  - H, node, orbit와 연결선을 결합한 inline SVG `BrandMark`를 Public·App shell과 404에서 재사용하도록 추가했다.
+- Key decisions:
+  - mark 자체는 장식으로 숨기고 실제 link에는 문맥별 accessible name을 제공하며 외부 asset은 사용하지 않는다.
+- Issues encountered:
+  - desktop sidebar에서 긴 lockup이 줄어드는 현상을 실제 캡처로 찾아 context를 아래로 배치했다.
+- Validation:
+  - 공용 component test와 1440·390px 직접 캡처에서 full·compact·inverse 사용처를 확인했다.
+- Next steps:
+  - favicon 적용은 별도 asset·제품 범위가 승인될 때 검토한다.
+
 ## [2026-07-27] Session Summary (제품 공용 UI primitive 구축)
 
 - What was done:

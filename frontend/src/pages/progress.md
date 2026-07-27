@@ -4,6 +4,21 @@
 
 P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-28] Session Summary (현재 Route B2C UX Writing 전면 적용)
+
+- What was done:
+  - 18개 사용자 route와 404의 제목, 설명, CTA, helper, loading·empty·error·success·conflict 문구를 사용자 결과와 다음 행동 중심으로 다시 작성했다.
+  - Dashboard를 가상 KPI 없이 네 가지 실제 작업을 잇는 numbered path로 재구성했다.
+  - 경험 정보의 원시 JSON 입력을 타입 보존 항목형 편집기로 바꾸고 자료 목록·상세에서 MIME type을 숨겼다.
+- Key decisions:
+  - `근거`는 문맥에 따라 경험 정보·자료에서 찾은 정보로 바꾸고 대표 학력은 `먼저 보여 줄 학력`으로 설명한다.
+- Issues encountered:
+  - 일부 성공·충돌 문장에 남은 `-습니다`형을 루트 시각·문구 감사에서 찾아 `-해요/-해 주세요`형으로 통일했다.
+- Validation:
+  - page component test와 18개 보호 route+404의 1440·390px 직접 진입·overflow smoke가 통과했다.
+- Next steps:
+  - Backend가 필요한 실제 데이터 밀도와 긴 파일명·공고명 검수는 actual E2E 환경에서 수행한다.
+
 ## [2026-07-27] Session Summary (현재 Route Page 정보 구조 개선)
 
 - What was done:

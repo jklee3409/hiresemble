@@ -6,6 +6,7 @@
 
 ## 주요 파일 및 하위 디렉터리
 
+- [`BrandMark.vue`](BrandMark.vue): H·node·orbit를 결합한 재사용 가능한 inline SVG 브랜드 mark
 - [`AppIcon.vue`](AppIcon.vue): currentColor 기반 장식·기능 SVG icon
 - [`PageHeader.vue`](PageHeader.vue): route page의 eyebrow·제목·설명·action 영역
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status
@@ -19,6 +20,7 @@
 - 도메인 상태 판단은 page·feature가 수행하고 공용 component에는 이미 결정된 label, tone, 설명과 action만 전달한다.
 - 상태는 색상에만 의존하지 않고 visible text와 적절한 `role`, `aria-live`, navigation label을 제공한다.
 - `AppIcon`은 emoji나 외부 icon dependency 없이 현재 제품에서 실제 사용하는 최소 SVG path만 제공한다.
+- `BrandMark`는 full·compact·inverse variant를 제공하고 실제 link의 accessible name은 사용하는 layout이 소유한다.
 
 ## 다른 디렉터리와의 의존 관계
 
