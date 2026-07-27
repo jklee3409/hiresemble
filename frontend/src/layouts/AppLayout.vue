@@ -1,19 +1,97 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
+
+const navItems = [
+  { to: '/dashboard', label: '대시보드', icon: 'dashboard', match: '/dashboard' },
+  { to: '/profile/basic', label: '내 프로필', icon: 'profile', match: '/profile' },
+  { to: '/documents', label: '문서·근거', icon: 'documents', match: '/documents' },
+  { to: '/jobs', label: '채용 공고', icon: 'jobs', match: '/jobs' },
+  { to: '/agent-runs', label: '작업 기록', icon: 'runs', match: '/agent-runs' },
+] as const
 
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const isLoggingOut = ref(false)
 const logoutError = ref('')
+const mobileNavOpen = ref(false)
+const mobileNavTrigger = ref<HTMLButtonElement | null>(null)
+const mobileNavPanel = ref<HTMLElement | null>(null)
+let bodyOverflowBeforeDrawer = ''
+
 const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
+const userInitial = computed(() => authStore.currentUser?.displayName.trim().charAt(0) || 'H')
 const AgentRunProgressDrawer = defineAsyncComponent(
   () => import('@/features/agent-runs/AgentRunProgressDrawer.vue'),
 )
+
+watch(
+  () => route.fullPath,
+  () => closeMobileNav(false),
+)
+
+watch(mobileNavOpen, async (open) => {
+  if (open) {
+    bodyOverflowBeforeDrawer = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    await nextTick()
+    mobileNavPanel.value?.querySelector<HTMLElement>('[data-mobile-nav-first]')?.focus()
+    return
+  }
+  document.body.style.overflow = bodyOverflowBeforeDrawer
+})
+
+document.addEventListener('keydown', onDocumentKeydown)
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onDocumentKeydown)
+  document.body.style.overflow = bodyOverflowBeforeDrawer
+})
+
+function isNavActive(match: string): boolean {
+  return match === '/dashboard' ? route.path === match : route.path.startsWith(match)
+}
+
+function openMobileNav(): void {
+  mobileNavOpen.value = true
+}
+
+function closeMobileNav(restoreFocus = true): void {
+  if (!mobileNavOpen.value) return
+  mobileNavOpen.value = false
+  if (restoreFocus) void nextTick(() => mobileNavTrigger.value?.focus())
+}
+
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (!mobileNavOpen.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeMobileNav()
+    return
+  }
+  if (event.key !== 'Tab' || mobileNavPanel.value === null) return
+
+  const focusable = Array.from(
+    mobileNavPanel.value.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  )
+  if (focusable.length === 0) return
+  const first = focusable[0]
+  const last = focusable.at(-1)
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last?.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first?.focus()
+  }
+}
 
 async function logout(): Promise<void> {
   isLoggingOut.value = true
@@ -31,52 +109,618 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-950">
-    <header class="border-b border-slate-200 bg-white">
-      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-        <div>
-          <RouterLink class="font-bold text-indigo-700" to="/dashboard">Hiresemble</RouterLink>
-          <h1 class="mt-1 text-xl font-semibold">{{ pageTitle }}</h1>
+  <div class="app-shell">
+    <a class="sr-only-focusable skip-link" href="#app-content">본문으로 건너뛰기</a>
+
+    <aside class="desktop-sidebar" aria-label="서비스 탐색">
+      <RouterLink class="sidebar-brand" to="/dashboard">
+        <span class="brand-mark" aria-hidden="true">H</span>
+        <span>
+          <strong>Hiresemble</strong>
+          <small>Career workspace</small>
+        </span>
+      </RouterLink>
+
+      <nav class="sidebar-nav" aria-label="주요 메뉴">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="sidebar-nav__link"
+          :class="{ 'sidebar-nav__link--active': isNavActive(item.match) }"
+          :aria-current="isNavActive(item.match) ? 'page' : undefined"
+        >
+          <AppIcon :name="item.icon" />
+          <span>{{ item.label }}</span>
+        </RouterLink>
+      </nav>
+
+      <div class="sidebar-footer">
+        <RouterLink
+          class="onboarding-link"
+          to="/onboarding"
+          :aria-current="route.path === '/onboarding' ? 'page' : undefined"
+        >
+          <span class="onboarding-link__label">프로필 설정 안내</span>
+          <span>온보딩 다시 보기</span>
+          <AppIcon name="arrow-right" />
+        </RouterLink>
+        <div class="sidebar-user">
+          <span class="user-avatar" aria-hidden="true">{{ userInitial }}</span>
+          <span class="sidebar-user__text">
+            <strong>{{ authStore.currentUser?.displayName }}</strong>
+            <small>{{ authStore.currentUser?.email }}</small>
+          </span>
         </div>
-        <div class="flex items-center gap-3">
+      </div>
+    </aside>
+
+    <div class="app-workspace">
+      <header class="workspace-header">
+        <div class="workspace-header__identity">
+          <button
+            ref="mobileNavTrigger"
+            type="button"
+            class="button button--secondary button--icon mobile-menu-button"
+            aria-label="주요 메뉴 열기"
+            aria-controls="mobile-navigation"
+            :aria-expanded="mobileNavOpen"
+            @click="openMobileNav"
+          >
+            <AppIcon name="menu" />
+          </button>
+          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 대시보드">
+            <span class="brand-mark brand-mark--small" aria-hidden="true">H</span>
+          </RouterLink>
+          <div class="workspace-title">
+            <p>Workspace</p>
+            <h1>{{ pageTitle }}</h1>
+          </div>
+        </div>
+
+        <div class="workspace-header__actions">
           <AgentRunProgressDrawer />
-          <span class="text-sm text-slate-700">{{ authStore.currentUser?.displayName }}</span>
+          <div class="header-user" aria-label="현재 사용자">
+            <span class="user-avatar user-avatar--small" aria-hidden="true">{{ userInitial }}</span>
+            <span>{{ authStore.currentUser?.displayName }}</span>
+          </div>
           <button
             type="button"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+            class="button button--ghost header-logout"
             :disabled="isLoggingOut"
             @click="logout"
           >
+            <AppIcon name="logout" />
             {{ isLoggingOut ? '로그아웃 중…' : '로그아웃' }}
           </button>
         </div>
+
+        <p v-if="logoutError" class="workspace-header__error" role="alert">
+          {{ logoutError }}
+        </p>
+      </header>
+
+      <main id="app-content" class="workspace-content" tabindex="-1">
+        <RouterView />
+      </main>
+    </div>
+
+    <Teleport to="body">
+      <div v-if="mobileNavOpen" class="mobile-drawer-layer">
+        <button
+          type="button"
+          class="mobile-drawer-overlay"
+          aria-label="주요 메뉴 닫기"
+          @click="closeMobileNav()"
+        />
+        <aside
+          id="mobile-navigation"
+          ref="mobileNavPanel"
+          class="mobile-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-navigation-title"
+        >
+          <div class="mobile-drawer__header">
+            <div>
+              <p class="page-eyebrow">Workspace</p>
+              <h2 id="mobile-navigation-title">Hiresemble 메뉴</h2>
+            </div>
+            <button
+              type="button"
+              class="button button--ghost button--icon"
+              aria-label="주요 메뉴 닫기"
+              @click="closeMobileNav()"
+            >
+              <AppIcon name="close" />
+            </button>
+          </div>
+
+          <nav class="mobile-drawer__nav" aria-label="모바일 주요 메뉴">
+            <RouterLink
+              v-for="(item, index) in navItems"
+              :key="item.to"
+              :data-mobile-nav-first="index === 0 ? '' : undefined"
+              :to="item.to"
+              class="mobile-nav-link"
+              :class="{ 'mobile-nav-link--active': isNavActive(item.match) }"
+              :aria-current="isNavActive(item.match) ? 'page' : undefined"
+              @click="closeMobileNav(false)"
+            >
+              <AppIcon :name="item.icon" />
+              <span>{{ item.label }}</span>
+            </RouterLink>
+          </nav>
+
+          <div class="mobile-drawer__footer">
+            <RouterLink
+              class="mobile-nav-link mobile-nav-link--secondary"
+              to="/onboarding"
+              :aria-current="route.path === '/onboarding' ? 'page' : undefined"
+              @click="closeMobileNav(false)"
+            >
+              <AppIcon name="profile" />
+              <span>온보딩 다시 보기</span>
+            </RouterLink>
+            <div class="mobile-drawer__user">
+              <span class="user-avatar" aria-hidden="true">{{ userInitial }}</span>
+              <span>
+                <strong>{{ authStore.currentUser?.displayName }}</strong>
+                <small>{{ authStore.currentUser?.email }}</small>
+              </span>
+            </div>
+          </div>
+        </aside>
       </div>
-      <nav class="mx-auto flex max-w-6xl flex-wrap gap-4 px-4 pb-3" aria-label="주요 메뉴">
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/dashboard">
-          대시보드
-        </RouterLink>
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/onboarding">
-          온보딩
-        </RouterLink>
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/profile/basic">
-          내 프로필
-        </RouterLink>
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/documents">
-          문서·근거
-        </RouterLink>
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/jobs"> 채용 공고 </RouterLink>
-        <RouterLink class="text-sm font-medium text-indigo-700" to="/agent-runs">
-          작업 기록
-        </RouterLink>
-      </nav>
-    </header>
-
-    <p v-if="logoutError" class="mx-auto mt-4 max-w-6xl px-4 text-sm text-red-700" role="alert">
-      {{ logoutError }}
-    </p>
-
-    <main class="mx-auto max-w-6xl px-4 py-8">
-      <RouterView />
-    </main>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.app-shell {
+  display: flex;
+  min-height: 100dvh;
+  background: var(--color-canvas);
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  border-radius: var(--radius-md);
+  background: var(--color-ink);
+  color: white;
+  padding: 0.625rem 0.875rem;
+  font-weight: 700;
+}
+
+.desktop-sidebar {
+  position: sticky;
+  top: 0;
+  display: none;
+  width: var(--sidebar-width);
+  height: 100dvh;
+  flex: 0 0 var(--sidebar-width);
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid #294850;
+  background: #12323a;
+  color: #e8f1f3;
+  padding: 1.25rem 1rem;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  padding: 0.375rem;
+  text-decoration: none;
+}
+
+.sidebar-brand strong {
+  display: block;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-brand small {
+  display: block;
+  margin-top: 0.0625rem;
+  color: #9db4ba;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.brand-mark {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #4e8993;
+  border-radius: var(--radius-md);
+  background: #0b6673;
+  color: white;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.brand-mark--small {
+  width: 2rem;
+  height: 2rem;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 2rem;
+}
+
+.sidebar-nav__link {
+  position: relative;
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  color: #c6d5d9;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 620;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.sidebar-nav__link:hover {
+  background: #1c4149;
+  color: white;
+}
+
+.sidebar-nav__link--active {
+  background: #25515a;
+  color: white;
+  box-shadow: inset 3px 0 #6bc1c8;
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.onboarding-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.125rem 0.5rem;
+  align-items: center;
+  border: 1px solid #365961;
+  border-radius: var(--radius-md);
+  color: #d7e4e7;
+  padding: 0.75rem;
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.onboarding-link:hover,
+.onboarding-link[aria-current='page'] {
+  border-color: #4e8993;
+  background: #1c4149;
+}
+
+.onboarding-link__label {
+  grid-column: 1 / -1;
+  color: #92aeb4;
+  font-size: 0.6875rem;
+}
+
+.onboarding-link .icon {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.sidebar-user {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+  border-top: 1px solid #365159;
+  padding: 1rem 0.375rem 0;
+}
+
+.user-avatar {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.user-avatar--small {
+  width: 1.875rem;
+  height: 1.875rem;
+  font-size: 0.75rem;
+}
+
+.sidebar-user .user-avatar {
+  background: #d5eaec;
+}
+
+.sidebar-user__text {
+  min-width: 0;
+}
+
+.sidebar-user__text strong,
+.sidebar-user__text small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user__text strong {
+  color: #f0f6f7;
+  font-size: 0.8125rem;
+}
+
+.sidebar-user__text small {
+  margin-top: 0.125rem;
+  color: #9db4ba;
+  font-size: 0.6875rem;
+}
+
+.app-workspace {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.workspace-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 0.75rem clamp(1rem, 2.5vw, 2rem);
+}
+
+.workspace-header__identity,
+.workspace-header__actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.workspace-title {
+  min-width: 0;
+}
+
+.workspace-title p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace-title h1 {
+  margin: 0.1rem 0 0;
+  overflow: hidden;
+  color: var(--color-ink);
+  font-size: 1.125rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 620;
+}
+
+.workspace-header__error {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 1rem;
+  max-width: min(26rem, calc(100vw - 2rem));
+  border: 1px solid #efc0bb;
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: #8e1c14;
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow-md);
+}
+
+.workspace-content {
+  width: 100%;
+  max-width: var(--content-width);
+  min-width: 0;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+}
+
+.mobile-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+}
+
+.mobile-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: rgb(15 32 39 / 58%);
+  padding: 0;
+}
+
+.mobile-drawer {
+  position: relative;
+  display: flex;
+  width: min(20rem, calc(100vw - 2rem));
+  max-height: 100dvh;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.mobile-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem;
+}
+
+.mobile-drawer__header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 720;
+}
+
+.mobile-drawer__nav {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+}
+
+.mobile-nav-link {
+  display: flex;
+  min-height: 2.875rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  color: var(--color-ink-soft);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.mobile-nav-link:hover {
+  background: var(--color-neutral-soft);
+}
+
+.mobile-nav-link--active {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
+}
+
+.mobile-nav-link--secondary {
+  border: 1px solid var(--color-border);
+}
+
+.mobile-drawer__footer {
+  display: grid;
+  gap: 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding: 1rem;
+}
+
+.mobile-drawer__user {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.mobile-drawer__user strong,
+.mobile-drawer__user small {
+  display: block;
+  overflow: hidden;
+  max-width: 13rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-drawer__user strong {
+  color: var(--color-ink);
+  font-size: 0.875rem;
+}
+
+.mobile-drawer__user small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .header-user {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-sidebar {
+    display: flex;
+  }
+
+  .mobile-menu-button,
+  .mobile-brand {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace-header {
+    min-height: 4rem;
+    padding-inline: 0.75rem;
+  }
+
+  .workspace-header__actions {
+    gap: 0.25rem;
+  }
+
+  .header-logout {
+    width: 2.625rem;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .header-logout .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .workspace-title p {
+    display: none;
+  }
+
+  .workspace-title h1 {
+    max-width: 7.25rem;
+    font-size: 1rem;
+  }
+
+  .workspace-content {
+    padding-inline: 1rem;
+  }
+}
+</style>
