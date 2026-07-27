@@ -113,13 +113,13 @@ describe('P2 onboarding', () => {
     )
     expect(wrapper.text()).toContain('현재 프로필')
     expect(wrapper.text()).toContain('필수 항목 완료')
-    expect(wrapper.text()).toContain('문서 업로드로 이동')
+    expect(wrapper.text()).toContain('자료 등록으로 이동')
     expect(wrapper.text()).not.toContain('P4에서 제공됩니다')
     expect(wrapper.text()).not.toContain('파일 선택')
 
     const uploadButton = wrapper
       .findAll('button')
-      .find((button) => button.text().includes('문서 업로드로 이동'))
+      .find((button) => button.text().includes('자료 등록으로 이동'))
     await uploadButton?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/documents')

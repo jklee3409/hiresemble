@@ -17,6 +17,8 @@ import {
   formatCost,
   formatDuration,
   formatInstant,
+  formatRunProgressLabel,
+  formatStepName,
   safeRequiredActionRoute,
 } from './presentation'
 import type { AgentRunConnectionState } from './stream'
@@ -47,12 +49,12 @@ const actionRoute = computed(() =>
 )
 const connectionMessage = computed(() => {
   if (props.connectionState === 'reconnecting') {
-    return '실시간 연결이 끊겨 마지막 상태를 유지하며 다시 연결하고 있습니다.'
+    return '진행 상황을 다시 확인하는 중이에요. 마지막으로 확인한 상태는 그대로 유지돼요.'
   }
   if (props.connectionState === 'polling') {
-    return '실시간 연결 복구에 실패해 5초마다 서버 상태를 확인하고 있습니다.'
+    return '진행 상황을 다시 확인하는 중이에요. AI 작업이 실패한 것은 아니에요.'
   }
-  if (props.connectionState === 'connecting') return '실시간 진행 상태에 연결하고 있습니다.'
+  if (props.connectionState === 'connecting') return '진행 상황을 연결하는 중이에요.'
   return ''
 })
 
@@ -74,7 +76,7 @@ function stepLabel(value: AgentStepStatus): string {
   return {
     PENDING: '대기',
     RUNNING: '진행 중',
-    WAITING_USER: '사용자 입력 대기',
+    WAITING_USER: '정보 입력 필요',
     SUCCEEDED: '완료',
     FAILED: '실패',
     SKIPPED: '건너뜀',
@@ -103,7 +105,7 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
             <h2>{{ STATUS_LABELS[run.status] }}</h2>
             <StatusBadge :label="STATUS_LABELS[run.status]" :tone="runTone(run.status)" />
           </div>
-          <p>실행 시도 {{ run.runAttemptNo }}</p>
+          <p>{{ run.runAttemptNo }}번째 시도</p>
         </div>
         <div class="run-summary__actions">
           <button
@@ -129,7 +131,7 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
 
       <div class="run-summary__progress" aria-label="진행률">
         <div>
-          <span>{{ run.currentStep ?? '단계 준비 중' }}</span>
+          <span>{{ formatRunProgressLabel(run.status) }}</span>
           <strong>{{ run.progressPercent }}%</strong>
         </div>
         <progress class="progress-track" :value="run.progressPercent" max="100">
@@ -150,8 +152,8 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
       v-if="run.status === 'WAITING_USER' && run.requiredUserAction"
       class="run-required-action"
     >
-      <p class="section-kicker">Action required</p>
-      <h3 class="section-title">사용자 입력이 필요합니다</h3>
+      <p class="section-kicker">다음 할 일</p>
+      <h3 class="section-title">정보를 입력해 주세요.</h3>
       <p>{{ run.requiredUserAction.message }}</p>
       <RouterLink v-if="actionRoute" class="button button--primary" :to="actionRoute">
         필요한 정보 입력하기
@@ -160,8 +162,8 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
 
     <section class="run-info-grid">
       <div class="run-info-section section-surface">
-        <p class="section-kicker">Execution</p>
-        <h3 class="section-title">실행 정보</h3>
+        <p class="section-kicker">작업 정보</p>
+        <h3 class="section-title">진행 시간</h3>
         <dl class="run-definition-list">
           <dt>요청 품질</dt>
           <dd>
@@ -169,7 +171,7 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
               run.requestedQualityMode ? QUALITY_LABELS[run.requestedQualityMode] : '정책 기본값'
             }}
           </dd>
-          <dt>사용 등급</dt>
+          <dt>처리 방식</dt>
           <dd>
             {{
               run.highestModelTierUsed
@@ -189,51 +191,50 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
       </div>
 
       <div class="run-info-section section-surface">
-        <p class="section-kicker">Billable estimate</p>
-        <h3 class="section-title">비용</h3>
+        <p class="section-kicker">비용 안내</p>
+        <h3 class="section-title">예상 사용 비용</h3>
         <dl class="run-definition-list">
           <dt>예상</dt>
           <dd>{{ formatCost(run.estimatedCostUsd) }}</dd>
           <dt>예약</dt>
           <dd>{{ formatCost(run.reservedCostUsd) }}</dd>
-          <dt>실제 사용 추정</dt>
+          <dt>현재까지 예상</dt>
           <dd>{{ formatCost(run.actualCostUsd) }}</dd>
         </dl>
         <p class="run-cost-note">
-          실제 사용 비용은 provider의 확정 청구액이 아니라 접수 시 고정된 가격 catalog로 계산한
-          billable estimate입니다.
+          표시된 금액은 작업을 시작할 때의 기준으로 계산한 예상치예요. 실제 결제 금액과 다를 수
+          있어요.
         </p>
       </div>
     </section>
 
     <section v-if="run.safeError" class="alert alert--danger run-safe-error" role="alert">
-      <h3>안전한 오류 안내</h3>
+      <h3>문제가 생겼어요</h3>
       <p>{{ run.safeError.message }}</p>
-      <small>오류 코드: {{ run.safeError.code }}</small>
     </section>
 
     <section v-if="run.partialResult" class="run-partial section-surface">
-      <p class="section-kicker">Partial result</p>
-      <h3 class="section-title">부분 처리 결과</h3>
-      <p>완료 범위: {{ run.partialResult.succeededScopeKeys.join(', ') || '없음' }}</p>
-      <p>실패 범위: {{ run.partialResult.failedScopeKeys.join(', ') || '없음' }}</p>
+      <p class="section-kicker">정리된 결과</p>
+      <h3 class="section-title">일부 작업 결과</h3>
+      <p>완료된 항목 {{ run.partialResult.succeededScopeKeys.length }}개</p>
+      <p>완료하지 못한 항목 {{ run.partialResult.failedScopeKeys.length }}개</p>
       <ul v-if="run.partialResult.resultRefs.length">
         <li v-for="reference in run.partialResult.resultRefs" :key="reference.resourceId">
-          {{ reference.displayLabel ?? reference.resourceType }}
+          {{ reference.displayLabel ?? '정리된 결과' }}
         </li>
       </ul>
     </section>
 
     <section class="run-timeline section-surface">
-      <p class="section-kicker">Timeline</p>
-      <h3 class="section-title">단계 Timeline</h3>
-      <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 단계가 없습니다.</p>
+      <p class="section-kicker">작업 흐름</p>
+      <h3 class="section-title">진행 단계</h3>
+      <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 단계가 없어요.</p>
       <ol v-else class="run-timeline__list">
         <li v-for="step in run.steps" :key="step.id" class="run-step">
           <span class="run-step__marker" aria-hidden="true" />
           <div class="run-step__body">
             <div class="run-step__header">
-              <strong>{{ step.stepOrder }}. {{ step.stepKey }}</strong>
+              <strong>{{ formatStepName(step.stepOrder) }}</strong>
               <StatusBadge :label="stepLabel(step.status)" :tone="stepTone(step.status)" />
             </div>
             <p>시도 {{ step.attempt }}/{{ step.maxAttempts }}</p>

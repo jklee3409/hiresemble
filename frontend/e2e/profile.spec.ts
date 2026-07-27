@@ -19,7 +19,7 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   await expect(page.locator('#onboarding-schoolName')).toBeVisible()
 
   await page.locator('#onboarding-schoolName').fill('First University')
-  await page.getByRole('button', { name: '대표 학력 저장' }).click()
+  await page.getByRole('button', { name: '이 학력 저장' }).click()
   await expect(page.locator('#onboarding-desiredRoles')).toBeVisible()
 
   await addDesiredItem(page, '#onboarding-desiredRoles', 'Backend Engineer')

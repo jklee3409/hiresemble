@@ -91,25 +91,25 @@ async function cancel(): Promise<void> {
   <section class="agent-run-detail-page app-page">
     <RouterLink class="back-link" to="/agent-runs">
       <AppIcon name="arrow-left" />
-      작업 기록
+      AI 작업
     </RouterLink>
     <StatePanel
       v-if="detail.isLoading.value"
       class="agent-run-detail-page__state"
       kind="loading"
-      title="Agent Run 상태를 불러오는 중…"
-      description="진행률과 단계 기록을 확인하고 있습니다."
+      title="AI 작업을 불러오는 중…"
+      description="진행률과 단계를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="detail.isError.value"
       class="agent-run-detail-page__state"
       kind="error"
-      title="작업 상태를 불러오지 못했습니다."
+      title="AI 작업을 불러오지 못했어요."
       :description="loadError"
     >
       <template #actions>
         <RouterLink class="button button--secondary" to="/agent-runs">
-          작업 기록으로 돌아가기
+          AI 작업으로 돌아가기
         </RouterLink>
       </template>
     </StatePanel>

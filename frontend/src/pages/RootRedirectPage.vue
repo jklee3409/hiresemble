@@ -3,7 +3,7 @@
     <div class="root-loading__brand" aria-hidden="true">H</div>
     <div>
       <strong>Hiresemble</strong>
-      <p>인증 상태를 확인하고 있습니다…</p>
+      <p>로그인 상태를 확인하고 있어요…</p>
     </div>
   </main>
 </template>

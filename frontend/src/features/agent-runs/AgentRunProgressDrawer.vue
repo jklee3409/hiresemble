@@ -8,7 +8,7 @@ import type { AgentRunStatus } from '@/shared/api/agentRunContracts'
 import { useAuthStore } from '@/stores/auth'
 
 import { useAgentRunListQuery } from './queries'
-import { STATUS_LABELS, WORKFLOW_LABELS } from './presentation'
+import { STATUS_LABELS, WORKFLOW_LABELS, formatRunProgressLabel } from './presentation'
 
 const authStore = useAuthStore()
 const open = ref(false)
@@ -78,7 +78,7 @@ function tone(status: AgentRunStatus) {
       @click="toggleDrawer"
     >
       <AppIcon name="clock" />
-      <span class="run-progress__trigger-label">진행 작업</span>
+      <span class="run-progress__trigger-label">AI 작업</span>
       <span class="run-progress__count">{{ activeCount }}</span>
     </button>
     <section
@@ -87,18 +87,18 @@ function tone(status: AgentRunStatus) {
       ref="panel"
       class="run-drawer"
       role="dialog"
-      aria-label="Agent Run 진행 현황"
+      aria-label="AI 작업 진행 현황"
       @keydown="onKeydown"
     >
       <header class="run-drawer__header">
         <div>
-          <p class="page-eyebrow">Active runs</p>
-          <h2 id="agent-run-progress-title">진행 중인 작업</h2>
+          <p class="page-eyebrow">지금 진행 중</p>
+          <h2 id="agent-run-progress-title">AI 작업</h2>
         </div>
         <button
           type="button"
           class="button button--ghost button--icon"
-          aria-label="진행 작업 닫기"
+          aria-label="AI 작업 닫기"
           @click="closeDrawer()"
         >
           <AppIcon name="close" />
@@ -107,21 +107,21 @@ function tone(status: AgentRunStatus) {
 
       <div class="run-drawer__body">
         <p class="run-drawer__summary">
-          최근 활성 작업 {{ items.length }}개를 표시합니다. 전체 {{ activeCount }}개
+          최근 진행 중인 AI 작업 {{ items.length }}개를 보여 드려요. 전체 {{ activeCount }}개
         </p>
         <div v-if="activeRuns.isLoading.value" class="run-drawer__state" role="status">
           <div class="skeleton-stack" aria-hidden="true">
             <div class="skeleton-line" />
             <div class="skeleton-line" />
           </div>
-          <span>진행 상태를 불러오는 중…</span>
+          <span>AI 작업을 불러오는 중…</span>
         </div>
         <div v-else-if="activeRuns.isError.value" class="alert alert--danger" role="alert">
-          진행 상태를 불러오지 못했습니다.
+          AI 작업을 불러오지 못했어요.
         </div>
         <div v-else-if="items.length === 0" class="run-drawer__state">
           <AppIcon name="check" />
-          <span>현재 활성 작업이 없습니다.</span>
+          <span>지금 진행 중인 AI 작업이 없어요.</span>
         </div>
         <ul v-else class="run-drawer__list">
           <li v-for="run in items" :key="run.id">
@@ -135,7 +135,7 @@ function tone(status: AgentRunStatus) {
                 <StatusBadge :label="STATUS_LABELS[run.status]" :tone="tone(run.status)" />
               </span>
               <span class="run-drawer__progress-label">
-                <span>{{ run.currentStep ?? '단계 준비 중' }}</span>
+                <span>{{ formatRunProgressLabel(run.status) }}</span>
                 <span>{{ run.progressPercent }}%</span>
               </span>
               <progress class="progress-track" :value="run.progressPercent" max="100">
@@ -148,7 +148,7 @@ function tone(status: AgentRunStatus) {
 
       <footer class="run-drawer__footer">
         <RouterLink class="text-link" to="/agent-runs" @click="closeDrawer(false)">
-          작업 기록 전체 보기
+          AI 작업 전체 보기
           <AppIcon name="arrow-right" />
         </RouterLink>
       </footer>
@@ -205,6 +205,7 @@ function tone(status: AgentRunStatus) {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
+  animation: run-drawer-enter 240ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .run-drawer__header {
@@ -268,7 +269,7 @@ function tone(status: AgentRunStatus) {
 }
 
 .run-drawer__item:hover {
-  border-color: #9ab1b9;
+  border-color: var(--color-brand-border);
   background: var(--color-surface-subtle);
 }
 
@@ -334,6 +335,23 @@ function tone(status: AgentRunStatus) {
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
+  }
+}
+
+@keyframes run-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-drawer {
+    animation: none;
   }
 }
 </style>

@@ -43,7 +43,7 @@ describe('AgentRunListPage URL state', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.query).toEqual({ status: ['FAILED'] })
-    expect(wrapper.text()).toContain('공고 분석')
+    expect(wrapper.text()).toContain('공고 살펴보기')
     expect(wrapper.text()).toContain('USD 0.010000')
 
     const sort = wrapper.findAll('select')[1]

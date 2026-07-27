@@ -23,13 +23,13 @@ function add(): void {
     return
   }
   if (props.modelValue.length >= 10) {
-    localError.value = '최대 10개까지 입력할 수 있습니다.'
+    localError.value = '항목은 최대 10개까지 입력해 주세요.'
     return
   }
   if (
     props.modelValue.some((item) => item.trim().toLocaleLowerCase() === value.toLocaleLowerCase())
   ) {
-    localError.value = '중복 항목은 추가할 수 없습니다.'
+    localError.value = '이미 추가한 항목이에요.'
     return
   }
   emit('update:modelValue', [...props.modelValue, value])

@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import PublicLayout from './PublicLayout.vue'
 
 const LoginForm = {
-  template: '<form aria-label="로그인 폼"><label>이메일<input type="email"></label></form>',
+  template:
+    '<form aria-label="로그인 폼"><h1>로그인</h1><label>이메일<input type="email"></label></form>',
 }
 const TestApp = {
   template: '<RouterView />',
@@ -36,9 +37,26 @@ describe('PublicLayout', () => {
     expect(wrapper.get('[data-testid="public-layout"]').element.tagName).toBe('MAIN')
     expect(wrapper.get('[data-testid="public-auth-panel"]').attributes('aria-label')).toBe('인증')
     expect(wrapper.get('form').attributes('aria-label')).toBe('로그인 폼')
-    expect(wrapper.get('aside').attributes('aria-label')).toBe('Hiresemble 서비스 안내')
-    expect(wrapper.text()).toContain('프로필, 증빙 문서, 채용 공고와 비동기 작업 기록')
-    expect(wrapper.text()).toContain('가입 시 개인정보 처리와 AI 처리 동의를 직접 확인합니다.')
+    expect(
+      wrapper
+        .get('[data-testid="public-auth-panel"]')
+        .element.compareDocumentPosition(
+          wrapper.get('section[aria-label="Hiresemble 서비스 안내"]').element,
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(wrapper.findAll('h1, h2').map((heading) => heading.element.tagName)).toEqual([
+      'H1',
+      'H2',
+    ])
+    expect(
+      wrapper.get('section[aria-label="Hiresemble 서비스 안내"]').attributes('aria-label'),
+    ).toBe('Hiresemble 서비스 안내')
+    expect(wrapper.text()).toContain('흩어진 경험을 모아')
+    expect(wrapper.text()).toContain('프로필부터 이력서, 관심 공고까지')
+    expect(wrapper.text()).toContain('개인정보와 AI 처리 동의를 직접 확인할 수 있어요.')
+    expect(wrapper.findAll('[data-testid="brand-mark"]')).toHaveLength(2)
+    expect(wrapper.text()).not.toContain('비동기')
+    expect(wrapper.text()).not.toContain('Career workspace')
     expect(wrapper.text()).not.toContain('이용자 수')
     expect(wrapper.text()).not.toContain('기업 고객')
     wrapper.unmount()

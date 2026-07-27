@@ -53,9 +53,9 @@ const message = ref('')
 const profileConflict = ref<{ draft: Record<string, unknown>; latest: ProfileDto } | null>(null)
 const steps = [
   { number: 1, label: '기본 정보', description: '이름과 소개' },
-  { number: 2, label: '대표 학력', description: '주요 교육 이력' },
-  { number: 3, label: '희망 조건', description: '직무·산업·지역' },
-  { number: 4, label: '문서 업로드', description: '이력서·포트폴리오' },
+  { number: 2, label: '먼저 보여 줄 학력', description: '주요 교육 이력' },
+  { number: 3, label: '희망 조건', description: '관심 있는 분야' },
+  { number: 4, label: '자료 등록', description: '이력서·포트폴리오' },
 ] as const
 
 const profileQuery = useQuery({
@@ -170,7 +170,7 @@ function reapplyConflict(value: Record<string, unknown>): void {
   if (latest === undefined) return
   loadProfile({ ...latest, ...value, version: latest.version } as ProfileDto)
   profileConflict.value = null
-  message.value = '선택한 내 입력을 최신값에 재적용했습니다. 다시 저장해 주세요.'
+  message.value = '선택한 내 입력을 최신 내용에 다시 적용했어요. 확인한 뒤 저장해 주세요.'
 }
 
 function later(): void {
@@ -190,9 +190,9 @@ async function retryLoad(): Promise<void> {
   <section class="onboarding app-page" aria-labelledby="onboarding-heading">
     <PageHeader
       heading-id="onboarding-heading"
-      title="내 정보 설정"
-      description="지원 준비에 필요한 기본 정보를 네 단계로 정리합니다. 입력하지 않은 항목은 나중에 언제든 보완할 수 있습니다."
-      eyebrow="Getting started"
+      title="나에게 맞게 시작해 볼까요?"
+      description="지금 아는 만큼만 입력해도 괜찮아요. 나중에 언제든 이어서 채울 수 있어요."
+      eyebrow="첫 준비"
     />
 
     <ol class="onboarding-steps" aria-label="온보딩 진행 단계">
@@ -221,15 +221,15 @@ async function retryLoad(): Promise<void> {
       v-if="isLoading"
       class="onboarding-state"
       kind="loading"
-      title="온보딩 정보를 불러오는 중…"
-      description="저장된 프로필과 대표 학력을 확인하고 있습니다."
+      title="입력한 정보를 불러오는 중…"
+      description="저장한 프로필과 먼저 보여 줄 학력을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="hasLoadError"
       class="onboarding-state"
       kind="error"
-      title="온보딩 정보를 불러오지 못했습니다."
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      title="입력한 정보를 불러오지 못했어요."
+      description="잠시 후 다시 시도해 주세요."
     >
       <template #actions>
         <button type="button" class="button button--secondary" @click="retryLoad">다시 시도</button>
@@ -267,9 +267,9 @@ async function retryLoad(): Promise<void> {
     >
       <header class="section-header">
         <div>
-          <p class="page-eyebrow">Step 1 of 4</p>
+          <p class="page-eyebrow">1 / 4</p>
           <h3 class="section-title">기본 정보</h3>
-          <p class="section-description">지원 과정에서 사용할 이름과 간단한 소개를 입력합니다.</p>
+          <p class="section-description">지원할 때 사용할 이름과 간단한 소개를 입력해 주세요.</p>
         </div>
       </header>
       <div class="field">
@@ -294,7 +294,7 @@ async function retryLoad(): Promise<void> {
           class="control min-h-28"
           maxlength="2000"
         />
-        <p class="field-help">핵심 경험이나 관심 직무를 2~3문장으로 정리할 수 있습니다.</p>
+        <p class="field-help">핵심 경험이나 관심 직무를 2~3문장으로 적어 보세요.</p>
       </div>
       <div class="field onboarding-date-field">
         <label class="field-label" for="onboarding-graduationDate">졸업 예정일</label>
@@ -326,9 +326,9 @@ async function retryLoad(): Promise<void> {
     >
       <header class="section-header">
         <div>
-          <p class="page-eyebrow">Step 2 of 4</p>
-          <h3 class="section-title">대표 학력</h3>
-          <p class="section-description">프로필에서 가장 먼저 보여 줄 교육 이력을 설정합니다.</p>
+          <p class="page-eyebrow">2 / 4</p>
+          <h3 class="section-title">먼저 보여 줄 학력</h3>
+          <p class="section-description">지원할 때 먼저 보여 줄 학력을 정해 주세요.</p>
         </div>
       </header>
       <div
@@ -336,9 +336,9 @@ async function retryLoad(): Promise<void> {
         class="alert alert--success"
       >
         <AppIcon name="check" />
-        <span>이미 대표 학력이 있습니다.</span>
+        <span>이미 먼저 보여 줄 학력이 있어요.</span>
         <button type="button" class="text-link" @click="useExistingPrimary">
-          기존 대표 학력 사용하기
+          저장된 학력 사용하기
         </button>
       </div>
       <div class="field">
@@ -392,7 +392,7 @@ async function retryLoad(): Promise<void> {
           class="button button--primary"
           :disabled="educationMutation.isPending.value"
         >
-          {{ educationMutation.isPending.value ? '저장 중…' : '대표 학력 저장' }}
+          {{ educationMutation.isPending.value ? '저장 중…' : '이 학력 저장' }}
           <AppIcon name="arrow-right" />
         </button>
       </div>
@@ -406,10 +406,10 @@ async function retryLoad(): Promise<void> {
     >
       <header class="section-header">
         <div>
-          <p class="page-eyebrow">Step 3 of 4</p>
+          <p class="page-eyebrow">3 / 4</p>
           <h3 class="section-title">희망 직무·산업·지역</h3>
           <p class="section-description">
-            지원 방향을 정리합니다. 각 항목은 키보드로 추가하고 개별 삭제할 수 있습니다.
+            관심 있는 직무, 산업과 지역을 입력해 주세요. 입력한 항목은 언제든 바꿀 수 있어요.
           </p>
         </div>
       </header>
@@ -456,10 +456,10 @@ async function retryLoad(): Promise<void> {
     >
       <header class="section-header">
         <div>
-          <p class="page-eyebrow">Step 4 of 4</p>
+          <p class="page-eyebrow">4 / 4</p>
           <h3 id="onboarding-complete-heading" class="section-title">이력서 또는 포트폴리오</h3>
           <p class="section-description">
-            문서를 등록하면 텍스트 처리와 근거 추출 상태를 별도로 확인할 수 있습니다.
+            자료를 등록하면 내용을 읽고 경력 정보를 정리하는 과정을 확인할 수 있어요.
           </p>
         </div>
       </header>
@@ -477,21 +477,21 @@ async function retryLoad(): Promise<void> {
         <progress class="progress-track" :value="completionPercent" max="100">
           {{ completionPercent }}%
         </progress>
-        <p>프로필 미완료는 다른 기능 이용을 차단하지 않습니다.</p>
+        <p>지금 모두 채우지 않아도 다른 준비를 계속할 수 있어요.</p>
       </div>
 
       <div class="alert alert--info">
         <AppIcon name="upload" />
         <span>
-          업로드 화면에서 PDF, DOCX, TXT 파일을 등록할 수 있습니다. 지금 문서가 없다면 대시보드로
-          이동해 나중에 계속하세요.
+          PDF, DOCX, TXT 파일을 등록할 수 있어요. 지금 자료가 없다면 나중에 이어서 등록해도
+          괜찮아요.
         </span>
       </div>
       <div class="onboarding-actions onboarding-actions--final">
         <button type="button" class="button button--secondary" @click="later">나중에 계속</button>
         <button type="button" class="button button--primary" @click="complete">
           <AppIcon name="upload" />
-          문서 업로드로 이동
+          자료 등록으로 이동
         </button>
       </div>
     </section>

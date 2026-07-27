@@ -16,9 +16,9 @@ export function validateUpload(input: UploadFormInput): Record<string, string> {
   } else {
     const extension = input.file.name.split('.').pop()?.toLocaleLowerCase() ?? ''
     if (!ALLOWED_EXTENSIONS.has(extension)) {
-      errors.file = 'PDF, DOCX, TXT 파일만 업로드할 수 있습니다.'
+      errors.file = 'PDF, DOCX, TXT 파일만 올릴 수 있어요.'
     } else if (input.file.size === 0) {
-      errors.file = '빈 파일은 업로드할 수 없습니다.'
+      errors.file = '내용이 없는 파일은 올릴 수 없어요.'
     } else if (input.file.size > MAX_DOCUMENT_BYTES) {
       errors.file = '파일 크기는 20MB 이하여야 합니다.'
     }
@@ -33,6 +33,6 @@ export function validateManualText(text: string): string | null {
   const codePointCount = Array.from(normalized).length
   const nonWhitespaceCount = Array.from(normalized).filter((value) => !/\s/u.test(value)).length
   if (nonWhitespaceCount < 100) return '공백을 제외한 텍스트를 100자 이상 입력해 주세요.'
-  if (codePointCount > 500_000) return '텍스트는 최대 500,000자까지 입력할 수 있습니다.'
+  if (codePointCount > 500_000) return '텍스트는 500,000자까지 입력할 수 있어요.'
   return null
 }

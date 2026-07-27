@@ -128,12 +128,12 @@ async function changeStatus(
   message.value = ''
   try {
     await statusMutation.mutateAsync({ jobId, version, status })
-    message.value = `공고 상태를 ${JOB_STATUS_LABELS[status]}(으)로 변경했습니다.`
+    message.value = `지원 상태를 ${JOB_STATUS_LABELS[status]}(으)로 변경했어요.`
   } catch (error) {
     const apiError = normalizeApiError(error)
     actionError.value =
       apiError.code === 'RESOURCE_VERSION_CONFLICT'
-        ? '공고가 다른 곳에서 변경되었습니다. 상세 화면에서 최신값을 비교해 다시 적용해 주세요.'
+        ? '공고가 다른 곳에서 변경됐어요. 상세 화면에서 최신 내용과 비교해 다시 적용해 주세요.'
         : apiError.message
     select.value = currentStatus
   }
@@ -169,9 +169,9 @@ function extractionTone(
   <section class="jobs-page app-page" aria-labelledby="jobs-heading">
     <PageHeader
       heading-id="jobs-heading"
-      title="채용 공고"
-      description="지원 업무 상태와 URL 추출 상태를 분리해 공고를 관리합니다."
-      eyebrow="Job workspace"
+      title="관심 공고"
+      description="관심 있는 공고를 모아 두고 지원 상태를 이어서 확인하세요."
+      eyebrow="지원할 공고"
     >
       <template #actions>
         <RouterLink class="button button--primary" :to="{ name: 'job-new' }">
@@ -180,7 +180,7 @@ function extractionTone(
       </template>
     </PageHeader>
 
-    <div class="job-tabs" role="tablist" aria-label="공고 업무 상태">
+    <div class="job-tabs" role="tablist" aria-label="공고 지원 상태">
       <button
         v-for="status in JOB_STATUSES"
         :key="status"
@@ -207,7 +207,7 @@ function extractionTone(
         />
       </label>
       <label class="field">
-        <span class="field__label">URL 추출 상태</span>
+        <span class="field__label">공고 불러오기 상태</span>
         <select v-model="extractionStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="status in JOB_EXTRACTION_STATUSES" :key="status" :value="status">
@@ -275,14 +275,14 @@ function extractionTone(
       class="jobs-page__state"
       kind="loading"
       title="공고 목록을 불러오는 중…"
-      description="현재 업무 상태와 추출 상태를 확인하고 있습니다."
+      description="지원 상태와 공고 불러오기 상태를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="jobs.isError.value"
       class="jobs-page__state"
       kind="error"
-      title="공고 목록을 불러오지 못했습니다."
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      title="공고를 불러오지 못했어요."
+      description="잠시 후 다시 시도해 주세요."
     >
       <template #actions>
         <button type="button" class="button button--secondary" @click="jobs.refetch()">
@@ -294,8 +294,8 @@ function extractionTone(
       v-else-if="jobs.data.value?.items.length === 0"
       class="jobs-page__state"
       kind="empty"
-      title="조건에 맞는 공고가 없습니다."
-      description="필터를 조정하거나 새 공고를 등록해 지원 준비를 시작하세요."
+      title="조건에 맞는 공고가 없어요."
+      description="필터를 바꾸거나 관심 있는 공고를 새로 등록해 주세요."
     >
       <template #actions>
         <RouterLink class="button button--primary" :to="{ name: 'job-new' }">공고 등록</RouterLink>
@@ -342,7 +342,7 @@ function extractionTone(
               :value="job.status"
               class="control control--compact"
               :disabled="statusMutation.isPending.value"
-              :aria-label="`${jobDisplayTitle(job)} 상태 변경`"
+              :aria-label="`${jobDisplayTitle(job)} 지원 상태 변경`"
               @change="changeStatus(job.id, job.version, job.status, $event)"
             >
               <option v-for="status in JOB_STATUSES" :key="status" :value="status">

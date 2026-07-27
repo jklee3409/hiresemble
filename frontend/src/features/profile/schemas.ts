@@ -81,11 +81,11 @@ const optionalDate = z.union([z.literal(''), z.iso.date()])
 const optionalText = (max: number) => z.string().trim().max(max, `${max}자 이하로 입력해 주세요.`)
 
 const requiredText = (max: number) =>
-  z.string().trim().min(1, '필수 입력입니다.').max(max, `${max}자 이하로 입력해 주세요.`)
+  z.string().trim().min(1, '필수로 입력해 주세요.').max(max, `${max}자 이하로 입력해 주세요.`)
 
 const desiredList = z
   .array(requiredText(100))
-  .max(10, '최대 10개까지 입력할 수 있습니다.')
+  .max(10, '최대 10개까지 입력할 수 있어요.')
   .transform((values) => values.map((value) => value.trim()))
   .superRefine((values, context) => {
     const canonical = values.map((value) => value.toLocaleLowerCase())
@@ -152,7 +152,7 @@ const educationSchema = z
         context.addIssue({
           code: 'custom',
           path: ['gpa'],
-          message: '학점은 기준 학점보다 클 수 없습니다.',
+          message: '학점은 기준 학점보다 클 수 없어요.',
         })
       }
     }
@@ -209,7 +209,7 @@ const careerSchema = z
       context.addIssue({
         code: 'custom',
         path: ['endedAt'],
-        message: '재직 중인 경력은 종료일을 입력할 수 없습니다.',
+        message: '재직 중인 경력에는 종료일을 입력할 수 없어요.',
       })
     }
     validateDateOrder(value.startedAt, value.endedAt, 'endedAt', context)
@@ -361,7 +361,7 @@ function validateDateOrder(
     context.addIssue({
       code: 'custom',
       path: [path],
-      message: '종료일은 시작일보다 빠를 수 없습니다.',
+      message: '종료일은 시작일보다 빠를 수 없어요.',
     })
   }
 }

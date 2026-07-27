@@ -53,9 +53,9 @@ describe('P4 document pages', () => {
     })
     const { wrapper } = await mountDetail()
 
-    expect(wrapper.text()).toContain('텍스트 준비 완료')
-    expect(wrapper.text()).toContain('근거 추출 실패')
-    expect(wrapper.text()).toContain('문서 업로드 실패가 아닙니다')
+    expect(wrapper.text()).toContain('읽기 완료')
+    expect(wrapper.text()).toContain('정리하지 못함')
+    expect(wrapper.text()).toContain('자료 내용은 안전하게 남아 있어요')
     expect(wrapper.text()).toContain('보존된 추출 텍스트')
   })
 
@@ -89,7 +89,7 @@ describe('P4 document pages', () => {
       { text: '가'.repeat(100), version: 2 },
       'manual-text-key-1234',
     )
-    expect(wrapper.text()).toContain('같은 작업을 다시 시작했습니다')
+    expect(wrapper.text()).toContain('같은 작업을 다시 시작했어요')
   })
 
   it('purges detail/text caches and navigates to the list after immediate delete', async () => {
@@ -127,8 +127,8 @@ describe('P4 document pages', () => {
       page([{ ...summary(), parseStatus: 'PARSING', evidenceExtractionStatus: 'QUEUED' }]),
     )
     const { wrapper } = await mountList('/documents?documentType=RESUME&sort=updatedAt,desc')
-    expect(wrapper.text()).toContain('텍스트 처리 중')
-    expect(wrapper.text()).toContain('근거 추출 대기')
+    expect(wrapper.text()).toContain('읽는 중')
+    expect(wrapper.text()).toContain('기다리는 중')
     expect(wrapper.findAll('select')).toHaveLength(5)
   })
 })

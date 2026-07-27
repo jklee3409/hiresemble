@@ -106,15 +106,18 @@ test('snapshot → progress → disconnect → 1/2/5 reconnect → polling termi
   })
 
   await page.goto('/agent-runs')
-  await expect(page.getByRole('heading', { name: 'Agent Run 작업 기록' })).toBeVisible()
-  await expect(page.getByRole('button', { name: '진행 작업 7' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'AI 작업', level: 2, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'AI 작업 7' })).toBeVisible()
   await page.getByRole('link', { name: '상세 보기' }).click()
 
-  await expect(page.getByText('TRANSFORM_FIXTURE', { exact: true })).toBeVisible()
+  await expect(page.getByText('2단계', { exact: true })).toBeVisible()
+  await expect(page.getByText('TRANSFORM_FIXTURE', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '45')
   await expect(page.getByText('시도 1/3')).toBeVisible()
-  await expect(page.getByText(/마지막 상태를 유지하며 다시 연결/)).toBeVisible()
-  await expect(page.getByText(/5초마다 서버 상태를 확인/)).toBeVisible({ timeout: 12_000 })
+  await expect(page.getByText(/마지막으로 확인한 상태는 그대로 유지/)).toBeVisible()
+  await expect(page.getByText(/AI 작업이 실패한 것은 아니에요/)).toBeVisible({
+    timeout: 12_000,
+  })
   await expect(page.getByRole('heading', { name: '완료' })).toBeVisible({ timeout: 9_000 })
 
   expect(streamRequests).toBe(4)

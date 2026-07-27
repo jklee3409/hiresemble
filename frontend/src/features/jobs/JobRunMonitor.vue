@@ -7,6 +7,7 @@ import {
   AgentRunStreamController,
   type AgentRunConnectionState,
 } from '@/features/agent-runs/stream'
+import { STATUS_LABELS } from '@/features/agent-runs/presentation'
 
 const props = defineProps<{ userId: string; jobId: string; agentRunId: string }>()
 const cache = useQueryClient()
@@ -51,30 +52,30 @@ onBeforeUnmount(() => stream?.close())
 const connectionLabel = computed(
   () =>
     ({
-      connecting: '진행 연결 중',
-      connected: '실시간 진행 연결됨',
-      reconnecting: '진행 연결 복구 중',
-      polling: 'REST 상태 확인 중',
-      closed: '진행 연결 종료',
+      connecting: '진행 상황 연결 중',
+      connected: '진행 상황 확인 중',
+      reconnecting: '진행 상황을 다시 확인하는 중',
+      polling: '진행 상황을 다시 확인하는 중',
+      closed: '진행 상황 확인 완료',
     })[connection.value],
 )
 </script>
 
 <template>
   <div class="job-run-monitor" aria-live="polite">
-    <p v-if="detail.isPending.value">URL 추출 작업을 불러오는 중…</p>
+    <p v-if="detail.isPending.value">공고를 불러오는 AI 작업을 확인하는 중…</p>
     <p v-else-if="detail.isError.value" class="job-run-monitor__warning">
-      실시간 작업을 확인할 수 없습니다. 공고 REST 상태를 기준으로 새로고침해 주세요.
+      진행 상황을 다시 확인하는 중이에요. 저장한 공고 상태는 그대로 유지돼요.
     </p>
     <template v-else-if="detail.data.value">
       <div class="job-run-monitor__summary">
-        <span>작업 상태: {{ detail.data.value.status }}</span>
+        <span>AI 작업: {{ STATUS_LABELS[detail.data.value.status] }}</span>
         <strong>{{ detail.data.value.progressPercent }}%</strong>
       </div>
       <progress class="progress-track" :value="detail.data.value.progressPercent" max="100">
         {{ detail.data.value.progressPercent }}%
       </progress>
-      <p>{{ connectionLabel }} — 연결 단절만으로 공고 추출 실패로 표시하지 않습니다.</p>
+      <p>{{ connectionLabel }} — 연결이 잠시 끊겨도 공고 불러오기가 실패한 것은 아니에요.</p>
     </template>
   </div>
 </template>

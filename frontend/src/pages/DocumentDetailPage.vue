@@ -99,8 +99,8 @@ async function submitManualText(): Promise<void> {
     manualIdempotencyKey = ''
     message.value =
       accepted.status === 'WAITING_USER'
-        ? '텍스트 입력을 접수했습니다.'
-        : '같은 작업을 다시 시작했습니다.'
+        ? '입력한 내용을 저장했어요.'
+        : '같은 작업을 다시 시작했어요.'
     await refreshDocument()
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -118,7 +118,7 @@ async function reparse(): Promise<void> {
     })
     activeRunId.value = accepted.agentRunId
     reparseIdempotencyKey = ''
-    message.value = '새 재처리 작업을 접수했습니다.'
+    message.value = '새로 읽는 작업을 접수했어요.'
     await refreshDocument()
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -196,25 +196,25 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   <section class="document-detail app-page" aria-labelledby="document-heading">
     <RouterLink class="back-link" to="/documents">
       <AppIcon name="arrow-left" />
-      문서 목록
+      이력서·자료
     </RouterLink>
     <StatePanel
       v-if="document.isPending.value"
       class="document-detail__state"
       kind="loading"
-      title="문서 상세를 불러오는 중…"
-      description="문서 정보와 처리 상태를 확인하고 있습니다."
+      title="자료를 불러오는 중…"
+      description="자료 정보와 정리 상태를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="document.isError.value"
       class="document-detail__state"
       kind="error"
-      title="문서를 불러오지 못했습니다."
+      title="자료를 불러오지 못했어요."
       :description="loadError"
     >
       <template #actions>
         <RouterLink class="button button--secondary" to="/documents">
-          문서 목록으로 돌아가기
+          이력서·자료로 돌아가기
         </RouterLink>
       </template>
     </StatePanel>
@@ -222,8 +222,8 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       <PageHeader
         heading-id="document-heading"
         :title="document.data.value.displayName"
-        :description="`${DOCUMENT_TYPE_LABELS[document.data.value.documentType]} · ${document.data.value.mimeType} · ${formatFileSize(document.data.value.fileSizeBytes)}`"
-        eyebrow="Document detail"
+        :description="`${DOCUMENT_TYPE_LABELS[document.data.value.documentType]} · ${formatFileSize(document.data.value.fileSizeBytes)}`"
+        eyebrow="자료 확인"
       >
         <template #actions>
           <div class="document-detail__actions">
@@ -242,20 +242,20 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
       <div class="document-status-grid">
         <section class="document-status">
-          <span class="document-status__label">텍스트 처리</span>
+          <span class="document-status__label">문서 읽기</span>
           <StatusBadge
             :label="DOCUMENT_PARSE_STATUS_LABELS[document.data.value.parseStatus]"
             :tone="parseTone(document.data.value.parseStatus)"
           />
-          <p>업로드 파일에서 읽을 수 있는 텍스트를 준비하는 상태입니다.</p>
+          <p>등록한 자료의 내용을 읽는 과정이에요.</p>
         </section>
         <section class="document-status">
-          <span class="document-status__label">근거 추출</span>
+          <span class="document-status__label">경력 정보 정리</span>
           <StatusBadge
             :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.data.value.evidenceExtractionStatus]"
             :tone="evidenceTone(document.data.value.evidenceExtractionStatus)"
           />
-          <p>준비된 텍스트에서 검토할 경력 근거를 찾는 별도 상태입니다.</p>
+          <p>읽은 내용에서 확인할 경력 정보를 정리하는 과정이에요.</p>
         </section>
       </div>
       <p class="alert alert--info document-detail__message">
@@ -305,8 +305,8 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       >
         <div class="document-section__heading">
           <div>
-            <p class="section-kicker">Processing</p>
-            <h3 class="section-title">연결된 작업</h3>
+            <p class="section-kicker">진행 상황</p>
+            <h3 class="section-title">연결된 AI 작업</h3>
           </div>
           <RouterLink
             class="button button--secondary button--compact"
@@ -314,7 +314,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
               name: 'agent-run-detail',
               params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
             }"
-            >작업 진행 상세 보기</RouterLink
+            >AI 작업 자세히 보기</RouterLink
           >
         </div>
         <DocumentRunMonitor
@@ -328,15 +328,15 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         v-if="document.data.value.parseStatus === 'NEEDS_MANUAL_TEXT'"
         class="document-section section-surface manual-text-section"
       >
-        <p class="section-kicker">Manual fallback</p>
-        <h3 class="section-title">텍스트 직접 입력</h3>
+        <p class="section-kicker">직접 입력</p>
+        <h3 class="section-title">내용 직접 입력</h3>
         <p class="document-section__description">
-          공백을 제외해 100자 이상, 최대 500,000자를 입력하세요. 기존 WAITING_USER 작업을
-          재개합니다.
+          자료에서 읽지 못한 내용을 직접 입력해 주세요. 공백을 제외하고 100자 이상 입력하면 기다리던
+          AI 작업을 이어서 진행해요.
         </p>
         <form class="manual-text-form" novalidate @submit.prevent="submitManualText">
           <label class="field">
-            <span class="field__label">문서 텍스트</span>
+            <span class="field__label">자료 내용</span>
             <textarea
               v-model="manualText"
               class="control manual-text-form__editor"
@@ -349,28 +349,28 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
             type="submit"
             :disabled="manualMutation.isPending.value"
           >
-            {{ manualMutation.isPending.value ? '재개 중…' : '텍스트 저장 후 재개' }}
+            {{ manualMutation.isPending.value ? '다시 시작하는 중…' : '내용 저장하고 계속하기' }}
           </button>
         </form>
       </section>
 
       <section class="document-section section-surface">
-        <p class="section-kicker">Text preview</p>
-        <h3 class="section-title">추출 텍스트</h3>
+        <p class="section-kicker">읽은 내용</p>
+        <h3 class="section-title">자료 미리보기</h3>
         <p v-if="documentText.isPending.value" class="document-text__status" role="status">
-          텍스트를 불러오는 중…
+          자료 내용을 불러오는 중…
         </p>
         <p
           v-else-if="documentText.isError.value"
           class="alert alert--warning document-text__status"
           role="alert"
         >
-          추출 텍스트를 아직 불러올 수 없습니다.
+          자료 내용을 아직 불러올 수 없어요.
         </p>
         <pre v-else-if="documentText.data.value" class="document-text__preview">{{
           documentText.data.value.text
         }}</pre>
-        <p v-else class="document-text__status">파싱이 완료되면 원문 미리보기가 표시됩니다.</p>
+        <p v-else class="document-text__status">문서를 다 읽으면 내용 미리보기가 표시돼요.</p>
       </section>
 
       <DocumentEvidencePanel :user-id="userId" :document-id="documentId" />

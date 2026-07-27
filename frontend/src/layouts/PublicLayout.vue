@@ -1,125 +1,311 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 
-import AppIcon from '@/shared/ui/AppIcon.vue'
+import BrandMark from '@/shared/ui/BrandMark.vue'
 </script>
 
 <template>
   <main class="public-shell" data-testid="public-layout">
-    <div class="public-shell__grid">
-      <section class="auth-panel" aria-label="인증" data-testid="public-auth-panel">
-        <RouterLink class="auth-brand auth-brand--mobile" to="/" aria-label="Hiresemble 시작 화면">
-          <span class="auth-brand__mark" aria-hidden="true">H</span>
-          <span>Hiresemble</span>
-        </RouterLink>
-        <div class="auth-form">
-          <RouterView />
-        </div>
-        <p class="auth-privacy-note">
-          계정 정보와 업로드한 자료는 취업 준비 기능 제공을 위해 사용됩니다. 가입 시 개인정보 처리와
-          AI 처리 동의를 직접 확인합니다.
-        </p>
-      </section>
+    <section class="auth-panel" aria-label="인증" data-testid="public-auth-panel">
+      <RouterLink class="auth-brand auth-brand--mobile" to="/" aria-label="Hiresemble 시작 화면">
+        <BrandMark />
+      </RouterLink>
+      <div class="auth-form">
+        <RouterView />
+      </div>
+      <p class="auth-privacy-note">
+        계정 정보와 등록한 자료는 취업 준비 기능을 제공하는 데 사용해요. 회원가입할 때 개인정보와 AI
+        처리 동의를 직접 확인할 수 있어요.
+      </p>
+    </section>
 
-      <aside class="auth-context" aria-label="Hiresemble 서비스 안내">
-        <RouterLink class="auth-brand" to="/" aria-label="Hiresemble 시작 화면">
-          <span class="auth-brand__mark" aria-hidden="true">H</span>
-          <span>Hiresemble</span>
-        </RouterLink>
-        <div class="auth-context__body">
-          <p class="auth-context__eyebrow">Career workspace</p>
-          <p class="auth-context__title">지원 준비의 근거와 진행 상황을 한곳에서 관리하세요.</p>
-          <p class="auth-context__description">
-            프로필, 증빙 문서, 채용 공고와 비동기 작업 기록을 분리된 상태로 확인할 수 있는 개인 취업
-            준비 공간입니다.
-          </p>
-          <ul class="auth-context__list">
-            <li>
-              <AppIcon name="check" />
-              <span>경력 정보와 승인한 근거를 구조적으로 관리합니다.</span>
-            </li>
-            <li>
-              <AppIcon name="check" />
-              <span>문서 처리와 공고 추출 상태를 단계별로 확인합니다.</span>
-            </li>
-            <li>
-              <AppIcon name="check" />
-              <span>진행 중인 작업과 필요한 사용자 조치를 놓치지 않습니다.</span>
-            </li>
-          </ul>
-        </div>
-        <p class="auth-context__footnote">
-          AI 처리는 필요한 작업 흐름 안에서만 사용되며, 사용자의 경력 정보와 명시적인 선택이
-          중심입니다.
+    <section class="brand-canvas" aria-label="Hiresemble 서비스 안내">
+      <RouterLink class="auth-brand" to="/" aria-label="Hiresemble 시작 화면">
+        <BrandMark inverse />
+      </RouterLink>
+
+      <div class="brand-orbit" aria-hidden="true">
+        <span class="brand-orbit__ring brand-orbit__ring--outer" />
+        <span class="brand-orbit__ring brand-orbit__ring--inner" />
+        <span class="brand-orbit__line brand-orbit__line--one" />
+        <span class="brand-orbit__line brand-orbit__line--two" />
+        <span class="brand-orbit__node brand-orbit__node--one" />
+        <span class="brand-orbit__node brand-orbit__node--two" />
+        <span class="brand-orbit__node brand-orbit__node--three" />
+        <span class="brand-orbit__node brand-orbit__node--four" />
+      </div>
+
+      <div class="auth-context">
+        <p class="auth-context__eyebrow">내 경력을, 다음 기회로</p>
+        <h2 class="auth-context__title">
+          흩어진 경험을 모아
+          <span>나답게 지원해요.</span>
+        </h2>
+        <p class="auth-context__description">
+          프로필부터 이력서, 관심 공고까지 한곳에 정리하고 필요한 준비를 이어갈 수 있어요.
         </p>
-      </aside>
-    </div>
+        <ol class="auth-context__steps">
+          <li>
+            <span>01</span>
+            <strong>경험을 정리해요</strong>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>공고를 모아 봐요</strong>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>준비 과정을 확인해요</strong>
+          </li>
+        </ol>
+      </div>
+
+      <p class="auth-context__footnote">
+        AI는 사용자가 요청한 준비 과정에서만 활용해요. 중요한 선택과 경력 정보의 주인은 사용자예요.
+      </p>
+    </section>
   </main>
 </template>
 
 <style scoped>
 .public-shell {
+  position: relative;
   display: grid;
   min-height: 100dvh;
-  place-items: center;
-  background: var(--color-canvas);
-  padding: clamp(1rem, 3vw, 2.5rem);
-}
-
-.public-shell__grid {
-  display: grid;
-  width: min(100%, 72rem);
-  min-height: min(46rem, calc(100dvh - 5rem));
-  grid-template-areas: 'context form';
-  grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(27rem, 35rem);
+  gap: clamp(2rem, 6vw, 7rem);
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  background: #11182d;
+  padding: clamp(1.5rem, 4vw, 4rem);
 }
 
-.auth-panel {
-  grid-area: form;
+.brand-canvas {
+  position: relative;
   display: flex;
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
+  min-height: calc(100dvh - clamp(3rem, 8vw, 8rem));
   flex-direction: column;
-  justify-content: center;
-  padding: clamp(2rem, 5vw, 4.5rem);
-}
-
-.auth-form {
-  width: 100%;
-  max-width: 27rem;
-  margin: auto;
+  color: white;
+  isolation: isolate;
 }
 
 .auth-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #f3f8f9;
-  font-size: 1.125rem;
-  font-weight: 760;
-  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 2;
+  width: max-content;
   text-decoration: none;
 }
 
 .auth-brand--mobile {
   display: none;
-  color: var(--color-ink);
 }
 
-.auth-brand__mark {
-  display: inline-grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  place-items: center;
-  border: 1px solid #5f99a2;
-  border-radius: var(--radius-md);
-  background: #0b6673;
+.auth-context {
+  position: relative;
+  z-index: 2;
+  max-width: 47rem;
+  margin-block: auto;
+  padding-block: clamp(4rem, 11vh, 8rem);
+}
+
+.auth-context__eyebrow {
+  margin: 0 0 1rem;
+  color: var(--color-accent);
+  font-size: 0.8125rem;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+}
+
+.auth-context__title {
+  max-width: 43rem;
+  margin: 0;
   color: white;
-  font-weight: 800;
+  font-size: clamp(3rem, 5vw, 5.25rem);
+  font-weight: 830;
+  line-height: 0.99;
+  letter-spacing: -0.075em;
+  word-break: keep-all;
+}
+
+.auth-context__title span {
+  display: block;
+  margin-top: 0.15em;
+  color: #79e8ff;
+}
+
+.auth-context__description {
+  max-width: 36rem;
+  margin: 1.75rem 0 0;
+  color: #c8d2ed;
+  font-size: clamp(0.9375rem, 1.4vw, 1.125rem);
+  line-height: 1.75;
+  word-break: keep-all;
+}
+
+.auth-context__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-context__steps li {
+  position: relative;
+  display: grid;
+  min-width: 10rem;
+  gap: 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 28%);
+  padding: 0.875rem 1.5rem 0 0;
+}
+
+.auth-context__steps li:not(:last-child)::after {
+  position: absolute;
+  top: -0.25rem;
+  right: 0.9rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--color-accent);
+  content: '';
+}
+
+.auth-context__steps span {
+  color: #7e91c4;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-context__steps strong {
+  color: #e7ecfa;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.auth-context__footnote {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  color: #8897bc;
+  font-size: 0.75rem;
+  line-height: 1.65;
+}
+
+.brand-orbit {
+  position: absolute;
+  top: 50%;
+  left: 58%;
+  z-index: 1;
+  width: min(34vw, 30rem);
+  aspect-ratio: 1;
+  opacity: 0.32;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.brand-orbit__ring,
+.brand-orbit__line,
+.brand-orbit__node {
+  position: absolute;
+}
+
+.brand-orbit__ring {
+  border: 1px solid #5571bd;
+  border-radius: 50%;
+}
+
+.brand-orbit__ring--outer {
+  inset: 0;
+  animation: orbit-turn 28s linear infinite;
+}
+
+.brand-orbit__ring--inner {
+  inset: 24%;
+  border-style: dashed;
+  animation: orbit-turn 22s linear infinite reverse;
+}
+
+.brand-orbit__line {
+  top: 50%;
+  left: 10%;
+  width: 80%;
+  height: 1px;
+  background: #4965ad;
+  transform-origin: center;
+}
+
+.brand-orbit__line--one {
+  transform: rotate(24deg);
+}
+
+.brand-orbit__line--two {
+  transform: rotate(-38deg);
+}
+
+.brand-orbit__node {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #11182d;
+  border-radius: 50%;
+  background: #79e8ff;
+  box-shadow: 0 0 0 1px #79e8ff;
+  animation: node-drift 20s ease-in-out infinite;
+}
+
+.brand-orbit__node--one {
+  top: 8%;
+  left: 48%;
+}
+
+.brand-orbit__node--two {
+  top: 48%;
+  right: 4%;
+  width: 1rem;
+  height: 1rem;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  animation-delay: -5s;
+}
+
+.brand-orbit__node--three {
+  bottom: 12%;
+  left: 25%;
+  animation-delay: -10s;
+}
+
+.brand-orbit__node--four {
+  top: 36%;
+  left: 21%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: white;
+  box-shadow: 0 0 0 1px white;
+  animation-delay: -14s;
+}
+
+.auth-panel {
+  position: relative;
+  z-index: 3;
+  align-self: center;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  max-height: calc(100dvh - 3rem);
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: 0 28px 70px rgb(2 7 26 / 36%);
+  padding: clamp(2rem, 4vw, 3.75rem);
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 27rem;
+  margin-inline: auto;
 }
 
 .auth-privacy-note {
@@ -133,118 +319,109 @@ import AppIcon from '@/shared/ui/AppIcon.vue'
   line-height: 1.65;
 }
 
-.auth-context {
-  grid-area: context;
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  background: #173840;
-  color: #e8f1f3;
-  padding: clamp(2rem, 5vw, 4.5rem);
+@keyframes orbit-turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.auth-context__body {
-  margin-block: auto;
+@keyframes node-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0.5rem, -0.75rem, 0);
+  }
 }
 
-.auth-context__eyebrow {
-  margin: 0 0 0.75rem;
-  color: #86c9ce;
-  font-size: 0.75rem;
-  font-weight: 760;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
+@media (max-width: 1099px) {
+  .public-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(25rem, 31rem);
+    gap: 2rem;
+  }
 
-.auth-context__title {
-  max-width: 31rem;
-  margin: 0;
-  color: white;
-  font-size: clamp(1.75rem, 1.4rem + 1.1vw, 2.5rem);
-  font-weight: 730;
-  line-height: 1.3;
-  letter-spacing: -0.035em;
-}
+  .auth-context__title {
+    font-size: clamp(3rem, 5.8vw, 4.75rem);
+  }
 
-.auth-context__description {
-  max-width: 31rem;
-  margin: 1.25rem 0 0;
-  color: #bed0d4;
-  font-size: 0.9375rem;
-  line-height: 1.75;
-}
+  .auth-context__steps {
+    display: grid;
+    max-width: 24rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 
-.auth-context__list {
-  display: grid;
-  gap: 0.875rem;
-  max-width: 31rem;
-  margin: 2rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.auth-context__list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  color: #dae7e9;
-  font-size: 0.875rem;
-  line-height: 1.6;
-}
-
-.auth-context__list .icon {
-  margin-top: 0.2rem;
-  color: #86c9ce;
-}
-
-.auth-context__footnote {
-  margin: 2rem 0 0;
-  border-top: 1px solid #36575f;
-  color: #9fb8be;
-  padding-top: 1rem;
-  font-size: 0.75rem;
-  line-height: 1.65;
+  .auth-context__steps li {
+    min-width: 0;
+    padding-right: 0.75rem;
+  }
 }
 
 @media (max-width: 767px) {
   .public-shell {
-    display: block;
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
     background: var(--color-canvas);
     padding: 0;
   }
 
-  .public-shell__grid {
-    min-height: 100dvh;
-    grid-template-areas:
-      'form'
-      'context';
-    grid-template-columns: minmax(0, 1fr);
+  .auth-panel {
+    max-height: none;
+    min-height: auto;
+    align-self: stretch;
     border: 0;
     border-radius: 0;
     box-shadow: none;
-  }
-
-  .auth-panel {
-    min-height: 100dvh;
-    justify-content: flex-start;
-    padding: 1.5rem clamp(1.25rem, 7vw, 2.5rem) 2.5rem;
+    padding: 1.25rem clamp(1.25rem, 7vw, 2.5rem) 2.5rem;
   }
 
   .auth-brand--mobile {
-    display: inline-flex;
-    margin-bottom: 2.75rem;
+    display: block;
+    margin-bottom: 2.5rem;
   }
 
-  .auth-context {
-    padding: 2.25rem clamp(1.25rem, 7vw, 2.5rem);
+  .brand-canvas {
+    min-height: 24rem;
+    background: #11182d;
+    padding: 2.5rem clamp(1.25rem, 7vw, 2.5rem);
   }
 
-  .auth-context > .auth-brand {
+  .brand-canvas > .auth-brand,
+  .auth-context__steps {
     display: none;
   }
 
+  .auth-context {
+    margin: auto 0;
+    padding: 1rem 0;
+  }
+
   .auth-context__title {
-    font-size: 1.5rem;
+    max-width: 22rem;
+    font-size: clamp(2.25rem, 12vw, 3.5rem);
+  }
+
+  .auth-context__description {
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-context__footnote {
+    margin-top: 2rem;
+  }
+
+  .brand-orbit {
+    top: 56%;
+    left: 75%;
+    width: 23rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-orbit__ring,
+  .brand-orbit__node {
+    animation: none;
   }
 }
 </style>

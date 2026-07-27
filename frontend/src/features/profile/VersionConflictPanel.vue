@@ -43,9 +43,9 @@ function reapply(): void {
     <header class="conflict-panel__header">
       <AppIcon name="alert" />
       <div>
-        <h3 id="version-conflict-title">다른 곳에서 최신 내용이 저장되었습니다</h3>
+        <h3 id="version-conflict-title">다른 곳에서 최신 내용이 저장됐어요</h3>
         <p>
-          자동으로 덮어쓰지 않습니다. 유지할 내 입력을 선택해 최신값에 재적용한 뒤 다시 저장해
+          자동으로 덮어쓰지 않아요. 유지할 내 입력을 선택해 최신 내용에 재적용한 뒤 다시 저장해
           주세요.
         </p>
       </div>
@@ -53,7 +53,7 @@ function reapply(): void {
 
     <div class="conflict-panel__legend" aria-hidden="true">
       <span>내 미저장 값</span>
-      <span>최신 서버 값</span>
+      <span>최근 저장된 값</span>
     </div>
     <ul class="conflict-list">
       <li v-for="field in fields" :key="field.key" class="conflict-item">
@@ -71,7 +71,7 @@ function reapply(): void {
           <p>{{ display(draft[field.key]) }}</p>
         </div>
         <div class="conflict-value">
-          <span>최신 서버 값</span>
+          <span>최근 저장된 값</span>
           <p>{{ display(latest[field.key]) }}</p>
         </div>
       </li>

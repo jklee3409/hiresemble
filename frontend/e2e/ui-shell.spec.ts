@@ -7,13 +7,13 @@ test('protected app shell stays usable without horizontal overflow at required w
 }) => {
   await installAuthenticatedRoutes(page)
   await page.goto('/dashboard')
-  await expect(page.getByRole('heading', { name: /지원 준비 공간/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '오늘의 지원 준비를 이어가세요.' })).toBeVisible()
 
-  const progressTrigger = page.getByRole('button', { name: '진행 작업 0' })
+  const progressTrigger = page.getByRole('button', { name: /AI 작업\s*0/ })
   await progressTrigger.click()
-  const progressDialog = page.getByRole('dialog', { name: 'Agent Run 진행 현황' })
+  const progressDialog = page.getByRole('dialog', { name: 'AI 작업 진행 현황' })
   await expect(progressDialog).toBeVisible()
-  await progressDialog.getByRole('button', { name: '진행 작업 닫기' }).click()
+  await progressDialog.getByRole('button', { name: 'AI 작업 닫기' }).click()
   await expect(progressDialog).toBeHidden()
   await expect(progressTrigger).toBeFocused()
 
@@ -68,14 +68,45 @@ test('public authentication shell keeps the form readable at desktop and mobile 
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
     await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible()
     await expect(page.getByLabel('이메일')).toBeVisible()
-    await expect(page.getByLabel('비밀번호')).toBeVisible()
+    await expect(page.getByLabel('비밀번호', { exact: true })).toBeVisible()
+    expect(
+      await page.locator('h1, h2').evaluateAll((headings) => headings.map((item) => item.tagName)),
+    ).toEqual(['H1', 'H2'])
+    const passwordToggleBox = await page
+      .getByRole('button', { name: '비밀번호 보기', exact: true })
+      .boundingBox()
+    expect(passwordToggleBox?.width).toBeGreaterThanOrEqual(44)
+    expect(passwordToggleBox?.height).toBeGreaterThanOrEqual(44)
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       ),
       `${width}px 인증 화면에서 가로 overflow가 없어야 합니다.`,
     ).toBe(false)
+
+    await page.goto('/signup')
+    await expect(page.getByRole('heading', { name: '회원가입' })).toBeVisible()
+    await expect(
+      page.getByText('다른 곳에서 사용하지 않는 비밀번호를 입력해 주세요.'),
+    ).toBeVisible()
+    await page.getByRole('button', { name: '비밀번호 보기', exact: true }).click()
+    await expect(page.getByRole('button', { name: '비밀번호 숨기기', exact: true })).toBeVisible()
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+      `${width}px 회원가입 화면에서 가로 overflow가 없어야 합니다.`,
+    ).toBe(false)
+    await page.goto('/login')
   }
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/login')
+  expect(
+    await page
+      .locator('.brand-orbit__ring--outer')
+      .evaluate((element) => getComputedStyle(element).animationName),
+  ).toBe('none')
 })
 
 async function installAuthenticatedRoutes(page: Page): Promise<void> {

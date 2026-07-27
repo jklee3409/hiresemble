@@ -87,14 +87,14 @@ const monitoredRunId = computed(
 const loadError = computed(() => {
   if (job.error.value === null) return ''
   const error = normalizeApiError(job.error.value)
-  return error.status === 404 ? '공고를 찾을 수 없습니다.' : error.message
+  return error.status === 404 ? '공고를 찾을 수 없어요.' : error.message
 })
 const createdMessage = computed(() => {
   if (route.query.created === 'manual') {
-    return '수동 본문으로 공고를 등록했습니다. URL 추출 작업은 만들지 않았습니다.'
+    return '직접 입력한 본문으로 공고를 등록했어요.'
   }
   if (route.query.created === 'async') {
-    return '공고를 등록하고 URL 추출 작업을 시작했습니다.'
+    return '공고를 등록하고 내용을 불러오기 시작했어요.'
   }
   return ''
 })
@@ -142,8 +142,8 @@ async function saveEdit(): Promise<void> {
     editing.value = false
     message.value =
       saved.descriptionSource === 'USER_ENTERED'
-        ? '공고 정보를 저장하고 수동 본문을 적용했습니다.'
-        : '공고 정보를 저장했습니다.'
+        ? '공고 정보를 저장하고 직접 입력한 내용을 적용했어요.'
+        : '공고 정보를 저장했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
@@ -167,13 +167,13 @@ async function changeStatus(): Promise<void> {
       version: current.version,
     })
     selectedStatus.value = saved.status
-    message.value = `공고 상태를 ${JOB_STATUS_LABELS[saved.status]}(으)로 변경했습니다.`
+    message.value = `지원 상태를 ${JOB_STATUS_LABELS[saved.status]}(으)로 변경했어요.`
   } catch (error) {
     const apiError = normalizeApiError(error)
     if (isJobVersionConflict(apiError)) {
       const draft = editableRequest(current)
       draft.status = selectedStatus.value
-      await establishConflict(draft, 'status', [{ key: 'status', label: '업무 상태' }])
+      await establishConflict(draft, 'status', [{ key: 'status', label: '지원 상태' }])
       return
     }
     selectedStatus.value = current.status
@@ -196,13 +196,13 @@ async function retryExtraction(): Promise<void> {
     })
     message.value =
       accepted.status === 'WAITING_USER'
-        ? '기존 URL 추출 작업을 다시 확인했습니다.'
-        : 'URL 추출 재시도를 접수했습니다.'
+        ? '진행 중인 공고 불러오기를 다시 확인했어요.'
+        : '공고를 다시 불러오기 시작했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     if (isJobVersionConflict(apiError)) {
       await refreshLatest()
-      actionError.value = '공고가 변경되었습니다. 최신 버전을 확인한 뒤 다시 시도해 주세요.'
+      actionError.value = '공고가 다른 곳에서 변경됐어요. 최신 내용을 확인한 뒤 다시 시도해 주세요.'
       return
     }
     actionError.value = apiError.message
@@ -226,7 +226,8 @@ async function remove(): Promise<void> {
     }
     if (isJobVersionConflict(apiError)) {
       await refreshLatest()
-      actionError.value = '공고가 변경되었습니다. 최신 버전을 확인한 뒤 삭제를 다시 선택해 주세요.'
+      actionError.value =
+        '공고가 다른 곳에서 변경됐어요. 최신 내용을 확인한 뒤 삭제를 다시 선택해 주세요.'
       return
     }
     actionError.value = apiError.message
@@ -263,8 +264,7 @@ function reapplyConflict(selectedFields: string[]): void {
   }
   conflict.value = null
   actionError.value = ''
-  message.value =
-    '선택한 내 값을 최신 서버 버전에 재적용했습니다. 내용을 확인하고 다시 저장해 주세요.'
+  message.value = '선택한 내 값을 최근 저장된 내용에 다시 적용했어요. 확인한 뒤 저장해 주세요.'
 }
 
 function cancelConflict(): void {
@@ -356,13 +356,13 @@ function extractionTone(
     <StatePanel
       v-if="job.isPending.value"
       kind="loading"
-      title="공고 상세를 불러오는 중…"
-      description="저장된 공고 정보와 처리 상태를 확인하고 있습니다."
+      title="공고 정보를 불러오는 중…"
+      description="저장한 공고와 불러오기 상태를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="job.isError.value"
       kind="error"
-      title="공고를 불러오지 못했습니다."
+      title="공고를 불러오지 못했어요."
       :description="loadError"
     >
       <template #actions>
@@ -386,7 +386,7 @@ function extractionTone(
             ? `${jobCompanyLabel(job.data.value.companyName)} · 직무 ${job.data.value.positionName}`
             : jobCompanyLabel(job.data.value.companyName)
         "
-        eyebrow="Job overview"
+        eyebrow="공고 정보"
       >
         <template #actions>
           <div class="job-overview__actions">
@@ -414,7 +414,7 @@ function extractionTone(
               :disabled="retryMutation.isPending.value"
               @click="retryExtraction"
             >
-              {{ retryMutation.isPending.value ? '재시도 접수 중…' : 'URL 추출 재시도' }}
+              {{ retryMutation.isPending.value ? '다시 불러오는 중…' : '공고 다시 불러오기' }}
             </button>
             <button
               id="job-delete"
@@ -460,9 +460,6 @@ function extractionTone(
         role="alert"
       >
         {{ job.data.value.extractionError.message }}
-        <span class="job-overview__error-code"
-          >오류 코드: {{ job.data.value.extractionError.code }}</span
-        >
       </p>
       <p v-if="message" class="alert alert--success job-overview__notice" role="status">
         {{ message }}
@@ -484,7 +481,7 @@ function extractionTone(
       <section v-if="editing" class="job-editor section-surface" aria-label="공고 정보 편집">
         <div class="job-editor__header">
           <div>
-            <p class="section-kicker">Edit job</p>
+            <p class="section-kicker">내용 수정</p>
             <h3 class="section-title">공고 정보 편집</h3>
           </div>
           <button type="button" class="button button--ghost button--compact" @click="cancelEdit">
@@ -573,7 +570,7 @@ function extractionTone(
 
       <div class="job-overview__grid">
         <section class="job-description section-surface" aria-labelledby="job-description-heading">
-          <p class="section-kicker">Description</p>
+          <p class="section-kicker">공고 내용</p>
           <h3 id="job-description-heading" class="section-title">공고 본문</h3>
           <p class="job-description__source">
             출처:
@@ -587,17 +584,17 @@ function extractionTone(
             job.data.value.descriptionText
           }}</pre>
           <p v-else class="job-description__empty">
-            저장된 공고 본문이 없습니다. 편집에서 직접 입력해 주세요.
+            저장된 공고 내용이 없어요. 편집에서 직접 입력해 주세요.
           </p>
         </section>
 
         <div class="job-overview__side">
           <section class="job-side-section section-surface">
-            <p class="section-kicker">Details</p>
+            <p class="section-kicker">기본 정보</p>
             <h3 class="section-title">공고 정보</h3>
             <dl class="job-facts">
               <div>
-                <dt>원본 URL</dt>
+                <dt>공고 링크</dt>
                 <dd>
                   <a
                     class="job-facts__url"
@@ -643,8 +640,8 @@ function extractionTone(
           </section>
 
           <section class="job-side-section section-surface">
-            <p class="section-kicker">Workflow</p>
-            <h3 class="section-title">업무 상태 변경</h3>
+            <p class="section-kicker">지원 과정</p>
+            <h3 class="section-title">지원 상태</h3>
             <form class="job-status-form" @submit.prevent="changeStatus">
               <label class="field">
                 <span class="field__label">상태</span>
@@ -668,8 +665,8 @@ function extractionTone(
           </section>
 
           <section v-if="monitoredRunId" class="job-side-section section-surface">
-            <p class="section-kicker">Processing</p>
-            <h3 class="section-title">URL 추출 작업</h3>
+            <p class="section-kicker">공고 내용</p>
+            <h3 class="section-title">공고 불러오기</h3>
             <RouterLink
               class="job-run-link"
               :to="{ name: 'agent-run-detail', params: { agentRunId: monitoredRunId } }"
@@ -702,12 +699,6 @@ function extractionTone(
 .job-editor,
 .job-overview__grid {
   margin-top: var(--space-5);
-}
-
-.job-overview__error-code {
-  display: block;
-  margin-top: var(--space-1);
-  font-size: var(--font-size-xs);
 }
 
 .job-editor,

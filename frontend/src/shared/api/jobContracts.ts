@@ -53,7 +53,7 @@ export const jobCreationAcceptedSchema = z
       context.addIssue({
         code: 'custom',
         path: ['agentRunId'],
-        message: '추출 상태와 Agent Run ID 조합이 올바르지 않습니다.',
+        message: '공고 정보를 확인하지 못했어요. 다시 불러와 주세요.',
       })
     }
   })

@@ -54,7 +54,7 @@ describe('P1 authentication forms', () => {
       aiConsent: true,
     })
     expect(router.currentRoute.value.name).toBe('onboarding')
-    expect(wrapper.text()).toContain('지원 준비에 필요한 기본 정보를 네 단계로 정리합니다.')
+    expect(wrapper.text()).toContain('지금 아는 만큼만 입력해도 괜찮아요.')
     expect(wrapper.get('[aria-current="step"]').text()).toContain('기본 정보')
   })
 
@@ -101,6 +101,25 @@ describe('P1 authentication forms', () => {
     expect(wrapper.text()).toContain('입력 형식을 확인해 주세요.')
     expect(email.attributes('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(email.element)
+  })
+
+  it('toggles password visibility with explicit accessible names', async () => {
+    const { wrapper } = await mountAt('/signup')
+    const password = wrapper.get<HTMLInputElement>('#signup-password')
+    const confirm = wrapper.get<HTMLInputElement>('#signup-passwordConfirm')
+
+    expect(password.attributes('type')).toBe('password')
+    expect(confirm.attributes('type')).toBe('password')
+
+    const passwordToggle = wrapper.get('button[aria-label="비밀번호 보기"]')
+    await passwordToggle.trigger('click')
+    expect(password.attributes('type')).toBe('text')
+    expect(passwordToggle.attributes('aria-label')).toBe('비밀번호 숨기기')
+
+    const confirmToggle = wrapper.get('button[aria-label="비밀번호 확인 보기"]')
+    await confirmToggle.trigger('click')
+    expect(confirm.attributes('type')).toBe('text')
+    expect(confirmToggle.attributes('aria-label')).toBe('비밀번호 확인 숨기기')
   })
 })
 

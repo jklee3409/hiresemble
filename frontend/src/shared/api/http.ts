@@ -104,7 +104,7 @@ export class HttpApiClient {
     const bootstrap = this.get<CsrfDto>('/auth/csrf').then((csrf) => {
       if (!isCsrfDto(csrf)) {
         throw new ApiClientError({
-          message: 'CSRF 응답 형식이 올바르지 않습니다.',
+          message: '보안 확인을 마치지 못했어요. 다시 시도해 주세요.',
           status: 0,
           code: 'INVALID_SERVER_RESPONSE',
         })

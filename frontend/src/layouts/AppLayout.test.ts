@@ -28,13 +28,13 @@ describe('AppLayout', () => {
 
     const activeDesktopLink = wrapper.get('.sidebar-nav__link[aria-current="page"]')
     expect(activeDesktopLink.text()).toBe('내 프로필')
-    expect(wrapper.get('.workspace-title h1').text()).toBe('기본 프로필')
+    expect(wrapper.get('.workspace-title h1').text()).toBe('내 프로필')
     expect(wrapper.findAll('.sidebar-nav__link').map((link) => link.text())).toEqual([
       '대시보드',
       '내 프로필',
-      '문서·근거',
-      '채용 공고',
-      '작업 기록',
+      '이력서·자료',
+      '관심 공고',
+      'AI 작업',
     ])
     expect(wrapper.text()).not.toContain('자기소개서')
     expect(wrapper.text()).not.toContain('면접 준비')
@@ -95,7 +95,7 @@ async function mountLayout(path: string) {
           {
             path: 'profile/basic',
             component: ProfilePage,
-            meta: { title: '기본 프로필' },
+            meta: { title: '내 프로필' },
           },
           { path: 'documents', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },

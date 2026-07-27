@@ -21,7 +21,7 @@ const completionLabels: Record<ProfileCompletionItem, string> = {
   DESIRED_ROLE: '희망 직무',
   DESIRED_INDUSTRY: '희망 산업',
   DESIRED_LOCATION: '희망 지역',
-  PRIMARY_EDUCATION: '대표 학력',
+  PRIMARY_EDUCATION: '먼저 보여 줄 학력',
 }
 
 const conflictFields = [
@@ -64,7 +64,7 @@ const saveMutation = useMutation({
     loadProfile(saved)
     fieldErrors.value = {}
     generalError.value = ''
-    message.value = '프로필을 저장했습니다.'
+    message.value = '프로필을 저장했어요.'
   },
 })
 
@@ -119,7 +119,7 @@ function reapplyConflict(value: Record<string, unknown>): void {
   if (latest === undefined) return
   loadProfile({ ...latest, ...value, version: latest.version } as ProfileDto)
   conflict.value = null
-  message.value = '선택한 내 입력을 최신값에 재적용했습니다. 내용을 확인하고 다시 저장해 주세요.'
+  message.value = '선택한 내 입력을 최신 내용에 다시 적용했어요. 확인한 뒤 저장해 주세요.'
 }
 
 function emptyForm(): ProfileFormValues {
@@ -140,9 +140,9 @@ function emptyForm(): ProfileFormValues {
     <ProfileTabs />
     <PageHeader
       heading-id="profile-basic-heading"
-      title="기본 프로필"
-      description="지원 과정에서 반복해서 사용할 기본 정보와 희망 조건을 관리합니다. 보완 항목은 안내용이며 다른 기능 이용을 막지 않습니다."
-      eyebrow="Profile"
+      title="내 프로필"
+      description="한 번 정리한 기본 정보와 희망 조건을 여러 지원에 활용할 수 있어요. 부족한 항목은 나중에 채워도 괜찮아요."
+      eyebrow="나의 경험"
     >
       <template #actions>
         <div v-if="profileQuery.data.value" class="completion-summary" aria-label="프로필 완료율">
@@ -165,14 +165,14 @@ function emptyForm(): ProfileFormValues {
       class="profile-basic__state"
       kind="loading"
       title="프로필을 불러오는 중…"
-      description="저장된 기본 정보와 완료 항목을 확인하고 있습니다."
+      description="저장한 기본 정보와 완료 항목을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="profileQuery.isError.value"
       class="profile-basic__state"
       kind="error"
-      title="프로필을 불러오지 못했습니다."
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      title="프로필을 불러오지 못했어요."
+      description="잠시 후 다시 시도해 주세요."
     >
       <template #actions>
         <button type="button" class="button button--secondary" @click="profileQuery.refetch()">
@@ -190,8 +190,8 @@ function emptyForm(): ProfileFormValues {
         <div class="profile-completion-note__intro">
           <AppIcon name="alert" />
           <div>
-            <strong>프로필 보완을 권장합니다.</strong>
-            <p>아래 항목을 채우면 지원 준비에 사용할 정보가 더 분명해집니다.</p>
+            <strong>조금 더 채우면 좋아요.</strong>
+            <p>아래 항목을 입력하면 지원할 때 활용할 정보가 더 분명해져요.</p>
           </div>
         </div>
         <ul class="profile-completion-note__items">
@@ -216,7 +216,9 @@ function emptyForm(): ProfileFormValues {
         <section class="profile-form__section" aria-labelledby="profile-identity-heading">
           <header>
             <h3 id="profile-identity-heading" class="section-title">기본 정보</h3>
-            <p class="section-description">이름, 소개와 졸업 예정 정보를 관리합니다.</p>
+            <p class="section-description">
+              지원할 때 사용할 이름, 소개와 졸업 예정일을 입력해 주세요.
+            </p>
           </header>
           <div class="profile-form__grid">
             <div class="field">
@@ -282,7 +284,7 @@ function emptyForm(): ProfileFormValues {
           <header>
             <h3 id="profile-preference-heading" class="section-title">희망 조건</h3>
             <p class="section-description">
-              관심 있는 직무, 산업과 지역을 최대 10개까지 입력할 수 있습니다.
+              관심 있는 직무, 산업과 지역을 입력해 두면 지원 방향을 빠르게 확인할 수 있어요.
             </p>
           </header>
           <div class="profile-form__preferences">

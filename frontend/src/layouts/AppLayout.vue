@@ -3,15 +3,16 @@ import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch }
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import BrandMark from '@/shared/ui/BrandMark.vue'
 import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const navItems = [
   { to: '/dashboard', label: '대시보드', icon: 'dashboard', match: '/dashboard' },
   { to: '/profile/basic', label: '내 프로필', icon: 'profile', match: '/profile' },
-  { to: '/documents', label: '문서·근거', icon: 'documents', match: '/documents' },
-  { to: '/jobs', label: '채용 공고', icon: 'jobs', match: '/jobs' },
-  { to: '/agent-runs', label: '작업 기록', icon: 'runs', match: '/agent-runs' },
+  { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
+  { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
+  { to: '/agent-runs', label: 'AI 작업', icon: 'runs', match: '/agent-runs' },
 ] as const
 
 const authStore = useAuthStore()
@@ -25,6 +26,13 @@ const mobileNavPanel = ref<HTMLElement | null>(null)
 let bodyOverflowBeforeDrawer = ''
 
 const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
+const pageContext = computed(() => {
+  if (route.path.startsWith('/profile') || route.path === '/onboarding') return '나의 경험'
+  if (route.path.startsWith('/documents')) return '이력서와 자료'
+  if (route.path.startsWith('/jobs')) return '지원할 공고'
+  if (route.path.startsWith('/agent-runs')) return '준비 진행 상황'
+  return '오늘의 지원 준비'
+})
 const userInitial = computed(() => authStore.currentUser?.displayName.trim().charAt(0) || 'H')
 const AgentRunProgressDrawer = defineAsyncComponent(
   () => import('@/features/agent-runs/AgentRunProgressDrawer.vue'),
@@ -113,11 +121,10 @@ async function logout(): Promise<void> {
     <a class="sr-only-focusable skip-link" href="#app-content">본문으로 건너뛰기</a>
 
     <aside class="desktop-sidebar" aria-label="서비스 탐색">
-      <RouterLink class="sidebar-brand" to="/dashboard">
-        <span class="brand-mark" aria-hidden="true">H</span>
+      <RouterLink class="sidebar-brand" to="/dashboard" aria-label="Hiresemble 오늘의 준비">
+        <BrandMark inverse />
         <span>
-          <strong>Hiresemble</strong>
-          <small>Career workspace</small>
+          <small>나의 지원 준비</small>
         </span>
       </RouterLink>
 
@@ -170,10 +177,10 @@ async function logout(): Promise<void> {
             <AppIcon name="menu" />
           </button>
           <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 대시보드">
-            <span class="brand-mark brand-mark--small" aria-hidden="true">H</span>
+            <BrandMark compact :show-name="false" />
           </RouterLink>
           <div class="workspace-title">
-            <p>Workspace</p>
+            <p>{{ pageContext }}</p>
             <h1>{{ pageTitle }}</h1>
           </div>
         </div>
@@ -223,7 +230,7 @@ async function logout(): Promise<void> {
         >
           <div class="mobile-drawer__header">
             <div>
-              <p class="page-eyebrow">Workspace</p>
+              <p class="page-eyebrow">나의 지원 준비</p>
               <h2 id="mobile-navigation-title">Hiresemble 메뉴</h2>
             </div>
             <button
@@ -304,53 +311,28 @@ async function logout(): Promise<void> {
   flex: 0 0 var(--sidebar-width);
   flex-direction: column;
   overflow-y: auto;
-  border-right: 1px solid #294850;
-  background: #12323a;
-  color: #e8f1f3;
+  border-right: 1px solid #263254;
+  background: #11182d;
+  color: #edf1ff;
   padding: 1.25rem 1rem;
 }
 
 .sidebar-brand {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.125rem;
   border-radius: var(--radius-md);
   padding: 0.375rem;
   text-decoration: none;
 }
 
-.sidebar-brand strong {
-  display: block;
-  font-size: 1.0625rem;
-  letter-spacing: -0.02em;
-}
-
 .sidebar-brand small {
   display: block;
-  margin-top: 0.0625rem;
-  color: #9db4ba;
+  margin-left: 3.2rem;
+  color: #9eabd1;
   font-size: 0.6875rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.brand-mark {
-  display: inline-grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid #4e8993;
-  border-radius: var(--radius-md);
-  background: #0b6673;
-  color: white;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-}
-
-.brand-mark--small {
-  width: 2rem;
-  height: 2rem;
+  letter-spacing: 0.02em;
 }
 
 .sidebar-nav {
@@ -366,7 +348,7 @@ async function logout(): Promise<void> {
   align-items: center;
   gap: 0.75rem;
   border-radius: var(--radius-md);
-  color: #c6d5d9;
+  color: #bac4e3;
   padding: 0.625rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 620;
@@ -377,14 +359,14 @@ async function logout(): Promise<void> {
 }
 
 .sidebar-nav__link:hover {
-  background: #1c4149;
+  background: #1c2745;
   color: white;
 }
 
 .sidebar-nav__link--active {
-  background: #25515a;
+  background: #24335a;
   color: white;
-  box-shadow: inset 3px 0 #6bc1c8;
+  box-shadow: inset 3px 0 #5f80ff;
 }
 
 .sidebar-footer {
@@ -399,9 +381,9 @@ async function logout(): Promise<void> {
   grid-template-columns: 1fr auto;
   gap: 0.125rem 0.5rem;
   align-items: center;
-  border: 1px solid #365961;
+  border: 1px solid #354466;
   border-radius: var(--radius-md);
-  color: #d7e4e7;
+  color: #dbe2f8;
   padding: 0.75rem;
   font-size: 0.8125rem;
   text-decoration: none;
@@ -409,13 +391,13 @@ async function logout(): Promise<void> {
 
 .onboarding-link:hover,
 .onboarding-link[aria-current='page'] {
-  border-color: #4e8993;
-  background: #1c4149;
+  border-color: #617ad0;
+  background: #1c2745;
 }
 
 .onboarding-link__label {
   grid-column: 1 / -1;
-  color: #92aeb4;
+  color: #94a2ca;
   font-size: 0.6875rem;
 }
 
@@ -429,7 +411,7 @@ async function logout(): Promise<void> {
   min-width: 0;
   align-items: center;
   gap: 0.625rem;
-  border-top: 1px solid #365159;
+  border-top: 1px solid #34405f;
   padding: 1rem 0.375rem 0;
 }
 
@@ -453,7 +435,7 @@ async function logout(): Promise<void> {
 }
 
 .sidebar-user .user-avatar {
-  background: #d5eaec;
+  background: #dce4ff;
 }
 
 .sidebar-user__text {
@@ -469,13 +451,13 @@ async function logout(): Promise<void> {
 }
 
 .sidebar-user__text strong {
-  color: #f0f6f7;
+  color: #f3f5ff;
   font-size: 0.8125rem;
 }
 
 .sidebar-user__text small {
   margin-top: 0.125rem;
-  color: #9db4ba;
+  color: #9eabd1;
   font-size: 0.6875rem;
 }
 
@@ -516,7 +498,7 @@ async function logout(): Promise<void> {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .workspace-title h1 {
@@ -574,7 +556,7 @@ async function logout(): Promise<void> {
   width: 100%;
   border: 0;
   border-radius: 0;
-  background: rgb(15 32 39 / 58%);
+  background: rgb(9 14 32 / 64%);
   padding: 0;
 }
 
@@ -587,6 +569,7 @@ async function logout(): Promise<void> {
   overflow-y: auto;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
+  animation: mobile-drawer-enter 240ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .mobile-drawer__header {
@@ -630,6 +613,7 @@ async function logout(): Promise<void> {
 .mobile-nav-link--active {
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
+  box-shadow: inset 3px 0 var(--color-brand);
 }
 
 .mobile-nav-link--secondary {
@@ -721,6 +705,23 @@ async function logout(): Promise<void> {
 
   .workspace-content {
     padding-inline: 1rem;
+  }
+}
+
+@keyframes mobile-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer {
+    animation: none;
   }
 }
 </style>

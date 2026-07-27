@@ -7,6 +7,11 @@ import { useDocumentListQuery } from '@/features/documents/queries'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
+import {
+  metadataFieldsToRecord,
+  metadataToFields,
+  type EvidenceMetadataField,
+} from '@/features/profile/evidenceMetadata'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
@@ -49,7 +54,13 @@ const evidenceQuery = useQuery({
   enabled: computed(() => userId.value !== ''),
 })
 
-const editForm = reactive({ title: '', content: '', metadata: '{}', version: 0 })
+interface MetadataEntry extends EvidenceMetadataField {
+  id: number
+}
+
+let metadataEntryId = 0
+const editForm = reactive({ title: '', content: '', version: 0 })
+const metadataEntries = ref<MetadataEntry[]>([])
 const editingId = ref<string | null>(null)
 const fieldErrors = ref<Record<string, string>>({})
 const generalError = ref('')
@@ -86,9 +97,9 @@ function openEdit(evidence: EvidenceDto): void {
   Object.assign(editForm, {
     title: evidence.title,
     content: evidence.content,
-    metadata: JSON.stringify(evidence.metadata, null, 2),
     version: evidence.version,
   })
+  metadataEntries.value = metadataToEntries(evidence.metadata)
   fieldErrors.value = {}
   generalError.value = ''
   conflict.value = null
@@ -108,11 +119,11 @@ async function saveEdit(): Promise<void> {
   fieldErrors.value = {}
   const title = editForm.title.trim()
   const content = editForm.content.trim()
-  if (title.length < 1 || title.length > 250) fieldErrors.value.title = '제목은 1~250자여야 합니다.'
+  if (title.length < 1 || title.length > 250)
+    fieldErrors.value.title = '제목을 입력하고 250자 안으로 작성해 주세요.'
   if (content.length < 1 || content.length > 20000)
-    fieldErrors.value.content = '내용은 1~20,000자여야 합니다.'
-  const metadata = parseMetadata(editForm.metadata)
-  if (metadata === null) fieldErrors.value.metadata = '16KiB 이하의 JSON object를 입력해 주세요.'
+    fieldErrors.value.content = '내용을 입력하고 20,000자 안으로 작성해 주세요.'
+  const metadata = buildMetadata()
   if (Object.keys(fieldErrors.value).length > 0 || metadata === null) return
 
   const request: EvidenceUpdateRequest = { title, content, metadata, version: editForm.version }
@@ -120,14 +131,14 @@ async function saveEdit(): Promise<void> {
     await editMutation.mutateAsync({ id: editingId.value, request })
     await evidenceQuery.refetch()
     editingId.value = null
-    message.value = '직접 입력 근거를 저장했습니다.'
+    message.value = '경험 정보를 저장했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
     if (apiError.code === 'EVIDENCE_SOURCE_DELETED') {
       await evidenceQuery.refetch()
       editingId.value = null
-      generalError.value = '원본이 삭제된 근거는 읽기만 할 수 있습니다.'
+      generalError.value = '원본이 삭제된 경험 정보는 읽기만 할 수 있어요.'
       return
     }
     if (isVersionConflict(apiError)) {
@@ -135,7 +146,7 @@ async function saveEdit(): Promise<void> {
       const latest = refreshed.data?.items.find((item) => item.id === editingId.value)
       if (latest !== undefined) {
         conflict.value = { draft: { ...request }, latest }
-        generalError.value = '최신 근거와 내 입력을 비교해 다시 적용해 주세요.'
+        generalError.value = '최근 저장된 내용과 내 입력을 비교해 다시 적용해 주세요.'
         return
       }
     }
@@ -153,12 +164,13 @@ async function verify(
   try {
     await verificationMutation.mutateAsync({ evidence, nextStatus })
     await evidenceQuery.refetch()
-    message.value = nextStatus === 'VERIFIED' ? '근거를 승인했습니다.' : '근거를 거절했습니다.'
+    message.value =
+      nextStatus === 'VERIFIED' ? '경험 정보를 승인했어요.' : '경험 정보를 거절했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     await evidenceQuery.refetch()
     generalError.value = isVersionConflict(apiError)
-      ? '근거 상태가 변경되어 최신 목록을 불러왔습니다. 확인 후 다시 시도해 주세요.'
+      ? '검토 상태가 바뀌어 최신 목록을 불러왔어요. 확인한 뒤 다시 시도해 주세요.'
       : apiError.message
   }
 }
@@ -174,29 +186,36 @@ function reapplyConflict(value: Record<string, unknown>): void {
   if (latest === undefined) return
   editForm.title = typeof value.title === 'string' ? value.title : latest.title
   editForm.content = typeof value.content === 'string' ? value.content : latest.content
-  editForm.metadata = JSON.stringify(value.metadata ?? latest.metadata, null, 2)
+  const metadata =
+    typeof value.metadata === 'object' && value.metadata !== null && !Array.isArray(value.metadata)
+      ? (value.metadata as Record<string, EvidenceMetadataValue>)
+      : latest.metadata
+  metadataEntries.value = metadataToEntries(metadata)
   editForm.version = latest.version
   conflict.value = null
-  message.value = '선택한 내 입력을 최신값에 재적용했습니다. 확인 후 다시 저장해 주세요.'
+  message.value = '선택한 내 입력을 최신 내용에 다시 적용했어요. 확인한 뒤 저장해 주세요.'
 }
 
-function parseMetadata(value: string): Record<string, EvidenceMetadataValue> | null {
-  try {
-    if (new TextEncoder().encode(value).byteLength > 16 * 1024) return null
-    const parsed: unknown = JSON.parse(value)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
-    const entries = Object.entries(parsed)
-    if (
-      entries.some(
-        ([, item]) => item !== null && !['string', 'number', 'boolean'].includes(typeof item),
-      )
-    ) {
-      return null
-    }
-    return Object.fromEntries(entries) as Record<string, EvidenceMetadataValue>
-  } catch {
-    return null
-  }
+function metadataToEntries(metadata: Record<string, EvidenceMetadataValue>): MetadataEntry[] {
+  return metadataToFields(metadata).map((field) => ({
+    id: metadataEntryId++,
+    ...field,
+  }))
+}
+
+function addMetadataEntry(): void {
+  metadataEntries.value.push({ id: metadataEntryId++, key: '', type: 'text', value: '' })
+}
+
+function removeMetadataEntry(id: number): void {
+  metadataEntries.value = metadataEntries.value.filter((entry) => entry.id !== id)
+}
+
+function buildMetadata(): Record<string, EvidenceMetadataValue> | null {
+  const result = metadataFieldsToRecord(metadataEntries.value)
+  if (result.error) fieldErrors.value.metadata = result.error
+  else delete fieldErrors.value.metadata
+  return result.data
 }
 
 function statusLabel(value: EvidenceVerificationStatus): string {
@@ -245,12 +264,13 @@ function confidenceLabel(value: number | null): string {
     <ProfileTabs />
     <PageHeader
       heading-id="evidence-heading"
-      title="직접 입력 근거"
-      description="프로필과 문서에서 생성된 경력 근거를 검토하고 상태를 관리합니다."
-      eyebrow="Profile evidence"
+      title="경험 정보"
+      description="내가 입력했거나 자료에서 찾은 경험을 확인하고 다듬어 보세요."
+      eyebrow="나의 경험"
     />
     <p class="alert alert--info evidence-page__guidance">
-      직접 입력 근거와 문서에서 추출된 근거를 함께 검토합니다. 삭제된 원천은 읽기 전용입니다.
+      직접 입력한 내용과 자료에서 찾은 경험을 함께 확인할 수 있어요. 원본이 삭제된 항목은 이전
+      기록을 위해 읽기 전용으로 남겨요.
     </p>
 
     <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
@@ -296,7 +316,7 @@ function confidenceLabel(value: number | null): string {
       <button type="submit" class="button button--primary button--compact">필터 적용</button>
     </form>
     <p v-if="documents.isError.value" class="inline-error" role="alert">
-      출처 문서 목록을 불러오지 못했습니다.
+      출처 자료를 불러오지 못했어요.
     </p>
 
     <p v-if="message" class="alert alert--success evidence-page__message" role="status">
@@ -310,12 +330,12 @@ function confidenceLabel(value: number | null): string {
       v-if="editingId"
       class="evidence-editor section-surface"
       role="region"
-      aria-label="근거 편집"
+      aria-label="경험 정보 편집"
     >
       <div class="evidence-editor__header">
         <div>
-          <p class="section-kicker">Evidence editor</p>
-          <h3 class="section-title">직접 입력 근거 편집</h3>
+          <p class="section-kicker">내용 다듬기</p>
+          <h3 class="section-title">경험 정보 편집</h3>
         </div>
         <button type="button" class="button button--ghost button--compact" @click="closeEdit">
           닫기
@@ -329,7 +349,7 @@ function confidenceLabel(value: number | null): string {
         :fields="[
           { key: 'title', label: '제목' },
           { key: 'content', label: '내용' },
-          { key: 'metadata', label: 'Metadata' },
+          { key: 'metadata', label: '추가 정보' },
         ]"
         @cancel="cancelConflict"
         @reapply="reapplyConflict"
@@ -363,26 +383,71 @@ function confidenceLabel(value: number | null): string {
             fieldErrors.content
           }}</span>
         </label>
-        <label class="field">
-          <span class="field__label">Metadata JSON</span>
-          <textarea
-            id="evidence-metadata"
-            v-model="editForm.metadata"
-            class="control evidence-editor__metadata"
-            :aria-invalid="Boolean(fieldErrors.metadata)"
-            :aria-describedby="fieldErrors.metadata ? 'evidence-metadata-error' : undefined"
-          />
+        <fieldset
+          class="field evidence-editor__metadata"
+          :aria-invalid="Boolean(fieldErrors.metadata)"
+          :aria-describedby="fieldErrors.metadata ? 'evidence-metadata-error' : 'metadata-help'"
+        >
+          <legend class="field__label">추가 정보</legend>
+          <p id="metadata-help" class="field__help">
+            역할이나 성과처럼 따로 남겨 둘 내용을 항목별로 추가할 수 있어요.
+          </p>
+          <div v-for="(entry, index) in metadataEntries" :key="entry.id" class="metadata-entry">
+            <label class="field">
+              <span class="sr-only">추가 정보 {{ index + 1 }} 이름</span>
+              <input v-model="entry.key" class="control" placeholder="예: 담당 역할" />
+            </label>
+            <label class="field">
+              <span class="sr-only">추가 정보 {{ index + 1 }} 형식</span>
+              <select v-model="entry.type" class="control">
+                <option value="text">글자</option>
+                <option value="number">숫자</option>
+                <option value="boolean">예·아니요</option>
+                <option value="empty">내용 없음</option>
+              </select>
+            </label>
+            <label v-if="entry.type !== 'empty'" class="field">
+              <span class="sr-only">추가 정보 {{ index + 1 }} 내용</span>
+              <select v-if="entry.type === 'boolean'" v-model="entry.value" class="control">
+                <option value="true">예</option>
+                <option value="false">아니요</option>
+              </select>
+              <input
+                v-else
+                v-model="entry.value"
+                class="control"
+                :inputmode="entry.type === 'number' ? 'decimal' : 'text'"
+                placeholder="내용 입력"
+              />
+            </label>
+            <span v-else class="metadata-entry__empty">내용 없음</span>
+            <button
+              type="button"
+              class="button button--ghost button--compact"
+              :aria-label="`추가 정보 ${index + 1} 삭제`"
+              @click="removeMetadataEntry(entry.id)"
+            >
+              삭제
+            </button>
+          </div>
+          <button
+            type="button"
+            class="button button--secondary button--compact metadata-entry__add"
+            @click="addMetadataEntry"
+          >
+            추가 정보 넣기
+          </button>
           <span v-if="fieldErrors.metadata" id="evidence-metadata-error" class="inline-error">{{
             fieldErrors.metadata
           }}</span>
-        </label>
+        </fieldset>
         <div class="form-actions">
           <button
             type="submit"
             class="button button--primary"
             :disabled="editMutation.isPending.value"
           >
-            {{ editMutation.isPending.value ? '저장 중…' : '근거 저장' }}
+            {{ editMutation.isPending.value ? '저장 중…' : '경험 정보 저장' }}
           </button>
           <button type="button" class="button button--secondary" @click="closeEdit">취소</button>
         </div>
@@ -393,15 +458,15 @@ function confidenceLabel(value: number | null): string {
       v-if="evidenceQuery.isPending.value"
       class="evidence-page__state"
       kind="loading"
-      title="근거를 불러오는 중…"
-      description="저장된 출처와 검토 상태를 확인하고 있습니다."
+      title="경험 정보를 불러오는 중…"
+      description="저장된 출처와 검토 상태를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="evidenceQuery.isError.value"
       class="evidence-page__state"
       kind="error"
-      title="근거를 불러오지 못했습니다."
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      title="경험 정보를 불러오지 못했어요."
+      description="잠시 후 다시 시도해 주세요."
     >
       <template #actions>
         <button type="button" class="button button--secondary" @click="evidenceQuery.refetch()">
@@ -413,8 +478,8 @@ function confidenceLabel(value: number | null): string {
       v-else-if="evidenceQuery.data.value?.items.length === 0"
       class="evidence-page__state"
       kind="empty"
-      title="조건에 맞는 직접 입력 근거가 없습니다."
-      description="필터를 조정하거나 프로필·문서에서 근거를 추가해 주세요."
+      title="조건에 맞는 경험 정보가 없어요."
+      description="필터를 바꾸거나 프로필과 자료에 경험을 추가해 주세요."
     />
     <ul v-else class="evidence-list data-list">
       <li
@@ -481,7 +546,7 @@ function confidenceLabel(value: number | null): string {
           v-if="evidence.verificationStatus === 'SOURCE_DELETED'"
           class="alert alert--warning evidence-card__readonly"
         >
-          원본이 삭제되어 읽기 전용입니다. 수정·승인·거절할 수 없습니다.
+          원본이 삭제되어 읽기 전용이에요. 수정·승인·거절할 수 없어요.
         </p>
       </li>
     </ul>
@@ -490,7 +555,7 @@ function confidenceLabel(value: number | null): string {
       v-if="evidenceQuery.data.value && evidenceQuery.data.value.totalPages > 0"
       :page="page"
       :total-pages="evidenceQuery.data.value.totalPages"
-      label="근거 페이지"
+      label="경험 정보 페이지"
       @change="page = $event"
     />
   </section>
@@ -546,9 +611,33 @@ function confidenceLabel(value: number | null): string {
 }
 
 .evidence-editor__metadata {
-  min-height: 7rem;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+
+.metadata-entry {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(7rem, 0.55fr) minmax(9rem, 1.4fr) auto;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  align-items: end;
+}
+
+.metadata-entry__empty {
+  align-self: center;
+  color: var(--color-muted);
   font-size: var(--font-size-sm);
+}
+
+.metadata-entry__add {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .metadata-entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .evidence-card {

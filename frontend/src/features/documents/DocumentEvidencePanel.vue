@@ -64,13 +64,13 @@ async function save(item: EvidenceDto): Promise<void> {
       request: { title, content, metadata: item.metadata, version: edit.version },
     })
     editingId.value = ''
-    message.value = '근거를 수정했습니다.'
+    message.value = '경력 정보를 수정했어요.'
     await evidence.refetch()
   } catch (error) {
     const apiError = normalizeApiError(error)
     actionError.value =
       apiError.code === 'EVIDENCE_SOURCE_DELETED'
-        ? '원본이 삭제된 근거는 읽기만 할 수 있습니다.'
+        ? '원본이 삭제된 경력 정보는 읽기만 할 수 있어요.'
         : apiError.message
     await evidence.refetch()
   }
@@ -83,7 +83,7 @@ async function verify(
   if (item.verificationStatus === 'SOURCE_DELETED') return
   try {
     await verifyMutation.mutateAsync({ item, status })
-    message.value = status === 'VERIFIED' ? '근거를 승인했습니다.' : '근거를 거절했습니다.'
+    message.value = status === 'VERIFIED' ? '경력 정보를 승인했어요.' : '경력 정보를 거절했어요.'
     await evidence.refetch()
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -116,10 +116,10 @@ function statusTone(
 
 <template>
   <section class="document-evidence section-surface" aria-labelledby="document-evidence-heading">
-    <p class="section-kicker">Evidence</p>
-    <h3 id="document-evidence-heading" class="section-title">추출 근거</h3>
+    <p class="section-kicker">정리한 내용</p>
+    <h3 id="document-evidence-heading" class="section-title">경력 정보</h3>
     <p class="document-evidence__description">
-      추출 후보는 검토 대기 상태이며 자동으로 승인되지 않습니다.
+      자료에서 찾은 내용은 확인하기 전까지 자동으로 승인되지 않아요.
     </p>
     <p v-if="message" class="alert alert--success document-evidence__message" role="status">
       {{ message }}
@@ -131,20 +131,20 @@ function statusTone(
       v-if="evidence.isPending.value"
       class="document-evidence__state"
       kind="loading"
-      title="근거를 불러오는 중…"
+      title="경력 정보를 불러오는 중…"
     />
     <StatePanel
       v-else-if="evidence.isError.value"
       class="document-evidence__state"
       kind="error"
-      title="문서 근거를 불러오지 못했습니다."
+      title="경력 정보를 불러오지 못했어요."
     />
     <StatePanel
       v-else-if="evidence.data.value?.items.length === 0"
       class="document-evidence__state"
       kind="empty"
-      title="추출된 근거가 없습니다."
-      description="근거 추출이 완료되면 검토할 항목이 이곳에 표시됩니다."
+      title="정리된 경력 정보가 없어요."
+      description="경력 정보 정리가 끝나면 확인할 내용이 이곳에 표시돼요."
     />
     <ul v-else class="document-evidence__list data-list">
       <li v-for="item in evidence.data.value?.items" :key="item.id" class="document-evidence-card">
@@ -218,7 +218,7 @@ function statusTone(
             v-if="item.verificationStatus === 'SOURCE_DELETED'"
             class="alert alert--warning document-evidence-card__readonly"
           >
-            원본이 삭제된 근거는 읽기 전용입니다. 수정·승인·거절할 수 없습니다.
+            원본이 삭제되어 읽기 전용이에요. 수정·승인·거절할 수 없어요.
           </p>
         </template>
       </li>

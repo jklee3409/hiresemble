@@ -2,19 +2,19 @@
 import { RouterLink } from 'vue-router'
 
 const tabs = [
-  ['/profile/basic', '기본 프로필'],
+  ['/profile/basic', '기본 정보'],
   ['/profile/education', '학력'],
   ['/profile/certifications', '자격증'],
   ['/profile/languages', '어학'],
   ['/profile/awards', '수상'],
   ['/profile/careers', '경력'],
-  ['/profile/evidence', '직접 입력 근거'],
+  ['/profile/evidence', '경험 정보'],
 ] as const
 </script>
 
 <template>
   <div class="profile-navigation">
-    <p class="profile-navigation__label">내 프로필</p>
+    <p class="profile-navigation__label">내 경험</p>
     <nav class="profile-tabs" aria-label="프로필 메뉴">
       <RouterLink v-for="[to, label] in tabs" :key="to" :to="to" class="profile-tab">
         {{ label }}

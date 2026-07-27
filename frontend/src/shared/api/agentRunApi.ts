@@ -84,6 +84,6 @@ function parseServerResponse<T>(schema: ZodType<T>, value: unknown): T {
   throw new ApiClientError({
     status: 0,
     code: 'INVALID_SERVER_RESPONSE',
-    message: 'Agent Run 응답 형식이 올바르지 않습니다.',
+    message: 'AI 작업 정보를 불러오는 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.',
   })
 }

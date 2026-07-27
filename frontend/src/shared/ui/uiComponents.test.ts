@@ -1,11 +1,21 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
+import BrandMark from './BrandMark.vue'
 import PaginationNav from './PaginationNav.vue'
 import StatePanel from './StatePanel.vue'
 import StatusBadge from './StatusBadge.vue'
 
 describe('shared UI state components', () => {
+  it('renders the shared H network mark without an external image', () => {
+    const wrapper = mount(BrandMark)
+
+    expect(wrapper.get('[data-testid="brand-mark"]').element.tagName).toBe('SPAN')
+    expect(wrapper.get('svg').attributes('viewBox')).toBe('0 0 44 44')
+    expect(wrapper.text()).toContain('Hiresemble')
+    expect(wrapper.find('img').exists()).toBe(false)
+  })
+
   it('renders a semantic status as text instead of relying on color alone', () => {
     const wrapper = mount(StatusBadge, {
       props: { prefix: '근거', label: '추출 실패', tone: 'danger' },

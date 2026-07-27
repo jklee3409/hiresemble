@@ -66,7 +66,7 @@ describe('P2 profile pages', () => {
 
     expect(wrapper.text()).toContain('20% 완료')
     expect(wrapper.text()).toContain('보완 권장')
-    expect(wrapper.text()).toContain('대표 학력')
+    expect(wrapper.text()).toContain('먼저 보여 줄 학력')
     await wrapper.get('#profile-legalName').setValue('Updated User')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -80,7 +80,7 @@ describe('P2 profile pages', () => {
       expectedGraduationDate: null,
       version: 1,
     })
-    expect(wrapper.text()).toContain('프로필을 저장했습니다.')
+    expect(wrapper.text()).toContain('프로필을 저장했어요.')
     expect(wrapper.text()).toContain('100% 완료')
   })
 
@@ -103,7 +103,7 @@ describe('P2 profile pages', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('다른 곳에서 최신 내용이 저장되었습니다')
+    expect(wrapper.text()).toContain('다른 곳에서 최신 내용이 저장됐어요')
     expect(wrapper.text()).toContain('My unsaved text')
     expect(wrapper.text()).toContain('Server latest')
     await wrapper.get('button[type="button"]').trigger('click')
@@ -266,17 +266,17 @@ describe('P2 profile pages', () => {
     )
     const wrapper = await mountPage(ProfileEvidencePage)
 
-    expect(wrapper.text()).toContain('직접 입력 근거와 문서에서 추출된 근거')
+    expect(wrapper.text()).toContain('직접 입력한 내용과 자료에서 찾은 경험')
     await wrapper.get('#evidence-document-filter').setValue('00000000-0000-4000-8000-000000000101')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.listEvidence).toHaveBeenLastCalledWith(
       expect.objectContaining({ documentId: '00000000-0000-4000-8000-000000000101' }),
     )
-    expect(wrapper.text()).toContain('원본이 삭제되어 읽기 전용입니다.')
+    expect(wrapper.text()).toContain('원본이 삭제되어 읽기 전용이에요.')
     const deletedCard = wrapper.get('[data-testid="evidence-card-evidence-deleted"]')
     expect(deletedCard.text()).toContain('원본 삭제됨')
-    expect(deletedCard.text()).toContain('수정·승인·거절할 수 없습니다.')
+    expect(deletedCard.text()).toContain('수정·승인·거절할 수 없어요.')
     expect(
       deletedCard
         .findAll('button')

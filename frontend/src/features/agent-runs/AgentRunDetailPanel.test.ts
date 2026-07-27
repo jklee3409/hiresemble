@@ -26,11 +26,17 @@ describe('AgentRunDetailPanel', () => {
       global,
     })
 
-    expect(wrapper.text()).toContain('공고 분석')
+    expect(wrapper.text()).toContain('공고 살펴보기')
     expect(wrapper.text()).toContain('균형형')
-    expect(wrapper.text()).toContain('저비용 등급')
-    expect(wrapper.text()).toContain('billable estimate')
-    expect(wrapper.text()).toContain('scope-a')
+    expect(wrapper.text()).toContain('빠른 처리')
+    expect(wrapper.text()).toContain('예상 사용 비용')
+    expect(wrapper.text()).toContain('실제 결제 금액과 다를 수 있어요')
+    expect(wrapper.text()).not.toContain('billable estimate')
+    expect(wrapper.text()).toContain('완료된 항목 1개')
+    expect(wrapper.text()).toContain('완료하지 못한 항목 1개')
+    expect(wrapper.text()).not.toContain('scope-a')
+    expect(wrapper.text()).not.toContain('scope-b')
+    expect(wrapper.text()).not.toContain('LOAD_FIXTURE')
     expect(wrapper.text()).not.toContain('provider-model-private')
     expect(wrapper.text()).not.toContain('prompt')
     expect(wrapper.text()).not.toContain('claimToken')
@@ -94,8 +100,8 @@ describe('AgentRunDetailPanel', () => {
       props: { run: agentRunDetail({ status: 'RUNNING' }), connectionState: 'polling' },
       global,
     })
-    expect(wrapper.get('h2').text()).toBe('실행 중')
-    expect(wrapper.text()).toContain('5초마다 서버 상태를 확인')
+    expect(wrapper.get('h2').text()).toBe('진행 중')
+    expect(wrapper.text()).toContain('진행 상황을 다시 확인하는 중이에요')
     expect(wrapper.get('h2').text()).not.toBe('실패')
   })
 })

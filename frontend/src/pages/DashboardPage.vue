@@ -13,30 +13,34 @@ const quickActions = [
   {
     to: '/profile/basic',
     icon: 'profile',
-    title: '프로필 관리',
-    description: '기본 정보와 학력·경력 등 지원에 사용할 정보를 정리합니다.',
-    action: '프로필 열기',
+    step: '01',
+    title: '내 경험 정리하기',
+    description: '기본 정보와 학력, 경력을 한 번 정리해 여러 지원에 활용해요.',
+    action: '내 프로필 열기',
   },
   {
     to: '/documents',
     icon: 'documents',
-    title: '문서 업로드',
-    description: '이력서나 포트폴리오를 등록하고 처리 상태와 추출 근거를 확인합니다.',
-    action: '문서 관리',
+    step: '02',
+    title: '이력서·자료 모으기',
+    description: '이력서나 포트폴리오를 등록하고 경력 정보가 정리되는 과정을 확인해요.',
+    action: '자료 등록하기',
   },
   {
     to: '/jobs/new',
     icon: 'jobs',
-    title: '공고 등록',
-    description: '채용 공고 URL을 등록하거나 필요한 경우 본문을 직접 입력합니다.',
-    action: '공고 등록',
+    step: '03',
+    title: '관심 공고 담기',
+    description: '지원할 공고 링크를 붙여 넣고 필요한 내용을 한곳에서 살펴봐요.',
+    action: '공고 등록하기',
   },
   {
     to: '/agent-runs',
     icon: 'runs',
-    title: '작업 기록 확인',
-    description: '비동기 작업의 진행률, 필요한 사용자 조치와 완료 결과를 확인합니다.',
-    action: '기록 보기',
+    step: '04',
+    title: 'AI 작업 확인하기',
+    description: '자료와 공고를 정리하는 작업이 어디까지 진행됐는지 확인해요.',
+    action: 'AI 작업 보기',
   },
 ] as const
 </script>
@@ -46,50 +50,58 @@ const quickActions = [
     <div class="dashboard-welcome">
       <PageHeader
         heading-id="dashboard-heading"
-        :title="`${displayName}님의 지원 준비 공간`"
-        description="현재 사용할 수 있는 작업부터 시작하세요. 등록한 정보와 처리 상태는 각 업무 화면에서 확인할 수 있습니다."
-        eyebrow="Workspace"
+        title="오늘의 지원 준비를 이어가세요."
+        :description="`${displayName}님, 지금 필요한 단계부터 가볍게 시작해 보세요.`"
+        eyebrow="나의 지원 준비"
       />
-      <div class="dashboard-welcome__line" aria-hidden="true" />
+      <div class="dashboard-signal" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
     </div>
 
     <section class="dashboard-actions" aria-labelledby="quick-actions-heading">
       <header class="dashboard-actions__header">
         <div>
-          <h3 id="quick-actions-heading" class="section-title">빠른 작업</h3>
-          <p class="section-description">준비하려는 항목을 선택해 바로 이동합니다.</p>
+          <p class="section-kicker">4가지 준비</p>
+          <h3 id="quick-actions-heading" class="section-title">다음 준비를 골라 보세요.</h3>
+          <p class="section-description">순서대로 진행하지 않아도 괜찮아요.</p>
         </div>
       </header>
-      <div class="dashboard-action-list">
+      <ol class="dashboard-action-list">
         <RouterLink
           v-for="action in quickActions"
           :key="action.to"
-          class="dashboard-action"
+          v-slot="{ href, navigate }"
+          custom
           :to="action.to"
         >
-          <span class="dashboard-action__icon">
-            <AppIcon :name="action.icon" />
-          </span>
-          <span class="dashboard-action__body">
-            <strong>{{ action.title }}</strong>
-            <small>{{ action.description }}</small>
-          </span>
-          <span class="dashboard-action__cta">
-            {{ action.action }}
-            <AppIcon name="arrow-right" />
-          </span>
+          <li class="dashboard-action-item">
+            <a class="dashboard-action" :href="href" @click="navigate">
+              <span class="dashboard-action__step">{{ action.step }}</span>
+              <span class="dashboard-action__icon">
+                <AppIcon :name="action.icon" />
+              </span>
+              <span class="dashboard-action__body">
+                <strong>{{ action.title }}</strong>
+                <small>{{ action.description }}</small>
+              </span>
+              <span class="dashboard-action__cta">
+                {{ action.action }}
+                <AppIcon name="arrow-right" />
+              </span>
+            </a>
+          </li>
         </RouterLink>
-      </div>
+      </ol>
     </section>
 
     <aside class="dashboard-note" aria-label="작업 공간 안내">
       <AppIcon name="check" />
       <div>
-        <strong>사용자 데이터가 준비의 중심입니다.</strong>
-        <p>
-          등록한 프로필, 문서와 공고를 기준으로 작업이 진행됩니다. 아직 데이터가 없어도 필요한
-          항목부터 차례로 시작할 수 있습니다.
-        </p>
+        <strong>등록한 경험이 모든 준비의 출발점이에요.</strong>
+        <p>아직 자료가 없어도 괜찮아요. 지금 가지고 있는 정보부터 하나씩 채워 나갈 수 있어요.</p>
       </div>
     </aside>
   </section>
@@ -104,67 +116,124 @@ const quickActions = [
 .dashboard-welcome {
   position: relative;
   overflow: hidden;
-  border: 1px solid #bfd2d7;
+  min-height: 15rem;
+  border: 1px solid #b9c8f2;
   border-radius: var(--radius-lg);
-  background: #edf5f5;
+  background: #eef2ff;
   padding: clamp(1.5rem, 4vw, 2.5rem);
 }
 
-.dashboard-welcome__line {
+.dashboard-welcome :deep(.page-title) {
+  max-width: 38rem;
+  font-size: clamp(2rem, 4vw, 3.75rem);
+  font-weight: 820;
+  line-height: 1.1;
+  letter-spacing: -0.055em;
+}
+
+.dashboard-signal {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 0.25rem;
+  right: clamp(1.5rem, 5vw, 4rem);
+  bottom: 2rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.dashboard-signal span {
+  width: 0.55rem;
+  border-radius: 999px;
   background: var(--color-brand);
 }
 
+.dashboard-signal span:nth-child(1) {
+  height: 2rem;
+}
+
+.dashboard-signal span:nth-child(2) {
+  height: 3.5rem;
+  background: var(--color-cyan);
+}
+
+.dashboard-signal span:nth-child(3) {
+  height: 5rem;
+  background: var(--color-accent);
+}
+
 .dashboard-actions {
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.32fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  border-top: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-border-strong);
+  padding-block: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .dashboard-actions__header {
-  border-bottom: 1px solid var(--color-border);
-  padding: 1.125rem 1.25rem;
+  padding: 0.5rem 0;
 }
 
 .dashboard-action-list {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-action-item {
+  position: relative;
+}
+
+.dashboard-action-item:not(:last-child)::before {
+  position: absolute;
+  top: 3.25rem;
+  bottom: -1rem;
+  left: 1rem;
+  width: 1px;
+  background: var(--color-brand-border);
+  content: '';
 }
 
 .dashboard-action {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.75rem 1rem;
-  align-items: start;
+  grid-template-columns: 2rem 2.75rem minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
   color: var(--color-ink);
-  padding: 1.25rem;
+  padding: 1rem 0;
   text-decoration: none;
-}
-
-.dashboard-action:nth-child(even) {
-  border-left: 1px solid var(--color-border);
-}
-
-.dashboard-action:nth-child(n + 3) {
-  border-top: 1px solid var(--color-border);
+  transition:
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .dashboard-action:hover {
-  background: var(--color-surface-subtle);
+  color: var(--color-brand);
+  transform: translateX(0.25rem);
+}
+
+.dashboard-action__step {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 50%;
+  background: var(--color-canvas);
+  color: var(--color-brand);
+  font-size: 0.6875rem;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-action__icon {
   display: inline-grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  grid-row: 1 / 3;
+  width: 2.75rem;
+  height: 2.75rem;
   place-items: center;
   border-radius: var(--radius-md);
   background: var(--color-brand-soft);
@@ -181,8 +250,8 @@ const quickActions = [
 }
 
 .dashboard-action__body strong {
-  font-size: 0.9375rem;
-  font-weight: 710;
+  font-size: 1rem;
+  font-weight: 740;
 }
 
 .dashboard-action__body small {
@@ -199,6 +268,7 @@ const quickActions = [
   color: var(--color-brand);
   font-size: 0.75rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .dashboard-action__cta .icon {
@@ -233,19 +303,32 @@ const quickActions = [
 }
 
 @media (max-width: 699px) {
-  .dashboard-action-list {
-    grid-template-columns: minmax(0, 1fr);
+  .dashboard-welcome {
+    min-height: 13rem;
   }
 
-  .dashboard-action,
-  .dashboard-action:nth-child(even),
-  .dashboard-action:nth-child(n + 3) {
-    border-top: 1px solid var(--color-border);
-    border-left: 0;
+  .dashboard-signal {
+    right: 1.25rem;
+    bottom: 1.25rem;
+    opacity: 0.55;
   }
 
-  .dashboard-action:first-child {
-    border-top: 0;
+  .dashboard-actions {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .dashboard-action {
+    grid-template-columns: 2rem 2.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .dashboard-action__cta {
+    grid-column: 3;
+  }
+
+  .dashboard-action-item:not(:last-child)::before {
+    bottom: -1.25rem;
   }
 }
 </style>

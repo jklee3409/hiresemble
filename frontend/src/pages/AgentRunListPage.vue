@@ -21,6 +21,7 @@ import {
   WORKFLOW_LABELS,
   formatCost,
   formatInstant,
+  formatRunProgressLabel,
 } from '@/features/agent-runs/presentation'
 import { useAgentRunListQuery } from '@/features/agent-runs/queries'
 import PageHeader from '@/shared/ui/PageHeader.vue'
@@ -114,14 +115,14 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
   <section class="run-list-page app-page" aria-labelledby="run-list-heading">
     <PageHeader
       heading-id="run-list-heading"
-      title="Agent Run 작업 기록"
-      description="문서 처리와 공고 정보 추출처럼 백그라운드에서 진행되는 작업의 안전한 상태를 확인합니다."
-      eyebrow="Async operations"
+      title="AI 작업"
+      description="이력서와 공고를 정리하는 작업의 진행 상황을 확인하세요."
+      eyebrow="준비 진행 상황"
     />
 
     <form class="run-filters filter-toolbar" @submit.prevent>
       <fieldset class="run-filter-group run-filter-group--workflow">
-        <legend>작업 유형</legend>
+        <legend>작업 종류</legend>
         <div class="run-filter-options">
           <label
             v-for="workflowType in WORKFLOW_TYPES"
@@ -177,22 +178,22 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       v-if="runs.isLoading.value"
       class="run-list-page__state"
       kind="loading"
-      title="작업 기록을 불러오는 중…"
-      description="접수된 작업과 최신 진행 상태를 확인하고 있습니다."
+      title="AI 작업을 불러오는 중…"
+      description="시작한 작업과 최신 진행 상황을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="runs.isError.value"
       class="run-list-page__state"
       kind="error"
-      title="작업 기록을 불러오지 못했습니다."
+      title="AI 작업을 불러오지 못했어요."
       :description="errorMessage"
     />
     <StatePanel
       v-else-if="runs.data.value?.items.length === 0"
       class="run-list-page__state"
       kind="empty"
-      title="조건에 맞는 작업 기록이 없습니다."
-      description="필터를 조정하거나 문서·공고 작업을 시작하면 이곳에 진행 기록이 표시됩니다."
+      title="조건에 맞는 AI 작업이 없어요."
+      description="필터를 바꾸거나 자료와 공고를 등록하면 진행 상황이 이곳에 표시돼요."
     />
     <div v-else class="run-list data-list">
       <article v-for="run in runs.data.value?.items" :key="run.id" class="run-row data-card">
@@ -202,7 +203,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
               <h3>{{ WORKFLOW_LABELS[run.workflowType] }}</h3>
               <StatusBadge :label="STATUS_LABELS[run.status]" :tone="statusTone(run.status)" />
             </div>
-            <p>{{ run.currentStep ?? '단계 준비 중' }}</p>
+            <p>{{ formatRunProgressLabel(run.status) }}</p>
           </div>
           <RouterLink
             class="button button--secondary button--compact"
@@ -227,7 +228,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
             <dd>{{ formatInstant(run.updatedAt) }}</dd>
           </div>
           <div>
-            <dt>비용 추정</dt>
+            <dt>예상 사용 비용</dt>
             <dd>{{ formatCost(run.actualCostUsd) }}</dd>
           </div>
           <div>
@@ -242,7 +243,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       v-if="runs.data.value && runs.data.value.totalPages > 0"
       :page="filters.page"
       :total-pages="runs.data.value.totalPages"
-      label="작업 기록 페이지"
+      label="AI 작업 페이지"
       @change="changePage"
     />
   </section>

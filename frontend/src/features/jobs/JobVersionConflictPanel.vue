@@ -41,8 +41,10 @@ function reapply(): void {
     <header class="conflict-panel__header">
       <AppIcon name="alert" />
       <div>
-        <h3 id="job-version-conflict-title">다른 곳에서 공고가 변경되었습니다</h3>
-        <p>자동으로 덮어쓰지 않습니다. 내 값을 최신 서버 버전에 재적용할 항목을 선택하세요.</p>
+        <h3 id="job-version-conflict-title">다른 곳에서 공고가 변경됐어요</h3>
+        <p>
+          내 입력을 자동으로 덮어쓰지 않아요. 최근 저장된 내용에 다시 적용할 항목을 골라 주세요.
+        </p>
       </div>
     </header>
     <ul class="conflict-list">
@@ -61,7 +63,7 @@ function reapply(): void {
           <p>{{ display(valueAt(draft, field.key)) }}</p>
         </div>
         <div class="conflict-value">
-          <span>최신 서버 값</span>
+          <span>최근 저장된 값</span>
           <p>{{ display(valueAt(latest, field.key)) }}</p>
         </div>
       </li>

@@ -48,7 +48,7 @@ async function submit(): Promise<void> {
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
     actionError.value =
       apiError.code === 'DUPLICATE_JOB_URL'
-        ? '이미 등록한 공고 URL입니다. 공고 목록에서 기존 항목을 확인해 주세요.'
+        ? '이미 등록한 공고 링크예요. 관심 공고에서 기존 항목을 확인해 주세요.'
         : apiError.message
   } finally {
     submitting = false
@@ -81,9 +81,9 @@ function emptyForm(): JobCreateForm {
     </RouterLink>
     <PageHeader
       heading-id="job-new-heading"
-      title="채용 공고 등록"
-      description="공고 URL을 기준으로 등록합니다. 본문 직접 입력은 URL에서 내용을 가져올 수 없을 때 사용할 수 있는 대체 경로입니다."
-      eyebrow="New job"
+      title="공고 등록"
+      description="공고 링크를 붙여 넣어 보세요. 내용을 불러오지 못하면 직접 입력할 수 있어요."
+      eyebrow="새 관심 공고"
     />
 
     <form id="job-create-form" class="job-create-form" novalidate @submit.prevent="submit">
@@ -94,12 +94,12 @@ function emptyForm(): JobCreateForm {
         <div class="job-create-section__heading">
           <span class="job-create-section__index" aria-hidden="true">1</span>
           <div>
-            <h3 id="job-url-title" class="section-title">공고 URL</h3>
-            <p>URL은 필수이며, 본문이 없으면 URL 추출 작업이 접수됩니다.</p>
+            <h3 id="job-url-title" class="section-title">공고 링크</h3>
+            <p>지원하려는 공고의 링크를 먼저 입력해 주세요.</p>
           </div>
         </div>
         <label class="field">
-          <span class="field__label">공고 URL <span aria-hidden="true">*</span></span>
+          <span class="field__label">공고 링크 <span aria-hidden="true">*</span></span>
           <input
             id="job-source-url"
             v-model="form.sourceUrl"
@@ -111,7 +111,7 @@ function emptyForm(): JobCreateForm {
             aria-describedby="job-source-url-help job-source-url-error"
           />
           <span id="job-source-url-help" class="field__help"
-            >HTTP 또는 HTTPS 주소를 입력하세요.</span
+            >브라우저 주소창에서 공고 링크를 복사해 붙여 넣어 주세요.</span
           >
           <span
             v-if="fieldErrors.sourceUrl"
@@ -129,7 +129,7 @@ function emptyForm(): JobCreateForm {
           <span class="job-create-section__index" aria-hidden="true">2</span>
           <div>
             <h3 id="job-detail-title" class="section-title">기본 정보</h3>
-            <p>이미 알고 있는 정보만 입력해도 됩니다.</p>
+            <p>지금 알고 있는 정보만 입력해도 괜찮아요.</p>
           </div>
         </div>
         <div class="job-create-grid">
@@ -180,7 +180,7 @@ function emptyForm(): JobCreateForm {
           <span class="job-create-section__index" aria-hidden="true">3</span>
           <div>
             <h3 id="job-manual-title" class="section-title">본문 직접 입력</h3>
-            <p>직접 입력하면 URL 추출 작업을 만들지 않고 바로 사용할 수 있습니다.</p>
+            <p>링크에서 내용을 불러오지 못했거나 이미 본문이 있다면 직접 입력해 주세요.</p>
           </div>
         </div>
         <label class="field">
@@ -208,7 +208,7 @@ function emptyForm(): JobCreateForm {
           class="button button--primary"
           :disabled="createMutation.isPending.value || submitting"
         >
-          {{ createMutation.isPending.value || submitting ? '등록 접수 중…' : '공고 등록' }}
+          {{ createMutation.isPending.value || submitting ? '등록하는 중…' : '공고 등록하기' }}
         </button>
         <button
           type="button"
@@ -219,10 +219,6 @@ function emptyForm(): JobCreateForm {
           입력 초기화
         </button>
       </div>
-      <p class="job-create-form__idempotency">
-        요청이 실패해 다시 시도할 때는 같은 멱등성 키를 유지하며, 성공 또는 입력 초기화 때만 새
-        요청으로 전환합니다.
-      </p>
     </form>
   </section>
 </template>
@@ -288,12 +284,6 @@ function emptyForm(): JobCreateForm {
   flex-wrap: wrap;
   gap: var(--space-3);
   padding-top: var(--space-2);
-}
-
-.job-create-form__idempotency {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  line-height: 1.6;
 }
 
 @media (max-width: 40rem) {

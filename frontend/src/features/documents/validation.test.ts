@@ -7,7 +7,7 @@ describe('document client validation', () => {
     expect(
       validateUpload({ file: new File([], 'empty.txt'), documentType: 'RESUME', displayName: '' })
         .file,
-    ).toContain('빈')
+    ).toBe('내용이 없는 파일은 올릴 수 없어요.')
     expect(
       validateUpload({
         file: new File(['x'], 'payload.svg'),

@@ -130,18 +130,18 @@ describe('authentication route policy', () => {
       },
     })
 
-    expect(wrapper.get('h2').text()).toContain('지원 준비 공간')
-    expect(wrapper.text()).toContain('프로필 관리')
-    expect(wrapper.text()).toContain('문서 업로드')
+    expect(wrapper.get('h2').text()).toContain('오늘의 지원 준비를 이어가세요')
+    expect(wrapper.text()).toContain('내 경험 정리하기')
+    expect(wrapper.text()).toContain('이력서·자료 모으기')
     expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
-    expect(wrapper.text()).toContain('지원 준비에 필요한 기본 정보를 네 단계로 정리합니다.')
+    expect(wrapper.text()).toContain('나에게 맞게 시작해 볼까요?')
 
     await router.push('/missing-page')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
-    expect(wrapper.text()).toContain('페이지를 찾을 수 없습니다')
+    expect(wrapper.text()).toContain('페이지를 찾을 수 없어요')
     expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('대시보드로 이동')
   })
 

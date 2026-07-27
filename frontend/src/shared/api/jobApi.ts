@@ -114,6 +114,6 @@ function invalidServerResponse(): ApiClientError {
   return new ApiClientError({
     status: 0,
     code: 'INVALID_SERVER_RESPONSE',
-    message: '채용 공고 응답 형식이 올바르지 않습니다.',
+    message: '공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
   })
 }

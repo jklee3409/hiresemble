@@ -125,13 +125,13 @@ describe('P5 Job pages', () => {
     const { wrapper } = await mountList('/jobs?status=CLOSED&page=0')
 
     expect(wrapper.get('[data-testid="job-business-status"]').text()).toContain('마감')
-    expect(wrapper.get('[data-testid="job-extraction-status"]').text()).toContain('수동 본문 입력')
+    expect(wrapper.get('[data-testid="job-extraction-status"]').text()).toContain('직접 입력 완료')
     expect(wrapper.text()).toContain('서류 제출 이력 있음')
     expect(wrapper.findAll('input[type="date"]')).toHaveLength(2)
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(3)
 
     await wrapper
-      .get(`select[aria-label="${jobSummaryFixture().title} 상태 변경"]`)
+      .get(`select[aria-label="${jobSummaryFixture().title} 지원 상태 변경"]`)
       .setValue('IN_PROGRESS')
     await flushPromises()
     expect(jobApi.updateJobStatus).toHaveBeenCalledWith(JOB_ID, {
@@ -161,14 +161,14 @@ describe('P5 Job pages', () => {
     const { wrapper } = await mountOverview()
 
     expect(wrapper.text()).toContain('서류 제출 이력 있음')
-    expect(wrapper.text()).toContain('공고 본문과 마감일을 직접 입력해 주세요')
+    expect(wrapper.text()).toContain('본문과 마감일을 직접 입력해 주세요')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     const manualButton = wrapper
       .findAll('button')
       .find((button) => button.text() === '본문 직접 입력')
     await manualButton?.trigger('click')
     expect(wrapper.find('textarea').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain('URL 추출 재시도')
+    expect(wrapper.text()).not.toContain('공고 다시 불러오기')
     expect(jobApi.retryJobExtraction).not.toHaveBeenCalled()
 
     await wrapper.get('select').setValue('IN_PROGRESS')
@@ -199,11 +199,11 @@ describe('P5 Job pages', () => {
     const { wrapper } = await mountOverview()
 
     expect(wrapper.get('[role="alert"]').text()).toContain('본문 추출에 실패했습니다')
-    expect(wrapper.get('[role="alert"]').text()).toContain('JOB_EXTRACTION_FAILED')
+    expect(wrapper.get('[role="alert"]').text()).not.toContain('JOB_EXTRACTION_FAILED')
     expect(wrapper.text()).toContain('본문 직접 입력')
     const retryButton = wrapper
       .findAll('button')
-      .find((button) => button.text() === 'URL 추출 재시도')
+      .find((button) => button.text() === '공고 다시 불러오기')
     expect(retryButton).toBeDefined()
 
     await retryButton?.trigger('click')
@@ -236,12 +236,12 @@ describe('P5 Job pages', () => {
     const editForm = wrapper.findAll('form').find((form) => form.find('textarea').exists())
     await editForm?.trigger('submit')
     await flushPromises()
-    expect(wrapper.text()).toContain('다른 곳에서 공고가 변경되었습니다')
+    expect(wrapper.text()).toContain('다른 곳에서 공고가 변경됐어요')
 
     await wrapper.get('input[aria-label="공고 제목 내 값 재적용"]').setValue(true)
     const reapply = wrapper.findAll('button').find((button) => button.text() === '선택 항목 재적용')
     await reapply?.trigger('click')
-    expect(wrapper.text()).toContain('최신 서버 버전에 재적용')
+    expect(wrapper.text()).toContain('최근 저장된 내용에 다시 적용')
 
     const reappliedForm = wrapper.findAll('form').find((form) => form.find('textarea').exists())
     await reappliedForm?.trigger('submit')

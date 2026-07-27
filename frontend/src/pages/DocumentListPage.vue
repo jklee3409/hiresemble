@@ -215,7 +215,7 @@ async function remove(id: string, version: number, name: string): Promise<void> 
     cache.removeQueries({ queryKey: documentQueryKeys.text(userId.value, id) })
     cache.removeQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
     await cache.invalidateQueries({ queryKey: documentQueryKeys.root(userId.value) })
-    message.value = '문서를 삭제했습니다.'
+    message.value = '자료를 삭제했어요.'
   } catch (error) {
     actionError.value = normalizeApiError(error).message
   }
@@ -252,16 +252,16 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   <section class="documents-page app-page" aria-labelledby="documents-heading">
     <PageHeader
       heading-id="documents-heading"
-      title="문서·근거"
-      description="경력 문서를 업로드하고 텍스트 처리와 근거 추출 상태를 각각 확인합니다."
-      eyebrow="Documents"
+      title="이력서·자료"
+      description="이력서와 포트폴리오를 등록하면 필요한 경력 정보를 정리해 드려요."
+      eyebrow="나의 자료"
     />
 
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
       <div class="upload-panel__heading">
-        <p class="section-kicker">Upload</p>
-        <h3 class="section-title">문서 업로드</h3>
-        <p>업로드가 접수되면 문서 상세에서 처리 과정을 이어서 확인할 수 있습니다.</p>
+        <p class="section-kicker">자료 등록</p>
+        <h3 class="section-title">이력서나 자료를 올려 주세요.</h3>
+        <p>등록한 뒤 내용을 읽고 경력 정보를 정리하는 과정을 이어서 확인할 수 있어요.</p>
       </div>
       <label for="document-file" class="dropzone" @dragover.prevent @drop.prevent="dropFile">
         <span class="dropzone__icon" aria-hidden="true"><AppIcon name="upload" /></span>
@@ -322,7 +322,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
     <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
       <label class="field">
-        <span class="field__label">문서 유형</span>
+        <span class="field__label">자료 유형</span>
         <select v-model="filterDocumentType" class="control control--compact">
           <option value="">전체</option>
           <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
@@ -331,7 +331,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         </select>
       </label>
       <label class="field">
-        <span class="field__label">텍스트 처리</span>
+        <span class="field__label">문서 읽기</span>
         <select v-model="filterParseStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
@@ -340,7 +340,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         </select>
       </label>
       <label class="field">
-        <span class="field__label">근거 추출</span>
+        <span class="field__label">경력 정보 정리</span>
         <select v-model="filterEvidenceStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
@@ -368,15 +368,15 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       v-if="documents.isPending.value"
       class="documents-page__state"
       kind="loading"
-      title="문서 목록을 불러오는 중…"
-      description="업로드한 문서와 처리 상태를 확인하고 있습니다."
+      title="등록한 자료를 불러오는 중…"
+      description="자료를 읽고 정리하는 상태를 확인하고 있어요."
     />
     <StatePanel
       v-else-if="documents.isError.value"
       class="documents-page__state"
       kind="error"
-      title="문서 목록을 불러오지 못했습니다."
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      title="자료를 불러오지 못했어요."
+      description="잠시 후 다시 시도해 주세요."
     >
       <template #actions>
         <button class="button button--secondary" type="button" @click="documents.refetch()">
@@ -388,8 +388,8 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       v-else-if="documents.data.value?.items.length === 0"
       class="documents-page__state"
       kind="empty"
-      title="조건에 맞는 문서가 없습니다."
-      description="필터를 조정하거나 위 업로드 영역에서 첫 문서를 등록해 주세요."
+      title="조건에 맞는 자료가 없어요."
+      description="필터를 바꾸거나 위에서 첫 자료를 등록해 주세요."
     />
     <ul v-else class="document-list data-list">
       <li
@@ -404,21 +404,21 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
             >{{ document.displayName }}</RouterLink
           >
           <p class="document-row__file">
-            {{ DOCUMENT_TYPE_LABELS[document.documentType] }} · {{ document.mimeType }} ·
+            {{ DOCUMENT_TYPE_LABELS[document.documentType] }} ·
             {{ formatFileSize(document.fileSizeBytes) }}
           </p>
           <p class="document-row__time">
             업로드 {{ new Date(document.uploadedAt).toLocaleString('ko-KR') }}
           </p>
         </div>
-        <div class="document-row__statuses" aria-label="문서 처리 상태">
+        <div class="document-row__statuses" aria-label="자료 상태">
           <StatusBadge
-            prefix="텍스트"
+            prefix="문서"
             :label="DOCUMENT_PARSE_STATUS_LABELS[document.parseStatus]"
             :tone="parseTone(document.parseStatus)"
           />
           <StatusBadge
-            prefix="근거"
+            prefix="경력 정보"
             :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.evidenceExtractionStatus]"
             :tone="evidenceTone(document.evidenceExtractionStatus)"
           />
@@ -453,7 +453,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       v-if="documents.data.value && documents.data.value.totalPages > 0"
       :page="filters.page"
       :total-pages="documents.data.value.totalPages"
-      label="문서 페이지"
+      label="자료 페이지"
       @change="updatePage"
     />
   </section>

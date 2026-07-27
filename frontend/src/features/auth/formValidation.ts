@@ -22,26 +22,37 @@ export interface ValidationResult<T> {
 const emailSchema = z
   .string()
   .trim()
-  .min(3, '이메일은 3자 이상 입력해 주세요.')
-  .max(320, '이메일은 320자 이하로 입력해 주세요.')
-  .email('올바른 이메일 형식을 입력해 주세요.')
+  .min(1, '이메일을 입력해 주세요.')
+  .min(3, '이메일 형식을 확인해 주세요.')
+  .max(320, '이메일 형식을 확인해 주세요.')
+  .email('이메일 형식을 확인해 주세요.')
 
 const signupPasswordSchema = z.string().superRefine((password, context) => {
   const bytes = utf8ByteLength(password)
-  if (bytes < 10 || bytes > 72) {
+  if (bytes < 10) {
     context.addIssue({
       code: 'custom',
-      message: '비밀번호는 UTF-8 기준 10~72바이트여야 합니다.',
+      message: '비밀번호를 조금 더 길게 입력해 주세요.',
+    })
+  } else if (bytes > 72) {
+    context.addIssue({
+      code: 'custom',
+      message: '비밀번호가 너무 깁니다. 조금 짧게 입력해 주세요.',
     })
   }
 })
 
 const loginPasswordSchema = z.string().superRefine((password, context) => {
   const bytes = utf8ByteLength(password)
-  if (bytes < 1 || bytes > 72) {
+  if (bytes < 1) {
     context.addIssue({
       code: 'custom',
-      message: '비밀번호는 UTF-8 기준 1~72바이트여야 합니다.',
+      message: '비밀번호를 입력해 주세요.',
+    })
+  } else if (bytes > 72) {
+    context.addIssue({
+      code: 'custom',
+      message: '비밀번호가 너무 깁니다. 조금 짧게 입력해 주세요.',
     })
   }
 })
@@ -58,13 +69,13 @@ const signupSchema = z
       .max(100, '표시 이름은 100자 이하로 입력해 주세요.')
       .refine(
         (displayName) => !/[\p{Cc}/\\]/u.test(displayName),
-        '표시 이름에 제어 문자나 경로 구분자를 사용할 수 없습니다.',
+        '표시 이름에 줄바꿈이나 /, \\를 사용할 수 없어요.',
       ),
-    termsAgreed: z.boolean().refine((agreed) => agreed, '이용약관 동의가 필요합니다.'),
-    aiConsent: z.boolean().refine((agreed) => agreed, 'AI 처리 동의가 필요합니다.'),
+    termsAgreed: z.boolean().refine((agreed) => agreed, '필수 이용약관에 동의해 주세요.'),
+    aiConsent: z.boolean().refine((agreed) => agreed, '필수 AI 처리 안내에 동의해 주세요.'),
   })
   .refine((form) => form.password === form.passwordConfirm, {
-    message: '비밀번호가 일치하지 않습니다.',
+    message: '입력한 비밀번호가 서로 달라요.',
     path: ['passwordConfirm'],
   })
 

@@ -155,7 +155,7 @@ async function save(): Promise<void> {
     await refreshAfterMutation()
     isFormOpen.value = false
     editingId.value = null
-    message.value = `${resourceTitle(props.kind, saved)}을(를) 저장했습니다.`
+    message.value = `${resourceTitle(props.kind, saved)}을(를) 저장했어요.`
   } catch (error) {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
@@ -183,13 +183,13 @@ async function remove(item: StructuredProfileDto): Promise<void> {
   try {
     await deleteMutation.mutateAsync(item)
     await refreshAfterMutation()
-    message.value = '삭제했습니다.'
+    message.value = '삭제했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     if (isVersionConflict(apiError)) {
       await resourceQuery.refetch()
       generalError.value =
-        '삭제하려던 항목이 변경되어 최신 목록을 불러왔습니다. 확인 후 다시 시도해 주세요.'
+        '삭제하려던 항목이 다른 곳에서 변경됐어요. 최신 내용을 확인한 뒤 다시 시도해 주세요.'
       return
     }
     generalError.value = apiError.message
@@ -212,13 +212,13 @@ async function makePrimary(item: EducationDto): Promise<void> {
   try {
     await saveMutation.mutateAsync({ id: item.id, version: item.version, request })
     await refreshAfterMutation()
-    message.value = '대표 학력을 변경했습니다.'
+    message.value = '먼저 보여 줄 학력을 변경했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     await resourceQuery.refetch()
     generalError.value =
       apiError.code === 'RESOURCE_STATE_CONFLICT'
-        ? '대표 학력이 동시에 변경되었습니다. 최신 목록을 확인해 주세요.'
+        ? '먼저 보여 줄 학력이 다른 곳에서 변경됐어요. 최신 목록을 확인해 주세요.'
         : apiError.message
   }
 }
@@ -241,7 +241,7 @@ function reapplyConflict(value: Record<string, unknown>): void {
     version: latest.version,
   })
   conflict.value = null
-  message.value = '선택한 내 입력을 최신값에 재적용했습니다. 확인 후 다시 저장해 주세요.'
+  message.value = '선택한 내 입력을 최신 내용에 다시 적용했어요. 확인한 뒤 저장해 주세요.'
 }
 
 async function refreshAfterMutation(): Promise<void> {
@@ -537,7 +537,7 @@ function fieldsForKind(kind: ResourceKind): Array<{ key: string; label: string }
       { key: 'graduationDate', label: '졸업일' },
       { key: 'gpa', label: '학점' },
       { key: 'gpaScale', label: '기준 학점' },
-      { key: 'isPrimary', label: '대표 학력' },
+      { key: 'isPrimary', label: '먼저 보여 줄 학력' },
       { key: 'description', label: '설명' },
     ],
     certification: [
@@ -589,7 +589,7 @@ const resourceLabels: Record<
 > = {
   education: {
     title: '학력',
-    description: '학력을 관리하고 한 항목을 대표 학력으로 설정할 수 있습니다.',
+    description: '지원할 때 먼저 보여 줄 학력을 정리해 두세요.',
     add: '학력 추가',
     sorts: [
       { value: 'createdAt,desc', label: '최근 등록순' },
@@ -598,7 +598,7 @@ const resourceLabels: Record<
   },
   certification: {
     title: '자격증',
-    description: '자격증과 취득·만료 정보를 관리합니다.',
+    description: '직무와 연결되는 자격증을 모아 두세요.',
     add: '자격증 추가',
     sorts: [
       { value: 'acquiredDate,desc', label: '취득일순' },
@@ -607,7 +607,7 @@ const resourceLabels: Record<
   },
   language: {
     title: '어학 성적',
-    description: '시험명, 점수와 유효기간을 관리합니다.',
+    description: '어학 성적과 유효기간을 한눈에 확인하세요.',
     add: '어학 성적 추가',
     sorts: [
       { value: 'testedAt,desc', label: '응시일순' },
@@ -616,7 +616,7 @@ const resourceLabels: Record<
   },
   award: {
     title: '수상',
-    description: '수상명, 주최 기관과 설명을 관리합니다.',
+    description: '나의 성과를 보여 주는 수상 경험을 정리하세요.',
     add: '수상 추가',
     sorts: [
       { value: 'awardedAt,desc', label: '수상일순' },
@@ -625,7 +625,7 @@ const resourceLabels: Record<
   },
   career: {
     title: '경력',
-    description: '회사·기관별 역할과 성과를 시간순으로 관리합니다.',
+    description: '해 온 일과 만든 변화를 시간의 흐름대로 남겨 보세요.',
     add: '경력 추가',
     sorts: [
       { value: 'startedAt,desc', label: '시작일순' },
@@ -642,7 +642,7 @@ const resourceLabels: Record<
       :heading-id="`${kind}-heading`"
       :title="title"
       :description="description"
-      eyebrow="Profile"
+      eyebrow="나의 경험"
     >
       <template #actions>
         <button type="button" class="button button--primary" @click="openCreate">
@@ -652,7 +652,7 @@ const resourceLabels: Record<
     </PageHeader>
 
     <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
-      현재 로그인 사용자의 삭제되지 않은 문서만 증빙으로 연결할 수 있습니다.
+      지금 이용 중인 계정에 남아 있는 자료만 연결할 수 있어요.
     </p>
 
     <div class="filter-toolbar structured-profile__toolbar">
@@ -778,7 +778,7 @@ const resourceLabels: Record<
             }}</span></label
           >
           <label class="flex items-center gap-2 text-sm font-medium"
-            ><input v-model="form.isPrimary" type="checkbox" />대표 학력으로 설정</label
+            ><input v-model="form.isPrimary" type="checkbox" />먼저 보여 줄 학력으로 설정</label
           >
           <label class="md:col-span-2 text-sm font-medium"
             >설명<textarea
@@ -991,7 +991,7 @@ const resourceLabels: Record<
             </option>
           </select>
           <span v-if="selectableDocuments.isError.value" class="mt-1 block text-red-700">
-            문서 목록을 불러오지 못했습니다.
+            자료 목록을 불러오지 못했어요.
           </span>
         </label>
 
@@ -1016,13 +1016,13 @@ const resourceLabels: Record<
       class="structured-profile__state"
       kind="loading"
       :title="`${title} 목록을 불러오는 중…`"
-      description="저장된 항목을 확인하고 있습니다."
+      description="저장된 항목을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="resourceQuery.isError.value"
       class="structured-profile__state"
       kind="error"
-      :title="`${title} 목록을 불러오지 못했습니다.`"
+      :title="`${title} 목록을 불러오지 못했어요.`"
       description="연결 상태를 확인한 뒤 다시 시도해 주세요."
     >
       <template #actions>
@@ -1035,8 +1035,8 @@ const resourceLabels: Record<
       v-else-if="resourceQuery.data.value?.items.length === 0"
       class="structured-profile__state"
       kind="empty"
-      :title="`등록된 ${title} 항목이 없습니다.`"
-      :description="`${title} 정보를 추가해 지원 준비에 활용할 수 있습니다.`"
+      :title="`등록된 ${title} 항목이 없어요.`"
+      :description="`${title} 정보를 추가해 여러 지원에 활용해 보세요.`"
     >
       <template #actions>
         <button type="button" class="button button--primary" @click="openCreate">
@@ -1061,7 +1061,7 @@ const resourceLabels: Record<
               <span
                 v-if="kind === 'education' && (item as EducationDto).isPrimary"
                 class="status-badge status-badge--brand"
-                >대표 학력</span
+                >먼저 보여 줄 학력</span
               >
             </div>
             <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">

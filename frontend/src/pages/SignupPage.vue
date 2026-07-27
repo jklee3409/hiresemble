@@ -19,6 +19,8 @@ const form = reactive<SignupFormValues>({
 const fieldErrors = ref<Record<string, string>>({})
 const generalError = ref('')
 const isSubmitting = ref(false)
+const passwordVisible = ref(false)
+const passwordConfirmVisible = ref(false)
 
 async function submit(): Promise<void> {
   generalError.value = ''
@@ -44,7 +46,7 @@ async function submit(): Promise<void> {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
     if (apiError.code === 'EMAIL_ALREADY_REGISTERED' && fieldErrors.value.email === undefined) {
-      fieldErrors.value.email = '이미 가입된 이메일입니다.'
+      fieldErrors.value.email = '이미 가입된 이메일이에요. 로그인해 주세요.'
     }
     generalError.value = authErrorMessage(apiError)
     isSubmitting.value = false
@@ -67,9 +69,9 @@ async function focusFirstError(): Promise<void> {
 
 <template>
   <div class="auth-page">
-    <p class="page-eyebrow">Create account</p>
+    <p class="page-eyebrow">나만의 지원 준비 시작</p>
     <h1 class="page-title">회원가입</h1>
-    <p class="page-description">취업 준비 자료와 지원 과정을 관리할 개인 계정을 만드세요.</p>
+    <p class="page-description">취업 준비를 한곳에서 시작할 계정을 만들어 보세요.</p>
 
     <form class="auth-page__form" novalidate :aria-busy="isSubmitting" @submit.prevent="submit">
       <div class="field">
@@ -109,21 +111,35 @@ async function focusFirstError(): Promise<void> {
 
       <div class="field">
         <label class="field-label" for="signup-password">비밀번호</label>
-        <input
-          id="signup-password"
-          v-model="form.password"
-          class="control"
-          type="password"
-          autocomplete="new-password"
-          :aria-invalid="Boolean(fieldErrors.password)"
-          :aria-describedby="
-            fieldErrors.password
-              ? 'signup-password-help signup-password-error'
-              : 'signup-password-help'
-          "
-          :disabled="isSubmitting"
-        />
-        <p id="signup-password-help" class="field-help">UTF-8 기준 10~72바이트로 입력해 주세요.</p>
+        <div class="password-control">
+          <input
+            id="signup-password"
+            v-model="form.password"
+            class="control"
+            :type="passwordVisible ? 'text' : 'password'"
+            autocomplete="new-password"
+            :aria-invalid="Boolean(fieldErrors.password)"
+            :aria-describedby="
+              fieldErrors.password
+                ? 'signup-password-help signup-password-error'
+                : 'signup-password-help'
+            "
+            :disabled="isSubmitting"
+          />
+          <button
+            type="button"
+            class="password-control__toggle"
+            :aria-label="passwordVisible ? '비밀번호 숨기기' : '비밀번호 보기'"
+            :aria-pressed="passwordVisible"
+            :disabled="isSubmitting"
+            @click="passwordVisible = !passwordVisible"
+          >
+            {{ passwordVisible ? '숨기기' : '보기' }}
+          </button>
+        </div>
+        <p id="signup-password-help" class="field-help">
+          다른 곳에서 사용하지 않는 비밀번호를 입력해 주세요.
+        </p>
         <p v-if="fieldErrors.password" id="signup-password-error" class="field-error">
           {{ fieldErrors.password }}
         </p>
@@ -131,18 +147,30 @@ async function focusFirstError(): Promise<void> {
 
       <div class="field">
         <label class="field-label" for="signup-passwordConfirm"> 비밀번호 확인 </label>
-        <input
-          id="signup-passwordConfirm"
-          v-model="form.passwordConfirm"
-          class="control"
-          type="password"
-          autocomplete="new-password"
-          :aria-invalid="Boolean(fieldErrors.passwordConfirm)"
-          :aria-describedby="
-            fieldErrors.passwordConfirm ? 'signup-passwordConfirm-error' : undefined
-          "
-          :disabled="isSubmitting"
-        />
+        <div class="password-control">
+          <input
+            id="signup-passwordConfirm"
+            v-model="form.passwordConfirm"
+            class="control"
+            :type="passwordConfirmVisible ? 'text' : 'password'"
+            autocomplete="new-password"
+            :aria-invalid="Boolean(fieldErrors.passwordConfirm)"
+            :aria-describedby="
+              fieldErrors.passwordConfirm ? 'signup-passwordConfirm-error' : undefined
+            "
+            :disabled="isSubmitting"
+          />
+          <button
+            type="button"
+            class="password-control__toggle"
+            :aria-label="passwordConfirmVisible ? '비밀번호 확인 숨기기' : '비밀번호 확인 보기'"
+            :aria-pressed="passwordConfirmVisible"
+            :disabled="isSubmitting"
+            @click="passwordConfirmVisible = !passwordConfirmVisible"
+          >
+            {{ passwordConfirmVisible ? '숨기기' : '보기' }}
+          </button>
+        </div>
         <p v-if="fieldErrors.passwordConfirm" id="signup-passwordConfirm-error" class="field-error">
           {{ fieldErrors.passwordConfirm }}
         </p>
@@ -161,7 +189,7 @@ async function focusFirstError(): Promise<void> {
           />
           <span>
             <strong>이용약관·개인정보 처리 동의</strong>
-            <small>계정 생성과 서비스 제공에 필요한 동의입니다.</small>
+            <small>계정을 만들고 서비스를 제공하는 데 꼭 필요한 동의예요.</small>
           </span>
         </label>
         <p
@@ -186,7 +214,7 @@ async function focusFirstError(): Promise<void> {
           />
           <span>
             <strong>취업 준비 지원을 위한 AI 처리 동의</strong>
-            <small>문서와 공고 처리 등 요청한 작업에 필요한 동의입니다.</small>
+            <small>이력서와 공고를 정리하려면 꼭 필요한 동의예요.</small>
           </span>
         </label>
         <p
@@ -270,5 +298,33 @@ async function focusFirstError(): Promise<void> {
 
 .consent-option__error {
   margin: 0.5rem 0 0 1.75rem;
+}
+
+.password-control {
+  position: relative;
+}
+
+.password-control .control {
+  padding-right: 4rem;
+}
+
+.password-control__toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-brand);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 720;
+  transform: translateY(-50%);
+}
+
+.password-control__toggle:hover:not(:disabled) {
+  background: var(--color-brand-soft);
 }
 </style>

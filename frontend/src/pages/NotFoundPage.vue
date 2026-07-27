@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import BrandMark from '@/shared/ui/BrandMark.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -15,16 +16,12 @@ const recoveryLabel = computed(() =>
 <template>
   <main class="not-found">
     <RouterLink class="not-found__brand" :to="recoveryRoute" aria-label="Hiresemble 시작 화면">
-      <span>H</span>
-      Hiresemble
+      <BrandMark />
     </RouterLink>
     <section class="not-found__content" aria-labelledby="not-found-heading">
-      <p class="section-kicker">Error 404</p>
-      <h1 id="not-found-heading">페이지를 찾을 수 없습니다</h1>
-      <p>
-        요청한 화면이 없거나 접근할 수 없는 주소입니다. 주소를 확인하거나 현재 사용할 수 있는
-        화면으로 돌아가 주세요.
-      </p>
+      <p class="section-kicker">404</p>
+      <h1 id="not-found-heading">페이지를 찾을 수 없어요.</h1>
+      <p>주소가 바뀌었거나 볼 수 없는 페이지예요. 지금 이용할 수 있는 화면으로 돌아가세요.</p>
       <RouterLink class="button button--primary" :to="recoveryRoute">
         {{ recoveryLabel }}
         <AppIcon name="arrow-right" />
@@ -51,16 +48,6 @@ const recoveryLabel = computed(() =>
   color: var(--color-text);
   font-weight: 800;
   letter-spacing: -0.02em;
-}
-
-.not-found__brand span {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border-radius: var(--radius-xs);
-  background: var(--color-brand-strong);
-  color: white;
 }
 
 .not-found__content {
