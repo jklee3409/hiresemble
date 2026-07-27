@@ -4,6 +4,19 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-27] Session Summary (Profile navigation·입력·충돌 UX 개선)
+
+- What was done:
+  - 구현된 7개 profile route navigation, string chip 입력과 409 비교·재적용 panel을 공통 제품 스타일과 mobile overflow 대응으로 개선했다.
+- Key decisions:
+  - keyboard 추가·삭제, 사용자별 query key와 자동 overwrite 금지 계약을 유지한다.
+- Issues encountered:
+  - generic 구조화 profile page의 여러 유형을 분리하지 않고 동일 component 안에서 data 성격별 presentation을 조정했다.
+- Validation:
+  - profile page/component test와 기존 ID·testid 보존 검사가 통과했다.
+- Next steps:
+  - 실제 데이터가 많은 경력 timeline은 cross-stack 환경에서 추가 시각 검수한다.
+
 ## [2026-07-19] Session Summary (P4 증빙 문서 selector 활성화)
 
 - What was done:

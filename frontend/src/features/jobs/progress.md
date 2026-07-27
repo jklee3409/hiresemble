@@ -4,6 +4,19 @@
 
 P5 Job filter·query·mutation·stream·version conflict feature가 구현됐다.
 
+## [2026-07-27] Session Summary (Job 상태·충돌 UI 개선)
+
+- What was done:
+  - Run monitor와 version conflict 비교·재적용 panel의 정보 계층, action priority와 responsive 표현을 개선했다.
+- Key decisions:
+  - 업무 상태와 extraction 상태를 별도 label로 유지하고 NEEDS_MANUAL_INPUT·FAILED action 의미를 바꾸지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job component/page test와 전체 Frontend check가 통과했다.
+- Next steps:
+  - P6 analysis action과 DTO는 계약 구현 전 추가하지 않는다.
+
 ## [2026-07-27] Session Summary (P5 Jobs frontend feature 구현)
 
 - What was done:

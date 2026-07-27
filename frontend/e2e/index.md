@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 핵심 사용자 여정을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 P2 profile, P3 Agent Run fixture, P4 Document와 P5 Job 실제 Backend pipeline이 구현되어 있다.
+이 디렉터리는 Hiresemble의 핵심 사용자 여정과 responsive shell을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 UI shell, P2 profile, P3 Agent Run fixture, P4 Document와 P5 Job 실제 Backend pipeline이 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,19 +11,21 @@
 | [`.gitkeep`](.gitkeep)                                 | 초기 디렉터리 추적용 placeholder로 보존                                |
 | [`profile.spec.ts`](profile.spec.ts)                   | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                  |
 | [`agent-runs.spec.ts`](agent-runs.spec.ts)             | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture      |
+| [`ui-shell.spec.ts`](ui-shell.spec.ts)                 | 1440·1024·768·390px overflow, desktop/sidebar와 mobile drawer fixture  |
 | [`documents.actual.spec.ts`](documents.actual.spec.ts) | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리       |
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)           | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler              |
 | [`index.md`](index.md)                                 | E2E 영역의 책임과 의존 관계 설명                                       |
 | [`progress.md`](progress.md)                           | E2E 구현 상태와 검증 이력 추적                                         |
 | [`../playwright.config.ts`](../playwright.config.ts)   | test directory, Chromium project, Vite web server와 artifact 정책 설정 |
 
-현재 하위 디렉터리는 없고 P2 profile, P3 Agent Run, P4 Document와 P5 Job spec을 관리한다.
+현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run, P4 Document와 P5 Job spec을 관리한다.
 
 ## 구성 요소 역할
 
 - P4 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - P5 actual spec은 Backend 주도 격리 PostgreSQL·Fake URL fetch·Fake Chat 환경에서만 활성화한다.
 - unit/component test로 확인하기 어려운 route 이동, form 상호작용, 화면 상태 연결을 다룬다.
+- UI shell fixture는 Backend 없이 인증 응답과 active Run 목록을 가로채 필수 viewport와 focus 복원을 검증한다.
 - Playwright 설정은 테스트 전에 Vite 개발 서버를 시작하고 Chromium desktop 환경을 사용한다.
 
 ## 다른 디렉터리와의 의존 관계

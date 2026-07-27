@@ -12,20 +12,21 @@
 | [`App.vue`](App.vue)         | 현재 `RouterView`만 렌더링하는 루트 컴포넌트             |
 | [`env.d.ts`](env.d.ts)       | Vite 환경 변수 TypeScript 타입 선언                      |
 | [`router/`](router/)         | browser history와 route/guard 구성 영역                  |
-| [`styles/`](styles/)         | Tailwind 진입점과 제한된 전역 style 영역                 |
+| [`styles/`](styles/)         | Tailwind 진입점, design token과 공통 제품 style          |
 | [`app/`](app/)               | Pinia·QueryClient bootstrap                              |
 | [`features/`](features/)     | auth·profile·Agent Run·Document·Job query·SSE·표현 규칙  |
 | [`layouts/`](layouts/)       | Public·App·JobDetail layout와 lazy Progress Drawer       |
 | [`pages/`](pages/)           | 인증·profile·Agent Run·Document·Job page와 404           |
-| [`shared/`](shared/)         | typed 인증·profile·Agent Run·Document·Job API와 cleanup  |
+| [`shared/`](shared/)         | typed API·cleanup과 여러 화면이 공유하는 UI primitive    |
 | [`stores/`](stores/)         | auth 상태와 사용자 경계 reset                            |
 | [`progress.md`](progress.md) | 소스 영역의 구현 상태와 검증 이력                        |
 
 ## 구성 요소 역할
 
-- `main.ts`는 Pinia, Vue Router, Vue Query와 PrimeVue Aura theme을 한 곳에서 조립한다.
+- `main.ts`는 Pinia, Vue Router와 Vue Query를 한 곳에서 조립한다. 설치된 PrimeVue는 현재 component 사용처가 없어 전역 초기화하지 않는다.
 - `App.vue`는 route component가 표시될 최상위 outlet만 소유한다.
 - `env.d.ts`는 `VITE_API_BASE_URL`과 선택적 proxy target의 접근 타입을 고정한다.
+- `styles/main.css`와 `shared/ui`가 현재 route 전반의 token, control, status, loading·empty·error 표현을 일관되게 제공한다.
 - 세부 책임은 각 하위 디렉터리의 `index.md`에서 관리하며 P6 이후 빈 기능 계층은 만들지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

@@ -4,10 +4,26 @@
 
 - `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
 - `agent-runs.spec.ts`가 test-local REST/SSE fixture로 P3 reconnect·polling·action cleanup을 검증한다.
+- `ui-shell.spec.ts`가 fixture 인증으로 필수 viewport의 overflow, navigation과 drawer focus를 검증한다.
 - `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
 - `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-27] Session Summary (Responsive UI Shell 브라우저 검증)
+
+- What was done:
+  - 보호 dashboard를 1440·1024·768·390px에서 검사하고 desktop sidebar, mobile drawer, Run drawer와 focus 복원을 자동화했다.
+  - login을 1440·390px에서 검사하고 별도 Playwright CLI 캡처로 desktop 인증, desktop app shell, 390px dashboard·drawer를 직접 검수했다.
+- Key decisions:
+  - fixture는 `/auth/me`와 active Run 목록만 가로채며 제품에 mock 데이터나 fixture 분기를 추가하지 않는다.
+  - viewport 검증은 pixel snapshot 대신 overflow·visibility·focus·dialog 경계를 assertion한다.
+- Issues encountered:
+  - `pnpm test:e2e -- ...` 선택 인자가 실제 spec까지 포함해 timeout되어 `pnpm exec playwright test`에 두 fixture 파일을 직접 전달했다.
+- Validation:
+  - `agent-runs.spec.ts`와 `ui-shell.spec.ts` Chromium 4/4가 20.3초에 통과했다.
+- Next steps:
+  - Backend·PostgreSQL·MinIO가 준비된 격리 환경에서 기존 actual spec을 다시 실행한다.
 
 ## [2026-07-27] Session Summary (P5 실제 Job pipeline 브라우저 검증)
 

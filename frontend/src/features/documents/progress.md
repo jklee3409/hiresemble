@@ -4,6 +4,19 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-07-27] Session Summary (Document 상태·근거 표현 개선)
+
+- What was done:
+  - evidence 검토와 active Run monitor를 공용 상태 언어에 맞추고 action priority와 긴 내용 가독성을 개선했다.
+- Key decisions:
+  - parse와 evidence extraction을 별도 label로 유지하며 `PARSED + evidence FAILED`를 업로드 전체 실패로 표현하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Document page/component 회귀와 전체 Frontend check가 통과했다.
+- Next steps:
+  - actual storage pipeline E2E는 격리 서비스 환경에서 재실행한다.
+
 ## [2026-07-19] Session Summary (Documents feature 구현)
 
 - What was done:

@@ -2,10 +2,25 @@
 
 ## Overview
 
-- `main.ts`가 Vue 앱과 Pinia, Router, Vue Query, PrimeVue를 초기화한다.
+- `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
 - P1 auth·Session부터 P5 `features/jobs`, API·page·lazy route 구현·테스트가 있다.
-- 실제 profile·Agent Run·Document·Job 화면이 있으며 Dashboard 집계·P6 분석·AI 설정 기능은 아직 없다.
+- 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job 화면과 공용 제품 UI 기반이 있으며 Dashboard 집계·P6 분석·AI 설정 기능은 아직 없다.
+
+## [2026-07-27] Session Summary (현재 Vue source 디자인 시스템 적용)
+
+- What was done:
+  - `styles`, `shared/ui`, layout, page와 현재 feature presentation에 token·공용 상태·responsive 구조를 적용했다.
+  - 미사용 PrimeVue plugin bootstrap을 제거해 브라우저 라이선스 배지와 초기 bundle 포함을 해소했다.
+- Key decisions:
+  - API/query/store/router table은 그대로 두고 SFC의 정보 계층·markup·style과 접근성 연결만 변경했다.
+  - 설치 dependency는 변경하지 않고 실제 component 사용이 생길 때 정식 설정과 함께 초기화한다.
+- Issues encountered:
+  - 초기 화면 전반에 분산된 utility 조합이 많아 공통 책임과 page 전용 배치를 구분해 단계적으로 정리했다.
+- Validation:
+  - lint·format·typecheck, Vitest 35 files/128 tests와 342 modules production build가 통과했다.
+- Next steps:
+  - 미래 feature source와 route는 해당 API 계약이 구현될 때 별도 추가한다.
 
 ## [2026-07-27] Session Summary (P5 Job Vue source 추가)
 

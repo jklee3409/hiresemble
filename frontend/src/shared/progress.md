@@ -2,7 +2,22 @@
 
 ## Overview
 
-여러 화면이 공유하는 P1 인증부터 P5 Job HTTP 계약과 Session cleanup port를 관리한다.
+여러 화면이 공유하는 P1 인증부터 P5 Job HTTP 계약, Session cleanup port와 비도메인 UI primitive를 관리한다.
+
+## [2026-07-27] Session Summary (공용 UI 표현 기반 추가)
+
+- What was done:
+  - `ui/`에 SVG icon, page header, text status, loading·empty·error state와 pagination component를 추가했다.
+  - 기존 `api/`와 `session/` 코드는 변경하지 않고 layout·page·feature의 반복 presentation만 공용화했다.
+- Key decisions:
+  - transport·cleanup과 UI primitive는 같은 shared 상위에 두되 서로의 domain 책임을 침범하지 않는다.
+  - status component는 label을 필수로 받아 색상만으로 상태를 전달하지 않는다.
+- Issues encountered:
+  - 공용화 범위를 넓히지 않도록 두 곳 이상 반복되는 접근성·표현 책임만 추출했다.
+- Validation:
+  - 공용 UI component test와 전체 Frontend check가 통과하고 API/session diff가 없음을 확인했다.
+- Next steps:
+  - 새 API나 미래 domain primitive를 선행 추가하지 않는다.
 
 ## [2026-07-27] Session Summary (P5 Job 공용 API·cleanup 연결)
 

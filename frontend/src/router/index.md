@@ -32,7 +32,7 @@
 
 ## 변경 시 주의사항
 
-- dashboard는 아직 shell이며 실제 집계 기능 완료로 기록하지 않는다.
+- dashboard는 현재 구현 route로 이동하는 작업 공간이며 집계 API나 가상 KPI가 있다고 기록하지 않는다.
 - profile 미완료 상태를 보호 route hard gate로 사용하지 않는다.
 - P6 analysis와 P7·P8 child route를 선행 등록하지 않는다.
 - guard에서 도메인 데이터 조회나 서버 권한 판단을 중복 구현하지 않는다.

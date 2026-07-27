@@ -2,7 +2,22 @@
 
 ## Overview
 
-P1 인증·보호 shell부터 P5 Job 목록·등록·overview page와 전용 404를 관리한다.
+P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-07-27] Session Summary (현재 Route Page 정보 구조 개선)
+
+- What was done:
+  - 인증, onboarding, dashboard, 7개 profile route, Documents, Jobs, Agent Run과 404의 typography·form·action·state hierarchy를 개선했다.
+  - Dashboard 개발 문구를 제거하고 실제 route 빠른 작업만 제공했으며 onboarding 마지막 단계는 구현된 문서 업로드 또는 추후 입력만 제공한다.
+- Key decisions:
+  - 가상 집계·최근 활동·미구현 analysis/cover-letter/interview/settings 화면과 API는 추가하지 않았다.
+  - 기존 form ID, `data-testid`, accessible name, 상태별 CTA와 mutation/query 흐름을 보존했다.
+- Issues encountered:
+  - 구조화 profile의 반복 form은 하나의 generic page 안에 있어 동작을 분할하지 않고 공통 scoped style로 시각 일관성만 맞췄다.
+- Validation:
+  - 기존 literal DOM ID와 `data-testid` 누락 0건, page component와 전체 128 tests가 통과했다.
+- Next steps:
+  - cross-stack 환경에서 긴 실제 문서명·URL·공고 본문 조합의 수동 시각 검수를 보강한다.
 
 ## [2026-07-27] Session Summary (P5 Job 목록·등록·overview Page 구현)
 

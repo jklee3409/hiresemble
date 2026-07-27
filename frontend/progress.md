@@ -4,8 +4,27 @@
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
-- `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 32 files/122 tests, profile E2E 1개, Agent Run fixture 2개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+- `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 35 files/128 tests, UI shell·Agent Run fixture 4개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-27] Session Summary (현재 구현 화면 제품 UI/UX 통합)
+
+- What was done:
+  - router에 존재하는 18개 사용자 route와 전용 404를 하나의 graphite·blue-teal 제품 언어로 개선했다.
+  - token·공용 UI, desktop sidebar·mobile drawer, 2열 인증 shell, 업무별 정보 구조와 loading·empty·error·status 표현을 연결했다.
+- Key decisions:
+  - Dashboard는 가상 KPI 없이 profile·documents·job 등록·Agent Run으로 이동하는 실제 작업 공간만 제공한다.
+  - 문서 parse/근거 추출, 공고 업무/추출, Run business/연결 상태를 계속 분리하고 query·mutation·cleanup 순서는 유지했다.
+- Issues encountered:
+  - 직접 캡처에서 미사용 PrimeVue 전역 초기화가 라이선스 배지를 렌더링해 초기화만 제거하고 dependency·lockfile은 유지했다.
+  - full E2E 선택 실행이 실제 Backend 의존 spec까지 포함해 timeout되어 fixture 두 파일을 직접 지정했다.
+- Validation:
+  - `corepack pnpm check`가 35 files/128 tests와 production build까지 통과했고 fixture Chromium 4/4가 통과했다.
+  - 1440·1024·768·390px overflow와 mobile drawer focus를 자동 검증하고 1440·390px 화면을 직접 시각 검수했다.
+  - 실제 Backend·PostgreSQL·MinIO/Fake gateway가 필요한 profile·Document·Job actual E2E와 screen reader 실기 검수는 현재 환경에서 실행하지 않았다.
+  - read-only validator가 미구현 기능·계약·접근성·반응형·문서 검토를 `PASS WITH WARNINGS`로 완료했다.
+- Next steps:
+  - cross-stack actual E2E와 screen reader 수동 검수는 필요한 서비스가 준비된 환경에서 수행한다.
 
 ## [2026-07-27] Session Summary (P5 Jobs 화면·실제 E2E 구현)
 

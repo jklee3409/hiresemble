@@ -9,7 +9,26 @@
 - P4 Document upload·parse·storage·Fake AI 근거 pipeline과 Frontend 목록·상세·검토가 최종 validator `PASS`로 완료됐다.
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
-- Dashboard·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
+- Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
+
+## [2026-07-27] Session Summary (현재 Frontend route UI/UX 전면 개선)
+
+- What was done:
+  - 현재 router의 인증·onboarding·dashboard·profile·documents·jobs·Agent Run·404 19개 화면만 제품 design system과 responsive app shell로 전면 개선했다.
+  - Backend, API·DTO·DB·route table과 P6 이후 기능은 변경하지 않고 공용 UI, 상태 표현과 접근성·반응형 검증을 추가했다.
+- Key decisions:
+  - graphite·blue-teal token, 얇은 border와 제한된 radius를 사용하고 사용자의 경력·문서·공고 작업을 시각적 중심으로 유지한다.
+  - 실제 PrimeVue component가 없어 전역 plugin 초기화를 제거해 라이선스 배지와 불필요한 bundle을 없애되 dependency 계약은 변경하지 않았다.
+- Issues encountered:
+  - 브라우저 검수에서 PrimeUI 라이선스 배지를 발견해 사용처를 조사한 뒤 미사용 초기화를 제거했다.
+  - 선택 E2E 인자가 잘못 전달돼 actual spec까지 대기한 첫 실행은 timeout됐고, fixture 파일을 직접 지정해 재검증했다.
+- Validation:
+  - `corepack pnpm check`의 ESLint·Prettier·TypeScript·Vitest 35 files/128 tests·production build와 fixture Chromium 4/4가 통과했다.
+  - 1440·1024·768·390px overflow/focus E2E와 1440·390px 직접 캡처 검수를 수행했고 main JS는 370.31 kB(gzip 116.87 kB)다.
+  - 실제 Backend·PostgreSQL·MinIO/Fake gateway 환경이 없어 profile·Document·Job actual E2E와 screen reader 실기 검수는 실행하지 않았다.
+  - 최종 read-only validator는 `PASS WITH WARNINGS`를 반환했고 전후 변경 fingerprint는 `c6e379cbdd26c74fc171a501b783eadbbf034a036d7116dd4d2f9b6136c1aa16`으로 동일했다.
+- Next steps:
+  - 실제 Backend·PostgreSQL·Object Storage가 준비된 환경에서 기존 profile·Document·Job actual E2E를 다시 실행한다.
 
 ## [2026-07-27] Session Summary (P5 채용 공고 등록·추출·상태·Scheduler 통합 구현)
 

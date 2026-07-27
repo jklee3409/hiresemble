@@ -2,7 +2,22 @@
 
 ## Overview
 
-익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile·documents·jobs navigation과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-27] Session Summary (Responsive 제품 App Shell 개선)
+
+- What was done:
+  - `AppLayout`을 desktop sticky sidebar·compact header와 mobile modal drawer로 재구성하고 active route, 사용자, logout과 Run count를 정리했다.
+  - `PublicLayout`을 mobile form 우선·desktop 2열 인증 구조로 통일하고 Job detail에는 현재 overview만 표시했다.
+- Key decisions:
+  - navigation은 dashboard·profile·documents·jobs·Agent Run만 제공하고 onboarding은 사용자 영역의 보조 동선으로 유지한다.
+  - drawer는 Escape·Tab focus trap, close 후 trigger focus 복원과 body scroll 제어를 제공한다.
+- Issues encountered:
+  - 기존 Agent Run drawer의 접근성 이름이 변경된 것을 루트 통합 검토에서 발견해 기존 이름으로 복구했다.
+- Validation:
+  - `AppLayout.test.ts`, `PublicLayout.test.ts`와 1440·1024·768·390px Playwright shell 검증이 통과했다.
+- Next steps:
+  - P6 navigation은 실제 route가 구현된 뒤에만 추가한다.
 
 ## [2026-07-27] Session Summary (Jobs navigation·detail layout 추가)
 

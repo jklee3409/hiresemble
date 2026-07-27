@@ -8,8 +8,8 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 
 - [`SignupPage.vue`](SignupPage.vue): 가입 Form과 onboarding 이동
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
-- [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·대표 학력·희망 조건·완료/추후 입력 P2 흐름
-- [`DashboardPage.vue`](DashboardPage.vue): 보호 layout 검증 shell
+- [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·대표 학력·희망 조건·문서 이동/추후 입력 P2 흐름
+- [`DashboardPage.vue`](DashboardPage.vue): 실제 구현 route로 연결하는 집계 없는 작업 공간
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): 기본 프로필·완료 항목·희망 배열 form
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): 프로필 5종 목록·form·삭제·409 재적용
 - [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): direct evidence filter·편집·검토와 read-only 상태
@@ -37,7 +37,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 
 ## 변경 시 주의사항
 
-- Dashboard 집계·API, AI 설정과 P6 이후 기능을 선행 추가하지 않는다.
+- Dashboard 집계·API, AI 설정과 P6 이후 기능을 선행 추가하지 않고 현재 API가 제공하는 정보만 표시한다.
 
 ## 관련 규칙 및 문서
 

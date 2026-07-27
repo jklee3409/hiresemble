@@ -6,6 +6,19 @@
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail만 허용한다.
 
+## [2026-07-27] Session Summary (현재 Route 범위 UI 회귀 고정)
+
+- What was done:
+  - route table은 변경하지 않고 router test에서 제품 dashboard 빠른 작업과 인증 상태별 404 복구 동선을 검증했다.
+- Key decisions:
+  - 현재 18개 사용자 route와 전용 404만 유지하고 P6 이후 path, placeholder와 disabled route를 추가하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - router/returnTo 기존 계약과 전체 Vitest가 통과하고 `index.ts` diff가 없음을 확인했다.
+- Next steps:
+  - 향후 route는 대응 API·page가 구현될 때 명세와 함께 추가한다.
+
 ## [2026-07-27] Session Summary (P5 Job lazy route 추가)
 
 - What was done:

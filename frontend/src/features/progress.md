@@ -4,6 +4,19 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P5 jobs feature까지 구현되어 있다.
 
+## [2026-07-27] Session Summary (현재 Feature 상태 표현 통일)
+
+- What was done:
+  - profile navigation·chip·conflict, Document evidence/Run monitor, Job conflict/Run monitor와 Agent Run detail/drawer의 정보 계층을 개선했다.
+- Key decisions:
+  - query·mutation·SSE state machine은 유지하고 visible label, action priority와 responsive presentation만 변경했다.
+- Issues encountered:
+  - 동일 색상처럼 보일 수 있는 상태는 공용 label과 보조 설명을 함께 사용하도록 조정했다.
+- Validation:
+  - feature unit/component test와 fixture Agent Run E2E가 통과했다.
+- Next steps:
+  - 미구현 P6 feature를 디자인 목적으로 선행 생성하지 않는다.
+
 ## [2026-07-27] Session Summary (P5 jobs feature 추가)
 
 - What was done:

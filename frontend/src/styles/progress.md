@@ -2,9 +2,25 @@
 
 ## Overview
 
-- `main.css`에는 `@import 'tailwindcss';`만 존재한다.
+- `main.css`가 Tailwind entry와 제품 design token, base·form·action·status·state pattern을 제공한다.
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
-- PrimeVue Aura theme은 등록되어 있지만 제품 UI, 별도 design token, reset 또는 component style은 아직 없다.
+- 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
+
+## [2026-07-27] Session Summary (제품 Design Token과 공용 Style 구축)
+
+- What was done:
+  - canvas·surface·ink·border·brand·semantic color, focus, radius, shadow, content width와 한국어 system typography token을 추가했다.
+  - control·button·alert·status·section·skeleton·pagination과 reduced-motion 공통 pattern을 구축했다.
+- Key decisions:
+  - blue-teal 한 가지 brand 축과 저채도 semantic color를 사용하고 page 배치는 각 SFC의 scoped style에 둔다.
+  - 모든 interactive element에 visible focus를 제공하고 skeleton animation은 `prefers-reduced-motion`에서 중단한다.
+- Issues encountered:
+  - 기존 화면에 indigo와 장문의 utility가 반복돼 금지 패턴 검색과 공통 class 사용 여부를 함께 점검했다.
+- Validation:
+  - 금지된 indigo·purple·glass·과도한 radius 패턴 0건, `git diff --check`와 production CSS build가 통과했다.
+  - 핵심 본문·brand·semantic text/background 조합의 계산 대비는 모두 5.13:1 이상이었다.
+- Next steps:
+  - 새 component가 실제로 반복될 때만 token과 primitive를 확장한다.
 
 ## [2026-07-17] Session Summary (Tailwind 및 PrimeVue 전역 스타일 기반 구성)
 

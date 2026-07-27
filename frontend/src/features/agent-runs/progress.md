@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
 
+## [2026-07-27] Session Summary (Agent Run 운영 기록 UI 개선)
+
+- What was done:
+  - detail의 전체 상태·진행률·timeline·비용·소요 시간·safe error·required action 계층과 Progress Drawer의 compact 목록을 개선했다.
+- Key decisions:
+  - Run business 상태와 SSE reconnect/polling 상태를 계속 분리하고 provider·model·prompt·hash를 노출하지 않는다.
+- Issues encountered:
+  - drawer accessible name을 기존 테스트·사용자 계약과 동일하게 복구했다.
+- Validation:
+  - component/unit test와 reconnect·polling·retry·cancel fixture Chromium 2/2가 통과했다.
+- Next steps:
+  - 실제 provider 내부 정보는 후속 UI에도 추가하지 않는다.
+
 ## [2026-07-27] Session Summary (Job resource stream 재사용)
 
 - What was done:

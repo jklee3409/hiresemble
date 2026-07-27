@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개로 총 50 operations/34 paths다. Frontend에는 lazy `/agent-runs`·`/documents`·`/jobs` 목록·상세와 복구 가능한 SSE UI가 있으며 `/dashboard`는 여전히 shell이다.
+공개 HTTP 범위는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개로 총 50 operations/34 paths다. Frontend에는 인증·onboarding·profile과 lazy `/agent-runs`·`/documents`·`/jobs` 목록·상세, 복구 가능한 SSE UI가 있으며 `/dashboard`는 집계 API 없이 현재 구현 route로 연결하는 작업 공간을 제공한다.
 
 ## 변경 시 주의사항
 
