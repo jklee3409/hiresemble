@@ -44,9 +44,13 @@ import { getJob } from '@/shared/api/jobApi'
 import {
   JOB_STATUSES,
   type JobDetailDto,
+  type JobExtractionStatus,
   type JobStatus,
   type UpdateJobRequest,
 } from '@/shared/api/jobContracts'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -320,120 +324,156 @@ function emptyUpdateForm(): JobUpdateForm {
     version: 0,
   }
 }
+
+function businessTone(value: JobStatus): 'brand' | 'info' | 'neutral' {
+  return (
+    {
+      IN_PROGRESS: 'brand',
+      SUBMITTED: 'info',
+      CLOSED: 'neutral',
+    } as const
+  )[value]
+}
+
+function extractionTone(
+  value: JobExtractionStatus,
+): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      QUEUED: 'neutral',
+      EXTRACTING: 'info',
+      EXTRACTED: 'success',
+      MANUAL_INPUT_PROVIDED: 'success',
+      NEEDS_MANUAL_INPUT: 'warning',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
 </script>
 
 <template>
-  <div class="pt-6">
-    <p v-if="job.isPending.value" aria-live="polite">공고 상세를 불러오는 중…</p>
-    <div v-else-if="job.isError.value" class="rounded-xl bg-red-50 p-5 text-red-800" role="alert">
-      <p>{{ loadError }}</p>
-      <div class="mt-3 flex flex-wrap gap-3">
-        <button type="button" class="underline" @click="job.refetch()">다시 시도</button>
-        <RouterLink class="underline" :to="{ name: 'jobs' }">공고 목록으로 돌아가기</RouterLink>
-      </div>
-    </div>
+  <div class="job-overview app-page">
+    <StatePanel
+      v-if="job.isPending.value"
+      kind="loading"
+      title="공고 상세를 불러오는 중…"
+      description="저장된 공고 정보와 처리 상태를 확인하고 있습니다."
+    />
+    <StatePanel
+      v-else-if="job.isError.value"
+      kind="error"
+      title="공고를 불러오지 못했습니다."
+      :description="loadError"
+    >
+      <template #actions>
+        <button type="button" class="button button--secondary" @click="job.refetch()">
+          다시 시도
+        </button>
+        <RouterLink class="button button--ghost" :to="{ name: 'jobs' }">
+          공고 목록으로 돌아가기
+        </RouterLink>
+      </template>
+    </StatePanel>
 
     <template v-else-if="job.data.value">
-      <p
-        v-if="createdMessage"
-        class="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"
-        role="status"
-      >
+      <p v-if="createdMessage" class="alert alert--success job-overview__created" role="status">
         {{ createdMessage }}
       </p>
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="min-w-0">
-          <p class="text-sm font-medium text-slate-600">
-            {{ jobCompanyLabel(job.data.value.companyName) }}
-          </p>
-          <h2 class="mt-1 break-words text-2xl font-bold">
-            {{ jobDisplayTitle(job.data.value) }}
-          </h2>
-          <p v-if="job.data.value.title && job.data.value.positionName" class="mt-1 text-slate-600">
-            직무: {{ job.data.value.positionName }}
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="rounded-lg border border-slate-300 px-3 py-2"
-            @click="beginEdit(false)"
-          >
-            편집
-          </button>
-          <button
-            v-if="['NEEDS_MANUAL_INPUT', 'FAILED'].includes(job.data.value.extractionStatus)"
-            id="job-manual-input"
-            type="button"
-            class="rounded-lg border border-amber-500 px-3 py-2 text-amber-900"
-            @click="beginEdit(true)"
-          >
-            본문 직접 입력
-          </button>
-          <button
-            v-if="job.data.value.extractionStatus === 'FAILED'"
-            id="job-retry-extraction"
-            type="button"
-            class="rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50"
-            :disabled="retryMutation.isPending.value"
-            @click="retryExtraction"
-          >
-            {{ retryMutation.isPending.value ? '재시도 접수 중…' : 'URL 추출 재시도' }}
-          </button>
-          <button
-            id="job-delete"
-            type="button"
-            class="rounded-lg border border-red-300 px-3 py-2 text-red-700 disabled:opacity-50"
-            :disabled="deleteMutation.isPending.value"
-            @click="remove"
-          >
-            {{ deleteMutation.isPending.value ? '삭제 중…' : '삭제' }}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        :title="jobDisplayTitle(job.data.value)"
+        :description="
+          job.data.value.title && job.data.value.positionName
+            ? `${jobCompanyLabel(job.data.value.companyName)} · 직무 ${job.data.value.positionName}`
+            : jobCompanyLabel(job.data.value.companyName)
+        "
+        eyebrow="Job overview"
+      >
+        <template #actions>
+          <div class="job-overview__actions">
+            <button
+              type="button"
+              class="button button--secondary button--compact"
+              @click="beginEdit(false)"
+            >
+              편집
+            </button>
+            <button
+              v-if="['NEEDS_MANUAL_INPUT', 'FAILED'].includes(job.data.value.extractionStatus)"
+              id="job-manual-input"
+              type="button"
+              class="button button--warning button--compact"
+              @click="beginEdit(true)"
+            >
+              본문 직접 입력
+            </button>
+            <button
+              v-if="job.data.value.extractionStatus === 'FAILED'"
+              id="job-retry-extraction"
+              type="button"
+              class="button button--secondary button--compact"
+              :disabled="retryMutation.isPending.value"
+              @click="retryExtraction"
+            >
+              {{ retryMutation.isPending.value ? '재시도 접수 중…' : 'URL 추출 재시도' }}
+            </button>
+            <button
+              id="job-delete"
+              type="button"
+              class="button button--danger button--compact"
+              :disabled="deleteMutation.isPending.value"
+              @click="remove"
+            >
+              {{ deleteMutation.isPending.value ? '삭제 중…' : '삭제' }}
+            </button>
+          </div>
+        </template>
+      </PageHeader>
 
-      <div class="mt-5 flex flex-wrap gap-2">
-        <span
+      <div class="job-overview__statuses" aria-label="공고 상태">
+        <StatusBadge
           data-testid="job-business-status"
-          class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-800"
-        >
-          업무 · {{ JOB_STATUS_LABELS[job.data.value.status] }}
-        </span>
-        <span
+          prefix="업무"
+          :label="JOB_STATUS_LABELS[job.data.value.status]"
+          :tone="businessTone(job.data.value.status)"
+        />
+        <StatusBadge
           data-testid="job-extraction-status"
-          class="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800"
-        >
-          추출 · {{ JOB_EXTRACTION_STATUS_LABELS[job.data.value.extractionStatus] }}
-        </span>
-        <span
+          prefix="추출"
+          :label="JOB_EXTRACTION_STATUS_LABELS[job.data.value.extractionStatus]"
+          :tone="extractionTone(job.data.value.extractionStatus)"
+        />
+        <StatusBadge
           v-if="job.data.value.status === 'CLOSED' && job.data.value.submittedAt"
-          class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
-        >
-          서류 제출 이력 있음
-        </span>
+          label="서류 제출 이력 있음"
+          tone="success"
+        />
       </div>
 
-      <p class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+      <p class="alert alert--info job-overview__notice">
         {{ jobExtractionGuidance(job.data.value.extractionStatus) }}
       </p>
       <p
         v-if="
           job.data.value.extractionStatus === 'FAILED' && job.data.value.extractionError !== null
         "
-        class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+        class="alert alert--warning job-overview__notice"
         role="alert"
       >
         {{ job.data.value.extractionError.message }}
-        <span class="mt-1 block text-xs">오류 코드: {{ job.data.value.extractionError.code }}</span>
+        <span class="job-overview__error-code"
+          >오류 코드: {{ job.data.value.extractionError.code }}</span
+        >
       </p>
-      <p v-if="message" class="mt-3 text-sm text-emerald-700" role="status">{{ message }}</p>
-      <p v-if="actionError" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+      <p v-if="message" class="alert alert--success job-overview__notice" role="status">
+        {{ message }}
+      </p>
+      <p v-if="actionError" class="alert alert--danger job-overview__notice" role="alert">
         {{ actionError }}
       </p>
 
       <JobVersionConflictPanel
         v-if="conflict"
-        class="mt-5"
+        class="job-overview__conflict"
         :draft="conflict.draft"
         :latest="conflict.latest"
         :fields="conflict.fields"
@@ -441,98 +481,101 @@ function emptyUpdateForm(): JobUpdateForm {
         @cancel="cancelConflict"
       />
 
-      <section v-if="editing" class="mt-6 rounded-2xl bg-white p-6 shadow-sm">
-        <h3 class="text-lg font-semibold">공고 정보 편집</h3>
-        <form class="mt-4 space-y-4" novalidate @submit.prevent="saveEdit">
-          <div class="grid gap-4 md:grid-cols-2">
-            <label class="text-sm font-medium">
-              회사명
+      <section v-if="editing" class="job-editor section-surface" aria-label="공고 정보 편집">
+        <div class="job-editor__header">
+          <div>
+            <p class="section-kicker">Edit job</p>
+            <h3 class="section-title">공고 정보 편집</h3>
+          </div>
+          <button type="button" class="button button--ghost button--compact" @click="cancelEdit">
+            닫기
+          </button>
+        </div>
+        <form class="job-editor__form" novalidate @submit.prevent="saveEdit">
+          <div class="job-editor__grid">
+            <label class="field">
+              <span class="field__label">회사명</span>
               <input
                 id="job-edit-company"
                 v-model="form.companyName"
                 maxlength="200"
-                class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                class="control"
+                :aria-invalid="Boolean(fieldErrors.companyName)"
               />
-              <span v-if="fieldErrors.companyName" class="mt-1 block text-red-700">{{
+              <span v-if="fieldErrors.companyName" class="inline-error">{{
                 fieldErrors.companyName
               }}</span>
             </label>
-            <label class="text-sm font-medium">
-              공고 제목
+            <label class="field">
+              <span class="field__label">공고 제목</span>
               <input
                 id="job-edit-title"
                 v-model="form.title"
                 maxlength="300"
-                class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                class="control"
+                :aria-invalid="Boolean(fieldErrors.title)"
               />
-              <span v-if="fieldErrors.title" class="mt-1 block text-red-700">{{
-                fieldErrors.title
-              }}</span>
+              <span v-if="fieldErrors.title" class="inline-error">{{ fieldErrors.title }}</span>
             </label>
-            <label class="text-sm font-medium">
-              직무명
+            <label class="field">
+              <span class="field__label">직무명</span>
               <input
                 id="job-edit-position"
                 v-model="form.positionName"
                 maxlength="300"
-                class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                class="control"
+                :aria-invalid="Boolean(fieldErrors.positionName)"
               />
-              <span v-if="fieldErrors.positionName" class="mt-1 block text-red-700">{{
+              <span v-if="fieldErrors.positionName" class="inline-error">{{
                 fieldErrors.positionName
               }}</span>
             </label>
-            <label class="text-sm font-medium">
-              마감 일시
+            <label class="field">
+              <span class="field__label">마감 일시</span>
               <input
                 id="job-edit-deadline"
                 v-model="form.deadlineAt"
                 type="datetime-local"
-                class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                class="control"
+                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
               />
-              <span v-if="fieldErrors.deadlineAt" class="mt-1 block text-red-700">{{
+              <span v-if="fieldErrors.deadlineAt" class="inline-error">{{
                 fieldErrors.deadlineAt
               }}</span>
             </label>
           </div>
-          <label class="block text-sm font-medium">
-            공고 본문
+          <label class="field">
+            <span class="field__label">공고 본문</span>
             <textarea
               id="job-edit-description"
               ref="descriptionInput"
               v-model="form.descriptionText"
               maxlength="200000"
-              class="mt-1 min-h-72 w-full rounded-lg border border-slate-300 p-3"
+              class="control job-editor__description"
+              :aria-invalid="Boolean(fieldErrors.descriptionText)"
             />
-            <span v-if="fieldErrors.descriptionText" class="mt-1 block text-red-700">{{
+            <span v-if="fieldErrors.descriptionText" class="inline-error">{{
               fieldErrors.descriptionText
             }}</span>
           </label>
-          <div class="flex flex-wrap gap-2">
+          <div class="form-actions">
             <button
               type="submit"
-              class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+              class="button button--primary"
               :disabled="updateMutation.isPending.value"
             >
               {{ updateMutation.isPending.value ? '저장 중…' : '저장' }}
             </button>
-            <button
-              type="button"
-              class="rounded-lg border border-slate-300 px-4 py-2"
-              @click="cancelEdit"
-            >
-              취소
-            </button>
+            <button type="button" class="button button--secondary" @click="cancelEdit">취소</button>
           </div>
         </form>
       </section>
 
-      <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-        <section
-          class="rounded-2xl bg-white p-6 shadow-sm"
-          aria-labelledby="job-description-heading"
-        >
-          <h3 id="job-description-heading" class="font-semibold">공고 본문</h3>
-          <p class="mt-1 text-xs text-slate-500">
+      <div class="job-overview__grid">
+        <section class="job-description section-surface" aria-labelledby="job-description-heading">
+          <p class="section-kicker">Description</p>
+          <h3 id="job-description-heading" class="section-title">공고 본문</h3>
+          <p class="job-description__source">
             출처:
             {{
               job.data.value.descriptionSource
@@ -540,24 +583,24 @@ function emptyUpdateForm(): JobUpdateForm {
                 : '미확인'
             }}
           </p>
-          <pre
-            v-if="job.data.value.descriptionText"
-            class="mt-4 max-h-[40rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-4 text-sm"
-            >{{ job.data.value.descriptionText }}</pre>
-          <p v-else class="mt-4 text-sm text-slate-600">
+          <pre v-if="job.data.value.descriptionText" class="job-description__body">{{
+            job.data.value.descriptionText
+          }}</pre>
+          <p v-else class="job-description__empty">
             저장된 공고 본문이 없습니다. 편집에서 직접 입력해 주세요.
           </p>
         </section>
 
-        <div class="space-y-5">
-          <section class="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 class="font-semibold">공고 정보</h3>
-            <dl class="mt-3 space-y-3 text-sm">
+        <div class="job-overview__side">
+          <section class="job-side-section section-surface">
+            <p class="section-kicker">Details</p>
+            <h3 class="section-title">공고 정보</h3>
+            <dl class="job-facts">
               <div>
-                <dt class="font-medium text-slate-500">원본 URL</dt>
-                <dd class="mt-1 break-all">
+                <dt>원본 URL</dt>
+                <dd>
                   <a
-                    class="text-indigo-700 underline"
+                    class="job-facts__url"
                     :href="job.data.value.sourceUrl"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -567,48 +610,45 @@ function emptyUpdateForm(): JobUpdateForm {
                 </dd>
               </div>
               <div>
-                <dt class="font-medium text-slate-500">마감</dt>
-                <dd class="mt-1">{{ formatJobInstant(job.data.value.deadlineAt) }}</dd>
-                <dd class="text-xs text-slate-500">
+                <dt>마감</dt>
+                <dd>{{ formatJobInstant(job.data.value.deadlineAt) }}</dd>
+                <dd class="job-facts__note">
                   {{ DEADLINE_SOURCE_LABELS[job.data.value.deadlineSource] }}
                 </dd>
               </div>
               <div v-if="job.data.value.submittedAt">
-                <dt class="font-medium text-slate-500">최초 서류 제출</dt>
-                <dd class="mt-1">{{ formatJobInstant(job.data.value.submittedAt) }}</dd>
+                <dt>최초 서류 제출</dt>
+                <dd>{{ formatJobInstant(job.data.value.submittedAt) }}</dd>
               </div>
               <div v-if="job.data.value.closedAt">
-                <dt class="font-medium text-slate-500">마감 처리</dt>
-                <dd class="mt-1">{{ formatJobInstant(job.data.value.closedAt) }}</dd>
-                <dd v-if="job.data.value.closedReason" class="text-xs text-slate-500">
+                <dt>마감 처리</dt>
+                <dd>{{ formatJobInstant(job.data.value.closedAt) }}</dd>
+                <dd v-if="job.data.value.closedReason" class="job-facts__note">
                   {{ CLOSED_REASON_LABELS[job.data.value.closedReason] }}
                 </dd>
               </div>
               <div v-if="job.data.value.roleCategory">
-                <dt class="font-medium text-slate-500">직무 분류</dt>
+                <dt>직무 분류</dt>
                 <dd>{{ job.data.value.roleCategory }}</dd>
               </div>
               <div v-if="job.data.value.employmentType">
-                <dt class="font-medium text-slate-500">고용 형태</dt>
+                <dt>고용 형태</dt>
                 <dd>{{ job.data.value.employmentType }}</dd>
               </div>
               <div v-if="job.data.value.location">
-                <dt class="font-medium text-slate-500">근무지</dt>
+                <dt>근무지</dt>
                 <dd>{{ job.data.value.location }}</dd>
               </div>
             </dl>
           </section>
 
-          <section class="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 class="font-semibold">업무 상태 변경</h3>
-            <form class="mt-3" @submit.prevent="changeStatus">
-              <label class="text-sm font-medium">
-                상태
-                <select
-                  id="job-status-select"
-                  v-model="selectedStatus"
-                  class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                >
+          <section class="job-side-section section-surface">
+            <p class="section-kicker">Workflow</p>
+            <h3 class="section-title">업무 상태 변경</h3>
+            <form class="job-status-form" @submit.prevent="changeStatus">
+              <label class="field">
+                <span class="field__label">상태</span>
+                <select id="job-status-select" v-model="selectedStatus" class="control">
                   <option v-for="status in JOB_STATUSES" :key="status" :value="status">
                     {{ JOB_STATUS_LABELS[status] }}
                   </option>
@@ -617,7 +657,7 @@ function emptyUpdateForm(): JobUpdateForm {
               <button
                 id="job-status-submit"
                 type="submit"
-                class="mt-3 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                class="button button--primary button--compact"
                 :disabled="
                   selectedStatus === job.data.value.status || statusMutation.isPending.value
                 "
@@ -627,10 +667,11 @@ function emptyUpdateForm(): JobUpdateForm {
             </form>
           </section>
 
-          <section v-if="monitoredRunId" class="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 class="font-semibold">URL 추출 Agent Run</h3>
+          <section v-if="monitoredRunId" class="job-side-section section-surface">
+            <p class="section-kicker">Processing</p>
+            <h3 class="section-title">URL 추출 작업</h3>
             <RouterLink
-              class="mt-2 inline-block text-indigo-700 underline"
+              class="job-run-link"
               :to="{ name: 'agent-run-detail', params: { agentRunId: monitoredRunId } }"
             >
               작업 진행 상세 보기
@@ -642,3 +683,155 @@ function emptyUpdateForm(): JobUpdateForm {
     </template>
   </div>
 </template>
+
+<style scoped>
+.job-overview__created {
+  margin-bottom: var(--space-4);
+}
+
+.job-overview__actions,
+.job-overview__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.job-overview__statuses,
+.job-overview__notice,
+.job-overview__conflict,
+.job-editor,
+.job-overview__grid {
+  margin-top: var(--space-5);
+}
+
+.job-overview__error-code {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.job-editor,
+.job-description,
+.job-side-section {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.job-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.job-editor__form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.job-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.job-editor__description {
+  min-height: 18rem;
+  line-height: 1.7;
+}
+
+.job-overview__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(17rem, 0.8fr);
+  gap: var(--space-5);
+}
+
+.job-description__source,
+.job-description__empty {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.job-description__body {
+  max-height: 44rem;
+  margin-top: var(--space-4);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  padding: var(--space-5);
+  white-space: pre-wrap;
+}
+
+.job-overview__side {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.job-facts {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.job-facts dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.job-facts dd {
+  margin-top: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.job-facts__note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.job-facts__url,
+.job-run-link {
+  color: var(--color-brand-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.job-status-form {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.job-status-form .field {
+  width: 100%;
+}
+
+.job-run-link {
+  display: inline-block;
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+@media (max-width: 64rem) {
+  .job-overview__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .job-editor__grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

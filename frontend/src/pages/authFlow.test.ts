@@ -54,7 +54,8 @@ describe('P1 authentication forms', () => {
       aiConsent: true,
     })
     expect(router.currentRoute.value.name).toBe('onboarding')
-    expect(wrapper.text()).toContain('필요한 정보를 단계별로 입력하세요.')
+    expect(wrapper.text()).toContain('지원 준비에 필요한 기본 정보를 네 단계로 정리합니다.')
+    expect(wrapper.get('[aria-current="step"]').text()).toContain('기본 정보')
   })
 
   it('uses a safe returnTo after login and rejects an external one', async () => {

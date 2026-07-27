@@ -6,6 +6,8 @@ import { useCreateJobMutation } from '@/features/jobs/queries'
 import { type JobCreateForm, validateJobCreateForm } from '@/features/jobs/validation'
 import { createJobIdempotencyKey } from '@/shared/api/jobApi'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
+import AppIcon from '@/shared/ui/AppIcon.vue'
+import PageHeader from '@/shared/ui/PageHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -72,117 +74,231 @@ function emptyForm(): JobCreateForm {
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl" aria-labelledby="job-new-heading">
-    <RouterLink class="text-sm font-semibold text-indigo-700" :to="{ name: 'jobs' }">
-      ← 공고 목록
+  <section class="job-new app-page app-page--narrow" aria-labelledby="job-new-heading">
+    <RouterLink class="back-link" :to="{ name: 'jobs' }">
+      <AppIcon name="arrow-left" />
+      공고 목록
     </RouterLink>
-    <h2 id="job-new-heading" class="mt-4 text-2xl font-bold">채용 공고 등록</h2>
-    <p class="mt-2 text-slate-600">
-      URL은 필수입니다. 본문을 직접 입력하면 URL 추출 작업 없이 즉시 사용할 수 있습니다.
-    </p>
+    <PageHeader
+      heading-id="job-new-heading"
+      title="채용 공고 등록"
+      description="공고 URL을 기준으로 등록합니다. 본문 직접 입력은 URL에서 내용을 가져올 수 없을 때 사용할 수 있는 대체 경로입니다."
+      eyebrow="New job"
+    />
 
-    <form
-      id="job-create-form"
-      class="mt-6 space-y-5 rounded-2xl bg-white p-6 shadow-sm"
-      novalidate
-      @submit.prevent="submit"
-    >
-      <label class="block text-sm font-medium">
-        공고 URL <span aria-hidden="true">*</span>
-        <input
-          id="job-source-url"
-          v-model="form.sourceUrl"
-          type="url"
-          required
-          maxlength="2000"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-          aria-describedby="job-source-url-error"
-        />
-        <span
-          v-if="fieldErrors.sourceUrl"
-          id="job-source-url-error"
-          class="mt-1 block text-red-700"
-          role="alert"
-        >
-          {{ fieldErrors.sourceUrl }}
-        </span>
-      </label>
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="text-sm font-medium">
-          회사명 (선택)
+    <form id="job-create-form" class="job-create-form" novalidate @submit.prevent="submit">
+      <section
+        class="job-create-section job-create-section--primary"
+        aria-labelledby="job-url-title"
+      >
+        <div class="job-create-section__heading">
+          <span class="job-create-section__index" aria-hidden="true">1</span>
+          <div>
+            <h3 id="job-url-title" class="section-title">공고 URL</h3>
+            <p>URL은 필수이며, 본문이 없으면 URL 추출 작업이 접수됩니다.</p>
+          </div>
+        </div>
+        <label class="field">
+          <span class="field__label">공고 URL <span aria-hidden="true">*</span></span>
           <input
-            id="job-company-name"
-            v-model="form.companyName"
-            maxlength="200"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            id="job-source-url"
+            v-model="form.sourceUrl"
+            type="url"
+            required
+            maxlength="2000"
+            class="control"
+            :aria-invalid="Boolean(fieldErrors.sourceUrl)"
+            aria-describedby="job-source-url-help job-source-url-error"
           />
-          <span v-if="fieldErrors.companyName" class="mt-1 block text-red-700" role="alert">
-            {{ fieldErrors.companyName }}
+          <span id="job-source-url-help" class="field__help"
+            >HTTP 또는 HTTPS 주소를 입력하세요.</span
+          >
+          <span
+            v-if="fieldErrors.sourceUrl"
+            id="job-source-url-error"
+            class="inline-error"
+            role="alert"
+          >
+            {{ fieldErrors.sourceUrl }}
           </span>
         </label>
-        <label class="text-sm font-medium">
-          직무명 (선택)
-          <input
-            id="job-position-name"
-            v-model="form.positionName"
-            maxlength="300"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+      </section>
+
+      <section class="job-create-section" aria-labelledby="job-detail-title">
+        <div class="job-create-section__heading">
+          <span class="job-create-section__index" aria-hidden="true">2</span>
+          <div>
+            <h3 id="job-detail-title" class="section-title">기본 정보</h3>
+            <p>이미 알고 있는 정보만 입력해도 됩니다.</p>
+          </div>
+        </div>
+        <div class="job-create-grid">
+          <label class="field">
+            <span class="field__label">회사명 <span class="field__optional">(선택)</span></span>
+            <input
+              id="job-company-name"
+              v-model="form.companyName"
+              maxlength="200"
+              class="control"
+              :aria-invalid="Boolean(fieldErrors.companyName)"
+            />
+            <span v-if="fieldErrors.companyName" class="inline-error" role="alert">
+              {{ fieldErrors.companyName }}
+            </span>
+          </label>
+          <label class="field">
+            <span class="field__label">직무명 <span class="field__optional">(선택)</span></span>
+            <input
+              id="job-position-name"
+              v-model="form.positionName"
+              maxlength="300"
+              class="control"
+              :aria-invalid="Boolean(fieldErrors.positionName)"
+            />
+            <span v-if="fieldErrors.positionName" class="inline-error" role="alert">
+              {{ fieldErrors.positionName }}
+            </span>
+          </label>
+          <label class="field">
+            <span class="field__label">마감 일시 <span class="field__optional">(선택)</span></span>
+            <input
+              id="job-deadline"
+              v-model="form.deadlineAt"
+              type="datetime-local"
+              class="control"
+              :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+            />
+            <span v-if="fieldErrors.deadlineAt" class="inline-error" role="alert">
+              {{ fieldErrors.deadlineAt }}
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="job-create-section" aria-labelledby="job-manual-title">
+        <div class="job-create-section__heading">
+          <span class="job-create-section__index" aria-hidden="true">3</span>
+          <div>
+            <h3 id="job-manual-title" class="section-title">본문 직접 입력</h3>
+            <p>직접 입력하면 URL 추출 작업을 만들지 않고 바로 사용할 수 있습니다.</p>
+          </div>
+        </div>
+        <label class="field">
+          <span class="field__label">공고 본문 <span class="field__optional">(선택)</span></span>
+          <textarea
+            id="job-description"
+            v-model="form.descriptionText"
+            maxlength="200000"
+            class="control job-create-form__description"
+            :aria-invalid="Boolean(fieldErrors.descriptionText)"
           />
-          <span v-if="fieldErrors.positionName" class="mt-1 block text-red-700" role="alert">
-            {{ fieldErrors.positionName }}
+          <span v-if="fieldErrors.descriptionText" class="inline-error" role="alert">
+            {{ fieldErrors.descriptionText }}
           </span>
         </label>
-      </div>
-      <label class="block text-sm font-medium">
-        공고 본문 직접 입력 (선택)
-        <textarea
-          id="job-description"
-          v-model="form.descriptionText"
-          maxlength="200000"
-          class="mt-1 min-h-64 w-full rounded-lg border border-slate-300 p-3"
-        />
-        <span v-if="fieldErrors.descriptionText" class="mt-1 block text-red-700" role="alert">
-          {{ fieldErrors.descriptionText }}
-        </span>
-      </label>
-      <label class="block text-sm font-medium">
-        마감 일시 (선택)
-        <input
-          id="job-deadline"
-          v-model="form.deadlineAt"
-          type="datetime-local"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-        />
-        <span v-if="fieldErrors.deadlineAt" class="mt-1 block text-red-700" role="alert">
-          {{ fieldErrors.deadlineAt }}
-        </span>
-      </label>
+      </section>
 
-      <p v-if="actionError" class="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+      <p v-if="actionError" class="alert alert--danger" role="alert">
         {{ actionError }}
       </p>
-      <div class="flex flex-wrap gap-3">
+      <div class="job-create-form__actions">
         <button
           id="job-create-submit"
           type="submit"
-          class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+          class="button button--primary"
           :disabled="createMutation.isPending.value || submitting"
         >
           {{ createMutation.isPending.value || submitting ? '등록 접수 중…' : '공고 등록' }}
         </button>
         <button
           type="button"
-          class="rounded-lg border border-slate-300 px-4 py-2 font-semibold"
+          class="button button--secondary"
           :disabled="createMutation.isPending.value || submitting"
           @click="reset"
         >
           입력 초기화
         </button>
       </div>
-      <p class="text-xs text-slate-500">
+      <p class="job-create-form__idempotency">
         요청이 실패해 다시 시도할 때는 같은 멱등성 키를 유지하며, 성공 또는 입력 초기화 때만 새
         요청으로 전환합니다.
       </p>
     </form>
   </section>
 </template>
+
+<style scoped>
+.job-create-form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.job-create-section {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.job-create-section--primary {
+  border-color: var(--color-brand-border);
+  box-shadow: inset 3px 0 var(--color-brand);
+}
+
+.job-create-section__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.job-create-section__heading p {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.job-create-section__index {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.job-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.job-create-form__description {
+  min-height: 17rem;
+  line-height: 1.7;
+}
+
+.job-create-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.job-create-form__idempotency {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+@media (max-width: 40rem) {
+  .job-create-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -28,6 +28,11 @@ import {
   reparseDocument,
 } from '@/shared/api/documentApi'
 import { normalizeApiError } from '@/shared/api/errors'
+import type { DocumentParseStatus, EvidenceExtractionStatus } from '@/shared/api/documentContracts'
+import AppIcon from '@/shared/ui/AppIcon.vue'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -159,72 +164,101 @@ async function refreshDocument(): Promise<void> {
   })
   await cache.invalidateQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
 }
+
+function parseTone(
+  value: DocumentParseStatus,
+): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      UPLOADED: 'neutral',
+      PARSING: 'info',
+      PARSED: 'success',
+      NEEDS_MANUAL_TEXT: 'warning',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
+
+function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'success' | 'danger' {
+  return (
+    {
+      NOT_STARTED: 'neutral',
+      QUEUED: 'neutral',
+      EXTRACTING: 'info',
+      SUCCEEDED: 'success',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
 </script>
 
 <template>
-  <section aria-labelledby="document-heading">
-    <RouterLink class="text-sm font-semibold text-indigo-700" to="/documents"
-      >← 문서 목록</RouterLink
-    >
-    <p v-if="document.isPending.value" class="mt-6" aria-live="polite">문서 상세를 불러오는 중…</p>
-    <div
+  <section class="document-detail app-page" aria-labelledby="document-heading">
+    <RouterLink class="back-link" to="/documents">
+      <AppIcon name="arrow-left" />
+      문서 목록
+    </RouterLink>
+    <StatePanel
+      v-if="document.isPending.value"
+      class="document-detail__state"
+      kind="loading"
+      title="문서 상세를 불러오는 중…"
+      description="문서 정보와 처리 상태를 확인하고 있습니다."
+    />
+    <StatePanel
       v-else-if="document.isError.value"
-      class="mt-6 rounded-xl bg-red-50 p-5 text-red-800"
-      role="alert"
+      class="document-detail__state"
+      kind="error"
+      title="문서를 불러오지 못했습니다."
+      :description="loadError"
     >
-      <p>{{ loadError }}</p>
-      <RouterLink class="mt-3 inline-block underline" to="/documents"
-        >문서 목록으로 돌아가기</RouterLink
-      >
-    </div>
+      <template #actions>
+        <RouterLink class="button button--secondary" to="/documents">
+          문서 목록으로 돌아가기
+        </RouterLink>
+      </template>
+    </StatePanel>
     <template v-else-if="document.data.value">
-      <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 id="document-heading" class="text-2xl font-bold">
-            {{ document.data.value.displayName }}
-          </h2>
-          <p class="mt-2 text-slate-600">
-            {{ DOCUMENT_TYPE_LABELS[document.data.value.documentType] }} ·
-            {{ document.data.value.mimeType }} ·
-            {{ formatFileSize(document.data.value.fileSizeBytes) }}
-          </p>
-        </div>
-        <div class="flex gap-2">
-          <button
-            class="rounded-lg border border-slate-300 px-3 py-2"
-            type="button"
-            @click="reparse"
-          >
-            재처리</button
-          ><button
-            class="rounded-lg border border-slate-300 px-3 py-2"
-            type="button"
-            @click="download"
-          >
-            다운로드</button
-          ><button
-            class="rounded-lg border border-red-300 px-3 py-2 text-red-700"
-            type="button"
-            @click="remove"
-          >
-            삭제
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        heading-id="document-heading"
+        :title="document.data.value.displayName"
+        :description="`${DOCUMENT_TYPE_LABELS[document.data.value.documentType]} · ${document.data.value.mimeType} · ${formatFileSize(document.data.value.fileSizeBytes)}`"
+        eyebrow="Document detail"
+      >
+        <template #actions>
+          <div class="document-detail__actions">
+            <button class="button button--secondary button--compact" type="button" @click="reparse">
+              재처리
+            </button>
+            <button class="button button--ghost button--compact" type="button" @click="download">
+              다운로드
+            </button>
+            <button class="button button--danger button--compact" type="button" @click="remove">
+              삭제
+            </button>
+          </div>
+        </template>
+      </PageHeader>
 
-      <div class="mt-6 grid gap-4 md:grid-cols-2">
-        <section class="rounded-xl bg-white p-5">
-          <h3 class="font-semibold">파싱 상태</h3>
-          <p class="mt-2">{{ DOCUMENT_PARSE_STATUS_LABELS[document.data.value.parseStatus] }}</p>
+      <div class="document-status-grid">
+        <section class="document-status">
+          <span class="document-status__label">텍스트 처리</span>
+          <StatusBadge
+            :label="DOCUMENT_PARSE_STATUS_LABELS[document.data.value.parseStatus]"
+            :tone="parseTone(document.data.value.parseStatus)"
+          />
+          <p>업로드 파일에서 읽을 수 있는 텍스트를 준비하는 상태입니다.</p>
         </section>
-        <section class="rounded-xl bg-white p-5">
-          <h3 class="font-semibold">근거 추출 상태</h3>
-          <p class="mt-2">
-            {{ EVIDENCE_EXTRACTION_STATUS_LABELS[document.data.value.evidenceExtractionStatus] }}
-          </p>
+        <section class="document-status">
+          <span class="document-status__label">근거 추출</span>
+          <StatusBadge
+            :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.data.value.evidenceExtractionStatus]"
+            :tone="evidenceTone(document.data.value.evidenceExtractionStatus)"
+          />
+          <p>준비된 텍스트에서 검토할 경력 근거를 찾는 별도 상태입니다.</p>
         </section>
       </div>
-      <p class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+      <p class="alert alert--info document-detail__message">
         {{
           documentStateMessage(
             document.data.value.parseStatus,
@@ -234,48 +268,55 @@ async function refreshDocument(): Promise<void> {
       </p>
       <p
         v-if="document.data.value.safeError"
-        class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+        class="alert alert--warning document-detail__message"
         role="alert"
       >
         {{ document.data.value.safeError.message }}
       </p>
-      <p v-if="message" class="mt-3 text-sm text-emerald-700" role="status">{{ message }}</p>
-      <p v-if="actionError" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+      <p v-if="message" class="alert alert--success document-detail__message" role="status">
+        {{ message }}
+      </p>
+      <p v-if="actionError" class="alert alert--danger document-detail__message" role="alert">
         {{ actionError }}
       </p>
 
-      <dl class="mt-6 grid gap-3 rounded-xl bg-white p-5 text-sm sm:grid-cols-2">
+      <dl class="metadata-grid section-surface document-metadata">
         <div>
-          <dt class="font-medium">페이지</dt>
+          <dt>페이지</dt>
           <dd>{{ document.data.value.pageCount ?? '확인 전' }}</dd>
         </div>
         <div>
-          <dt class="font-medium">문자 수</dt>
+          <dt>문자 수</dt>
           <dd>{{ document.data.value.characterCount ?? '확인 전' }}</dd>
         </div>
         <div>
-          <dt class="font-medium">업로드</dt>
+          <dt>업로드</dt>
           <dd>{{ new Date(document.data.value.uploadedAt).toLocaleString('ko-KR') }}</dd>
         </div>
         <div>
-          <dt class="font-medium">최근 수정</dt>
+          <dt>최근 수정</dt>
           <dd>{{ new Date(document.data.value.updatedAt).toLocaleString('ko-KR') }}</dd>
         </div>
       </dl>
 
       <section
         v-if="activeRunId || document.data.value.latestAgentRunId"
-        class="mt-6 rounded-xl bg-white p-5"
+        class="document-section section-surface"
       >
-        <h3 class="font-semibold">Agent Run</h3>
-        <RouterLink
-          class="mt-2 inline-block text-indigo-700 underline"
-          :to="{
-            name: 'agent-run-detail',
-            params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
-          }"
-          >작업 진행 상세 보기</RouterLink
-        >
+        <div class="document-section__heading">
+          <div>
+            <p class="section-kicker">Processing</p>
+            <h3 class="section-title">연결된 작업</h3>
+          </div>
+          <RouterLink
+            class="button button--secondary button--compact"
+            :to="{
+              name: 'agent-run-detail',
+              params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
+            }"
+            >작업 진행 상세 보기</RouterLink
+          >
+        </div>
         <DocumentRunMonitor
           :user-id="userId"
           :document-id="documentId"
@@ -285,24 +326,26 @@ async function refreshDocument(): Promise<void> {
 
       <section
         v-if="document.data.value.parseStatus === 'NEEDS_MANUAL_TEXT'"
-        class="mt-6 rounded-xl bg-white p-5"
+        class="document-section section-surface manual-text-section"
       >
-        <h3 class="font-semibold">텍스트 직접 입력</h3>
-        <p class="mt-1 text-sm text-slate-600">
+        <p class="section-kicker">Manual fallback</p>
+        <h3 class="section-title">텍스트 직접 입력</h3>
+        <p class="document-section__description">
           공백을 제외해 100자 이상, 최대 500,000자를 입력하세요. 기존 WAITING_USER 작업을
           재개합니다.
         </p>
-        <form class="mt-4" novalidate @submit.prevent="submitManualText">
-          <label class="block text-sm font-medium"
-            >문서 텍스트<textarea
+        <form class="manual-text-form" novalidate @submit.prevent="submitManualText">
+          <label class="field">
+            <span class="field__label">문서 텍스트</span>
+            <textarea
               v-model="manualText"
-              class="mt-1 min-h-56 w-full rounded-lg border border-slate-300 p-3"
+              class="control manual-text-form__editor"
               maxlength="500000"
             />
           </label>
-          <p v-if="manualError" class="mt-2 text-sm text-red-700" role="alert">{{ manualError }}</p>
+          <p v-if="manualError" class="inline-error" role="alert">{{ manualError }}</p>
           <button
-            class="mt-3 rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+            class="button button--primary"
             type="submit"
             :disabled="manualMutation.isPending.value"
           >
@@ -311,22 +354,132 @@ async function refreshDocument(): Promise<void> {
         </form>
       </section>
 
-      <section class="mt-6 rounded-xl bg-white p-5">
-        <h3 class="font-semibold">추출 텍스트</h3>
-        <p v-if="documentText.isPending.value" class="mt-3">텍스트를 불러오는 중…</p>
-        <p v-else-if="documentText.isError.value" class="mt-3 text-sm text-amber-800" role="alert">
+      <section class="document-section section-surface">
+        <p class="section-kicker">Text preview</p>
+        <h3 class="section-title">추출 텍스트</h3>
+        <p v-if="documentText.isPending.value" class="document-text__status" role="status">
+          텍스트를 불러오는 중…
+        </p>
+        <p
+          v-else-if="documentText.isError.value"
+          class="alert alert--warning document-text__status"
+          role="alert"
+        >
           추출 텍스트를 아직 불러올 수 없습니다.
         </p>
-        <pre
-          v-else-if="documentText.data.value"
-          class="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm"
-          >{{ documentText.data.value.text }}</pre>
-        <p v-else class="mt-3 text-sm text-slate-600">
-          파싱이 완료되면 원문 미리보기가 표시됩니다.
-        </p>
+        <pre v-else-if="documentText.data.value" class="document-text__preview">{{
+          documentText.data.value.text
+        }}</pre>
+        <p v-else class="document-text__status">파싱이 완료되면 원문 미리보기가 표시됩니다.</p>
       </section>
 
       <DocumentEvidencePanel :user-id="userId" :document-id="documentId" />
     </template>
   </section>
 </template>
+
+<style scoped>
+.document-detail__state,
+.document-status-grid,
+.document-detail__message,
+.document-metadata,
+.document-section {
+  margin-top: var(--space-5);
+}
+
+.document-detail__actions,
+.document-section__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.document-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.document-status {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.document-status__label {
+  font-weight: 700;
+}
+
+.document-status p {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.document-metadata {
+  padding: var(--space-5);
+}
+
+.document-section {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.document-section__heading {
+  justify-content: space-between;
+}
+
+.document-section__description,
+.document-text__status {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.manual-text-form {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.manual-text-form .field {
+  width: 100%;
+}
+
+.manual-text-form__editor {
+  min-height: 15rem;
+  line-height: 1.7;
+}
+
+.document-text__preview {
+  max-height: 32rem;
+  margin-top: var(--space-4);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  padding: var(--space-5);
+  white-space: pre-wrap;
+}
+
+@media (max-width: 40rem) {
+  .document-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .document-section__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

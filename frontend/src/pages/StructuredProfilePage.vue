@@ -19,6 +19,9 @@ import {
   validateEducationForm,
   validateLanguageScoreForm,
 } from '@/features/profile/schemas'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
 import type {
   AwardCreateRequest,
   AwardDto,
@@ -264,15 +267,6 @@ function validateCurrentForm(): {
     case 'career':
       return validateCareerForm(form)
   }
-}
-
-function nextPage(): void {
-  if (resourceQuery.data.value && page.value + 1 < resourceQuery.data.value.totalPages)
-    page.value += 1
-}
-
-function previousPage(): void {
-  if (page.value > 0) page.value -= 1
 }
 
 function onSortChange(): void {
@@ -642,50 +636,67 @@ const resourceLabels: Record<
 </script>
 
 <template>
-  <section :aria-labelledby="`${kind}-heading`">
+  <section class="structured-profile app-page" :aria-labelledby="`${kind}-heading`">
     <ProfileTabs />
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h2 :id="`${kind}-heading`" class="text-2xl font-bold">{{ title }}</h2>
-        <p class="mt-2 text-slate-600">{{ description }}</p>
-      </div>
-      <button
-        type="button"
-        class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white"
-        @click="openCreate"
-      >
-        {{ addLabel }}
-      </button>
-    </div>
+    <PageHeader
+      :heading-id="`${kind}-heading`"
+      :title="title"
+      :description="description"
+      eyebrow="Profile"
+    >
+      <template #actions>
+        <button type="button" class="button button--primary" @click="openCreate">
+          {{ addLabel }}
+        </button>
+      </template>
+    </PageHeader>
 
-    <p v-if="documentLinkable" class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+    <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
       현재 로그인 사용자의 삭제되지 않은 문서만 증빙으로 연결할 수 있습니다.
     </p>
 
-    <div class="mt-5 flex items-center gap-2">
-      <label class="text-sm font-medium" :for="`${kind}-sort`">정렬</label>
-      <select
-        :id="`${kind}-sort`"
-        v-model="sort"
-        class="rounded-lg border border-slate-300 px-3 py-2"
-        @change="onSortChange"
-      >
-        <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+    <div class="filter-toolbar structured-profile__toolbar">
+      <label class="field field--inline" :for="`${kind}-sort`">
+        <span class="field__label">정렬</span>
+        <select
+          :id="`${kind}-sort`"
+          v-model="sort"
+          class="control control--compact"
+          @change="onSortChange"
+        >
+          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
     </div>
 
-    <p v-if="message" class="mt-4 text-sm text-emerald-700" role="status">{{ message }}</p>
-    <p v-if="generalError" class="mt-4 text-sm text-red-700" role="alert">{{ generalError }}</p>
+    <p v-if="message" class="alert alert--success structured-profile__message" role="status">
+      {{ message }}
+    </p>
+    <p
+      v-if="generalError && !isFormOpen"
+      class="alert alert--danger structured-profile__message"
+      role="alert"
+    >
+      {{ generalError }}
+    </p>
 
     <section
       v-if="isFormOpen"
-      class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      role="dialog"
+      class="structured-editor section-surface"
+      role="region"
       :aria-label="editingId ? `${title} 수정` : `${title} 추가`"
     >
-      <h3 class="text-lg font-semibold">{{ editingId ? `${title} 수정` : addLabel }}</h3>
+      <div class="structured-editor__header">
+        <div>
+          <p class="section-kicker">{{ editingId ? '등록 정보 수정' : '새 항목 등록' }}</p>
+          <h3 class="section-title">{{ editingId ? `${title} 수정` : addLabel }}</h3>
+        </div>
+        <button type="button" class="button button--ghost button--compact" @click="closeForm">
+          닫기
+        </button>
+      </div>
 
       <VersionConflictPanel
         v-if="conflict"
@@ -697,7 +708,7 @@ const resourceLabels: Record<
         @reapply="reapplyConflict"
       />
 
-      <form class="mt-4 grid gap-4 md:grid-cols-2" novalidate @submit.prevent="save">
+      <form class="structured-form" novalidate @submit.prevent="save">
         <template v-if="kind === 'education'">
           <label class="text-sm font-medium"
             >학교명<input
@@ -984,86 +995,98 @@ const resourceLabels: Record<
           </span>
         </label>
 
-        <p v-if="generalError" class="md:col-span-2 text-sm text-red-700" role="alert">
+        <p v-if="generalError" class="alert alert--danger form-span" role="alert">
           {{ generalError }}
         </p>
-        <div class="md:col-span-2 flex gap-2">
+        <div class="form-actions form-span">
           <button
             type="submit"
-            class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+            class="button button--primary"
             :disabled="saveMutation.isPending.value"
           >
             {{ saveMutation.isPending.value ? '저장 중…' : '저장' }}
           </button>
-          <button
-            type="button"
-            class="rounded-lg border border-slate-300 px-4 py-2 font-semibold"
-            @click="closeForm"
-          >
-            취소
-          </button>
+          <button type="button" class="button button--secondary" @click="closeForm">취소</button>
         </div>
       </form>
     </section>
 
-    <p v-if="resourceQuery.isPending.value" class="mt-8" aria-live="polite">목록을 불러오는 중…</p>
-    <div
+    <StatePanel
+      v-if="resourceQuery.isPending.value"
+      class="structured-profile__state"
+      kind="loading"
+      :title="`${title} 목록을 불러오는 중…`"
+      description="저장된 항목을 확인하고 있습니다."
+    />
+    <StatePanel
       v-else-if="resourceQuery.isError.value"
-      class="mt-8 rounded-xl bg-red-50 p-4 text-red-800"
-      role="alert"
+      class="structured-profile__state"
+      kind="error"
+      :title="`${title} 목록을 불러오지 못했습니다.`"
+      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
     >
-      목록을 불러오지 못했습니다.
-      <button type="button" class="underline" @click="resourceQuery.refetch()">다시 시도</button>
-    </div>
-    <div
+      <template #actions>
+        <button type="button" class="button button--secondary" @click="resourceQuery.refetch()">
+          다시 시도
+        </button>
+      </template>
+    </StatePanel>
+    <StatePanel
       v-else-if="resourceQuery.data.value?.items.length === 0"
-      class="mt-8 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600"
+      class="structured-profile__state"
+      kind="empty"
+      :title="`등록된 ${title} 항목이 없습니다.`"
+      :description="`${title} 정보를 추가해 지원 준비에 활용할 수 있습니다.`"
     >
-      등록된 {{ title }} 항목이 없습니다.
-    </div>
+      <template #actions>
+        <button type="button" class="button button--primary" @click="openCreate">
+          {{ addLabel }}
+        </button>
+      </template>
+    </StatePanel>
     <ol
       v-else
-      class="mt-8 space-y-3"
-      :class="kind === 'career' ? 'border-l-2 border-indigo-200 pl-5' : ''"
+      class="structured-list data-list"
+      :class="{ 'structured-list--timeline': kind === 'career' }"
     >
       <li
         v-for="item in resourceQuery.data.value?.items"
         :key="item.id"
-        class="rounded-2xl bg-white p-5 shadow-sm"
+        class="structured-item data-card"
       >
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div class="flex items-center gap-2">
-              <h3 class="font-semibold">{{ resourceTitle(kind, item) }}</h3>
+        <div class="structured-item__body">
+          <div class="structured-item__content">
+            <div class="structured-item__title">
+              <h3>{{ resourceTitle(kind, item) }}</h3>
               <span
                 v-if="kind === 'education' && (item as EducationDto).isPrimary"
-                class="rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800"
+                class="status-badge status-badge--brand"
                 >대표 학력</span
               >
             </div>
-            <p v-if="resourceSubtitle(kind, item)" class="mt-1 text-sm text-slate-600">
+            <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">
               {{ resourceSubtitle(kind, item) }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2">
+          <div class="structured-item__actions">
             <button
               v-if="kind === 'education' && !(item as EducationDto).isPrimary"
               type="button"
-              class="rounded-lg border border-indigo-300 px-3 py-1.5 text-sm text-indigo-800"
+              class="button button--secondary button--compact"
               @click="makePrimary(item as EducationDto)"
             >
               대표로 설정
             </button>
             <button
               type="button"
-              class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+              class="button button--ghost button--compact"
               @click="openEdit(item)"
             >
               수정
             </button>
             <button
               type="button"
-              class="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700"
+              class="button button--danger button--compact"
               :disabled="deleteMutation.isPending.value"
               @click="remove(item)"
             >
@@ -1074,28 +1097,157 @@ const resourceLabels: Record<
       </li>
     </ol>
 
-    <nav
+    <PaginationNav
       v-if="resourceQuery.data.value && resourceQuery.data.value.totalPages > 0"
-      class="mt-6 flex items-center justify-between"
-      aria-label="목록 페이지"
-    >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="page === 0"
-        @click="previousPage"
-      >
-        이전
-      </button>
-      <span class="text-sm">{{ page + 1 }} / {{ resourceQuery.data.value.totalPages }} 페이지</span>
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="page + 1 >= resourceQuery.data.value.totalPages"
-        @click="nextPage"
-      >
-        다음
-      </button>
-    </nav>
+      :page="page"
+      :total-pages="resourceQuery.data.value.totalPages"
+      label="목록 페이지"
+      @change="page = $event"
+    />
   </section>
 </template>
+
+<style scoped>
+.structured-profile__guidance,
+.structured-profile__toolbar,
+.structured-profile__message,
+.structured-profile__state,
+.structured-editor,
+.structured-list {
+  margin-top: var(--space-5);
+}
+
+.structured-profile__toolbar {
+  justify-content: flex-end;
+}
+
+.structured-editor {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.structured-editor__header,
+.structured-item__body,
+.structured-item__title,
+.structured-item__actions {
+  display: flex;
+  align-items: center;
+}
+
+.structured-editor__header,
+.structured-item__body {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.structured-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.structured-form :deep(label) {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.structured-form :deep(input:not([type='checkbox'])),
+.structured-form :deep(select),
+.structured-form :deep(textarea) {
+  width: 100%;
+  margin-top: var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.structured-form :deep(input:not([type='checkbox'])),
+.structured-form :deep(select) {
+  min-height: 2.75rem;
+}
+
+.structured-form :deep(input:not([type='checkbox']):focus),
+.structured-form :deep(select:focus),
+.structured-form :deep(textarea:focus) {
+  border-color: var(--color-brand);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.structured-form :deep(.md\:col-span-2),
+.form-span {
+  grid-column: 1 / -1;
+}
+
+.structured-item {
+  position: relative;
+  padding: var(--space-5);
+}
+
+.structured-list--timeline {
+  padding-left: var(--space-5);
+  border-left: 2px solid var(--color-border);
+}
+
+.structured-list--timeline .structured-item::before {
+  position: absolute;
+  top: 1.6rem;
+  left: calc(-1 * var(--space-5) - 0.42rem);
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--color-brand);
+  border-radius: 50%;
+  background: var(--color-canvas);
+  content: '';
+}
+
+.structured-item__content {
+  min-width: 0;
+}
+
+.structured-item__title,
+.structured-item__actions {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.structured-item__title h3 {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.structured-item__meta {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 48rem) {
+  .structured-profile__toolbar {
+    justify-content: stretch;
+  }
+
+  .structured-profile__toolbar .field {
+    width: 100%;
+  }
+
+  .structured-form {
+    grid-template-columns: 1fr;
+  }
+
+  .structured-form :deep(.md\:col-span-2) {
+    grid-column: auto;
+  }
+
+  .form-span {
+    grid-column: 1;
+  }
+
+  .structured-item__body {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

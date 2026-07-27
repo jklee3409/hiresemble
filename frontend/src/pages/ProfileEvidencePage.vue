@@ -8,6 +8,10 @@ import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import type {
   EvidenceDto,
   EvidenceMetadataValue,
@@ -205,67 +209,78 @@ function statusLabel(value: EvidenceVerificationStatus): string {
 }
 
 function sourceLabel(value: EvidenceDto['sourceType']): string {
-  return {
-    EDUCATION: '학력',
-    CERTIFICATION: '자격증',
-    LANGUAGE_SCORE: '어학',
-    AWARD: '수상',
-    CAREER: '경력',
-    DOCUMENT_CHUNK: '문서',
-    MANUAL: '수동',
-  }[value]
+  return (
+    {
+      EDUCATION: '학력',
+      CERTIFICATION: '자격증',
+      LANGUAGE_SCORE: '어학',
+      AWARD: '수상',
+      CAREER: '경력',
+      DOCUMENT_CHUNK: '문서',
+      MANUAL: '수동',
+    } as const
+  )[value]
+}
+
+function statusTone(
+  value: EvidenceVerificationStatus,
+): 'neutral' | 'success' | 'danger' | 'warning' {
+  return (
+    {
+      PENDING: 'neutral',
+      VERIFIED: 'success',
+      REJECTED: 'danger',
+      SOURCE_DELETED: 'warning',
+    } as const
+  )[value]
+}
+
+function confidenceLabel(value: number | null): string {
+  return value === null ? '신뢰도 미산정' : `신뢰도 ${Math.round(value * 100)}%`
 }
 </script>
 
 <template>
-  <section aria-labelledby="evidence-heading">
+  <section class="evidence-page app-page" aria-labelledby="evidence-heading">
     <ProfileTabs />
-    <h2 id="evidence-heading" class="text-2xl font-bold">직접 입력 근거</h2>
-    <p class="mt-2 text-slate-600">구조화 프로필에서 동기화된 근거를 검토하고 편집합니다.</p>
-    <p class="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+    <PageHeader
+      heading-id="evidence-heading"
+      title="직접 입력 근거"
+      description="프로필과 문서에서 생성된 경력 근거를 검토하고 상태를 관리합니다."
+      eyebrow="Profile evidence"
+    />
+    <p class="alert alert--info evidence-page__guidance">
       직접 입력 근거와 문서에서 추출된 근거를 함께 검토합니다. 삭제된 원천은 읽기 전용입니다.
     </p>
 
-    <form
-      class="mt-5 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4"
-      @submit.prevent="applyFilters"
-    >
-      <label class="text-sm font-medium"
-        >상태<select
-          v-model="status"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-        >
+    <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
+      <label class="field">
+        <span class="field__label">상태</span>
+        <select v-model="status" class="control control--compact">
           <option value="">전체</option>
-          <option value="PENDING">PENDING</option>
-          <option value="VERIFIED">VERIFIED</option>
-          <option value="REJECTED">REJECTED</option>
-          <option value="SOURCE_DELETED">SOURCE_DELETED</option>
-        </select></label
-      >
-      <label class="text-sm font-medium"
-        >카테고리<input
-          v-model="category"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-          maxlength="80"
-      /></label>
-      <label class="text-sm font-medium"
-        >정렬<select
-          v-model="sort"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-          @change="applyFilters"
-        >
+          <option value="PENDING">검토 대기</option>
+          <option value="VERIFIED">승인됨</option>
+          <option value="REJECTED">거절됨</option>
+          <option value="SOURCE_DELETED">원본 삭제됨</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">카테고리</span>
+        <input v-model="category" class="control control--compact" maxlength="80" />
+      </label>
+      <label class="field">
+        <span class="field__label">정렬</span>
+        <select v-model="sort" class="control control--compact" @change="applyFilters">
           <option value="updatedAt,desc">최근 수정순</option>
           <option value="confidence,desc">신뢰도순</option>
-        </select></label
-      >
-      <button type="submit" class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white">
-        필터 적용
-      </button>
-      <label class="text-sm font-medium"
-        >출처 문서<select
+        </select>
+      </label>
+      <label class="field evidence-filters__document">
+        <span class="field__label">출처 문서</span>
+        <select
           id="evidence-document-filter"
           v-model="documentId"
-          class="mt-1 block max-w-72 rounded-lg border border-slate-300 px-3 py-2"
+          class="control control--compact"
           :disabled="documents.isPending.value || documents.isError.value"
         >
           <option value="">전체</option>
@@ -276,23 +291,36 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
           >
             {{ candidate.displayName }}
           </option>
-        </select></label
-      >
+        </select>
+      </label>
+      <button type="submit" class="button button--primary button--compact">필터 적용</button>
     </form>
-    <p v-if="documents.isError.value" class="mt-1 text-xs text-red-700" role="alert">
+    <p v-if="documents.isError.value" class="inline-error" role="alert">
       출처 문서 목록을 불러오지 못했습니다.
     </p>
 
-    <p v-if="message" class="mt-4 text-sm text-emerald-700" role="status">{{ message }}</p>
-    <p v-if="generalError" class="mt-4 text-sm text-red-700" role="alert">{{ generalError }}</p>
+    <p v-if="message" class="alert alert--success evidence-page__message" role="status">
+      {{ message }}
+    </p>
+    <p v-if="generalError" class="alert alert--danger evidence-page__message" role="alert">
+      {{ generalError }}
+    </p>
 
     <section
       v-if="editingId"
-      class="mt-6 rounded-2xl border border-slate-200 bg-white p-6"
-      role="dialog"
+      class="evidence-editor section-surface"
+      role="region"
       aria-label="근거 편집"
     >
-      <h3 class="text-lg font-semibold">직접 입력 근거 편집</h3>
+      <div class="evidence-editor__header">
+        <div>
+          <p class="section-kicker">Evidence editor</p>
+          <h3 class="section-title">직접 입력 근거 편집</h3>
+        </div>
+        <button type="button" class="button button--ghost button--compact" @click="closeEdit">
+          닫기
+        </button>
+      </div>
       <VersionConflictPanel
         v-if="conflict"
         class="mt-4"
@@ -306,151 +334,290 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
         @cancel="cancelConflict"
         @reapply="reapplyConflict"
       />
-      <form class="mt-4 space-y-4" novalidate @submit.prevent="saveEdit">
-        <label class="block text-sm font-medium"
-          >제목<input
+      <form class="evidence-editor__form" novalidate @submit.prevent="saveEdit">
+        <label class="field">
+          <span class="field__label">제목</span>
+          <input
             id="evidence-title"
             v-model="editForm.title"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            class="control"
             maxlength="250"
-          /><span v-if="fieldErrors.title" class="mt-1 block text-red-700">{{
+            :aria-invalid="Boolean(fieldErrors.title)"
+            :aria-describedby="fieldErrors.title ? 'evidence-title-error' : undefined"
+          />
+          <span v-if="fieldErrors.title" id="evidence-title-error" class="inline-error">{{
             fieldErrors.title
-          }}</span></label
-        >
-        <label class="block text-sm font-medium"
-          >내용<textarea
+          }}</span>
+        </label>
+        <label class="field">
+          <span class="field__label">내용</span>
+          <textarea
             id="evidence-content"
             v-model="editForm.content"
-            class="mt-1 min-h-36 w-full rounded-lg border border-slate-300 px-3 py-2"
+            class="control evidence-editor__content"
             maxlength="20000"
-          /><span v-if="fieldErrors.content" class="mt-1 block text-red-700">{{
+            :aria-invalid="Boolean(fieldErrors.content)"
+            :aria-describedby="fieldErrors.content ? 'evidence-content-error' : undefined"
+          />
+          <span v-if="fieldErrors.content" id="evidence-content-error" class="inline-error">{{
             fieldErrors.content
-          }}</span></label
-        >
-        <label class="block text-sm font-medium"
-          >Metadata JSON<textarea
+          }}</span>
+        </label>
+        <label class="field">
+          <span class="field__label">Metadata JSON</span>
+          <textarea
             id="evidence-metadata"
             v-model="editForm.metadata"
-            class="mt-1 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
-          /><span v-if="fieldErrors.metadata" class="mt-1 block text-red-700">{{
+            class="control evidence-editor__metadata"
+            :aria-invalid="Boolean(fieldErrors.metadata)"
+            :aria-describedby="fieldErrors.metadata ? 'evidence-metadata-error' : undefined"
+          />
+          <span v-if="fieldErrors.metadata" id="evidence-metadata-error" class="inline-error">{{
             fieldErrors.metadata
-          }}</span></label
-        >
-        <div class="flex gap-2">
+          }}</span>
+        </label>
+        <div class="form-actions">
           <button
             type="submit"
-            class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+            class="button button--primary"
             :disabled="editMutation.isPending.value"
           >
-            {{ editMutation.isPending.value ? '저장 중…' : '근거 저장' }}</button
-          ><button
-            type="button"
-            class="rounded-lg border border-slate-300 px-4 py-2"
-            @click="closeEdit"
-          >
-            취소
+            {{ editMutation.isPending.value ? '저장 중…' : '근거 저장' }}
           </button>
+          <button type="button" class="button button--secondary" @click="closeEdit">취소</button>
         </div>
       </form>
     </section>
 
-    <p v-if="evidenceQuery.isPending.value" class="mt-8" aria-live="polite">근거를 불러오는 중…</p>
-    <div
+    <StatePanel
+      v-if="evidenceQuery.isPending.value"
+      class="evidence-page__state"
+      kind="loading"
+      title="근거를 불러오는 중…"
+      description="저장된 출처와 검토 상태를 확인하고 있습니다."
+    />
+    <StatePanel
       v-else-if="evidenceQuery.isError.value"
-      class="mt-8 rounded-xl bg-red-50 p-4 text-red-800"
-      role="alert"
+      class="evidence-page__state"
+      kind="error"
+      title="근거를 불러오지 못했습니다."
+      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
     >
-      근거를 불러오지 못했습니다.
-      <button type="button" class="underline" @click="evidenceQuery.refetch()">다시 시도</button>
-    </div>
-    <div
+      <template #actions>
+        <button type="button" class="button button--secondary" @click="evidenceQuery.refetch()">
+          다시 시도
+        </button>
+      </template>
+    </StatePanel>
+    <StatePanel
       v-else-if="evidenceQuery.data.value?.items.length === 0"
-      class="mt-8 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600"
-    >
-      조건에 맞는 직접 입력 근거가 없습니다.
-    </div>
-    <ul v-else class="mt-8 space-y-4">
+      class="evidence-page__state"
+      kind="empty"
+      title="조건에 맞는 직접 입력 근거가 없습니다."
+      description="필터를 조정하거나 프로필·문서에서 근거를 추가해 주세요."
+    />
+    <ul v-else class="evidence-list data-list">
       <li
         v-for="evidence in evidenceQuery.data.value?.items"
         :key="evidence.id"
-        class="rounded-2xl bg-white p-5 shadow-sm"
+        class="evidence-card data-card"
+        :data-testid="`evidence-card-${evidence.id}`"
       >
-        <div class="flex flex-wrap justify-between gap-3">
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <h3 class="font-semibold">{{ evidence.title }}</h3>
-              <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{{
-                statusLabel(evidence.verificationStatus)
-              }}</span>
+        <div class="evidence-card__header">
+          <div class="evidence-card__identity">
+            <div class="evidence-card__title">
+              <h3>{{ evidence.title }}</h3>
+              <StatusBadge
+                :label="statusLabel(evidence.verificationStatus)"
+                :tone="statusTone(evidence.verificationStatus)"
+              />
             </div>
-            <p class="mt-1 text-xs text-slate-500">
-              {{ sourceLabel(evidence.sourceType) }} · {{ evidence.evidenceCategory }}
-            </p>
+            <dl class="evidence-card__meta">
+              <div>
+                <dt>출처</dt>
+                <dd>{{ sourceLabel(evidence.sourceType) }}</dd>
+              </div>
+              <div>
+                <dt>카테고리</dt>
+                <dd>{{ evidence.evidenceCategory }}</dd>
+              </div>
+              <div>
+                <dt>신뢰도</dt>
+                <dd>{{ confidenceLabel(evidence.confidence) }}</dd>
+              </div>
+            </dl>
           </div>
-          <div class="flex flex-wrap gap-2">
+          <div
+            v-if="evidence.verificationStatus !== 'SOURCE_DELETED'"
+            class="evidence-card__actions"
+          >
             <button
               type="button"
-              class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-              :disabled="evidence.verificationStatus === 'SOURCE_DELETED'"
+              class="button button--ghost button--compact"
               @click="openEdit(evidence)"
             >
               수정
             </button>
             <button
               type="button"
-              class="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm text-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
-              :disabled="
-                evidence.verificationStatus === 'SOURCE_DELETED' ||
-                verificationMutation.isPending.value
-              "
+              class="button button--secondary button--compact"
+              :disabled="verificationMutation.isPending.value"
               @click="verify(evidence, 'VERIFIED')"
             >
               승인
             </button>
             <button
               type="button"
-              class="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-              :disabled="
-                evidence.verificationStatus === 'SOURCE_DELETED' ||
-                verificationMutation.isPending.value
-              "
+              class="button button--danger button--compact"
+              :disabled="verificationMutation.isPending.value"
               @click="verify(evidence, 'REJECTED')"
             >
               거절
             </button>
           </div>
         </div>
-        <p class="mt-3 whitespace-pre-wrap text-sm text-slate-700">{{ evidence.content }}</p>
+        <p class="evidence-card__content">{{ evidence.content }}</p>
         <p
           v-if="evidence.verificationStatus === 'SOURCE_DELETED'"
-          class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+          class="alert alert--warning evidence-card__readonly"
         >
           원본이 삭제되어 읽기 전용입니다. 수정·승인·거절할 수 없습니다.
         </p>
       </li>
     </ul>
 
-    <nav
+    <PaginationNav
       v-if="evidenceQuery.data.value && evidenceQuery.data.value.totalPages > 0"
-      class="mt-6 flex items-center justify-between"
-      aria-label="근거 페이지"
-    >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="page === 0"
-        @click="page -= 1"
-      >
-        이전</button
-      ><span class="text-sm">{{ page + 1 }} / {{ evidenceQuery.data.value.totalPages }} 페이지</span
-      ><button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="page + 1 >= evidenceQuery.data.value.totalPages"
-        @click="page += 1"
-      >
-        다음
-      </button>
-    </nav>
+      :page="page"
+      :total-pages="evidenceQuery.data.value.totalPages"
+      label="근거 페이지"
+      @change="page = $event"
+    />
   </section>
 </template>
+
+<style scoped>
+.evidence-page__guidance,
+.evidence-filters,
+.evidence-page__message,
+.evidence-editor,
+.evidence-page__state,
+.evidence-list {
+  margin-top: var(--space-5);
+}
+
+.evidence-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(8rem, 0.7fr)) minmax(12rem, 1.4fr) auto;
+  align-items: end;
+}
+
+.evidence-filters__document {
+  min-width: 0;
+}
+
+.evidence-editor {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.evidence-editor__header,
+.evidence-card__header,
+.evidence-card__title,
+.evidence-card__actions,
+.evidence-card__meta {
+  display: flex;
+  align-items: center;
+}
+
+.evidence-editor__header,
+.evidence-card__header {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.evidence-editor__form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.evidence-editor__content {
+  min-height: 10rem;
+}
+
+.evidence-editor__metadata {
+  min-height: 7rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: var(--font-size-sm);
+}
+
+.evidence-card {
+  padding: var(--space-5);
+}
+
+.evidence-card__identity {
+  min-width: 0;
+}
+
+.evidence-card__title,
+.evidence-card__actions,
+.evidence-card__meta {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.evidence-card__title h3 {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.evidence-card__meta {
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-3);
+}
+
+.evidence-card__meta div {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.evidence-card__meta dt {
+  color: var(--color-text-muted);
+}
+
+.evidence-card__meta dd {
+  color: var(--color-text-secondary);
+  font-weight: 650;
+}
+
+.evidence-card__content {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.evidence-card__readonly {
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 64rem) {
+  .evidence-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .evidence-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

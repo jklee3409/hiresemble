@@ -61,18 +61,52 @@ const connectionLabel = computed(
 </script>
 
 <template>
-  <div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm" aria-live="polite">
+  <div class="job-run-monitor" aria-live="polite">
     <p v-if="detail.isPending.value">URL 추출 작업을 불러오는 중…</p>
-    <p v-else-if="detail.isError.value" class="text-amber-800">
+    <p v-else-if="detail.isError.value" class="job-run-monitor__warning">
       실시간 작업을 확인할 수 없습니다. 공고 REST 상태를 기준으로 새로고침해 주세요.
     </p>
     <template v-else-if="detail.data.value">
-      <p class="font-medium">
-        작업 상태: {{ detail.data.value.status }} · {{ detail.data.value.progressPercent }}%
-      </p>
-      <p class="mt-1 text-xs text-slate-600">
-        {{ connectionLabel }} — 연결 단절만으로 공고 추출 실패로 표시하지 않습니다.
-      </p>
+      <div class="job-run-monitor__summary">
+        <span>작업 상태: {{ detail.data.value.status }}</span>
+        <strong>{{ detail.data.value.progressPercent }}%</strong>
+      </div>
+      <progress class="progress-track" :value="detail.data.value.progressPercent" max="100">
+        {{ detail.data.value.progressPercent }}%
+      </progress>
+      <p>{{ connectionLabel }} — 연결 단절만으로 공고 추출 실패로 표시하지 않습니다.</p>
     </template>
   </div>
 </template>
+
+<style scoped>
+.job-run-monitor {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.job-run-monitor__summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-weight: 650;
+}
+
+.job-run-monitor progress {
+  margin-top: var(--space-2);
+}
+
+.job-run-monitor p:last-child {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.job-run-monitor__warning {
+  color: var(--color-warning-strong) !important;
+}
+</style>

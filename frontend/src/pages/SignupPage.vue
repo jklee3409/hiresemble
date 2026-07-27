@@ -66,17 +66,18 @@ async function focusFirstError(): Promise<void> {
 </script>
 
 <template>
-  <div>
-    <h1 class="text-2xl font-bold">회원가입</h1>
-    <p class="mt-2 text-sm text-slate-600">취업 준비를 위한 개인 계정을 만드세요.</p>
+  <div class="auth-page">
+    <p class="page-eyebrow">Create account</p>
+    <h1 class="page-title">회원가입</h1>
+    <p class="page-description">취업 준비 자료와 지원 과정을 관리할 개인 계정을 만드세요.</p>
 
-    <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
-      <div>
-        <label class="block text-sm font-medium" for="signup-email">이메일</label>
+    <form class="auth-page__form" novalidate :aria-busy="isSubmitting" @submit.prevent="submit">
+      <div class="field">
+        <label class="field-label" for="signup-email">이메일</label>
         <input
           id="signup-email"
           v-model="form.email"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control"
           type="email"
           autocomplete="email"
           autofocus
@@ -84,57 +85,56 @@ async function focusFirstError(): Promise<void> {
           :aria-describedby="fieldErrors.email ? 'signup-email-error' : undefined"
           :disabled="isSubmitting"
         />
-        <p v-if="fieldErrors.email" id="signup-email-error" class="mt-1 text-sm text-red-700">
+        <p v-if="fieldErrors.email" id="signup-email-error" class="field-error">
           {{ fieldErrors.email }}
         </p>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium" for="signup-displayName">표시 이름</label>
+      <div class="field">
+        <label class="field-label" for="signup-displayName">표시 이름</label>
         <input
           id="signup-displayName"
           v-model="form.displayName"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control"
           type="text"
           autocomplete="name"
           :aria-invalid="Boolean(fieldErrors.displayName)"
           :aria-describedby="fieldErrors.displayName ? 'signup-displayName-error' : undefined"
           :disabled="isSubmitting"
         />
-        <p
-          v-if="fieldErrors.displayName"
-          id="signup-displayName-error"
-          class="mt-1 text-sm text-red-700"
-        >
+        <p v-if="fieldErrors.displayName" id="signup-displayName-error" class="field-error">
           {{ fieldErrors.displayName }}
         </p>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium" for="signup-password">비밀번호</label>
+      <div class="field">
+        <label class="field-label" for="signup-password">비밀번호</label>
         <input
           id="signup-password"
           v-model="form.password"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control"
           type="password"
           autocomplete="new-password"
           :aria-invalid="Boolean(fieldErrors.password)"
-          :aria-describedby="fieldErrors.password ? 'signup-password-error' : undefined"
+          :aria-describedby="
+            fieldErrors.password
+              ? 'signup-password-help signup-password-error'
+              : 'signup-password-help'
+          "
           :disabled="isSubmitting"
         />
-        <p v-if="fieldErrors.password" id="signup-password-error" class="mt-1 text-sm text-red-700">
+        <p id="signup-password-help" class="field-help">UTF-8 기준 10~72바이트로 입력해 주세요.</p>
+        <p v-if="fieldErrors.password" id="signup-password-error" class="field-error">
           {{ fieldErrors.password }}
         </p>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium" for="signup-passwordConfirm">
-          비밀번호 확인
-        </label>
+      <div class="field">
+        <label class="field-label" for="signup-passwordConfirm"> 비밀번호 확인 </label>
         <input
           id="signup-passwordConfirm"
           v-model="form.passwordConfirm"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control"
           type="password"
           autocomplete="new-password"
           :aria-invalid="Boolean(fieldErrors.passwordConfirm)"
@@ -143,75 +143,132 @@ async function focusFirstError(): Promise<void> {
           "
           :disabled="isSubmitting"
         />
-        <p
-          v-if="fieldErrors.passwordConfirm"
-          id="signup-passwordConfirm-error"
-          class="mt-1 text-sm text-red-700"
-        >
+        <p v-if="fieldErrors.passwordConfirm" id="signup-passwordConfirm-error" class="field-error">
           {{ fieldErrors.passwordConfirm }}
         </p>
       </div>
 
-      <div>
-        <label class="flex items-start gap-2" for="signup-termsAgreed">
+      <div class="consent-option">
+        <label class="consent-option__label" for="signup-termsAgreed">
           <input
             id="signup-termsAgreed"
             v-model="form.termsAgreed"
-            class="mt-1"
+            class="checkbox-control"
             type="checkbox"
             :aria-invalid="Boolean(fieldErrors.termsAgreed)"
             :aria-describedby="fieldErrors.termsAgreed ? 'signup-termsAgreed-error' : undefined"
             :disabled="isSubmitting"
           />
-          <span class="text-sm">이용약관과 개인정보 처리에 동의합니다.</span>
+          <span>
+            <strong>이용약관·개인정보 처리 동의</strong>
+            <small>계정 생성과 서비스 제공에 필요한 동의입니다.</small>
+          </span>
         </label>
         <p
           v-if="fieldErrors.termsAgreed"
           id="signup-termsAgreed-error"
-          class="mt-1 text-sm text-red-700"
+          class="field-error consent-option__error"
         >
           {{ fieldErrors.termsAgreed }}
         </p>
       </div>
 
-      <div>
-        <label class="flex items-start gap-2" for="signup-aiConsent">
+      <div class="consent-option">
+        <label class="consent-option__label" for="signup-aiConsent">
           <input
             id="signup-aiConsent"
             v-model="form.aiConsent"
-            class="mt-1"
+            class="checkbox-control"
             type="checkbox"
             :aria-invalid="Boolean(fieldErrors.aiConsent)"
             :aria-describedby="fieldErrors.aiConsent ? 'signup-aiConsent-error' : undefined"
             :disabled="isSubmitting"
           />
-          <span class="text-sm">취업 준비 지원을 위한 AI 처리에 동의합니다.</span>
+          <span>
+            <strong>취업 준비 지원을 위한 AI 처리 동의</strong>
+            <small>문서와 공고 처리 등 요청한 작업에 필요한 동의입니다.</small>
+          </span>
         </label>
         <p
           v-if="fieldErrors.aiConsent"
           id="signup-aiConsent-error"
-          class="mt-1 text-sm text-red-700"
+          class="field-error consent-option__error"
         >
           {{ fieldErrors.aiConsent }}
         </p>
       </div>
 
-      <p v-if="generalError" class="text-sm text-red-700" role="alert">
+      <p v-if="generalError" class="alert alert--danger" role="alert">
         {{ generalError }}
       </p>
 
       <button
-        class="w-full rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        class="button button--primary auth-page__submit"
         type="submit"
         :disabled="isSubmitting"
       >
+        <span v-if="isSubmitting" class="button-spinner" aria-hidden="true" />
         {{ isSubmitting ? '가입 중…' : '가입하기' }}
       </button>
     </form>
 
-    <p class="mt-5 text-center text-sm">
+    <p class="auth-page__alternate">
       이미 계정이 있나요?
-      <RouterLink class="font-semibold text-indigo-700" to="/login">로그인</RouterLink>
+      <RouterLink class="text-link" to="/login">로그인</RouterLink>
     </p>
   </div>
 </template>
+
+<style scoped>
+.auth-page__form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.auth-page__submit {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.auth-page__alternate {
+  margin: 1.5rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.consent-option {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: 0.75rem;
+}
+
+.consent-option__label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+.consent-option__label strong,
+.consent-option__label small {
+  display: block;
+}
+
+.consent-option__label strong {
+  color: var(--color-ink-soft);
+  font-size: 0.8125rem;
+}
+
+.consent-option__label small {
+  margin-top: 0.125rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.consent-option__error {
+  margin: 0.5rem 0 0 1.75rem;
+}
+</style>

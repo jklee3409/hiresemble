@@ -2,7 +2,12 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import type { AgentRunDetailDto } from '@/shared/api/agentRunContracts'
+import type {
+  AgentRunDetailDto,
+  AgentRunStatus,
+  AgentStepStatus,
+} from '@/shared/api/agentRunContracts'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 import {
   MODEL_TIER_LABELS,
@@ -50,22 +55,61 @@ const connectionMessage = computed(() => {
   if (props.connectionState === 'connecting') return '실시간 진행 상태에 연결하고 있습니다.'
   return ''
 })
+
+function runTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      QUEUED: 'neutral',
+      RUNNING: 'info',
+      WAITING_USER: 'warning',
+      SUCCEEDED: 'success',
+      FAILED: 'danger',
+      CANCELLED: 'neutral',
+      INTERRUPTED: 'warning',
+    } as const
+  )[value]
+}
+
+function stepLabel(value: AgentStepStatus): string {
+  return {
+    PENDING: '대기',
+    RUNNING: '진행 중',
+    WAITING_USER: '사용자 입력 대기',
+    SUCCEEDED: '완료',
+    FAILED: '실패',
+    SKIPPED: '건너뜀',
+    REUSED: '결과 재사용',
+    CANCELLED: '취소됨',
+    INTERRUPTED: '중단됨',
+  }[value]
+}
+
+function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  if (value === 'RUNNING') return 'info'
+  if (value === 'WAITING_USER' || value === 'INTERRUPTED') return 'warning'
+  if (value === 'SUCCEEDED' || value === 'REUSED') return 'success'
+  if (value === 'FAILED') return 'danger'
+  return 'neutral'
+}
 </script>
 
 <template>
-  <article class="space-y-6" data-testid="agent-run-detail">
-    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p class="text-sm font-medium text-indigo-700">{{ WORKFLOW_LABELS[run.workflowType] }}</p>
-          <h2 class="mt-1 text-2xl font-semibold">{{ STATUS_LABELS[run.status] }}</h2>
-          <p class="mt-1 text-sm text-slate-600">실행 시도 {{ run.runAttemptNo }}</p>
+  <article class="run-detail" data-testid="agent-run-detail">
+    <section class="run-summary section-surface">
+      <div class="run-summary__header">
+        <div class="run-summary__identity">
+          <p class="section-kicker">{{ WORKFLOW_LABELS[run.workflowType] }}</p>
+          <div class="run-summary__title">
+            <h2>{{ STATUS_LABELS[run.status] }}</h2>
+            <StatusBadge :label="STATUS_LABELS[run.status]" :tone="runTone(run.status)" />
+          </div>
+          <p>실행 시도 {{ run.runAttemptNo }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="run-summary__actions">
           <button
             v-if="canRetry"
             type="button"
-            class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            class="button button--primary"
             :disabled="retryPending"
             @click="$emit('retry')"
           >
@@ -74,7 +118,7 @@ const connectionMessage = computed(() => {
           <button
             v-if="canCancel"
             type="button"
-            class="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+            class="button button--danger"
             :disabled="cancelPending"
             @click="$emit('cancel')"
           >
@@ -83,19 +127,19 @@ const connectionMessage = computed(() => {
         </div>
       </div>
 
-      <div class="mt-5" aria-label="진행률">
-        <div class="mb-1 flex justify-between text-sm">
+      <div class="run-summary__progress" aria-label="진행률">
+        <div>
           <span>{{ run.currentStep ?? '단계 준비 중' }}</span>
-          <span>{{ run.progressPercent }}%</span>
+          <strong>{{ run.progressPercent }}%</strong>
         </div>
-        <progress class="h-3 w-full" :value="run.progressPercent" max="100">
+        <progress class="progress-track" :value="run.progressPercent" max="100">
           {{ run.progressPercent }}%
         </progress>
       </div>
 
       <p
         v-if="connectionMessage"
-        class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+        class="alert alert--warning run-summary__connection"
         role="status"
       >
         {{ connectionMessage }}
@@ -104,30 +148,28 @@ const connectionMessage = computed(() => {
 
     <section
       v-if="run.status === 'WAITING_USER' && run.requiredUserAction"
-      class="rounded-xl border border-amber-300 bg-amber-50 p-5"
+      class="run-required-action"
     >
-      <h3 class="font-semibold">사용자 입력이 필요합니다</h3>
-      <p class="mt-2 text-sm">{{ run.requiredUserAction.message }}</p>
-      <RouterLink
-        v-if="actionRoute"
-        class="mt-3 inline-block font-semibold text-indigo-700 underline"
-        :to="actionRoute"
-      >
+      <p class="section-kicker">Action required</p>
+      <h3 class="section-title">사용자 입력이 필요합니다</h3>
+      <p>{{ run.requiredUserAction.message }}</p>
+      <RouterLink v-if="actionRoute" class="button button--primary" :to="actionRoute">
         필요한 정보 입력하기
       </RouterLink>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2">
-      <div class="rounded-xl border border-slate-200 bg-white p-5">
-        <h3 class="font-semibold">실행 정보</h3>
-        <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt class="text-slate-500">요청 품질</dt>
+    <section class="run-info-grid">
+      <div class="run-info-section section-surface">
+        <p class="section-kicker">Execution</p>
+        <h3 class="section-title">실행 정보</h3>
+        <dl class="run-definition-list">
+          <dt>요청 품질</dt>
           <dd>
             {{
               run.requestedQualityMode ? QUALITY_LABELS[run.requestedQualityMode] : '정책 기본값'
             }}
           </dd>
-          <dt class="text-slate-500">사용 등급</dt>
+          <dt>사용 등급</dt>
           <dd>
             {{
               run.highestModelTierUsed
@@ -135,76 +177,272 @@ const connectionMessage = computed(() => {
                 : '아직 사용하지 않음'
             }}
           </dd>
-          <dt class="text-slate-500">접수</dt>
+          <dt>접수</dt>
           <dd>{{ formatInstant(run.queuedAt) }}</dd>
-          <dt class="text-slate-500">시작</dt>
+          <dt>시작</dt>
           <dd>{{ formatInstant(run.startedAt) }}</dd>
-          <dt class="text-slate-500">완료</dt>
+          <dt>완료</dt>
           <dd>{{ formatInstant(run.completedAt) }}</dd>
-          <dt class="text-slate-500">소요 시간</dt>
+          <dt>소요 시간</dt>
           <dd>{{ formatDuration(run.durationMs) }}</dd>
         </dl>
       </div>
 
-      <div class="rounded-xl border border-slate-200 bg-white p-5">
-        <h3 class="font-semibold">비용</h3>
-        <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt class="text-slate-500">예상</dt>
+      <div class="run-info-section section-surface">
+        <p class="section-kicker">Billable estimate</p>
+        <h3 class="section-title">비용</h3>
+        <dl class="run-definition-list">
+          <dt>예상</dt>
           <dd>{{ formatCost(run.estimatedCostUsd) }}</dd>
-          <dt class="text-slate-500">예약</dt>
+          <dt>예약</dt>
           <dd>{{ formatCost(run.reservedCostUsd) }}</dd>
-          <dt class="text-slate-500">실제 사용 추정</dt>
+          <dt>실제 사용 추정</dt>
           <dd>{{ formatCost(run.actualCostUsd) }}</dd>
         </dl>
-        <p class="mt-4 text-xs leading-5 text-slate-600">
+        <p class="run-cost-note">
           실제 사용 비용은 provider의 확정 청구액이 아니라 접수 시 고정된 가격 catalog로 계산한
           billable estimate입니다.
         </p>
       </div>
     </section>
 
-    <section
-      v-if="run.safeError"
-      class="rounded-xl border border-red-200 bg-red-50 p-5"
-      role="alert"
-    >
-      <h3 class="font-semibold text-red-900">안전한 오류 안내</h3>
-      <p class="mt-2 text-sm text-red-800">{{ run.safeError.message }}</p>
-      <p class="mt-1 text-xs text-red-700">오류 코드: {{ run.safeError.code }}</p>
+    <section v-if="run.safeError" class="alert alert--danger run-safe-error" role="alert">
+      <h3>안전한 오류 안내</h3>
+      <p>{{ run.safeError.message }}</p>
+      <small>오류 코드: {{ run.safeError.code }}</small>
     </section>
 
-    <section v-if="run.partialResult" class="rounded-xl border border-slate-200 bg-white p-5">
-      <h3 class="font-semibold">부분 처리 결과</h3>
-      <p class="mt-2 text-sm">
-        완료 범위: {{ run.partialResult.succeededScopeKeys.join(', ') || '없음' }}
-      </p>
-      <p class="mt-1 text-sm">
-        실패 범위: {{ run.partialResult.failedScopeKeys.join(', ') || '없음' }}
-      </p>
-      <ul v-if="run.partialResult.resultRefs.length" class="mt-2 list-inside list-disc text-sm">
+    <section v-if="run.partialResult" class="run-partial section-surface">
+      <p class="section-kicker">Partial result</p>
+      <h3 class="section-title">부분 처리 결과</h3>
+      <p>완료 범위: {{ run.partialResult.succeededScopeKeys.join(', ') || '없음' }}</p>
+      <p>실패 범위: {{ run.partialResult.failedScopeKeys.join(', ') || '없음' }}</p>
+      <ul v-if="run.partialResult.resultRefs.length">
         <li v-for="reference in run.partialResult.resultRefs" :key="reference.resourceId">
           {{ reference.displayLabel ?? reference.resourceType }}
         </li>
       </ul>
     </section>
 
-    <section class="rounded-xl border border-slate-200 bg-white p-5">
-      <h3 class="font-semibold">단계 Timeline</h3>
-      <p v-if="run.steps.length === 0" class="mt-3 text-sm text-slate-500">
-        아직 기록된 단계가 없습니다.
-      </p>
-      <ol v-else class="mt-4 space-y-3">
-        <li v-for="step in run.steps" :key="step.id" class="rounded-lg border border-slate-200 p-4">
-          <div class="flex flex-wrap justify-between gap-2">
-            <strong>{{ step.stepOrder }}. {{ step.stepKey }}</strong>
-            <span class="text-sm">{{ step.status }}</span>
+    <section class="run-timeline section-surface">
+      <p class="section-kicker">Timeline</p>
+      <h3 class="section-title">단계 Timeline</h3>
+      <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 단계가 없습니다.</p>
+      <ol v-else class="run-timeline__list">
+        <li v-for="step in run.steps" :key="step.id" class="run-step">
+          <span class="run-step__marker" aria-hidden="true" />
+          <div class="run-step__body">
+            <div class="run-step__header">
+              <strong>{{ step.stepOrder }}. {{ step.stepKey }}</strong>
+              <StatusBadge :label="stepLabel(step.status)" :tone="stepTone(step.status)" />
+            </div>
+            <p>시도 {{ step.attempt }}/{{ step.maxAttempts }}</p>
+            <p v-if="step.safeError" class="run-step__error">
+              {{ step.safeError.message }}
+            </p>
           </div>
-          <p class="mt-1 text-sm text-slate-600">시도 {{ step.attempt }}/{{ step.maxAttempts }}</p>
-          <p v-if="step.safeError" class="mt-2 text-sm text-red-700">
-            {{ step.safeError.message }}
-          </p>
         </li>
       </ol>
     </section>
   </article>
 </template>
+
+<style scoped>
+.run-detail {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.run-summary,
+.run-info-section,
+.run-partial,
+.run-timeline {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.run-summary__header,
+.run-summary__title,
+.run-summary__actions,
+.run-summary__progress > div,
+.run-step__header {
+  display: flex;
+  align-items: center;
+}
+
+.run-summary__header,
+.run-summary__progress > div,
+.run-step__header {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.run-summary__title,
+.run-summary__actions {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.run-summary__title h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 780;
+}
+
+.run-summary__identity > p:last-child {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.run-summary__progress {
+  margin-top: var(--space-6);
+}
+
+.run-summary__progress strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.run-summary__progress progress {
+  margin-top: var(--space-2);
+}
+
+.run-summary__connection {
+  margin-top: var(--space-4);
+}
+
+.run-required-action {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+}
+
+.run-required-action p:not(.section-kicker) {
+  margin: var(--space-2) 0 var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.run-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.run-definition-list {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.run-definition-list dt {
+  color: var(--color-text-muted);
+}
+
+.run-definition-list dd {
+  overflow-wrap: anywhere;
+}
+
+.run-cost-note,
+.run-partial > p,
+.run-timeline__empty,
+.run-step p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.run-cost-note {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-xs);
+  line-height: 1.65;
+}
+
+.run-safe-error {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.run-safe-error h3 {
+  font-weight: 750;
+}
+
+.run-safe-error small {
+  font-size: var(--font-size-xs);
+}
+
+.run-partial > p {
+  margin-top: var(--space-2);
+}
+
+.run-partial ul {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+  list-style: disc;
+  font-size: var(--font-size-sm);
+}
+
+.run-timeline__empty {
+  margin-top: var(--space-4);
+}
+
+.run-timeline__list {
+  margin-top: var(--space-5);
+  padding-left: 0.4rem;
+}
+
+.run-step {
+  display: grid;
+  position: relative;
+  grid-template-columns: 1rem 1fr;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+
+.run-step:not(:last-child)::before {
+  position: absolute;
+  top: 0.8rem;
+  bottom: 0;
+  left: 0.34rem;
+  width: 1px;
+  background: var(--color-border-strong);
+  content: '';
+}
+
+.run-step__marker {
+  z-index: 1;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.2rem;
+  border: 2px solid var(--color-brand);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.run-step__body {
+  min-width: 0;
+}
+
+.run-step__header strong {
+  overflow-wrap: anywhere;
+}
+
+.run-step p {
+  margin-top: var(--space-1);
+}
+
+.run-step__error {
+  color: var(--color-danger-strong) !important;
+}
+
+@media (max-width: 48rem) {
+  .run-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .run-summary__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

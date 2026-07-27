@@ -14,6 +14,8 @@ import {
   type AgentRunConnectionState,
 } from '@/features/agent-runs/stream'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppIcon from '@/shared/ui/AppIcon.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -86,18 +88,33 @@ async function cancel(): Promise<void> {
 </script>
 
 <template>
-  <section>
-    <p v-if="detail.isLoading.value" class="rounded-xl bg-white p-6 text-slate-600">
-      Agent Run 상태를 불러오는 중입니다.
-    </p>
-    <div v-else-if="detail.isError.value" class="rounded-xl bg-red-50 p-6" role="alert">
-      <p class="text-red-800">{{ loadError }}</p>
-      <RouterLink class="mt-3 inline-block font-semibold text-indigo-700" to="/agent-runs"
-        >작업 기록으로 돌아가기</RouterLink
-      >
-    </div>
+  <section class="agent-run-detail-page app-page">
+    <RouterLink class="back-link" to="/agent-runs">
+      <AppIcon name="arrow-left" />
+      작업 기록
+    </RouterLink>
+    <StatePanel
+      v-if="detail.isLoading.value"
+      class="agent-run-detail-page__state"
+      kind="loading"
+      title="Agent Run 상태를 불러오는 중…"
+      description="진행률과 단계 기록을 확인하고 있습니다."
+    />
+    <StatePanel
+      v-else-if="detail.isError.value"
+      class="agent-run-detail-page__state"
+      kind="error"
+      title="작업 상태를 불러오지 못했습니다."
+      :description="loadError"
+    >
+      <template #actions>
+        <RouterLink class="button button--secondary" to="/agent-runs">
+          작업 기록으로 돌아가기
+        </RouterLink>
+      </template>
+    </StatePanel>
     <template v-else-if="detail.data.value">
-      <p v-if="actionError" class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+      <p v-if="actionError" class="alert alert--danger agent-run-detail-page__message" role="alert">
         {{ actionError }}
       </p>
       <AgentRunDetailPanel
@@ -111,3 +128,10 @@ async function cancel(): Promise<void> {
     </template>
   </section>
 </template>
+
+<style scoped>
+.agent-run-detail-page__state,
+.agent-run-detail-page__message {
+  margin-top: var(--space-5);
+}
+</style>

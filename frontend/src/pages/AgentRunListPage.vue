@@ -23,6 +23,10 @@ import {
   formatInstant,
 } from '@/features/agent-runs/presentation'
 import { useAgentRunListQuery } from '@/features/agent-runs/queries'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -90,51 +94,67 @@ function changeSort(event: Event): void {
 function changePage(page: number): void {
   replaceFilters({ ...filters.value, page })
 }
+
+function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      QUEUED: 'neutral',
+      RUNNING: 'info',
+      WAITING_USER: 'warning',
+      SUCCEEDED: 'success',
+      FAILED: 'danger',
+      CANCELLED: 'neutral',
+      INTERRUPTED: 'warning',
+    } as const
+  )[value]
+}
 </script>
 
 <template>
-  <section class="space-y-6">
-    <div>
-      <h2 class="text-2xl font-semibold">Agent Run 작업 기록</h2>
-      <p class="mt-1 text-sm text-slate-600">
-        접수된 비동기 작업의 안전한 상태와 비용 추정을 확인합니다.
-      </p>
-    </div>
+  <section class="run-list-page app-page" aria-labelledby="run-list-heading">
+    <PageHeader
+      heading-id="run-list-heading"
+      title="Agent Run 작업 기록"
+      description="문서 처리와 공고 정보 추출처럼 백그라운드에서 진행되는 작업의 안전한 상태를 확인합니다."
+      eyebrow="Async operations"
+    />
 
-    <form class="rounded-xl border border-slate-200 bg-white p-5" @submit.prevent>
-      <fieldset>
-        <legend class="font-semibold">Workflow</legend>
-        <div class="mt-2 flex flex-wrap gap-3">
-          <label v-for="workflowType in WORKFLOW_TYPES" :key="workflowType" class="text-sm">
+    <form class="run-filters filter-toolbar" @submit.prevent>
+      <fieldset class="run-filter-group run-filter-group--workflow">
+        <legend>작업 유형</legend>
+        <div class="run-filter-options">
+          <label
+            v-for="workflowType in WORKFLOW_TYPES"
+            :key="workflowType"
+            class="run-filter-option"
+          >
             <input
               type="checkbox"
-              class="mr-1"
               :checked="filters.workflowType.includes(workflowType)"
               @change="toggleWorkflow(workflowType, $event)"
             />
-            {{ WORKFLOW_LABELS[workflowType] }}
+            <span>{{ WORKFLOW_LABELS[workflowType] }}</span>
           </label>
         </div>
       </fieldset>
-      <fieldset class="mt-4">
-        <legend class="font-semibold">상태</legend>
-        <div class="mt-2 flex flex-wrap gap-3">
-          <label v-for="status in AGENT_RUN_STATUSES" :key="status" class="text-sm">
+      <fieldset class="run-filter-group">
+        <legend>상태</legend>
+        <div class="run-filter-options">
+          <label v-for="status in AGENT_RUN_STATUSES" :key="status" class="run-filter-option">
             <input
               type="checkbox"
-              class="mr-1"
               :checked="filters.status.includes(status)"
               @change="toggleStatus(status, $event)"
             />
-            {{ STATUS_LABELS[status] }}
+            <span>{{ STATUS_LABELS[status] }}</span>
           </label>
         </div>
       </fieldset>
-      <div class="mt-4 flex flex-wrap gap-4">
-        <label class="text-sm">
-          재시도 가능
+      <div class="run-filter-selects">
+        <label class="field">
+          <span class="field__label">재시도 가능</span>
           <select
-            class="ml-2 rounded-lg border border-slate-300 px-2 py-1"
+            class="control control--compact"
             :value="filters.retryable === undefined ? '' : String(filters.retryable)"
             @change="changeRetryable"
           >
@@ -143,13 +163,9 @@ function changePage(page: number): void {
             <option value="false">불가능</option>
           </select>
         </label>
-        <label class="text-sm">
-          정렬
-          <select
-            class="ml-2 rounded-lg border border-slate-300 px-2 py-1"
-            :value="filters.sort"
-            @change="changeSort"
-          >
+        <label class="field">
+          <span class="field__label">정렬</span>
+          <select class="control control--compact" :value="filters.sort" @change="changeSort">
             <option value="queuedAt,desc">최근 접수순</option>
             <option value="updatedAt,desc">최근 갱신순</option>
           </select>
@@ -157,78 +173,232 @@ function changePage(page: number): void {
       </div>
     </form>
 
-    <p v-if="runs.isLoading.value" class="rounded-xl bg-white p-6 text-slate-600">
-      작업 기록을 불러오는 중입니다.
-    </p>
-    <p v-else-if="runs.isError.value" class="rounded-xl bg-red-50 p-6 text-red-800" role="alert">
-      {{ errorMessage }}
-    </p>
-    <div
+    <StatePanel
+      v-if="runs.isLoading.value"
+      class="run-list-page__state"
+      kind="loading"
+      title="작업 기록을 불러오는 중…"
+      description="접수된 작업과 최신 진행 상태를 확인하고 있습니다."
+    />
+    <StatePanel
+      v-else-if="runs.isError.value"
+      class="run-list-page__state"
+      kind="error"
+      title="작업 기록을 불러오지 못했습니다."
+      :description="errorMessage"
+    />
+    <StatePanel
       v-else-if="runs.data.value?.items.length === 0"
-      class="rounded-xl bg-white p-8 text-center text-slate-600"
-    >
-      조건에 맞는 작업 기록이 없습니다.
-    </div>
-    <div v-else class="space-y-3">
-      <article
-        v-for="run in runs.data.value?.items"
-        :key="run.id"
-        class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h3 class="font-semibold">{{ WORKFLOW_LABELS[run.workflowType] }}</h3>
-            <p class="mt-1 text-sm text-slate-600">
-              {{ STATUS_LABELS[run.status] }} · {{ run.progressPercent }}%
-            </p>
+      class="run-list-page__state"
+      kind="empty"
+      title="조건에 맞는 작업 기록이 없습니다."
+      description="필터를 조정하거나 문서·공고 작업을 시작하면 이곳에 진행 기록이 표시됩니다."
+    />
+    <div v-else class="run-list data-list">
+      <article v-for="run in runs.data.value?.items" :key="run.id" class="run-row data-card">
+        <div class="run-row__header">
+          <div class="run-row__identity">
+            <div class="run-row__title">
+              <h3>{{ WORKFLOW_LABELS[run.workflowType] }}</h3>
+              <StatusBadge :label="STATUS_LABELS[run.status]" :tone="statusTone(run.status)" />
+            </div>
+            <p>{{ run.currentStep ?? '단계 준비 중' }}</p>
           </div>
-          <RouterLink class="font-semibold text-indigo-700" :to="`/agent-runs/${run.id}`"
-            >상세 보기</RouterLink
+          <RouterLink
+            class="button button--secondary button--compact"
+            :to="`/agent-runs/${run.id}`"
           >
+            상세 보기
+          </RouterLink>
         </div>
-        <dl class="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div class="run-row__progress" aria-label="진행률">
+          <progress class="progress-track" :value="run.progressPercent" max="100">
+            {{ run.progressPercent }}%
+          </progress>
+          <span>{{ run.progressPercent }}%</span>
+        </div>
+        <dl class="run-row__meta">
           <div>
-            <dt class="text-slate-500">접수</dt>
+            <dt>접수</dt>
             <dd>{{ formatInstant(run.queuedAt) }}</dd>
           </div>
           <div>
-            <dt class="text-slate-500">최근 갱신</dt>
+            <dt>최근 갱신</dt>
             <dd>{{ formatInstant(run.updatedAt) }}</dd>
           </div>
           <div>
-            <dt class="text-slate-500">비용 추정</dt>
+            <dt>비용 추정</dt>
             <dd>{{ formatCost(run.actualCostUsd) }}</dd>
           </div>
           <div>
-            <dt class="text-slate-500">재시도</dt>
+            <dt>재시도</dt>
             <dd>{{ run.retryable ? '가능' : '불가능' }}</dd>
           </div>
         </dl>
       </article>
     </div>
 
-    <nav
+    <PaginationNav
       v-if="runs.data.value && runs.data.value.totalPages > 0"
-      class="flex items-center justify-center gap-3"
-      aria-label="작업 기록 페이지"
-    >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50"
-        :disabled="filters.page === 0"
-        @click="changePage(filters.page - 1)"
-      >
-        이전
-      </button>
-      <span class="text-sm">{{ filters.page + 1 }} / {{ runs.data.value.totalPages }}</span>
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50"
-        :disabled="filters.page + 1 >= runs.data.value.totalPages"
-        @click="changePage(filters.page + 1)"
-      >
-        다음
-      </button>
-    </nav>
+      :page="filters.page"
+      :total-pages="runs.data.value.totalPages"
+      label="작업 기록 페이지"
+      @change="changePage"
+    />
   </section>
 </template>
+
+<style scoped>
+.run-filters,
+.run-list-page__state,
+.run-list {
+  margin-top: var(--space-5);
+}
+
+.run-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+.run-filter-group legend {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+.run-filter-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.run-filter-option {
+  display: flex;
+  min-height: 2.5rem;
+  cursor: pointer;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.run-filter-option:has(input:checked) {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-weight: 700;
+}
+
+.run-filter-option input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-brand);
+}
+
+.run-filter-selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 14rem));
+  gap: var(--space-3);
+}
+
+.run-row {
+  padding: var(--space-5);
+}
+
+.run-row__header,
+.run-row__title,
+.run-row__progress {
+  display: flex;
+  align-items: center;
+}
+
+.run-row__header {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.run-row__identity {
+  min-width: 0;
+}
+
+.run-row__title {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.run-row__title h3 {
+  font-weight: 750;
+}
+
+.run-row__identity > p {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.run-row__progress {
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.run-row__progress progress {
+  flex: 1;
+}
+
+.run-row__progress span {
+  min-width: 3rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.run-row__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.run-row__meta dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.run-row__meta dd {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 64rem) {
+  .run-filter-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .run-row__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .run-filter-options,
+  .run-filter-selects,
+  .run-row__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .run-row__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

@@ -19,7 +19,7 @@ vi.mock('@/shared/api/profileApi', () => ({
 describe('P2 onboarding', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('runs basic profile, primary education, desired fields, and completion without document upload', async () => {
+  it('runs profile steps and finishes with the implemented document upload route', async () => {
     const initial = profile(0, false)
     const basicSaved = { ...initial, legalName: 'Onboarding User', version: 1 }
     const completed = {
@@ -70,6 +70,7 @@ describe('P2 onboarding', () => {
         { path: '/', component: { template: '<div />' } },
         { path: '/dashboard', component: { template: '<div />' } },
         { path: '/profile/basic', component: { template: '<div />' } },
+        { path: '/documents', component: { template: '<div />' } },
       ],
     })
     await router.push('/')
@@ -110,9 +111,18 @@ describe('P2 onboarding', () => {
         desiredLocations: ['Seoul'],
       }),
     )
-    expect(wrapper.text()).toContain('현재 프로필: 완료')
-    expect(wrapper.text()).toContain('문서 업로드는 P4에서 제공됩니다')
+    expect(wrapper.text()).toContain('현재 프로필')
+    expect(wrapper.text()).toContain('필수 항목 완료')
+    expect(wrapper.text()).toContain('문서 업로드로 이동')
+    expect(wrapper.text()).not.toContain('P4에서 제공됩니다')
     expect(wrapper.text()).not.toContain('파일 선택')
+
+    const uploadButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('문서 업로드로 이동'))
+    await uploadButton?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/documents')
   })
 })
 

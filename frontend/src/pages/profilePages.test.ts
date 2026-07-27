@@ -274,14 +274,14 @@ describe('P2 profile pages', () => {
       expect.objectContaining({ documentId: '00000000-0000-4000-8000-000000000101' }),
     )
     expect(wrapper.text()).toContain('원본이 삭제되어 읽기 전용입니다.')
-    const deletedCard = wrapper
-      .findAll('li')
-      .find((card) => card.text().includes('evidence-deleted'))
-    expect(deletedCard).toBeUndefined()
-    const disabledActions = wrapper
-      .findAll('button[disabled]')
-      .filter((button) => ['수정', '승인', '거절'].includes(button.text()))
-    expect(disabledActions.length).toBeGreaterThanOrEqual(3)
+    const deletedCard = wrapper.get('[data-testid="evidence-card-evidence-deleted"]')
+    expect(deletedCard.text()).toContain('원본 삭제됨')
+    expect(deletedCard.text()).toContain('수정·승인·거절할 수 없습니다.')
+    expect(
+      deletedCard
+        .findAll('button')
+        .filter((button) => ['수정', '승인', '거절'].includes(button.text())),
+    ).toHaveLength(0)
 
     await wrapper.get('select').setValue('REJECTED')
     await flushPromises()

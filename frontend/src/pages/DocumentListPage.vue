@@ -22,7 +22,9 @@ import {
   DOCUMENT_PARSE_STATUSES,
   DOCUMENT_TYPES,
   EVIDENCE_EXTRACTION_STATUSES,
+  type DocumentParseStatus,
   type DocumentType,
+  type EvidenceExtractionStatus,
 } from '@/shared/api/documentContracts'
 import {
   createDocumentDownloadUrl,
@@ -32,6 +34,11 @@ import {
   uploadDocument,
 } from '@/shared/api/documentApi'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppIcon from '@/shared/ui/AppIcon.vue'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -213,220 +220,445 @@ async function remove(id: string, version: number, name: string): Promise<void> 
     actionError.value = normalizeApiError(error).message
   }
 }
+
+function parseTone(
+  value: DocumentParseStatus,
+): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      UPLOADED: 'neutral',
+      PARSING: 'info',
+      PARSED: 'success',
+      NEEDS_MANUAL_TEXT: 'warning',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
+
+function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'success' | 'danger' {
+  return (
+    {
+      NOT_STARTED: 'neutral',
+      QUEUED: 'neutral',
+      EXTRACTING: 'info',
+      SUCCEEDED: 'success',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
 </script>
 
 <template>
-  <section aria-labelledby="documents-heading">
-    <h2 id="documents-heading" class="text-2xl font-bold">문서·근거</h2>
-    <p class="mt-2 text-slate-600">PDF, DOCX, TXT 파일을 업로드하고 두 처리 상태를 확인합니다.</p>
+  <section class="documents-page app-page" aria-labelledby="documents-heading">
+    <PageHeader
+      heading-id="documents-heading"
+      title="문서·근거"
+      description="경력 문서를 업로드하고 텍스트 처리와 근거 추출 상태를 각각 확인합니다."
+      eyebrow="Documents"
+    />
 
-    <form class="mt-6 rounded-2xl bg-white p-6 shadow-sm" novalidate @submit.prevent="upload">
-      <h3 class="text-lg font-semibold">문서 업로드</h3>
-      <label
-        for="document-file"
-        class="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 p-6 text-center focus-within:border-indigo-600"
-        @dragover.prevent
-        @drop.prevent="dropFile"
-      >
-        <span class="font-medium">파일을 놓거나 눌러 선택하세요</span>
-        <span class="mt-1 block text-sm text-slate-600">PDF · DOCX · TXT, 파일당 최대 20MB</span>
+    <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
+      <div class="upload-panel__heading">
+        <p class="section-kicker">Upload</p>
+        <h3 class="section-title">문서 업로드</h3>
+        <p>업로드가 접수되면 문서 상세에서 처리 과정을 이어서 확인할 수 있습니다.</p>
+      </div>
+      <label for="document-file" class="dropzone" @dragover.prevent @drop.prevent="dropFile">
+        <span class="dropzone__icon" aria-hidden="true"><AppIcon name="upload" /></span>
+        <strong>파일을 놓거나 눌러 선택하세요</strong>
+        <span>PDF · DOCX · TXT, 파일당 최대 20MB</span>
         <input
           id="document-file"
-          class="mt-3 block w-full text-sm"
+          class="dropzone__input"
           type="file"
           accept=".pdf,.docx,.txt"
           @change="selectFile"
         />
       </label>
-      <p v-if="selectedFile" class="mt-2 text-sm" role="status">
-        선택: {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
+      <p v-if="selectedFile" class="selected-file" role="status">
+        <span>선택한 파일</span>
+        <strong>{{ selectedFile.name }}</strong>
+        <span>{{ formatFileSize(selectedFile.size) }}</span>
       </p>
-      <p v-if="uploadErrors.file" class="mt-2 text-sm text-red-700" role="alert">
+      <p v-if="uploadErrors.file" class="inline-error" role="alert">
         {{ uploadErrors.file }}
       </p>
-      <div class="mt-4 grid gap-4 md:grid-cols-2">
-        <label class="text-sm font-medium"
-          >문서 유형<select
-            id="document-upload-type"
-            v-model="documentType"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-          >
+      <div class="upload-panel__fields">
+        <label class="field">
+          <span class="field__label">문서 유형</span>
+          <select id="document-upload-type" v-model="documentType" class="control">
             <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
               {{ DOCUMENT_TYPE_LABELS[type] }}
             </option>
-          </select></label
-        >
-        <label class="text-sm font-medium"
-          >표시 이름 (선택)<input
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">표시 이름 <span class="field__optional">(선택)</span></span>
+          <input
             id="document-displayName"
             v-model="displayName"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            class="control"
             maxlength="255"
+            :aria-invalid="Boolean(uploadErrors.displayName)"
+            :aria-describedby="uploadErrors.displayName ? 'document-displayName-error' : undefined"
           />
-          <span v-if="uploadErrors.displayName" class="mt-1 block text-red-700">{{
-            uploadErrors.displayName
-          }}</span>
+          <span
+            v-if="uploadErrors.displayName"
+            id="document-displayName-error"
+            class="inline-error"
+            >{{ uploadErrors.displayName }}</span
+          >
         </label>
       </div>
       <button
         id="document-upload-submit"
         type="submit"
-        class="mt-4 rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+        class="button button--primary upload-panel__submit"
         :disabled="uploadMutation.isPending.value"
       >
         {{ uploadMutation.isPending.value ? '업로드 접수 중…' : '업로드' }}
       </button>
     </form>
 
-    <form
-      class="mt-6 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4"
-      @submit.prevent="applyFilters"
-    >
-      <label class="text-sm font-medium"
-        >문서 유형<select
-          v-model="filterDocumentType"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-        >
+    <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
+      <label class="field">
+        <span class="field__label">문서 유형</span>
+        <select v-model="filterDocumentType" class="control control--compact">
           <option value="">전체</option>
           <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
             {{ DOCUMENT_TYPE_LABELS[type] }}
           </option>
-        </select></label
-      >
-      <label class="text-sm font-medium"
-        >파싱 상태<select
-          v-model="filterParseStatus"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-        >
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">텍스트 처리</span>
+        <select v-model="filterParseStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
             {{ DOCUMENT_PARSE_STATUS_LABELS[value] }}
           </option>
-        </select></label
-      >
-      <label class="text-sm font-medium"
-        >근거 추출 상태<select
-          v-model="filterEvidenceStatus"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-        >
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">근거 추출</span>
+        <select v-model="filterEvidenceStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
             {{ EVIDENCE_EXTRACTION_STATUS_LABELS[value] }}
           </option>
-        </select></label
-      >
-      <label class="text-sm font-medium"
-        >정렬<select
-          :value="filters.sort"
-          class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
-          @change="updateSort"
-        >
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">정렬</span>
+        <select :value="filters.sort" class="control control--compact" @change="updateSort">
           <option value="uploadedAt,desc">최근 업로드순</option>
           <option value="updatedAt,desc">최근 수정순</option>
-        </select></label
-      >
-      <button class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white" type="submit">
-        필터 적용
-      </button>
+        </select>
+      </label>
+      <button class="button button--primary button--compact" type="submit">필터 적용</button>
     </form>
 
-    <p v-if="message" class="mt-4 text-sm text-emerald-700" role="status">{{ message }}</p>
-    <p v-if="actionError" class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+    <p v-if="message" class="alert alert--success documents-page__message" role="status">
+      {{ message }}
+    </p>
+    <p v-if="actionError" class="alert alert--danger documents-page__message" role="alert">
       {{ actionError }}
     </p>
-    <p v-if="documents.isPending.value" class="mt-8" aria-live="polite">문서 목록을 불러오는 중…</p>
-    <div
+    <StatePanel
+      v-if="documents.isPending.value"
+      class="documents-page__state"
+      kind="loading"
+      title="문서 목록을 불러오는 중…"
+      description="업로드한 문서와 처리 상태를 확인하고 있습니다."
+    />
+    <StatePanel
       v-else-if="documents.isError.value"
-      class="mt-8 rounded-xl bg-red-50 p-4 text-red-800"
-      role="alert"
+      class="documents-page__state"
+      kind="error"
+      title="문서 목록을 불러오지 못했습니다."
+      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
     >
-      문서 목록을 불러오지 못했습니다.
-      <button class="underline" type="button" @click="documents.refetch()">다시 시도</button>
-    </div>
-    <div
+      <template #actions>
+        <button class="button button--secondary" type="button" @click="documents.refetch()">
+          다시 시도
+        </button>
+      </template>
+    </StatePanel>
+    <StatePanel
       v-else-if="documents.data.value?.items.length === 0"
-      class="mt-8 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600"
-    >
-      조건에 맞는 문서가 없습니다.
-    </div>
-    <ul v-else class="mt-6 space-y-4">
+      class="documents-page__state"
+      kind="empty"
+      title="조건에 맞는 문서가 없습니다."
+      description="필터를 조정하거나 위 업로드 영역에서 첫 문서를 등록해 주세요."
+    />
+    <ul v-else class="document-list data-list">
       <li
         v-for="document in documents.data.value?.items"
         :key="document.id"
-        class="rounded-2xl bg-white p-5 shadow-sm"
+        class="document-row data-card"
       >
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <RouterLink
-              class="font-semibold text-indigo-700"
-              :to="{ name: 'document-detail', params: { documentId: document.id } }"
-              >{{ document.displayName }}</RouterLink
-            >
-            <p class="mt-1 text-sm text-slate-600">
-              {{ DOCUMENT_TYPE_LABELS[document.documentType] }} · {{ document.mimeType }} ·
-              {{ formatFileSize(document.fileSizeBytes) }}
-            </p>
-            <p class="mt-2 text-sm">
-              <span class="font-medium">파싱:</span>
-              {{ DOCUMENT_PARSE_STATUS_LABELS[document.parseStatus] }}
-              <span class="ml-3 font-medium">근거:</span>
-              {{ EVIDENCE_EXTRACTION_STATUS_LABELS[document.evidenceExtractionStatus] }}
-            </p>
-            <p class="mt-1 text-xs text-slate-500">
-              업로드 {{ new Date(document.uploadedAt).toLocaleString('ko-KR') }}
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              @click="reparse(document.id, document.version)"
-            >
-              재처리
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              @click="download(document.id)"
-            >
-              다운로드
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-700"
-              @click="remove(document.id, document.version, document.displayName)"
-            >
-              삭제
-            </button>
-          </div>
+        <div class="document-row__identity">
+          <RouterLink
+            class="document-row__title"
+            :to="{ name: 'document-detail', params: { documentId: document.id } }"
+            >{{ document.displayName }}</RouterLink
+          >
+          <p class="document-row__file">
+            {{ DOCUMENT_TYPE_LABELS[document.documentType] }} · {{ document.mimeType }} ·
+            {{ formatFileSize(document.fileSizeBytes) }}
+          </p>
+          <p class="document-row__time">
+            업로드 {{ new Date(document.uploadedAt).toLocaleString('ko-KR') }}
+          </p>
+        </div>
+        <div class="document-row__statuses" aria-label="문서 처리 상태">
+          <StatusBadge
+            prefix="텍스트"
+            :label="DOCUMENT_PARSE_STATUS_LABELS[document.parseStatus]"
+            :tone="parseTone(document.parseStatus)"
+          />
+          <StatusBadge
+            prefix="근거"
+            :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.evidenceExtractionStatus]"
+            :tone="evidenceTone(document.evidenceExtractionStatus)"
+          />
+        </div>
+        <div class="document-row__actions">
+          <button
+            type="button"
+            class="button button--secondary button--compact"
+            @click="reparse(document.id, document.version)"
+          >
+            재처리
+          </button>
+          <button
+            type="button"
+            class="button button--ghost button--compact"
+            @click="download(document.id)"
+          >
+            다운로드
+          </button>
+          <button
+            type="button"
+            class="button button--danger button--compact"
+            @click="remove(document.id, document.version, document.displayName)"
+          >
+            삭제
+          </button>
         </div>
       </li>
     </ul>
 
-    <nav
+    <PaginationNav
       v-if="documents.data.value && documents.data.value.totalPages > 0"
-      class="mt-6 flex items-center justify-between"
-      aria-label="문서 페이지"
-    >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="filters.page === 0"
-        @click="updatePage(filters.page - 1)"
-      >
-        이전
-      </button>
-      <span class="text-sm"
-        >{{ filters.page + 1 }} / {{ documents.data.value.totalPages }} 페이지</span
-      >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="filters.page + 1 >= documents.data.value.totalPages"
-        @click="updatePage(filters.page + 1)"
-      >
-        다음
-      </button>
-    </nav>
+      :page="filters.page"
+      :total-pages="documents.data.value.totalPages"
+      label="문서 페이지"
+      @change="updatePage"
+    />
   </section>
 </template>
+
+<style scoped>
+.upload-panel,
+.document-filters,
+.documents-page__message,
+.documents-page__state,
+.document-list {
+  margin-top: var(--space-6);
+}
+
+.upload-panel {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.75fr) minmax(18rem, 1.25fr);
+  gap: var(--space-5) var(--space-7);
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.upload-panel__heading p:last-child {
+  max-width: 31rem;
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.dropzone {
+  display: flex;
+  min-height: 11rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  text-align: center;
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast);
+}
+
+.dropzone:hover,
+.dropzone:focus-within {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.dropzone__icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: white;
+  font-size: 1.35rem;
+}
+
+.dropzone strong {
+  color: var(--color-text);
+}
+
+.dropzone span:last-of-type {
+  font-size: var(--font-size-sm);
+}
+
+.dropzone__input {
+  width: min(100%, 19rem);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.selected-file {
+  display: flex;
+  min-width: 0;
+  grid-column: 2;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.selected-file strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-panel__fields {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.upload-panel__submit {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.document-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(8rem, 1fr)) auto;
+  align-items: end;
+}
+
+.document-row {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.4fr) minmax(15rem, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+
+.document-row__identity {
+  min-width: 0;
+}
+
+.document-row__title {
+  color: var(--color-brand-strong);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.document-row__title:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.document-row__file,
+.document-row__time {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.document-row__statuses,
+.document-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.document-row__actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 64rem) {
+  .document-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .document-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .document-row__statuses {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .document-row__actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 48rem) {
+  .upload-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-file,
+  .upload-panel__fields,
+  .upload-panel__submit {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .document-filters,
+  .upload-panel__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .document-row {
+    grid-template-columns: 1fr;
+  }
+
+  .document-row__statuses,
+  .document-row__actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .document-row__actions {
+    justify-content: flex-start;
+  }
+}
+</style>

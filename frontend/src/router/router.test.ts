@@ -130,15 +130,19 @@ describe('authentication route policy', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('대시보드 데이터는 다음 단계에서 연결됩니다.')
+    expect(wrapper.get('h2').text()).toContain('지원 준비 공간')
+    expect(wrapper.text()).toContain('프로필 관리')
+    expect(wrapper.text()).toContain('문서 업로드')
+    expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
-    expect(wrapper.text()).toContain('필요한 정보를 단계별로 입력하세요.')
+    expect(wrapper.text()).toContain('지원 준비에 필요한 기본 정보를 네 단계로 정리합니다.')
 
     await router.push('/missing-page')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
     expect(wrapper.text()).toContain('페이지를 찾을 수 없습니다')
+    expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('대시보드로 이동')
   })
 
   it('redirects /profile to /profile/basic without gating an incomplete profile', async () => {

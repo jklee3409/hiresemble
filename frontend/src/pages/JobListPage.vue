@@ -28,6 +28,10 @@ import {
 } from '@/shared/api/jobContracts'
 import { JOB_SORTS } from '@/shared/api/jobApi'
 import { normalizeApiError } from '@/shared/api/errors'
+import PageHeader from '@/shared/ui/PageHeader.vue'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import StatePanel from '@/shared/ui/StatePanel.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -134,35 +138,56 @@ async function changeStatus(
     select.value = currentStatus
   }
 }
+
+function businessTone(value: JobStatus): 'brand' | 'info' | 'neutral' {
+  return (
+    {
+      IN_PROGRESS: 'brand',
+      SUBMITTED: 'info',
+      CLOSED: 'neutral',
+    } as const
+  )[value]
+}
+
+function extractionTone(
+  value: JobExtractionStatus,
+): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
+  return (
+    {
+      QUEUED: 'neutral',
+      EXTRACTING: 'info',
+      EXTRACTED: 'success',
+      MANUAL_INPUT_PROVIDED: 'success',
+      NEEDS_MANUAL_INPUT: 'warning',
+      FAILED: 'danger',
+    } as const
+  )[value]
+}
 </script>
 
 <template>
-  <section aria-labelledby="jobs-heading">
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h2 id="jobs-heading" class="text-2xl font-bold">채용 공고</h2>
-        <p class="mt-2 text-slate-600">지원 업무 상태와 URL 추출 상태를 분리해 확인합니다.</p>
-      </div>
-      <RouterLink
-        class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white"
-        :to="{ name: 'job-new' }"
-      >
-        공고 등록
-      </RouterLink>
-    </div>
+  <section class="jobs-page app-page" aria-labelledby="jobs-heading">
+    <PageHeader
+      heading-id="jobs-heading"
+      title="채용 공고"
+      description="지원 업무 상태와 URL 추출 상태를 분리해 공고를 관리합니다."
+      eyebrow="Job workspace"
+    >
+      <template #actions>
+        <RouterLink class="button button--primary" :to="{ name: 'job-new' }">
+          공고 등록
+        </RouterLink>
+      </template>
+    </PageHeader>
 
-    <div class="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="공고 업무 상태">
+    <div class="job-tabs" role="tablist" aria-label="공고 업무 상태">
       <button
         v-for="status in JOB_STATUSES"
         :key="status"
         type="button"
         role="tab"
-        class="rounded-full border px-4 py-2 text-sm font-semibold"
-        :class="
-          filters.status === status
-            ? 'border-indigo-700 bg-indigo-700 text-white'
-            : 'border-slate-300 bg-white text-slate-700'
-        "
+        class="job-tab"
+        :class="{ 'job-tab--active': filters.status === status }"
         :aria-selected="filters.status === status"
         @click="selectTab(status)"
       >
@@ -170,67 +195,57 @@ async function changeStatus(
       </button>
     </div>
 
-    <form
-      class="mt-5 grid gap-4 rounded-2xl bg-white p-5 shadow-sm md:grid-cols-2 xl:grid-cols-4"
-      @submit.prevent="applyFilters"
-    >
-      <label class="text-sm font-medium xl:col-span-2">
-        회사·직무 검색
+    <form class="filter-toolbar job-filters" @submit.prevent="applyFilters">
+      <label class="field job-filters__search">
+        <span class="field__label">회사·직무 검색</span>
         <input
           v-model="search"
           type="search"
           maxlength="200"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control control--compact"
           placeholder="회사명, 공고 제목, 직무명"
         />
       </label>
-      <label class="text-sm font-medium">
-        URL 추출 상태
-        <select
-          v-model="extractionStatus"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-        >
+      <label class="field">
+        <span class="field__label">URL 추출 상태</span>
+        <select v-model="extractionStatus" class="control control--compact">
           <option value="">전체</option>
           <option v-for="status in JOB_EXTRACTION_STATUSES" :key="status" :value="status">
             {{ JOB_EXTRACTION_STATUS_LABELS[status] }}
           </option>
         </select>
       </label>
-      <label class="text-sm font-medium">
-        정렬
-        <select
-          :value="filters.sort"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-          @change="updateSort"
-        >
+      <label class="field">
+        <span class="field__label">정렬</span>
+        <select :value="filters.sort" class="control control--compact" @change="updateSort">
           <option value="createdAt,desc">최근 등록순</option>
           <option value="deadlineAt,asc">마감 임박순</option>
           <option value="updatedAt,desc">최근 수정순</option>
         </select>
       </label>
-      <label class="text-sm font-medium">
-        마감 시작
+      <label class="field">
+        <span class="field__label">마감 시작</span>
         <input
           v-model="deadlineFrom"
           type="date"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control control--compact"
           :disabled="deadlineWithinDays !== ''"
         />
       </label>
-      <label class="text-sm font-medium">
-        마감 종료
+      <label class="field">
+        <span class="field__label">마감 종료</span>
         <input
           v-model="deadlineTo"
           type="date"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control control--compact"
           :disabled="deadlineWithinDays !== ''"
         />
       </label>
-      <label class="text-sm font-medium">
-        마감 임박
+      <label class="field">
+        <span class="field__label">마감 임박</span>
         <select
           v-model="deadlineWithinDays"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          class="control control--compact"
           :disabled="deadlineFrom !== '' || deadlineTo !== ''"
         >
           <option value="">사용 안 함</option>
@@ -240,85 +255,92 @@ async function changeStatus(
           <option value="30">30일 이내</option>
         </select>
       </label>
-      <div class="flex items-end gap-2">
-        <button type="submit" class="rounded-lg bg-indigo-700 px-4 py-2 font-semibold text-white">
-          필터 적용
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-slate-300 px-4 py-2"
-          @click="clearDeadline"
-        >
+      <div class="job-filters__actions">
+        <button type="submit" class="button button--primary button--compact">필터 적용</button>
+        <button type="button" class="button button--ghost button--compact" @click="clearDeadline">
           마감 초기화
         </button>
       </div>
     </form>
 
-    <p v-if="message" class="mt-4 text-sm text-emerald-700" role="status">{{ message }}</p>
-    <p v-if="actionError" class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+    <p v-if="message" class="alert alert--success jobs-page__message" role="status">
+      {{ message }}
+    </p>
+    <p v-if="actionError" class="alert alert--danger jobs-page__message" role="alert">
       {{ actionError }}
     </p>
 
-    <p v-if="jobs.isPending.value" class="mt-8" aria-live="polite">공고 목록을 불러오는 중…</p>
-    <div
+    <StatePanel
+      v-if="jobs.isPending.value"
+      class="jobs-page__state"
+      kind="loading"
+      title="공고 목록을 불러오는 중…"
+      description="현재 업무 상태와 추출 상태를 확인하고 있습니다."
+    />
+    <StatePanel
       v-else-if="jobs.isError.value"
-      class="mt-8 rounded-xl bg-red-50 p-4 text-red-800"
-      role="alert"
+      class="jobs-page__state"
+      kind="error"
+      title="공고 목록을 불러오지 못했습니다."
+      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
     >
-      공고 목록을 불러오지 못했습니다.
-      <button type="button" class="underline" @click="jobs.refetch()">다시 시도</button>
-    </div>
-    <div
+      <template #actions>
+        <button type="button" class="button button--secondary" @click="jobs.refetch()">
+          다시 시도
+        </button>
+      </template>
+    </StatePanel>
+    <StatePanel
       v-else-if="jobs.data.value?.items.length === 0"
-      class="mt-8 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600"
+      class="jobs-page__state"
+      kind="empty"
+      title="조건에 맞는 공고가 없습니다."
+      description="필터를 조정하거나 새 공고를 등록해 지원 준비를 시작하세요."
     >
-      조건에 맞는 공고가 없습니다.
-    </div>
-    <ul v-else class="mt-6 space-y-4">
-      <li
-        v-for="job in jobs.data.value?.items"
-        :key="job.id"
-        class="rounded-2xl bg-white p-5 shadow-sm"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-slate-600">{{ jobCompanyLabel(job.companyName) }}</p>
+      <template #actions>
+        <RouterLink class="button button--primary" :to="{ name: 'job-new' }">공고 등록</RouterLink>
+      </template>
+    </StatePanel>
+    <ul v-else class="job-list data-list">
+      <li v-for="job in jobs.data.value?.items" :key="job.id" class="job-row data-card">
+        <div class="job-row__content">
+          <div class="job-row__identity">
+            <p class="job-row__company">{{ jobCompanyLabel(job.companyName) }}</p>
             <RouterLink
-              class="mt-1 block break-words text-lg font-semibold text-indigo-700"
+              class="job-row__title"
               :to="{ name: 'job-overview', params: { jobId: job.id } }"
             >
               {{ jobDisplayTitle(job) }}
             </RouterLink>
-            <p v-if="job.title && job.positionName" class="mt-1 text-sm text-slate-600">
+            <p v-if="job.title && job.positionName" class="job-row__position">
               직무: {{ job.positionName }}
             </p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span
+            <div class="job-row__statuses">
+              <StatusBadge
                 data-testid="job-business-status"
-                class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-800"
-              >
-                업무 · {{ JOB_STATUS_LABELS[job.status] }}
-              </span>
-              <span
+                prefix="업무"
+                :label="JOB_STATUS_LABELS[job.status]"
+                :tone="businessTone(job.status)"
+              />
+              <StatusBadge
                 data-testid="job-extraction-status"
-                class="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800"
-              >
-                추출 · {{ JOB_EXTRACTION_STATUS_LABELS[job.extractionStatus] }}
-              </span>
-              <span
+                prefix="추출"
+                :label="JOB_EXTRACTION_STATUS_LABELS[job.extractionStatus]"
+                :tone="extractionTone(job.extractionStatus)"
+              />
+              <StatusBadge
                 v-if="job.status === 'CLOSED' && job.submittedAt"
-                class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
-              >
-                서류 제출 이력 있음
-              </span>
+                label="서류 제출 이력 있음"
+                tone="success"
+              />
             </div>
-            <p class="mt-3 text-sm text-slate-600">마감 {{ formatJobInstant(job.deadlineAt) }}</p>
+            <p class="job-row__deadline">마감 {{ formatJobInstant(job.deadlineAt) }}</p>
           </div>
-          <label class="text-sm font-medium">
-            상태 변경
+          <label class="field job-row__status-control">
+            <span class="field__label">상태 변경</span>
             <select
               :value="job.status"
-              class="mt-1 block rounded-lg border border-slate-300 px-3 py-2"
+              class="control control--compact"
               :disabled="statusMutation.isPending.value"
               :aria-label="`${jobDisplayTitle(job)} 상태 변경`"
               @change="changeStatus(job.id, job.version, job.status, $event)"
@@ -332,28 +354,147 @@ async function changeStatus(
       </li>
     </ul>
 
-    <nav
+    <PaginationNav
       v-if="jobs.data.value && jobs.data.value.totalPages > 0"
-      class="mt-6 flex items-center justify-between"
-      aria-label="공고 페이지"
-    >
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="filters.page === 0"
-        @click="updatePage(filters.page - 1)"
-      >
-        이전
-      </button>
-      <span class="text-sm">{{ filters.page + 1 }} / {{ jobs.data.value.totalPages }} 페이지</span>
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
-        :disabled="filters.page + 1 >= jobs.data.value.totalPages"
-        @click="updatePage(filters.page + 1)"
-      >
-        다음
-      </button>
-    </nav>
+      :page="filters.page"
+      :total-pages="jobs.data.value.totalPages"
+      label="공고 페이지"
+      @change="updatePage"
+    />
   </section>
 </template>
+
+<style scoped>
+.job-tabs,
+.job-filters,
+.jobs-page__message,
+.jobs-page__state,
+.job-list {
+  margin-top: var(--space-5);
+}
+
+.job-tabs {
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.job-tab {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.job-tab:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.job-tab--active {
+  background: var(--color-brand);
+  color: white;
+}
+
+.job-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+}
+
+.job-filters__search {
+  grid-column: span 2;
+}
+
+.job-filters__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.job-row {
+  padding: var(--space-5);
+}
+
+.job-row__content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.job-row__identity {
+  min-width: 0;
+}
+
+.job-row__company,
+.job-row__position,
+.job-row__deadline {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.job-row__company {
+  font-weight: 650;
+}
+
+.job-row__title {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-lg);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.job-row__position {
+  margin-top: var(--space-1);
+}
+
+.job-row__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.job-row__deadline {
+  margin-top: var(--space-3);
+}
+
+.job-row__status-control {
+  width: 9.5rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 64rem) {
+  .job-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .job-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .job-filters__search {
+    grid-column: auto;
+  }
+
+  .job-row__content {
+    flex-direction: column;
+  }
+
+  .job-row__status-control {
+    width: 100%;
+  }
+}
+</style>
