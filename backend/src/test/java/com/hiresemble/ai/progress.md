@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 AI runtime targeted 19 tests가 구현됐다.
+P3 runtime과 P4 Document·P5 Job workflow 통합 검증이 구현됐다.
+
+## [2026-07-27] Session Summary (P5 Job workflow 테스트 추가)
+
+- What was done:
+  - Job 고정 순서·structured output·override·waiting·retry·cancel·restart·reuse·privacy 테스트를 추가했다.
+- Key decisions:
+  - 실제 외부 provider 없이 Fake fetch·Chat만 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 관련 7개와 전체 Backend 322 tests가 통과했다.
+- Next steps:
+  - P6 분석 workflow가 생길 때 별도 fixture를 추가한다.
 
 ## [2026-07-19] Session Summary (AI runtime Fake 검증 구현)
 

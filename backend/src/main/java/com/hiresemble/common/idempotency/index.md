@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-향후 비용·생성 mutation이 사용할 DB 기반 HMAC reservation과 원 응답 replay의 최소 기반을 제공한다.
+Document·Job 생성 mutation이 사용하는 DB 기반 HMAC reservation과 원 HTTP status·응답 replay를 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -26,7 +26,7 @@
 
 ## 변경 시 주의사항
 
-- P1 auth endpoint에 적용하거나 production test endpoint·과도한 annotation 계층을 추가하지 않는다.
+- P1 auth endpoint에 적용하거나 production test endpoint·과도한 annotation 계층을 추가하지 않는다. replay는 최초 생성의 Job·Run ID와 HTTP status를 보존한다.
 
 ## 관련 규칙 및 문서
 

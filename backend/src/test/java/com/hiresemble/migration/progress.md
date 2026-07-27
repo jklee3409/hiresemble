@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway V1~V3 보존과 V4 P3 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway V1~V5 보존과 V6 P5 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-07-27] Session Summary (P5 V6 migration·불변식 검증)
+
+- What was done:
+  - 빈 DB V1→V6, V5-only upgrade, owner FK·canonical active unique·상태 CHECK·history FK와 P6 table 부재를 검증했다.
+- Key decisions:
+  - V1~V5 Git blob·SHA-256을 기준선으로 고정한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `P5MigrationTest` 6개와 전체 Backend check가 통과했다.
+- Next steps:
+  - P6 migration은 새 version으로 검증한다.
 
 ## [2026-07-19] Session Summary (P4 V5 migration·불변식 검증)
 

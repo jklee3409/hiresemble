@@ -39,7 +39,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyFortyThreeP1ThroughP4OperationsAndThirtyPaths() {
+    void liveSpringMappingsHaveExactlyFiftyP1ThroughP5OperationsAndThirtyFourPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -55,19 +55,20 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(30);
-        assertThat(operations[0]).isEqualTo(43);
+        assertThat(paths).hasSize(34);
+        assertThat(operations[0]).isEqualTo(50);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyFortyThreeP1ThroughP4Operations()
+    void generatedOpenApiHasStableMetadataAndExactlyFiftyP1ThroughP5Operations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.4");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.5");
         assertThat(fieldValues(document.get("tags"), "name"))
-                .containsExactlyInAnyOrder("Authentication", "Profile", "Agent Runs", "Documents");
+                .containsExactlyInAnyOrder(
+                        "Authentication", "Profile", "Agent Runs", "Documents", "Jobs");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -106,8 +107,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/documents/{documentId}/text",
                         "/api/v1/documents/{documentId}/manual-text",
                         "/api/v1/documents/{documentId}/reparse",
-                        "/api/v1/documents/{documentId}/download-url");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(43);
+                        "/api/v1/documents/{documentId}/download-url",
+                        "/api/v1/jobs",
+                        "/api/v1/jobs/{jobId}",
+                        "/api/v1/jobs/{jobId}/status",
+                        "/api/v1/jobs/{jobId}/retry-extraction");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(50);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -158,6 +163,18 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .isEqualTo("getDocument");
         assertThat(document.at("/paths/~1api~1v1~1documents~1{documentId}/delete/operationId").asText())
                 .isEqualTo("deleteDocument");
+        assertJobOperation(document, "/api/v1/jobs", "post", "createJob");
+        assertJobOperation(document, "/api/v1/jobs", "get", "listJobs");
+        assertJobOperation(document, "/api/v1/jobs/{jobId}", "get", "getJob");
+        assertJobOperation(document, "/api/v1/jobs/{jobId}", "put", "updateJob");
+        assertJobOperation(document, "/api/v1/jobs/{jobId}", "delete", "deleteJob");
+        assertJobOperation(
+                document, "/api/v1/jobs/{jobId}/status", "patch", "changeJobStatus");
+        assertJobOperation(
+                document,
+                "/api/v1/jobs/{jobId}/retry-extraction",
+                "post",
+                "retryJobExtraction");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs/get"),
                 "200", "400", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/get"),
@@ -168,6 +185,21 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "202", "400", "401", "403", "404", "409", "429");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1cancel/post"),
                 "202", "400", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs/post"),
+                "201", "202", "400", "401", "403", "409", "429", "503");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs/get"),
+                "200", "400", "401");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs~1{jobId}/get"),
+                "200", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs~1{jobId}/put"),
+                "200", "400", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs~1{jobId}/delete"),
+                "204", "400", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1jobs~1{jobId}~1status/patch"),
+                "200", "400", "401", "403", "404", "409");
+        assertResponseCodes(
+                document.at("/paths/~1api~1v1~1jobs~1{jobId}~1retry-extraction/post"),
+                "202", "400", "401", "403", "404", "409", "429", "503");
 
         assertThat(document.at("/paths/~1api~1v1~1profile~1educations/post/responses/201")
                         .isMissingNode())
@@ -217,6 +249,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1cancel/post/security");
         assertThat(agentRunMutationSecurity).hasSize(1);
         assertThat(fieldNames(agentRunMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        assertSingleSecurityRequirement(
+                document.at("/paths/~1api~1v1~1jobs/get"), "sessionCookie");
+        JsonNode jobMutationSecurity =
+                document.at("/paths/~1api~1v1~1jobs~1{jobId}~1status/patch/security");
+        assertThat(jobMutationSecurity).hasSize(1);
+        assertThat(fieldNames(jobMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
     }
 
@@ -281,8 +320,32 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
                         "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt",
                         "pageCount", "characterCount", "parsedAt");
+        assertThat(fieldNames(schemas.at("/JobCreationAcceptedDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "jobId", "status", "extractionStatus", "agentRunId");
+        assertThat(fieldNames(schemas.at("/JobSummaryDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "companyName", "title", "positionName", "status",
+                        "extractionStatus", "submittedAt", "deadlineAt", "deadlineSource",
+                        "latestFitScore", "analysisOutdated", "outdatedReasons",
+                        "coverLetterStatus", "interviewPreparationCount", "version",
+                        "createdAt", "updatedAt");
+        assertThat(fieldNames(schemas.at("/JobDetailDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "companyName", "title", "positionName", "status",
+                        "extractionStatus", "submittedAt", "deadlineAt", "deadlineSource",
+                        "latestFitScore", "analysisOutdated", "outdatedReasons",
+                        "coverLetterStatus", "interviewPreparationCount", "version",
+                        "createdAt", "updatedAt", "sourceUrl", "canonicalUrl",
+                        "roleCategory", "employmentType", "location", "descriptionText",
+                        "descriptionSource", "extractionError", "closedAt", "closedReason",
+                        "latestAnalysis", "coverLetterId", "latestQuestionSetId",
+                        "latestMockSessionId")
+                .doesNotContain(
+                        "contentHash", "companyUserOverride", "titleUserOverride",
+                        "positionUserOverride", "deadlineUserOverride", "provider",
+                        "storageKey");
         assertThat(document.toString())
-                .doesNotContain("/api/v1/jobs")
                 .doesNotContain("/api/v1/dashboard")
                 .doesNotContain("/api/v1/settings/ai")
                 .doesNotContain("createProfileEvidence")
@@ -389,6 +452,16 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.get("description").asText()).isNotBlank();
         assertThat(operation.at("/tags/0").asText()).isEqualTo("Agent Runs");
+    }
+
+    private void assertJobOperation(
+            JsonNode document, String path, String method, String operationId) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
+        assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo("Jobs");
     }
 
     private int operationCount(JsonNode paths) {

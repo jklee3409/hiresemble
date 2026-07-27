@@ -2,7 +2,20 @@
 
 ## Overview
 
-익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile navigation과 lazy Agent Run Progress Drawer를 제공한다.
+익명 인증 화면과 보호 화면의 공통 shell을 분리하고 profile·documents·jobs navigation과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-27] Session Summary (Jobs navigation·detail layout 추가)
+
+- What was done:
+  - AppLayout에 Job 목록 진입점을 추가하고 `/jobs/:jobId` child route용 `JobDetailLayout`을 추가했다.
+- Key decisions:
+  - P6 분석 tab은 route와 화면이 구현될 때 추가한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Router unit test와 Frontend production build가 통과했다.
+- Next steps:
+  - P6에서 현재 outlet 아래 analysis child route를 추가한다.
 
 ## [2026-07-19] Session Summary (Documents navigation 추가)
 

@@ -7,8 +7,26 @@
 - P1 공통 HTTP·Session·CSRF·인증·idempotency 기반과 P2 사용자 소유 프로필·direct evidence가 구현되어 있다.
 - P3 PostgreSQL Agent Run 수명주기, 고정 Fake workflow, 비용 예약·정산, SSE와 Frontend 복구 기반이 최종 validator `PASS`로 완료됐다.
 - P4 Document upload·parse·storage·Fake AI 근거 pipeline과 Frontend 목록·상세·검토가 최종 validator `PASS`로 완료됐다.
-- 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개인 총 43 operations·30 paths다.
-- Dashboard·공고·P6 전체 RAG와 실제 provider는 아직 없다.
+- P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
+- 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
+- Dashboard·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
+
+## [2026-07-27] Session Summary (P5 채용 공고 등록·추출·상태·Scheduler 통합 구현)
+
+- What was done:
+  - V6 Job schema, 공개 API 7개, canonical URL·SSRF-safe fetch, 고정 5단계 추출 workflow, 상태 history·Scheduler와 Vue 목록·등록·overview를 구현했다.
+  - 실제 PostgreSQL·Spring·Vue·Fake fetch/Chat·Chromium으로 수동 201, 자동 202, WAITING_USER resume, owner 격리와 자동 마감 5개 여정을 검증했다.
+- Key decisions:
+  - 업무 상태와 추출 상태를 분리하고 Job·Run 최초 생성과 상태·history를 각 transaction으로 묶되 URL fetch는 transaction 밖에서 수행한다.
+  - 검증된 DNS 주소로 실제 socket을 고정하고 HTTPS 원 hostname의 SNI·인증서 검증, redirect 재검사와 전체 fetch 절대 deadline을 적용한다.
+- Issues encountered:
+  - 최초 read-only validator가 DNS rebinding, streamed body timeout, reserved URL escape, P6 DTO 선행 구현과 NEEDS_MANUAL_INPUT retry를 지적해 허용된 한 차례 보정했다.
+- Validation:
+  - Backend 37 suites/322 tests, Frontend 32 files/122 tests·build, migration 6, P5 Browser E2E 5/5, Compose와 OpenAPI 50/34가 통과했다.
+  - V1~V5 Git blob·SHA-256은 기준선과 동일하고 최종 read-only validator가 신규 finding 없이 `PASS`를 반환했다.
+  - Validator 전후 173개 변경 파일 fingerprint는 `deacb3d70790bddf8baa27db3ec44eca10a7f6499a85f9477f1e8d3d96ed4212`로 동일했다.
+- Next steps:
+  - P6 공고 분석·RAG는 새 API·migration·workflow로 별도 착수한다.
 
 ## [2026-07-23] Session Summary (backend package·디렉터리 구조 세분화)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run list/detail projection, drawer와 snapshot-first SSE 복구 기반이 구현됐다.
+P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
+
+## [2026-07-27] Session Summary (Job resource stream 재사용)
+
+- What was done:
+  - Job terminal·WAITING_USER event의 목록·상세·Run query invalidation과 삭제/user 전환 stream cleanup을 연결했다.
+- Key decisions:
+  - 새로운 SSE client를 만들지 않고 기존 `AgentRunStreamController`를 재사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - stream unit test, logout·사용자 전환 test와 P5 Browser E2E가 통과했다.
+- Next steps:
+  - P6에서도 동일 stream을 분석 Run에 재사용한다.
 
 ## [2026-07-19] Session Summary (Document resource stream 재사용)
 

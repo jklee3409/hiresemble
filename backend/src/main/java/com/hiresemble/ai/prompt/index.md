@@ -7,6 +7,7 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 ## 주요 파일 및 하위 디렉터리
 
 - `PromptRegistry`: immutable prompt definition lookup
+- `JobPostingExtractionPromptDefinitions`: P5 추출 prompt version·output schema·call/token cap
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할
@@ -15,11 +16,11 @@ workflow type+version+step key로 정확한 prompt contract를 찾는다.
 
 ## 다른 디렉터리와의 의존 관계
 
-[`../orchestration/`](../orchestration/index.md)이 실행 전에 조회한다. P4 Document structured prompt metadata는 production registry에 있고 provider 본문 fixture는 test scope에 있다.
+[`../orchestration/`](../orchestration/index.md)이 실행 전에 조회한다. P4 Document와 P5 Job structured prompt metadata는 production registry에 있고 provider 응답 fixture는 test scope에 있다.
 
 ## 변경 시 주의사항
 
-P5 이후 빈 production prompt를 미리 만들지 않고 전체 prompt 내용을 로그·DB에 저장하지 않는다.
+P6 이후 빈 production prompt를 미리 만들지 않고 전체 prompt 내용을 로그·DB에 저장하지 않는다.
 
 ## 관련 규칙 및 문서
 

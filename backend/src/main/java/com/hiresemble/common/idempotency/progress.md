@@ -2,7 +2,20 @@
 
 ## Overview
 
-비용·생성 mutation이 사용하는 DB 기반 HMAC reservation, 원 응답 replay와 P3 Agent Run successor metadata를 제공한다.
+Document·Job 생성 mutation이 사용하는 DB 기반 HMAC reservation, 원 응답 replay와 Agent Run successor metadata를 제공한다.
+
+## [2026-07-27] Session Summary (Job 201/202 replay 연결)
+
+- What was done:
+  - 최초 HTTP status와 Job·Run ID를 그대로 replay하도록 prepared/transaction 실행 경계를 확장했다.
+- Key decisions:
+  - 같은 key의 다른 request hash는 409이고 URL-only 생성의 linked Run reservation은 reconciliation까지 보존한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 수동 201·비동기 202 replay와 key reuse 충돌 통합 테스트가 통과했다.
+- Next steps:
+  - 없음.
 
 ## [2026-07-19] Session Summary (Document prepared idempotency transaction 연결)
 

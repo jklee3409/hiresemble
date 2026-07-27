@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P4 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P5 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-27] Session Summary (P5 Job typed contract·client 구현)
+
+- What was done:
+  - Job enum·DTO strict Zod schema와 공개 API 7개 typed client·idempotency header를 추가했다.
+- Key decisions:
+  - P5 projection은 `null`, `false`, 빈 tuple과 `0`만 허용하고 P6 분석 DTO를 정의하지 않는다.
+- Issues encountered:
+  - 초기 P6 `Eligibility`·analysis schema를 validator 보정에서 제거했다.
+- Validation:
+  - 잘못된 server response 거부, API request/status와 전체 Frontend 122 tests가 통과했다.
+- Next steps:
+  - P6 OpenAPI가 구현된 뒤 분석 계약을 별도 추가한다.
 
 ## [2026-07-19] Session Summary (P4 Document typed contract·client 구현)
 

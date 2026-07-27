@@ -2,7 +2,20 @@
 
 ## Overview
 
-com.hiresemble.agentrun.infrastructure.persistence package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+Agent Run JDBC 저장·조회와 Document·Job typed resource owner resolution을 관리한다.
+
+## [2026-07-27] Session Summary (Job typed resource owner resolution 연결)
+
+- What was done:
+  - Job resource filter·상세·SSE가 owner-scoped active Job만 해석하도록 repository query를 확장했다.
+- Key decisions:
+  - 다른 사용자와 soft-deleted Job의 Run은 404로 숨긴다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job owner 격리 API·Browser E2E와 Agent Run 회귀 테스트가 통과했다.
+- Next steps:
+  - P6 analysis resource는 실제 aggregate가 생길 때 별도 typed link로 추가한다.
 
 ## [2026-07-23] Session Summary (책임별 persistence package 분리)
 

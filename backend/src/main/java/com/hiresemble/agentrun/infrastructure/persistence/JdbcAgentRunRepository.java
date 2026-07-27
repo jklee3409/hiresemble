@@ -94,9 +94,15 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 .param("resourceId", resourceId)
                 .param("queuedAt", utc(queuedAt))
                 .update();
-        if (command.resource() != null && "DOCUMENT".equals(command.resource().resourceType())) {
-            insertDocumentLink(
-                    command.userId(), agentRunId, command.resource().resourceId(), queuedAt);
+        if (command.resource() != null
+                && ("DOCUMENT".equals(command.resource().resourceType())
+                        || "JOB".equals(command.resource().resourceType()))) {
+            insertTypedLink(
+                    command.userId(),
+                    agentRunId,
+                    command.resource().resourceType(),
+                    command.resource().resourceId(),
+                    queuedAt);
         }
         return findByOwner(command.userId(), agentRunId).orElseThrow();
     }
@@ -178,6 +184,41 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                         .update();
                 if (attached != 1) {
                     throw new IllegalStateException("document retry resource is not active");
+                }
+            } else if ("JOB".equals(predecessor.resourceType())) {
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,job_posting_id,
+                                    primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,job_posting_id,
+                                       true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='JOB' AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException("job retry is missing its typed resource link");
+                }
+                int attached = jdbcClient.sql("""
+                                UPDATE job_postings SET latest_agent_run_id=:successorId,
+                                    extraction_status='QUEUED',
+                                    version=version+1,updated_at=:updatedAt
+                                WHERE user_id=:userId AND id=:jobId AND deleted_at IS NULL
+                                """)
+                        .param("successorId", successorId)
+                        .param("updatedAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("jobId", predecessor.resourceId())
+                        .update();
+                if (attached != 1) {
+                    throw new IllegalStateException("job retry resource is not active");
                 }
             }
             return findByOwner(predecessor.userId(), successorId).orElseThrow();
@@ -320,21 +361,28 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 && java.util.Objects.equals(successor.resourceId(), predecessor.resourceId());
     }
 
-    private void insertDocumentLink(
-            UUID userId, UUID runId, UUID documentId, Instant createdAt) {
-        int inserted = jdbcClient.sql("""
-                        INSERT INTO agent_run_resource_links (
-                            id,user_id,agent_run_id,resource_kind,document_id,primary_resource,created_at
-                        ) VALUES (:id,:userId,:runId,'DOCUMENT',:documentId,true,:createdAt)
-                        """)
+    private void insertTypedLink(
+            UUID userId, UUID runId, String resourceType, UUID resourceId, Instant createdAt) {
+        String resourceColumn = switch (resourceType) {
+            case "DOCUMENT" -> "document_id";
+            case "JOB" -> "job_posting_id";
+            default -> throw new IllegalArgumentException("unsupported typed resource");
+        };
+        String insertSql = """
+                INSERT INTO agent_run_resource_links (
+                    id,user_id,agent_run_id,resource_kind,%s,primary_resource,created_at
+                ) VALUES (:id,:userId,:runId,:resourceType,:resourceId,true,:createdAt)
+                """.formatted(resourceColumn);
+        int inserted = jdbcClient.sql(insertSql)
                 .param("id", UUID.randomUUID())
                 .param("userId", userId)
                 .param("runId", runId)
-                .param("documentId", documentId)
+                .param("resourceType", resourceType)
+                .param("resourceId", resourceId)
                 .param("createdAt", utc(createdAt))
                 .update();
         if (inserted != 1) {
-            throw new IllegalStateException("typed document resource link was not created");
+            throw new IllegalStateException("typed Agent Run resource link was not created");
         }
     }
 

@@ -102,6 +102,18 @@ hiresemble:
     scan-interval: ${OBJECT_DELETION_SCAN_INTERVAL:30s}
     lease-duration: ${OBJECT_DELETION_LEASE_DURATION:2m}
     batch-size: ${OBJECT_DELETION_BATCH_SIZE:20}
+  job-page-fetch:
+    connect-timeout: ${JOB_PAGE_CONNECT_TIMEOUT:3s}
+    response-timeout: ${JOB_PAGE_RESPONSE_TIMEOUT:10s}
+    max-redirects: ${JOB_PAGE_MAX_REDIRECTS:5}
+    max-response-bytes: ${JOB_PAGE_MAX_RESPONSE_BYTES:2097152}
+  job:
+    ai-cost:
+      estimated-cost-usd: ${JOB_AI_ESTIMATED_COST_USD:0.000000}
+      price-version: ${JOB_AI_PRICE_VERSION:0}
+  job-deadline-scheduler:
+    cron: ${JOB_DEADLINE_SCHEDULER_CRON:0 0 * * * *}
+    batch-size: ${JOB_DEADLINE_SCHEDULER_BATCH_SIZE:100}
   ai:
     provider: ${AI_PROVIDER:none}
     model-low-cost: ${AI_MODEL_LOW_COST:}

@@ -2,7 +2,20 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth, P2 profile과 P3 agent-runs feature가 구현되어 있다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P5 jobs feature까지 구현되어 있다.
+
+## [2026-07-27] Session Summary (P5 jobs feature 추가)
+
+- What was done:
+  - Job filter·query·mutation·Run monitor·version conflict feature를 추가했다.
+- Key decisions:
+  - REST Job 상태를 원천으로 삼고 SSE는 terminal·WAITING_USER invalidation 신호로만 사용한다.
+- Issues encountered:
+  - P6 분석 DTO 선행 구현과 NEEDS_MANUAL_INPUT retry 노출을 validator 보정에서 제거했다.
+- Validation:
+  - Frontend 32 files/122 tests와 P5 Browser E2E 5/5가 통과했다.
+- Next steps:
+  - P6 analysis feature는 새 계약 이후 추가한다.
 
 ## [2026-07-19] Session Summary (P4 documents feature 추가)
 

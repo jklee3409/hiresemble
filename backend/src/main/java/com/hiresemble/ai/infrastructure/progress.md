@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 local/production 기본 gateway는 network-free disabled 상태다.
+local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job contribution이 runtime에 등록돼 있다.
+
+## [2026-07-27] Session Summary (P5 Job runtime contribution 등록)
+
+- What was done:
+  - Job context·workflow·failure handler를 canonical registry와 orchestrator runtime에 조립했다.
+- Key decisions:
+  - production Chat 기본값은 disabled이고 Fake Chat은 test scope에만 둔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - application context와 Job workflow 통합 테스트가 통과했다.
+- Next steps:
+  - 실제 provider 활성화 전 가격·policy·timeout 계약을 별도 검증한다.
 
 ## [2026-07-19] Session Summary (P4 runtime contribution 등록)
 

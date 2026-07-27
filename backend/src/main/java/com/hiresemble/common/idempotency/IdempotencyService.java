@@ -142,7 +142,17 @@ public class IdempotencyService {
                     existing.responseStatus(), read(existing.responseJson(), responseType), true);
         }
 
-        P prepared = preparation.get();
+        P prepared;
+        try {
+            prepared = preparation.get();
+        } catch (RuntimeException preparationFailure) {
+            try {
+                requiresNew.executeWithoutResult(status -> repository.abandon(recordId));
+            } catch (RuntimeException cleanupFailure) {
+                preparationFailure.addSuppressed(cleanupFailure);
+            }
+            throw preparationFailure;
+        }
         try {
             IdempotentResponse<T> response = requiresNew.execute(status -> {
                 OriginalResponse<T> original = operation.apply(prepared);
@@ -168,6 +178,11 @@ public class IdempotencyService {
                 compensation.accept(prepared);
             } catch (RuntimeException compensationFailure) {
                 failure.addSuppressed(compensationFailure);
+            }
+            try {
+                requiresNew.executeWithoutResult(status -> repository.abandon(recordId));
+            } catch (RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
             }
             throw failure;
         }

@@ -2,7 +2,20 @@
 
 ## Overview
 
-com.hiresemble.common.openapi package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+P1~P5 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+
+## [2026-07-27] Session Summary (Job OpenAPI 공통 오류·security 연결)
+
+- What was done:
+  - Job GET/mutation별 400·401·403·404·409·429·503 응답과 CSRF security를 보강했다.
+- Key decisions:
+  - 성공 DTO는 Controller operation 문서를 원천으로 하고 공통 customizer는 오류·security만 추가한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 생성 OpenAPI 50 operations/34 paths와 Job 7개 operation 계약이 통과했다.
+- Next steps:
+  - P6 endpoint가 생길 때 실제 계약만 추가한다.
 
 ## [2026-07-23] Session Summary (책임별 openapi package 분리)
 

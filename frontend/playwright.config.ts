@@ -1,15 +1,20 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const requestedFrontendPort = Number(process.env.P4_FRONTEND_PORT ?? '5173')
+const configuredFrontendPort = process.env.P5_FRONTEND_PORT ?? process.env.P4_FRONTEND_PORT
+const requestedFrontendPort = Number(configuredFrontendPort ?? '5173')
 if (
   !Number.isInteger(requestedFrontendPort) ||
   requestedFrontendPort < 1 ||
   requestedFrontendPort > 65_535
 ) {
-  throw new Error('P4_FRONTEND_PORT must be an integer between 1 and 65535.')
+  throw new Error('The configured frontend port must be an integer between 1 and 65535.')
 }
 const frontendBaseUrl =
-  process.env.P4_FRONTEND_BASE_URL ?? `http://127.0.0.1:${requestedFrontendPort}`
+  process.env.P5_FRONTEND_BASE_URL ??
+  process.env.P4_FRONTEND_BASE_URL ??
+  `http://127.0.0.1:${requestedFrontendPort}`
+const skipWebServer =
+  process.env.P5_SKIP_WEB_SERVER === 'true' || process.env.P4_SKIP_WEB_SERVER === 'true'
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,12 +33,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer:
-    process.env.P4_SKIP_WEB_SERVER === 'true'
-      ? undefined
-      : {
-          command: `corepack pnpm dev --host 127.0.0.1 --port ${requestedFrontendPort} --strictPort`,
-          url: frontendBaseUrl,
-          reuseExistingServer: process.env.P4_FRONTEND_PORT === undefined && !process.env.CI,
-        },
+  webServer: skipWebServer
+    ? undefined
+    : {
+        command: `corepack pnpm dev --host 127.0.0.1 --port ${requestedFrontendPort} --strictPort`,
+        url: frontendBaseUrl,
+        reuseExistingServer: configuredFrontendPort === undefined && !process.env.CI,
+      },
 })

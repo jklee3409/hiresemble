@@ -3,9 +3,24 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth, P2 profile, P3 Agent Run과 P4 Document typed client·Vue Query·SSE 복구가 구현되어 있다.
-- `/agent-runs`와 `/documents` 목록·상세는 lazy route이며 AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 26 files/95 tests, profile E2E 1개, Agent Run fixture 2개와 실제 Document E2E 4개가 있다. Dashboard·공고·AI 설정은 아직 없다.
+- P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
+- `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 32 files/122 tests, profile E2E 1개, Agent Run fixture 2개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-27] Session Summary (P5 Jobs 화면·실제 E2E 구현)
+
+- What was done:
+  - strict Zod Job 계약·API·Vue Query와 `/jobs`, `/jobs/new`, `/jobs/:jobId/overview`를 구현했다.
+  - URL query filter, 201/202 생성, 상태·retry·manual·delete, 409 비교·재적용과 기존 Agent Run stream invalidation을 연결했다.
+- Key decisions:
+  - 업무/추출 상태 badge를 분리하고 NEEDS_MANUAL_INPUT은 수동 입력, FAILED는 retry와 수동 입력을 제공한다.
+  - P5 projection은 `null`, `false`, `[]`, `0`으로 엄격히 검증하고 P6 분석 DTO·route를 만들지 않는다.
+- Issues encountered:
+  - 최초 validator가 P6 DTO 선행 구현과 NEEDS_MANUAL_INPUT retry 노출을 찾아 한 차례 보정했다.
+- Validation:
+  - `corepack pnpm check`가 32 files/122 tests와 production build까지 통과했고 P5 실제 Chromium E2E 5/5가 통과했다.
+- Next steps:
+  - P6 계약 구현 시 Job detail child route 아래 analysis 화면을 별도 추가한다.
 
 ## [2026-07-19] Session Summary (P4 Documents 화면·실제 E2E 구현)
 

@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증·테스트 기반과 P2 프로필·직접 입력 근거는 각각 최종 validator `PASS`로 완료됐다. P3 Agent Run·AI runtime 기반과 P4 Document·근거 pipeline도 최종 read-only validator `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P5 Job 등록·추출·상태·Scheduler까지 최종 validator `PASS`로 완료됐다.
 
 ## 범위
 
@@ -23,13 +23,14 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] 사용자·프로필·직접 입력 근거를 구현해 AC-01~02를 고정한다.
 - [x] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
 - [x] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
-- [ ] 공고 등록·수동 보완·상태·Scheduler·분석을 구현해 AC-04~07을 고정한다.
+- [x] 공고 등록·수동 보완·상태·Scheduler를 구현해 AC-04~06을 고정한다.
+- [ ] 공고 분석·RAG를 구현해 AC-07을 고정한다.
 - [ ] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
 - [ ] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0·P1·P2·P3·P4 완료. P5–P10은 미착수다.
+현재 단계: P0~~P5 완료. P6~~P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -322,42 +323,47 @@ P0 계약 기준선
 - AC: AC-04~06
 - 선행: P3
 - 주 담당: backend → ai_workflow → frontend
+- 상태: 완료(2026-07-27). Backend 322 tests, Frontend 122 tests·production build, 격리 Chromium E2E 5개와 최종 read-only validator `PASS`
 
 ### 8.1 Backend
 
-- company/job aggregate와 owner-scoped CRUD
-- URL validation·canonicalization·중복
-- SSRF-safe page extraction gateway
-- 업무 상태 command와 history transaction
-- 마감 Scheduler와 concurrency
-- content hash와 분석 stale 입력 기반
+- [x] company/job aggregate와 owner-scoped CRUD
+- [x] URL validation·canonicalization·중복
+- [x] DNS 고정·redirect 재검사·절대 deadline의 SSRF-safe page extraction gateway
+- [x] 업무 상태 command와 history transaction
+- [x] batch 마감 Scheduler와 concurrency
+- [x] content hash와 분석 stale 입력 기반
 
 ### 8.2 AI workflow
 
-- `JobPostingExtraction` structured step
-- 사용자 입력 우선 merge
-- 추출 실패 분류와 safe error
+- [x] 고정 5단계 `JobPostingExtraction` structured workflow
+- [x] 사용자 입력 우선 merge
+- [x] 추출 실패 분류와 safe error
 
 ### 8.3 Frontend
 
-- jobs list tabs/filter/sort
-- new job form와 extraction progress
-- manual body/deadline 보완
-- detail overview, retry, edit, delete
-- 제출 이력 보조 badge
+- [x] jobs list tabs/filter/sort
+- [x] new job form와 extraction progress
+- [x] manual body/deadline 보완
+- [x] detail overview, retry, edit, delete
+- [x] 제출 이력 보조 badge
 
 ### 8.4 검증
 
-- canonical duplicate와 Idempotency-Key
-- login/bot/JS page 수동 fallback
-- private URL·redirect·응답 제한
-- 모든 허용/금지 상태 전이
-- Scheduler와 user command race
-- submitted timestamp 보존
+- [x] canonical duplicate와 Idempotency-Key
+- [x] login/bot/JS page 수동 fallback
+- [x] private URL·redirect·DNS rebinding·응답 제한
+- [x] 모든 허용/금지 상태 전이
+- [x] Scheduler와 user command race
+- [x] submitted timestamp 보존
 
 ### 8.5 완료 조건
 
-- AC-04~06과 URL 실패 수동 보완, 세 상태 filter, 자동 마감 test가 통과한다.
+- [x] AC-04~06과 URL 실패 수동 보완, 세 상태 filter, 자동 마감 test가 통과한다.
+- [x] 공개 API는 Job 7개가 추가되어 전체 50 operations/34 paths다.
+- [x] V6가 빈 DB와 V5 upgrade를 통과하고 V1~V5는 불변이다.
+- [x] 실제 외부 웹사이트·유료 provider 없이 P5 Browser E2E 5/5가 통과한다.
+- [x] 최종 read-only Validator가 신규 finding 없이 `PASS`를 반환한다.
 
 ## 9. P6 — 공고 분석·RAG
 
@@ -740,12 +746,12 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
 | 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
 
-## P5·P6 착수 전 남은 위험
+## P6 착수 전 남은 위험
 
-- P4는 Document typed Agent Run link와 profile evidence provenance 경계만 구현했다. P5 Job typed link는 실제 aggregate와 같은 forward migration에서 owner 복합 FK로 추가해야 한다.
+- P5 V6가 Job typed Agent Run link와 owner 복합 FK를 추가했다. P6 분석 lineage는 새 analysis aggregate와 forward migration에서 연결해야 한다.
 - production provider adapter는 계속 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 승인된 immutable price item과 model policy, timeout·network failure 분류와 heartbeat를 함께 검증해야 한다.
-- V1~V4는 적용 이력으로 보존했고 P4 schema는 단일 V5 forward migration으로 추가했다. P5 이후 resource link·domain result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
+- V1~V5는 적용 이력으로 보존했고 P5 schema는 V6 forward migration으로 추가했다. P6 이후 result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
 - P4 exact cosine query는 owner·active document·model·dimension·generation 격리를 검증했지만 P6의 hybrid retrieval·RAG 전체 흐름과 ANN index는 아직 구현하지 않았다.
-- 현재 `EvidenceReferenceQueryPort` production contributor는 downstream 참조 없음이다. P5 이후 provenance table이 생기면 실제 참조 contributor와 tombstone 보존을 연결해야 한다.
+- 현재 `EvidenceReferenceQueryPort` production contributor는 downstream 참조 없음이다. P6 provenance table이 생기면 실제 참조 contributor와 tombstone 보존을 연결해야 한다.
 - P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 P10 범위로 남긴다.
-- P5 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.
+- P6 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

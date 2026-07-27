@@ -16,6 +16,8 @@ import java.util.Set;
 public final class CanonicalWorkflowDefinitions {
 
     public static final String VERSION = "p0-contract-v1";
+    public static final String JOB_POSTING_EXTRACTION_VERSION =
+            "job-posting-extraction-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -31,9 +33,7 @@ public final class CanonicalWorkflowDefinitions {
                         "LOAD_DOCUMENT_SOURCE", "EXTRACT_OR_ACCEPT_TEXT", "MASK_TEXT", "CHUNK_TEXT",
                         "EMBED_CHUNKS", "EXTRACT_EVIDENCE_CANDIDATES", "APPLY_EVIDENCE_CANDIDATES",
                         "FINALIZE_DOCUMENT"),
-                definition(WorkflowType.JOB_POSTING_EXTRACTION, economyBalanced(),
-                        "FETCH_JOB_PAGE", "SANITIZE_PAGE_TEXT", "EXTRACT_JOB_FIELDS",
-                        "MERGE_USER_OVERRIDES", "APPLY_JOB_EXTRACTION"),
+                jobPostingExtraction(),
                 definition(WorkflowType.JOB_ANALYSIS, economyBalanced(),
                         "BUILD_JOB_SNAPSHOT", "EXTRACT_REQUIREMENTS", "ASSESS_ELIGIBILITY",
                         "RETRIEVE_VERIFIED_EVIDENCE", "MATCH_EVIDENCE", "SCORE_FIT",
@@ -61,6 +61,14 @@ public final class CanonicalWorkflowDefinitions {
 
     private static WorkflowDefinition definition(
             WorkflowType type, Set<AiQualityMode> allowedQuality, String... keys) {
+        return definition(type, VERSION, allowedQuality, keys);
+    }
+
+    private static WorkflowDefinition definition(
+            WorkflowType type,
+            String version,
+            Set<AiQualityMode> allowedQuality,
+            String... keys) {
         List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
         List<StepDefinition> steps = new ArrayList<>(keys.length);
         for (int index = 0; index < keys.length; index++) {
@@ -86,7 +94,75 @@ public final class CanonicalWorkflowDefinitions {
                     modelCalls == 0 ? Set.of() : RETRYABLE,
                     weights.get(index)));
         }
-        return new WorkflowDefinition(type, VERSION, true, allowedQuality, steps);
+        return new WorkflowDefinition(type, version, true, allowedQuality, steps);
+    }
+
+    private static WorkflowDefinition jobPostingExtraction() {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(5);
+        return new WorkflowDefinition(
+                WorkflowType.JOB_POSTING_EXTRACTION,
+                JOB_POSTING_EXTRACTION_VERSION,
+                true,
+                economyBalanced(),
+                List.of(
+                        jobStep(
+                                "FETCH_JOB_PAGE",
+                                "job-fetch-input-v1",
+                                "job-fetch-output-v1",
+                                0,
+                                EnumSet.of(
+                                        FailureKind.PROVIDER_5XX,
+                                        FailureKind.NETWORK,
+                                        FailureKind.TIMEOUT),
+                                weights.get(0)),
+                        jobStep(
+                                "SANITIZE_PAGE_TEXT",
+                                "job-sanitize-input-v1",
+                                "job-sanitize-output-v1",
+                                0,
+                                Set.of(),
+                                weights.get(1)),
+                        jobStep(
+                                "EXTRACT_JOB_FIELDS",
+                                "job-fields-input-v1",
+                                "job-fields-output-v1",
+                                1,
+                                RETRYABLE,
+                                weights.get(2)),
+                        jobStep(
+                                "MERGE_USER_OVERRIDES",
+                                "job-merge-input-v1",
+                                "job-merge-output-v1",
+                                0,
+                                Set.of(),
+                                weights.get(3)),
+                        jobStep(
+                                "APPLY_JOB_EXTRACTION",
+                                "job-apply-input-v1",
+                                "job-apply-output-v1",
+                                0,
+                                Set.of(),
+                                weights.get(4))));
+    }
+
+    private static StepDefinition jobStep(
+            String key,
+            String inputSchemaVersion,
+            String outputSchemaVersion,
+            int modelCalls,
+            Set<FailureKind> retryableFailures,
+            BigDecimal weight) {
+        return new StepDefinition(
+                key,
+                agentName(key),
+                inputSchemaVersion,
+                outputSchemaVersion,
+                Set.of(),
+                modelCalls,
+                1,
+                ModelTier.LOW_COST,
+                retryableFailures,
+                weight);
     }
 
     private static boolean isModelStep(String key) {

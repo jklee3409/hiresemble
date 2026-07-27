@@ -14,6 +14,7 @@ import {
 } from '@/shared/api/agentRunContracts'
 import { getAgentRun } from '@/shared/api/agentRunApi'
 import { documentQueryKeys } from '@/features/documents/queries'
+import { jobQueryKeys } from '@/features/jobs/queries'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import {
   sessionCleanup,
@@ -221,15 +222,27 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
     )
     if (
       run.status === 'WAITING_USER' &&
-      run.resourceType === 'DOCUMENT' &&
+      (run.resourceType === 'DOCUMENT' || run.resourceType === 'JOB') &&
       run.resourceId !== null
     ) {
-      void this.options.cache.invalidateQueries({
-        queryKey: documentQueryKeys.root(this.options.userId),
-      })
-      void this.options.cache.invalidateQueries({
-        queryKey: documentQueryKeys.detail(this.options.userId, run.resourceId),
-      })
+      if (run.resourceType === 'DOCUMENT') {
+        void this.options.cache.invalidateQueries({
+          queryKey: documentQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: documentQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+      } else {
+        void this.options.cache.invalidateQueries({
+          queryKey: jobQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: jobQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: agentRunQueryKeys.root(this.options.userId),
+        })
+      }
     }
   }
 
@@ -266,6 +279,13 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         })
         void this.options.cache.invalidateQueries({
           queryKey: profileQueryKeys.evidenceRoot(this.options.userId),
+        })
+      } else if (run.resourceType === 'JOB') {
+        void this.options.cache.invalidateQueries({
+          queryKey: jobQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: jobQueryKeys.detail(this.options.userId, run.resourceId),
         })
       }
     }

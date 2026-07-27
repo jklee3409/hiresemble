@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P3 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+P1~P5 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+
+## [2026-07-27] Session Summary (P5 Job table 격리 지원)
+
+- What was done:
+  - Job·Company·status history와 typed resource link cleanup 순서를 공통 PostgreSQL fixture에 추가했다.
+- Key decisions:
+  - FK 의존 순서를 지키고 테스트마다 사용자 소유 row를 완전히 격리한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 전체 Backend 322 tests가 반복 가능한 격리 상태로 통과했다.
+- Next steps:
+  - P6 table 추가 시 cleanup 순서를 함께 갱신한다.
 
 ## [2026-07-19] Session Summary (P4 Document table 격리 cleanup 확장)
 

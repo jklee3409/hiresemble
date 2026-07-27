@@ -1,8 +1,8 @@
-# P1~P4 Page 안내
+# P1~P5 Page 안내
 
 ## 디렉터리 목적
 
-P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run과 P4 Document list/detail page 및 전용 404를 관리한다.
+P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5 Job page 및 전용 404를 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -17,6 +17,9 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run과 P4 Document lis
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록
 - [`DocumentDetailPage.vue`](DocumentDetailPage.vue): text·manual resume·reparse·download·delete·evidence 검토
+- [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
+- [`JobNewPage.vue`](JobNewPage.vue): URL·선택 override·수동 본문·마감일과 201/202 생성
+- [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict
 - [`RootRedirectPage.vue`](RootRedirectPage.vue): 인증 bootstrap 대기 shell
 - [`NotFoundPage.vue`](NotFoundPage.vue): 전용 404
 - [`authFlow.test.ts`](authFlow.test.ts): 가입·로그인·field 오류 component 흐름
@@ -34,7 +37,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run과 P4 Document lis
 
 ## 변경 시 주의사항
 
-- Dashboard 집계·API, AI 설정과 P5 이후 기능을 선행 추가하지 않는다.
+- Dashboard 집계·API, AI 설정과 P6 이후 기능을 선행 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

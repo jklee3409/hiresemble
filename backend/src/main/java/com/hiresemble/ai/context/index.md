@@ -7,11 +7,13 @@
 ## 주요 파일 및 하위 디렉터리
 
 - `ContextBuilder`: resource/version/hash, upstream refs, truncation·verification·policy projection
+- `JobPostingExtractionContextBuilder`: owner·Job version과 사용자 override의 안전한 snapshot
+- `WorkflowContextBuilder`: workflow별 context builder dispatch
 - [`progress.md`](progress.md): 계약 상태
 
 ## 구성 요소 역할
 
-workflow 실행 시점의 안전한 reference snapshot을 메모리에서 구성한다.
+workflow 실행 시점의 안전한 reference snapshot을 메모리에서 구성한다. Job context는 원문 대신 override 존재 여부와 hash·version을 durable input으로 사용한다.
 
 ## 다른 디렉터리와의 의존 관계
 

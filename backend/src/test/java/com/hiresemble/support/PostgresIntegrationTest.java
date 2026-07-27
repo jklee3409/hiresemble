@@ -52,8 +52,12 @@ public abstract class PostgresIntegrationTest {
             jdbcTemplate.update("DELETE FROM document_chunks");
             jdbcTemplate.update("DELETE FROM document_texts");
             jdbcTemplate.update("UPDATE documents SET latest_agent_run_id=NULL");
+            jdbcTemplate.update("UPDATE job_postings SET latest_agent_run_id=NULL");
             jdbcTemplate.update("DELETE FROM agent_run_resource_links");
             jdbcTemplate.update("DELETE FROM documents");
+            jdbcTemplate.update("DELETE FROM job_status_history");
+            jdbcTemplate.update("DELETE FROM job_postings");
+            jdbcTemplate.update("DELETE FROM companies");
             jdbcTemplate.update("DELETE FROM ai_usage_records");
             jdbcTemplate.update("DELETE FROM ai_budget_reservations");
             jdbcTemplate.update("DELETE FROM ai_budget_ledgers");

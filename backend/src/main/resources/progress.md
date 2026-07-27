@@ -4,9 +4,22 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V4 migration이 사용자·프로필과 P3 Agent runtime schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V6 migration이 P1~~P5 schema를 관리한다.
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-07-27] Session Summary (P5 Job 설정·V6 추가)
+
+- What was done:
+  - Job fetch timeout·redirect·response byte, hourly Scheduler batch와 AI cost 설정 및 V6 migration을 추가했다.
+- Key decisions:
+  - 실제 AI provider 기본값은 disabled이며 URL fetch 제한에는 안전한 기본값을 둔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Backend check, migration 6개와 Compose config가 통과했다.
+- Next steps:
+  - 운영 provider 활성화 전 환경별 가격·network 설정을 승인한다.
 
 ## [2026-07-19] Session Summary (P4 V5·Document runtime 설정 추가)
 

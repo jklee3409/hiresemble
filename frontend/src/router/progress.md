@@ -3,8 +3,21 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run list/detail 및 전용 404 route가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run detail만 허용한다.
+- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job route 및 전용 404가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail만 허용한다.
+
+## [2026-07-27] Session Summary (P5 Job lazy route 추가)
+
+- What was done:
+  - `/jobs`, `/jobs/new`, `/jobs/:jobId` redirect와 `/jobs/:jobId/overview` lazy route를 추가했다.
+- Key decisions:
+  - 향후 child route를 수용하는 layout만 만들고 P6 analysis route는 등록하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - route guard·returnTo·redirect unit test와 P5 Browser E2E가 통과했다.
+- Next steps:
+  - P6 분석 구현 시 overview sibling child route를 추가한다.
 
 ## [2026-07-19] Session Summary (P4 Document lazy route 추가)
 

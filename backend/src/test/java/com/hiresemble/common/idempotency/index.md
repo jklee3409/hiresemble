@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-PostgreSQL에 저장되는 P1 idempotency reservation·hash·replay 계약을 검증한다.
+PostgreSQL에 저장되는 idempotency reservation·hash·원 HTTP status/응답 replay 계약을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`IdempotencyIntegrationTest.java`](IdempotencyIntegrationTest.java): 동시성·replay·hash mismatch·재시작·민감 비저장
+- [`IdempotencyIntegrationTest.java`](IdempotencyIntegrationTest.java): 동시성·status replay·hash mismatch·재시작·민감 비저장
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

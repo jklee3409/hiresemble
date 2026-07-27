@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 fixed workflow runtime 계약과 no-network gateway 기반이 구현됐고 실제 business workflow·provider adapter는 없다.
+P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document와 P5 Job business workflow가 연결됐고 실제 provider adapter는 없다.
+
+## [2026-07-27] Session Summary (P5 Job Posting Extraction workflow 연결)
+
+- What was done:
+  - URL fetch부터 sanitize·structured extract·override merge·domain apply까지 고정 5단계 workflow를 추가했다.
+- Key decisions:
+  - raw HTML·전체 prompt·provider response를 checkpoint에 저장하지 않고 사용자 입력을 AI 값보다 우선한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job workflow 계약·orchestrator 통합 테스트와 전체 Backend check가 통과했다.
+- Next steps:
+  - P6 분석·RAG workflow는 별도 phase에서 추가한다.
 
 ## [2026-07-19] Session Summary (P4 Document ingestion workflow 연결)
 

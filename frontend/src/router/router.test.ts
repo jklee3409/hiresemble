@@ -155,7 +155,23 @@ describe('authentication route policy', () => {
     expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
   })
 
-  it('adds lazy Document and Agent Run pages while preserving P1 and P2 routes', () => {
+  it('protects P5 Job routes and redirects the base detail to overview without future P6 children', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    vi.mocked(authApi.login).mockResolvedValueOnce(session('user-1'))
+    await useAuthStore(pinia).login({ email: 'one@example.com', password: 'password-123' })
+    const router = createAppRouter({ history: createMemoryHistory(), pinia })
+    const jobId = '10000000-0000-4000-8000-000000000001'
+
+    await router.push(`/jobs/${jobId}`)
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('job-overview')
+    expect(router.currentRoute.value.fullPath).toBe(`/jobs/${jobId}/overview`)
+    expect(router.resolve(`/jobs/${jobId}/analysis`).name).toBe('not-found')
+  })
+
+  it('adds lazy Document, Job and Agent Run pages while preserving earlier routes', () => {
     const protectedShell = routes.find(
       (route) => route.path === '/' && route.meta?.requiresAuth === true,
     )
@@ -164,11 +180,21 @@ describe('authentication route policy', () => {
     const detailRoute = children.find((route) => route.name === 'agent-run-detail')
     const documentsRoute = children.find((route) => route.name === 'documents')
     const documentDetailRoute = children.find((route) => route.name === 'document-detail')
+    const jobsRoute = children.find((route) => route.name === 'jobs')
+    const jobNewRoute = children.find((route) => route.name === 'job-new')
+    const jobDetailLayout = children.find((route) => route.path === 'jobs/:jobId')
 
     expect(typeof documentsRoute?.component).toBe('function')
     expect(typeof documentDetailRoute?.component).toBe('function')
     expect(typeof listRoute?.component).toBe('function')
     expect(typeof detailRoute?.component).toBe('function')
+    expect(typeof jobsRoute?.component).toBe('function')
+    expect(typeof jobNewRoute?.component).toBe('function')
+    expect(typeof jobDetailLayout?.component).toBe('function')
+    expect(jobDetailLayout?.children?.map((route) => route.name)).toEqual([
+      'job-detail',
+      'job-overview',
+    ])
     expect(children.map((route) => route.name)).toEqual(
       expect.arrayContaining([
         'onboarding',
@@ -178,6 +204,8 @@ describe('authentication route policy', () => {
         'profile-evidence',
         'documents',
         'document-detail',
+        'jobs',
+        'job-new',
         'agent-runs',
         'agent-run-detail',
       ]),

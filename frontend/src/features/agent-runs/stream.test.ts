@@ -159,9 +159,15 @@ describe('AgentRunStreamController', () => {
     expect(invalidations).toContainEqual(['user', 'user-1', 'agentRuns'])
   })
 
-  it('closes the concrete EventSource on logout, 401 cleanup, or user boundary change', async () => {
+  it('closes a concrete Job EventSource on logout, 401 cleanup, or user boundary change', async () => {
     const sources: FakeEventSource[] = []
-    const { cache, latest } = cacheFixture(agentRunDetail())
+    const { cache, latest } = cacheFixture(
+      agentRunDetail({
+        workflowType: 'JOB_POSTING_EXTRACTION',
+        resourceType: 'JOB',
+        resourceId: '00000000-0000-4000-8000-000000000011',
+      }),
+    )
     const cancelQueries = vi.fn(async () => undefined)
     const clear = vi.fn()
     const cleanup = new SessionCleanupCoordinator(
@@ -227,6 +233,48 @@ describe('AgentRunStreamController', () => {
     second.start()
     closeAgentRunStreamsForResource('user-1', 'DOCUMENT', documentId)
     expect(secondSources[0]?.closed).toBe(true)
+  })
+
+  it('invalidates Job list/detail and related run queries on WAITING_USER and terminal', () => {
+    const jobId = '00000000-0000-4000-8000-000000000011'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({
+      workflowType: 'JOB_POSTING_EXTRACTION',
+      resourceType: 'JOB',
+      resourceId: jobId,
+    })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('waiting_user', {
+      ...waitingEvent(2),
+      requiredUserAction: {
+        type: 'PROVIDE_JOB_TEXT',
+        resource: { resourceType: 'JOB', resourceId: jobId, displayLabel: null },
+        route: `/jobs/${jobId}/overview`,
+        message: '공고 본문을 입력해 주세요.',
+      },
+    })
+    expect(invalidations).toContainEqual(['user', 'user-1', 'jobs'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'agentRuns'])
+
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(3, 'SUCCEEDED'),
+      resourceType: 'JOB',
+      resourceId: jobId,
+    })
+    expect(invalidations).toContainEqual(['user', 'user-1', 'resource', 'JOB', jobId])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'jobs'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId])
+    expect(sources[0]?.closed).toBe(true)
   })
 })
 

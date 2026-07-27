@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint 회귀와 P1·P2 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint 회귀와 P1~P5 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-07-27] Session Summary (P5 포함 50-operation OpenAPI 검증)
+
+- What was done:
+  - Job 7개 operationId·request·response·security와 P6 분석 path 부재를 고정했다.
+- Key decisions:
+  - 기존 43 operations/30 paths를 보존하며 Job 7개로 50/34만 확장한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 실제 Spring mapping·생성 OpenAPI 계약 테스트가 통과했다.
+- Next steps:
+  - P6 전까지 analysis path assertion은 부재 상태를 유지한다.
 
 ## [2026-07-19] Session Summary (P4 포함 43-operation OpenAPI 검증)
 

@@ -2,7 +2,21 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0·P1·P2·P3·P4는 최종 validator `PASS`로 완료됐고 P5–P10은 미착수이며 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~P5는 최종 validator `PASS`로 완료됐고 P6–P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-07-27] Session Summary (P5 완료 상태와 P6 경계 반영)
+
+- What was done:
+  - 구현 계획의 P5 체크리스트·완료 조건과 P0~~P5 완료, P6~~P10 미착수 상태를 실제 코드·검증 수치에 맞췄다.
+- Key decisions:
+  - P5는 AC-04~06만 완료하며 analysis·RAG·fit score·eligibility는 P6에 유지한다.
+- Issues encountered:
+  - 최초 validator 보안·범위 지적을 한 차례 보정했고 최종 read-only validator가 신규 finding 없이 `PASS`를 반환했다.
+- Validation:
+  - Backend 322, Frontend 122, migration 6, Browser E2E 5와 OpenAPI 50/34 결과를 대조했다.
+  - Validator 전후 173개 변경 파일 fingerprint가 `deacb3d70790bddf8baa27db3ec44eca10a7f6499a85f9477f1e8d3d96ed4212`로 일치했다.
+- Next steps:
+  - P6는 현재 Job content hash·typed resource 경계를 선행 조건으로 착수한다.
 
 ## [2026-07-23] Session Summary (책임별 backend 목표 구조 동기화)
 

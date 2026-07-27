@@ -3,9 +3,24 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개와 P4 Document 8개 API가 구현되어 있다.
-- V1~V4를 보존한 V5 migration이 Document·text·chunk·typed Run link·Object outbox DB 불변식을 추가한다.
-- 생성 OpenAPI는 정확히 43 operations/30 paths이며 job·설정 등 P5 이후 endpoint는 없다.
+- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개, P4 Document 8개와 P5 Job 7개 API가 구현되어 있다.
+- V1~V5를 보존한 V6 migration이 Company·Job·status history와 typed Job Run link 불변식을 추가한다.
+- 생성 OpenAPI는 정확히 50 operations/34 paths이며 P6 분석 endpoint는 없다.
+
+## [2026-07-27] Session Summary (P5 Job Backend·AI workflow 구현)
+
+- What was done:
+  - Job API·application·domain·JDBC·Scheduler와 5단계 `JOB_POSTING_EXTRACTION` workflow를 추가했다.
+  - owner·version·soft delete, canonical duplicate, idempotency 201/202 replay와 typed Agent Run resource를 연결했다.
+- Key decisions:
+  - validated `InetAddress`에 직접 연결하는 JDK socket transport로 DNS rebinding을 막고 body·압축 해제까지 절대 response deadline을 적용한다.
+  - 사용자 override를 AI 추출보다 우선하며 unusable page는 WAITING_USER, 기술 실패는 FAILED로 업무 상태와 독립 처리한다.
+- Issues encountered:
+  - validator 보정에서 HttpClient 재해석과 stream timeout, reserved escape false duplicate를 해소했다.
+- Validation:
+  - `gradlew.bat check` 37 suites/322 tests, migration 6, OpenAPI 50/34와 `p5BrowserE2eTest` 5/5가 통과했다.
+- Next steps:
+  - P6 분석·RAG table·endpoint·workflow는 새 forward migration과 별도 package 책임으로 추가한다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

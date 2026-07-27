@@ -137,6 +137,35 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '문서 상세' },
       },
       {
+        path: 'jobs',
+        name: 'jobs',
+        component: () => import('@/pages/JobListPage.vue'),
+        meta: { title: '채용 공고' },
+      },
+      {
+        path: 'jobs/new',
+        name: 'job-new',
+        component: () => import('@/pages/JobNewPage.vue'),
+        meta: { title: '채용 공고 등록' },
+      },
+      {
+        path: 'jobs/:jobId',
+        component: () => import('@/layouts/JobDetailLayout.vue'),
+        children: [
+          {
+            path: '',
+            name: 'job-detail',
+            redirect: { name: 'job-overview' },
+          },
+          {
+            path: 'overview',
+            name: 'job-overview',
+            component: () => import('@/pages/JobOverviewPage.vue'),
+            meta: { title: '채용 공고 개요' },
+          },
+        ],
+      },
+      {
         path: 'agent-runs',
         name: 'agent-runs',
         component: () => import('@/pages/AgentRunListPage.vue'),

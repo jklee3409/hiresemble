@@ -5,8 +5,22 @@
 - `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
 - `agent-runs.spec.ts`가 test-local REST/SSE fixture로 P3 reconnect·polling·action cleanup을 검증한다.
 - `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
+- `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-27] Session Summary (P5 실제 Job pipeline 브라우저 검증)
+
+- What was done:
+  - 수동 201 상태 전이·submittedAt 보존, 자동 202 추출, WAITING_USER same-run resume, owner 404와 Scheduler 마감을 추가했다.
+- Key decisions:
+  - `P5_E2E_ENABLED=true`인 Backend 주도 격리 환경에서만 actual spec을 실행한다.
+- Issues encountered:
+  - mutation pending 종료와 생성 후 canonical URL query를 명시적으로 기다리도록 locator·wait를 안정화했다.
+- Validation:
+  - Chromium 5/5가 47초에 통과하고 Backend wrapper DB assertion도 통과했다.
+- Next steps:
+  - P6 전까지 분석 시나리오를 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P4 실제 Document pipeline 브라우저 검증)
 

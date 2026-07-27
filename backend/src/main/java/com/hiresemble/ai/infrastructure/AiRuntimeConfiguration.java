@@ -11,6 +11,8 @@ import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
+import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
+import com.hiresemble.ai.context.WorkflowContextBuilder;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.model.ModelRouter;
 import com.hiresemble.ai.model.ModelRouter.ModelPolicy;
@@ -21,26 +23,33 @@ import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
+import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
+import com.hiresemble.ai.workflow.JobPostingExtractionFailureHandler;
+import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow;
 import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
+import com.hiresemble.job.application.port.JobPageFetchGateway;
+import com.hiresemble.job.application.port.JobWorkflowCommandPort;
+import com.hiresemble.job.application.port.JobWorkflowQueryPort;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import tools.jackson.databind.ObjectMapper;
 
-/** Activates only the P4 document contribution; default gateways remain network-free and disabled. */
+/** Activates bounded Document and Job contributions; model gateways remain disabled by default. */
 @Configuration(proxyBeanMethods = false)
 public class AiRuntimeConfiguration {
 
@@ -53,22 +62,43 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
-    WorkflowRegistry workflowRegistry(DocumentIngestionWorkflow documentWorkflow) {
+    JobPostingExtractionWorkflow jobPostingExtractionWorkflow(
+            JobWorkflowQueryPort queryPort,
+            JobWorkflowCommandPort commandPort,
+            JobPageFetchGateway fetchGateway,
+            ObjectMapper objectMapper,
+            Clock clock) {
+        return new JobPostingExtractionWorkflow(
+                queryPort, commandPort, fetchGateway, objectMapper, clock);
+    }
+
+    @Bean
+    WorkflowRegistry workflowRegistry(
+            DocumentIngestionWorkflow documentWorkflow,
+            JobPostingExtractionWorkflow jobWorkflow) {
         return new WorkflowRegistry(
-                CanonicalWorkflowDefinitions.all(), List.of(documentWorkflow.contribution()));
+                CanonicalWorkflowDefinitions.all(),
+                List.of(documentWorkflow.contribution(), jobWorkflow.contribution()));
     }
 
     @Bean
     PromptRegistry promptRegistry() {
-        return new PromptRegistry(DocumentIngestionPromptDefinitions.all());
+        var prompts = new ArrayList<PromptRegistry.PromptDefinition>();
+        prompts.addAll(DocumentIngestionPromptDefinitions.all());
+        prompts.addAll(JobPostingExtractionPromptDefinitions.all());
+        return new PromptRegistry(prompts);
     }
 
     @Bean
     ContextBuilder contextBuilder(
-            DocumentWorkflowQueryPort queryPort, Environment environment) {
+            DocumentWorkflowQueryPort documentQueryPort,
+            JobWorkflowQueryPort jobQueryPort,
+            Environment environment) {
         long version = environment.getProperty(
                 "hiresemble.ai.model-policy-version", Long.class, 1L);
-        return new DocumentIngestionContextBuilder(queryPort, version);
+        return new WorkflowContextBuilder(
+                new DocumentIngestionContextBuilder(documentQueryPort, version),
+                new JobPostingExtractionContextBuilder(jobQueryPort, version));
     }
 
     @Bean
@@ -112,6 +142,13 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    WorkflowFailureHandler jobWorkflowFailureHandler(
+            JobWorkflowQueryPort queryPort,
+            JobWorkflowCommandPort commandPort) {
+        return new JobPostingExtractionFailureHandler(queryPort, commandPort);
+    }
+
+    @Bean
     @ConditionalOnProperty(
             name = "hiresemble.ai.runtime.enabled",
             havingValue = "true",
@@ -135,7 +172,7 @@ public class AiRuntimeConfiguration {
             ObjectMapper objectMapper,
             Clock clock,
             ObjectProvider<WorkflowFailureHandler> failureHandlers) {
-        DomainResultApplyPort unsupportedGenericApply = command -> {
+        DomainResultApplyPort domainApply = command -> {
             throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
                     "AI_GENERIC_DOMAIN_APPLY_NOT_CONFIGURED",
@@ -154,7 +191,7 @@ public class AiRuntimeConfiguration {
                 runStatePort,
                 stepCheckpointPort,
                 usageRecorderPort,
-                unsupportedGenericApply,
+                domainApply,
                 cancellationPort,
                 leaseHeartbeatPort,
                 budgetGuard,

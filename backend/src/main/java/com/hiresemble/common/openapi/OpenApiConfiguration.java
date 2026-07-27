@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.4",
-                description = "P4 authentication, profile, Agent Run, and document APIs. Successful DTOs are returned directly without an envelope."),
+                version = "1.5",
+                description = "P5 authentication, profile, Agent Run, document, and job APIs. Successful DTOs are returned directly without an envelope."),
         tags = {
             @Tag(
                     name = "Authentication",
@@ -44,7 +44,10 @@ import org.springframework.context.annotation.Configuration;
                     description = "Durable Agent Run status, retry, cancellation, and progress events."),
             @Tag(
                     name = "Documents",
-                    description = "Owner-scoped upload, parsing, text, download, and deletion pipeline.")
+                    description = "Owner-scoped upload, parsing, text, download, and deletion pipeline."),
+            @Tag(
+                    name = "Jobs",
+                    description = "Owner-scoped job registration, extraction, status, and deadline lifecycle.")
         })
 @SecuritySchemes({
     @SecurityScheme(
@@ -75,7 +78,8 @@ public class OpenApiConfiguration {
                     boolean protectedMutation = path.equals("/api/v1/auth/logout")
                             || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"))
                             || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST)
-                            || (path.startsWith("/api/v1/documents") && method != HttpMethod.GET);
+                            || (path.startsWith("/api/v1/documents") && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/jobs") && method != HttpMethod.GET);
                     if (protectedMutation) {
                         operation.setSecurity(List.of(new SecurityRequirement()
                                 .addList("sessionCookie")
@@ -87,7 +91,30 @@ public class OpenApiConfiguration {
                     if (path.startsWith("/api/v1/documents")) {
                         addDocumentErrorResponses(path, method, operation);
                     }
+                    if (path.startsWith("/api/v1/jobs")) {
+                        addJobErrorResponses(path, method, operation);
+                    }
                 }));
+    }
+
+    private void addJobErrorResponses(
+            String path, HttpMethod method, Operation operation) {
+        addError(operation, "401");
+        if (method != HttpMethod.GET) addError(operation, "403");
+        if (method == HttpMethod.GET && path.equals("/api/v1/jobs")) {
+            addError(operation, "400");
+            return;
+        }
+        if (!path.equals("/api/v1/jobs")) addError(operation, "404");
+        if (method != HttpMethod.GET) {
+            addError(operation, "400");
+            addError(operation, "409");
+        }
+        if ((path.equals("/api/v1/jobs") && method == HttpMethod.POST)
+                || path.endsWith("/retry-extraction")) {
+            addError(operation, "429");
+            addError(operation, "503");
+        }
     }
 
     private void addDocumentErrorResponses(

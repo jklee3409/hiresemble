@@ -14,6 +14,7 @@ public enum ErrorCode {
     RESOURCE_STATE_CONFLICT(HttpStatus.CONFLICT, "현재 상태에서는 요청한 작업을 수행할 수 없습니다."),
     EVIDENCE_SOURCE_DELETED(HttpStatus.CONFLICT, "원본이 삭제된 근거는 변경할 수 없습니다."),
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 등록된 이메일입니다."),
+    DUPLICATE_JOB_URL(HttpStatus.CONFLICT, "이미 등록된 채용 공고 URL입니다."),
     IDEMPOTENCY_REQUEST_IN_PROGRESS(HttpStatus.CONFLICT, "같은 요청이 처리 중입니다."),
     IDEMPOTENCY_KEY_REUSED(HttpStatus.CONFLICT, "같은 키가 다른 요청에 사용되었습니다."),
     AGENT_RUN_RETRY_ALREADY_CREATED(HttpStatus.CONFLICT, "이 실행의 재시도가 이미 생성되었습니다."),

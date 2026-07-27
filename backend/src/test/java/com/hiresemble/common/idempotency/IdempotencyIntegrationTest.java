@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -322,6 +323,54 @@ class IdempotencyIntegrationTest extends PostgresIntegrationTest {
             allowCompletion.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void preparedFailureAbandonsReservationAndOperationFailureAlsoCompensates() {
+        IdempotencyScope scope = scope(KEY);
+        assertThatThrownBy(() -> service.executePrepared(
+                        scope,
+                        "{\"value\":\"prepared\"}",
+                        FixtureResponse.class,
+                        () -> {
+                            throw new IllegalStateException("preparation failed");
+                        },
+                        ignored -> new OriginalResponse<>(
+                                201, new FixtureResponse(UUID.randomUUID(), "wrong")),
+                        ignored -> {}))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM idempotency_records WHERE idempotency_key=?",
+                Long.class,
+                KEY)).isZero();
+
+        AtomicBoolean compensated = new AtomicBoolean();
+        assertThatThrownBy(() -> service.executePrepared(
+                        scope,
+                        "{\"value\":\"prepared\"}",
+                        FixtureResponse.class,
+                        () -> "prepared-object",
+                        ignored -> {
+                            throw new IllegalStateException("operation failed");
+                        },
+                        ignored -> compensated.set(true)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(compensated).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM idempotency_records WHERE idempotency_key=?",
+                Long.class,
+                KEY)).isZero();
+
+        IdempotentResponse<FixtureResponse> recovered = service.executePrepared(
+                scope,
+                "{\"value\":\"prepared\"}",
+                FixtureResponse.class,
+                () -> "prepared-object",
+                ignored -> new OriginalResponse<>(
+                        201, new FixtureResponse(UUID.randomUUID(), "created")),
+                ignored -> {});
+        assertThat(recovered.status()).isEqualTo(201);
+        assertThat(recovered.replayed()).isFalse();
     }
 
     @Test

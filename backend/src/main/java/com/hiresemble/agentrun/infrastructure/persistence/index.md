@@ -6,21 +6,21 @@ com.hiresemble.agentrun.infrastructure.persistence package는 JDBC/JPA 기반 �
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AgentRunJdbcMapper.java](AgentRunJdbcMapper.java) | Persistence 책임 구현 |
-| [AiPreferenceStore.java](AiPreferenceStore.java) | Persistence 책임 구현 |
-| [JdbcAgentRunRepository.java](JdbcAgentRunRepository.java) | Persistence 책임 구현 |
-| [JdbcAgentRunStateStore.java](JdbcAgentRunStateStore.java) | Persistence 책임 구현 |
-| [JdbcAgentStepStore.java](JdbcAgentStepStore.java) | Persistence 책임 구현 |
-| [JdbcBudgetStore.java](JdbcBudgetStore.java) | Persistence 책임 구현 |
-| [JdbcUsageRecorder.java](JdbcUsageRecorder.java) | Persistence 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                       | 역할                        |
+| ---------------------------------------------------------- | --------------------------- |
+| [AgentRunJdbcMapper.java](AgentRunJdbcMapper.java)         | Persistence 책임 구현       |
+| [AiPreferenceStore.java](AiPreferenceStore.java)           | Persistence 책임 구현       |
+| [JdbcAgentRunRepository.java](JdbcAgentRunRepository.java) | Persistence 책임 구현       |
+| [JdbcAgentRunStateStore.java](JdbcAgentRunStateStore.java) | Persistence 책임 구현       |
+| [JdbcAgentStepStore.java](JdbcAgentStepStore.java)         | Persistence 책임 구현       |
+| [JdbcBudgetStore.java](JdbcBudgetStore.java)               | Persistence 책임 구현       |
+| [JdbcUsageRecorder.java](JdbcUsageRecorder.java)           | Persistence 책임 구현       |
+| [progress.md](progress.md)                                 | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할
 
 - JDBC/JPA 기반 저장·조회 구현과 mapping을 소유한다.
-- 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
+- `JdbcAgentRunRepository`는 Document와 Job typed resource의 owner-scoped 목록·상세·SSE 조회를 해석한다.
 
 ## 다른 디렉터리와의 의존 관계
 

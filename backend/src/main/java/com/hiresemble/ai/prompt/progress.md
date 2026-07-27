@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 versioned PromptRegistry 계약과 test-only fixture prompt가 구현됐다.
+P3 versioned PromptRegistry에 P4 Document와 P5 Job structured prompt metadata가 구현됐다.
+
+## [2026-07-27] Session Summary (Job Posting Extraction prompt 계약 추가)
+
+- What was done:
+  - P5 추출 prompt version·output schema와 호출/token 제한을 registry에 추가했다.
+- Key decisions:
+  - Chat 호출은 추출 step에만 attempt당 1회 허용하고 tool 호출은 허용하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - schema version·structured invalid·provider timeout 분류 테스트가 통과했다.
+- Next steps:
+  - P6 prompt는 이번 registry에 선행 등록하지 않는다.
 
 ## [2026-07-19] Session Summary (Document evidence structured prompt 추가)
 

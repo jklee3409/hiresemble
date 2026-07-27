@@ -136,6 +136,15 @@ public class IdempotencyRepository {
         }
     }
 
+    void abandon(UUID id) {
+        jdbcClient.sql("""
+                        DELETE FROM idempotency_records
+                        WHERE id = :id AND state = 'IN_PROGRESS' AND agent_run_id IS NULL
+                        """)
+                .param("id", id)
+                .update();
+    }
+
     private OffsetDateTime utc(Instant instant) {
         return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }

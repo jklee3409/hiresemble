@@ -9,6 +9,8 @@ describe('safeReturnTo', () => {
     ['/profile/basic', '/profile/basic'],
     ['/profile/education?page=1', '/profile/education?page=1'],
     ['/documents?parseStatus=PARSED', '/documents?parseStatus=PARSED'],
+    ['/jobs?status=CLOSED', '/jobs?status=CLOSED'],
+    ['/jobs/new', '/jobs/new'],
   ])('accepts registered auth-required paths: %s', (candidate, expected) => {
     expect(safeReturnTo(candidate, 'https://hiresemble.example')).toBe(expected)
   })
@@ -29,6 +31,16 @@ describe('safeReturnTo', () => {
       safeReturnTo('/documents/10000000-0000-4000-8000-000000000001', 'https://hiresemble.example'),
     ).toBe('/documents/10000000-0000-4000-8000-000000000001')
     expect(safeReturnTo('/documents/not-a-uuid', 'https://hiresemble.example')).toBeNull()
+  })
+
+  it('accepts only the P5 Job base/overview UUID routes', () => {
+    const id = '10000000-0000-4000-8000-000000000001'
+    expect(safeReturnTo(`/jobs/${id}`, 'https://hiresemble.example')).toBe(`/jobs/${id}`)
+    expect(safeReturnTo(`/jobs/${id}/overview?run=${id}`, 'https://hiresemble.example')).toBe(
+      `/jobs/${id}/overview?run=${id}`,
+    )
+    expect(safeReturnTo(`/jobs/${id}/analysis`, 'https://hiresemble.example')).toBeNull()
+    expect(safeReturnTo('/jobs/not-a-uuid/overview', 'https://hiresemble.example')).toBeNull()
   })
 
   it.each([

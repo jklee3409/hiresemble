@@ -7,7 +7,22 @@
 - `V3__create_structured_profiles_and_direct_evidence.sql`은 P2의 프로필 5종과 direct evidence 및 DB 불변식을 생성한다.
 - `V4__create_agent_runtime_and_ai_budget.sql`은 P3 Run·Step과 AI policy·price·budget·usage 11개 table을 생성한다.
 - `V5__create_documents_evidence_and_storage_outbox.sql`은 P4 문서·text·chunk·Object outbox·typed Run link와 evidence document FK를 생성한다.
-- 공고·자기소개서·면접 등 P5 이후 table은 구현하지 않았다.
+- `V6__create_job_postings_and_extend_agent_resources.sql`은 P5 Company·Job·status history와 typed Job Run link를 생성한다.
+- 분석·자기소개서·면접 등 P6 이후 table은 구현하지 않았다.
+
+## [2026-07-27] Session Summary (P5 Job V6 migration)
+
+- What was done:
+  - `companies`, `job_postings`, `job_status_history`와 Job typed resource owner FK·index·CHECK·partial unique를 V6로 추가했다.
+- Key decisions:
+  - V1~V5는 byte 단위로 보존하고 일반 삭제는 `deleted_at` 기반 soft delete로 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 빈 DB V1→V6와 V5-only upgrade, owner FK·상태 CHECK·canonical active unique·history FK와 P6 table 부재 6개가 통과했다.
+  - V1~V5 Git blob과 SHA-256은 기준선과 동일하다.
+- Next steps:
+  - P6 schema는 V6를 수정하지 않고 새 forward migration으로 추가한다.
 
 ## [2026-07-19] Session Summary (P4 Document·evidence·storage V5 migration)
 

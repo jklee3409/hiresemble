@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·보호 shell, P2 profile, P3 Agent Run과 P4 Document list/detail page 및 전용 404를 관리한다.
+P1 인증·보호 shell부터 P5 Job 목록·등록·overview page와 전용 404를 관리한다.
+
+## [2026-07-27] Session Summary (P5 Job 목록·등록·overview Page 구현)
+
+- What was done:
+  - 상태 tab·filter·pagination 목록, 201/202 생성과 편집·상태·retry·manual·delete 상세를 구현했다.
+- Key decisions:
+  - 업무/추출 badge를 분리하고 submittedAt 이력이 있는 CLOSED 공고를 표시한다.
+- Issues encountered:
+  - NEEDS_MANUAL_INPUT retry를 제거하고 수동 입력만 강조하도록 validator 보정했다.
+- Validation:
+  - page component test와 실제 Chromium Job E2E 5/5가 통과했다.
+- Next steps:
+  - P6 전까지 분석 버튼·가짜 page를 추가하지 않는다.
 
 ## [2026-07-19] Session Summary (P4 Document 목록·상세 Page 구현)
 

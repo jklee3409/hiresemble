@@ -2,7 +2,7 @@
 
 Hiresemble은 사용자의 검증된 경력 근거를 바탕으로 채용 공고 분석, 자기소개서 작성·검증, 면접 준비와 모의 면접을 지원하는 개인 맞춤형 AI 취업 준비 서비스입니다.
 
-현재 저장소는 **P1 공통 HTTP·Session 인증·테스트 기반**과 **P2 프로필·직접 입력 근거**를 제공합니다. 상세 요구사항과 이후 단계는 [`docs/spec`](docs/spec)과 [`docs/design/implementation-plan.md`](docs/design/implementation-plan.md)에서 확인할 수 있습니다.
+현재 저장소는 **P0 계약 기준선부터 P5 채용 공고 등록·URL 추출·상태·자동 마감까지** 구현되어 있습니다. P6 공고 분석·RAG부터 P10 운영 완성도까지는 아직 착수하지 않았습니다. 상세 계약과 단계별 상태는 [`docs/spec`](docs/spec)과 [`docs/design/implementation-plan.md`](docs/design/implementation-plan.md)에서 확인할 수 있습니다.
 
 ## 구성
 
@@ -77,11 +77,11 @@ cd backend
 sh ./gradlew bootRun
 ```
 
-기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. 공개 API는 인증 5개와 `/api/v1/profile` 하위 프로필·direct evidence 25개 operation이며 Spring Session Cookie와 CSRF를 사용합니다. 사용자·Session·idempotency, 기본·구조화 프로필과 direct evidence schema는 Flyway V1~V3가 관리합니다.
+기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. 공개 API는 인증 5개, 프로필·direct evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations/34 paths이며 Spring Session Cookie와 CSRF를 사용합니다. PostgreSQL schema는 기존 V1~~V5를 보존한 Flyway V1~~V6가 관리합니다.
 
-`.env.example`의 `IDEMPOTENCY_HMAC_KEY`는 의도적으로 비어 있습니다. P1 인증 API에는 Idempotency-Key를 적용하지 않으며, 후속 idempotent endpoint를 활성화하기 전에 versioned 운영 secret을 설정해야 합니다.
+`.env.example`의 `IDEMPOTENCY_HMAC_KEY`는 의도적으로 비어 있습니다. Document와 Job 생성처럼 멱등성이 필요한 mutation을 실행하려면 안전한 versioned 운영 secret을 설정해야 합니다.
 
-유료 외부 호출 없이 로컬 부팅이 가능하도록 Spring AI 모델과 VectorStore 자동 구성은 기본적으로 꺼져 있습니다. AI 연동 개발을 시작할 때 `.env`에서 API 키를 입력하고 다음 값을 명시적으로 활성화합니다.
+유료 외부 호출 없이 로컬 부팅과 테스트가 가능하도록 실제 AI 모델과 VectorStore 자동 구성은 기본적으로 꺼져 있습니다. P5 URL fetch와 AI 추출 테스트도 Fake gateway만 사용합니다. P6 이후 실제 연동을 별도로 승인하고 구성할 때만 `.env`에서 API 키와 provider 값을 명시적으로 활성화합니다.
 
 ```dotenv
 AI_CHAT_MODEL_PROVIDER=openai
@@ -106,7 +106,7 @@ corepack pnpm dev
 
 기본 주소는 `http://localhost:5173`입니다. Vite는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
 
-익명 사용자는 `/login` 또는 `/signup`, 인증 사용자는 보호된 `/onboarding`, `/profile/**`와 `/dashboard`를 사용할 수 있습니다. 온보딩과 프로필은 실제 P2 데이터를 저장하며 Dashboard는 아직 shell입니다.
+익명 사용자는 `/login` 또는 `/signup`, 인증 사용자는 보호된 `/onboarding`, `/profile/**`, `/agent-runs`, `/documents`, `/jobs`, `/jobs/new`, `/jobs/:jobId/overview`와 `/dashboard`를 사용할 수 있습니다. Dashboard는 아직 shell이고 P6 분석 route는 존재하지 않습니다.
 
 검증 명령:
 
@@ -121,11 +121,11 @@ Playwright 브라우저는 E2E 테스트를 작성하는 단계에서 다음 명
 corepack pnpm exec playwright install --with-deps chromium
 ```
 
-Backend를 실행한 상태에서 P2 실제 브라우저 여정은 다음처럼 별도로 검증합니다.
+P5 실제 브라우저 여정은 Backend가 격리 PostgreSQL·Spring·Vue·Fake fetch/AI·Chromium을 함께 기동하는 전용 Gradle task로 검증합니다.
 
-```shell
-cd frontend
-corepack pnpm exec playwright test e2e/profile.spec.ts --project=chromium --workers=1
+```powershell
+Set-Location backend
+.\gradlew.bat p5BrowserE2eTest
 ```
 
 ## 인프라 종료
@@ -136,13 +136,12 @@ docker compose --profile mail down
 
 Named volume의 개발 데이터를 함께 삭제하려면 의도적으로 `docker compose down --volumes`를 실행해야 합니다.
 
-## P2에서 제외한 범위
+## 현재 제외한 범위
 
-- 계정 변경·탈퇴와 Dashboard 집계 API·카드
-- 문서 연결·업로드·파싱과 AI 추출 근거
-- 공고·자기소개서·면접 기능
-- P3 이후 업무 테이블·API·UI
-- AI Agent, 프롬프트, 외부 API 연동 구현
+- P6 공고 분석·RAG, fit score, eligibility와 analysis history
+- 자기소개서, 면접 준비·조사와 모의 면접
+- Dashboard 실제 집계와 공개 AI 설정
+- 실제 OpenAI·Tavily provider 기본 활성화
 - 운영 배포 구성
 
 이후 구현은 `docs/spec`의 모듈러 모놀리스 원칙, 사용자별 데이터 격리, 구조화된 AI 워크플로와 비용 통제 요구를 기준으로 진행합니다.

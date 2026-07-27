@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P3 registry, router, validator, disabled gateway와 PostgreSQL Fake 3-step orchestration을 검증한다.
+P3 registry·orchestrator 기반과 P4 Document·P5 Job 실제 contribution을 Fake gateway·PostgreSQL로 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,7 +13,7 @@ P3 registry, router, validator, disabled gateway와 PostgreSQL Fake 3-step orche
 
 ## 구성 요소 역할
 
-test-only fixture로 정상·실패·waiting·cancel·interruption·reuse를 검증하며 production executable이나 endpoint를 만들지 않는다.
+test-only fixture로 정상·실패·waiting·cancel·interruption·reuse를 검증하며 실제 provider나 test용 공개 endpoint를 만들지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

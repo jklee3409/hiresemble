@@ -2,7 +2,20 @@
 
 ## Overview
 
-PostgreSQL에 저장되는 P1 idempotency reservation·hash·replay 계약을 검증한다. 현재 P1 구현과 검증 상태만 기록한다.
+PostgreSQL에 저장되는 idempotency reservation·hash·원 status/응답 replay 계약을 검증한다.
+
+## [2026-07-27] Session Summary (원 HTTP status replay 회귀 추가)
+
+- What was done:
+  - application callback이 반환한 201/202 status와 응답을 동일 key에서 보존하는 테스트를 추가했다.
+- Key decisions:
+  - replay는 새 resource나 Run을 생성하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Idempotency 통합 테스트와 Job 생성 replay 테스트가 통과했다.
+- Next steps:
+  - 없음.
 
 ## [2026-07-19] Session Summary (Durable idempotency 통합 테스트 구현)
 

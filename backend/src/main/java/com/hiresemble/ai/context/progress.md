@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 provenance-only ContextBuilder 계약과 test fixture snapshot이 구현됐다.
+P3 provenance-only ContextBuilder와 Document·Job owner/version snapshot이 구현됐다.
+
+## [2026-07-27] Session Summary (Job Posting Extraction context 추가)
+
+- What was done:
+  - Job owner·resource version과 사용자 override를 검증하는 context builder와 workflow dispatch를 추가했다.
+- Key decisions:
+  - 전체 공고 본문·HTML은 durable context에 저장하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - owner/version 재검증과 context hash 통합 테스트가 통과했다.
+- Next steps:
+  - P6 context는 승인 근거 reference와 새 analysis snapshot을 별도 추가한다.
 
 ## [2026-07-19] Session Summary (Document ingestion context 추가)
 

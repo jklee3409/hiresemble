@@ -2,7 +2,20 @@
 
 ## Overview
 
-여러 화면이 공유하는 P1 인증·P2 프로필·P3 Agent Run HTTP 계약과 Session cleanup port를 관리한다.
+여러 화면이 공유하는 P1 인증부터 P5 Job HTTP 계약과 Session cleanup port를 관리한다.
+
+## [2026-07-27] Session Summary (P5 Job 공용 API·cleanup 연결)
+
+- What was done:
+  - strict Job DTO/client와 Job별 stream/query cleanup을 공용 lifecycle에 연결했다.
+- Key decisions:
+  - transport와 cleanup만 shared에 두고 Job 화면 상태는 feature/page가 소유한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Zod rejection, logout·사용자 전환 cleanup과 전체 Frontend check가 통과했다.
+- Next steps:
+  - P6 분석 계약은 Backend OpenAPI 구현 후 추가한다.
 
 ## [2026-07-19] Session Summary (P3 Agent Run 공용 API·Session 경계 연결)
 

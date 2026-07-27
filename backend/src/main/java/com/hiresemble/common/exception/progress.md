@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1·P2 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+P1~P5 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+
+## [2026-07-27] Session Summary (Job duplicate 오류 계약 추가)
+
+- What was done:
+  - canonical active URL 충돌을 `DUPLICATE_JOB_URL` 409로 변환했다.
+- Key decisions:
+  - 외부 fetch·DNS·provider 상세는 공통 오류 응답에 노출하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job duplicate와 공통 오류 field set 통합 테스트가 통과했다.
+- Next steps:
+  - 없음.
 
 ## [2026-07-19] Session Summary (P4 upload·storage 안전 오류 추가)
 

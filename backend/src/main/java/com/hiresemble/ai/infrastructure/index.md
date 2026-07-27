@@ -2,11 +2,12 @@
 
 ## 디렉터리 목적
 
-P3 production 기본 gateway를 외부 네트워크 없는 disabled adapter로 제공한다.
+production 기본 gateway를 외부 네트워크 없는 disabled adapter로 제공하고 실행 가능한 Document·Job contribution을 runtime에 조립한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - `DisabledAiGateways`: Chat·Embedding·Search 공통 disabled adapter
+- `AiRuntimeConfiguration`: 고정 workflow contribution과 handler·registry 조립
 - [`progress.md`](progress.md): adapter 상태
 
 ## 구성 요소 역할

@@ -9,12 +9,14 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `WorkflowRegistry`: definition/contribution 검증
 - `CanonicalWorkflowDefinitions`: 8개 WorkflowType 고정 definition
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
+- `JobPostingExtractionWorkflow`: P5 URL fetch부터 사용자 override 병합·domain apply까지의 5단계 contribution
+- `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - [`document/`](document/index.md): P4 `DOCUMENT_INGESTION` 8단계 contribution과 실패 보상
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할
 
-step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 progress weight를 검증한다. P4에서는 Document repository 대신 application port로 실제 aggregate에 연결한다.
+step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 progress weight를 검증한다. Document와 Job은 application port를 통해 실제 aggregate에 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 
