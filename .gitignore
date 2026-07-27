@@ -27,6 +27,7 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+.playwright-cli/
 
 # Logs and local runtime files
 *.log
