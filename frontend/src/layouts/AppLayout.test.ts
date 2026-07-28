@@ -30,7 +30,7 @@ describe('AppLayout', () => {
     expect(activeDesktopLink.text()).toBe('내 지원 정보')
     expect(wrapper.get('.workspace-title h1').text()).toBe('내 지원 정보')
     expect(wrapper.findAll('.sidebar-nav__link').map((link) => link.text())).toEqual([
-      '오늘의 준비',
+      '지원 홈',
       '내 지원 정보',
       '이력서·자료',
       '관심 공고',

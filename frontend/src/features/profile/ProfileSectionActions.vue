@@ -45,7 +45,7 @@ const next = computed(() =>
       {{ next.label }} →
     </RouterLink>
     <RouterLink v-else to="/dashboard" class="button button--secondary">
-      오늘의 준비로 돌아가기
+      지원 홈으로 돌아가기
     </RouterLink>
   </nav>
 </template>

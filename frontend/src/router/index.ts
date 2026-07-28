@@ -71,7 +71,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'dashboard',
         component: DashboardPage,
-        meta: { title: '오늘의 준비' },
+        meta: { title: '지원 홈' },
       },
       {
         path: 'profile',

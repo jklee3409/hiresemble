@@ -5,9 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 
 import App from '@/App.vue'
+import * as agentRunApi from '@/shared/api/agentRunApi'
 import * as authApi from '@/shared/api/authApi'
 import type { AuthSessionDto, ErrorResponseDto, ProfileDto } from '@/shared/api/contracts'
+import * as documentApi from '@/shared/api/documentApi'
 import { ApiClientError } from '@/shared/api/errors'
+import * as jobApi from '@/shared/api/jobApi'
 import { useAuthStore } from '@/stores/auth'
 import * as profileApi from '@/shared/api/profileApi'
 
@@ -28,12 +31,27 @@ vi.mock('@/shared/api/profileApi', () => ({
   createEducation: vi.fn(),
 }))
 
+vi.mock('@/shared/api/documentApi', () => ({
+  listDocuments: vi.fn(),
+}))
+
+vi.mock('@/shared/api/jobApi', () => ({
+  listJobs: vi.fn(),
+}))
+
+vi.mock('@/shared/api/agentRunApi', () => ({
+  listAgentRuns: vi.fn(),
+}))
+
 describe('authentication route policy', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.mocked(profileApi.getProfile).mockResolvedValue(emptyProfile())
     vi.mocked(profileApi.listEducations).mockResolvedValue(emptyPage())
+    vi.mocked(documentApi.listDocuments).mockResolvedValue(emptyPage())
+    vi.mocked(jobApi.listJobs).mockResolvedValue(emptyPage())
+    vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(emptyPage())
   })
 
   it('redirects the root according to the bootstrapped auth state', async () => {
@@ -130,9 +148,10 @@ describe('authentication route policy', () => {
       },
     })
 
-    expect(wrapper.get('h2').text()).toContain('오늘의 지원 준비를 이어가세요')
-    expect(wrapper.text()).toContain('내 경험 정리하기')
-    expect(wrapper.text()).toContain('이력서·자료 모으기')
+    await flushPromises()
+    expect(wrapper.get('h2').text()).toContain('user-1님의 지원 현황')
+    expect(wrapper.text()).toContain('프로필 작성')
+    expect(wrapper.text()).toContain('문서 업로드')
     expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
@@ -142,7 +161,7 @@ describe('authentication route policy', () => {
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
     expect(wrapper.text()).toContain('페이지를 찾을 수 없어요')
-    expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('오늘의 준비로 돌아가기')
+    expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('지원 홈으로 돌아가기')
   })
 
   it('redirects /profile to /profile/basic without gating an incomplete profile', async () => {

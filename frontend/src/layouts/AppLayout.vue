@@ -8,7 +8,7 @@ import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const navItems = [
-  { to: '/dashboard', label: '오늘의 준비', icon: 'dashboard', match: '/dashboard' },
+  { to: '/dashboard', label: '지원 홈', icon: 'dashboard', match: '/dashboard' },
   { to: '/profile/basic', label: '내 지원 정보', icon: 'profile', match: '/profile' },
   { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
@@ -31,7 +31,7 @@ const pageContext = computed(() => {
   if (route.path.startsWith('/documents')) return '이력서와 자료'
   if (route.path.startsWith('/jobs')) return '지원할 공고'
   if (route.path.startsWith('/agent-runs')) return '준비 진행 상황'
-  return '오늘의 지원 준비'
+  return '지원 현황과 다음 할 일'
 })
 const userInitial = computed(() => authStore.currentUser?.displayName.trim().charAt(0) || 'H')
 const AgentRunProgressDrawer = defineAsyncComponent(
@@ -121,7 +121,7 @@ async function logout(): Promise<void> {
     <a class="sr-only-focusable skip-link" href="#app-content">본문으로 건너뛰기</a>
 
     <aside class="desktop-sidebar" aria-label="서비스 탐색">
-      <RouterLink class="sidebar-brand" to="/dashboard" aria-label="Hiresemble 오늘의 준비">
+      <RouterLink class="sidebar-brand" to="/dashboard" aria-label="Hiresemble 지원 홈">
         <BrandMark inverse />
         <span>
           <small>나의 지원 준비</small>
@@ -176,7 +176,7 @@ async function logout(): Promise<void> {
           >
             <AppIcon name="menu" />
           </button>
-          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 오늘의 준비">
+          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 지원 홈">
             <BrandMark compact :show-name="false" />
           </RouterLink>
           <div class="workspace-title">
