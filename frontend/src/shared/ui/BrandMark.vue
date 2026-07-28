@@ -67,7 +67,7 @@ withDefaults(
 }
 
 .brand-symbol__signal {
-  stroke: var(--color-cyan);
+  stroke: var(--hs-blue-400);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.5;
@@ -78,13 +78,13 @@ withDefaults(
 }
 
 .brand-symbol__node--accent {
-  fill: var(--color-accent);
+  fill: var(--hs-blue-500);
   stroke: var(--color-ink);
   stroke-width: 1;
 }
 
 .brand-symbol__core {
-  fill: var(--color-cyan);
+  fill: var(--hs-blue-400);
 }
 
 .brand-lockup__name {
@@ -123,8 +123,8 @@ withDefaults(
 
 .brand-lockup--inverse .brand-symbol__signal,
 .brand-lockup--inverse .brand-symbol__core {
-  stroke: var(--color-cyan-bright);
-  fill: var(--color-cyan-bright);
+  stroke: var(--hs-blue-300);
+  fill: var(--hs-blue-300);
 }
 
 .brand-lockup--inverse .brand-symbol__node {
@@ -132,7 +132,7 @@ withDefaults(
 }
 
 .brand-lockup--inverse .brand-symbol__node--accent {
-  fill: var(--color-accent);
+  fill: var(--hs-blue-400);
   stroke: var(--color-ink);
 }
 </style>

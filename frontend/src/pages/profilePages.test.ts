@@ -84,6 +84,22 @@ describe('P2 profile pages', () => {
     expect(wrapper.text()).toContain('100% 완료')
   })
 
+  it('moves to education only after the basic profile save succeeds', async () => {
+    const initial = profile()
+    vi.mocked(profileApi.getProfile).mockResolvedValue(initial)
+    vi.mocked(profileApi.updateProfile).mockResolvedValue({ ...initial, version: 2 })
+    const wrapper = await mountPage(ProfileBasicPage)
+
+    const continueButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('저장하고 학력으로'))
+    await continueButton?.trigger('click')
+    await flushPromises()
+
+    expect(profileApi.updateProfile).toHaveBeenCalledTimes(1)
+    expect(wrapper.vm.$router.currentRoute.value.path).toBe('/profile/education')
+  })
+
   it('maps server field errors and offers latest-vs-draft field reapplication on 409', async () => {
     const initial = profile()
     const latest = { ...initial, introduction: 'Server latest', version: 2 }
@@ -283,7 +299,7 @@ describe('P2 profile pages', () => {
         .filter((button) => ['수정', '승인', '거절'].includes(button.text())),
     ).toHaveLength(0)
 
-    await wrapper.get('select').setValue('REJECTED')
+    await wrapper.get('.evidence-filters select').setValue('REJECTED')
     await flushPromises()
     expect(profileApi.listEvidence).toHaveBeenLastCalledWith(
       expect.objectContaining({ verificationStatus: 'REJECTED' }),
@@ -330,6 +346,12 @@ async function mountPage(
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div />' } },
+      { path: '/dashboard', component: { template: '<div />' } },
+      {
+        path: '/profile/education',
+        name: 'profile-education',
+        component: { template: '<div />' },
+      },
       { path: '/profile/:pathMatch(.*)*', component: { template: '<div />' } },
     ],
   })

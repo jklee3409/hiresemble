@@ -8,8 +8,8 @@ import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const navItems = [
-  { to: '/dashboard', label: '대시보드', icon: 'dashboard', match: '/dashboard' },
-  { to: '/profile/basic', label: '내 프로필', icon: 'profile', match: '/profile' },
+  { to: '/dashboard', label: '오늘의 준비', icon: 'dashboard', match: '/dashboard' },
+  { to: '/profile/basic', label: '내 지원 정보', icon: 'profile', match: '/profile' },
   { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
   { to: '/agent-runs', label: '분석 기록', icon: 'runs', match: '/agent-runs' },
@@ -176,7 +176,7 @@ async function logout(): Promise<void> {
           >
             <AppIcon name="menu" />
           </button>
-          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 대시보드">
+          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 오늘의 준비">
             <BrandMark compact :show-name="false" />
           </RouterLink>
           <div class="workspace-title">
@@ -366,7 +366,7 @@ async function logout(): Promise<void> {
 .sidebar-nav__link--active {
   background: #24335a;
   color: white;
-  box-shadow: inset 3px 0 #5f80ff;
+  box-shadow: inset 3px 0 var(--hs-blue-400);
 }
 
 .sidebar-footer {

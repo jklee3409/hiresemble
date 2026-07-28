@@ -81,7 +81,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'profile/basic',
         name: 'profile-basic',
         component: ProfileBasicPage,
-        meta: { title: '내 프로필', profileRecommended: true },
+        meta: { title: '내 지원 정보', profileRecommended: true },
       },
       {
         path: 'profile/education',

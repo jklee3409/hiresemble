@@ -142,7 +142,7 @@ describe('authentication route policy', () => {
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
     expect(wrapper.text()).toContain('페이지를 찾을 수 없어요')
-    expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('대시보드로 이동')
+    expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('오늘의 준비로 돌아가기')
   })
 
   it('redirects /profile to /profile/basic without gating an incomplete profile', async () => {

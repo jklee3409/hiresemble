@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useDocumentListQuery } from '@/features/documents/queries'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
+import ProfileSectionActions from '@/features/profile/ProfileSectionActions.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
 import {
@@ -17,6 +18,7 @@ import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import type {
   EvidenceDto,
   EvidenceMetadataValue,
@@ -124,7 +126,11 @@ async function saveEdit(): Promise<void> {
   if (content.length < 1 || content.length > 20000)
     fieldErrors.value.content = '내용을 입력하고 20,000자 안으로 작성해 주세요.'
   const metadata = buildMetadata()
-  if (Object.keys(fieldErrors.value).length > 0 || metadata === null) return
+  if (Object.keys(fieldErrors.value).length > 0 || metadata === null) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
 
   const request: EvidenceUpdateRequest = { title, content, metadata, version: editForm.version }
   try {
@@ -260,310 +266,319 @@ function confidenceLabel(value: number | null): string {
 </script>
 
 <template>
-  <section class="evidence-page app-page" aria-labelledby="evidence-heading">
+  <section
+    class="evidence-page app-page profile-workspace-shell"
+    aria-labelledby="evidence-heading"
+  >
     <ProfileTabs />
-    <PageHeader
-      heading-id="evidence-heading"
-      title="경험 정보"
-      description="내가 입력했거나 자료에서 찾은 경험을 확인하고 다듬어 보세요."
-      eyebrow="나의 경험"
-    />
-    <p class="alert alert--info evidence-page__guidance">
-      직접 입력한 내용과 자료에서 찾은 경험을 함께 확인할 수 있어요. 원본이 삭제된 항목은 이전
-      기록을 위해 읽기 전용으로 남겨요.
-    </p>
-
-    <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
-      <label class="field">
-        <span class="field__label">상태</span>
-        <select v-model="status" class="control control--compact">
-          <option value="">전체</option>
-          <option value="PENDING">검토 대기</option>
-          <option value="VERIFIED">승인됨</option>
-          <option value="REJECTED">거절됨</option>
-          <option value="SOURCE_DELETED">원본 삭제됨</option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">카테고리</span>
-        <input v-model="category" class="control control--compact" maxlength="80" />
-      </label>
-      <label class="field">
-        <span class="field__label">정렬</span>
-        <select v-model="sort" class="control control--compact" @change="applyFilters">
-          <option value="updatedAt,desc">최근 수정순</option>
-          <option value="confidence,desc">신뢰도순</option>
-        </select>
-      </label>
-      <label class="field evidence-filters__document">
-        <span class="field__label">출처 문서</span>
-        <select
-          id="evidence-document-filter"
-          v-model="documentId"
-          class="control control--compact"
-          :disabled="documents.isPending.value || documents.isError.value"
-        >
-          <option value="">전체</option>
-          <option
-            v-for="candidate in documents.data.value?.items"
-            :key="candidate.id"
-            :value="candidate.id"
-          >
-            {{ candidate.displayName }}
-          </option>
-        </select>
-      </label>
-      <button type="submit" class="button button--primary button--compact">필터 적용</button>
-    </form>
-    <p v-if="documents.isError.value" class="inline-error" role="alert">
-      출처 자료를 불러오지 못했어요.
-    </p>
-
-    <p v-if="message" class="alert alert--success evidence-page__message" role="status">
-      {{ message }}
-    </p>
-    <p v-if="generalError" class="alert alert--danger evidence-page__message" role="alert">
-      {{ generalError }}
-    </p>
-
-    <section
-      v-if="editingId"
-      class="evidence-editor section-surface"
-      role="region"
-      aria-label="경험 정보 편집"
-    >
-      <div class="evidence-editor__header">
-        <div>
-          <p class="section-kicker">내용 다듬기</p>
-          <h3 class="section-title">경험 정보 편집</h3>
-        </div>
-        <button type="button" class="button button--ghost button--compact" @click="closeEdit">
-          닫기
-        </button>
-      </div>
-      <VersionConflictPanel
-        v-if="conflict"
-        class="mt-4"
-        :draft="conflict.draft"
-        :latest="conflict.latest"
-        :fields="[
-          { key: 'title', label: '제목' },
-          { key: 'content', label: '내용' },
-          { key: 'metadata', label: '추가 정보' },
-        ]"
-        @cancel="cancelConflict"
-        @reapply="reapplyConflict"
+    <div class="profile-workspace-shell__content">
+      <PageHeader
+        heading-id="evidence-heading"
+        title="경험 정보"
+        description="내가 입력했거나 자료에서 찾은 경험을 확인하고 다듬어 보세요."
+        eyebrow="내 지원 정보"
       />
-      <form class="evidence-editor__form" novalidate @submit.prevent="saveEdit">
-        <label class="field">
-          <span class="field__label">제목</span>
-          <input
-            id="evidence-title"
-            v-model="editForm.title"
-            class="control"
-            maxlength="250"
-            :aria-invalid="Boolean(fieldErrors.title)"
-            :aria-describedby="fieldErrors.title ? 'evidence-title-error' : undefined"
-          />
-          <span v-if="fieldErrors.title" id="evidence-title-error" class="inline-error">{{
-            fieldErrors.title
-          }}</span>
-        </label>
-        <label class="field">
-          <span class="field__label">내용</span>
-          <textarea
-            id="evidence-content"
-            v-model="editForm.content"
-            class="control evidence-editor__content"
-            maxlength="20000"
-            :aria-invalid="Boolean(fieldErrors.content)"
-            :aria-describedby="fieldErrors.content ? 'evidence-content-error' : undefined"
-          />
-          <span v-if="fieldErrors.content" id="evidence-content-error" class="inline-error">{{
-            fieldErrors.content
-          }}</span>
-        </label>
-        <fieldset
-          class="field evidence-editor__metadata"
-          :aria-invalid="Boolean(fieldErrors.metadata)"
-          :aria-describedby="fieldErrors.metadata ? 'evidence-metadata-error' : 'metadata-help'"
-        >
-          <legend class="field__label">추가 정보</legend>
-          <p id="metadata-help" class="field__help">
-            역할이나 성과처럼 따로 남겨 둘 내용을 항목별로 추가할 수 있어요.
-          </p>
-          <div v-for="(entry, index) in metadataEntries" :key="entry.id" class="metadata-entry">
-            <label class="field">
-              <span class="sr-only">추가 정보 {{ index + 1 }} 이름</span>
-              <input v-model="entry.key" class="control" placeholder="예: 담당 역할" />
-            </label>
-            <label class="field">
-              <span class="sr-only">추가 정보 {{ index + 1 }} 형식</span>
-              <select v-model="entry.type" class="control">
-                <option value="text">글자</option>
-                <option value="number">숫자</option>
-                <option value="boolean">예·아니요</option>
-                <option value="empty">내용 없음</option>
-              </select>
-            </label>
-            <label v-if="entry.type !== 'empty'" class="field">
-              <span class="sr-only">추가 정보 {{ index + 1 }} 내용</span>
-              <select v-if="entry.type === 'boolean'" v-model="entry.value" class="control">
-                <option value="true">예</option>
-                <option value="false">아니요</option>
-              </select>
-              <input
-                v-else
-                v-model="entry.value"
-                class="control"
-                :inputmode="entry.type === 'number' ? 'decimal' : 'text'"
-                placeholder="내용 입력"
-              />
-            </label>
-            <span v-else class="metadata-entry__empty">내용 없음</span>
-            <button
-              type="button"
-              class="button button--ghost button--compact"
-              :aria-label="`추가 정보 ${index + 1} 삭제`"
-              @click="removeMetadataEntry(entry.id)"
-            >
-              삭제
-            </button>
-          </div>
-          <button
-            type="button"
-            class="button button--secondary button--compact metadata-entry__add"
-            @click="addMetadataEntry"
-          >
-            추가 정보 넣기
-          </button>
-          <span v-if="fieldErrors.metadata" id="evidence-metadata-error" class="inline-error">{{
-            fieldErrors.metadata
-          }}</span>
-        </fieldset>
-        <div class="form-actions">
-          <button
-            type="submit"
-            class="button button--primary"
-            :disabled="editMutation.isPending.value"
-          >
-            {{ editMutation.isPending.value ? '저장 중…' : '경험 정보 저장' }}
-          </button>
-          <button type="button" class="button button--secondary" @click="closeEdit">취소</button>
-        </div>
-      </form>
-    </section>
+      <p class="alert alert--info evidence-page__guidance">
+        직접 입력한 내용과 자료에서 찾은 경험을 함께 확인할 수 있어요. 원본이 삭제된 항목은 이전
+        기록을 위해 읽기 전용으로 남겨요.
+      </p>
 
-    <StatePanel
-      v-if="evidenceQuery.isPending.value"
-      class="evidence-page__state"
-      kind="loading"
-      title="경험 정보를 불러오는 중…"
-      description="저장된 출처와 검토 상태를 확인하고 있어요."
-    />
-    <StatePanel
-      v-else-if="evidenceQuery.isError.value"
-      class="evidence-page__state"
-      kind="error"
-      title="경험 정보를 불러오지 못했어요."
-      description="잠시 후 다시 시도해 주세요."
-    >
-      <template #actions>
-        <button type="button" class="button button--secondary" @click="evidenceQuery.refetch()">
-          다시 시도
-        </button>
-      </template>
-    </StatePanel>
-    <StatePanel
-      v-else-if="evidenceQuery.data.value?.items.length === 0"
-      class="evidence-page__state"
-      kind="empty"
-      title="조건에 맞는 경험 정보가 없어요."
-      description="필터를 바꾸거나 프로필과 자료에 경험을 추가해 주세요."
-    />
-    <ul v-else class="evidence-list data-list">
-      <li
-        v-for="evidence in evidenceQuery.data.value?.items"
-        :key="evidence.id"
-        class="evidence-card data-card"
-        :data-testid="`evidence-card-${evidence.id}`"
+      <details class="filter-disclosure evidence-page__filters" open>
+        <summary>경험 정보 필터</summary>
+        <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
+          <label class="field">
+            <span class="field__label">상태</span>
+            <select v-model="status" class="control control--compact">
+              <option value="">전체</option>
+              <option value="PENDING">검토 대기</option>
+              <option value="VERIFIED">승인됨</option>
+              <option value="REJECTED">거절됨</option>
+              <option value="SOURCE_DELETED">원본 삭제됨</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">카테고리</span>
+            <input v-model="category" class="control control--compact" maxlength="80" />
+          </label>
+          <label class="field">
+            <span class="field__label">정렬</span>
+            <select v-model="sort" class="control control--compact" @change="applyFilters">
+              <option value="updatedAt,desc">최근 수정순</option>
+              <option value="confidence,desc">신뢰도순</option>
+            </select>
+          </label>
+          <label class="field evidence-filters__document">
+            <span class="field__label">출처 문서</span>
+            <select
+              id="evidence-document-filter"
+              v-model="documentId"
+              class="control control--compact"
+              :disabled="documents.isPending.value || documents.isError.value"
+            >
+              <option value="">전체</option>
+              <option
+                v-for="candidate in documents.data.value?.items"
+                :key="candidate.id"
+                :value="candidate.id"
+              >
+                {{ candidate.displayName }}
+              </option>
+            </select>
+          </label>
+          <button type="submit" class="button button--primary button--compact">필터 적용</button>
+        </form>
+      </details>
+      <p v-if="documents.isError.value" class="inline-error" role="alert">
+        출처 자료를 불러오지 못했어요.
+      </p>
+
+      <p v-if="message" class="alert alert--success evidence-page__message" role="status">
+        {{ message }}
+      </p>
+      <p v-if="generalError" class="alert alert--danger evidence-page__message" role="alert">
+        {{ generalError }}
+      </p>
+
+      <section
+        v-if="editingId"
+        class="evidence-editor section-surface"
+        role="region"
+        aria-label="경험 정보 편집"
       >
-        <div class="evidence-card__header">
-          <div class="evidence-card__identity">
-            <div class="evidence-card__title">
-              <h3>{{ evidence.title }}</h3>
-              <StatusBadge
-                :label="statusLabel(evidence.verificationStatus)"
-                :tone="statusTone(evidence.verificationStatus)"
-              />
-            </div>
-            <dl class="evidence-card__meta">
-              <div>
-                <dt>출처</dt>
-                <dd>{{ sourceLabel(evidence.sourceType) }}</dd>
-              </div>
-              <div>
-                <dt>카테고리</dt>
-                <dd>{{ evidence.evidenceCategory }}</dd>
-              </div>
-              <div>
-                <dt>신뢰도</dt>
-                <dd>{{ confidenceLabel(evidence.confidence) }}</dd>
-              </div>
-            </dl>
+        <div class="evidence-editor__header">
+          <div>
+            <p class="section-kicker">내용 다듬기</p>
+            <h3 class="section-title">경험 정보 편집</h3>
           </div>
-          <div
-            v-if="evidence.verificationStatus !== 'SOURCE_DELETED'"
-            class="evidence-card__actions"
-          >
-            <button
-              type="button"
-              class="button button--ghost button--compact"
-              @click="openEdit(evidence)"
-            >
-              수정
-            </button>
-            <button
-              type="button"
-              class="button button--secondary button--compact"
-              :disabled="verificationMutation.isPending.value"
-              @click="verify(evidence, 'VERIFIED')"
-            >
-              승인
-            </button>
-            <button
-              type="button"
-              class="button button--danger button--compact"
-              :disabled="verificationMutation.isPending.value"
-              @click="verify(evidence, 'REJECTED')"
-            >
-              거절
-            </button>
-          </div>
+          <button type="button" class="button button--ghost button--compact" @click="closeEdit">
+            닫기
+          </button>
         </div>
-        <p class="evidence-card__content">{{ evidence.content }}</p>
-        <p
-          v-if="evidence.verificationStatus === 'SOURCE_DELETED'"
-          class="alert alert--warning evidence-card__readonly"
-        >
-          원본이 삭제되어 읽기 전용이에요. 수정·승인·거절할 수 없어요.
-        </p>
-      </li>
-    </ul>
+        <VersionConflictPanel
+          v-if="conflict"
+          class="mt-4"
+          :draft="conflict.draft"
+          :latest="conflict.latest"
+          :fields="[
+            { key: 'title', label: '제목' },
+            { key: 'content', label: '내용' },
+            { key: 'metadata', label: '추가 정보' },
+          ]"
+          @cancel="cancelConflict"
+          @reapply="reapplyConflict"
+        />
+        <form class="evidence-editor__form" novalidate @submit.prevent="saveEdit">
+          <label class="field">
+            <span class="field__label">제목</span>
+            <input
+              id="evidence-title"
+              v-model="editForm.title"
+              class="control"
+              maxlength="250"
+              :aria-invalid="Boolean(fieldErrors.title)"
+              :aria-describedby="fieldErrors.title ? 'evidence-title-error' : undefined"
+            />
+            <span v-if="fieldErrors.title" id="evidence-title-error" class="inline-error">{{
+              fieldErrors.title
+            }}</span>
+          </label>
+          <label class="field">
+            <span class="field__label">내용</span>
+            <textarea
+              id="evidence-content"
+              v-model="editForm.content"
+              class="control evidence-editor__content"
+              maxlength="20000"
+              :aria-invalid="Boolean(fieldErrors.content)"
+              :aria-describedby="fieldErrors.content ? 'evidence-content-error' : undefined"
+            />
+            <span v-if="fieldErrors.content" id="evidence-content-error" class="inline-error">{{
+              fieldErrors.content
+            }}</span>
+          </label>
+          <fieldset
+            class="field evidence-editor__metadata"
+            :aria-invalid="Boolean(fieldErrors.metadata)"
+            :aria-describedby="fieldErrors.metadata ? 'evidence-metadata-error' : 'metadata-help'"
+          >
+            <legend class="field__label">추가 정보</legend>
+            <p id="metadata-help" class="field__help">
+              역할이나 성과처럼 따로 남겨 둘 내용을 항목별로 추가할 수 있어요.
+            </p>
+            <div v-for="(entry, index) in metadataEntries" :key="entry.id" class="metadata-entry">
+              <label class="field">
+                <span class="sr-only">추가 정보 {{ index + 1 }} 이름</span>
+                <input v-model="entry.key" class="control" placeholder="예: 담당 역할" />
+              </label>
+              <label class="field">
+                <span class="sr-only">추가 정보 {{ index + 1 }} 형식</span>
+                <select v-model="entry.type" class="control">
+                  <option value="text">글자</option>
+                  <option value="number">숫자</option>
+                  <option value="boolean">예·아니요</option>
+                  <option value="empty">내용 없음</option>
+                </select>
+              </label>
+              <label v-if="entry.type !== 'empty'" class="field">
+                <span class="sr-only">추가 정보 {{ index + 1 }} 내용</span>
+                <select v-if="entry.type === 'boolean'" v-model="entry.value" class="control">
+                  <option value="true">예</option>
+                  <option value="false">아니요</option>
+                </select>
+                <input
+                  v-else
+                  v-model="entry.value"
+                  class="control"
+                  :inputmode="entry.type === 'number' ? 'decimal' : 'text'"
+                  placeholder="내용 입력"
+                />
+              </label>
+              <span v-else class="metadata-entry__empty">내용 없음</span>
+              <button
+                type="button"
+                class="button button--ghost button--compact"
+                :aria-label="`추가 정보 ${index + 1} 삭제`"
+                @click="removeMetadataEntry(entry.id)"
+              >
+                삭제
+              </button>
+            </div>
+            <button
+              type="button"
+              class="button button--secondary button--compact metadata-entry__add"
+              @click="addMetadataEntry"
+            >
+              추가 정보 넣기
+            </button>
+            <span v-if="fieldErrors.metadata" id="evidence-metadata-error" class="inline-error">{{
+              fieldErrors.metadata
+            }}</span>
+          </fieldset>
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="button button--primary"
+              :disabled="editMutation.isPending.value"
+            >
+              {{ editMutation.isPending.value ? '저장 중…' : '경험 정보 저장' }}
+            </button>
+            <button type="button" class="button button--secondary" @click="closeEdit">취소</button>
+          </div>
+        </form>
+      </section>
 
-    <PaginationNav
-      v-if="evidenceQuery.data.value && evidenceQuery.data.value.totalPages > 0"
-      :page="page"
-      :total-pages="evidenceQuery.data.value.totalPages"
-      label="경험 정보 페이지"
-      @change="page = $event"
-    />
+      <StatePanel
+        v-if="evidenceQuery.isPending.value"
+        class="evidence-page__state"
+        kind="loading"
+        title="경험 정보를 불러오는 중…"
+        description="저장된 출처와 검토 상태를 확인하고 있어요."
+      />
+      <StatePanel
+        v-else-if="evidenceQuery.isError.value"
+        class="evidence-page__state"
+        kind="error"
+        title="경험 정보를 불러오지 못했어요."
+        description="잠시 후 다시 시도해 주세요."
+      >
+        <template #actions>
+          <button type="button" class="button button--secondary" @click="evidenceQuery.refetch()">
+            다시 시도
+          </button>
+        </template>
+      </StatePanel>
+      <StatePanel
+        v-else-if="evidenceQuery.data.value?.items.length === 0"
+        class="evidence-page__state"
+        kind="empty"
+        title="조건에 맞는 경험 정보가 없어요."
+        description="필터를 바꾸거나 프로필과 자료에 경험을 추가해 주세요."
+      />
+      <ul v-else class="evidence-list data-list">
+        <li
+          v-for="evidence in evidenceQuery.data.value?.items"
+          :key="evidence.id"
+          class="evidence-card data-card"
+          :data-testid="`evidence-card-${evidence.id}`"
+        >
+          <div class="evidence-card__header">
+            <div class="evidence-card__identity">
+              <div class="evidence-card__title">
+                <h3>{{ evidence.title }}</h3>
+                <StatusBadge
+                  :label="statusLabel(evidence.verificationStatus)"
+                  :tone="statusTone(evidence.verificationStatus)"
+                />
+              </div>
+              <dl class="evidence-card__meta">
+                <div>
+                  <dt>출처</dt>
+                  <dd>{{ sourceLabel(evidence.sourceType) }}</dd>
+                </div>
+                <div>
+                  <dt>카테고리</dt>
+                  <dd>{{ evidence.evidenceCategory }}</dd>
+                </div>
+                <div>
+                  <dt>신뢰도</dt>
+                  <dd>{{ confidenceLabel(evidence.confidence) }}</dd>
+                </div>
+              </dl>
+            </div>
+            <div
+              v-if="evidence.verificationStatus !== 'SOURCE_DELETED'"
+              class="evidence-card__actions"
+            >
+              <button
+                type="button"
+                class="button button--ghost button--compact"
+                @click="openEdit(evidence)"
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                class="button button--secondary button--compact"
+                :disabled="verificationMutation.isPending.value"
+                @click="verify(evidence, 'VERIFIED')"
+              >
+                승인
+              </button>
+              <button
+                type="button"
+                class="button button--danger button--compact"
+                :disabled="verificationMutation.isPending.value"
+                @click="verify(evidence, 'REJECTED')"
+              >
+                거절
+              </button>
+            </div>
+          </div>
+          <p class="evidence-card__content">{{ evidence.content }}</p>
+          <p
+            v-if="evidence.verificationStatus === 'SOURCE_DELETED'"
+            class="alert alert--warning evidence-card__readonly"
+          >
+            원본이 삭제되어 읽기 전용이에요. 수정·승인·거절할 수 없어요.
+          </p>
+        </li>
+      </ul>
+
+      <PaginationNav
+        v-if="evidenceQuery.data.value && evidenceQuery.data.value.totalPages > 0"
+        :page="page"
+        :total-pages="evidenceQuery.data.value.totalPages"
+        label="경험 정보 페이지"
+        @change="page = $event"
+      />
+      <ProfileSectionActions v-if="!editingId" />
+    </div>
   </section>
 </template>
 
 <style scoped>
 .evidence-page__guidance,
-.evidence-filters,
+.evidence-page__filters,
 .evidence-page__message,
 .evidence-editor,
 .evidence-page__state,
@@ -575,6 +590,10 @@ function confidenceLabel(value: number | null): string {
   display: grid;
   grid-template-columns: repeat(3, minmax(8rem, 0.7fr)) minmax(12rem, 1.4fr) auto;
   align-items: end;
+}
+
+.evidence-page__filters > .evidence-filters {
+  margin-top: var(--space-5);
 }
 
 .evidence-filters__document {

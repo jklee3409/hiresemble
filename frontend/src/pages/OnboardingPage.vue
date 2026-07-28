@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import StringListInput from '@/features/profile/StringListInput.vue'
@@ -16,6 +16,7 @@ import { profileQueryKeys } from '@/features/profile/queryKeys'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import {
   type EducationFormValues,
   type ProfileFormValues,
@@ -112,7 +113,11 @@ async function saveProfile(nextStep: number): Promise<void> {
   message.value = ''
   const validation = validateProfileForm(profileForm)
   fieldErrors.value = validation.fieldErrors
-  if (validation.data === null) return
+  if (validation.data === null) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
   try {
     const saved = await profileMutation.mutateAsync(validation.data)
     queryClient.setQueryData(profileQueryKeys.profile(userId.value), saved)
@@ -136,7 +141,11 @@ async function saveEducation(): Promise<void> {
   generalError.value = ''
   const validation = validateEducationForm({ ...educationForm, isPrimary: true })
   fieldErrors.value = validation.fieldErrors
-  if (validation.data === null) return
+  if (validation.data === null) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
   try {
     await educationMutation.mutateAsync({ ...validation.data, isPrimary: true })
     await educationQuery.refetch()

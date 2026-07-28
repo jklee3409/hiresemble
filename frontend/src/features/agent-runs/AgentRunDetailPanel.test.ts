@@ -27,9 +27,10 @@ describe('AgentRunDetailPanel', () => {
     })
 
     expect(wrapper.text()).toContain('공고 살펴보기')
-    expect(wrapper.text()).toContain('균형형')
-    expect(wrapper.text()).toContain('빠른 처리')
     expect(wrapper.text()).toContain('예상 사용 비용')
+    expect(wrapper.text()).not.toContain('요청 품질')
+    expect(wrapper.text()).not.toContain('처리 방식')
+    expect(wrapper.text()).not.toContain('예약')
     expect(wrapper.text()).toContain('실제 결제 금액과 다를 수 있어요')
     expect(wrapper.text()).not.toContain('billable estimate')
     expect(wrapper.text()).toContain('완료된 항목 1개')

@@ -10,8 +10,6 @@ import type {
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 import {
-  MODEL_TIER_LABELS,
-  QUALITY_LABELS,
   STATUS_LABELS,
   WORKFLOW_LABELS,
   formatCost,
@@ -165,20 +163,6 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
         <p class="section-kicker">작업 정보</p>
         <h3 class="section-title">진행 시간</h3>
         <dl class="run-definition-list">
-          <dt>요청 품질</dt>
-          <dd>
-            {{
-              run.requestedQualityMode ? QUALITY_LABELS[run.requestedQualityMode] : '정책 기본값'
-            }}
-          </dd>
-          <dt>처리 방식</dt>
-          <dd>
-            {{
-              run.highestModelTierUsed
-                ? MODEL_TIER_LABELS[run.highestModelTierUsed]
-                : '아직 사용하지 않음'
-            }}
-          </dd>
           <dt>접수</dt>
           <dd>{{ formatInstant(run.queuedAt) }}</dd>
           <dt>시작</dt>
@@ -194,10 +178,8 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
         <p class="section-kicker">비용 안내</p>
         <h3 class="section-title">예상 사용 비용</h3>
         <dl class="run-definition-list">
-          <dt>예상</dt>
+          <dt>시작 시 예상</dt>
           <dd>{{ formatCost(run.estimatedCostUsd) }}</dd>
-          <dt>예약</dt>
-          <dd>{{ formatCost(run.reservedCostUsd) }}</dd>
           <dt>현재까지 예상</dt>
           <dd>{{ formatCost(run.actualCostUsd) }}</dd>
         </dl>

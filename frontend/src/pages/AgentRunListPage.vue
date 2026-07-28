@@ -120,59 +120,64 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       eyebrow="준비 진행 상황"
     />
 
-    <form class="run-filters filter-toolbar" @submit.prevent>
-      <fieldset class="run-filter-group run-filter-group--workflow">
-        <legend>작업 종류</legend>
-        <div class="run-filter-options">
-          <label
-            v-for="workflowType in WORKFLOW_TYPES"
-            :key="workflowType"
-            class="run-filter-option"
-          >
-            <input
-              type="checkbox"
-              :checked="filters.workflowType.includes(workflowType)"
-              @change="toggleWorkflow(workflowType, $event)"
-            />
-            <span>{{ WORKFLOW_LABELS[workflowType] }}</span>
+    <details class="filter-disclosure run-list-page__filters" open>
+      <summary>분석 기록 필터</summary>
+      <form class="run-filters filter-toolbar" @submit.prevent>
+        <fieldset class="run-filter-group run-filter-group--workflow">
+          <legend>작업 종류</legend>
+          <div class="run-filter-options">
+            <label
+              v-for="workflowType in WORKFLOW_TYPES"
+              :key="workflowType"
+              class="run-filter-option"
+            >
+              <input
+                class="checkbox-control"
+                type="checkbox"
+                :checked="filters.workflowType.includes(workflowType)"
+                @change="toggleWorkflow(workflowType, $event)"
+              />
+              <span>{{ WORKFLOW_LABELS[workflowType] }}</span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="run-filter-group">
+          <legend>상태</legend>
+          <div class="run-filter-options">
+            <label v-for="status in AGENT_RUN_STATUSES" :key="status" class="run-filter-option">
+              <input
+                class="checkbox-control"
+                type="checkbox"
+                :checked="filters.status.includes(status)"
+                @change="toggleStatus(status, $event)"
+              />
+              <span>{{ STATUS_LABELS[status] }}</span>
+            </label>
+          </div>
+        </fieldset>
+        <div class="run-filter-selects">
+          <label class="field">
+            <span class="field__label">재시도 가능</span>
+            <select
+              class="control control--compact"
+              :value="filters.retryable === undefined ? '' : String(filters.retryable)"
+              @change="changeRetryable"
+            >
+              <option value="">전체</option>
+              <option value="true">가능</option>
+              <option value="false">불가능</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">정렬</span>
+            <select class="control control--compact" :value="filters.sort" @change="changeSort">
+              <option value="queuedAt,desc">최근 접수순</option>
+              <option value="updatedAt,desc">최근 갱신순</option>
+            </select>
           </label>
         </div>
-      </fieldset>
-      <fieldset class="run-filter-group">
-        <legend>상태</legend>
-        <div class="run-filter-options">
-          <label v-for="status in AGENT_RUN_STATUSES" :key="status" class="run-filter-option">
-            <input
-              type="checkbox"
-              :checked="filters.status.includes(status)"
-              @change="toggleStatus(status, $event)"
-            />
-            <span>{{ STATUS_LABELS[status] }}</span>
-          </label>
-        </div>
-      </fieldset>
-      <div class="run-filter-selects">
-        <label class="field">
-          <span class="field__label">재시도 가능</span>
-          <select
-            class="control control--compact"
-            :value="filters.retryable === undefined ? '' : String(filters.retryable)"
-            @change="changeRetryable"
-          >
-            <option value="">전체</option>
-            <option value="true">가능</option>
-            <option value="false">불가능</option>
-          </select>
-        </label>
-        <label class="field">
-          <span class="field__label">정렬</span>
-          <select class="control control--compact" :value="filters.sort" @change="changeSort">
-            <option value="queuedAt,desc">최근 접수순</option>
-            <option value="updatedAt,desc">최근 갱신순</option>
-          </select>
-        </label>
-      </div>
-    </form>
+      </form>
+    </details>
 
     <StatePanel
       v-if="runs.isLoading.value"
@@ -250,7 +255,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
 </template>
 
 <style scoped>
-.run-filters,
+.run-list-page__filters,
 .run-list-page__state,
 .run-list {
   margin-top: var(--space-5);
@@ -260,6 +265,10 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-5);
+}
+
+.run-list-page__filters > .run-filters {
+  margin-top: var(--space-5);
 }
 
 .run-filter-group legend {

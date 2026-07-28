@@ -51,6 +51,7 @@ import {
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -131,7 +132,11 @@ async function saveEdit(): Promise<void> {
   fieldErrors.value = validation.fieldErrors
   message.value = ''
   actionError.value = ''
-  if (validation.data === null) return
+  if (validation.data === null) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
   try {
     const saved = await updateMutation.mutateAsync({
       jobId: jobId.value,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -39,6 +39,7 @@ import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -138,7 +139,11 @@ async function upload(): Promise<void> {
     documentType: documentType.value,
     displayName: displayName.value,
   })
-  if (selectedFile.value === null || Object.keys(uploadErrors.value).length > 0) return
+  if (selectedFile.value === null || Object.keys(uploadErrors.value).length > 0) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
 
   try {
     const accepted = await uploadMutation.mutateAsync({
@@ -277,7 +282,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
       <header class="upload-panel__heading">
         <div>
-          <p class="section-kicker">Document studio</p>
+          <p class="section-kicker">자료 등록</p>
           <h2 class="section-title">경력을 설명해 줄 자료를 등록하세요.</h2>
           <p>
             원본 파일은 그대로 보관하고, 읽어 낸 내용과 정리된 경력 정보는 등록 후 직접 확인할 수
@@ -397,43 +402,46 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       </div>
     </form>
 
-    <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
-      <label class="field">
-        <span class="field__label">자료 유형</span>
-        <select v-model="filterDocumentType" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
-            {{ DOCUMENT_TYPE_LABELS[type] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">문서 읽기</span>
-        <select v-model="filterParseStatus" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
-            {{ DOCUMENT_PARSE_STATUS_LABELS[value] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">경력 정보 정리</span>
-        <select v-model="filterEvidenceStatus" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
-            {{ EVIDENCE_EXTRACTION_STATUS_LABELS[value] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">정렬</span>
-        <select :value="filters.sort" class="control control--compact" @change="updateSort">
-          <option value="uploadedAt,desc">최근 업로드순</option>
-          <option value="updatedAt,desc">최근 수정순</option>
-        </select>
-      </label>
-      <button class="button button--primary button--compact" type="submit">필터 적용</button>
-    </form>
+    <details class="filter-disclosure documents-page__filters" open>
+      <summary>자료 검색·필터</summary>
+      <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
+        <label class="field">
+          <span class="field__label">자료 유형</span>
+          <select v-model="filterDocumentType" class="control control--compact">
+            <option value="">전체</option>
+            <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
+              {{ DOCUMENT_TYPE_LABELS[type] }}
+            </option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">문서 읽기</span>
+          <select v-model="filterParseStatus" class="control control--compact">
+            <option value="">전체</option>
+            <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
+              {{ DOCUMENT_PARSE_STATUS_LABELS[value] }}
+            </option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">경력 정보 정리</span>
+          <select v-model="filterEvidenceStatus" class="control control--compact">
+            <option value="">전체</option>
+            <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
+              {{ EVIDENCE_EXTRACTION_STATUS_LABELS[value] }}
+            </option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">정렬</span>
+          <select :value="filters.sort" class="control control--compact" @change="updateSort">
+            <option value="uploadedAt,desc">최근 업로드순</option>
+            <option value="updatedAt,desc">최근 수정순</option>
+          </select>
+        </label>
+        <button class="button button--primary button--compact" type="submit">필터 적용</button>
+      </form>
+    </details>
 
     <p v-if="message" class="alert alert--success documents-page__message" role="status">
       {{ message }}
@@ -538,7 +546,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
 <style scoped>
 .upload-panel,
-.document-filters,
+.documents-page__filters,
 .documents-page__message,
 .documents-page__state,
 .document-list {
@@ -743,10 +751,9 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 }
 
 .selected-file strong {
-  overflow: hidden;
   color: var(--color-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .upload-panel__action {
@@ -779,6 +786,11 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   display: grid;
   grid-template-columns: repeat(4, minmax(8rem, 1fr)) auto;
   align-items: end;
+  gap: var(--space-3);
+}
+
+.documents-page__filters > .document-filters {
+  margin-top: var(--space-6);
 }
 
 .document-row {

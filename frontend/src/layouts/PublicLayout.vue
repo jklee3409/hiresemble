@@ -72,8 +72,9 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
   position: relative;
   display: grid;
   min-height: 100dvh;
-  grid-template-columns: minmax(0, 1fr) minmax(27rem, 35rem);
-  gap: clamp(2rem, 6vw, 7rem);
+  grid-template-columns: minmax(0, 56rem) minmax(27rem, 35rem);
+  justify-content: center;
+  gap: clamp(2rem, 4vw, 4rem);
   overflow: hidden;
   background: #11182d;
   padding: clamp(1.5rem, 4vw, 4rem);
@@ -112,7 +113,7 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
 
 .auth-context__eyebrow {
   margin: 0 0 1rem;
-  color: var(--color-accent);
+  color: var(--hs-blue-300);
   font-size: 0.8125rem;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -132,7 +133,7 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
 .auth-context__title span {
   display: block;
   margin-top: 0.15em;
-  color: #79e8ff;
+  color: var(--hs-blue-300);
 }
 
 .auth-context__description {
@@ -169,7 +170,7 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--hs-blue-400);
   content: '';
 }
 
@@ -250,8 +251,8 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
   height: 0.75rem;
   border: 2px solid #11182d;
   border-radius: 50%;
-  background: #79e8ff;
-  box-shadow: 0 0 0 1px #79e8ff;
+  background: var(--hs-blue-300);
+  box-shadow: 0 0 0 1px var(--hs-blue-300);
   animation: node-drift 20s ease-in-out infinite;
 }
 
@@ -265,8 +266,8 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
   right: 4%;
   width: 1rem;
   height: 1rem;
-  background: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
+  background: var(--hs-blue-400);
+  box-shadow: 0 0 0 1px var(--hs-blue-400);
   animation-delay: -5s;
 }
 

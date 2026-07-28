@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useCreateJobMutation } from '@/features/jobs/queries'
@@ -8,6 +8,7 @@ import { createJobIdempotencyKey } from '@/shared/api/jobApi'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -25,7 +26,14 @@ async function submit(): Promise<void> {
   actionError.value = ''
   const validation = validateJobCreateForm(form)
   fieldErrors.value = validation.fieldErrors
-  if (validation.data === null) return
+  if (validation.data === null) {
+    if (fieldErrors.value.descriptionText) {
+      document.querySelector('.job-create-section--optional')?.setAttribute('open', '')
+    }
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
 
   submitting = true
   try {
@@ -175,15 +183,15 @@ function emptyForm(): JobCreateForm {
         </div>
       </section>
 
-      <section class="job-create-section" aria-labelledby="job-manual-title">
-        <div class="job-create-section__heading">
-          <span class="job-create-section__index" aria-hidden="true">3</span>
+      <details class="job-create-section job-create-section--optional">
+        <summary class="job-create-section__heading">
+          <span class="job-create-section__index" aria-hidden="true">또는</span>
           <div>
-            <h3 id="job-manual-title" class="section-title">본문 직접 입력</h3>
-            <p>링크에서 내용을 불러오지 못했거나 이미 본문이 있다면 직접 입력해 주세요.</p>
+            <h3 class="section-title">직접 입력해서 등록</h3>
+            <p>공고 본문을 이미 가지고 있거나 링크에서 내용을 불러오기 어려울 때 사용하세요.</p>
           </div>
-        </div>
-        <label class="field">
+        </summary>
+        <label class="field job-create-section__optional-body">
           <span class="field__label">공고 본문 <span class="field__optional">(선택)</span></span>
           <textarea
             id="job-description"
@@ -196,7 +204,7 @@ function emptyForm(): JobCreateForm {
             {{ fieldErrors.descriptionText }}
           </span>
         </label>
-      </section>
+      </details>
 
       <p v-if="actionError" class="alert alert--danger" role="alert">
         {{ actionError }}
@@ -249,6 +257,36 @@ function emptyForm(): JobCreateForm {
   margin-bottom: var(--space-5);
 }
 
+.job-create-section--optional > summary {
+  margin-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.job-create-section--optional > summary::-webkit-details-marker {
+  display: none;
+}
+
+.job-create-section--optional > summary::after {
+  margin-left: auto;
+  color: var(--color-brand);
+  content: '+';
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.job-create-section--optional[open] > summary {
+  margin-bottom: var(--space-5);
+}
+
+.job-create-section--optional[open] > summary::after {
+  content: '−';
+}
+
+.job-create-section__optional-body {
+  padding-top: var(--space-2);
+}
+
 .job-create-section__heading p {
   margin-top: var(--space-1);
   color: var(--color-text-secondary);
@@ -266,6 +304,12 @@ function emptyForm(): JobCreateForm {
   color: var(--color-brand-strong);
   font-size: var(--font-size-xs);
   font-weight: 800;
+}
+
+.job-create-section--optional .job-create-section__index {
+  width: auto;
+  min-width: 2.75rem;
+  padding-inline: 0.5rem;
 }
 
 .job-create-grid {

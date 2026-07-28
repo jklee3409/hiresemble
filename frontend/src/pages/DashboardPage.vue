@@ -16,7 +16,7 @@ const quickActions = [
     step: '01',
     title: '내 경험 정리하기',
     description: '기본 정보와 학력, 경력을 한 번 정리해 여러 지원에 활용해요.',
-    action: '내 프로필 열기',
+    action: '지원 정보 정리하기',
   },
   {
     to: '/documents',
@@ -124,11 +124,20 @@ const quickActions = [
 }
 
 .dashboard-welcome :deep(.page-title) {
-  max-width: 38rem;
-  font-size: clamp(2rem, 4vw, 3.75rem);
+  max-width: none;
+  font-size: clamp(2rem, 3.4vw, 3.75rem);
   font-weight: 820;
   line-height: 1.1;
   letter-spacing: -0.055em;
+  overflow-wrap: normal;
+  text-wrap: balance;
+  word-break: keep-all;
+}
+
+@media (min-width: 480px) {
+  .dashboard-welcome :deep(.page-title) {
+    white-space: nowrap;
+  }
 }
 
 .dashboard-signal {
@@ -329,6 +338,17 @@ const quickActions = [
 
   .dashboard-action-item:not(:last-child)::before {
     bottom: -1.25rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .dashboard-welcome :deep(.page-title) {
+    max-width: 20rem;
+    font-size: clamp(2.125rem, 9.5vw, 2.5rem);
+  }
+
+  .dashboard-welcome :deep(.page-description) {
+    max-width: 15rem;
   }
 }
 </style>

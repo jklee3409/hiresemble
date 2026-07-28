@@ -195,73 +195,76 @@ function extractionTone(
       </button>
     </div>
 
-    <form class="filter-toolbar job-filters" @submit.prevent="applyFilters">
-      <label class="field job-filters__search">
-        <span class="field__label">회사·직무 검색</span>
-        <input
-          v-model="search"
-          type="search"
-          maxlength="200"
-          class="control control--compact"
-          placeholder="회사명, 공고 제목, 직무명"
-        />
-      </label>
-      <label class="field">
-        <span class="field__label">공고 불러오기 상태</span>
-        <select v-model="extractionStatus" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="status in JOB_EXTRACTION_STATUSES" :key="status" :value="status">
-            {{ JOB_EXTRACTION_STATUS_LABELS[status] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">정렬</span>
-        <select :value="filters.sort" class="control control--compact" @change="updateSort">
-          <option value="createdAt,desc">최근 등록순</option>
-          <option value="deadlineAt,asc">마감 임박순</option>
-          <option value="updatedAt,desc">최근 수정순</option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">마감 시작</span>
-        <input
-          v-model="deadlineFrom"
-          type="date"
-          class="control control--compact"
-          :disabled="deadlineWithinDays !== ''"
-        />
-      </label>
-      <label class="field">
-        <span class="field__label">마감 종료</span>
-        <input
-          v-model="deadlineTo"
-          type="date"
-          class="control control--compact"
-          :disabled="deadlineWithinDays !== ''"
-        />
-      </label>
-      <label class="field">
-        <span class="field__label">마감 임박</span>
-        <select
-          v-model="deadlineWithinDays"
-          class="control control--compact"
-          :disabled="deadlineFrom !== '' || deadlineTo !== ''"
-        >
-          <option value="">사용 안 함</option>
-          <option value="3">3일 이내</option>
-          <option value="7">7일 이내</option>
-          <option value="14">14일 이내</option>
-          <option value="30">30일 이내</option>
-        </select>
-      </label>
-      <div class="job-filters__actions">
-        <button type="submit" class="button button--primary button--compact">필터 적용</button>
-        <button type="button" class="button button--ghost button--compact" @click="clearDeadline">
-          마감 초기화
-        </button>
-      </div>
-    </form>
+    <details class="filter-disclosure jobs-page__filters" open>
+      <summary>공고 검색·필터</summary>
+      <form class="filter-toolbar job-filters" @submit.prevent="applyFilters">
+        <label class="field job-filters__search">
+          <span class="field__label">회사·직무 검색</span>
+          <input
+            v-model="search"
+            type="search"
+            maxlength="200"
+            class="control control--compact"
+            placeholder="회사명, 공고 제목, 직무명"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">공고 불러오기 상태</span>
+          <select v-model="extractionStatus" class="control control--compact">
+            <option value="">전체</option>
+            <option v-for="status in JOB_EXTRACTION_STATUSES" :key="status" :value="status">
+              {{ JOB_EXTRACTION_STATUS_LABELS[status] }}
+            </option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">정렬</span>
+          <select :value="filters.sort" class="control control--compact" @change="updateSort">
+            <option value="createdAt,desc">최근 등록순</option>
+            <option value="deadlineAt,asc">마감 임박순</option>
+            <option value="updatedAt,desc">최근 수정순</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">마감 시작</span>
+          <input
+            v-model="deadlineFrom"
+            type="date"
+            class="control control--compact"
+            :disabled="deadlineWithinDays !== ''"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">마감 종료</span>
+          <input
+            v-model="deadlineTo"
+            type="date"
+            class="control control--compact"
+            :disabled="deadlineWithinDays !== ''"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">마감 임박</span>
+          <select
+            v-model="deadlineWithinDays"
+            class="control control--compact"
+            :disabled="deadlineFrom !== '' || deadlineTo !== ''"
+          >
+            <option value="">사용 안 함</option>
+            <option value="3">3일 이내</option>
+            <option value="7">7일 이내</option>
+            <option value="14">14일 이내</option>
+            <option value="30">30일 이내</option>
+          </select>
+        </label>
+        <div class="job-filters__actions">
+          <button type="submit" class="button button--primary button--compact">필터 적용</button>
+          <button type="button" class="button button--ghost button--compact" @click="clearDeadline">
+            마감 초기화
+          </button>
+        </div>
+      </form>
+    </details>
 
     <p v-if="message" class="alert alert--success jobs-page__message" role="status">
       {{ message }}
@@ -315,16 +318,17 @@ function extractionTone(
             <p v-if="job.title && job.positionName" class="job-row__position">
               직무: {{ job.positionName }}
             </p>
+            <p class="job-row__deadline">마감 {{ formatJobInstant(job.deadlineAt) }}</p>
             <div class="job-row__statuses">
               <StatusBadge
                 data-testid="job-business-status"
-                prefix="업무"
+                prefix="지원"
                 :label="JOB_STATUS_LABELS[job.status]"
                 :tone="businessTone(job.status)"
               />
               <StatusBadge
                 data-testid="job-extraction-status"
-                prefix="추출"
+                prefix="공고"
                 :label="JOB_EXTRACTION_STATUS_LABELS[job.extractionStatus]"
                 :tone="extractionTone(job.extractionStatus)"
               />
@@ -334,7 +338,6 @@ function extractionTone(
                 tone="success"
               />
             </div>
-            <p class="job-row__deadline">마감 {{ formatJobInstant(job.deadlineAt) }}</p>
           </div>
           <label class="field job-row__status-control">
             <span class="field__label">상태 변경</span>
@@ -366,7 +369,7 @@ function extractionTone(
 
 <style scoped>
 .job-tabs,
-.job-filters,
+.jobs-page__filters,
 .jobs-page__message,
 .jobs-page__state,
 .job-list {
@@ -384,7 +387,7 @@ function extractionTone(
 }
 
 .job-tab {
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0 var(--space-4);
   border-radius: calc(var(--radius-sm) - 2px);
   color: var(--color-text-secondary);
@@ -407,6 +410,11 @@ function extractionTone(
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: end;
+  gap: var(--space-3);
+}
+
+.jobs-page__filters > .job-filters {
+  margin-top: var(--space-5);
 }
 
 .job-filters__search {

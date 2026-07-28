@@ -1,8 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
+import ProfileSectionActions from '@/features/profile/ProfileSectionActions.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { useDocumentListQuery } from '@/features/documents/queries'
 import { isVersionConflict } from '@/features/profile/conflict'
@@ -22,6 +23,7 @@ import {
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
+import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import type {
   AwardCreateRequest,
   AwardDto,
@@ -144,7 +146,11 @@ async function save(): Promise<void> {
   generalError.value = ''
   const validation = validateCurrentForm()
   fieldErrors.value = validation.fieldErrors
-  if (validation.data === null) return
+  if (validation.data === null) {
+    await nextTick()
+    focusFirstInvalidControl()
+    return
+  }
 
   try {
     const saved = await saveMutation.mutateAsync({
@@ -636,474 +642,416 @@ const resourceLabels: Record<
 </script>
 
 <template>
-  <section class="structured-profile app-page" :aria-labelledby="`${kind}-heading`">
+  <section
+    class="structured-profile app-page profile-workspace-shell"
+    :aria-labelledby="`${kind}-heading`"
+  >
     <ProfileTabs />
-    <PageHeader
-      :heading-id="`${kind}-heading`"
-      :title="title"
-      :description="description"
-      eyebrow="나의 경험"
-    >
-      <template #actions>
-        <button type="button" class="button button--primary" @click="openCreate">
-          {{ addLabel }}
-        </button>
-      </template>
-    </PageHeader>
-
-    <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
-      지금 이용 중인 계정에 남아 있는 자료만 연결할 수 있어요.
-    </p>
-
-    <div class="filter-toolbar structured-profile__toolbar">
-      <label class="field field--inline" :for="`${kind}-sort`">
-        <span class="field__label">정렬</span>
-        <select
-          :id="`${kind}-sort`"
-          v-model="sort"
-          class="control control--compact"
-          @change="onSortChange"
-        >
-          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
-    </div>
-
-    <p v-if="message" class="alert alert--success structured-profile__message" role="status">
-      {{ message }}
-    </p>
-    <p
-      v-if="generalError && !isFormOpen"
-      class="alert alert--danger structured-profile__message"
-      role="alert"
-    >
-      {{ generalError }}
-    </p>
-
-    <section
-      v-if="isFormOpen"
-      class="structured-editor section-surface"
-      role="region"
-      :aria-label="editingId ? `${title} 수정` : `${title} 추가`"
-    >
-      <div class="structured-editor__header">
-        <div>
-          <p class="section-kicker">{{ editingId ? '등록 정보 수정' : '새 항목 등록' }}</p>
-          <h3 class="section-title">{{ editingId ? `${title} 수정` : addLabel }}</h3>
-        </div>
-        <button type="button" class="button button--ghost button--compact" @click="closeForm">
-          닫기
-        </button>
-      </div>
-
-      <VersionConflictPanel
-        v-if="conflict"
-        class="mt-4"
-        :draft="conflict.draft"
-        :latest="conflict.latest"
-        :fields="conflictFields"
-        @cancel="cancelConflict"
-        @reapply="reapplyConflict"
-      />
-
-      <form class="structured-form" novalidate @submit.prevent="save">
-        <template v-if="kind === 'education'">
-          <label class="text-sm font-medium"
-            >학교명<input
-              id="education-schoolName"
-              v-model="form.schoolName"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-            /><span v-if="fieldErrors.schoolName" class="mt-1 block text-red-700">{{
-              fieldErrors.schoolName
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >전공<input
-              v-model="form.major"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-          /></label>
-          <label class="text-sm font-medium"
-            >학위<input
-              v-model="form.degree"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="100"
-          /></label>
-          <label class="text-sm font-medium"
-            >재학 상태<select
-              v-model="form.educationStatus"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-            >
-              <option value="ENROLLED">재학</option>
-              <option value="LEAVE_OF_ABSENCE">휴학</option>
-              <option value="EXPECTED_GRADUATION">졸업 예정</option>
-              <option value="GRADUATED">졸업</option>
-              <option value="WITHDRAWN">중퇴</option>
-            </select></label
-          >
-          <label class="text-sm font-medium"
-            >입학일<input
-              v-model="form.admissionDate"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-          /></label>
-          <label class="text-sm font-medium"
-            >졸업(예정)일<input
-              v-model="form.graduationDate"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-            /><span v-if="fieldErrors.graduationDate" class="mt-1 block text-red-700">{{
-              fieldErrors.graduationDate
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >학점<input
-              v-model="form.gpa"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              inputmode="decimal"
-            /><span v-if="fieldErrors.gpa" class="mt-1 block text-red-700">{{
-              fieldErrors.gpa
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >기준 학점<input
-              v-model="form.gpaScale"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              inputmode="decimal"
-            /><span v-if="fieldErrors.gpaScale" class="mt-1 block text-red-700">{{
-              fieldErrors.gpaScale
-            }}</span></label
-          >
-          <label class="flex items-center gap-2 text-sm font-medium"
-            ><input v-model="form.isPrimary" type="checkbox" />먼저 보여 줄 학력으로 설정</label
-          >
-          <label class="md:col-span-2 text-sm font-medium"
-            >설명<textarea
-              v-model="form.description"
-              class="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="5000"
-            />
-          </label>
+    <div class="profile-workspace-shell__content">
+      <PageHeader
+        :heading-id="`${kind}-heading`"
+        :title="title"
+        :description="description"
+        eyebrow="내 지원 정보"
+      >
+        <template #actions>
+          <button type="button" class="button button--primary" @click="openCreate">
+            {{ addLabel }}
+          </button>
         </template>
+      </PageHeader>
 
-        <template v-else-if="kind === 'certification'">
-          <label class="text-sm font-medium"
-            >자격증명<input
-              id="certification-name"
-              v-model="form.name"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-            /><span v-if="fieldErrors.name" class="mt-1 block text-red-700">{{
-              fieldErrors.name
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >발급 기관<input
-              v-model="form.issuer"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-          /></label>
-          <label class="text-sm font-medium"
-            >자격 번호<input
-              v-model="form.credentialNumber"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-          /></label>
-          <label class="text-sm font-medium"
-            >취득일<input
-              v-model="form.acquiredDate"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-          /></label>
-          <label class="text-sm font-medium"
-            >만료일<input
-              v-model="form.expiresAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-            /><span v-if="fieldErrors.expiresAt" class="mt-1 block text-red-700">{{
-              fieldErrors.expiresAt
-            }}</span></label
-          >
-          <label class="md:col-span-2 text-sm font-medium"
-            >설명<textarea
-              v-model="form.description"
-              class="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="5000"
-            />
-          </label>
-        </template>
+      <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
+        지금 이용 중인 계정에 남아 있는 자료만 연결할 수 있어요.
+      </p>
 
-        <template v-else-if="kind === 'language'">
-          <label class="text-sm font-medium"
-            >시험명<input
-              id="language-testName"
-              v-model="form.testName"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="100"
-            /><span v-if="fieldErrors.testName" class="mt-1 block text-red-700">{{
-              fieldErrors.testName
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >점수<input
-              v-model="form.score"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="100"
-            /><span v-if="fieldErrors.score" class="mt-1 block text-red-700">{{
-              fieldErrors.score
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >등급<input
-              v-model="form.grade"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="100"
-          /></label>
-          <label class="text-sm font-medium"
-            >응시일<input
-              v-model="form.testedAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-          /></label>
-          <label class="text-sm font-medium"
-            >만료일<input
-              v-model="form.expiresAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-            /><span v-if="fieldErrors.expiresAt" class="mt-1 block text-red-700">{{
-              fieldErrors.expiresAt
-            }}</span></label
-          >
-        </template>
-
-        <template v-else-if="kind === 'award'">
-          <label class="text-sm font-medium"
-            >수상명<input
-              id="award-name"
-              v-model="form.name"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-            /><span v-if="fieldErrors.name" class="mt-1 block text-red-700">{{
-              fieldErrors.name
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >주최 기관<input
-              v-model="form.organizer"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-          /></label>
-          <label class="text-sm font-medium"
-            >수상일<input
-              v-model="form.awardedAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-          /></label>
-          <label class="md:col-span-2 text-sm font-medium"
-            >설명<textarea
-              v-model="form.description"
-              class="mt-1 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="5000"
-            />
-          </label>
-        </template>
-
-        <template v-else>
-          <label class="text-sm font-medium"
-            >회사·기관<input
-              id="career-organization"
-              v-model="form.organization"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-            /><span v-if="fieldErrors.organization" class="mt-1 block text-red-700">{{
-              fieldErrors.organization
-            }}</span></label
-          >
-          <label class="text-sm font-medium"
-            >직무<input
-              v-model="form.position"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="200"
-          /></label>
-          <label class="text-sm font-medium"
-            >고용 형태<input
-              v-model="form.employmentType"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="50"
-          /></label>
-          <label class="text-sm font-medium"
-            >시작일<input
-              v-model="form.startedAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              type="date"
-          /></label>
-          <label class="text-sm font-medium"
-            >종료일<input
-              v-model="form.endedAt"
-              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
-              type="date"
-              :disabled="form.isCurrent"
-            /><span v-if="fieldErrors.endedAt" class="mt-1 block text-red-700">{{
-              fieldErrors.endedAt
-            }}</span></label
-          >
-          <label class="flex items-center gap-2 text-sm font-medium"
-            ><input
-              v-model="form.isCurrent"
-              type="checkbox"
-              @change="form.isCurrent && (form.endedAt = '')"
-            />현재 재직 중</label
-          >
-          <label class="md:col-span-2 text-sm font-medium"
-            >역할<textarea
-              v-model="form.responsibilities"
-              class="mt-1 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="20000"
-            />
-          </label>
-          <label class="md:col-span-2 text-sm font-medium"
-            >성과<textarea
-              v-model="form.achievements"
-              class="mt-1 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2"
-              maxlength="20000"
-            />
-          </label>
-        </template>
-
-        <label v-if="documentLinkable" class="md:col-span-2 text-sm font-medium">
-          증빙 문서
+      <div class="filter-toolbar structured-profile__toolbar">
+        <label class="field field--inline" :for="`${kind}-sort`">
+          <span class="field__label">정렬</span>
           <select
-            :id="`${kind}-evidenceDocumentId`"
-            v-model="form.evidenceDocumentId"
-            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-            :disabled="selectableDocuments.isPending.value || selectableDocuments.isError.value"
+            :id="`${kind}-sort`"
+            v-model="sort"
+            class="control control--compact"
+            @change="onSortChange"
           >
-            <option value="">연결하지 않음</option>
-            <option
-              v-for="candidate in selectableDocuments.data.value?.items"
-              :key="candidate.id"
-              :value="candidate.id"
-            >
-              {{ candidate.displayName }}
+            <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
             </option>
           </select>
-          <span v-if="selectableDocuments.isError.value" class="mt-1 block text-red-700">
-            자료 목록을 불러오지 못했어요.
-          </span>
         </label>
+      </div>
 
-        <p v-if="generalError" class="alert alert--danger form-span" role="alert">
-          {{ generalError }}
-        </p>
-        <div class="form-actions form-span">
-          <button
-            type="submit"
-            class="button button--primary"
-            :disabled="saveMutation.isPending.value"
-          >
-            {{ saveMutation.isPending.value ? '저장 중…' : '저장' }}
-          </button>
-          <button type="button" class="button button--secondary" @click="closeForm">취소</button>
-        </div>
-      </form>
-    </section>
-
-    <StatePanel
-      v-if="resourceQuery.isPending.value"
-      class="structured-profile__state"
-      kind="loading"
-      :title="`${title} 목록을 불러오는 중…`"
-      description="저장된 항목을 확인하고 있어요."
-    />
-    <StatePanel
-      v-else-if="resourceQuery.isError.value"
-      class="structured-profile__state"
-      kind="error"
-      :title="`${title} 목록을 불러오지 못했어요.`"
-      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
-    >
-      <template #actions>
-        <button type="button" class="button button--secondary" @click="resourceQuery.refetch()">
-          다시 시도
-        </button>
-      </template>
-    </StatePanel>
-    <StatePanel
-      v-else-if="resourceQuery.data.value?.items.length === 0"
-      class="structured-profile__state"
-      kind="empty"
-      :title="`등록된 ${title} 항목이 없어요.`"
-      :description="`${title} 정보를 추가해 여러 지원에 활용해 보세요.`"
-    >
-      <template #actions>
-        <button type="button" class="button button--primary" @click="openCreate">
-          {{ addLabel }}
-        </button>
-      </template>
-    </StatePanel>
-    <ol
-      v-else
-      class="structured-list data-list"
-      :class="{ 'structured-list--timeline': kind === 'career' }"
-    >
-      <li
-        v-for="item in resourceQuery.data.value?.items"
-        :key="item.id"
-        class="structured-item data-card"
+      <p v-if="message" class="alert alert--success structured-profile__message" role="status">
+        {{ message }}
+      </p>
+      <p
+        v-if="generalError && !isFormOpen"
+        class="alert alert--danger structured-profile__message"
+        role="alert"
       >
-        <div class="structured-item__body">
-          <div class="structured-item__content">
-            <div class="structured-item__title">
-              <h3>{{ resourceTitle(kind, item) }}</h3>
-              <span
-                v-if="kind === 'education' && (item as EducationDto).isPrimary"
-                class="status-badge status-badge--brand"
-                >먼저 보여 줄 학력</span
-              >
-            </div>
-            <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">
-              {{ resourceSubtitle(kind, item) }}
-            </p>
-          </div>
-          <div class="structured-item__actions">
-            <button
-              v-if="kind === 'education' && !(item as EducationDto).isPrimary"
-              type="button"
-              class="button button--secondary button--compact"
-              @click="makePrimary(item as EducationDto)"
-            >
-              대표로 설정
-            </button>
-            <button
-              type="button"
-              class="button button--ghost button--compact"
-              @click="openEdit(item)"
-            >
-              수정
-            </button>
-            <button
-              type="button"
-              class="button button--danger button--compact"
-              :disabled="deleteMutation.isPending.value"
-              @click="remove(item)"
-            >
-              삭제
-            </button>
-          </div>
-        </div>
-      </li>
-    </ol>
+        {{ generalError }}
+      </p>
 
-    <PaginationNav
-      v-if="resourceQuery.data.value && resourceQuery.data.value.totalPages > 0"
-      :page="page"
-      :total-pages="resourceQuery.data.value.totalPages"
-      label="목록 페이지"
-      @change="page = $event"
-    />
+      <section
+        v-if="isFormOpen"
+        class="structured-editor section-surface"
+        role="region"
+        :aria-label="editingId ? `${title} 수정` : `${title} 추가`"
+      >
+        <div class="structured-editor__header">
+          <div>
+            <p class="section-kicker">{{ editingId ? '등록 정보 수정' : '새 항목 등록' }}</p>
+            <h3 class="section-title">{{ editingId ? `${title} 수정` : addLabel }}</h3>
+          </div>
+          <button type="button" class="button button--ghost button--compact" @click="closeForm">
+            닫기
+          </button>
+        </div>
+
+        <VersionConflictPanel
+          v-if="conflict"
+          class="mt-4"
+          :draft="conflict.draft"
+          :latest="conflict.latest"
+          :fields="conflictFields"
+          @cancel="cancelConflict"
+          @reapply="reapplyConflict"
+        />
+
+        <form class="structured-form" novalidate @submit.prevent="save">
+          <template v-if="kind === 'education'">
+            <label class="field"
+              >학교명<input
+                id="education-schoolName"
+                v-model="form.schoolName"
+                class="control"
+                maxlength="200"
+              /><span v-if="fieldErrors.schoolName" class="field-error">{{
+                fieldErrors.schoolName
+              }}</span></label
+            >
+            <label class="field"
+              >전공<input v-model="form.major" class="control" maxlength="200"
+            /></label>
+            <label class="field"
+              >학위<input v-model="form.degree" class="control" maxlength="100"
+            /></label>
+            <label class="field"
+              >재학 상태<select v-model="form.educationStatus" class="control">
+                <option value="ENROLLED">재학</option>
+                <option value="LEAVE_OF_ABSENCE">휴학</option>
+                <option value="EXPECTED_GRADUATION">졸업 예정</option>
+                <option value="GRADUATED">졸업</option>
+                <option value="WITHDRAWN">중퇴</option>
+              </select></label
+            >
+            <label class="field"
+              >입학일<input v-model="form.admissionDate" class="control" type="date"
+            /></label>
+            <label class="field"
+              >졸업(예정)일<input v-model="form.graduationDate" class="control" type="date" /><span
+                v-if="fieldErrors.graduationDate"
+                class="field-error"
+                >{{ fieldErrors.graduationDate }}</span
+              ></label
+            >
+            <label class="field"
+              >학점<input v-model="form.gpa" class="control" inputmode="decimal" /><span
+                v-if="fieldErrors.gpa"
+                class="field-error"
+                >{{ fieldErrors.gpa }}</span
+              ></label
+            >
+            <label class="field"
+              >기준 학점<input v-model="form.gpaScale" class="control" inputmode="decimal" /><span
+                v-if="fieldErrors.gpaScale"
+                class="field-error"
+                >{{ fieldErrors.gpaScale }}</span
+              ></label
+            >
+            <label class="check-row form-span"
+              ><input v-model="form.isPrimary" class="checkbox-control" type="checkbox" />먼저 보여
+              줄 학력으로 설정</label
+            >
+            <label class="field form-span"
+              >설명<textarea v-model="form.description" class="control min-h-24" maxlength="5000" />
+            </label>
+          </template>
+
+          <template v-else-if="kind === 'certification'">
+            <label class="field"
+              >자격증명<input
+                id="certification-name"
+                v-model="form.name"
+                class="control"
+                maxlength="200"
+              /><span v-if="fieldErrors.name" class="field-error">{{
+                fieldErrors.name
+              }}</span></label
+            >
+            <label class="field"
+              >발급 기관<input v-model="form.issuer" class="control" maxlength="200"
+            /></label>
+            <label class="field"
+              >자격 번호<input v-model="form.credentialNumber" class="control" maxlength="200"
+            /></label>
+            <label class="field"
+              >취득일<input v-model="form.acquiredDate" class="control" type="date"
+            /></label>
+            <label class="field"
+              >만료일<input v-model="form.expiresAt" class="control" type="date" /><span
+                v-if="fieldErrors.expiresAt"
+                class="field-error"
+                >{{ fieldErrors.expiresAt }}</span
+              ></label
+            >
+            <label class="field form-span"
+              >설명<textarea v-model="form.description" class="control min-h-24" maxlength="5000" />
+            </label>
+          </template>
+
+          <template v-else-if="kind === 'language'">
+            <label class="field"
+              >시험명<input
+                id="language-testName"
+                v-model="form.testName"
+                class="control"
+                maxlength="100"
+              /><span v-if="fieldErrors.testName" class="field-error">{{
+                fieldErrors.testName
+              }}</span></label
+            >
+            <label class="field"
+              >점수<input v-model="form.score" class="control" maxlength="100" /><span
+                v-if="fieldErrors.score"
+                class="field-error"
+                >{{ fieldErrors.score }}</span
+              ></label
+            >
+            <label class="field"
+              >등급<input v-model="form.grade" class="control" maxlength="100"
+            /></label>
+            <label class="field"
+              >응시일<input v-model="form.testedAt" class="control" type="date"
+            /></label>
+            <label class="field"
+              >만료일<input v-model="form.expiresAt" class="control" type="date" /><span
+                v-if="fieldErrors.expiresAt"
+                class="field-error"
+                >{{ fieldErrors.expiresAt }}</span
+              ></label
+            >
+          </template>
+
+          <template v-else-if="kind === 'award'">
+            <label class="field"
+              >수상명<input
+                id="award-name"
+                v-model="form.name"
+                class="control"
+                maxlength="200"
+              /><span v-if="fieldErrors.name" class="field-error">{{
+                fieldErrors.name
+              }}</span></label
+            >
+            <label class="field"
+              >주최 기관<input v-model="form.organizer" class="control" maxlength="200"
+            /></label>
+            <label class="field"
+              >수상일<input v-model="form.awardedAt" class="control" type="date"
+            /></label>
+            <label class="field form-span"
+              >설명<textarea v-model="form.description" class="control min-h-24" maxlength="5000" />
+            </label>
+          </template>
+
+          <template v-else>
+            <label class="field"
+              >회사·기관<input
+                id="career-organization"
+                v-model="form.organization"
+                class="control"
+                maxlength="200"
+              /><span v-if="fieldErrors.organization" class="field-error">{{
+                fieldErrors.organization
+              }}</span></label
+            >
+            <label class="field"
+              >직무<input v-model="form.position" class="control" maxlength="200"
+            /></label>
+            <label class="field"
+              >고용 형태<input v-model="form.employmentType" class="control" maxlength="50"
+            /></label>
+            <label class="field"
+              >시작일<input v-model="form.startedAt" class="control" type="date"
+            /></label>
+            <label class="field"
+              >종료일<input
+                v-model="form.endedAt"
+                class="control"
+                type="date"
+                :disabled="form.isCurrent"
+              /><span v-if="fieldErrors.endedAt" class="field-error">{{
+                fieldErrors.endedAt
+              }}</span></label
+            >
+            <label class="check-row form-span"
+              ><input
+                v-model="form.isCurrent"
+                class="checkbox-control"
+                type="checkbox"
+                @change="form.isCurrent && (form.endedAt = '')"
+              />현재 재직 중</label
+            >
+            <label class="field form-span"
+              >역할<textarea
+                v-model="form.responsibilities"
+                class="control min-h-28"
+                maxlength="20000"
+              />
+            </label>
+            <label class="field form-span"
+              >성과<textarea
+                v-model="form.achievements"
+                class="control min-h-28"
+                maxlength="20000"
+              />
+            </label>
+          </template>
+
+          <label v-if="documentLinkable" class="field form-span">
+            증빙 문서
+            <select
+              :id="`${kind}-evidenceDocumentId`"
+              v-model="form.evidenceDocumentId"
+              class="control"
+              :disabled="selectableDocuments.isPending.value || selectableDocuments.isError.value"
+            >
+              <option value="">연결하지 않음</option>
+              <option
+                v-for="candidate in selectableDocuments.data.value?.items"
+                :key="candidate.id"
+                :value="candidate.id"
+              >
+                {{ candidate.displayName }}
+              </option>
+            </select>
+            <span v-if="selectableDocuments.isError.value" class="field-error">
+              자료 목록을 불러오지 못했어요.
+            </span>
+          </label>
+
+          <p v-if="generalError" class="alert alert--danger form-span" role="alert">
+            {{ generalError }}
+          </p>
+          <div class="form-actions form-span">
+            <button
+              type="submit"
+              class="button button--primary"
+              :disabled="saveMutation.isPending.value"
+            >
+              {{ saveMutation.isPending.value ? '저장 중…' : '저장' }}
+            </button>
+            <button type="button" class="button button--secondary" @click="closeForm">취소</button>
+          </div>
+        </form>
+      </section>
+
+      <StatePanel
+        v-if="resourceQuery.isPending.value"
+        class="structured-profile__state"
+        kind="loading"
+        :title="`${title} 목록을 불러오는 중…`"
+        description="저장된 항목을 확인하고 있어요."
+      />
+      <StatePanel
+        v-else-if="resourceQuery.isError.value"
+        class="structured-profile__state"
+        kind="error"
+        :title="`${title} 목록을 불러오지 못했어요.`"
+        description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+      >
+        <template #actions>
+          <button type="button" class="button button--secondary" @click="resourceQuery.refetch()">
+            다시 시도
+          </button>
+        </template>
+      </StatePanel>
+      <StatePanel
+        v-else-if="resourceQuery.data.value?.items.length === 0"
+        class="structured-profile__state"
+        kind="empty"
+        :title="`등록된 ${title} 항목이 없어요.`"
+        :description="`${title} 정보를 추가해 여러 지원에 활용해 보세요.`"
+      >
+        <template #actions>
+          <button type="button" class="button button--primary" @click="openCreate">
+            {{ addLabel }}
+          </button>
+        </template>
+      </StatePanel>
+      <ol
+        v-else
+        class="structured-list data-list"
+        :class="{ 'structured-list--timeline': kind === 'career' }"
+      >
+        <li
+          v-for="item in resourceQuery.data.value?.items"
+          :key="item.id"
+          class="structured-item data-card"
+        >
+          <div class="structured-item__body">
+            <div class="structured-item__content">
+              <div class="structured-item__title">
+                <h3>{{ resourceTitle(kind, item) }}</h3>
+                <span
+                  v-if="kind === 'education' && (item as EducationDto).isPrimary"
+                  class="status-badge status-badge--brand"
+                  >먼저 보여 줄 학력</span
+                >
+              </div>
+              <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">
+                {{ resourceSubtitle(kind, item) }}
+              </p>
+            </div>
+            <div class="structured-item__actions">
+              <button
+                v-if="kind === 'education' && !(item as EducationDto).isPrimary"
+                type="button"
+                class="button button--secondary button--compact"
+                @click="makePrimary(item as EducationDto)"
+              >
+                대표로 설정
+              </button>
+              <button
+                type="button"
+                class="button button--ghost button--compact"
+                @click="openEdit(item)"
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                class="button button--danger button--compact"
+                :disabled="deleteMutation.isPending.value"
+                @click="remove(item)"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </li>
+      </ol>
+
+      <PaginationNav
+        v-if="resourceQuery.data.value && resourceQuery.data.value.totalPages > 0"
+        :page="page"
+        :total-pages="resourceQuery.data.value.totalPages"
+        label="목록 페이지"
+        @change="page = $event"
+      />
+      <ProfileSectionActions v-if="!isFormOpen" />
+    </div>
   </section>
 </template>
 

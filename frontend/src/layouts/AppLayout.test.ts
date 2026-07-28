@@ -27,11 +27,11 @@ describe('AppLayout', () => {
     const { wrapper } = await mountLayout('/profile/basic')
 
     const activeDesktopLink = wrapper.get('.sidebar-nav__link[aria-current="page"]')
-    expect(activeDesktopLink.text()).toBe('내 프로필')
-    expect(wrapper.get('.workspace-title h1').text()).toBe('내 프로필')
+    expect(activeDesktopLink.text()).toBe('내 지원 정보')
+    expect(wrapper.get('.workspace-title h1').text()).toBe('내 지원 정보')
     expect(wrapper.findAll('.sidebar-nav__link').map((link) => link.text())).toEqual([
-      '대시보드',
-      '내 프로필',
+      '오늘의 준비',
+      '내 지원 정보',
       '이력서·자료',
       '관심 공고',
       '분석 기록',
@@ -95,7 +95,7 @@ async function mountLayout(path: string) {
           {
             path: 'profile/basic',
             component: ProfilePage,
-            meta: { title: '내 프로필' },
+            meta: { title: '내 지원 정보' },
           },
           { path: 'documents', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },

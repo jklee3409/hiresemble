@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 const recoveryRoute = computed(() => (authStore.isAuthenticated ? '/dashboard' : '/login'))
 const recoveryLabel = computed(() =>
-  authStore.isAuthenticated ? '대시보드로 이동' : '로그인으로 이동',
+  authStore.isAuthenticated ? '오늘의 준비로 돌아가기' : '로그인으로 이동',
 )
 </script>
 
