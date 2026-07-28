@@ -3,12 +3,13 @@ package com.hiresemble.common.idempotency;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "hiresemble.idempotency")
-public class IdempotencyProperties {
+public class IdempotencyProperties implements InitializingBean {
 
     private int currentHashKeyVersion = 1;
     private Map<Integer, String> hmacKeys = new HashMap<>();
@@ -45,5 +46,10 @@ public class IdempotencyProperties {
                     "An idempotency HMAC key must be configured before an idempotent endpoint is enabled");
         }
         return key;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        keyFor(currentHashKeyVersion);
     }
 }

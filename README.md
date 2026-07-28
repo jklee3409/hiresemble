@@ -79,7 +79,11 @@ sh ./gradlew bootRun
 
 기본 포트는 `8080`, Actuator health 경로는 `/actuator/health`입니다. 공개 API는 인증 5개, 프로필·direct evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations/34 paths이며 Spring Session Cookie와 CSRF를 사용합니다. PostgreSQL schema는 기존 V1~~V5를 보존한 Flyway V1~~V6가 관리합니다.
 
-`.env.example`의 `IDEMPOTENCY_HMAC_KEY`는 의도적으로 비어 있습니다. Document와 Job 생성처럼 멱등성이 필요한 mutation을 실행하려면 안전한 versioned 운영 secret을 설정해야 합니다.
+Document와 Job 생성처럼 멱등성이 필요한 mutation을 로컬에서 바로 검증할 수 있도록
+`.env.example`은 명시적인 `local` profile과 개발 전용 HMAC 키를 제공합니다. profile을 지정하지
+않거나 비로컬 profile에서 `IDEMPOTENCY_HMAC_KEY`가 비어 있으면 애플리케이션은 시작되지 않습니다.
+운영 환경에서는 `local` profile을 사용하지 말고 충분한 엔트로피의 versioned secret을 주입해야
+합니다.
 
 유료 외부 호출 없이 로컬 부팅과 테스트가 가능하도록 실제 AI 모델과 VectorStore 자동 구성은 기본적으로 꺼져 있습니다. P5 URL fetch와 AI 추출 테스트도 Fake gateway만 사용합니다. P6 이후 실제 연동을 별도로 승인하고 구성할 때만 `.env`에서 API 키와 provider 값을 명시적으로 활성화합니다.
 
