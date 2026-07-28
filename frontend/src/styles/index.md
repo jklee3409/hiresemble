@@ -16,8 +16,8 @@
 
 ## 구성 요소 역할
 
-- `main.css`는 Tailwind utility 생성과 함께 electric cobalt·warm off-white·deep ink 기반 canvas·surface·text·border·brand·semantic color, radius·shadow·content width·typography token을 선언한다.
-- 최소 reset, focus ring, reduced motion, button·control·alert·status·skeleton·progress·section reveal·pagination처럼 여러 화면이 공유하는 pattern만 전역으로 제공한다.
+- `main.css`는 Tailwind utility 생성과 함께 `#3157ff` Hiresemble Blue scale, neutral canvas·surface·ink·muted·border, semantic color, 제한된 radius·shadow·content width·typography token을 선언한다.
+- 최소 reset, focus ring, reduced motion, 44px button·input·select·checkbox·radio·switch·date·file, alert·status·skeleton·progress·section reveal·pagination처럼 여러 화면이 공유하는 pattern만 전역으로 제공한다.
 - PrimeVue dependency는 유지하지만 현재 component 사용처가 없어 Aura theme을 전역 초기화하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

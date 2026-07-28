@@ -10,7 +10,8 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 - [`queryKeys.ts`](queryKeys.ts): 사용자 ID가 포함된 profile query key factory
 - [`conflict.ts`](conflict.ts): 미저장 값과 최신 snapshot의 field별 비교·재적용
 - [`evidenceMetadata.ts`](evidenceMetadata.ts): 경험 정보 primitive metadata를 key 손실 없이 항목형 편집 값으로 변환
-- [`ProfileTabs.vue`](ProfileTabs.vue): 구현된 profile route navigation
+- [`ProfileTabs.vue`](ProfileTabs.vue): desktop 세로 outline과 mobile selector를 제공하는 Career Profile Workspace navigation
+- [`ProfileSectionActions.vue`](ProfileSectionActions.vue): 저장 영역과 분리된 이전·다음 profile section 이동
 - [`StringListInput.vue`](StringListInput.vue): 최대 10개 canonical 문자열 입력
 - [`preferenceOptions.ts`](preferenceOptions.ts): 한국 사용자용 희망 직무·지역 빠른 선택과 포함 검색 후보
 - [`VersionConflictPanel.vue`](VersionConflictPanel.vue): 취소·최신값·field 재적용·다시 저장 UI
@@ -20,6 +21,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 ## 구성 요소 역할
 
 - 서버 상태는 page의 Vue Query가 소유하고 이 영역은 재사용 가능한 profile 규칙과 표현만 제공한다.
+- 모든 기존 profile route deep link와 browser history를 유지하며 가상의 section 완료 count는 만들지 않는다.
 - query key는 모든 profile cache에 인증 사용자 ID를 포함해 사용자 전환 경계를 유지한다.
 
 ## 다른 디렉터리와의 의존 관계

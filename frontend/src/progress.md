@@ -7,6 +7,20 @@
 - P1 auth·Session부터 P5 `features/jobs`, API·page·lazy route 구현·테스트가 있다.
 - 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job 화면과 공용 제품 UI 기반이 있으며 Dashboard 집계·P6 분석·AI 설정 기능은 아직 없다.
 
+## [2026-07-28] Session Summary (Hiresemble Blue UI와 통합 프로필 Source 적용)
+
+- What was done:
+  - 전역 control token, Career Profile Workspace navigation, mobile filter disclosure, 첫 invalid focus와 사용자 행동 중심 CTA를 현재 Vue source 전반에 적용했다.
+  - 분석 상세에서 model·quality tier·비용 예약값을 숨기고 진행·시간·예상 비용만 표시했다.
+- Key decisions:
+  - shared API·store·query·SSE source는 수정하지 않고 page·layout·presentation 책임 안에서 변경했다.
+- Issues encountered:
+  - profile navigation 도입으로 기존 generic select test가 mobile selector를 선택해 의미가 분명한 selector로 보정했다.
+- Validation:
+  - Vue typecheck, 39 test files/149 tests, production build와 fixture browser 5 tests가 통과했다.
+- Next steps:
+  - 실제 Backend actual test 실패 원인은 Frontend source 범위 밖 실행 환경에서 재확인한다.
+
 ## [2026-07-28] Session Summary (현재 Vue 화면 B2C 언어·브랜드 적용)
 
 - What was done:

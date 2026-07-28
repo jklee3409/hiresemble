@@ -4,6 +4,33 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-28] Session Summary (Profile outline 인접 상태 간격 보정)
+
+- What was done:
+  - desktop section outline에 행 간격과 내부 padding을 추가하고 active surface를 한 단계 선명하게 조정해 선택 항목과 인접 hover 영역이 맞닿지 않게 했다.
+- Key decisions:
+  - route deep link, `aria-current`, mobile native selector와 keyboard semantics는 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 1440px에서 기본 정보 active·학력 hover를 동시에 캡처해 분리된 상태 영역을 확인했고 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-28] Session Summary (Career Profile Workspace navigation)
+
+- What was done:
+  - 가로 tab을 제거하고 desktop sticky vertical outline, mobile native section selector와 이전·다음 action을 추가했다.
+  - 기본 정보 저장 성공 후에만 학력으로 이동하는 연속 작성 action과 deep link test를 추가했다.
+- Key decisions:
+  - 7개 기존 route·browser history·409 보존을 유지하고 실제 데이터가 없는 section 완료 count는 만들지 않았다.
+- Issues encountered:
+  - mobile selector가 기존 evidence filter test의 첫 select 가정을 깨뜨려 filter 영역 selector로 정확히 한정했다.
+- Validation:
+  - workspace component, 저장 후 다음 section, 1024·390px navigation·overflow test가 통과했다.
+- Next steps:
+  - 대외활동 신규 등록은 Backend/API 생성 계약이 마련될 때 별도 수직 기능으로 구현한다.
+
 ## [2026-07-28] Session Summary (한국형 희망 조건 추천 입력)
 
 - What was done:

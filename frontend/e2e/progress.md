@@ -10,6 +10,22 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-07-28] Session Summary (통합 프로필·Viewport 시각 회귀)
+
+- What was done:
+  - UI shell fixture에 desktop profile outline, mobile selector deep link와 저장 후 다음 section 흐름을 추가했다.
+  - 1440×1000, 1024×900, 768×1024, 390×844에서 인증·onboarding·dashboard·profile·documents·jobs·분석 기록·404를 캡처했다.
+- Key decisions:
+  - 생성 screenshot은 `output/playwright/after` 로컬 artifact로 유지하고 테스트 source에는 안정적인 role·label selector만 남겼다.
+- Issues encountered:
+  - 실제 P4 E2E는 Backend upload 일반 오류로 첫 test가 240초 timeout됐고 나머지 직렬 test 3개는 실행되지 않았다.
+  - Profile actual은 구 온보딩 selector를 한 차례 동기화한 뒤 `100%` text와 progressbar strict locator 중복으로 재검증도 실패했다.
+  - P5 actual은 필수 success/empty fixture URL이 없어 실행하지 않았다.
+- Validation:
+  - fixture `ui-shell` 3/3·`agent-runs` 2/2와 네 viewport overflow 0건; actual Profile 0/1·P4 0/4 완료.
+- Next steps:
+  - Profile strict locator를 한정하고 Backend 재시작 후 P4 4개, fixture URL 준비 후 P5 5개를 재실행한다.
+
 ## [2026-07-28] Session Summary (추천 입력·자료 등록 반응형 회귀)
 
 - What was done:

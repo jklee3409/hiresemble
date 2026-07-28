@@ -12,6 +12,7 @@
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
 - [`PaginationNav.vue`](PaginationNav.vue): 이전·현재·다음 공용 pagination
+- [`formFocus.ts`](formFocus.ts): 검증 실패 뒤 첫 invalid control로 focus를 옮기는 공용 helper
 - [`uiComponents.test.ts`](uiComponents.test.ts): text status와 loading·empty·error 접근성 검증
 - [`progress.md`](progress.md): 공용 UI 구현·검증 이력
 
@@ -21,6 +22,7 @@
 - 상태는 색상에만 의존하지 않고 visible text와 적절한 `role`, `aria-live`, navigation label을 제공한다.
 - `AppIcon`은 emoji나 외부 icon dependency 없이 현재 제품에서 실제 사용하는 최소 SVG path만 제공한다.
 - `BrandMark`는 full·compact·inverse variant를 제공하고 실제 link의 accessible name은 사용하는 layout이 소유한다.
+- button·input·select·checkbox·radio·switch·date·file의 시각 상태는 공용 style token을 사용하고 native semantics와 label 연결은 각 component·page가 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 

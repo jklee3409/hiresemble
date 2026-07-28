@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
 
+## [2026-07-28] Session Summary (분석 상세 내부 실행 정보 제거)
+
+- What was done:
+  - 상세 화면에서 요청 quality, model tier와 예약 비용을 제거하고 진행률·시간·예상 사용 비용·다음 행동만 남겼다.
+  - 목록 filter는 mobile disclosure로 정리하되 workflow/status URL query 계약은 유지했다.
+- Key decisions:
+  - DTO 필드는 그대로 소비하되 사용자 화면에는 provider/model/prompt/hash와 내부 비용 예약 정보를 표시하지 않는다.
+- Issues encountered:
+  - 기존 component test의 model label assertion을 내부 정보 미노출 assertion으로 교체했다.
+- Validation:
+  - Agent Run component test와 reconnect·polling·retry·cancel fixture Playwright 2/2가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (Agent Run 사용자 용어를 분석 기록으로 전환)
 
 - What was done:

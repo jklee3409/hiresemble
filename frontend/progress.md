@@ -5,7 +5,39 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
 - `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 37 files/145 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+- Vitest 39 files/149 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-28] Session Summary (첨부 화면 기반 반응형·정보 계층 보정)
+
+- What was done:
+  - 인증 shell의 최대 콘텐츠 폭, Dashboard hero 제목의 반응형 줄바꿈, profile outline의 인접 상태 간격을 보정했다.
+  - 기본 정보 form의 두 정보군을 명확히 분리하고 안내 surface, 자료·공고 filter grid 간격을 Hiresemble Blue 체계에 맞췄다.
+- Key decisions:
+  - 기능 계약과 selector는 유지하고 기존 공용 token 및 scoped CSS만 활용해 dependency를 추가하지 않았다.
+- Issues encountered:
+  - 390px 첫 시각 검수에서 Dashboard 제목의 과도한 줄바꿈을 발견해 의미 단위 두 줄로 다시 조정했다.
+- Validation:
+  - `corepack pnpm check`: ESLint·Prettier·TypeScript·Vitest 39 files/149 tests·production build 통과.
+  - fixture Chromium UI shell 3/3과 2500·1600·1574·1440·390px 시각 검수, 390px horizontal overflow 검사가 통과했다.
+- Next steps:
+  - 실제 Backend가 필요한 profile·document·job cross-stack E2E는 이번 시각 보정에서 재실행하지 않았다.
+
+## [2026-07-28] Session Summary (전체 Frontend Career Workspace·Control System 재설계)
+
+- What was done:
+  - 모든 현재 route의 navigation, form, filter, loading·empty·error·status 표현을 `#3157ff` Hiresemble Blue와 공용 44px control language로 통합했다.
+  - profile deep link는 유지하면서 desktop 세로 outline·mobile selector·이전/다음 action을 갖는 Career Profile Workspace로 재구성했다.
+- Key decisions:
+  - native select·checkbox·date semantics를 유지해 keyboard와 mobile 사용성을 보존하고 미구현 대외활동·공고 분석 route는 추가하지 않았다.
+- Issues encountered:
+  - 시각 재검토에서 자료 등록의 영어 eyebrow를 발견해 사용자용 한국어로 한 차례 보정했다.
+  - actual Document E2E는 실행 중 Backend의 upload 일반 오류로 첫 test가 timeout됐고 Job actual은 필수 fixture URL이 없어 실행하지 않았다.
+  - actual Profile E2E는 selector 보정 후 완료율 `100%` strict locator 중복으로 재검증도 실패해 추가 보정하지 않았다.
+- Validation:
+  - `corepack pnpm check`: ESLint·Prettier·TypeScript·Vitest 39 files/149 tests·production build 통과.
+  - fixture Playwright 5/5와 1440·1024·768·390px 18개 화면 overflow·캡처 검수 통과; actual Profile 0/1·Document 0/4 완료.
+- Next steps:
+  - Backend 재시작·fixture URL 준비 후 actual Document·Job Playwright를 재실행한다.
 
 ## [2026-07-28] Session Summary (프로필·자료 등록 전문 UX와 추천 입력 적용)
 

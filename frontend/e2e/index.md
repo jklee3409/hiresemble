@@ -25,7 +25,7 @@
 - P4 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - P5 actual spec은 Backend 주도 격리 PostgreSQL·Fake URL fetch·Fake Chat 환경에서만 활성화한다.
 - unit/component test로 확인하기 어려운 route 이동, form 상호작용, 화면 상태 연결을 다룬다.
-- UI shell fixture는 Backend 없이 인증 응답과 active Run 목록을 가로채 필수 viewport, focus 복원, password 표시와 reduced-motion을 검증한다.
+- UI shell fixture는 Backend 없이 인증 응답과 active Run 목록을 가로채 필수 viewport, profile desktop outline·mobile selector, focus 복원, password 표시와 reduced-motion을 검증한다.
 - Playwright 설정은 테스트 전에 Vite 개발 서버를 시작하고 Chromium desktop 환경을 사용한다.
 
 ## 다른 디렉터리와의 의존 관계

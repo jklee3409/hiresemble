@@ -6,6 +6,20 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-07-28] Session Summary (Hiresemble Blue Control System 확정)
+
+- What was done:
+  - `#3157ff`를 단일 brand로 고정하고 blue 50~900, canvas·surface·ink·muted·border neutral을 명시했다.
+  - button·select·checkbox·radio·switch·date·file·filter·profile workspace의 default, hover, focus-visible, disabled, invalid 상태와 44px target을 통합했다.
+- Key decisions:
+  - native semantics를 유지하고 custom arrow·appearance로 시각만 통일했으며 추가 UI dependency는 설치하지 않았다.
+- Issues encountered:
+  - 기존 cyan·teal·indigo alias는 page별 primary로 남지 않도록 Hiresemble Blue scale로 정리했다.
+- Validation:
+  - `pnpm check`, reduced-motion fixture, 네 viewport overflow와 screenshot 검수가 통과했다.
+- Next steps:
+  - 새 control 유형은 실제 두 화면 이상 사용될 때 같은 token 체계로 확장한다.
+
 ## [2026-07-28] Session Summary (Cobalt Brand Token·Motion System 재설계)
 
 - What was done:

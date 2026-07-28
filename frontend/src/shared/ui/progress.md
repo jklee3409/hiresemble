@@ -5,6 +5,20 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-07-28] Session Summary (공용 검증 Focus·Control 언어 통합)
+
+- What was done:
+  - 첫 invalid control로 focus를 이동하는 `focusFirstInvalidControl` helper와 회귀 test를 추가했다.
+  - BrandMark의 보조 accent를 Hiresemble Blue scale 안으로 정리하고 전역 control class와 결합했다.
+- Key decisions:
+  - native input semantics와 page의 label·error 연결을 유지하고 helper는 domain validation을 소유하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - helper unit test, 전체 149 tests와 keyboard Playwright가 통과했다.
+- Next steps:
+  - dialog·drawer의 기존 focus trap 계약은 layout·feature 소유로 유지한다.
+
 ## [2026-07-28] Session Summary (조립형 Hiresemble BrandMark 추가)
 
 - What was done:

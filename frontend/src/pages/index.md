@@ -10,15 +10,15 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·대표 학력·희망 조건·문서 이동/추후 입력 P2 흐름
 - [`DashboardPage.vue`](DashboardPage.vue): 실제 구현 route로 연결하는 집계 없는 작업 공간
-- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): 기본 프로필·완료 항목·희망 배열 form
-- [`StructuredProfilePage.vue`](StructuredProfilePage.vue): 프로필 5종 목록·form·삭제·409 재적용
-- [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): direct evidence filter·편집·검토와 read-only 상태
+- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·희망 조건 form과 저장 후 다음 section 이동
+- [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력·경력·자격증·어학·수상 목록·form·삭제·409 재적용
+- [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): Workspace 안의 자료 기반 경험 정보 filter·편집·검토와 read-only 상태
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort 목록
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록
 - [`DocumentDetailPage.vue`](DocumentDetailPage.vue): text·manual resume·reparse·download·delete·evidence 검토
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
-- [`JobNewPage.vue`](JobNewPage.vue): URL·선택 override·수동 본문·마감일과 201/202 생성
+- [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·마감일과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict
 - [`RootRedirectPage.vue`](RootRedirectPage.vue): 인증 bootstrap 대기 shell
 - [`NotFoundPage.vue`](NotFoundPage.vue): 전용 404

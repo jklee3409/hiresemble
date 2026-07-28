@@ -6,6 +6,19 @@
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail만 허용한다.
 
+## [2026-07-28] Session Summary (내 지원 정보 Meta·Deep Link 보존)
+
+- What was done:
+  - profile basic meta를 `내 지원 정보`로 맞추고 workspace navigation이 기존 7개 route를 그대로 사용하도록 검증했다.
+- Key decisions:
+  - path·route name·guard·redirect·returnTo는 변경하지 않고 미구현 route를 추가하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - route table 전수 비교와 router test, mobile selector deep link가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (분석 기록 route meta 적용)
 
 - What was done:

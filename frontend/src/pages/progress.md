@@ -4,6 +4,37 @@
 
 P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-28] Session Summary (Dashboard·필터·기본 정보 화면 완성도 보정)
+
+- What was done:
+  - Dashboard hero 제목을 desktop 한 줄, 390px 의미 단위 두 줄로 조정하고 장식과 설명의 충돌을 제거했다.
+  - 자료·관심 공고 filter control 사이의 여백을 늘리고 프로필 기본 정보의 공통 정보·희망 조건을 번호, eyebrow, surface와 section divider로 구분했다.
+  - 노란 프로필 작성 안내를 브랜드 blue soft surface로 교체하고 희망 조건 입력군의 구조적 rail을 추가했다.
+- Key decisions:
+  - 기존 form ID, label, mutation, query, route와 오류·conflict 동작은 유지했다.
+- Issues encountered:
+  - 첫 mobile 캡처에서 제목이 세 줄이 되어 한 차례 typography를 보정했다.
+- Validation:
+  - 1574px·390px Dashboard, 1440px·390px 기본 정보, 1600px 자료·공고 필터를 직접 검수했고 390px 가로 넘침이 없었다.
+  - Frontend 전체 check와 fixture UI shell 3/3이 통과했다.
+- Next steps:
+  - 실제 데이터가 필요한 cross-stack 시나리오는 이번 visual-only 보정 범위에서 재실행하지 않았다.
+
+## [2026-07-28] Session Summary (현재 전체 Page 정보 구조·Form 재설계)
+
+- What was done:
+  - 인증·onboarding·dashboard·7개 profile·documents·jobs·분석 기록·404에 Hiresemble Blue control과 B2C action copy를 적용했다.
+  - 자료 등록은 dropzone→분류→분석, 공고 등록은 URL 우선→직접 입력 disclosure, 목록 filter는 mobile 접기 흐름으로 재구성했다.
+- Key decisions:
+  - Document·Job 상태 축, 201/202, idempotency, 409, SSE, ID·test selector와 입력값 보존을 유지했다.
+- Issues encountered:
+  - 실제 Document E2E는 upload API 일반 오류로 첫 시나리오가 timeout되어 완료하지 못했다.
+  - 실제 Profile E2E는 현재 온보딩 문구까지 동기화했지만 완료율 text·progressbar strict locator 중복에서 중단됐다.
+- Validation:
+  - page component test, 전체 149 tests, fixture Playwright 5/5와 18개 화면 네 viewport 시각 검수가 통과했다.
+- Next steps:
+  - Profile 완료율 locator를 명시적으로 한정하고 실행 Backend 설정을 갱신한 뒤 actual pipeline을 재검증한다.
+
 ## [2026-07-28] Session Summary (프로필·자료 등록 화면 전문 서비스화)
 
 - What was done:

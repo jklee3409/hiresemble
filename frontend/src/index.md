@@ -26,7 +26,8 @@
 - `main.ts`는 Pinia, Vue Router와 Vue Query를 한 곳에서 조립한다. 설치된 PrimeVue는 현재 component 사용처가 없어 전역 초기화하지 않는다.
 - `App.vue`는 route component가 표시될 최상위 outlet만 소유한다.
 - `env.d.ts`는 `VITE_API_BASE_URL`과 선택적 proxy target의 접근 타입을 고정한다.
-- `styles/main.css`와 `shared/ui`가 현재 route 전반의 cobalt token, BrandMark, control, status, loading·empty·error·motion 표현을 일관되게 제공한다.
+- `styles/main.css`와 `shared/ui`가 현재 route 전반의 Hiresemble Blue token, BrandMark, 44px control, status, loading·empty·error·motion 표현을 일관되게 제공한다.
+- profile route는 URL deep link를 유지하면서 desktop 세로 outline과 mobile section selector로 하나의 Career Profile Workspace를 구성한다.
 - 세부 책임은 각 하위 디렉터리의 `index.md`에서 관리하며 P6 이후 빈 기능 계층은 만들지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

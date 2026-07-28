@@ -26,7 +26,7 @@ Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run busin
 
 ## 변경 시 주의사항
 
-provider/model 실명, prompt, hash, raw JSON, claim·lease를 표시하지 않는다. SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
+provider/model·quality tier·비용 예약값, prompt, hash, raw JSON, claim·lease를 표시하지 않는다. SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
 
 ## 관련 규칙 및 문서
 

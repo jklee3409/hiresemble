@@ -19,7 +19,7 @@
 
 ## 구성 요소 역할
 
-- `index.ts`는 `/`, 인증, onboarding, dashboard, `/profile`, lazy `/agent-runs`·`/documents`·`/jobs` route와 전용 404를 등록한다.
+- `index.ts`는 `/`, 인증, onboarding, dashboard, deep-link 가능한 7개 `/profile` section, lazy `/agent-runs`·`/documents`·`/jobs` route와 전용 404를 등록한다.
 - public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
 - `returnTo`는 dashboard·onboarding·등록된 profile·Agent Run·Document·Job의 same-origin path만 허용한다.
 - route name, path, page import와 layout 경계를 한눈에 추적할 수 있는 진입점 역할을 한다.

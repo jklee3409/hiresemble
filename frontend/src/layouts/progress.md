@@ -4,6 +4,32 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-28] Session Summary (초대형 화면 인증 레이아웃 간격 보정)
+
+- What was done:
+  - `PublicLayout`의 소개·인증 column 최대 폭과 grid 정렬을 제한해 넓은 화면에서 두 영역이 과도하게 멀어지지 않게 했다.
+- Key decisions:
+  - mobile·tablet breakpoint와 인증 form 동작은 유지하고 desktop grid constraint만 조정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 2500×1160 로그인 화면 직접 캡처와 fixture UI shell 3/3, Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-28] Session Summary (지원 준비 중심 App navigation 통합)
+
+- What was done:
+  - 보호 navigation을 오늘의 준비·내 지원 정보·이력서·자료·관심 공고·분석 기록으로 통일하고 brand accent를 Hiresemble Blue로 정리했다.
+- Key decisions:
+  - route path, drawer focus trap·Escape·trigger focus 복원과 active Run count 계약은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - layout test와 1440·1024·768·390px drawer·overflow fixture가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (분석 기록 navigation 용어 적용)
 
 - What was done:

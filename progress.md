@@ -11,6 +11,41 @@
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
 - Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
 
+## [2026-07-28] Session Summary (첨부 화면 기반 Frontend 시각 완성도 보정)
+
+- What was done:
+  - 초대형 화면의 인증 레이아웃 폭과 간격, Dashboard 제목 줄바꿈, 지원 정보 outline 인접 hover 간격을 보정했다.
+  - 프로필 작성 안내를 Hiresemble Blue 계열로 통일하고 기본 정보·지원 희망 조건의 시각적 구분과 자료·공고 필터 간격을 강화했다.
+- Key decisions:
+  - route, API, DTO, 상태 관리와 기존 입력·저장 동작은 바꾸지 않고 scoped layout·presentation 범위에서만 보정했다.
+  - 작은 화면에서는 Dashboard 제목이 의미 단위 두 줄로 읽히도록 하고 480px 이상에서는 한 줄을 유지하도록 했다.
+- Issues encountered:
+  - 브라우저 mock route를 CLI 문자열로 전달할 때 PowerShell quoting 때문에 응답이 깨져 JavaScript route fulfillment로 전환했다.
+  - 첫 390px 캡처에서 제목이 세 줄로 나뉘고 장식과 가까워져 font와 설명 폭을 한 차례 보정했다.
+- Validation:
+  - Frontend `corepack pnpm check`가 39 files/149 tests와 production build까지 통과했고 fixture Playwright UI shell 3/3이 통과했다.
+  - 2500px 인증, 1574px·390px Dashboard, 1440px·390px 프로필, 1600px 자료·공고 필터를 직접 캡처했으며 390px Dashboard와 프로필의 horizontal overflow가 0임을 확인했다.
+- Next steps:
+  - 실제 Backend 연동 E2E는 이번 scoped 시각 보정에서 재실행하지 않았으므로 기존 cross-stack 검증 이력을 따른다.
+
+## [2026-07-28] Session Summary (Hiresemble Frontend 전체 UI·UX 재설계)
+
+- What was done:
+  - 현재 18개 사용자 route와 404를 Hiresemble Blue 디자인 시스템으로 통합하고 프로필 가로 tab을 Career Profile Workspace의 세로 outline·mobile selector로 교체했다.
+  - 자료·공고·분석 기록의 filter, form, 상태와 다음 행동을 취업 준비생 중심의 정보 계층으로 정리했다.
+- Key decisions:
+  - route·API·DTO·DB·Vue Query·CSRF·idempotency·409·SSE와 Document·Job 독립 상태 축은 변경하지 않았다.
+  - 대외활동 생성과 공고 분석 route는 현재 계약에 없어 가짜 화면이나 저장 기능을 만들지 않았다.
+- Issues encountered:
+  - 대화형 브라우저 세션과 Behance 원문 접근이 불가능해 확인 가능한 공개 사이트와 Playwright 실제 화면 검수만 근거로 사용했다.
+  - 실제 Document E2E는 실행 중인 Backend의 upload 오류로 첫 시나리오가 timeout됐고 후속 직렬 시나리오는 실행되지 않았다.
+  - 실제 Profile E2E는 구 selector를 한 차례 보정한 뒤 완료율 `100%`의 strict locator 중복으로 두 번째 검증도 실패해 규칙상 중단했다.
+- Validation:
+  - Frontend `corepack pnpm check`가 39 files/149 tests와 production build까지 통과했고 fixture Playwright 5/5가 통과했다.
+  - 1440·1024·768·390px 18개 화면 캡처와 overflow 검사가 통과했으며 실제 Profile 0/1·Document 0/4 완료로 남겼다.
+- Next steps:
+  - Backend를 현재 local 설정으로 재시작한 뒤 실제 Document E2E 4개와 fixture URL이 필요한 Job actual E2E를 재실행한다.
+
 ## [2026-07-28] Session Summary (이력서 업로드 복구와 프로필·자료 UX 고도화)
 
 - What was done:
