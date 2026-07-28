@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-익명 인증 화면과 responsive 보호 화면의 공통 shell을 분리하고 오늘의 준비·내 지원 정보·이력서·자료·관심 공고·분석 기록 navigation과 lazy Progress Drawer를 제공한다.
+익명 인증 화면과 responsive 보호 화면의 공통 shell을 분리하고 지원 홈·내 지원 정보·이력서·자료·관심 공고·분석 기록 navigation과 lazy Progress Drawer를 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 

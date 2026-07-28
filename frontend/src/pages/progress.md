@@ -4,6 +4,23 @@
 
 P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-28] Session Summary (지원 현황 Dashboard·기본 프로필 단일 편집 구조)
+
+- What was done:
+  - Dashboard를 사용자 이름 기반 제목, 핵심 빠른 작업, 실제 집계, 상태 기반 다음 할 일, 마감 임박 공고, 최근 활동과 신규 사용자 전용 시작 안내로 재구현했다.
+  - Profile 기본 정보 화면을 기본 정보·자기소개·희망 조건의 세 section과 단일 저장 action으로 재구성하고 dirty·saving·success·error·409 conflict 상태를 분리했다.
+  - Dashboard의 기존 사용자, 신규 사용자 이름 fallback, 부분 query 오류를 검증하는 unit test를 추가하고 Profile 저장·field error 회귀 test를 갱신했다.
+- Key decisions:
+  - Dashboard 최근 목록은 현재 query가 반환한 항목만 표시하고, 전체 수치는 pagination의 `totalElements`만 사용한다.
+  - 서버 field error는 해당 control 가까이에 유지하고 저장 완료 뒤 version baseline을 갱신하되 auto-save는 도입하지 않았다.
+- Issues encountered:
+  - Cover Letter와 Mock Interview는 현재 연결 가능한 Dashboard API가 없어 가짜 최근 활동이나 수치를 만들지 않았다.
+- Validation:
+  - 관련 Vitest 6 files/25 tests와 전체 40 files/154 tests, TypeScript, production build 통과.
+  - 1440px·390px Dashboard와 Profile 스크린샷에서 overflow, CTA 우선순위와 상태 구분을 확인했다.
+- Next steps:
+  - 전용 Dashboard 계약 구현 뒤 자기소개서·모의 면접·검증 경고 집계를 연결한다.
+
 ## [2026-07-28] Session Summary (Dashboard·필터·기본 정보 화면 완성도 보정)
 
 - What was done:

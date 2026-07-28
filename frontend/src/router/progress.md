@@ -6,6 +6,19 @@
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail만 허용한다.
 
+## [2026-07-28] Session Summary (지원 홈 Route Meta 통일)
+
+- What was done:
+  - Dashboard route meta와 404·Profile section action의 복귀 문구를 `지원 홈`으로 통일했다.
+- Key decisions:
+  - `/dashboard` path, route name, guard, redirect와 returnTo 계약은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router unit test와 Dashboard·Not Found UI fixture가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (내 지원 정보 Meta·Deep Link 보존)
 
 - What was done:

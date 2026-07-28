@@ -4,6 +4,21 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-28] Session Summary (평면 Profile Navigation·희망 조건 입력)
+
+- What was done:
+  - Profile desktop navigation에서 번호 card 장식을 제거하고 현재 항목을 명확히 표시하는 좁은 평면 outline으로 정리했으며 mobile native selector는 유지했다.
+  - 희망 직무·산업 입력을 연결된 input·추가 button, 선택 tag, 일부 추천과 `추천 더 보기` 구조로 정리하고 산업 preset을 추가했다.
+- Key decisions:
+  - Profile section별 완료 여부를 판정하는 계약이 없으므로 임의의 완료·미입력 상태는 만들지 않고 현재 위치만 표시했다.
+  - 자유 텍스트 배열, Enter 추가, 중복 방지, 최대 10개와 keyboard semantics를 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile workspace navigation과 StringListInput unit test, 전체 Frontend check, 1440px·390px Profile fixture가 통과했다.
+- Next steps:
+  - section completion을 표시하려면 서버 또는 명세의 판정 규칙이 먼저 필요하다.
+
 ## [2026-07-28] Session Summary (Profile outline 인접 상태 간격 보정)
 
 - What was done:

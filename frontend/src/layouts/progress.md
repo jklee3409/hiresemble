@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-28] Session Summary (지원 홈 Navigation 명칭 통합)
+
+- What was done:
+  - Sidebar의 `오늘의 준비`를 `지원 홈`으로 바꾸고 desktop·mobile brand link의 접근성 이름과 Dashboard context를 같은 목적어로 정리했다.
+- Key decisions:
+  - route path와 navigation 구조는 유지하고 표시 명칭과 설명만 서비스의 지원 관리 목적에 맞췄다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AppLayout unit test와 Chromium desktop·mobile navigation fixture가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (초대형 화면 인증 레이아웃 간격 보정)
 
 - What was done:

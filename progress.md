@@ -11,6 +11,23 @@
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
 - Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
 
+## [2026-07-28] Session Summary (지원 대시보드·프로필 관리 UI 전면 개선)
+
+- What was done:
+  - `/dashboard`를 소개형 링크 화면에서 프로필 완성도, 지원 상태, 문서, Agent Run, 다음 할 일과 최근 활동을 실제 사용자 데이터로 보여 주는 지원 관리 화면으로 재구성했다.
+  - 프로필 기본 정보 화면을 평면 내비게이션과 단일 편집 영역으로 재구성하고 기본 정보, 자기소개, 희망 조건의 입력 위계와 저장 상태를 명확히 했다.
+- Key decisions:
+  - 명세에는 `DashboardDto`가 있지만 현재 Backend 계약에는 `/api/v1/dashboard`가 없으므로 API를 추가하거나 수치를 추측하지 않고 기존 Profile·Document·Job·Agent Run API의 `totalElements`와 반환된 최근 항목만 조합했다.
+  - route, 공개 DTO, Profile version·409 conflict, 인증·CSRF, Vue Query·Pinia와 기존 mutation 책임은 유지했다.
+- Issues encountered:
+  - 연결 가능한 in-app browser가 없어 레퍼런스의 로그인 후 화면을 직접 탐색하지 못했고, 자소설닷컴 경력 관리 URL은 공개 접근이 되지 않아 공개 페이지와 현재 화면 계약을 기준으로 원칙만 적용했다.
+- Validation:
+  - `corepack pnpm check`: ESLint, Prettier, TypeScript, Vitest 40 files/154 tests와 production build 통과.
+  - fixture Chromium UI shell 3/3 통과; 1920·1440·1280·1024·768·390px에서 Dashboard와 Profile을 확인하고 1440·390px 스크린샷을 직접 검토했다.
+- Next steps:
+  - 전용 Dashboard API가 구현되면 현재 조합 query를 `DashboardDto`로 교체하고 자기소개서·모의 면접 최근 활동을 서버 집계에 연결한다.
+  - 실제 Backend를 포함한 Profile·Document·Job cross-stack 흐름과 screen reader 실기기 검증은 이번 fixture 기반 시각 작업 범위에서 재실행하지 않았다.
+
 ## [2026-07-28] Session Summary (첨부 화면 기반 Frontend 시각 완성도 보정)
 
 - What was done:

@@ -10,6 +10,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-07-28] Session Summary (지원 Dashboard·Profile 반응형 시각 회귀)
+
+- What was done:
+  - UI shell fixture에 Profile·Document·Job·Agent Run Dashboard 데이터를 추가하고 기존 사용자 Dashboard의 집계·다음 할 일·최근 활동을 검증했다.
+  - 1920·1440·1280·1024·768·390px viewport를 고정 검증하고 선택적으로 Dashboard·Profile 1440·390px screenshot을 남기도록 했다.
+- Key decisions:
+  - 스크린샷은 `test-results`의 비추적 artifact로 유지하고 role·label 기반 assertion을 회귀 기준으로 사용했다.
+- Issues encountered:
+  - in-app browser 연결은 사용할 수 없어 Playwright Chromium과 생성 screenshot 직접 검토로 대체했다.
+- Validation:
+  - `UI_SCREENSHOTS=true corepack pnpm exec playwright test e2e/ui-shell.spec.ts --project=chromium --workers=1`: 3/3 통과.
+- Next steps:
+  - 실제 Backend를 포함하는 Profile·Document·Job actual spec은 이번 UI fixture 변경 뒤 재실행하지 않았다.
+
 ## [2026-07-28] Session Summary (통합 프로필·Viewport 시각 회귀)
 
 - What was done:

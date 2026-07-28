@@ -9,8 +9,9 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 - [`SignupPage.vue`](SignupPage.vue): 가입 Form과 onboarding 이동
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·대표 학력·희망 조건·문서 이동/추후 입력 P2 흐름
-- [`DashboardPage.vue`](DashboardPage.vue): 실제 구현 route로 연결하는 집계 없는 작업 공간
-- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·희망 조건 form과 저장 후 다음 section 이동
+- [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 상태 기반 다음 할 일과 신규 사용자 시작 화면
+- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 단일 편집 영역과 명시적 저장 상태·409 재적용
+- [`DashboardPage.test.ts`](DashboardPage.test.ts): 신규·기존 사용자, 사용자 이름 fallback과 부분 조회 오류 대시보드 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력·경력·자격증·어학·수상 목록·form·삭제·409 재적용
 - [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): Workspace 안의 자료 기반 경험 정보 filter·편집·검토와 read-only 상태
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort 목록
@@ -37,7 +38,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 
 ## 변경 시 주의사항
 
-- Dashboard 집계·API, AI 설정과 P6 이후 기능을 선행 추가하지 않고 현재 API가 제공하는 정보만 표시한다.
+- Dashboard의 명세상 전용 집계 endpoint는 아직 구현되지 않았다. 현재 API의 `totalElements`와 반환된 최근 항목만 표시하고 paginated `items.length`를 전체 수치로 사용하지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -10,10 +10,10 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 - [`queryKeys.ts`](queryKeys.ts): 사용자 ID가 포함된 profile query key factory
 - [`conflict.ts`](conflict.ts): 미저장 값과 최신 snapshot의 field별 비교·재적용
 - [`evidenceMetadata.ts`](evidenceMetadata.ts): 경험 정보 primitive metadata를 key 손실 없이 항목형 편집 값으로 변환
-- [`ProfileTabs.vue`](ProfileTabs.vue): desktop 세로 outline과 mobile selector를 제공하는 Career Profile Workspace navigation
+- [`ProfileTabs.vue`](ProfileTabs.vue): 번호·중첩 card 없이 현재 위치를 강조하는 desktop 세로 navigation과 mobile selector
 - [`ProfileSectionActions.vue`](ProfileSectionActions.vue): 저장 영역과 분리된 이전·다음 profile section 이동
-- [`StringListInput.vue`](StringListInput.vue): 최대 10개 canonical 문자열 입력
-- [`preferenceOptions.ts`](preferenceOptions.ts): 한국 사용자용 희망 직무·지역 빠른 선택과 포함 검색 후보
+- [`StringListInput.vue`](StringListInput.vue): Enter·중복 방지·최대 10개·검색 추천·접을 수 있는 추천·접근 가능한 삭제를 제공하는 canonical 문자열 입력
+- [`preferenceOptions.ts`](preferenceOptions.ts): 한국 사용자용 희망 직무·산업·지역 빠른 선택과 포함 검색 후보
 - [`VersionConflictPanel.vue`](VersionConflictPanel.vue): 취소·최신값·field 재적용·다시 저장 UI
 - `*.test.ts`: schema·query key·conflict 단위 테스트
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

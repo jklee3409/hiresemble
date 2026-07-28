@@ -6,6 +6,19 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-07-28] Session Summary (Dashboard·Profile Content 폭 체계 보정)
+
+- What was done:
+  - 전역 content 최대 폭을 80rem, App sidebar를 15rem, Profile navigation 최대 폭을 14.5rem으로 조정해 1280~1920px에서 과도한 공백과 긴 행을 줄였다.
+- Key decisions:
+  - 기존 spacing·typography·button·input·focus token을 재사용하고 새 색상 체계나 UI dependency는 추가하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Prettier, ESLint, production build와 1920·1440·1280·1024·768·390px Chromium fixture가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (Hiresemble Blue Control System 확정)
 
 - What was done:

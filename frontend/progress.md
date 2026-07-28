@@ -5,7 +5,24 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
 - `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 39 files/149 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+- Vitest 40 files/154 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard는 현재 전용 API 없이 Profile·Document·Job·Agent Run의 정확한 집계와 최근 항목을 조합하며 P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-28] Session Summary (데이터 기반 지원 홈·프로필 편집 경험 재설계)
+
+- What was done:
+  - Sidebar·header·route meta의 `오늘의 준비`를 `지원 홈`으로 통일하고 Dashboard를 상태 카드, 동적 다음 할 일, 마감 임박 공고, 최근 활동과 신규 사용자 시작 안내로 재설계했다.
+  - Profile 기본 정보는 얕은 section 구조, 일관된 저장 상태, field error, 추천 축약형 tag 입력과 반응형 내비게이션을 적용했다.
+  - 공통 content 폭, sidebar 폭과 Profile navigation 폭을 조정하고 Dashboard unit test와 6개 viewport UI fixture를 보강했다.
+- Key decisions:
+  - 보라색 장식과 중첩 card를 늘리지 않고 기존 Hiresemble Blue를 primary CTA·현재 위치·선택 상태에 한정했다.
+  - 현재 Backend에 없는 Dashboard endpoint를 만들지 않았으며 목록 길이로 전체 건수를 추정하지 않고 `totalElements`만 사용했다.
+- Issues encountered:
+  - 첫 1440px 시각 검사에서 지표 grid의 빈 칸을 발견해 12-column 비대칭 배치로 보정한 뒤 desktop·mobile을 다시 확인했다.
+- Validation:
+  - `corepack pnpm check`: ESLint, Prettier, TypeScript, Vitest 40 files/154 tests와 production build 통과.
+  - `UI_SCREENSHOTS=true` Chromium UI shell 3/3 통과; Dashboard·Profile 1440px와 390px 결과를 직접 검토했다.
+- Next steps:
+  - 실제 Backend cross-stack E2E와 보조 기술 실기기 검증은 별도 실행이 필요하다.
 
 ## [2026-07-28] Session Summary (첨부 화면 기반 반응형·정보 계층 보정)
 
