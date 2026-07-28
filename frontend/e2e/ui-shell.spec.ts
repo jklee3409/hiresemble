@@ -4,10 +4,20 @@ const viewportWidths = [1440, 1024, 768, 390] as const
 
 test('protected app shell stays usable without horizontal overflow at required widths', async ({
   page,
-}) => {
+}, testInfo) => {
   await installAuthenticatedRoutes(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/dashboard')
-  await expect(page.getByRole('heading', { name: '오늘의 지원 준비를 이어가세요.' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '반응형 확인 사용자님의 지원 현황' }),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '지원 준비 현황' })).toBeVisible()
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.screenshot({
+      path: testInfo.outputPath('dashboard-1440.png'),
+      fullPage: true,
+    })
+  }
 
   const progressTrigger = page.getByRole('button', { name: /진행 중인 분석\s*0/ })
   await progressTrigger.click()
@@ -17,13 +27,19 @@ test('protected app shell stays usable without horizontal overflow at required w
   await expect(progressDialog).toBeHidden()
   await expect(progressTrigger).toBeFocused()
 
-  for (const width of viewportWidths) {
+  for (const width of [1920, ...viewportWidths.slice(0, 1), 1280, ...viewportWidths.slice(1)]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
 
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     )
     expect(hasHorizontalOverflow, `${width}px에서 가로 overflow가 없어야 합니다.`).toBe(false)
+    if (width === 390 && process.env.UI_SCREENSHOTS === 'true') {
+      await page.screenshot({
+        path: testInfo.outputPath('dashboard-390.png'),
+        fullPage: true,
+      })
+    }
 
     if (width >= 1024) {
       await expect(page.getByLabel('서비스 탐색')).toBeVisible()
@@ -111,7 +127,7 @@ test('public authentication shell keeps the form readable at desktop and mobile 
 
 test('profile suggestions and document registration stay keyboard-ready and responsive', async ({
   page,
-}) => {
+}, testInfo) => {
   await installAuthenticatedRoutes(page)
   await page.route('**/api/v1/profile', async (route) => {
     await route.fulfill({
@@ -165,6 +181,13 @@ test('profile suggestions and document registration stay keyboard-ready and resp
   })
 
   await page.goto('/profile/basic')
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.screenshot({
+      path: testInfo.outputPath('profile-basic-1440.png'),
+      fullPage: true,
+    })
+  }
   const roleInput = page.getByRole('combobox', { name: '희망 직무' })
   await roleInput.fill('프론트')
   const roleSuggestion = page.getByRole('option', { name: /프론트엔드 개발자/ })
@@ -182,6 +205,12 @@ test('profile suggestions and document registration stay keyboard-ready and resp
       ),
       `${width}px 프로필 화면에서 가로 overflow가 없어야 합니다.`,
     ).toBe(false)
+    if (width === 390 && process.env.UI_SCREENSHOTS === 'true') {
+      await page.screenshot({
+        path: testInfo.outputPath('profile-basic-390.png'),
+        fullPage: true,
+      })
+    }
 
     if (width === 1024) {
       await expect(page.getByLabel('프로필 메뉴')).toBeVisible()
@@ -238,6 +267,96 @@ async function installAuthenticatedRoutes(page: Page): Promise<void> {
         size: 20,
         totalElements: 0,
         totalPages: 0,
+      }),
+    })
+  })
+  await page.route('**/api/v1/profile', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        legalName: null,
+        introduction: null,
+        desiredRoles: [],
+        desiredIndustries: [],
+        desiredLocations: [],
+        expectedGraduationDate: null,
+        profileCompleted: false,
+        missingCompletionItems: [
+          'LEGAL_NAME',
+          'DESIRED_ROLE',
+          'DESIRED_INDUSTRY',
+          'DESIRED_LOCATION',
+          'PRIMARY_EDUCATION',
+        ],
+        version: 0,
+        createdAt: '2026-07-28T00:00:00Z',
+        updatedAt: '2026-07-28T00:00:00Z',
+      }),
+    })
+  })
+  await page.route('**/api/v1/documents?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: '00000000-0000-4000-8000-000000000010',
+            documentType: 'RESUME',
+            displayName: '지원용 이력서.pdf',
+            mimeType: 'application/pdf',
+            fileSizeBytes: 1024,
+            parseStatus: 'PARSED',
+            evidenceExtractionStatus: 'SUCCEEDED',
+            manualTextProvided: false,
+            safeError: null,
+            latestAgentRunId: null,
+            version: 1,
+            uploadedAt: '2026-07-27T00:00:00Z',
+            updatedAt: '2026-07-28T04:00:00Z',
+          },
+        ],
+        page: 0,
+        size: 5,
+        totalElements: 1,
+        totalPages: 1,
+      }),
+    })
+  })
+  await page.route('**/api/v1/jobs?*', async (route) => {
+    const status = new URL(route.request().url()).searchParams.get('status')
+    const baseJob = {
+      id: '00000000-0000-4000-8000-000000000020',
+      companyName: 'Hiresemble',
+      title: '백엔드 개발자',
+      positionName: '백엔드 개발자',
+      extractionStatus: 'EXTRACTED',
+      submittedAt: null,
+      deadlineAt: '2026-08-02T14:59:59Z',
+      deadlineSource: 'USER_ENTERED',
+      latestFitScore: null,
+      analysisOutdated: false,
+      outdatedReasons: [],
+      coverLetterStatus: null,
+      interviewPreparationCount: 0,
+      version: 1,
+      createdAt: '2026-07-26T00:00:00Z',
+      updatedAt: '2026-07-28T02:00:00Z',
+    }
+    const items =
+      status === 'SUBMITTED'
+        ? [{ ...baseJob, status: 'SUBMITTED', submittedAt: '2026-07-28T01:00:00Z' }]
+        : [{ ...baseJob, status: 'IN_PROGRESS' }]
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items,
+        page: 0,
+        size: 5,
+        totalElements: status === null ? 2 : 1,
+        totalPages: 1,
       }),
     })
   })
