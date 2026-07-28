@@ -56,25 +56,23 @@ function changeSection(event: Event): void {
 <template>
   <aside class="profile-outline" aria-label="내 지원 정보 항목">
     <div class="profile-outline__intro">
-      <p class="profile-outline__eyebrow">지원 정보 작성</p>
+      <p class="profile-outline__eyebrow">프로필 관리</p>
       <h2>내 지원 정보</h2>
-      <p>필요한 항목부터 차근차근 정리해 여러 지원에 활용하세요.</p>
+      <p>필요한 항목부터 정리해 여러 지원에 활용하세요.</p>
     </div>
 
     <nav class="profile-outline__desktop" aria-label="프로필 메뉴">
       <RouterLink
-        v-for="(section, index) in sections"
+        v-for="section in sections"
         :key="section.to"
         :to="section.to"
         class="profile-outline__link"
       >
-        <span class="profile-outline__number" aria-hidden="true">
-          {{ String(index + 1).padStart(2, '0') }}
-        </span>
         <span>
           <strong>{{ section.label }}</strong>
           <small>{{ section.description }}</small>
         </span>
+        <span v-if="route.path === section.to" class="profile-outline__current">현재</span>
       </RouterLink>
     </nav>
 
@@ -92,9 +90,7 @@ function changeSection(event: Event): void {
       </select>
     </label>
 
-    <p class="profile-outline__note">
-      모든 항목을 한 번에 채우지 않아도 괜찮아요. 저장한 내용부터 준비에 활용할 수 있어요.
-    </p>
+    <p class="profile-outline__note">저장한 내용부터 바로 지원 준비에 활용돼요.</p>
   </aside>
 </template>
 
@@ -103,18 +99,12 @@ function changeSection(event: Event): void {
   position: sticky;
   top: 1.5rem;
   align-self: start;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  border-right: 1px solid var(--color-border);
+  padding-right: var(--space-5);
 }
 
 .profile-outline__intro {
-  border-bottom: 1px solid var(--color-border);
-  background:
-    radial-gradient(circle at 90% 10%, rgb(49 87 255 / 16%), transparent 38%), var(--hs-blue-50);
-  padding: 1.25rem;
+  padding: 0 var(--space-3) var(--space-5);
 }
 
 .profile-outline__eyebrow {
@@ -141,20 +131,19 @@ function changeSection(event: Event): void {
 
 .profile-outline__desktop {
   display: grid;
-  gap: 0.3rem;
-  padding: 0.625rem;
+  gap: var(--space-1);
 }
 
 .profile-outline__link {
   display: grid;
-  min-height: 3.75rem;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
+  min-height: 3.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.5rem;
-  border-left: 3px solid transparent;
+  gap: var(--space-2);
+  border-left: 2px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--color-muted-strong);
-  padding: 0.55rem 0.625rem;
+  padding: var(--space-2) var(--space-3);
   text-decoration: none;
   transition:
     border-color var(--motion-fast),
@@ -164,27 +153,25 @@ function changeSection(event: Event): void {
 }
 
 .profile-outline__link:hover {
-  background: var(--hs-blue-50);
+  background: var(--color-surface-subtle);
   color: var(--color-ink);
-  transform: translateX(2px);
 }
 
 .profile-outline__link[aria-current='page'] {
   border-left-color: var(--color-brand);
-  background: var(--hs-blue-100);
+  background: var(--color-brand-soft);
   color: var(--hs-blue-800);
-}
-
-.profile-outline__number {
-  color: var(--hs-blue-500);
-  font-size: 0.6875rem;
-  font-weight: 760;
-  font-variant-numeric: tabular-nums;
 }
 
 .profile-outline__link strong,
 .profile-outline__link small {
   display: block;
+}
+
+.profile-outline__current {
+  color: var(--color-brand);
+  font-size: 0.6875rem;
+  font-weight: 750;
 }
 
 .profile-outline__link strong {
@@ -204,9 +191,8 @@ function changeSection(event: Event): void {
 
 .profile-outline__note {
   margin: 0;
-  border-top: 1px solid var(--color-border);
   color: var(--color-muted);
-  padding: 1rem 1.25rem;
+  padding: var(--space-5) var(--space-3) 0;
   font-size: 0.75rem;
   line-height: 1.55;
 }
@@ -214,6 +200,8 @@ function changeSection(event: Event): void {
 @media (max-width: 63.99rem) {
   .profile-outline {
     position: static;
+    border-right: 0;
+    padding-right: 0;
   }
 
   .profile-outline__intro,

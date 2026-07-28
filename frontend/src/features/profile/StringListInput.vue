@@ -18,10 +18,14 @@ const emit = defineEmits<{ 'update:modelValue': [value: string[]] }>()
 const input = ref('')
 const localError = ref('')
 const suggestionsVisible = ref(false)
+const presetsExpanded = ref(false)
 const textInput = useTemplateRef<HTMLInputElement>('textInput')
 const suggestionButtons = useTemplateRef<HTMLButtonElement[]>('suggestionButton')
 
 const availablePresets = computed(() => (props.presets ?? []).filter((option) => !hasValue(option)))
+const visiblePresets = computed(() =>
+  presetsExpanded.value ? availablePresets.value : availablePresets.value.slice(0, 4),
+)
 const matchingSuggestions = computed(() => {
   const query = input.value.trim().toLocaleLowerCase()
   if (!suggestionsVisible.value || query.length === 0) return []
@@ -170,11 +174,38 @@ function returnToInput(): void {
       {{ help ?? `직접 입력 후 Enter 또는 추가 버튼으로 등록 · 최대 10개` }} · 현재
       {{ modelValue.length }}개
     </p>
+    <div v-if="modelValue.length > 0" class="string-list__selected">
+      <span>선택한 항목</span>
+      <ul class="string-list__items" :aria-label="`${label} 목록`">
+        <li v-for="(item, index) in modelValue" :key="`${item}-${index}`" class="string-list__item">
+          <span>{{ item }}</span>
+          <button
+            type="button"
+            class="string-list__remove"
+            :aria-label="`${item} 삭제`"
+            @click="remove(index)"
+          >
+            <AppIcon name="close" />
+          </button>
+        </li>
+      </ul>
+    </div>
     <div v-if="availablePresets.length > 0" class="string-list__presets">
-      <span>빠른 선택</span>
+      <div class="string-list__presets-heading">
+        <span>추천 항목</span>
+        <button
+          v-if="availablePresets.length > 4"
+          type="button"
+          class="string-list__preset-toggle"
+          :aria-expanded="presetsExpanded"
+          @click="presetsExpanded = !presetsExpanded"
+        >
+          {{ presetsExpanded ? '간단히 보기' : '추천 더 보기' }}
+        </button>
+      </div>
       <div>
         <button
-          v-for="option in availablePresets"
+          v-for="option in visiblePresets"
           :key="option"
           type="button"
           :disabled="modelValue.length >= 10"
@@ -188,19 +219,6 @@ function returnToInput(): void {
     <p v-if="error || localError" :id="`${id}-error`" class="field-error">
       {{ error || localError }}
     </p>
-    <ul v-if="modelValue.length > 0" class="string-list__items" :aria-label="`${label} 목록`">
-      <li v-for="(item, index) in modelValue" :key="`${item}-${index}`" class="string-list__item">
-        <span>{{ item }}</span>
-        <button
-          type="button"
-          class="string-list__remove"
-          :aria-label="`${item} 삭제`"
-          @click="remove(index)"
-        >
-          <AppIcon name="close" />
-        </button>
-      </li>
-    </ul>
   </fieldset>
 </template>
 
@@ -216,8 +234,17 @@ function returnToInput(): void {
 .string-list__input-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
+  gap: 0;
   margin-top: 0.5rem;
+}
+
+.string-list__input-row .control {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.string-list__input-row .button {
+  border-left: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .string-list__suggestions {
@@ -266,14 +293,32 @@ function returnToInput(): void {
 .string-list__presets {
   display: grid;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
 }
 
-.string-list__presets > span {
+.string-list__presets-heading,
+.string-list__selected > span {
   color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.string-list__presets-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.string-list__preset-toggle {
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .string-list__presets > div {
@@ -282,9 +327,9 @@ function returnToInput(): void {
   gap: 0.375rem;
 }
 
-.string-list__presets button {
+.string-list__presets > div:last-child > button {
   display: inline-flex;
-  min-height: 2.25rem;
+  min-height: 2.5rem;
   align-items: center;
   gap: 0.25rem;
   border: 1px solid var(--color-border);
@@ -296,13 +341,13 @@ function returnToInput(): void {
   font-weight: 650;
 }
 
-.string-list__presets button:hover:not(:disabled) {
+.string-list__presets > div:last-child > button:hover:not(:disabled) {
   border-color: var(--color-brand-border);
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
 }
 
-.string-list__presets .icon {
+.string-list__presets > div:last-child .icon {
   width: 0.75rem;
   height: 0.75rem;
 }
@@ -311,7 +356,7 @@ function returnToInput(): void {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 0.75rem 0 0;
+  margin: 0.5rem 0 0;
   padding: 0;
   list-style: none;
 }
@@ -321,7 +366,7 @@ function returnToInput(): void {
   min-height: 2rem;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid #b5d8db;
+  border: 1px solid var(--color-brand-border);
   border-radius: 999px;
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
@@ -332,8 +377,8 @@ function returnToInput(): void {
 
 .string-list__remove {
   display: inline-grid;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border: 0;
   border-radius: 999px;
@@ -343,7 +388,7 @@ function returnToInput(): void {
 }
 
 .string-list__remove:hover {
-  background: rgb(11 102 115 / 12%);
+  background: var(--hs-blue-100);
 }
 
 .string-list__remove .icon {
@@ -354,6 +399,13 @@ function returnToInput(): void {
 @media (max-width: 399px) {
   .string-list__input-row {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .string-list__input-row .control,
+  .string-list__input-row .button {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
   }
 }
 </style>

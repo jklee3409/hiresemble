@@ -78,9 +78,9 @@
   --shadow-sm: 0 8px 24px rgb(22 26 43 / 8%);
   --shadow-md: 0 24px 64px rgb(22 26 43 / 16%);
 
-  --content-width: 88rem;
+  --content-width: 80rem;
   --reading-width: 48rem;
-  --sidebar-width: 16rem;
+  --sidebar-width: 15rem;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -195,7 +195,7 @@ a {
 
 .profile-workspace-shell {
   display: grid;
-  grid-template-columns: minmax(13.5rem, 16rem) minmax(0, 1fr);
+  grid-template-columns: minmax(13rem, 14.5rem) minmax(0, 1fr);
   align-items: start;
   gap: clamp(1.25rem, 2.5vw, 2rem);
 }

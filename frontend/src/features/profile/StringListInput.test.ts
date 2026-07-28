@@ -89,4 +89,42 @@ describe('StringListInput suggestions and presets', () => {
     await wrapper.get('input').trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([['서울', '판교']])
   })
+
+  it('shows only a concise preset set until the user expands it', async () => {
+    const wrapper = mount(StringListInput, {
+      props: {
+        id: 'desired-role-presets',
+        label: '희망 직무',
+        modelValue: [],
+        presets: DESIRED_ROLE_PRESETS,
+        suggestions: DESIRED_ROLE_SUGGESTIONS,
+      },
+    })
+
+    expect(wrapper.findAll('.string-list__presets > div:last-child > button')).toHaveLength(4)
+    const toggle = wrapper.get('.string-list__preset-toggle')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+  })
+
+  it('prevents case-insensitive duplicates and enforces the ten-item maximum', async () => {
+    const values = Array.from({ length: 10 }, (_, index) => `항목 ${index + 1}`)
+    const wrapper = mount(StringListInput, {
+      props: {
+        id: 'desired-role-limit',
+        label: '희망 직무',
+        modelValue: ['Frontend'],
+      },
+    })
+
+    await wrapper.get('input').setValue('frontend')
+    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.text()).toContain('이미 추가한 항목이에요.')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await wrapper.setProps({ modelValue: values })
+    expect(wrapper.get('.string-list__input-row button').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('현재 10개')
+  })
 })

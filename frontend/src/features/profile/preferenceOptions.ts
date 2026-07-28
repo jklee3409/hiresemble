@@ -34,6 +34,27 @@ export const DESIRED_ROLE_SUGGESTIONS = [
   '경영지원',
 ] as const
 
+export const DESIRED_INDUSTRY_PRESETS = [
+  'IT·소프트웨어',
+  '금융·핀테크',
+  '제조·반도체',
+  '유통·커머스',
+] as const
+
+export const DESIRED_INDUSTRY_SUGGESTIONS = [
+  ...DESIRED_INDUSTRY_PRESETS,
+  'AI·데이터',
+  '게임',
+  '콘텐츠·미디어',
+  '광고·마케팅',
+  '교육',
+  '헬스케어·바이오',
+  '모빌리티',
+  '에너지·환경',
+  '건설·부동산',
+  '공공·비영리',
+] as const
+
 export const DESIRED_LOCATION_PRESETS = [
   '서울',
   '경기',

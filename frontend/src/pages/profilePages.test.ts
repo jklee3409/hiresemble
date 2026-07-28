@@ -64,10 +64,13 @@ describe('P2 profile pages', () => {
     vi.mocked(profileApi.updateProfile).mockResolvedValue(saved)
     const wrapper = await mountPage(ProfileBasicPage)
 
-    expect(wrapper.text()).toContain('20% 완료')
-    expect(wrapper.text()).toContain('보완 권장')
+    expect(wrapper.text()).toContain('20%')
+    expect(wrapper.text()).toContain('필수 항목 4개')
     expect(wrapper.text()).toContain('먼저 보여 줄 학력')
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
     await wrapper.get('#profile-legalName').setValue('Updated User')
+    expect(wrapper.text()).toContain('저장되지 않은 변경 사항')
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
@@ -80,8 +83,9 @@ describe('P2 profile pages', () => {
       expectedGraduationDate: null,
       version: 1,
     })
-    expect(wrapper.text()).toContain('프로필을 저장했어요.')
-    expect(wrapper.text()).toContain('100% 완료')
+    expect(wrapper.text()).toContain('저장 완료')
+    expect(wrapper.text()).toContain('100%')
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
   })
 
   it('moves to education only after the basic profile save succeeds', async () => {
@@ -90,9 +94,10 @@ describe('P2 profile pages', () => {
     vi.mocked(profileApi.updateProfile).mockResolvedValue({ ...initial, version: 2 })
     const wrapper = await mountPage(ProfileBasicPage)
 
+    await wrapper.get('#profile-introduction').setValue('학력으로 이동하기 전 저장할 소개')
     const continueButton = wrapper
       .findAll('button')
-      .find((button) => button.text().includes('저장하고 학력으로'))
+      .find((button) => button.text().includes('저장 후 다음: 학력'))
     await continueButton?.trigger('click')
     await flushPromises()
 
@@ -141,6 +146,7 @@ describe('P2 profile pages', () => {
       }),
     )
     const wrapper = await mountPage(ProfileBasicPage)
+    await wrapper.get('#profile-legalName').setValue('Changed name')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 

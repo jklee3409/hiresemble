@@ -27,13 +27,13 @@ describe('Career Profile Workspace navigation', () => {
 
     expect(wrapper.find('.profile-tabs').exists()).toBe(false)
     expect(wrapper.findAll('.profile-outline__link').map((link) => link.text())).toEqual([
-      '01기본 정보소개와 희망 조건',
-      '02학력학교와 전공',
-      '03경력회사·역할·성과',
-      '04자격증자격과 증빙 자료',
-      '05어학시험과 점수',
-      '06수상수상 이력과 설명',
-      '07경험 정보자료에서 정리한 내용',
+      '기본 정보소개와 희망 조건',
+      '학력학교와 전공',
+      '경력회사·역할·성과현재',
+      '자격증자격과 증빙 자료',
+      '어학시험과 점수',
+      '수상수상 이력과 설명',
+      '경험 정보자료에서 정리한 내용',
     ])
     expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('경력')
     expect(
