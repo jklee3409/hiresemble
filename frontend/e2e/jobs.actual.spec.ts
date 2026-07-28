@@ -210,6 +210,7 @@ async function createJob(page: Page, input: CreateInput): Promise<CreatedJob> {
   await page.goto('/jobs/new')
   await page.locator('#job-source-url').fill(input.sourceUrl)
   if (input.descriptionText !== undefined) {
+    await page.getByText('직접 입력해서 등록', { exact: true }).click()
     await page.locator('#job-description').fill(input.descriptionText)
   }
   if (input.deadlineAt !== undefined) {

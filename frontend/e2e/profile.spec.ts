@@ -15,7 +15,7 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   await expect(page).toHaveURL(/\/onboarding$/)
 
   await page.locator('#onboarding-legalName').fill('First Candidate')
-  await page.getByRole('button', { name: '다음', exact: true }).click()
+  await page.getByRole('button', { name: '저장하고 다음', exact: true }).click()
   await expect(page.locator('#onboarding-schoolName')).toBeVisible()
 
   await page.locator('#onboarding-schoolName').fill('First University')
@@ -25,10 +25,10 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   await addDesiredItem(page, '#onboarding-desiredRoles', 'Backend Engineer')
   await addDesiredItem(page, '#onboarding-desiredIndustries', 'Software')
   await addDesiredItem(page, '#onboarding-desiredLocations', 'Seoul')
-  await page.getByRole('button', { name: '저장하고 확인' }).click()
+  await page.getByRole('button', { name: '저장하고 다음', exact: true }).click()
 
-  await expect(page.getByRole('heading', { name: '4. 완료 또는 추후 입력' })).toBeVisible()
-  await expect(page.getByRole('strong')).toHaveText('완료')
+  await expect(page.getByRole('heading', { name: '이력서 또는 포트폴리오' })).toBeVisible()
+  await expect(page.getByText('필수 항목 완료', { exact: true })).toBeVisible()
   await expect(page.getByText('100%')).toBeVisible()
 
   const completedProfile = await getJson<{
@@ -50,8 +50,9 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   const firstEducationId = educationPage.items[0]?.id
   expect(firstEducationId).toBeTruthy()
 
-  await page.getByRole('button', { name: '프로필 확인' }).click()
-  await expect(page).toHaveURL(/\/profile\/basic$/)
+  await page.getByRole('button', { name: '나중에 계속' }).click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.goto('/profile/basic')
   await expect(page.locator('#profile-legalName')).toHaveValue('First Candidate')
   await page.reload()
   await expect(page.locator('#profile-legalName')).toHaveValue('First Candidate')

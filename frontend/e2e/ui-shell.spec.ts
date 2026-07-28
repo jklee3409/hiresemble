@@ -150,6 +150,19 @@ test('profile suggestions and document registration stay keyboard-ready and resp
       }),
     })
   })
+  await page.route('**/api/v1/profile/educations?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+      }),
+    })
+  })
 
   await page.goto('/profile/basic')
   const roleInput = page.getByRole('combobox', { name: '희망 직무' })
@@ -169,6 +182,19 @@ test('profile suggestions and document registration stay keyboard-ready and resp
       ),
       `${width}px 프로필 화면에서 가로 overflow가 없어야 합니다.`,
     ).toBe(false)
+
+    if (width === 1024) {
+      await expect(page.getByLabel('프로필 메뉴')).toBeVisible()
+      await expect(page.getByLabel('프로필 항목 선택')).toBeHidden()
+    } else {
+      await expect(page.getByLabel('프로필 메뉴')).toBeHidden()
+      const sectionSelector = page.getByLabel('프로필 항목 선택')
+      await expect(sectionSelector).toBeVisible()
+      await sectionSelector.selectOption('/profile/education')
+      await page.waitForURL(/\/profile\/education$/)
+      await expect(page.getByRole('heading', { name: '학력', level: 2 })).toBeVisible()
+      await page.goto('/profile/basic')
+    }
 
     await page.goto('/documents')
     await expect(page.getByRole('heading', { name: '이력서·자료', level: 2 })).toBeVisible()
