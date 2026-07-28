@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-28] Session Summary (분석 기록 navigation 용어 적용)
+
+- What was done:
+  - 보호 shell navigation과 progress drawer accessible name을 분석 기록·진행 중인 분석으로 변경했다.
+- Key decisions:
+  - drawer focus trap, Escape, trigger 복원과 responsive layout은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Layout tests와 UI shell Playwright 3/3가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (B2C Brand Canvas·App Shell 재구성)
 
 - What was done:

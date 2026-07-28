@@ -7,11 +7,14 @@ PostgreSQL에 저장되는 idempotency reservation·hash·원 HTTP status/응답
 ## 주요 파일 및 하위 디렉터리
 
 - [`IdempotencyIntegrationTest.java`](IdempotencyIntegrationTest.java): 동시성·status replay·hash mismatch·재시작·민감 비저장
+- [`IdempotencyLocalConfigurationTest.java`](IdempotencyLocalConfigurationTest.java): 명시적 local profile과 개발 전용 HMAC 설정
+- [`IdempotencyPropertiesTest.java`](IdempotencyPropertiesTest.java): active key 누락 startup fail-closed
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
 - 동일 scope/key 경쟁과 process 경계를 실제 DB row로 확인한다.
+- 실제 기본 설정이 로컬 업로드를 막는 빈 HMAC key로 회귀하지 않는지 확인한다.
 
 ## 다른 디렉터리와의 의존 관계
 

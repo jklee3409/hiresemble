@@ -12,6 +12,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 - [`evidenceMetadata.ts`](evidenceMetadata.ts): 경험 정보 primitive metadata를 key 손실 없이 항목형 편집 값으로 변환
 - [`ProfileTabs.vue`](ProfileTabs.vue): 구현된 profile route navigation
 - [`StringListInput.vue`](StringListInput.vue): 최대 10개 canonical 문자열 입력
+- [`preferenceOptions.ts`](preferenceOptions.ts): 한국 사용자용 희망 직무·지역 빠른 선택과 포함 검색 후보
 - [`VersionConflictPanel.vue`](VersionConflictPanel.vue): 취소·최신값·field 재적용·다시 저장 UI
 - `*.test.ts`: schema·query key·conflict 단위 테스트
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

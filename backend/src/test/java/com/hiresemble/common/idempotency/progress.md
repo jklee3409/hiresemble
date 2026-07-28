@@ -4,6 +4,20 @@
 
 PostgreSQL에 저장되는 idempotency reservation·hash·원 status/응답 replay 계약을 검증한다.
 
+## [2026-07-28] Session Summary (로컬 HMAC 기본 설정 회귀 추가)
+
+- What was done:
+  - 전역 default profile이 없고 local profile 리소스에 비어 있지 않은 개발 전용 HMAC 키가 있는지 검증했다.
+  - active key가 비어 있으면 startup property 초기화가 실패하는지 검증했다.
+- Key decisions:
+  - Document 테스트의 동적 test key와 별도로 실제 기본 설정 파일을 직접 검사한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - IdempotencyLocalConfigurationTest, IdempotencyPropertiesTest와 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - profile 또는 환경 변수 구조 변경 시 비로컬 secret 요구 계약을 함께 검토한다.
+
 ## [2026-07-27] Session Summary (원 HTTP status replay 회귀 추가)
 
 - What was done:

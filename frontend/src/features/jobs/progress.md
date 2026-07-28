@@ -4,6 +4,19 @@
 
 P5 Job filter·query·mutation·stream·version conflict feature가 구현됐다.
 
+## [2026-07-28] Session Summary (공고 분석 monitor 용어 정리)
+
+- What was done:
+  - Job Run monitor의 `AI 작업` 노출을 공고 분석·분석 상태 표현으로 바꿨다.
+- Key decisions:
+  - Job extraction과 Agent Run 상태 계약은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 관련 component tests와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (지원 상태·공고 불러오기 UX Writing 적용)
 
 - What was done:

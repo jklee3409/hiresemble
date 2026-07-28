@@ -10,6 +10,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-07-28] Session Summary (추천 입력·자료 등록 반응형 회귀)
+
+- What was done:
+  - 희망 직무 추천의 키보드 선택과 390px 프로필·자료 등록 overflow, 파일 선택 상태를 UI shell fixture에 추가했다.
+  - `AI 작업` selector를 `진행 중인 분석`·`분석 기록` 용어로 갱신했다.
+- Key decisions:
+  - 외부 추천 API 없이 실제 component interaction과 접근성 role을 검증한다.
+- Issues encountered:
+  - 실제 P4 E2E의 구 상태·action selector를 새 사용자 용어와 동기화한 뒤 한 차례 재실행했다.
+- Validation:
+  - UI shell 3/3, Agent Run fixture 2/2와 실제 P4 pipeline 4/4가 Chromium에서 통과했다.
+- Next steps:
+  - 실제 장문 파일명 조합은 별도 시각 회귀에서 추가 확인한다.
+
 ## [2026-07-28] Session Summary (B2C Brand·Copy 반응형 브라우저 검증)
 
 - What was done:

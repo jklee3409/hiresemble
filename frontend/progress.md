@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
 - `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 36 files/134 tests, UI shell·Agent Run fixture 4개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+- Vitest 37 files/145 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard 집계·P6 분석·AI 설정은 아직 없다.
+
+## [2026-07-28] Session Summary (프로필·자료 등록 전문 UX와 추천 입력 적용)
+
+- What was done:
+  - 회원가입·로그인 이메일 형식, 닉네임·분석 기록·졸업(예정)일 문구를 사용자 화면에 적용했다.
+  - 한국형 희망 직무·지역 preset과 포함 검색 combobox를 추가하고 프로필·자료 등록 정보 구조를 재설계했다.
+- Key decisions:
+  - 기존 API DTO·route·문자열 배열·Session/CSRF 계약과 design token을 유지했다.
+- Issues encountered:
+  - 변경된 제목을 참조하던 Playwright selector 한 건을 새 사용자 용어로 동기화했다.
+- Validation:
+  - `corepack pnpm check`, Playwright UI shell 3/3, Agent Run 2/2와 실제 Document E2E 4/4가 통과했다.
+- Next steps:
+  - 재시작한 실제 Backend·MinIO 환경에서 긴 파일명과 실제 데이터 밀도를 추가 검수한다.
 
 ## [2026-07-28] Session Summary (B2C UX Writing·Brand Experience 통합)
 

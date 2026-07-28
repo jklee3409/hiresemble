@@ -2,7 +2,20 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P4가 완료됐고 P5–P10은 미착수다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P5가 완료됐고 P6–P10은 미착수다.
+
+## [2026-07-28] Session Summary (프로필 사용자 용어 계약 동기화)
+
+- What was done:
+  - 기능·페이지 명세의 졸업 예정일을 졸업(예정)일로, 사용자 노출 표시 이름을 닉네임으로 바꿨다.
+- Key decisions:
+  - API·DB field 이름과 호환성은 유지하고 사용자 의미만 명확히 했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend check의 Markdown Prettier와 명세 잔여 용어 검색이 통과했다.
+- Next steps:
+  - 향후 설정 화면 구현 시 닉네임 용어를 그대로 사용한다.
 
 ## [2026-07-23] Session Summary (backend package 문서 체계 동기화)
 

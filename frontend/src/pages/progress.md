@@ -4,6 +4,20 @@
 
 P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-28] Session Summary (프로필·자료 등록 화면 전문 서비스화)
+
+- What was done:
+  - 프로필을 지원 방향 brief와 단계형 form으로, 자료 등록을 파일 선택·분류·분석 안내 흐름으로 재구성했다.
+  - 닉네임, 분석 기록과 졸업(예정)일을 전체 현재 route의 사용자 언어로 통일했다.
+- Key decisions:
+  - 기존 DOM ID·API mutation·route와 자유 입력 기능을 유지하고 정보 계층과 반응형 표현만 강화했다.
+- Issues encountered:
+  - 모바일에서는 sticky guide를 일반 흐름으로 바꾸고 file card action을 wrap해 overflow를 제거했다.
+- Validation:
+  - Page tests, Frontend 전체 145 tests와 390px Playwright 검증이 통과했다.
+- Next steps:
+  - 실제 장문 경력·파일명 데이터로 시각 밀도를 추가 확인한다.
+
 ## [2026-07-28] Session Summary (현재 Route B2C UX Writing 전면 적용)
 
 - What was done:

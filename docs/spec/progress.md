@@ -4,7 +4,21 @@
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 기준 명세가 P0 승인 문서 버전 1.1로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 백엔드는 애플리케이션 부트스트랩과 pgvector 확장 migration만, 프론트엔드는 빈 route table을 포함한 초기 환경만 구성되어 있다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1 인증부터 P5 공고 등록·분석 기반까지이며 Dashboard 집계와 P6 이후 기능은 아직 없다.
+
+## [2026-07-28] Session Summary (닉네임·졸업 예정/완료 사용자 의미 보정)
+
+- What was done:
+  - Profile 기능 필드를 졸업(예정)일로 표현해 이미 졸업한 사용자도 포함하도록 의미를 보정했다.
+  - Signup·Account 페이지 구성의 사용자 용어를 닉네임으로 변경했다.
+- Key decisions:
+  - 공개 `displayName`, `expectedGraduationDate` DTO와 DB column은 호환성을 위해 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend check의 Markdown format과 코드 사용자 노출 용어 검색이 통과했다.
+- Next steps:
+  - API field rename이 필요해지는 별도 major 계약 변경 전까지 내부 이름은 유지한다.
 
 ## [2026-07-18] Session Summary (P0 승인 계약 다섯 기준 명세 동기화)
 

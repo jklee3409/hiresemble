@@ -4,6 +4,20 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-28] Session Summary (한국형 희망 조건 추천 입력)
+
+- What was done:
+  - 직무·지역 빠른 선택과 입력 문자열을 포함하는 최대 6개 추천을 StringListInput에 추가했다.
+  - combobox/listbox/option, ArrowDown·Enter·Escape·ArrowUp 키보드 흐름과 중복·최대 10개 규칙을 검증했다.
+- Key decisions:
+  - 추천은 정적 한국어 사전으로 제공하고 모든 항목은 기존 자유 입력 배열에 그대로 저장한다.
+- Issues encountered:
+  - focusout에서 추천 클릭이 닫히지 않도록 focus 이동 경계를 명시했다.
+- Validation:
+  - 새 component tests와 Playwright keyboard flow, Frontend check가 통과했다.
+- Next steps:
+  - 직무 taxonomy가 제품 계약으로 생길 때 정적 사전의 소유 위치를 재검토한다.
+
 ## [2026-07-28] Session Summary (경험 정보·학력·충돌 문구 재설계)
 
 - What was done:

@@ -4,6 +4,20 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-07-28] Session Summary (자료 등록 단계형 UX와 용어 개선)
+
+- What was done:
+  - drag 상태, 선택 파일 card·해제, 유형별 설명, 자료 이름 예시와 분석 안내를 추가했다.
+  - 연결된 Agent Run 사용자 용어를 진행 중인 분석·분석 기록으로 바꿨다.
+- Key decisions:
+  - multipart field, idempotency key와 두 상태 축 계약은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document validation/page tests와 390px overflow 검증이 통과했다.
+- Next steps:
+  - 실제 storage pipeline에서 긴 파일명과 20MB 경계를 재확인한다.
+
 ## [2026-07-28] Session Summary (문서 읽기·경력 정보 정리 표현 적용)
 
 - What was done:

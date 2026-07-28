@@ -11,6 +11,26 @@
 - 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
 - Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
 
+## [2026-07-28] Session Summary (이력서 업로드 복구와 프로필·자료 UX 고도화)
+
+- What was done:
+  - 실제 CSRF·가입·multipart 요청으로 `/api/v1/documents`의 500을 재현하고 로컬 멱등성 HMAC 설정을 복구했다.
+  - 이메일 형식 검증, 닉네임·분석 기록 용어, 졸업(예정)일, 한국형 직무·지역 빠른 선택과 포함 검색 추천을 적용했다.
+  - 프로필과 자료 등록을 편집형 지원 브리프와 파일 선택·분류·분석 흐름으로 재설계했다.
+- Key decisions:
+  - API·DB의 `displayName`, `expectedGraduationDate`와 Agent Run 계약은 유지하고 사용자 노출 언어만 바꿨다.
+  - 알려진 개발 키는 명시적 `local` profile에만 두고 profile 미지정·비로컬 환경은 key 누락 시 시작을 거부한다.
+- Issues encountered:
+  - 대화형 브라우저 연결이 없어 저장소 Playwright와 실제 HTTP 재현으로 대체했다.
+  - 실행 중인 8080 프로세스는 이전 설정을 사용하므로 새 설정 적용에는 재시작이 필요하다.
+  - 1차 validator 지적은 모두 보정했지만 최종 독립 재검증은 모델 용량 부족으로 실행되지 않아 `NOT_VERIFIED`로 남겼다.
+- Validation:
+  - Backend `check`, Document 12 tests, fail-closed 설정 회귀와 실제 P4 Browser E2E 4/4가 통과했다.
+  - Frontend `check` 37 files/145 tests, Playwright UI shell 3/3과 Agent Run fixture 2/2가 통과했다.
+  - Root diff·설정·문구 검사는 통과했으며 최종 validator 판정만 인프라 오류로 확보하지 못했다.
+- Next steps:
+  - 백엔드를 명시적 local profile로 재시작하고 운영에서는 충분한 엔트로피의 HMAC secret을 주입한다.
+
 ## [2026-07-28] Session Summary (Frontend B2C UX Writing·Brand Experience 재설계)
 
 - What was done:

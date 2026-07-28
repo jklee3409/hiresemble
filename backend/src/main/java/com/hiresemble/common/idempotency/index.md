@@ -9,7 +9,7 @@ Document·Job 생성 mutation이 사용하는 DB 기반 HMAC reservation과 원 
 - [`IdempotencyService.java`](IdempotencyService.java): reservation·hash 비교·replay 조정
 - [`IdempotencyRepository.java`](IdempotencyRepository.java): reservation·만료 reclaim·완료의 원자적 JDBC 접근
 - [`IdempotencyRequestHasher.java`](IdempotencyRequestHasher.java): versioned HMAC-SHA-256
-- [`IdempotencyProperties.java`](IdempotencyProperties.java): key version·secret map·24시간 TTL
+- [`IdempotencyProperties.java`](IdempotencyProperties.java): key version·secret map·24시간 TTL과 startup fail-closed
 - [`IdempotencyScope.java`](IdempotencyScope.java): 사용자·method·route·resource·key scope
 - [`IdempotentResponse.java`](IdempotentResponse.java): status·DTO·replay 결과
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

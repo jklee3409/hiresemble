@@ -4,6 +4,20 @@
 
 Signup·login의 client 입력 schema와 Backend UTF-8 byte 계약을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
 
+## [2026-07-28] Session Summary (이메일 형식·닉네임 검증 명시)
+
+- What was done:
+  - 가입·로그인 공통 이메일에 공백·@·domain dot 형식을 명시적으로 검사하고 invalid table test를 추가했다.
+  - signup의 `displayName` 사용자 문구를 닉네임으로 바꿨다.
+- Key decisions:
+  - Backend DTO field와 email normalization, password byte 계약은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth validation과 visible flow test, Frontend 전체 check가 통과했다.
+- Next steps:
+  - Backend email 계약이 바뀌면 공통 schema 경계를 함께 갱신한다.
+
 ## [2026-07-28] Session Summary (인증 Validation 소비자 문구 개선)
 
 - What was done:

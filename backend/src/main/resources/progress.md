@@ -8,6 +8,20 @@
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
 
+## [2026-07-28] Session Summary (로컬 idempotency HMAC profile 추가)
+
+- What was done:
+  - `application-local.yml`에 개발 전용 HMAC 키를 분리하고 `.env.example`에서 local profile을 명시적으로 활성화했다.
+  - profile 미지정·비로컬 환경은 기존 `IDEMPOTENCY_HMAC_KEY` placeholder를 사용한다.
+- Key decisions:
+  - 운영 secret을 저장소에 넣지 않고 로컬 즉시 실행성과 배포 환경 분리를 profile 우선순위로 해결했다.
+- Issues encountered:
+  - 알려진 개발 키가 profile 미지정 배포에 적용되지 않도록 전역 default profile을 두지 않았다.
+- Validation:
+  - 설정 리소스 회귀 테스트와 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - 배포 환경에서는 `local`을 활성화하지 않고 versioned secret을 주입한다.
+
 ## [2026-07-27] Session Summary (P5 Job 설정·V6 추가)
 
 - What was done:

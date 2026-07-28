@@ -4,6 +4,19 @@
 
 Backend P1~P5 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-07-28] Session Summary (Agent Run 오류 사용자 문구 정리)
+
+- What was done:
+  - invalid Agent Run server response의 사용자 메시지를 분석 기록 표현으로 변경했다.
+- Key decisions:
+  - schema, error code와 transport 계약은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - API client tests와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-27] Session Summary (P5 Job typed contract·client 구현)
 
 - What was done:

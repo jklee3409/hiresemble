@@ -4,6 +4,19 @@
 
 Document·Job 생성 mutation이 사용하는 DB 기반 HMAC reservation, 원 응답 replay와 Agent Run successor metadata를 제공한다.
 
+## [2026-07-28] Session Summary (Idempotency key startup fail-closed)
+
+- What was done:
+  - active hash key가 없거나 비어 있으면 application context 초기화에서 즉시 실패하도록 properties 검증을 추가했다.
+- Key decisions:
+  - 알려진 개발 키는 명시적 local profile에서만 제공하고 profile 미지정·비로컬 환경은 환경 secret을 요구한다.
+- Issues encountered:
+  - 전역 default local profile은 배포 설정 누락 시 알려진 key를 사용할 수 있어 제거했다.
+- Validation:
+  - Properties 단위 회귀, Backend 전체 check와 실제 P4 Browser E2E 4/4가 통과했다.
+- Next steps:
+  - 운영 key rotation에서는 current version과 과거 hash key map을 함께 제공한다.
+
 ## [2026-07-27] Session Summary (Job 201/202 replay 연결)
 
 - What was done:

@@ -6,15 +6,17 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                 | 역할                                                              |
-| ------------------------------------ | ----------------------------------------------------------------- |
-| [`application.yml`](application.yml) | datasource, Session·AI·Document·Job·Object Storage와 OpenAPI 설정 |
-| [`db/`](db/)                         | DB 관리 리소스의 상위 경계                                        |
-| [`db/migration/`](db/migration/)     | Flyway가 순서대로 적용하는 SQL migration                          |
+| 경로                                             | 역할                                                              |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
+| [`application.yml`](application.yml)             | datasource, Session·AI·Document·Job·Object Storage와 OpenAPI 설정 |
+| [`application-local.yml`](application-local.yml) | 로컬 개발 전용 idempotency HMAC 설정                              |
+| [`db/`](db/)                                     | DB 관리 리소스의 상위 경계                                        |
+| [`db/migration/`](db/migration/)                 | Flyway가 순서대로 적용하는 SQL migration                          |
 
 ## 구성 요소 역할
 
 - `application.yml`은 선택적 `.env`를 읽고 Session·Cookie, versioned HMAC, bounded Agent worker, Document pipeline과 Job fetch·Scheduler·cost override를 정의한다.
+- `application-local.yml`은 명시적 local profile에서만 개발 전용 HMAC 키를 제공하며 비로컬 환경의 secret 계약을 대체하지 않는다.
 - `db/migration`은 PostgreSQL/pgvector schema 변경의 유일한 버전 관리 경로다.
 - 이 디렉터리의 파일은 Gradle `main` resources로 처리되어 런타임 classpath에 놓인다.
 

@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
 
+## [2026-07-28] Session Summary (Agent Run 사용자 용어를 분석 기록으로 전환)
+
+- What was done:
+  - `AI 작업`을 문맥별 `진행 중인 분석`, `분석 기록`, `분석 진행 상황`으로 바꿨다.
+- Key decisions:
+  - 내부 Agent Run·workflow·status 타입과 route는 유지했다.
+- Issues encountered:
+  - 기존 E2E accessible name을 새 용어와 맞췄다.
+- Validation:
+  - Agent Run unit/component와 Playwright fixture 2/2가 통과했다.
+- Next steps:
+  - 새 workflow가 추가될 때 사용자 결과 중심 label을 함께 정의한다.
+
 ## [2026-07-28] Session Summary (AI 작업 소비자 경험 재설계)
 
 - What was done:

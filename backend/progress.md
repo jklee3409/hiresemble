@@ -7,6 +7,20 @@
 - V1~V5를 보존한 V6 migration이 Company·Job·status history와 typed Job Run link 불변식을 추가한다.
 - 생성 OpenAPI는 정확히 50 operations/34 paths이며 P6 분석 endpoint는 없다.
 
+## [2026-07-28] Session Summary (로컬 Document 업로드 멱등 설정 복구)
+
+- What was done:
+  - 실제 multipart 업로드 500의 원인을 빈 idempotency HMAC 키로 확정하고 명시적 `local` profile에 개발 전용 키를 제공했다.
+  - 비로컬 profile의 환경 변수 기반 versioned secret 계약과 Document API·workflow 구현은 유지했다.
+- Key decisions:
+  - Document나 AgentOrchestrator에서 예외를 우회하지 않고 key 누락은 application startup에서 fail-closed한다.
+- Issues encountered:
+  - 실행 중인 8080 프로세스는 변경 전 설정을 보유해 재시작 전에는 동일 500을 반환한다.
+- Validation:
+  - `.\gradlew.bat check --console=plain`, DocumentIntegrationTest 12개, 설정 회귀와 P4 Browser E2E 4/4가 통과했다.
+- Next steps:
+  - 로컬 백엔드를 재시작하고 운영 profile에서는 충분한 엔트로피의 `IDEMPOTENCY_HMAC_KEY`를 주입한다.
+
 ## [2026-07-27] Session Summary (P5 Job Backend·AI workflow 구현)
 
 - What was done:

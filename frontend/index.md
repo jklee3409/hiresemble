@@ -26,7 +26,7 @@
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
 - `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증 상태와 typed profile·Agent Run·Document·Job transport를 관리한다.
 - `src/styles`와 `src/shared/ui`가 cobalt 기반 제품 design token, BrandMark, 공통 form/action/status/state·motion pattern을 제공한다.
-- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, profile, `AI 작업` Progress Drawer, Document 검토와 Job 수명주기 흐름을 제공한다.
+- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, profile, 진행 중인 분석 drawer, Document 검토와 Job 수명주기 흐름을 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 
