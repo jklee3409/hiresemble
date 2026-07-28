@@ -20,8 +20,8 @@ test.describe('P4 actual Backend document pipeline', () => {
 
     await uploadText(page, 'long-document.txt', longDocument(), '통합 이력서')
     const documentId = idFromUrl(page.url())
-    await expect(page.getByText('텍스트 준비 완료')).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByText('근거 추출 완료')).toBeVisible({ timeout: 120_000 })
+    await expect(page.getByText('읽기 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
+    await expect(page.getByText('정리 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
     expect(eventRequests.length).toBeGreaterThan(0)
 
     const evidenceCard = page.locator('[aria-labelledby="document-evidence-heading"] li').first()
@@ -58,14 +58,16 @@ test.describe('P4 actual Backend document pipeline', () => {
     test.setTimeout(240_000)
     await signup(page, uniqueEmail('manual'), 'P4 Manual')
     await uploadText(page, 'short-document.txt', '짧은 문서', '수동 입력 문서')
-    await expect(page.getByText('텍스트 입력 필요')).toBeVisible({ timeout: 120_000 })
-    const runLink = page.getByRole('link', { name: '작업 진행 상세 보기' })
+    await expect(page.getByText('내용 직접 입력 필요', { exact: true })).toBeVisible({
+      timeout: 120_000,
+    })
+    const runLink = page.getByRole('link', { name: '분석 기록 자세히 보기' })
     const originalRun = await runLink.getAttribute('href')
-    await page.getByLabel('문서 텍스트').fill(longDocument())
-    await page.getByRole('button', { name: '텍스트 저장 후 재개' }).click()
+    await page.getByLabel('자료 내용').fill(longDocument())
+    await page.getByRole('button', { name: '내용 저장하고 계속하기' }).click()
     await expect(runLink).toHaveAttribute('href', originalRun ?? '')
-    await expect(page.getByText('텍스트 준비 완료')).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByText('근거 추출 완료')).toBeVisible({ timeout: 120_000 })
+    await expect(page.getByText('읽기 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
+    await expect(page.getByText('정리 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
   })
 
   test('parse success remains visible when configured Fake embedding/extraction fails', async ({
@@ -74,9 +76,11 @@ test.describe('P4 actual Backend document pipeline', () => {
     test.setTimeout(240_000)
     await signup(page, uniqueEmail('failure'), 'P4 Failure')
     await uploadText(page, 'failure-document.txt', failureDocument(), '부분 성공 문서')
-    await expect(page.getByText('텍스트 준비 완료')).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByText('근거 추출 실패')).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByText('문서 업로드 실패가 아닙니다')).toBeVisible()
+    await expect(page.getByText('읽기 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
+    await expect(page.getByText('정리하지 못함', { exact: true })).toBeVisible({
+      timeout: 120_000,
+    })
+    await expect(page.getByText(/자료 내용은 안전하게 남아 있어요/)).toBeVisible()
     await expect(page.getByText(longDocument().slice(0, 40), { exact: false })).toBeVisible()
   })
 
@@ -89,7 +93,7 @@ test.describe('P4 actual Backend document pipeline', () => {
     await uploadText(page, 'owner-document.txt', longDocument(), '소유자 문서')
     const documentId = idFromUrl(page.url())
     const runHref = await page
-      .getByRole('link', { name: '작업 진행 상세 보기' })
+      .getByRole('link', { name: '분석 기록 자세히 보기' })
       .getAttribute('href')
     const runId = runHref?.split('/').pop()
     expect(runId).toBeTruthy()

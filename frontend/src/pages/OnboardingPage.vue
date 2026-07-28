@@ -6,6 +6,12 @@ import { useRouter } from 'vue-router'
 import StringListInput from '@/features/profile/StringListInput.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
+import {
+  DESIRED_LOCATION_PRESETS,
+  DESIRED_LOCATION_SUGGESTIONS,
+  DESIRED_ROLE_PRESETS,
+  DESIRED_ROLE_SUGGESTIONS,
+} from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
@@ -253,7 +259,7 @@ async function retryLoad(): Promise<void> {
         { key: 'desiredRoles', label: '희망 직무' },
         { key: 'desiredIndustries', label: '희망 산업' },
         { key: 'desiredLocations', label: '희망 지역' },
-        { key: 'expectedGraduationDate', label: '졸업 예정일' },
+        { key: 'expectedGraduationDate', label: '졸업(예정)일' },
       ]"
       @cancel="cancelConflict"
       @reapply="reapplyConflict"
@@ -297,7 +303,7 @@ async function retryLoad(): Promise<void> {
         <p class="field-help">핵심 경험이나 관심 직무를 2~3문장으로 적어 보세요.</p>
       </div>
       <div class="field onboarding-date-field">
-        <label class="field-label" for="onboarding-graduationDate">졸업 예정일</label>
+        <label class="field-label" for="onboarding-graduationDate">졸업(예정)일</label>
         <input
           id="onboarding-graduationDate"
           v-model="profileForm.expectedGraduationDate"
@@ -418,18 +424,27 @@ async function retryLoad(): Promise<void> {
         v-model="profileForm.desiredRoles"
         label="희망 직무"
         :error="fieldErrors.desiredRoles"
+        placeholder="예: 프론트엔드 개발자"
+        help="직무명을 입력하면 관련 선택지를 추천해 드려요"
+        :presets="DESIRED_ROLE_PRESETS"
+        :suggestions="DESIRED_ROLE_SUGGESTIONS"
       />
       <StringListInput
         id="onboarding-desiredIndustries"
         v-model="profileForm.desiredIndustries"
         label="희망 산업"
         :error="fieldErrors.desiredIndustries"
+        placeholder="예: IT·소프트웨어"
       />
       <StringListInput
         id="onboarding-desiredLocations"
         v-model="profileForm.desiredLocations"
         label="희망 지역"
         :error="fieldErrors.desiredLocations"
+        placeholder="예: 서울 또는 원격근무"
+        help="시·도나 원하는 근무 방식을 직접 입력할 수 있어요"
+        :presets="DESIRED_LOCATION_PRESETS"
+        :suggestions="DESIRED_LOCATION_SUGGESTIONS"
       />
       <div class="onboarding-actions">
         <button type="button" class="button button--ghost" @click="step = 2">

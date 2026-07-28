@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -55,11 +55,21 @@ const filterEvidenceStatus = ref('')
 const selectedFile = ref<File | null>(null)
 const documentType = ref<DocumentType>('RESUME')
 const displayName = ref('')
+const isDragging = ref(false)
+const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const uploadErrors = ref<Record<string, string>>({})
 const actionError = ref('')
 const message = ref('')
 let uploadIdempotencyKey = ''
 const reparseKeys = new Map<string, string>()
+const DOCUMENT_TYPE_HINTS: Record<DocumentType, string> = {
+  RESUME: '학력·경력·기술 등 지원의 기본이 되는 정보를 정리해요.',
+  PORTFOLIO: '프로젝트와 결과물에서 역할과 성과를 찾아 정리해요.',
+  CAREER_DESCRIPTION: '회사별 담당 업무와 성과를 경력 정보로 정리해요.',
+  CERTIFICATE: '자격 취득 내용을 프로필에 연결할 때 활용해요.',
+  TRANSCRIPT: '학업 이력과 성적 정보를 확인할 때 활용해요.',
+  OTHER: '지원 준비에 참고할 수 있는 기타 자료로 등록해요.',
+}
 
 const uploadMutation = useMutation({
   mutationFn: (input: {
@@ -111,6 +121,13 @@ function selectFile(event: Event): void {
 function dropFile(event: DragEvent): void {
   selectedFile.value = event.dataTransfer?.files[0] ?? null
   uploadErrors.value = {}
+  isDragging.value = false
+}
+
+function clearSelectedFile(): void {
+  selectedFile.value = null
+  uploadErrors.value = {}
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 async function upload(): Promise<void> {
@@ -258,47 +275,100 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     />
 
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
-      <div class="upload-panel__heading">
-        <p class="section-kicker">자료 등록</p>
-        <h3 class="section-title">이력서나 자료를 올려 주세요.</h3>
-        <p>등록한 뒤 내용을 읽고 경력 정보를 정리하는 과정을 이어서 확인할 수 있어요.</p>
+      <header class="upload-panel__heading">
+        <div>
+          <p class="section-kicker">Document studio</p>
+          <h2 class="section-title">경력을 설명해 줄 자료를 등록하세요.</h2>
+          <p>
+            원본 파일은 그대로 보관하고, 읽어 낸 내용과 정리된 경력 정보는 등록 후 직접 확인할 수
+            있어요.
+          </p>
+        </div>
+        <ol class="upload-panel__steps" aria-label="자료 등록 순서">
+          <li class="upload-panel__step upload-panel__step--current">
+            <span>01</span>
+            <strong>파일 선택</strong>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>자료 분류</strong>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>내용 분석</strong>
+          </li>
+        </ol>
+      </header>
+      <div class="upload-panel__file">
+        <p class="upload-panel__label"><span>01</span> 파일 선택</p>
+        <label
+          for="document-file"
+          class="dropzone"
+          :class="{ 'dropzone--active': isDragging }"
+          @dragenter.prevent="isDragging = true"
+          @dragover.prevent
+          @dragleave.prevent="isDragging = false"
+          @drop.prevent="dropFile"
+        >
+          <span class="dropzone__icon" aria-hidden="true"><AppIcon name="upload" /></span>
+          <strong>{{
+            isDragging ? '여기에 놓아 주세요' : '파일을 끌어오거나 눌러 선택하세요'
+          }}</strong>
+          <span>PDF · DOCX · TXT, 파일당 최대 20MB</span>
+          <input
+            id="document-file"
+            ref="fileInput"
+            class="dropzone__input"
+            type="file"
+            accept=".pdf,.docx,.txt"
+            :aria-describedby="
+              uploadErrors.file ? 'document-file-help document-file-error' : 'document-file-help'
+            "
+            :aria-invalid="Boolean(uploadErrors.file)"
+            @change="selectFile"
+          />
+          <span id="document-file-help" class="dropzone__privacy">
+            등록한 파일은 본인의 취업 준비에만 사용해요.
+          </span>
+        </label>
+        <div v-if="selectedFile" class="selected-file" role="status">
+          <span class="selected-file__icon" aria-hidden="true"><AppIcon name="documents" /></span>
+          <div>
+            <span>선택한 파일</span>
+            <strong>{{ selectedFile.name }}</strong>
+            <small>{{ formatFileSize(selectedFile.size) }}</small>
+          </div>
+          <button
+            type="button"
+            class="button button--ghost button--compact"
+            @click="clearSelectedFile"
+          >
+            선택 해제
+          </button>
+        </div>
+        <p v-if="uploadErrors.file" id="document-file-error" class="inline-error" role="alert">
+          {{ uploadErrors.file }}
+        </p>
       </div>
-      <label for="document-file" class="dropzone" @dragover.prevent @drop.prevent="dropFile">
-        <span class="dropzone__icon" aria-hidden="true"><AppIcon name="upload" /></span>
-        <strong>파일을 놓거나 눌러 선택하세요</strong>
-        <span>PDF · DOCX · TXT, 파일당 최대 20MB</span>
-        <input
-          id="document-file"
-          class="dropzone__input"
-          type="file"
-          accept=".pdf,.docx,.txt"
-          @change="selectFile"
-        />
-      </label>
-      <p v-if="selectedFile" class="selected-file" role="status">
-        <span>선택한 파일</span>
-        <strong>{{ selectedFile.name }}</strong>
-        <span>{{ formatFileSize(selectedFile.size) }}</span>
-      </p>
-      <p v-if="uploadErrors.file" class="inline-error" role="alert">
-        {{ uploadErrors.file }}
-      </p>
-      <div class="upload-panel__fields">
+      <div class="upload-panel__details">
+        <p class="upload-panel__label"><span>02</span> 자료 분류</p>
         <label class="field">
-          <span class="field__label">문서 유형</span>
+          <span class="field__label">자료 유형</span>
           <select id="document-upload-type" v-model="documentType" class="control">
             <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
               {{ DOCUMENT_TYPE_LABELS[type] }}
             </option>
           </select>
+          <span class="field-help">{{ DOCUMENT_TYPE_HINTS[documentType] }}</span>
         </label>
         <label class="field">
-          <span class="field__label">표시 이름 <span class="field__optional">(선택)</span></span>
+          <span class="field__label">자료 이름 <span class="field__optional">(선택)</span></span>
           <input
             id="document-displayName"
             v-model="displayName"
             class="control"
             maxlength="255"
+            placeholder="예: 2026 상반기 이력서"
             :aria-invalid="Boolean(uploadErrors.displayName)"
             :aria-describedby="uploadErrors.displayName ? 'document-displayName-error' : undefined"
           />
@@ -309,15 +379,22 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
             >{{ uploadErrors.displayName }}</span
           >
         </label>
+        <div class="upload-panel__action">
+          <p>
+            <AppIcon name="runs" />
+            등록하면 문서 읽기와 경력 정보 정리를 시작해요.
+          </p>
+          <button
+            id="document-upload-submit"
+            type="submit"
+            class="button button--primary upload-panel__submit"
+            :disabled="uploadMutation.isPending.value"
+          >
+            <span v-if="uploadMutation.isPending.value" class="button-spinner" aria-hidden="true" />
+            {{ uploadMutation.isPending.value ? '등록을 시작하는 중…' : '등록하고 분석 시작' }}
+          </button>
+        </div>
       </div>
-      <button
-        id="document-upload-submit"
-        type="submit"
-        class="button button--primary upload-panel__submit"
-        :disabled="uploadMutation.isPending.value"
-      >
-        {{ uploadMutation.isPending.value ? '업로드 접수 중…' : '업로드' }}
-      </button>
     </form>
 
     <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
@@ -470,9 +547,27 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
 .upload-panel {
   display: grid;
-  grid-template-columns: minmax(13rem, 0.75fr) minmax(18rem, 1.25fr);
+  grid-template-columns: minmax(18rem, 1.1fr) minmax(16rem, 0.9fr);
   gap: var(--space-5) var(--space-7);
+  overflow: hidden;
   padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.upload-panel__heading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-6);
+}
+
+.upload-panel__heading h2 {
+  max-width: 34rem;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.04em;
 }
 
 .upload-panel__heading p:last-child {
@@ -482,9 +577,75 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   font-size: var(--font-size-sm);
 }
 
-.dropzone {
+.upload-panel__steps {
   display: flex;
-  min-height: 11rem;
+  flex: 0 0 auto;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upload-panel__steps li {
+  min-width: 5.5rem;
+  border-top: 1px solid var(--color-border-strong);
+  color: var(--color-muted);
+  padding: 0.5rem 1rem 0 0;
+}
+
+.upload-panel__steps span,
+.upload-panel__steps strong {
+  display: block;
+}
+
+.upload-panel__steps span {
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.upload-panel__steps strong {
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+}
+
+.upload-panel__steps .upload-panel__step--current {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.upload-panel__file,
+.upload-panel__details {
+  min-width: 0;
+}
+
+.upload-panel__details {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-7);
+}
+
+.upload-panel__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 var(--space-3);
+  color: var(--color-ink);
+  font-size: 0.8125rem;
+  font-weight: 750;
+}
+
+.upload-panel__label span {
+  color: var(--color-brand);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dropzone {
+  position: relative;
+  display: flex;
+  min-height: 15rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
@@ -501,7 +662,8 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 }
 
 .dropzone:hover,
-.dropzone:focus-within {
+.dropzone:focus-within,
+.dropzone--active {
   border-color: var(--color-brand);
   background: var(--color-brand-soft);
 }
@@ -526,39 +688,91 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 }
 
 .dropzone__input {
-  width: min(100%, 19rem);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.dropzone__privacy {
   margin-top: var(--space-2);
-  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs) !important;
 }
 
 .selected-file {
   display: flex;
   min-width: 0;
-  grid-column: 2;
   align-items: center;
   gap: var(--space-2);
+  margin-top: var(--space-3);
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-soft);
   color: var(--color-text-secondary);
+  padding: var(--space-3);
   font-size: var(--font-size-sm);
 }
 
-.selected-file strong {
+.selected-file__icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: white;
+}
+
+.selected-file > div {
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.selected-file span,
+.selected-file strong,
+.selected-file small {
+  display: block;
+}
+
+.selected-file span,
+.selected-file small {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+}
+
+.selected-file strong {
   overflow: hidden;
   color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.upload-panel__fields {
+.upload-panel__action {
   display: grid;
-  grid-column: 2;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.upload-panel__action p {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.upload-panel__action .icon {
+  flex: 0 0 auto;
+  color: var(--color-brand);
+  margin-top: 0.1rem;
 }
 
 .upload-panel__submit {
-  grid-column: 2;
-  justify-self: start;
+  width: 100%;
 }
 
 .document-filters {
@@ -634,10 +848,24 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     grid-template-columns: 1fr;
   }
 
-  .selected-file,
-  .upload-panel__fields,
-  .upload-panel__submit {
-    grid-column: 1;
+  .upload-panel__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .upload-panel__steps {
+    width: 100%;
+  }
+
+  .upload-panel__steps li {
+    flex: 1 1 0;
+  }
+
+  .upload-panel__details {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+    padding-top: var(--space-5);
+    padding-left: 0;
   }
 }
 
@@ -659,6 +887,15 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
   .document-row__actions {
     justify-content: flex-start;
+  }
+
+  .selected-file {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .selected-file > div {
+    min-width: calc(100% - 3rem);
   }
 }
 </style>

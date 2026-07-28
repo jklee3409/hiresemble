@@ -534,7 +534,7 @@ function fieldsForKind(kind: ResourceKind): Array<{ key: string; label: string }
       { key: 'degree', label: '학위' },
       { key: 'educationStatus', label: '상태' },
       { key: 'admissionDate', label: '입학일' },
-      { key: 'graduationDate', label: '졸업일' },
+      { key: 'graduationDate', label: '졸업(예정)일' },
       { key: 'gpa', label: '학점' },
       { key: 'gpaScale', label: '기준 학점' },
       { key: 'isPrimary', label: '먼저 보여 줄 학력' },
@@ -593,7 +593,7 @@ const resourceLabels: Record<
     add: '학력 추가',
     sorts: [
       { value: 'createdAt,desc', label: '최근 등록순' },
-      { value: 'graduationDate,desc', label: '졸업일순' },
+      { value: 'graduationDate,desc', label: '졸업(예정)일순' },
     ],
   },
   certification: {
@@ -751,7 +751,7 @@ const resourceLabels: Record<
               type="date"
           /></label>
           <label class="text-sm font-medium"
-            >졸업일<input
+            >졸업(예정)일<input
               v-model="form.graduationDate"
               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               type="date"

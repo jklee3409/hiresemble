@@ -9,11 +9,11 @@ test('protected app shell stays usable without horizontal overflow at required w
   await page.goto('/dashboard')
   await expect(page.getByRole('heading', { name: '오늘의 지원 준비를 이어가세요.' })).toBeVisible()
 
-  const progressTrigger = page.getByRole('button', { name: /AI 작업\s*0/ })
+  const progressTrigger = page.getByRole('button', { name: /진행 중인 분석\s*0/ })
   await progressTrigger.click()
-  const progressDialog = page.getByRole('dialog', { name: 'AI 작업 진행 현황' })
+  const progressDialog = page.getByRole('dialog', { name: '진행 중인 분석' })
   await expect(progressDialog).toBeVisible()
-  await progressDialog.getByRole('button', { name: 'AI 작업 닫기' }).click()
+  await progressDialog.getByRole('button', { name: '진행 중인 분석 닫기' }).click()
   await expect(progressDialog).toBeHidden()
   await expect(progressTrigger).toBeFocused()
 
@@ -107,6 +107,87 @@ test('public authentication shell keeps the form readable at desktop and mobile 
       .locator('.brand-orbit__ring--outer')
       .evaluate((element) => getComputedStyle(element).animationName),
   ).toBe('none')
+})
+
+test('profile suggestions and document registration stay keyboard-ready and responsive', async ({
+  page,
+}) => {
+  await installAuthenticatedRoutes(page)
+  await page.route('**/api/v1/profile', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        legalName: '반응형 확인 사용자',
+        introduction: '',
+        desiredRoles: [],
+        desiredIndustries: [],
+        desiredLocations: [],
+        expectedGraduationDate: null,
+        profileCompleted: false,
+        missingCompletionItems: [
+          'DESIRED_ROLE',
+          'DESIRED_INDUSTRY',
+          'DESIRED_LOCATION',
+          'PRIMARY_EDUCATION',
+        ],
+        version: 1,
+        createdAt: '2026-07-28T00:00:00Z',
+        updatedAt: '2026-07-28T00:00:00Z',
+      }),
+    })
+  })
+  await page.route('**/api/v1/documents?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+      }),
+    })
+  })
+
+  await page.goto('/profile/basic')
+  const roleInput = page.getByRole('combobox', { name: '희망 직무' })
+  await roleInput.fill('프론트')
+  const roleSuggestion = page.getByRole('option', { name: /프론트엔드 개발자/ })
+  await expect(roleSuggestion).toBeVisible()
+  await roleInput.press('ArrowDown')
+  await expect(roleSuggestion).toBeFocused()
+  await roleSuggestion.press('Enter')
+  await expect(page.getByLabel('희망 직무 목록')).toContainText('프론트엔드 개발자')
+
+  for (const width of [1024, 390] as const) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+      `${width}px 프로필 화면에서 가로 overflow가 없어야 합니다.`,
+    ).toBe(false)
+
+    await page.goto('/documents')
+    await expect(page.getByRole('heading', { name: '이력서·자료', level: 2 })).toBeVisible()
+    await expect(page.getByLabel('자료 등록 순서')).toContainText('내용 분석')
+    await page.locator('#document-file').setInputFiles({
+      name: '지원용-이력서.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('fixture resume'),
+    })
+    await expect(page.getByText('지원용-이력서.txt')).toBeVisible()
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+      `${width}px 자료 등록 화면에서 가로 overflow가 없어야 합니다.`,
+    ).toBe(false)
+
+    if (width === 1024) await page.goto('/profile/basic')
+  }
 })
 
 async function installAuthenticatedRoutes(page: Page): Promise<void> {

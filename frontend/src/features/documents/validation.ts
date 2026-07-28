@@ -24,7 +24,7 @@ export function validateUpload(input: UploadFormInput): Record<string, string> {
     }
   }
   const displayName = input.displayName.trim()
-  if (displayName.length > 255) errors.displayName = '표시 이름은 255자 이하여야 합니다.'
+  if (displayName.length > 255) errors.displayName = '자료 이름은 255자 이하로 입력해 주세요.'
   return errors
 }
 

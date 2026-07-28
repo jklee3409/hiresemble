@@ -115,7 +115,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
   <section class="run-list-page app-page" aria-labelledby="run-list-heading">
     <PageHeader
       heading-id="run-list-heading"
-      title="AI 작업"
+      title="분석 기록"
       description="이력서와 공고를 정리하는 작업의 진행 상황을 확인하세요."
       eyebrow="준비 진행 상황"
     />
@@ -178,21 +178,21 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       v-if="runs.isLoading.value"
       class="run-list-page__state"
       kind="loading"
-      title="AI 작업을 불러오는 중…"
+      title="분석 기록을 불러오는 중…"
       description="시작한 작업과 최신 진행 상황을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="runs.isError.value"
       class="run-list-page__state"
       kind="error"
-      title="AI 작업을 불러오지 못했어요."
+      title="분석 기록을 불러오지 못했어요."
       :description="errorMessage"
     />
     <StatePanel
       v-else-if="runs.data.value?.items.length === 0"
       class="run-list-page__state"
       kind="empty"
-      title="조건에 맞는 AI 작업이 없어요."
+      title="조건에 맞는 분석 기록이 없어요."
       description="필터를 바꾸거나 자료와 공고를 등록하면 진행 상황이 이곳에 표시돼요."
     />
     <div v-else class="run-list data-list">
@@ -243,7 +243,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       v-if="runs.data.value && runs.data.value.totalPages > 0"
       :page="filters.page"
       :total-pages="runs.data.value.totalPages"
-      label="AI 작업 페이지"
+      label="분석 기록 페이지"
       @change="changePage"
     />
   </section>

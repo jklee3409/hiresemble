@@ -62,13 +62,13 @@ const connectionLabel = computed(
 
 <template>
   <div class="document-run-monitor" aria-live="polite">
-    <p v-if="detail.isPending.value">연결된 AI 작업을 불러오는 중…</p>
+    <p v-if="detail.isPending.value">자료 분석 진행 상황을 불러오는 중…</p>
     <p v-else-if="detail.isError.value" class="document-run-monitor__warning">
       진행 상황을 다시 확인하는 중이에요. 자료 상태는 그대로 유지돼요.
     </p>
     <template v-else-if="detail.data.value">
       <div class="document-run-monitor__summary">
-        <span>AI 작업: {{ STATUS_LABELS[detail.data.value.status] }}</span>
+        <span>자료 분석: {{ STATUS_LABELS[detail.data.value.status] }}</span>
         <strong>{{ detail.data.value.progressPercent }}%</strong>
       </div>
       <progress class="progress-track" :value="detail.data.value.progressPercent" max="100">

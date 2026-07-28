@@ -306,7 +306,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         <div class="document-section__heading">
           <div>
             <p class="section-kicker">진행 상황</p>
-            <h3 class="section-title">연결된 AI 작업</h3>
+            <h3 class="section-title">자료 분석 진행 상황</h3>
           </div>
           <RouterLink
             class="button button--secondary button--compact"
@@ -314,7 +314,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
               name: 'agent-run-detail',
               params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
             }"
-            >AI 작업 자세히 보기</RouterLink
+            >분석 기록 자세히 보기</RouterLink
           >
         </div>
         <DocumentRunMonitor
@@ -332,7 +332,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         <h3 class="section-title">내용 직접 입력</h3>
         <p class="document-section__description">
           자료에서 읽지 못한 내용을 직접 입력해 주세요. 공백을 제외하고 100자 이상 입력하면 기다리던
-          AI 작업을 이어서 진행해요.
+          자료 분석을 이어서 진행해요.
         </p>
         <form class="manual-text-form" novalidate @submit.prevent="submitManualText">
           <label class="field">

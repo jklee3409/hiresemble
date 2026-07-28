@@ -78,7 +78,7 @@ function tone(status: AgentRunStatus) {
       @click="toggleDrawer"
     >
       <AppIcon name="clock" />
-      <span class="run-progress__trigger-label">AI 작업</span>
+      <span class="run-progress__trigger-label">진행 중인 분석</span>
       <span class="run-progress__count">{{ activeCount }}</span>
     </button>
     <section
@@ -87,18 +87,18 @@ function tone(status: AgentRunStatus) {
       ref="panel"
       class="run-drawer"
       role="dialog"
-      aria-label="AI 작업 진행 현황"
+      aria-label="진행 중인 분석"
       @keydown="onKeydown"
     >
       <header class="run-drawer__header">
         <div>
           <p class="page-eyebrow">지금 진행 중</p>
-          <h2 id="agent-run-progress-title">AI 작업</h2>
+          <h2 id="agent-run-progress-title">진행 중인 분석</h2>
         </div>
         <button
           type="button"
           class="button button--ghost button--icon"
-          aria-label="AI 작업 닫기"
+          aria-label="진행 중인 분석 닫기"
           @click="closeDrawer()"
         >
           <AppIcon name="close" />
@@ -107,21 +107,21 @@ function tone(status: AgentRunStatus) {
 
       <div class="run-drawer__body">
         <p class="run-drawer__summary">
-          최근 진행 중인 AI 작업 {{ items.length }}개를 보여 드려요. 전체 {{ activeCount }}개
+          최근 진행 중인 분석 {{ items.length }}개를 보여 드려요. 전체 {{ activeCount }}개
         </p>
         <div v-if="activeRuns.isLoading.value" class="run-drawer__state" role="status">
           <div class="skeleton-stack" aria-hidden="true">
             <div class="skeleton-line" />
             <div class="skeleton-line" />
           </div>
-          <span>AI 작업을 불러오는 중…</span>
+          <span>분석 진행 상황을 불러오는 중…</span>
         </div>
         <div v-else-if="activeRuns.isError.value" class="alert alert--danger" role="alert">
-          AI 작업을 불러오지 못했어요.
+          분석 진행 상황을 불러오지 못했어요.
         </div>
         <div v-else-if="items.length === 0" class="run-drawer__state">
           <AppIcon name="check" />
-          <span>지금 진행 중인 AI 작업이 없어요.</span>
+          <span>지금 진행 중인 분석이 없어요.</span>
         </div>
         <ul v-else class="run-drawer__list">
           <li v-for="run in items" :key="run.id">
@@ -148,7 +148,7 @@ function tone(status: AgentRunStatus) {
 
       <footer class="run-drawer__footer">
         <RouterLink class="text-link" to="/agent-runs" @click="closeDrawer(false)">
-          AI 작업 전체 보기
+          분석 기록 전체 보기
           <AppIcon name="arrow-right" />
         </RouterLink>
       </footer>

@@ -38,9 +38,9 @@ const quickActions = [
     to: '/agent-runs',
     icon: 'runs',
     step: '04',
-    title: 'AI 작업 확인하기',
+    title: '진행 중인 분석 확인하기',
     description: '자료와 공고를 정리하는 작업이 어디까지 진행됐는지 확인해요.',
-    action: 'AI 작업 보기',
+    action: '분석 기록 보기',
   },
 ] as const
 </script>

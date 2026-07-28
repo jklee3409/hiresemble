@@ -6,6 +6,12 @@ import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import StringListInput from '@/features/profile/StringListInput.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
 import { isVersionConflict } from '@/features/profile/conflict'
+import {
+  DESIRED_LOCATION_PRESETS,
+  DESIRED_LOCATION_SUGGESTIONS,
+  DESIRED_ROLE_PRESETS,
+  DESIRED_ROLE_SUGGESTIONS,
+} from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import { type ProfileFormValues, validateProfileForm } from '@/features/profile/schemas'
 import AppIcon from '@/shared/ui/AppIcon.vue'
@@ -30,7 +36,7 @@ const conflictFields = [
   { key: 'desiredRoles', label: '희망 직무' },
   { key: 'desiredIndustries', label: '희망 산업' },
   { key: 'desiredLocations', label: '희망 지역' },
-  { key: 'expectedGraduationDate', label: '졸업 예정일' },
+  { key: 'expectedGraduationDate', label: '졸업(예정)일' },
 ] as const
 
 const authStore = useAuthStore()
@@ -212,120 +218,173 @@ function emptyForm(): ProfileFormValues {
         @reapply="reapplyConflict"
       />
 
-      <form class="profile-form section-surface" novalidate @submit.prevent="save">
-        <section class="profile-form__section" aria-labelledby="profile-identity-heading">
-          <header>
-            <h3 id="profile-identity-heading" class="section-title">기본 정보</h3>
-            <p class="section-description">
-              지원할 때 사용할 이름, 소개와 졸업 예정일을 입력해 주세요.
-            </p>
-          </header>
-          <div class="profile-form__grid">
-            <div class="field">
-              <label class="field-label" for="profile-legalName">이름</label>
-              <input
-                id="profile-legalName"
-                v-model="form.legalName"
-                class="control"
-                maxlength="100"
-                :aria-invalid="Boolean(fieldErrors.legalName)"
-                :aria-describedby="fieldErrors.legalName ? 'profile-legalName-error' : undefined"
-              />
-              <p v-if="fieldErrors.legalName" id="profile-legalName-error" class="field-error">
-                {{ fieldErrors.legalName }}
-              </p>
-            </div>
-            <div class="field">
-              <label class="field-label" for="profile-expectedGraduationDate">졸업 예정일</label>
-              <input
-                id="profile-expectedGraduationDate"
-                v-model="form.expectedGraduationDate"
-                class="control"
-                type="date"
-                :aria-invalid="Boolean(fieldErrors.expectedGraduationDate)"
-                :aria-describedby="
-                  fieldErrors.expectedGraduationDate
-                    ? 'profile-expectedGraduationDate-error'
-                    : undefined
-                "
-              />
-              <p
-                v-if="fieldErrors.expectedGraduationDate"
-                id="profile-expectedGraduationDate-error"
-                class="field-error"
-              >
-                {{ fieldErrors.expectedGraduationDate }}
-              </p>
-            </div>
-            <div class="field profile-form__wide">
-              <label class="field-label" for="profile-introduction">간단 소개</label>
-              <textarea
-                id="profile-introduction"
-                v-model="form.introduction"
-                class="control min-h-32"
-                maxlength="2000"
-                :aria-invalid="Boolean(fieldErrors.introduction)"
-                :aria-describedby="
-                  fieldErrors.introduction ? 'profile-introduction-error' : undefined
-                "
-              />
-              <p
-                v-if="fieldErrors.introduction"
-                id="profile-introduction-error"
-                class="field-error"
-              >
-                {{ fieldErrors.introduction }}
-              </p>
-            </div>
-          </div>
-        </section>
+      <div class="profile-workspace">
+        <aside class="profile-guide" aria-labelledby="profile-guide-heading">
+          <p class="section-kicker">Profile brief</p>
+          <h2 id="profile-guide-heading">지원 방향을 정하는 나의 기준</h2>
+          <p>이곳에 정리한 정보는 공고를 살피고 지원 준비의 우선순위를 정할 때 기준이 돼요.</p>
+          <ol>
+            <li>
+              <span>01</span>
+              <div>
+                <strong>나를 소개하는 정보</strong>
+                <small>이름과 한 줄 이상의 소개</small>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <strong>가고 싶은 방향</strong>
+                <small>직무·산업·근무 지역</small>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <strong>경험으로 뒷받침</strong>
+                <small>학력과 경력 정보는 위 탭에서 관리</small>
+              </div>
+            </li>
+          </ol>
+          <p class="profile-guide__note">
+            완벽하게 채우지 않아도 저장하고 나중에 이어갈 수 있어요.
+          </p>
+        </aside>
 
-        <section class="profile-form__section" aria-labelledby="profile-preference-heading">
-          <header>
-            <h3 id="profile-preference-heading" class="section-title">희망 조건</h3>
-            <p class="section-description">
-              관심 있는 직무, 산업과 지역을 입력해 두면 지원 방향을 빠르게 확인할 수 있어요.
-            </p>
-          </header>
-          <div class="profile-form__preferences">
-            <StringListInput
-              id="profile-desiredRoles"
-              v-model="form.desiredRoles"
-              label="희망 직무"
-              :error="fieldErrors.desiredRoles"
-            />
-            <StringListInput
-              id="profile-desiredIndustries"
-              v-model="form.desiredIndustries"
-              label="희망 산업"
-              :error="fieldErrors.desiredIndustries"
-            />
-            <StringListInput
-              id="profile-desiredLocations"
-              v-model="form.desiredLocations"
-              label="희망 지역"
-              :error="fieldErrors.desiredLocations"
-            />
-          </div>
-        </section>
+        <form class="profile-form section-surface" novalidate @submit.prevent="save">
+          <section class="profile-form__section" aria-labelledby="profile-identity-heading">
+            <header>
+              <span class="profile-form__number" aria-hidden="true">01</span>
+              <div>
+                <h3 id="profile-identity-heading" class="section-title">기본 정보</h3>
+                <p class="section-description">
+                  채용 담당자가 이해하기 쉬운 이름과 소개, 졸업(예정)일을 정리해 주세요.
+                </p>
+              </div>
+            </header>
+            <div class="profile-form__grid">
+              <div class="field">
+                <label class="field-label" for="profile-legalName">이름</label>
+                <input
+                  id="profile-legalName"
+                  v-model="form.legalName"
+                  class="control"
+                  maxlength="100"
+                  :aria-invalid="Boolean(fieldErrors.legalName)"
+                  :aria-describedby="fieldErrors.legalName ? 'profile-legalName-error' : undefined"
+                />
+                <p v-if="fieldErrors.legalName" id="profile-legalName-error" class="field-error">
+                  {{ fieldErrors.legalName }}
+                </p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="profile-expectedGraduationDate">졸업(예정)일</label>
+                <input
+                  id="profile-expectedGraduationDate"
+                  v-model="form.expectedGraduationDate"
+                  class="control"
+                  type="date"
+                  :aria-invalid="Boolean(fieldErrors.expectedGraduationDate)"
+                  :aria-describedby="
+                    fieldErrors.expectedGraduationDate
+                      ? 'profile-expectedGraduationDate-error'
+                      : undefined
+                  "
+                />
+                <p
+                  v-if="fieldErrors.expectedGraduationDate"
+                  id="profile-expectedGraduationDate-error"
+                  class="field-error"
+                >
+                  {{ fieldErrors.expectedGraduationDate }}
+                </p>
+              </div>
+              <div class="field profile-form__wide">
+                <label class="field-label" for="profile-introduction">간단 소개</label>
+                <textarea
+                  id="profile-introduction"
+                  v-model="form.introduction"
+                  class="control min-h-32"
+                  maxlength="2000"
+                  :aria-invalid="Boolean(fieldErrors.introduction)"
+                  :aria-describedby="
+                    fieldErrors.introduction ? 'profile-introduction-error' : undefined
+                  "
+                />
+                <p class="field-help">핵심 경험과 강점을 2~3문장으로 적어 두면 활용하기 좋아요.</p>
+                <p class="profile-form__count" aria-live="polite">
+                  {{ form.introduction.length.toLocaleString('ko-KR') }} / 2,000자
+                </p>
+                <p
+                  v-if="fieldErrors.introduction"
+                  id="profile-introduction-error"
+                  class="field-error"
+                >
+                  {{ fieldErrors.introduction }}
+                </p>
+              </div>
+            </div>
+          </section>
 
-        <footer class="profile-form__footer">
-          <div class="profile-form__feedback">
-            <p v-if="generalError" class="alert alert--danger" role="alert">
-              {{ generalError }}
-            </p>
-            <p v-if="message" class="alert alert--success" role="status">{{ message }}</p>
-          </div>
-          <button
-            type="submit"
-            class="button button--primary"
-            :disabled="saveMutation.isPending.value"
-          >
-            <span v-if="saveMutation.isPending.value" class="button-spinner" aria-hidden="true" />
-            {{ saveMutation.isPending.value ? '저장 중…' : '프로필 저장' }}
-          </button>
-        </footer>
-      </form>
+          <section class="profile-form__section" aria-labelledby="profile-preference-heading">
+            <header>
+              <span class="profile-form__number" aria-hidden="true">02</span>
+              <div>
+                <h3 id="profile-preference-heading" class="section-title">희망 조건</h3>
+                <p class="section-description">
+                  빠른 선택을 활용하거나 직접 입력해 나에게 맞는 지원 범위를 만들어 보세요.
+                </p>
+              </div>
+            </header>
+            <div class="profile-form__preferences">
+              <StringListInput
+                id="profile-desiredRoles"
+                v-model="form.desiredRoles"
+                label="희망 직무"
+                :error="fieldErrors.desiredRoles"
+                placeholder="예: 프론트엔드 개발자"
+                help="직무명을 입력하면 관련 선택지를 추천해 드려요"
+                :presets="DESIRED_ROLE_PRESETS"
+                :suggestions="DESIRED_ROLE_SUGGESTIONS"
+              />
+              <StringListInput
+                id="profile-desiredIndustries"
+                v-model="form.desiredIndustries"
+                label="희망 산업"
+                :error="fieldErrors.desiredIndustries"
+                placeholder="예: IT·소프트웨어"
+              />
+              <StringListInput
+                id="profile-desiredLocations"
+                v-model="form.desiredLocations"
+                label="희망 지역"
+                :error="fieldErrors.desiredLocations"
+                placeholder="예: 서울 또는 원격근무"
+                help="시·도나 원하는 근무 방식을 직접 입력할 수 있어요"
+                :presets="DESIRED_LOCATION_PRESETS"
+                :suggestions="DESIRED_LOCATION_SUGGESTIONS"
+              />
+            </div>
+          </section>
+
+          <footer class="profile-form__footer">
+            <div class="profile-form__feedback">
+              <p v-if="generalError" class="alert alert--danger" role="alert">
+                {{ generalError }}
+              </p>
+              <p v-if="message" class="alert alert--success" role="status">{{ message }}</p>
+            </div>
+            <button
+              type="submit"
+              class="button button--primary"
+              :disabled="saveMutation.isPending.value"
+            >
+              <span v-if="saveMutation.isPending.value" class="button-spinner" aria-hidden="true" />
+              {{ saveMutation.isPending.value ? '저장 중…' : '프로필 저장' }}
+            </button>
+          </footer>
+        </form>
+      </div>
     </template>
   </section>
 </template>
@@ -364,6 +423,84 @@ function emptyForm(): ProfileFormValues {
 .profile-completion-note,
 .profile-form {
   margin-top: 1.5rem;
+}
+
+.profile-workspace {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.profile-guide {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  border-top: 3px solid var(--color-brand);
+  background: var(--color-ink);
+  color: white;
+  padding: 1.5rem;
+}
+
+.profile-guide h2 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+}
+
+.profile-guide > p:not(.section-kicker, .profile-guide__note) {
+  margin: 0.75rem 0 0;
+  color: #bdc8e2;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.profile-guide ol {
+  display: grid;
+  gap: 0;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-guide li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.625rem;
+  border-top: 1px solid rgb(255 255 255 / 18%);
+  padding: 0.875rem 0;
+}
+
+.profile-guide li > span {
+  color: var(--color-accent);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-guide li strong,
+.profile-guide li small {
+  display: block;
+}
+
+.profile-guide li strong {
+  font-size: 0.8125rem;
+}
+
+.profile-guide li small {
+  margin-top: 0.15rem;
+  color: #9cabc9;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.profile-guide__note {
+  margin: 1rem 0 0;
+  border-left: 2px solid var(--color-accent);
+  color: #d7def0;
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.6;
 }
 
 .profile-completion-note {
@@ -425,12 +562,34 @@ function emptyForm(): ProfileFormValues {
 
 .profile-form {
   overflow: hidden;
+  margin-top: 0;
 }
 
 .profile-form__section {
   display: grid;
   gap: 1.25rem;
   padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.profile-form__section > header {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.profile-form__number {
+  color: var(--color-brand);
+  font-size: 0.75rem;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.2rem;
+}
+
+.profile-form__count {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  text-align: right;
 }
 
 .profile-form__section + .profile-form__section {
@@ -477,6 +636,14 @@ function emptyForm(): ProfileFormValues {
 }
 
 @media (max-width: 719px) {
+  .profile-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-guide {
+    position: static;
+  }
+
   .profile-completion-note {
     grid-template-columns: minmax(0, 1fr);
   }

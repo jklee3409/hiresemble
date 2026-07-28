@@ -26,6 +26,7 @@ const emailSchema = z
   .min(3, '이메일 형식을 확인해 주세요.')
   .max(320, '이메일 형식을 확인해 주세요.')
   .email('이메일 형식을 확인해 주세요.')
+  .refine((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email), '이메일 형식을 확인해 주세요.')
 
 const signupPasswordSchema = z.string().superRefine((password, context) => {
   const bytes = utf8ByteLength(password)
@@ -65,11 +66,11 @@ const signupSchema = z
     displayName: z
       .string()
       .trim()
-      .min(1, '표시 이름을 입력해 주세요.')
-      .max(100, '표시 이름은 100자 이하로 입력해 주세요.')
+      .min(1, '닉네임을 입력해 주세요.')
+      .max(100, '닉네임은 100자 이하로 입력해 주세요.')
       .refine(
         (displayName) => !/[\p{Cc}/\\]/u.test(displayName),
-        '표시 이름에 줄바꿈이나 /, \\를 사용할 수 없어요.',
+        '닉네임에 줄바꿈이나 /, \\를 사용할 수 없어요.',
       ),
     termsAgreed: z.boolean().refine((agreed) => agreed, '필수 이용약관에 동의해 주세요.'),
     aiConsent: z.boolean().refine((agreed) => agreed, '필수 AI 처리 안내에 동의해 주세요.'),

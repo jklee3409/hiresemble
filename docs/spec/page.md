@@ -127,7 +127,7 @@ Frontend의 TypeScript type과 runtime validation은 [`api.md`](api.md) 2장의 
 - 이메일
 - 비밀번호
 - 비밀번호 확인
-- 표시 이름
+- 닉네임
 - 이용약관 동의
 - AI 처리 동의
 - 가입 버튼
@@ -208,7 +208,7 @@ Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지
 
 - 이름
 - 간단 소개
-- 졸업 예정일
+- 졸업(예정)일
 - 희망 직무
 - 희망 산업
 - 희망 지역
@@ -731,7 +731,7 @@ API:
 
 ## 13.1 `/settings/account`
 
-- 표시 이름
+- 닉네임
 - 비밀번호 변경
 - 로그아웃
 - 회원 탈퇴

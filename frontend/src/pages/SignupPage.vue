@@ -93,13 +93,14 @@ async function focusFirstError(): Promise<void> {
       </div>
 
       <div class="field">
-        <label class="field-label" for="signup-displayName">표시 이름</label>
+        <label class="field-label" for="signup-displayName">닉네임</label>
         <input
           id="signup-displayName"
           v-model="form.displayName"
           class="control"
           type="text"
-          autocomplete="name"
+          autocomplete="nickname"
+          placeholder="서비스에서 사용할 이름"
           :aria-invalid="Boolean(fieldErrors.displayName)"
           :aria-describedby="fieldErrors.displayName ? 'signup-displayName-error' : undefined"
           :disabled="isSubmitting"

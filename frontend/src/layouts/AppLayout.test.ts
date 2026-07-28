@@ -34,7 +34,7 @@ describe('AppLayout', () => {
       '내 프로필',
       '이력서·자료',
       '관심 공고',
-      'AI 작업',
+      '분석 기록',
     ])
     expect(wrapper.text()).not.toContain('자기소개서')
     expect(wrapper.text()).not.toContain('면접 준비')

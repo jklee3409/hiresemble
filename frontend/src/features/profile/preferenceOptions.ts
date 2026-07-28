@@ -1,0 +1,60 @@
+export const DESIRED_ROLE_PRESETS = [
+  '프론트엔드 개발자',
+  '백엔드 개발자',
+  '데이터 분석가',
+  'AI 엔지니어',
+  '프로덕트 매니저',
+  '서비스 기획자',
+  'UX/UI 디자이너',
+  '마케팅',
+] as const
+
+export const DESIRED_ROLE_SUGGESTIONS = [
+  ...DESIRED_ROLE_PRESETS,
+  '풀스택 개발자',
+  '모바일 앱 개발자',
+  'DevOps 엔지니어',
+  '클라우드 엔지니어',
+  '정보보안 담당자',
+  '데이터 엔지니어',
+  '데이터 사이언티스트',
+  '머신러닝 엔지니어',
+  'QA 엔지니어',
+  '프로덕트 디자이너',
+  '그래픽 디자이너',
+  '콘텐츠 디자이너',
+  '브랜드 마케터',
+  '퍼포먼스 마케터',
+  '콘텐츠 마케터',
+  '영업',
+  '사업개발',
+  '고객 성공 매니저',
+  '인사',
+  '재무·회계',
+  '경영지원',
+] as const
+
+export const DESIRED_LOCATION_PRESETS = [
+  '서울',
+  '경기',
+  '인천',
+  '부산',
+  '대전',
+  '대구',
+  '광주',
+  '세종',
+  '원격근무',
+] as const
+
+export const DESIRED_LOCATION_SUGGESTIONS = [
+  ...DESIRED_LOCATION_PRESETS,
+  '강원',
+  '충북',
+  '충남',
+  '전북',
+  '전남',
+  '경북',
+  '경남',
+  '울산',
+  '제주',
+] as const

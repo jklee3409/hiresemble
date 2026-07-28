@@ -24,6 +24,32 @@ describe('auth form validation', () => {
     ).toBeDefined()
   })
 
+  it.each([
+    'user',
+    'user@',
+    '@example.com',
+    'user@example',
+    'user name@example.com',
+    'user@example..com',
+  ])('rejects an invalid email format on signup and login: %s', (email) => {
+    expect(signup('password-123', email).fieldErrors.email).toBe('이메일 형식을 확인해 주세요.')
+    expect(validateLoginForm({ email, password: 'password-123' }).fieldErrors.email).toBe(
+      '이메일 형식을 확인해 주세요.',
+    )
+  })
+
+  it('trims and accepts a valid email address on both forms', () => {
+    expect(signup('password-123', '  user.name+job@example.co.kr  ').data?.email).toBe(
+      'user.name+job@example.co.kr',
+    )
+    expect(
+      validateLoginForm({
+        email: '  user.name+job@example.co.kr  ',
+        password: 'password-123',
+      }).data?.email,
+    ).toBe('user.name+job@example.co.kr')
+  })
+
   it('requires matching confirmation and both consent fields without adding them to login', () => {
     const result = validateSignupForm({
       email: 'user@example.com',
@@ -53,9 +79,9 @@ describe('auth form validation', () => {
   })
 })
 
-function signup(password: string) {
+function signup(password: string, email = 'user@example.com') {
   return validateSignupForm({
-    email: 'user@example.com',
+    email,
     password,
     passwordConfirm: password,
     displayName: 'User',

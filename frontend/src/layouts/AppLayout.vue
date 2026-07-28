@@ -12,7 +12,7 @@ const navItems = [
   { to: '/profile/basic', label: '내 프로필', icon: 'profile', match: '/profile' },
   { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
-  { to: '/agent-runs', label: 'AI 작업', icon: 'runs', match: '/agent-runs' },
+  { to: '/agent-runs', label: '분석 기록', icon: 'runs', match: '/agent-runs' },
 ] as const
 
 const authStore = useAuthStore()

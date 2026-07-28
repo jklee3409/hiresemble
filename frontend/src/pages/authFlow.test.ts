@@ -103,6 +103,35 @@ describe('P1 authentication forms', () => {
     expect(document.activeElement).toBe(email.element)
   })
 
+  it('shows and focuses the client email format error on signup and login', async () => {
+    const signup = await mountAt('/signup')
+    await fillSignup(signup.wrapper)
+    await signup.wrapper.get('#signup-email').setValue('signup@invalid')
+    await signup.wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    const signupEmail = signup.wrapper.get<HTMLInputElement>('#signup-email')
+    expect(signup.wrapper.text()).toContain('이메일 형식을 확인해 주세요.')
+    expect(signupEmail.attributes('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(signupEmail.element)
+    expect(authApi.signup).not.toHaveBeenCalled()
+
+    signup.wrapper.unmount()
+    document.body.replaceChildren()
+
+    const login = await mountAt('/login')
+    await fillLogin(login.wrapper)
+    await login.wrapper.get('#login-email').setValue('login@invalid')
+    await login.wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    const loginEmail = login.wrapper.get<HTMLInputElement>('#login-email')
+    expect(login.wrapper.text()).toContain('이메일 형식을 확인해 주세요.')
+    expect(loginEmail.attributes('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(loginEmail.element)
+    expect(authApi.login).not.toHaveBeenCalled()
+  })
+
   it('toggles password visibility with explicit accessible names', async () => {
     const { wrapper } = await mountAt('/signup')
     const password = wrapper.get<HTMLInputElement>('#signup-password')

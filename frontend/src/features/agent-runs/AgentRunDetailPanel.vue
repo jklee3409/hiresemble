@@ -52,7 +52,7 @@ const connectionMessage = computed(() => {
     return '진행 상황을 다시 확인하는 중이에요. 마지막으로 확인한 상태는 그대로 유지돼요.'
   }
   if (props.connectionState === 'polling') {
-    return '진행 상황을 다시 확인하는 중이에요. AI 작업이 실패한 것은 아니에요.'
+    return '진행 상황을 다시 확인하는 중이에요. 분석이 실패한 것은 아니에요.'
   }
   if (props.connectionState === 'connecting') return '진행 상황을 연결하는 중이에요.'
   return ''
