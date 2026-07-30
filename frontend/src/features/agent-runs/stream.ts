@@ -242,6 +242,14 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         void this.options.cache.invalidateQueries({
           queryKey: agentRunQueryKeys.root(this.options.userId),
         })
+        if (run.workflowType === 'JOB_ANALYSIS') {
+          void this.options.cache.invalidateQueries({
+            queryKey: jobQueryKeys.analysisRoot(this.options.userId, run.resourceId),
+          })
+          void this.options.cache.invalidateQueries({
+            queryKey: jobQueryKeys.latestAnalysis(this.options.userId, run.resourceId),
+          })
+        }
       }
     }
   }
@@ -287,6 +295,14 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         void this.options.cache.invalidateQueries({
           queryKey: jobQueryKeys.detail(this.options.userId, run.resourceId),
         })
+        if (run.workflowType === 'JOB_ANALYSIS') {
+          void this.options.cache.invalidateQueries({
+            queryKey: jobQueryKeys.analysisRoot(this.options.userId, run.resourceId),
+          })
+          void this.options.cache.invalidateQueries({
+            queryKey: jobQueryKeys.latestAnalysis(this.options.userId, run.resourceId),
+          })
+        }
       }
     }
   }

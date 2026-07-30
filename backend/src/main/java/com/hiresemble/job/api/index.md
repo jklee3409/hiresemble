@@ -2,14 +2,14 @@
 
 ## 디렉터리 목적
 
-P5 Job HTTP 요청·응답·OpenAPI metadata와 application 결과 mapping을 소유한다.
+P5~P6 Job·Job Analysis HTTP 요청·응답·OpenAPI metadata와 application 결과 mapping을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- `JobController`: Job 공개 API 7개와 실제 HTTP status
-- `JobRequests`: 생성·수정·상태 변경 request validation
-- `JobDtos`: P5 공개 생성·목록·상세·mutation DTO
-- `JobApiMapper`: application projection의 공개 DTO 변환
+- `JobController`: Job 공개 API 10개와 실제 HTTP status
+- `JobRequests`, `JobAnalysisRequests`: 생성·수정·상태·분석 request validation
+- `JobDtos`, `JobAnalysisDtos`: P5~P6 공개 생성·목록·상세·분석 DTO
+- `JobApiMapper`, `JobAnalysisApiMapper`: application projection의 공개 DTO 변환
 - [`progress.md`](progress.md): API 구현 상태
 
 ## 구성 요소 역할
@@ -22,7 +22,7 @@ Controller는 인증 사용자와 HTTP parameter를 application service로 전�
 
 ## 변경 시 주의사항
 
-성공 envelope를 추가하지 않고 201/202/204와 공통 오류 DTO를 유지한다. P6 analysis endpoint는 이 package에 없다.
+성공 envelope를 추가하지 않고 200/201/202/204와 공통 오류 DTO를 유지한다. Entity·snapshot hash·provider/model 실명을 노출하지 않는다.
 
 ## 관련 규칙 및 문서
 

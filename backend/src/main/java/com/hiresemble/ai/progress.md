@@ -2,7 +2,25 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document와 P5 Job business workflow가 연결됐고 실제 provider adapter는 없다.
+P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document, P5 Job extraction과 P6 Job Analysis workflow가 연결됐고 실제 provider adapter는 없다.
+
+## [2026-07-29] Session Summary (P6 JOB_ANALYSIS 고정 workflow·RAG)
+
+- What was done:
+  - snapshot→requirement→eligibility→verified retrieval→matching→score→validation→persist의 정확한 8단계를 실행 가능 contribution으로 등록했다.
+  - structured record, prompt-injection 경계, owner-scoped retrieval, evidence allowlist와 Backend command-only apply를 구현했다.
+- Key decisions:
+  - requirement·eligibility·matching과 query embedding만 provider를 사용하고 score·validation·persist·reuse는 결정론적 local step으로 실행한다.
+  - 동일 snapshot reuse도 공개 8단계를 유지하되 chat·embedding·search를 0회로 만들고 기존 analysis만 새 Run에 연결한다.
+  - fresh/reuse domain apply와 완료 checkpoint는 gateway 호출 밖의 `SERIALIZABLE` transaction에서 함께 commit한다.
+- Issues encountered:
+  - 공통 completed-step 재실행 변경을 되돌리고 executor별 provider 생략 hook만 남겼으며 embedding dimension 하드코딩을 active policy port로 교체했다.
+  - 1차 validator가 완료 checkpoint와 분석 저장 사이 crash window를 MAJOR로 판정해 rollback·commit 직후 crash/restart 회귀를 추가했다.
+- Validation:
+  - P6 workflow 11 tests, 완료 transaction 집중 검증 13 tests와 Backend 전체 352 tests가 통과했다.
+  - 최종 validator가 atomic apply finding 해소를 확인했다. 전체 P6 verdict는 actual E2E 미검증 때문에 `FAIL`이다.
+- Next steps:
+  - 실제 provider 활성화 전 chat route product와 embedding product 정책 분리를 검증한다.
 
 ## [2026-07-27] Session Summary (P5 Job Posting Extraction workflow 연결)
 

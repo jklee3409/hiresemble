@@ -14,7 +14,12 @@ vi.mock('@/stores/auth', () => ({
 vi.mock('@/features/agent-runs/queries', () => ({
   useAgentRunListQuery: () => ({
     data: ref({
-      items: [agentRunSummary()],
+      items: [
+        agentRunSummary('RUNNING', {
+          resourceType: 'JOB',
+          resourceId: '50000000-0000-4000-8000-000000000001',
+        }),
+      ],
       page: 0,
       size: 20,
       totalElements: 2,
@@ -33,6 +38,11 @@ describe('AgentRunListPage URL state', () => {
       routes: [
         { path: '/agent-runs', component: AgentRunListPage },
         { path: '/agent-runs/:agentRunId', component: { template: '<div />' } },
+        {
+          path: '/jobs/:jobId/analysis',
+          name: 'job-analysis',
+          component: { template: '<div />' },
+        },
       ],
     })
     await router.push(
@@ -43,7 +53,10 @@ describe('AgentRunListPage URL state', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.query).toEqual({ status: ['FAILED'] })
-    expect(wrapper.text()).toContain('공고 살펴보기')
+    expect(wrapper.text()).toContain('공고 분석')
+    expect(
+      wrapper.get('a[href="/jobs/50000000-0000-4000-8000-000000000001/analysis"]').text(),
+    ).toBe('공고 분석')
     expect(wrapper.text()).toContain('USD 0.010000')
 
     const sort = wrapper.findAll('select')[1]

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 예약·정산, worker claim·복구와 공개 조회·SSE 계약을 소유한다.
+PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 예약·정산, worker claim·복구와 공개 조회·SSE 계약 및 typed resource 연결을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -14,7 +14,7 @@ PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 �
 
 ## 구성 요소 역할
 
-DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다.
+DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P6 `JOB_ANALYSIS` Run은 공고를 primary resource로 유지하고 성공한 immutable 분석을 secondary typed resource로 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -25,7 +25,7 @@ DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 �
 ## 변경 시 주의사항
 
 - terminal Run을 다시 열거나 stale RUNNING을 같은 Run의 QUEUED로 되돌리지 않는다.
-- P4 전에는 document/job typed resource FK나 공개 생성 endpoint를 추가하지 않는다.
+- typed resource는 owner composite FK를 유지하고 실행 결과 본문을 Agent Run DTO에 복제하지 않는다.
 - 외부 호출은 DB transaction 밖에서 수행하고 상태 변경 event는 commit 뒤 발행한다.
 
 ## 관련 규칙 및 문서

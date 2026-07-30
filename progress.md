@@ -8,8 +8,28 @@
 - P3 PostgreSQL Agent Run 수명주기, 고정 Fake workflow, 비용 예약·정산, SSE와 Frontend 복구 기반이 최종 validator `PASS`로 완료됐다.
 - P4 Document upload·parse·storage·Fake AI 근거 pipeline과 Frontend 목록·상세·검토가 최종 validator `PASS`로 완료됐다.
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
-- 공개 Spring/OpenAPI는 인증 5개, 프로필·evidence 25개, Agent Run 5개, Document 8개와 Job 7개인 총 50 operations·34 paths다.
-- Dashboard 집계·P6 전체 RAG·자기소개서·면접과 실제 provider는 아직 없다.
+- P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능과 두 구현 MAJOR 보정은 완료됐지만 final-source actual E2E 미검증으로 최종 validator `FAIL`이며 P6는 `NOT_VERIFIED`다.
+- 공개 Spring/OpenAPI는 P6 공고 분석 3개를 포함해 총 53 operations·37 paths다.
+- Dashboard 전용 집계·자기소개서·면접과 실제 provider는 아직 없다.
+
+## [2026-07-29] Session Summary (P6 공고 분석·RAG 수직 기능 구현)
+
+- What was done:
+  - V7 immutable 분석·criterion·evidence provenance, 3개 Job Analysis API, 고정 8단계 `JOB_ANALYSIS`, verified evidence RAG와 `/jobs/:jobId/analysis` 결과·이력·OUTDATED UI를 구현했다.
+  - `/agent-runs`는 `AI 작업 내역`으로 정리하고 분석 결과를 복제하지 않은 채 해당 공고 분석 화면으로 연결했다.
+- Key decisions:
+  - 최종 점수는 Java 정책만 계산하고 Eligibility와 분리하며, 동일 snapshot은 새 Run에 기존 analysis를 연결하고 `forceReanalyze=true`만 새 version을 만든다.
+  - Agent Run primary resource는 접수 시 존재하는 `JOB`으로 유지하고 성공 뒤 immutable `JOB_ANALYSIS` secondary resource link를 추가한다.
+  - 성공·재사용 step checkpoint와 domain apply는 외부 호출 뒤 `SERIALIZABLE` transaction에서 함께 commit하고, 과거 분석 근거의 현재 상태 변경은 결과를 숨기지 않고 OUTDATED 안내로 표시한다.
+- Issues encountered:
+  - 실제 P6 Browser E2E 첫 실행은 중복 제목 locator, 두 번째는 계약에 없는 evidence 단건 GET assertion 때문에 종료됐다. assertion은 공개 PUT endpoint의 타 사용자 404로 수정했지만 재검증 상한에 따라 세 번째 실행은 하지 않았다.
+  - 1차 read-only validator는 checkpoint 뒤 별도 분석 적용과 변경·삭제된 historical evidence를 거부하는 Frontend 계약을 MAJOR로 판정했다. 허용된 보정 라운드에서 원자 완료 경계와 역사 결과 유지 계약·회귀 테스트를 추가했다.
+- Validation:
+  - 보정 후 Backend `check`: 44 suites, 352 tests, 실패 0. Frontend `check`: 42 files, 169 tests와 lint·format·type·build 통과.
+  - P6 migration 3/3, 생성 OpenAPI 53 operations/37 paths, fixture Chromium 3/3, `docker compose config --quiet`와 `git diff --check`가 통과했다.
+  - 2차 read-only validator는 atomic apply와 historical evidence finding 해소를 확인했지만 actual wrapper 최종 source가 실행되지 않아 전체 verdict를 `FAIL`로 유지했다. validator 전후 138개 변경 파일 지문은 `053fb0bf5a4adfd3005b4733a4c32ae82fe78688b871612ee9c3e4952e51ba15`로 동일했다.
+- Next steps:
+  - 이 요청에서는 추가 자동 수정·검증을 수행하지 않는다. 새로 승인된 검증 주기에서 current P6 wrapper의 두 Playwright scenario와 후속 DB assertion을 모두 통과시켜야 한다.
 
 ## [2026-07-28] Session Summary (지원 대시보드·프로필 관리 UI 전면 개선)
 

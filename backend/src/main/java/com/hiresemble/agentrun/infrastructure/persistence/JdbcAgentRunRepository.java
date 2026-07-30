@@ -15,6 +15,7 @@ import com.hiresemble.agentrun.application.command.WorkflowLaunchCommand;
 import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import java.time.Instant;
@@ -206,19 +207,38 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 if (linked != 1) {
                     throw new IllegalStateException("job retry is missing its typed resource link");
                 }
-                int attached = jdbcClient.sql("""
-                                UPDATE job_postings SET latest_agent_run_id=:successorId,
-                                    extraction_status='QUEUED',
-                                    version=version+1,updated_at=:updatedAt
-                                WHERE user_id=:userId AND id=:jobId AND deleted_at IS NULL
-                                """)
-                        .param("successorId", successorId)
-                        .param("updatedAt", utc(queuedAt))
-                        .param("userId", predecessor.userId())
-                        .param("jobId", predecessor.resourceId())
-                        .update();
-                if (attached != 1) {
-                    throw new IllegalStateException("job retry resource is not active");
+                if (predecessor.workflowType() == WorkflowType.JOB_POSTING_EXTRACTION) {
+                    int attached = jdbcClient.sql("""
+                                    UPDATE job_postings SET latest_agent_run_id=:successorId,
+                                        extraction_status='QUEUED',
+                                        version=version+1,updated_at=:updatedAt
+                                    WHERE user_id=:userId AND id=:jobId AND deleted_at IS NULL
+                                    """)
+                            .param("successorId", successorId)
+                            .param("updatedAt", utc(queuedAt))
+                            .param("userId", predecessor.userId())
+                            .param("jobId", predecessor.resourceId())
+                            .update();
+                    if (attached != 1) {
+                        throw new IllegalStateException("job retry resource is not active");
+                    }
+                } else if (predecessor.workflowType() == WorkflowType.JOB_ANALYSIS) {
+                    boolean active = jdbcClient.sql("""
+                                    SELECT EXISTS (
+                                        SELECT 1 FROM job_postings
+                                        WHERE user_id=:userId AND id=:jobId AND deleted_at IS NULL
+                                    )
+                                    """)
+                            .param("userId", predecessor.userId())
+                            .param("jobId", predecessor.resourceId())
+                            .query(Boolean.class)
+                            .single();
+                    if (!active) {
+                        throw new IllegalStateException("job analysis retry resource is not active");
+                    }
+                } else {
+                    throw new IllegalStateException(
+                            "unsupported workflow owns a typed job retry resource");
                 }
             }
             return findByOwner(predecessor.userId(), successorId).orElseThrow();

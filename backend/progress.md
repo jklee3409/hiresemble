@@ -3,9 +3,28 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개, P4 Document 8개와 P5 Job 7개 API가 구현되어 있다.
-- V1~V5를 보존한 V6 migration이 Company·Job·status history와 typed Job Run link 불변식을 추가한다.
-- 생성 OpenAPI는 정확히 50 operations/34 paths이며 P6 분석 endpoint는 없다.
+- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개, P4 Document 8개와 P5~P6 Job 10개 API가 구현되어 있다.
+- V1~V6를 byte 단위로 보존한 V7 migration이 immutable Job Analysis·criterion·evidence provenance와 typed analysis Run link를 추가한다.
+- 생성 OpenAPI는 정확히 53 operations/37 paths이며 실제 provider는 계속 비활성이다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis Backend·AI workflow 구현)
+
+- What was done:
+  - owner-scoped snapshot/query/command port, deterministic scoring·hashing, immutable 저장소, 3개 API와 정확한 8단계 `job-analysis-v1` workflow를 연결했다.
+  - VERIFIED evidence만 exact cosine·lexical fallback 후보와 provenance에 사용하고 동일 snapshot reuse·force reanalysis·OUTDATED projection을 구현했다.
+- Key decisions:
+  - 외부 호출은 transaction 밖에서 수행하고 serializable apply transaction이 snapshot 재검증, version 할당, criteria·provenance·Run link를 원자 처리한다.
+  - `HIGH_QUALITY`는 거부하고 final fit score·owner·hash·persist는 모델이 아닌 Backend 정책과 command port가 결정한다.
+  - 성공·재사용 step checkpoint도 같은 `SERIALIZABLE` 완료 transaction에 포함하며, 분석 당시 승인된 근거의 현재 상태가 바뀌어도 immutable 결과와 provenance link를 유지한다.
+- Issues encountered:
+  - OpenAPI 기준선, 통합 테스트 connection pool과 E2E selector/비공개 endpoint assertion을 보정했다. 수정된 실제 P6 Browser E2E는 재검증 상한으로 세 번째 실행하지 않았다.
+  - 1차 validator의 atomic apply와 historical evidence 유지 MAJOR 두 건은 fresh/reuse rollback·crash/restart 및 `VERIFIED→REJECTED→SOURCE_DELETED` 회귀로 보정했다.
+- Validation:
+  - 보정 후 `.\gradlew.bat check --console=plain`: 44 suites/352 tests, 실패·오류·skip 0.
+  - V1→V7, populated V6→V7, 제약·불변 migration 3/3과 OpenAPI 53/37가 통과했고 V1~V6 SHA-256은 기준선과 동일하다.
+  - 최종 validator는 atomic completion과 historical evidence Backend finding 해소를 확인했지만 final-source actual P6 wrapper 미실행으로 전체 `FAIL`을 유지했다.
+- Next steps:
+  - 새로 승인된 검증 주기에서 실제 P6 Browser wrapper와 후속 DB assertion을 실행한다. 이 요청에서는 추가 자동 재검증하지 않는다.
 
 ## [2026-07-28] Session Summary (로컬 Document 업로드 멱등 설정 복구)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job 상태 전이·timestamp·URL canonicalization 정책이 구현됐다.
+P5 Job 상태·URL 정책과 P6 analysis enum·hash·결정론적 scoring 정책이 구현됐다.
+
+## [2026-07-29] Session Summary (P6 결정론적 점수·snapshot hash)
+
+- What was done:
+  - canonical 분석 enum, stable tenant snapshot hash와 category redistribution scoring을 추가했다.
+- Key decisions:
+  - Eligibility와 점수는 독립이며 MATCHED/PARTIAL/MISSING/UNKNOWN 계수만 서버가 적용한다.
+- Issues encountered:
+  - decimal residual은 stable criterion order에 cent 단위로 배분했다.
+- Validation:
+  - scoring fixture 6개와 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job domain 규칙 구현)
 

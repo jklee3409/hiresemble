@@ -33,13 +33,16 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo('/documents/not-a-uuid', 'https://hiresemble.example')).toBeNull()
   })
 
-  it('accepts only the P5 Job base/overview UUID routes', () => {
+  it('accepts only the implemented Job base, overview and analysis UUID routes', () => {
     const id = '10000000-0000-4000-8000-000000000001'
     expect(safeReturnTo(`/jobs/${id}`, 'https://hiresemble.example')).toBe(`/jobs/${id}`)
     expect(safeReturnTo(`/jobs/${id}/overview?run=${id}`, 'https://hiresemble.example')).toBe(
       `/jobs/${id}/overview?run=${id}`,
     )
-    expect(safeReturnTo(`/jobs/${id}/analysis`, 'https://hiresemble.example')).toBeNull()
+    expect(safeReturnTo(`/jobs/${id}/analysis`, 'https://hiresemble.example')).toBe(
+      `/jobs/${id}/analysis`,
+    )
+    expect(safeReturnTo(`/jobs/${id}/cover-letter`, 'https://hiresemble.example')).toBeNull()
     expect(safeReturnTo('/jobs/not-a-uuid/overview', 'https://hiresemble.example')).toBeNull()
   })
 

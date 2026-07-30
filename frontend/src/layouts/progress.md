@@ -2,7 +2,20 @@
 
 ## Overview
 
-form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 현재 navigation과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `AI 작업 내역` navigation, Job Analysis tab과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-29] Session Summary (P6 Job tab·AI 작업 내역 navigation)
+
+- What was done:
+  - Job detail에 공고 정보·공고 분석 두 tab을 추가하고 sidebar·mobile navigation 용어를 `AI 작업 내역`으로 바꿨다.
+- Key decisions:
+  - active tab과 `aria-current`는 route로 계산하며 자기소개서·면접 가짜 tab은 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - layout/router unit test와 1440px·390px Chromium keyboard/overflow 검증이 통과했다.
+- Next steps:
+  - P7/P8 tab은 각 phase 구현 뒤 추가한다.
 
 ## [2026-07-28] Session Summary (지원 홈 Navigation 명칭 통합)
 

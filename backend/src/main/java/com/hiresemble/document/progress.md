@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했다.
+P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석용 active-generation embedding 검색 adapter를 제공한다.
+
+## [2026-07-29] Session Summary (P6 공고 분석 embedding 검색 adapter)
+
+- What was done:
+  - Job Analysis query port를 구현하는 owner-scoped document chunk embedding 검색 adapter를 추가했다.
+- Key decisions:
+  - active generation과 정확한 cosine 순위를 적용하되 후보 청크는 `VERIFIED` evidence allowlist 검증 전까지 공개 근거나 점수 근거가 아니다.
+- Issues encountered:
+  - 실제 외부 embedding provider는 활성화하지 않았다.
+- Validation:
+  - Fake 기반 workflow와 Backend `check` 352개 테스트가 통과했으며 유료 provider 호출은 없었다.
+- Next steps:
+  - 실제 provider 활성화는 별도 승인과 운영 정책 검증 뒤 수행한다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

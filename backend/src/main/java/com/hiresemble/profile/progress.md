@@ -2,7 +2,20 @@
 
 ## Overview
 
-P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했다.
+P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6 분석용 canonical profile·`VERIFIED` evidence snapshot query를 제공한다.
+
+## [2026-07-29] Session Summary (P6 프로필·승인 근거 snapshot 경계)
+
+- What was done:
+  - 공고 분석이 사용할 canonical profile hash와 owner-scoped `VERIFIED` evidence snapshot query를 추가했다.
+- Key decisions:
+  - `PENDING`, `REJECTED`, `SOURCE_DELETED` evidence와 profile entity·문서 원문은 분석용 application model에 포함하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - snapshot filtering, 분석 뒤 근거 상태 전환과 공고 분석 통합을 포함한 Backend `check` 352개 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

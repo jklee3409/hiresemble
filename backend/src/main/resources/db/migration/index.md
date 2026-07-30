@@ -14,6 +14,7 @@
 | [`V4__create_agent_runtime_and_ai_budget.sql`](V4__create_agent_runtime_and_ai_budget.sql)                         | P3 Run·Step, AI policy·price·budget·usage schema     |
 | [`V5__create_documents_evidence_and_storage_outbox.sql`](V5__create_documents_evidence_and_storage_outbox.sql)     | P4 Document·chunk·typed Run link·Object outbox       |
 | [`V6__create_job_postings_and_extend_agent_resources.sql`](V6__create_job_postings_and_extend_agent_resources.sql) | P5 Company·Job·status history와 typed Job Run link   |
+| [`V7__create_job_analyses_and_provenance.sql`](V7__create_job_analyses_and_provenance.sql)                         | P6 immutable analysis·criterion·evidence·Run lineage |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -25,7 +26,8 @@
 - V4는 Agent Run·Step과 immutable model·embedding·budget·price version, preference, ledger·reservation·usage 11개 table을 추가한다.
 - V5는 Document·revision text·`vector(1536)` chunk·Object deletion outbox·typed Run link와 profile document owner FK를 추가한다.
 - V6는 Company·Job Posting·status history, owner 복합 FK, canonical active unique와 typed Job Agent Run link를 추가한다.
-- 분석·자기소개서·research·interview schema는 P6 이후 forward migration으로 남긴다.
+- V7은 immutable Job Analysis version·score criterion·VERIFIED evidence provenance와 secondary typed analysis Run link를 추가한다.
+- 자기소개서·research·interview schema는 P7 이후 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계
 

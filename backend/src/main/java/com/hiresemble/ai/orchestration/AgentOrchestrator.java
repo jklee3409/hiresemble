@@ -85,6 +85,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     private final AgentRunCancellationPort cancellationPort;
     private final AgentRunLeaseHeartbeatPort leaseHeartbeatPort;
     private final BudgetGuard budgetGuard;
+    private final StepCompletionTransaction stepCompletionTransaction;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final List<WorkflowFailureHandler> failureHandlers;
@@ -107,34 +108,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
             BudgetGuard budgetGuard,
             ObjectMapper objectMapper,
-            Clock clock) {
-        this(
-                workflowRegistry, contextBuilder, modelRouter, promptRegistry, outputValidator,
-                chatGateway, embeddingGateway, webSearchGateway, runQueryPort, runStatePort,
-                stepCheckpointPort, usageRecorderPort, domainResultApplyPort, cancellationPort,
-                leaseHeartbeatPort, budgetGuard, objectMapper, clock, List.of());
-    }
-
-    public AgentOrchestrator(
-            WorkflowRegistry workflowRegistry,
-            ContextBuilder contextBuilder,
-            ModelRouter modelRouter,
-            PromptRegistry promptRegistry,
-            StructuredOutputValidator outputValidator,
-            ChatGateway chatGateway,
-            EmbeddingGateway embeddingGateway,
-            WebSearchGateway webSearchGateway,
-            AgentRunQueryPort runQueryPort,
-            AgentRunStatePort runStatePort,
-            AgentStepCheckpointPort stepCheckpointPort,
-            UsageRecorderPort usageRecorderPort,
-            DomainResultApplyPort domainResultApplyPort,
-            AgentRunCancellationPort cancellationPort,
-            AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
-            BudgetGuard budgetGuard,
-            ObjectMapper objectMapper,
             Clock clock,
-            List<WorkflowFailureHandler> failureHandlers) {
+            List<WorkflowFailureHandler> failureHandlers,
+            StepCompletionTransaction stepCompletionTransaction) {
         this.workflowRegistry = workflowRegistry;
         this.contextBuilder = contextBuilder;
         this.modelRouter = modelRouter;
@@ -151,6 +127,8 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         this.cancellationPort = cancellationPort;
         this.leaseHeartbeatPort = leaseHeartbeatPort;
         this.budgetGuard = budgetGuard;
+        this.stepCompletionTransaction = java.util.Objects.requireNonNull(
+                stepCompletionTransaction);
         this.objectMapper = objectMapper;
         this.clock = clock;
         this.failureHandlers = failureHandlers == null ? List.of() : List.copyOf(failureHandlers);
@@ -253,13 +231,54 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 continue;
             }
             if (reusable.isPresent()) {
-                AgentStepSnapshot reused = stepCheckpointPort.reuse(
-                        startCommand(run, claimed.claimToken(), stepDefinition, prompt, input, inputHash,
-                                context.modelPolicyVersion(), 1),
-                        reusable.get());
-                if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) return;
-                applyReused(executableStep.executor(), reusable.get().minimalOutput(), executionContext,
-                        run, reused, inputHash);
+                if (completeCancellationIfRequested(
+                        current(run.userId(), run.id()), claimed.claimToken())) {
+                    return;
+                }
+                try {
+                    stepCompletionTransaction.execute(() -> {
+                        AgentStepSnapshot reused = stepCheckpointPort.reuse(
+                                startCommand(
+                                        run,
+                                        claimed.claimToken(),
+                                        stepDefinition,
+                                        prompt,
+                                        input,
+                                        inputHash,
+                                        context.modelPolicyVersion(),
+                                        1),
+                                reusable.get());
+                        applyReused(
+                                executableStep.executor(),
+                                reusable.get().minimalOutput(),
+                                executionContext,
+                                run,
+                                reused,
+                                inputHash);
+                    });
+                } catch (RuntimeException exception) {
+                    AiExecutionException failure = completionFailure(exception);
+                    AgentRunSnapshot afterRollback = current(run.userId(), run.id());
+                    if (completeCancellationIfRequested(
+                            afterRollback, claimed.claimToken())) {
+                        return;
+                    }
+                    AgentStepSnapshot failed = startOrResumePending(
+                            afterRollback,
+                            claimed.claimToken(),
+                            stepDefinition,
+                            prompt,
+                            input,
+                            inputHash,
+                            context.modelPolicyVersion(),
+                            1);
+                    checkpointFailure(
+                            afterRollback,
+                            claimed.claimToken(),
+                            failed,
+                            failure);
+                    throw failure;
+                }
                 upstreamOutputs.put(stepDefinition.stepKey(), reusable.get().minimalOutput());
                 ephemeralOutputs.put(
                         stepDefinition.stepKey(),
@@ -345,9 +364,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         for (int attempt = firstAttempt; attempt <= MAX_ATTEMPTS; attempt++) {
             run = current(run.userId(), run.id());
             if (completeCancellationIfRequested(run, claimed.claimToken())) return StepResult.terminal();
+            boolean providerRequired = stepDefinition.requiresProvider()
+                    && executor.requiresProvider(executionContext);
             ModelRoute route = modelRouter.route(new RoutingRequest(
                     run.workflowType(), stepDefinition.stepKey(), run.requestedQualityMode(),
-                    stepDefinition.preferredTier(), stepDefinition.requiresProvider(),
+                    stepDefinition.preferredTier(), providerRequired,
                     executionContext.contextSnapshot().highQualityEnabled(),
                     executionContext.contextSnapshot().budgetReservationConfirmed(),
                     attempt, previousTier, previousFailure));
@@ -382,20 +403,45 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                             executorEphemeralOutput(executor, validated),
                             requiredAction.get());
                 }
-                stepCheckpointPort.checkpoint(new StepCheckpointCommand(
-                        run.userId(), run.id(), step.id(), claimed.claimToken(), AgentStepStatus.SUCCEEDED,
-                        sha256(minimalOutput.toString()), minimalOutput, route.tier(), null, null,
-                        clock.instant()));
-                activeStep = false;
+                Object ephemeralOutput = executorEphemeralOutput(executor, validated);
+                PartialResult stepPartialResult = executorPartialResult(
+                                executor, validated, minimalOutput, executionContext)
+                        .orElse(null);
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
-                applyFresh(executor, validated, minimalOutput, executionContext, run, step, inputHash);
+                AgentRunSnapshot completionRun = run;
+                try {
+                    stepCompletionTransaction.execute(() -> {
+                        stepCheckpointPort.checkpoint(new StepCheckpointCommand(
+                                completionRun.userId(),
+                                completionRun.id(),
+                                step.id(),
+                                claimed.claimToken(),
+                                AgentStepStatus.SUCCEEDED,
+                                sha256(minimalOutput.toString()),
+                                minimalOutput,
+                                route.tier(),
+                                null,
+                                null,
+                                clock.instant()));
+                        applyFresh(
+                                executor,
+                                validated,
+                                minimalOutput,
+                                executionContext,
+                                completionRun,
+                                step,
+                                inputHash);
+                    });
+                } catch (RuntimeException exception) {
+                    throw completionFailure(exception);
+                }
+                activeStep = false;
                 return new StepResult(
                         minimalOutput,
-                        executorEphemeralOutput(executor, validated),
-                        executorPartialResult(executor, validated, minimalOutput, executionContext)
-                                .orElse(null),
+                        ephemeralOutput,
+                        stepPartialResult,
                         null,
                         false);
             } catch (AiExecutionException exception) {
@@ -616,6 +662,19 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                         "AI 결과를 현재 리소스에 적용할 수 없습니다.");
             }
         });
+    }
+
+    private AiExecutionException completionFailure(RuntimeException exception) {
+        if (exception instanceof AiExecutionException aiExecutionException) {
+            return aiExecutionException;
+        }
+        if (exception instanceof BusinessException businessException) {
+            return mapBusiness(businessException);
+        }
+        return AiExecutionException.nonRetryable(
+                FailureKind.CONFIGURATION,
+                "AI_DOMAIN_APPLY_FAILED",
+                "AI 결과를 안전하게 적용하지 못했습니다.");
     }
 
     private void validatePromptContract(StepDefinition step, PromptDefinition prompt) {

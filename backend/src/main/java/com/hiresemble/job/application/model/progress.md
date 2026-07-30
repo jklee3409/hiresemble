@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job application 결과 record가 구현됐다.
+P5 Job과 P6 Job Analysis application 결과·snapshot·command record가 구현됐다.
+
+## [2026-07-29] Session Summary (P6 분석 immutable model)
+
+- What was done:
+  - 최소 profile/evidence snapshot, retrieval candidate, summary/detail과 persist command record를 추가했다.
+- Key decisions:
+  - domain entity·원문 전체·provider/model/storage 내부값을 노출하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - compile·workflow/Job 통합과 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job application projection 정의)
 

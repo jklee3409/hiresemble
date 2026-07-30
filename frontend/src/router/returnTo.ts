@@ -20,7 +20,7 @@ const AGENT_RUN_DETAIL_PATH =
 const DOCUMENT_DETAIL_PATH =
   /^\/documents\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const JOB_DETAIL_PATH =
-  /^\/jobs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/overview)?$/i
+  /^\/jobs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/(?:overview|analysis))?$/i
 
 export function safeReturnTo(value: unknown, origin = currentOrigin()): string | null {
   if (typeof value !== 'string' || value.length === 0) {

@@ -2,7 +2,23 @@
 
 ## Overview
 
-P5 Job filter·query·mutation·stream·version conflict feature가 구현됐다.
+P5 Job filter·mutation·stream·version conflict와 P6 analysis query·presentation·terminal invalidation이 구현됐다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis query·presentation)
+
+- What was done:
+  - user-scoped latest/history query key, 분석 접수 mutation과 terminal Run 뒤 Job·analysis invalidation을 추가했다.
+  - canonical Eligibility·Match·criterion·OUTDATED·quality label을 정의했다.
+  - 분석 당시 근거와 현재 승인·삭제 상태를 구분하는 presentation helper를 추가했다.
+- Key decisions:
+  - `ECONOMY|BALANCED`만 노출하고 점수와 지원 가능 여부를 하나의 badge 의미로 합치지 않는다.
+- Issues encountered:
+  - reload 뒤 active analysis Run 확인 실패 시 중복 유료 요청 방지를 위해 command를 잠그는 상태를 추가했다.
+  - 1차 validator의 historical evidence rendering finding을 보정했다.
+- Validation:
+  - query·stream·historical evidence page unit test, Frontend 169 tests와 Chromium P6 fixture가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-28] Session Summary (공고 분석 monitor 용어 정리)
 

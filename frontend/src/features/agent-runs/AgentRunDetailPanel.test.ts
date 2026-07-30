@@ -26,7 +26,7 @@ describe('AgentRunDetailPanel', () => {
       global,
     })
 
-    expect(wrapper.text()).toContain('공고 살펴보기')
+    expect(wrapper.text()).toContain('공고 분석')
     expect(wrapper.text()).toContain('예상 사용 비용')
     expect(wrapper.text()).not.toContain('요청 품질')
     expect(wrapper.text()).not.toContain('처리 방식')
@@ -42,6 +42,24 @@ describe('AgentRunDetailPanel', () => {
     expect(wrapper.text()).not.toContain('prompt')
     expect(wrapper.text()).not.toContain('claimToken')
     expect(wrapper.text()).not.toContain('inputHash')
+  })
+
+  it('links a Job analysis run back to the owning Job analysis page without copying results', () => {
+    const wrapper = mount(AgentRunDetailPanel, {
+      props: {
+        run: agentRunDetail({
+          resourceType: 'JOB',
+          resourceId: '50000000-0000-4000-8000-000000000001',
+        }),
+        connectionState: 'connected',
+      },
+      global,
+    })
+
+    expect(wrapper.text()).toContain('공고 분석 보기')
+    expect(wrapper.text()).not.toContain('적합도 점수')
+    expect(wrapper.text()).not.toContain('강점')
+    expect(wrapper.text()).not.toContain('부족한 점')
   })
 
   it('shows a safe WAITING_USER action, disables generic retry, and trusts server cancellable', async () => {

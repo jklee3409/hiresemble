@@ -2,7 +2,22 @@
 
 ## Overview
 
-P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply 경계가 구현됐다.
+P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply, P6 deterministic reuse provider-skip 및 atomic completion 경계가 구현됐다.
+
+## [2026-07-29] Session Summary (P6 reuse provider routing·atomic completion 보강)
+
+- What was done:
+  - executor context에 따라 model-backed step의 compatible reuse branch만 provider routing을 생략하는 hook을 추가했다.
+  - fresh/reuse domain apply와 성공 checkpoint를 실제 Spring `SERIALIZABLE` transaction으로 묶었다.
+- Key decisions:
+  - 기존 workflow 기본값은 provider required이며 gateway·usage·validation은 transaction 밖에 두고 완료된 checkpoint만 committed domain apply를 보장한다.
+- Issues encountered:
+  - 1차 validator가 checkpoint 후 별도 apply의 crash window를 MAJOR로 확인해 부분 domain write와 성공 checkpoint를 함께 rollback하도록 보정했다.
+- Validation:
+  - fresh/reuse rollback과 commit 직후 crash/restart를 포함한 orchestrator 13 tests, P6 workflow 11 tests와 Backend 352 tests가 통과했다.
+  - 최종 read-only validator가 atomic completion MAJOR 해소를 확인했다.
+- Next steps:
+  - None.
 
 ## [2026-07-19] Session Summary (Document failure handler·resource 실행 연결)
 

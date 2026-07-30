@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job 공개 API 7개의 validation·OpenAPI·HTTP status 계약이 구현됐다.
+P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약이 구현됐다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis API 3개)
+
+- What was done:
+  - 분석 접수, immutable 이력과 최신 상세 endpoint·DTO·mapper를 추가했다.
+- Key decisions:
+  - 실제 HTTP 202/200과 공통 오류 DTO를 사용하고 owner resource는 404로 숨긴다.
+- Issues encountered:
+  - OpenAPI exact operation 기준선을 53/37로 갱신했다.
+- Validation:
+  - API 통합·OpenAPI와 Backend 전체 check가 통과했다.
+- Next steps:
+  - P7 API는 이번 범위에 없다.
 
 ## [2026-07-27] Session Summary (Job 공개 API 구현)
 

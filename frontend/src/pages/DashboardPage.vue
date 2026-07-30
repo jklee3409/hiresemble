@@ -227,7 +227,7 @@ const recentActivity = computed<ActivityItem[]>(() => {
   const runs: ActivityItem[] = (recentRunsQuery.data.value?.items ?? []).map((run) => ({
     key: `run-${run.id}`,
     at: run.updatedAt,
-    eyebrow: '분석 기록',
+    eyebrow: 'AI 작업 내역',
     title: WORKFLOW_LABELS[run.workflowType],
     description: STATUS_LABELS[run.status],
     to: `/agent-runs/${run.id}`,
@@ -423,7 +423,7 @@ function formatActivityDate(value: string): string {
                     : '자료와 공고를 정리하고 있는 작업이에요.'
                 }}
               </p>
-              <RouterLink to="/agent-runs">분석 기록 보기</RouterLink>
+              <RouterLink to="/agent-runs">AI 작업 내역 보기</RouterLink>
             </article>
 
             <article class="metric metric--documents">
@@ -511,7 +511,7 @@ function formatActivityDate(value: string): string {
               <h2 id="activity-heading">최근 활동</h2>
             </div>
             <RouterLink to="/agent-runs" class="text-link">
-              분석 기록 보기
+              AI 작업 내역 보기
               <AppIcon name="arrow-right" />
             </RouterLink>
           </div>

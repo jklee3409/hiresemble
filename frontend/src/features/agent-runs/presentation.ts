@@ -7,11 +7,15 @@ import type {
 
 const AGENT_RUN_DETAIL_PATH =
   /^\/agent-runs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const DOCUMENT_DETAIL_PATH =
+  /^\/documents\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const JOB_DETAIL_PATH =
+  /^\/jobs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/(?:overview|analysis)$/i
 
 export const WORKFLOW_LABELS: Record<WorkflowType, string> = {
   DOCUMENT_INGESTION: '이력서·자료 정리',
   JOB_POSTING_EXTRACTION: '공고 불러오기',
-  JOB_ANALYSIS: '공고 살펴보기',
+  JOB_ANALYSIS: '공고 분석',
   COVER_LETTER_GENERATION: '자기소개서 초안 만들기',
   COVER_LETTER_VERIFICATION: '자기소개서 내용 확인',
   INTERVIEW_PREPARATION: '면접 준비 자료 만들기',
@@ -97,7 +101,10 @@ export function safeRequiredActionRoute(value: string | null): string | null {
     const allowed =
       ['/onboarding', '/profile/basic', '/profile/evidence', '/agent-runs'].includes(
         target.pathname,
-      ) || AGENT_RUN_DETAIL_PATH.test(target.pathname)
+      ) ||
+      AGENT_RUN_DETAIL_PATH.test(target.pathname) ||
+      DOCUMENT_DETAIL_PATH.test(target.pathname) ||
+      JOB_DETAIL_PATH.test(target.pathname)
     return allowed ? `${target.pathname}${target.search}${target.hash}` : null
   } catch {
     return null

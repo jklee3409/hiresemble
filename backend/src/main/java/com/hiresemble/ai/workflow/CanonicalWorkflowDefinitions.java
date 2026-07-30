@@ -18,6 +18,7 @@ public final class CanonicalWorkflowDefinitions {
     public static final String VERSION = "p0-contract-v1";
     public static final String JOB_POSTING_EXTRACTION_VERSION =
             "job-posting-extraction-v1";
+    public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -34,10 +35,7 @@ public final class CanonicalWorkflowDefinitions {
                         "EMBED_CHUNKS", "EXTRACT_EVIDENCE_CANDIDATES", "APPLY_EVIDENCE_CANDIDATES",
                         "FINALIZE_DOCUMENT"),
                 jobPostingExtraction(),
-                definition(WorkflowType.JOB_ANALYSIS, economyBalanced(),
-                        "BUILD_JOB_SNAPSHOT", "EXTRACT_REQUIREMENTS", "ASSESS_ELIGIBILITY",
-                        "RETRIEVE_VERIFIED_EVIDENCE", "MATCH_EVIDENCE", "SCORE_FIT",
-                        "VALIDATE_ANALYSIS", "PERSIST_ANALYSIS"),
+                jobAnalysis(),
                 definition(WorkflowType.COVER_LETTER_GENERATION, allQuality(),
                         "BUILD_GENERATION_CONTEXT", "PLAN_QUESTIONS", "ANALYZE_QUESTION",
                         "RETRIEVE_EVIDENCE", "ALLOCATE_EXPERIENCES", "WRITE_ANSWER",
@@ -143,6 +141,101 @@ public final class CanonicalWorkflowDefinitions {
                                 0,
                                 Set.of(),
                                 weights.get(4))));
+    }
+
+    private static WorkflowDefinition jobAnalysis() {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(8);
+        return new WorkflowDefinition(
+                WorkflowType.JOB_ANALYSIS,
+                JOB_ANALYSIS_VERSION,
+                true,
+                economyBalanced(),
+                List.of(
+                        analysisStep(
+                                "BUILD_JOB_SNAPSHOT",
+                                "job-analysis-build-output-v1",
+                                Set.of(),
+                                0,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(0)),
+                        analysisStep(
+                                "EXTRACT_REQUIREMENTS",
+                                "job-analysis-requirements-output-v1",
+                                Set.of(),
+                                1,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(1)),
+                        analysisStep(
+                                "ASSESS_ELIGIBILITY",
+                                "job-analysis-eligibility-output-v1",
+                                Set.of(),
+                                1,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(2)),
+                        analysisStep(
+                                "RETRIEVE_VERIFIED_EVIDENCE",
+                                "job-analysis-retrieval-output-v1",
+                                Set.of("EMBEDDING"),
+                                1,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(3)),
+                        analysisStep(
+                                "MATCH_EVIDENCE",
+                                "job-analysis-match-output-v1",
+                                Set.of(),
+                                1,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(4)),
+                        analysisStep(
+                                "SCORE_FIT",
+                                "job-analysis-score-output-v1",
+                                Set.of(),
+                                0,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(5)),
+                        analysisStep(
+                                "VALIDATE_ANALYSIS",
+                                "job-analysis-validation-output-v1",
+                                Set.of(),
+                                0,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(6)),
+                        analysisStep(
+                                "PERSIST_ANALYSIS",
+                                "job-analysis-persist-output-v1",
+                                Set.of(),
+                                0,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(7))));
+    }
+
+    private static StepDefinition analysisStep(
+            String key,
+            String outputSchemaVersion,
+            Set<String> tools,
+            int modelCalls,
+            Set<FailureKind> retryableFailures,
+            ModelTier preferredTier,
+            BigDecimal weight) {
+        return new StepDefinition(
+                key,
+                agentName(key),
+                "job-analysis-input-v1",
+                outputSchemaVersion,
+                tools,
+                modelCalls,
+                1,
+                preferredTier,
+                retryableFailures,
+                weight);
     }
 
     private static StepDefinition jobStep(

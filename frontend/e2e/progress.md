@@ -7,8 +7,23 @@
 - `ui-shell.spec.ts`가 fixture 인증으로 필수 viewport의 overflow, navigation과 drawer focus를 검증한다.
 - `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
 - `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
+- `job-analysis.spec.ts`가 fixture로 P6 결과·OUTDATED·접근성·desktop/mobile overflow를 검증한다.
+- `job-analysis.actual.spec.ts`가 P6 실제 Backend 분석·reuse·재분석·근거 부족·owner 격리를 검증하도록 구성되어 있다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis fixture·actual E2E)
+
+- What was done:
+  - 1440px/390px 결과·OUTDATED·history fixture와 Spring/PostgreSQL/Fake AI 주도 actual 분석·reuse·재분석·근거 부족·owner 격리 시나리오를 추가했다.
+- Key decisions:
+  - 실제 provider·운영 DB를 사용하지 않고 direct career가 만든 VERIFIED evidence와 test-scope Fake Chat/Embedding만 사용한다.
+- Issues encountered:
+  - actual 1차는 중복 버전 제목 locator, 2차는 공개 계약에 없는 evidence GET assertion에서 종료됐다. assertion은 공개 PUT owner 404로 수정했으나 세 번째 실행은 하지 않았다.
+- Validation:
+  - P6+Agent Run fixture Chromium 3/3 통과. actual 2차에서 정상 분석·reuse·OUTDATED·재분석과 공고/분석/Run 격리, 근거 부족 실패까지 실행됐지만 wrapper는 evidence assertion 때문에 실패했다.
+- Next steps:
+  - 수정된 actual evidence PUT 404 assertion을 향후 단일 실행으로 확인한다.
 
 ## [2026-07-28] Session Summary (지원 Dashboard·Profile 반응형 시각 회귀)
 

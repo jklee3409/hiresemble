@@ -276,6 +276,34 @@ describe('AgentRunStreamController', () => {
     expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId])
     expect(sources[0]?.closed).toBe(true)
   })
+
+  it('invalidates latest analysis and history after a JOB_ANALYSIS terminal event', () => {
+    const jobId = '00000000-0000-4000-8000-000000000012'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({
+      workflowType: 'JOB_ANALYSIS',
+      resourceType: 'JOB',
+      resourceId: jobId,
+    })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(2, 'SUCCEEDED'),
+      resourceType: 'JOB',
+      resourceId: jobId,
+    })
+
+    expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId, 'analyses'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId, 'analysis', 'latest'])
+  })
 })
 
 describe('mergeAgentRunEvent', () => {

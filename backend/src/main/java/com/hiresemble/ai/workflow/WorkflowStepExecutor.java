@@ -60,6 +60,15 @@ public interface WorkflowStepExecutor<T> {
         return true;
     }
 
+    /**
+     * A statically model-backed step may take a deterministic local branch for an already
+     * persisted compatible result. The registry still owns the model-call upper bound; this
+     * hook only prevents provider routing for that invocation.
+     */
+    default boolean requiresProvider(StepExecutionContext context) {
+        return true;
+    }
+
     /** Allows deterministic inspection to request user input discovered during the step. */
     default Optional<RequiredUserAction> requiredUserAction(
             T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {

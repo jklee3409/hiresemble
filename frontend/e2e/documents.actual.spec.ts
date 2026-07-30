@@ -61,7 +61,7 @@ test.describe('P4 actual Backend document pipeline', () => {
     await expect(page.getByText('내용 직접 입력 필요', { exact: true })).toBeVisible({
       timeout: 120_000,
     })
-    const runLink = page.getByRole('link', { name: '분석 기록 자세히 보기' })
+    const runLink = page.getByRole('link', { name: 'AI 작업 내역 자세히 보기' })
     const originalRun = await runLink.getAttribute('href')
     await page.getByLabel('자료 내용').fill(longDocument())
     await page.getByRole('button', { name: '내용 저장하고 계속하기' }).click()
@@ -93,7 +93,7 @@ test.describe('P4 actual Backend document pipeline', () => {
     await uploadText(page, 'owner-document.txt', longDocument(), '소유자 문서')
     const documentId = idFromUrl(page.url())
     const runHref = await page
-      .getByRole('link', { name: '분석 기록 자세히 보기' })
+      .getByRole('link', { name: 'AI 작업 내역 자세히 보기' })
       .getAttribute('href')
     const runId = runHref?.split('/').pop()
     expect(runId).toBeTruthy()

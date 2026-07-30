@@ -2,7 +2,23 @@
 
 ## Overview
 
-P1 인증부터 P5 Job 목록·등록·overview, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+P1 인증부터 P6 Job 목록·등록·overview·analysis, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-07-29] Session Summary (P6 공고별 분석 결과 페이지)
+
+- What was done:
+  - 분석 없음·선행 조건·진행·WAITING_USER·실패·성공·OUTDATED·history 상태를 단일 Job Analysis page에 구현했다.
+  - Eligibility, fit score 안내, requirement, strength/gap, verified evidence와 criterion breakdown을 분리해 표시했다.
+  - historical evidence의 현재 상태가 바뀌어도 분석 당시 결과를 유지하고 재분석 제외 상태를 텍스트로 표시한다.
+- Key decisions:
+  - 프로필 미완료는 경고만 표시하고 usable 공고 분석을 차단하지 않으며 OUTDATED 기존 결과도 숨기지 않는다.
+- Issues encountered:
+  - 실제 E2E의 같은 버전 제목 locator와 비공개 evidence GET assertion을 공개 계약에 맞게 보정했다.
+  - 1차 validator의 historical detail 거부 finding을 canonical current evidence 상태 수용과 OUTDATED 안내로 보정했다.
+- Validation:
+  - Job Analysis component, 1440px/390px Chromium·keyboard·overflow와 Frontend 전체 169 tests가 통과했다.
+- Next steps:
+  - 수정된 actual P6 E2E assertion은 재검증 상한으로 아직 실행하지 않았다.
 
 ## [2026-07-28] Session Summary (지원 현황 Dashboard·기본 프로필 단일 편집 구조)
 

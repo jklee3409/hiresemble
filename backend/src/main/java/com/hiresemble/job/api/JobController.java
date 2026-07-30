@@ -9,11 +9,15 @@ import com.hiresemble.common.idempotency.IdempotentResponse;
 import com.hiresemble.job.api.JobDtos.JobCreationAcceptedDto;
 import com.hiresemble.job.api.JobDtos.JobDetailDto;
 import com.hiresemble.job.api.JobDtos.JobPageDto;
+import com.hiresemble.job.api.JobAnalysisDtos.JobAnalysisDetailDto;
+import com.hiresemble.job.api.JobAnalysisDtos.JobAnalysisPageDto;
+import com.hiresemble.job.api.JobAnalysisRequests.AnalyzeJobRequest;
 import com.hiresemble.job.api.JobRequests.ChangeJobStatusRequest;
 import com.hiresemble.job.api.JobRequests.CreateJobRequest;
 import com.hiresemble.job.api.JobRequests.RetryJobExtractionRequest;
 import com.hiresemble.job.api.JobRequests.UpdateJobRequest;
 import com.hiresemble.job.application.JobApplicationService;
+import com.hiresemble.job.application.JobAnalysisApplicationService;
 import com.hiresemble.job.application.model.JobApplicationResults.JobCreationAccepted;
 import com.hiresemble.job.application.model.JobApplicationResults.RunAccepted;
 import com.hiresemble.job.domain.JobCommands.JobListQuery;
@@ -71,12 +75,22 @@ public class JobController {
             "page",
             "size",
             "sort");
+    private static final Set<String> ANALYSIS_LIST_PARAMETERS =
+            Set.of("page", "size", "sort");
     private final JobApplicationService service;
     private final JobApiMapper mapper;
+    private final JobAnalysisApplicationService analysisService;
+    private final JobAnalysisApiMapper analysisMapper;
 
-    public JobController(JobApplicationService service, JobApiMapper mapper) {
+    public JobController(
+            JobApplicationService service,
+            JobApiMapper mapper,
+            JobAnalysisApplicationService analysisService,
+            JobAnalysisApiMapper analysisMapper) {
         this.service = service;
         this.mapper = mapper;
+        this.analysisService = analysisService;
+        this.analysisMapper = analysisMapper;
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -262,6 +276,91 @@ public class JobController {
                 result.replayed());
     }
 
+    @PostMapping(
+            value = "/{jobId}/analysis",
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            operationId = "analyzeJob",
+            summary = "Analyze a job posting",
+            description = "Accepts the fixed JOB_ANALYSIS workflow for one owner-scoped snapshot.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "202", content = @Content(schema = @Schema(implementation = RunAcceptedDto.class))),
+        @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "429", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "503", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public ResponseEntity<RunAcceptedDto> analyze(
+            @PathVariable UUID jobId,
+            @Valid @RequestBody AnalyzeJobRequest request,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        IdempotentResponse<RunAccepted> result = analysisService.accept(
+                user.id(),
+                jobId,
+                request.qualityMode(),
+                request.forceReanalyze(),
+                request.jobVersion(),
+                idempotencyKey);
+        RunAccepted value = result.body();
+        return response(
+                result.status(),
+                new RunAcceptedDto(
+                        value.agentRunId(),
+                        value.status(),
+                        value.resourceType(),
+                        value.resourceId(),
+                        result.replayed()),
+                result.replayed());
+    }
+
+    @GetMapping("/{jobId}/analyses")
+    @Operation(
+            operationId = "listJobAnalyses",
+            summary = "List job analyses",
+            description = "Lists immutable analysis versions for one owner-scoped job.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = JobAnalysisPageDto.class))),
+        @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public JobAnalysisPageDto analyses(
+            @PathVariable UUID jobId,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "analysisVersion,desc") String sort,
+            @Parameter(hidden = true) HttpServletRequest servletRequest,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        rejectUnknownParameters(servletRequest, ANALYSIS_LIST_PARAMETERS);
+        var result = analysisService.list(user.id(), jobId, page, size, sort);
+        return new JobAnalysisPageDto(
+                result.items().stream().map(analysisMapper::summary).toList(),
+                result.page(),
+                result.size(),
+                result.totalElements(),
+                result.totalPages());
+    }
+
+    @GetMapping("/{jobId}/analyses/latest")
+    @Operation(
+            operationId = "getLatestJobAnalysis",
+            summary = "Get the latest job analysis",
+            description = "Returns the latest immutable result with current snapshot outdated reasons.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = JobAnalysisDetailDto.class))),
+        @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public JobAnalysisDetailDto latestAnalysis(
+            @PathVariable UUID jobId,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return analysisMapper.detail(analysisService.latest(user.id(), jobId));
+    }
+
     @DeleteMapping("/{jobId}")
     @Operation(
             operationId = "deleteJob",
@@ -284,7 +383,12 @@ public class JobController {
     }
 
     private void rejectUnknownParameters(HttpServletRequest request) {
-        if (!LIST_PARAMETERS.containsAll(request.getParameterMap().keySet())) {
+        rejectUnknownParameters(request, LIST_PARAMETERS);
+    }
+
+    private void rejectUnknownParameters(
+            HttpServletRequest request, Set<String> allowedParameters) {
+        if (!allowedParameters.containsAll(request.getParameterMap().keySet())) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
     }

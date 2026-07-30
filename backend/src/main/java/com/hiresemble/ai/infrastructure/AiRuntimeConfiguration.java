@@ -12,23 +12,28 @@ import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
 import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
+import com.hiresemble.ai.context.JobAnalysisContextBuilder;
 import com.hiresemble.ai.context.WorkflowContextBuilder;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.model.ModelRouter;
 import com.hiresemble.ai.model.ModelRouter.ModelPolicy;
 import com.hiresemble.ai.model.PolicyModelRouter;
 import com.hiresemble.ai.orchestration.AgentOrchestrator;
+import com.hiresemble.ai.orchestration.SpringStepCompletionTransaction;
+import com.hiresemble.ai.orchestration.StepCompletionTransaction;
 import com.hiresemble.ai.orchestration.WorkflowFailureHandler;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
 import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
+import com.hiresemble.ai.prompt.JobAnalysisPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.JobPostingExtractionFailureHandler;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow;
 import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
@@ -36,6 +41,9 @@ import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.job.application.port.JobPageFetchGateway;
+import com.hiresemble.job.application.port.JobAnalysisCommandPort;
+import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort;
+import com.hiresemble.job.application.port.JobAnalysisQueryPort;
 import com.hiresemble.job.application.port.JobWorkflowCommandPort;
 import com.hiresemble.job.application.port.JobWorkflowQueryPort;
 import java.time.Clock;
@@ -47,6 +55,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.ObjectMapper;
 
 /** Activates bounded Document and Job contributions; model gateways remain disabled by default. */
@@ -73,12 +82,26 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    JobAnalysisWorkflow jobAnalysisWorkflow(
+            JobAnalysisQueryPort queryPort,
+            JobAnalysisCommandPort commandPort,
+            JobAnalysisEmbeddingQueryPort embeddingQueryPort,
+            ObjectMapper objectMapper) {
+        return new JobAnalysisWorkflow(
+                queryPort, commandPort, embeddingQueryPort, objectMapper);
+    }
+
+    @Bean
     WorkflowRegistry workflowRegistry(
             DocumentIngestionWorkflow documentWorkflow,
-            JobPostingExtractionWorkflow jobWorkflow) {
+            JobPostingExtractionWorkflow jobWorkflow,
+            JobAnalysisWorkflow jobAnalysisWorkflow) {
         return new WorkflowRegistry(
                 CanonicalWorkflowDefinitions.all(),
-                List.of(documentWorkflow.contribution(), jobWorkflow.contribution()));
+                List.of(
+                        documentWorkflow.contribution(),
+                        jobWorkflow.contribution(),
+                        jobAnalysisWorkflow.contribution()));
     }
 
     @Bean
@@ -86,6 +109,7 @@ public class AiRuntimeConfiguration {
         var prompts = new ArrayList<PromptRegistry.PromptDefinition>();
         prompts.addAll(DocumentIngestionPromptDefinitions.all());
         prompts.addAll(JobPostingExtractionPromptDefinitions.all());
+        prompts.addAll(JobAnalysisPromptDefinitions.all());
         return new PromptRegistry(prompts);
     }
 
@@ -93,12 +117,14 @@ public class AiRuntimeConfiguration {
     ContextBuilder contextBuilder(
             DocumentWorkflowQueryPort documentQueryPort,
             JobWorkflowQueryPort jobQueryPort,
+            JobAnalysisQueryPort jobAnalysisQueryPort,
             Environment environment) {
         long version = environment.getProperty(
                 "hiresemble.ai.model-policy-version", Long.class, 1L);
         return new WorkflowContextBuilder(
                 new DocumentIngestionContextBuilder(documentQueryPort, version),
-                new JobPostingExtractionContextBuilder(jobQueryPort, version));
+                new JobPostingExtractionContextBuilder(jobQueryPort, version),
+                new JobAnalysisContextBuilder(jobAnalysisQueryPort, version));
     }
 
     @Bean
@@ -132,6 +158,12 @@ public class AiRuntimeConfiguration {
     @Bean
     BudgetGuard budgetGuard(com.hiresemble.agentrun.application.port.BudgetReservationPort port) {
         return new BudgetGuard(port);
+    }
+
+    @Bean
+    StepCompletionTransaction stepCompletionTransaction(
+            PlatformTransactionManager transactionManager) {
+        return new SpringStepCompletionTransaction(transactionManager);
     }
 
     @Bean
@@ -171,7 +203,8 @@ public class AiRuntimeConfiguration {
             BudgetGuard budgetGuard,
             ObjectMapper objectMapper,
             Clock clock,
-            ObjectProvider<WorkflowFailureHandler> failureHandlers) {
+            ObjectProvider<WorkflowFailureHandler> failureHandlers,
+            StepCompletionTransaction stepCompletionTransaction) {
         DomainResultApplyPort domainApply = command -> {
             throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
@@ -197,7 +230,8 @@ public class AiRuntimeConfiguration {
                 budgetGuard,
                 objectMapper,
                 clock,
-                failureHandlers.orderedStream().toList());
+                failureHandlers.orderedStream().toList(),
+                stepCompletionTransaction);
     }
 
     private String textOrNone(String value) {

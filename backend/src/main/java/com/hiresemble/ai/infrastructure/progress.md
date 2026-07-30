@@ -2,7 +2,20 @@
 
 ## Overview
 
-local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job contribution이 runtime에 등록돼 있다.
+local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job extraction·Job Analysis contribution이 runtime에 등록돼 있다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis runtime wiring)
+
+- What was done:
+  - P6 context·prompt·workflow와 Job query/command/embedding port를 production registry에 조립했다.
+- Key decisions:
+  - 실제 provider 기본값과 disabled gateway는 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Spring context·전체 Backend check가 통과했다.
+- Next steps:
+  - 실제 provider 활성화는 별도 승인·가격 정책과 함께 수행한다.
 
 ## [2026-07-27] Session Summary (P5 Job runtime contribution 등록)
 

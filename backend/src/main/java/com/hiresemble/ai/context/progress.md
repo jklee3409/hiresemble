@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 provenance-only ContextBuilder와 Document·Job owner/version snapshot이 구현됐다.
+P3 provenance-only ContextBuilder와 Document·Job extraction·Job Analysis owner/version/hash snapshot이 구현됐다.
+
+## [2026-07-29] Session Summary (Job Analysis context builder)
+
+- What was done:
+  - tenant·Job/profile/evidence/context/policy hash와 verified evidence reference만 담는 P6 context를 추가했다.
+- Key decisions:
+  - 공고·문서 원문과 profile PII는 durable context에 저장하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - workflow context/Fake 실행과 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job Posting Extraction context 추가)
 

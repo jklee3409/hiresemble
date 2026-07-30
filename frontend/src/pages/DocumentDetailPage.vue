@@ -314,7 +314,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
               name: 'agent-run-detail',
               params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
             }"
-            >분석 기록 자세히 보기</RouterLink
+            >AI 작업 내역 자세히 보기</RouterLink
           >
         </div>
         <DocumentRunMonitor

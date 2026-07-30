@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job JDBC·Scheduler 설정과 SSRF-safe URL fetch adapter가 구현됐다.
+P5 Job JDBC·Scheduler/fetch와 P6 immutable Analysis JDBC·비용 설정이 구현됐다.
+
+## [2026-07-29] Session Summary (P6 분석 persistence)
+
+- What was done:
+  - immutable analysis·criteria·evidence·Run link insert/query와 reuse/latest/history SQL을 추가했다.
+- Key decisions:
+  - 모든 사용자 query는 owner scope를 사용하고 V7 sealing·FK·trigger와 같은 transaction에서 apply한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - repository/application·migration negative와 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job persistence와 안전한 fetch 구현)
 

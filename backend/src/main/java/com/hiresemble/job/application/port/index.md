@@ -10,6 +10,9 @@ Job application과 외부 URL fetch·AI workflow 사이의 최소 typed 경계�
 - `JobPageFetchException`: safe code와 retryable 분류
 - `JobWorkflowQueryPort`: owner·version·override snapshot 조회
 - `JobWorkflowCommandPort`: 추출 성공·사용자 입력 필요·기술 실패 apply
+- `JobAnalysisQueryPort`: owner·version/hash snapshot, reusable result와 VERIFIED evidence 검색
+- `JobAnalysisCommandPort`: immutable 분석 persist·reuse Run link apply
+- `JobAnalysisEmbeddingQueryPort`: active embedding policy와 exact cosine 검색
 - [`progress.md`](progress.md): port 계약 상태
 
 ## 구성 요소 역할
@@ -22,7 +25,7 @@ AI package가 Job repository나 Controller를 직접 참조하지 않도록 quer
 
 ## 변경 시 주의사항
 
-WebSearch/Tavily extract를 Job URL fetch 경계로 사용하지 않는다.
+WebSearch/Tavily extract를 Job URL fetch 경계로 사용하지 않는다. AI workflow에 JPA/JDBC entity나 provider/model/storage 내부값을 노출하지 않는다.
 
 ## 관련 규칙 및 문서
 

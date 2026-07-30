@@ -6,6 +6,8 @@ import com.hiresemble.job.domain.DeadlineSource;
 import com.hiresemble.job.domain.JobDescriptionSource;
 import com.hiresemble.job.domain.JobExtractionStatus;
 import com.hiresemble.job.domain.JobStatus;
+import com.hiresemble.job.domain.OutdatedReason;
+import com.hiresemble.job.api.JobAnalysisDtos.JobAnalysisSummaryDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -35,7 +37,7 @@ public final class JobDtos {
             DeadlineSource deadlineSource,
             @Schema(nullable = true, minimum = "0", maximum = "100") java.math.BigDecimal latestFitScore,
             boolean analysisOutdated,
-            List<String> outdatedReasons,
+            List<OutdatedReason> outdatedReasons,
             @Schema(nullable = true) String coverLetterStatus,
             @Schema(minimum = "0") int interviewPreparationCount,
             long version,
@@ -59,7 +61,7 @@ public final class JobDtos {
             DeadlineSource deadlineSource,
             @Schema(nullable = true, minimum = "0", maximum = "100") java.math.BigDecimal latestFitScore,
             boolean analysisOutdated,
-            List<String> outdatedReasons,
+            List<OutdatedReason> outdatedReasons,
             @Schema(nullable = true) String coverLetterStatus,
             @Schema(minimum = "0") int interviewPreparationCount,
             long version,
@@ -75,7 +77,7 @@ public final class JobDtos {
             @Schema(nullable = true) SafeErrorDto extractionError,
             @Schema(nullable = true) Instant closedAt,
             @Schema(nullable = true) ClosedReason closedReason,
-            @Schema(nullable = true, type = "object") Object latestAnalysis,
+            @Schema(nullable = true) JobAnalysisSummaryDto latestAnalysis,
             @Schema(nullable = true) UUID coverLetterId,
             @Schema(nullable = true) UUID latestQuestionSetId,
             @Schema(nullable = true) UUID latestMockSessionId) {

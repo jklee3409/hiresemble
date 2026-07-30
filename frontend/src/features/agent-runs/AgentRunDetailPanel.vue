@@ -45,6 +45,13 @@ const canCancel = computed(
 const actionRoute = computed(() =>
   safeRequiredActionRoute(props.run.requiredUserAction?.route ?? null),
 )
+const jobAnalysisRoute = computed(() =>
+  props.run.workflowType === 'JOB_ANALYSIS' &&
+  props.run.resourceType === 'JOB' &&
+  props.run.resourceId !== null
+    ? { name: 'job-analysis', params: { jobId: props.run.resourceId } }
+    : null,
+)
 const connectionMessage = computed(() => {
   if (props.connectionState === 'reconnecting') {
     return '진행 상황을 다시 확인하는 중이에요. 마지막으로 확인한 상태는 그대로 유지돼요.'
@@ -106,6 +113,13 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
           <p>{{ run.runAttemptNo }}번째 시도</p>
         </div>
         <div class="run-summary__actions">
+          <RouterLink
+            v-if="jobAnalysisRoute"
+            class="button button--secondary"
+            :to="jobAnalysisRoute"
+          >
+            공고 분석 보기
+          </RouterLink>
           <button
             v-if="canRetry"
             type="button"

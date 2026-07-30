@@ -93,7 +93,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 - 채용 공고
 - 자기소개서
 - 면접 준비
-- 작업 기록
+- AI 작업 내역
 - 설정
 
 ### 상단 Header
@@ -682,12 +682,13 @@ API:
 
 API 요청 시 각각 canonical API parameter 이름으로 변환한다.
 
-## 11.3 작업 기록 `/agent-runs`
+## 11.3 AI 작업 내역 `/agent-runs`
 
 - Workflow, 상태, 접수·최근 갱신 시각
 - 실패·중단 Filter
 - 비용과 재시도 가능 여부
 - 상세 실행 이동
+- `JOB_ANALYSIS` 작업은 결과 전체를 중복 표시하지 않고 해당 `/jobs/:jobId/analysis`로 이동하는 resource link 제공
 
 API:
 
@@ -695,7 +696,7 @@ API:
 
 ---
 
-# 12. Agent Run `/agent-runs/:agentRunId`
+# 12. AI 작업 상세 `/agent-runs/:agentRunId`
 
 ## 구성
 

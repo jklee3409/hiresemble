@@ -39,7 +39,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyFiftyP1ThroughP5OperationsAndThirtyFourPaths() {
+    void liveSpringMappingsHaveExactlyFiftyThreeP1ThroughP6OperationsAndThirtySevenPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -55,12 +55,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(34);
-        assertThat(operations[0]).isEqualTo(50);
+        assertThat(paths).hasSize(37);
+        assertThat(operations[0]).isEqualTo(53);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyFiftyP1ThroughP5Operations()
+    void generatedOpenApiHasStableMetadataAndExactlyFiftyThreeP1ThroughP6Operations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -111,8 +111,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/jobs",
                         "/api/v1/jobs/{jobId}",
                         "/api/v1/jobs/{jobId}/status",
-                        "/api/v1/jobs/{jobId}/retry-extraction");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(50);
+                        "/api/v1/jobs/{jobId}/retry-extraction",
+                        "/api/v1/jobs/{jobId}/analysis",
+                        "/api/v1/jobs/{jobId}/analyses",
+                        "/api/v1/jobs/{jobId}/analyses/latest");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(53);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -175,6 +178,24 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "/api/v1/jobs/{jobId}/retry-extraction",
                 "post",
                 "retryJobExtraction");
+        assertJobOperation(
+                document, "/api/v1/jobs/{jobId}/analysis", "post", "analyzeJob");
+        assertJobOperation(
+                document, "/api/v1/jobs/{jobId}/analyses", "get", "listJobAnalyses");
+        assertJobOperation(
+                document,
+                "/api/v1/jobs/{jobId}/analyses/latest",
+                "get",
+                "getLatestJobAnalysis");
+        assertResponseCodes(
+                document.at("/paths/~1api~1v1~1jobs~1{jobId}~1analysis/post"),
+                "202", "400", "401", "403", "404", "409", "429", "503");
+        assertResponseCodes(
+                document.at("/paths/~1api~1v1~1jobs~1{jobId}~1analyses/get"),
+                "200", "400", "401", "404");
+        assertResponseCodes(
+                document.at("/paths/~1api~1v1~1jobs~1{jobId}~1analyses~1latest/get"),
+                "200", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs/get"),
                 "200", "400", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/get"),

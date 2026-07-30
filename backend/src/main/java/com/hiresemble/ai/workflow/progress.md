@@ -2,7 +2,20 @@
 
 ## Overview
 
-canonical workflow definition과 Document·Job executable contribution 분리가 구현됐다.
+canonical workflow definition과 Document ingestion·Job extraction·Job Analysis executable contribution 분리가 구현됐다.
+
+## [2026-07-29] Session Summary (JOB_ANALYSIS 8단계 executable contribution)
+
+- What was done:
+  - `job-analysis-v1` 8단계 executor, 단계별 structured output와 verified evidence allowlist·deterministic apply를 추가했다.
+- Key decisions:
+  - reuse branch는 동일 step contract를 local로 실행하고 provider routing만 생략하며 persistence는 Job command port만 사용한다.
+- Issues encountered:
+  - embedding dimension을 active policy에서 읽도록 보정하고 기존 workflow 기본 provider 요구 의미를 회귀 테스트로 고정했다.
+- Validation:
+  - workflow contract 3개와 Fake 실행 8개, 전체 Backend check가 통과했다.
+- Next steps:
+  - production provider가 활성화될 때 embedding product routing을 별도 계약으로 보강한다.
 
 ## [2026-07-27] Session Summary (JOB_POSTING_EXTRACTION executable contribution 추가)
 

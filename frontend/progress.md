@@ -3,9 +3,28 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P5 Job typed client·Vue Query·SSE 복구까지 구현되어 있다.
-- `/agent-runs`, `/documents`와 `/jobs` 목록·등록·overview는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 40 files/154 tests, UI shell 3개·Agent Run fixture 2개, profile E2E 1개, 실제 Document E2E 4개와 Job E2E 5개가 있다. Dashboard는 현재 전용 API 없이 Profile·Document·Job·Agent Run의 정확한 집계와 최근 항목을 조합하며 P6 분석·AI 설정은 아직 없다.
+- P1 auth부터 P6 Job Analysis typed client·Vue Query·SSE terminal invalidation까지 구현되어 있다.
+- `/agent-runs`, `/documents`, `/jobs`와 `/jobs/:jobId/analysis`는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 42 files/169 tests, P6·Agent Run fixture Chromium 3개와 P2~P5 actual E2E가 있다. P6 actual E2E source는 추가됐지만 수정된 evidence 격리 assertion은 재실행하지 않았다.
+
+## [2026-07-29] Session Summary (P6 공고 분석 화면·AI 작업 내역 연결)
+
+- What was done:
+  - `/jobs/:jobId/analysis`의 실행·진행·실패·성공·OUTDATED·이력 상태와 user-scoped typed query/client를 구현했다.
+  - Eligibility와 fit score, 강점·부족한 점·criterion·VERIFIED evidence를 분리해 표시하고 사용자 용어를 `AI 작업 내역`으로 통일했다.
+  - 분석 당시 근거가 이후 `PENDING`, `REJECTED`, `SOURCE_DELETED`로 바뀌어도 기존 결과와 점수를 유지하고 현재 상태·재분석 제외 안내를 텍스트로 표시한다.
+- Key decisions:
+  - 공고 상세 tab은 `공고 정보`와 `공고 분석`만 제공하며 P7/P8 가짜 tab을 만들지 않는다.
+  - `/agent-runs`에는 결과를 복제하지 않고 `JOB_ANALYSIS` Run에서 공고 분석 화면으로 가는 resource link만 표시한다.
+- Issues encountered:
+  - actual E2E의 중복 제목 locator는 최신 결과 ID로 제한했고, 비공개 evidence GET assertion은 공개 PUT owner 404로 교체했다. 교체 후 actual E2E는 재실행하지 않았다.
+  - 1차 validator가 current evidence 상태를 이유로 historical detail 전체를 거부하는 schema를 MAJOR로 판정해 canonical 상태는 수용하되 현재 positive proof로 오해하지 않는 UI로 보정했다.
+- Validation:
+  - 보정 후 `corepack pnpm check`: lint·Prettier·TypeScript·42 files/169 tests·production build 통과.
+  - Job Analysis 1440px/390px와 Agent Run reconnect fixture Chromium 3/3, horizontal overflow·keyboard tab 검증이 통과했다.
+  - 최종 validator는 historical evidence detail·UI finding 해소를 확인했지만 final-source actual P6 wrapper 미실행으로 전체 `FAIL`을 유지했다.
+- Next steps:
+  - 새로 승인된 검증 주기에서 current actual P6 spec을 wrapper로 실행한다. 이 요청에서는 추가 자동 재검증하지 않는다.
 
 ## [2026-07-28] Session Summary (데이터 기반 지원 홈·프로필 편집 경험 재설계)
 

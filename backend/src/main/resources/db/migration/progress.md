@@ -8,7 +8,21 @@
 - `V4__create_agent_runtime_and_ai_budget.sql`은 P3 Run·Step과 AI policy·price·budget·usage 11개 table을 생성한다.
 - `V5__create_documents_evidence_and_storage_outbox.sql`은 P4 문서·text·chunk·Object outbox·typed Run link와 evidence document FK를 생성한다.
 - `V6__create_job_postings_and_extend_agent_resources.sql`은 P5 Company·Job·status history와 typed Job Run link를 생성한다.
-- 분석·자기소개서·면접 등 P6 이후 table은 구현하지 않았다.
+- `V7__create_job_analyses_and_provenance.sql`은 P6 immutable analysis·criterion·VERIFIED evidence provenance와 typed analysis Run link를 생성한다.
+- 자기소개서·면접 등 P7 이후 table은 구현하지 않았다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis V7 migration)
+
+- What was done:
+  - `job_analyses`, `job_analysis_score_criteria`, `job_analysis_evidence_links`와 `JOB_ANALYSIS` secondary Run link를 V7로 추가했다.
+- Key decisions:
+  - 모든 owner FK는 `(user_id,id)` 복합 경계로 강제하고 analysis sealing·child immutability·monotonic version·최소 criterion·VERIFIED evidence를 trigger/CHECK로 보장한다.
+- Issues encountered:
+  - immutable trigger와 테스트 cleanup 충돌은 운영 DDL을 약화하지 않고 test fixture가 분석 table을 먼저 truncate하도록 해결했다.
+- Validation:
+  - 빈 DB V1→V7, populated V6→V7, cross-user·score·immutability negative와 V1~V6 SHA-256 불변 3개가 통과했다.
+- Next steps:
+  - P7 이후 schema는 V7을 수정하지 않고 새 forward migration으로 추가한다.
 
 ## [2026-07-27] Session Summary (P5 Job V6 migration)
 

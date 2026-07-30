@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 import AppIcon from '@/shared/ui/AppIcon.vue'
 
 const route = useRoute()
+const activeTab = computed(() => (route.name === 'job-analysis' ? 'analysis' : 'overview'))
 </script>
 
 <template>
@@ -15,10 +17,19 @@ const route = useRoute()
     <nav class="job-detail-tabs" aria-label="공고 상세 탭">
       <RouterLink
         class="job-detail-tab"
+        :class="{ 'job-detail-tab--active': activeTab === 'overview' }"
         :to="{ name: 'job-overview', params: { jobId: route.params.jobId } }"
-        aria-current="page"
+        :aria-current="activeTab === 'overview' ? 'page' : undefined"
       >
-        개요
+        공고 정보
+      </RouterLink>
+      <RouterLink
+        class="job-detail-tab"
+        :class="{ 'job-detail-tab--active': activeTab === 'analysis' }"
+        :to="{ name: 'job-analysis', params: { jobId: route.params.jobId } }"
+        :aria-current="activeTab === 'analysis' ? 'page' : undefined"
+      >
+        공고 분석
       </RouterLink>
     </nav>
     <RouterView />
@@ -49,16 +60,27 @@ const route = useRoute()
   display: flex;
   gap: 0.25rem;
   margin-top: 1rem;
+  overflow-x: auto;
   border-bottom: 1px solid var(--color-border);
 }
 
 .job-detail-tab {
   min-height: 2.75rem;
-  border-bottom: 2px solid var(--color-brand);
-  color: var(--color-brand);
+  flex: 0 0 auto;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.job-detail-tab:hover {
+  color: var(--color-brand);
+}
+
+.job-detail-tab--active {
+  border-bottom-color: var(--color-brand);
+  color: var(--color-brand);
 }
 </style>

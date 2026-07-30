@@ -107,7 +107,7 @@ test('snapshot → progress → disconnect → 1/2/5 reconnect → polling termi
 
   await page.goto('/agent-runs')
   await expect(
-    page.getByRole('heading', { name: '분석 기록', level: 2, exact: true }),
+    page.getByRole('heading', { name: 'AI 작업 내역', level: 2, exact: true }),
   ).toBeVisible()
   await expect(page.getByRole('button', { name: '진행 중인 분석 7' })).toBeVisible()
   await page.getByRole('link', { name: '상세 보기' }).click()

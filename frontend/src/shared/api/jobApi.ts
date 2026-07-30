@@ -5,10 +5,15 @@ import { ApiClientError } from './errors'
 import { apiClient } from './http'
 import {
   jobCreationAcceptedSchema,
+  jobAnalysisDetailSchema,
+  jobAnalysisPageSchema,
   jobDetailSchema,
   jobPageSchema,
+  type AnalyzeJobRequest,
   type CreateJobRequest,
   type JobCreationAcceptedDto,
+  type JobAnalysisDetailDto,
+  type JobAnalysisPageDto,
   type JobDetailDto,
   type JobExtractionStatus,
   type JobPageDto,
@@ -31,6 +36,15 @@ export interface JobListParams {
   page?: number
   size?: number
   sort?: JobSort
+}
+
+export const JOB_ANALYSIS_SORTS = ['analysisVersion,desc', 'createdAt,desc'] as const
+export type JobAnalysisSort = (typeof JOB_ANALYSIS_SORTS)[number]
+
+export interface JobAnalysisListParams {
+  page?: number
+  size?: number
+  sort?: JobAnalysisSort
 }
 
 export type JobCreationResult =
@@ -94,13 +108,48 @@ export async function retryJobExtraction(
   return parse(runAcceptedSchema, value)
 }
 
+export async function analyzeJob(
+  jobId: string,
+  request: AnalyzeJobRequest,
+  idempotencyKey: string,
+): Promise<RunAcceptedDto> {
+  const response = await apiClient.client.post<unknown>(
+    `/jobs/${encodeURIComponent(jobId)}/analysis`,
+    request,
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  )
+  if (response.status !== 202) throw invalidServerResponse()
+  const accepted = parse(runAcceptedSchema, response.data)
+  if (accepted.resourceType !== 'JOB' || accepted.resourceId !== jobId) {
+    throw invalidServerResponse()
+  }
+  return accepted
+}
+
+export async function listJobAnalyses(
+  jobId: string,
+  params: JobAnalysisListParams = {},
+): Promise<JobAnalysisPageDto> {
+  const value = await apiClient.get<unknown>(`/jobs/${encodeURIComponent(jobId)}/analyses`, {
+    params,
+  })
+  return parse(jobAnalysisPageSchema, value)
+}
+
+export async function getLatestJobAnalysis(jobId: string): Promise<JobAnalysisDetailDto> {
+  const value = await apiClient.get<unknown>(`/jobs/${encodeURIComponent(jobId)}/analyses/latest`)
+  return parse(jobAnalysisDetailSchema, value)
+}
+
 export function deleteJob(jobId: string, version: number): Promise<void> {
   return apiClient.delete(`/jobs/${encodeURIComponent(jobId)}`, {
     params: { version },
   })
 }
 
-export function createJobIdempotencyKey(operation: 'create' | 'retry-extraction'): string {
+export function createJobIdempotencyKey(
+  operation: 'create' | 'retry-extraction' | 'analysis',
+): string {
   return `job-${operation}:${globalThis.crypto.randomUUID()}`
 }
 

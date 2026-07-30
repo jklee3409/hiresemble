@@ -30,7 +30,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0~~P5 완료. P6~~P10은 미착수다.
+현재 단계: P0~~P5 완료. P6 구현·표준 검증과 atomic apply·historical evidence MAJOR 보정은 완료됐다. 최종 validator는 두 finding 해소를 확인했지만 수정된 actual E2E assertion과 wrapper DB assertion이 재검증 상한으로 미검증이라 `FAIL`을 유지했다. P6는 `NOT_VERIFIED`, P7~~P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -373,24 +373,29 @@ P0 계약 기준선
 
 ### 9.1 Backend
 
-- immutable `job_analysis` version
-- content/profile/evidence snapshot hash
-- analysis list/latest API와 stale projection
-- eligibility·score·matched evidence domain validation
+- V7 immutable `job_analyses`·criterion·VERIFIED evidence provenance
+- stable content/profile/evidence/context snapshot hash
+- 분석 접수·목록·최신 API와 OUTDATED projection
+- eligibility·deterministic score·matched evidence domain validation
+- 동일 snapshot reuse와 explicit force reanalysis
 
 ### 9.2 AI workflow
 
-- JobAnalysis, Eligibility, Evidence Retrieval, ExperienceMatcher
-- user-scoped hybrid retrieval
-- rubric-based fit score와 explanation
-- 근거 없는 result 제거·경고
+- 정확한 8단계 `job-analysis-v1`
+- user-scoped exact cosine+lexical verified evidence retrieval
+- structured requirement·eligibility·matching과 Java rubric score
+- hallucinated/cross-user evidence와 prompt injection 차단
+- Backend command port 전용 persist/reuse attach
+- provider 호출 밖의 `SERIALIZABLE` checkpoint·domain apply 원자 완료
 
 ### 9.3 Frontend
 
-- run/re-run
+- `/jobs/:jobId/analysis` run/re-run·진행·실패·성공 상태
 - eligibility, fit score 안내, responsibilities/requirements
-- strength, gap, matched evidence
+- strength, gap, matched evidence와 criterion breakdown
 - analysis history와 OUTDATED UI
+- 변경·삭제된 historical evidence의 기존 결과 유지와 현재 상태 안내
+- `/agent-runs` 사용자 명칭 `AI 작업 내역`과 Job Analysis resource link
 
 ### 9.4 검증
 
@@ -399,11 +404,15 @@ P0 계약 기준선
 - hash가 같을 때 cache, 바뀌면 stale/reanalysis
 - 점수가 합격 확률로 표현되지 않음
 - structured output invalid/timeout/budget failure
+- P7/P8 route·domain 누수 없음
 
 ### 9.5 완료 조건
 
-- AC-07과 E2E 시나리오 A 전체가 통과한다.
-- 분석 result의 모든 evidence reference가 같은 사용자에게 속한다.
+- [x] 분석 result의 모든 evidence reference가 같은 사용자에게 속한다.
+- [x] 보정 후 Backend 352 tests, Frontend 169 tests, P6 migration 3개와 OpenAPI 53/37가 통과한다.
+- [x] 실제 외부 provider 없이 fixture Chromium P6/Agent Run 3/3이 통과한다.
+- [ ] 수정된 actual P6 E2E evidence owner assertion과 wrapper DB assertion이 통과한다.
+- [ ] 최종 read-only validator가 미해결 MAJOR finding 없이 `PASS`한다.
 
 ## 10. P7 — 자기소개서
 
@@ -746,12 +755,14 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
 | 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
 
-## P6 착수 전 남은 위험
+## P6 구현 후 남은 위험
 
-- P5 V6가 Job typed Agent Run link와 owner 복합 FK를 추가했다. P6 분석 lineage는 새 analysis aggregate와 forward migration에서 연결해야 한다.
+- P6 actual Browser E2E는 정상 분석·reuse·OUTDATED·재분석·근거 부족과 공고/분석/Run owner 404까지 실행했지만 마지막 evidence 격리 assertion을 공개 PUT endpoint로 수정한 뒤 재실행하지 않았다.
+- 1차 read-only validator의 atomic apply와 historical evidence rendering MAJOR는 허용된 보정 라운드에서 `SERIALIZABLE` completion transaction, rollback·crash/restart와 근거 상태 전환 회귀로 수정했고 2차 validator가 해소를 확인했다.
+- 2차 validator는 final-source actual wrapper와 후속 DB assertion 미실행만을 MAJOR completion gap으로 남기고 `FAIL`했다. 추가 자동 라운드는 수행하지 않는다.
 - production provider adapter는 계속 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 승인된 immutable price item과 model policy, timeout·network failure 분류와 heartbeat를 함께 검증해야 한다.
-- V1~V5는 적용 이력으로 보존했고 P5 schema는 V6 forward migration으로 추가했다. P6 이후 result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
-- P4 exact cosine query는 owner·active document·model·dimension·generation 격리를 검증했지만 P6의 hybrid retrieval·RAG 전체 흐름과 ANN index는 아직 구현하지 않았다.
-- 현재 `EvidenceReferenceQueryPort` production contributor는 downstream 참조 없음이다. P6 provenance table이 생기면 실제 참조 contributor와 tombstone 보존을 연결해야 한다.
+- V1~V6는 적용 이력으로 보존했고 P6 schema는 V7 forward migration으로 추가했다. P7 이후 result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
+- P6 retrieval은 owner-scoped exact cosine과 direct evidence lexical fallback을 구현했다. ANN index 도입은 데이터 규모와 실행 계획을 측정한 뒤 결정한다.
+- `EvidenceReferenceQueryPort`는 P6 provenance 참조를 반영해 분석에서 사용한 direct evidence 삭제를 차단한다.
 - P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 P10 범위로 남긴다.
-- P6 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.
+- P7 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

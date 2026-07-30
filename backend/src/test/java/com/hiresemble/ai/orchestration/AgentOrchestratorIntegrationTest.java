@@ -1,6 +1,7 @@
 package com.hiresemble.ai.orchestration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hiresemble.agentrun.application.port.AgentRunCancellationPort;
 import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
 import com.hiresemble.agentrun.application.port.AgentRunLeaseHeartbeatPort;
@@ -82,7 +83,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -103,6 +107,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
     @Autowired private AgentRunRetryPort retryPort;
     @Autowired private BudgetReservationPort budgetReservationPort;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private PlatformTransactionManager transactionManager;
 
     private long modelPolicyVersion;
     private UUID userId;
@@ -118,7 +123,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         resourceId = UUID.randomUUID();
         contextBuilder = new MutableContextBuilder(modelPolicyVersion, resourceId);
         chatGateway = new FakeChatGateway();
-        domainApply = new FakeDomainApply(userId, resourceId);
+        domainApply = new FakeDomainApply(userId, resourceId, jdbcTemplate);
     }
 
     @Test
@@ -259,6 +264,8 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         assertThat(sameHashes).as("first hashes: %s", firstHashes).isEqualTo(firstHashes);
         assertThat(run(same).steps()).allSatisfy(step ->
                 assertThat(step.status()).isEqualTo(AgentStepStatus.REUSED));
+        assertThat(domainApply.applyCallCount()).isEqualTo(2);
+        assertThat(domainApply.appliedCount()).isEqualTo(1);
 
         UUID changed = launch(AiQualityMode.ECONOMY, "d".repeat(64)).agentRunId();
         execute(changed, orchestrator);
@@ -271,6 +278,96 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         execute(highQuality, orchestrator);
         assertThat(run(highQuality).steps()).allSatisfy(step ->
                 assertThat(step.status()).isEqualTo(AgentStepStatus.SUCCEEDED));
+    }
+
+    @Test
+    void freshApplyFailureRollsBackSucceededCheckpointAndDomainMutation() {
+        domainApply.failAfterDomainWrite();
+        UUID runId = launch(AiQualityMode.ECONOMY, "e".repeat(64)).agentRunId();
+
+        execute(runId, fixtureOrchestrator(false, false));
+
+        AgentRunSnapshot failed = run(runId);
+        assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(failed.safeError().code()).isEqualTo("AI_DOMAIN_APPLY_FAILED");
+        assertThat(failed.steps())
+                .extracting(step -> step.stepKey() + ":" + step.status())
+                .containsExactly(
+                        "LOAD_FIXTURE:SUCCEEDED",
+                        "TRANSFORM_FIXTURE:SUCCEEDED",
+                        "APPLY_FIXTURE:FAILED");
+        assertThat(domainApply.appliedCount()).isZero();
+        assertThat(domainApply.applyCallCount()).isEqualTo(1);
+        assertThat(domainApply.failedMarkerCount()).isZero();
+    }
+
+    @Test
+    void reusedApplyFailureRollsBackReusedCheckpointAndDomainMutation() {
+        String canonicalInputHash = "f".repeat(64);
+        AgentOrchestrator orchestrator = fixtureOrchestrator(false, false);
+        UUID firstRunId = launch(AiQualityMode.ECONOMY, canonicalInputHash).agentRunId();
+        execute(firstRunId, orchestrator);
+        assertThat(run(firstRunId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+
+        domainApply.failAfterDomainWrite();
+        UUID reusedRunId = launch(AiQualityMode.ECONOMY, canonicalInputHash).agentRunId();
+        execute(reusedRunId, orchestrator);
+
+        AgentRunSnapshot failed = run(reusedRunId);
+        assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(failed.safeError().code()).isEqualTo("AI_DOMAIN_APPLY_FAILED");
+        assertThat(failed.steps())
+                .extracting(step -> step.stepKey() + ":" + step.status())
+                .containsExactly(
+                        "LOAD_FIXTURE:REUSED",
+                        "TRANSFORM_FIXTURE:REUSED",
+                        "APPLY_FIXTURE:FAILED");
+        assertThat(domainApply.appliedCount()).isEqualTo(1);
+        assertThat(domainApply.applyCallCount()).isEqualTo(2);
+        assertThat(domainApply.failedMarkerCount()).isZero();
+    }
+
+    @Test
+    void restartSkipsCommittedApplyOnlyAfterCheckpointAndDomainMutationCommitTogether() {
+        UUID runId = launch(AiQualityMode.ECONOMY, "1".repeat(64)).agentRunId();
+        ClaimedAgentRun claim = claim(runId);
+        AtomicInteger completionCount = new AtomicInteger();
+        SpringStepCompletionTransaction delegate =
+                new SpringStepCompletionTransaction(transactionManager);
+        StepCompletionTransaction crashAfterPersist = work -> {
+            delegate.execute(work);
+            if (completionCount.incrementAndGet() == 3) {
+                throw new SimulatedProcessCrash();
+            }
+        };
+
+        AgentOrchestrator crashing = fixtureOrchestrator(
+                false,
+                false,
+                () -> {},
+                leaseHeartbeatPort,
+                crashAfterPersist);
+        assertThatThrownBy(() -> crashing.execute(claim))
+                .isInstanceOf(SimulatedProcessCrash.class);
+
+        AgentRunSnapshot interrupted = run(runId);
+        assertThat(interrupted.status()).isEqualTo(AgentRunStatus.RUNNING);
+        assertThat(interrupted.steps())
+                .extracting(step -> step.stepKey() + ":" + step.status())
+                .containsExactly(
+                        "LOAD_FIXTURE:SUCCEEDED",
+                        "TRANSFORM_FIXTURE:SUCCEEDED",
+                        "APPLY_FIXTURE:SUCCEEDED");
+        assertThat(domainApply.appliedCount()).isEqualTo(1);
+        assertThat(domainApply.applyCallCount()).isEqualTo(1);
+        assertThat(domainApply.committedMarkerCount()).isEqualTo(1);
+
+        fixtureOrchestrator(false, false).execute(claim);
+
+        assertThat(run(runId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(domainApply.appliedCount()).isEqualTo(1);
+        assertThat(domainApply.applyCallCount()).isEqualTo(1);
+        assertThat(domainApply.committedMarkerCount()).isEqualTo(1);
     }
 
     @Test
@@ -414,6 +511,20 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
             boolean unused,
             Runnable beforeApplyProjection,
             AgentRunLeaseHeartbeatPort heartbeatPort) {
+        return fixtureOrchestrator(
+                waitingCapable,
+                unused,
+                beforeApplyProjection,
+                heartbeatPort,
+                new SpringStepCompletionTransaction(transactionManager));
+    }
+
+    private AgentOrchestrator fixtureOrchestrator(
+            boolean waitingCapable,
+            boolean unused,
+            Runnable beforeApplyProjection,
+            AgentRunLeaseHeartbeatPort heartbeatPort,
+            StepCompletionTransaction completionTransaction) {
         WorkflowDefinition fixture = fixtureDefinition();
         List<WorkflowStepExecutor<?>> executors = List.of(
                 new FixtureStepExecutor("LOAD_FIXTURE", false, false, () -> {}),
@@ -449,7 +560,9 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 heartbeatPort,
                 new BudgetGuard(budgetReservationPort),
                 objectMapper,
-                Clock.systemUTC());
+                Clock.systemUTC(),
+                List.of(),
+                completionTransaction);
     }
 
     private WorkflowDefinition fixtureDefinition() {
@@ -674,6 +787,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
         @Override
         public AiGatewayResponse chat(ChatRequest request) {
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             products.add(request.productKey());
             entered.countDown();
             if (block) {
@@ -709,30 +823,86 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
     private static final class FakeDomainApply implements DomainResultApplyPort {
         private final UUID expectedUserId;
         private final UUID expectedResourceId;
-        private final Set<String> appliedKeys = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        private final JdbcTemplate jdbcTemplate;
         private final AtomicInteger appliedCount = new AtomicInteger();
+        private final AtomicInteger applyCallCount = new AtomicInteger();
+        private final AtomicBoolean failAfterDomainWrite = new AtomicBoolean();
+        private volatile String failedMarker;
 
-        private FakeDomainApply(UUID expectedUserId, UUID expectedResourceId) {
+        private FakeDomainApply(
+                UUID expectedUserId,
+                UUID expectedResourceId,
+                JdbcTemplate jdbcTemplate) {
             this.expectedUserId = expectedUserId;
             this.expectedResourceId = expectedResourceId;
+            this.jdbcTemplate = jdbcTemplate;
         }
 
         @Override
         public ApplyResult apply(DomainResultCommand command) {
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
             assertThat(command.userId()).isEqualTo(expectedUserId);
             assertThat(command.resourceType()).isEqualTo("FIXTURE");
             assertThat(command.resourceId()).isEqualTo(expectedResourceId);
             assertThat(command.expectedResourceVersion()).isZero();
             assertThat(command.inputHash()).matches("[0-9a-f]{64}");
             assertThat(command.validatedResultReference().isObject()).isTrue();
-            String key = command.resourceId() + ":" + command.inputHash();
-            if (!appliedKeys.add(key)) return ApplyResult.ALREADY_APPLIED;
+            assertThat(TransactionSynchronizationManager.getCurrentTransactionIsolationLevel())
+                    .isEqualTo(java.sql.Connection.TRANSACTION_SERIALIZABLE);
+            applyCallCount.incrementAndGet();
+            if (failAfterDomainWrite.compareAndSet(true, false)) {
+                failedMarker = "ai-failed-" + command.agentRunId();
+                jdbcTemplate.update("""
+                        INSERT INTO companies (
+                            id, normalized_name, display_name, official_website,
+                            created_at, updated_at
+                        ) VALUES (?, ?, ?, NULL, now(), now())
+                        """, UUID.randomUUID(), failedMarker, failedMarker);
+                throw new IllegalStateException("fixture domain apply crash");
+            }
+            String key =
+                    "ai-applied-" + command.resourceId() + "-" + command.inputHash();
+            if (jdbcTemplate.queryForObject(
+                            "SELECT count(*) FROM companies WHERE normalized_name = ?",
+                            Long.class,
+                            key)
+                    > 0) {
+                return ApplyResult.ALREADY_APPLIED;
+            }
+            jdbcTemplate.update("""
+                    INSERT INTO companies (
+                        id, normalized_name, display_name, official_website,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, NULL, now(), now())
+                    """, UUID.randomUUID(), key, key);
             appliedCount.incrementAndGet();
             return ApplyResult.APPLIED;
         }
 
+        private void failAfterDomainWrite() {
+            failAfterDomainWrite.set(true);
+        }
+
         private int appliedCount() { return appliedCount.get(); }
+
+        private int applyCallCount() { return applyCallCount.get(); }
+
+        private long failedMarkerCount() {
+            return jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM companies WHERE normalized_name = ?",
+                    Long.class,
+                    failedMarker);
+        }
+
+        private long committedMarkerCount() {
+            return jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM companies WHERE normalized_name LIKE ?",
+                    Long.class,
+                    "ai-applied-" + expectedResourceId + "-%");
+        }
     }
+
+    private static final class SimulatedProcessCrash extends Error {}
 
     private static AiGatewayResponse successResponse(AiUsage usage) {
         return new AiGatewayResponse(

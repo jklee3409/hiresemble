@@ -10,12 +10,15 @@ public final class WorkflowContextBuilder implements ContextBuilder {
 
     private final ContextBuilder documentIngestion;
     private final ContextBuilder jobPostingExtraction;
+    private final ContextBuilder jobAnalysis;
 
     public WorkflowContextBuilder(
             ContextBuilder documentIngestion,
-            ContextBuilder jobPostingExtraction) {
+            ContextBuilder jobPostingExtraction,
+            ContextBuilder jobAnalysis) {
         this.documentIngestion = Objects.requireNonNull(documentIngestion);
         this.jobPostingExtraction = Objects.requireNonNull(jobPostingExtraction);
+        this.jobAnalysis = Objects.requireNonNull(jobAnalysis);
     }
 
     @Override
@@ -24,6 +27,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
         return switch (workflowType) {
             case DOCUMENT_INGESTION -> documentIngestion.build(request);
             case JOB_POSTING_EXTRACTION -> jobPostingExtraction.build(request);
+            case JOB_ANALYSIS -> jobAnalysis.build(request);
             default -> throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
                     "AI_CONTEXT_NOT_CONFIGURED",

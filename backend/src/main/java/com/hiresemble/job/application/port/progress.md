@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job fetch와 workflow query/mutation port가 구현됐다.
+P5 Job fetch/extraction과 P6 analysis query/command/embedding port가 구현됐다.
+
+## [2026-07-29] Session Summary (P6 분석 port 정의)
+
+- What was done:
+  - owner-scoped snapshot/reuse/retrieval query, immutable persist/attach command와 active embedding search port를 추가했다.
+- Key decisions:
+  - AI package는 Job/Profile/Document repository를 직접 참조하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - compile·AI workflow Fake test와 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job 외부·AI port 정의)
 

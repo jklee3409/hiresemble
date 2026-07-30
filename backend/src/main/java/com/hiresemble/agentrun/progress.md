@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반이 구현됐으며 실제 provider와 P4 resource 연결은 비활성 상태다.
+P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4 Document, P5 Job과 P6 Job Analysis typed resource 연결이 구현됐으며 실제 provider는 비활성 상태다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis resource·retry 연결)
+
+- What was done:
+  - `JOB_ANALYSIS` Run의 공고 primary resource와 성공 분석 secondary resource 연결을 기존 수명주기·Idempotency·budget·retry 구조에 통합했다.
+- Key decisions:
+  - 분석 결과 본문은 Agent Run에 복제하지 않고 공고 분석 화면으로 이동할 typed link만 제공하며, retry lineage는 primary resource를 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - atomic step completion과 Agent Run 회귀를 포함한 Backend `check` 352개 테스트와 frontend terminal invalidation 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

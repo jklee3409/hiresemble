@@ -2,7 +2,21 @@
 
 ## Overview
 
-Backend P1~P5 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P6 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-29] Session Summary (P6 Job Analysis typed contract·client)
+
+- What was done:
+  - canonical Eligibility·OutdatedReason·FitCriterionCategory·MatchLevel과 summary/detail/request schema, 분석 3개 client를 추가했다.
+- Key decisions:
+  - Backend strict DTO와 `ECONOMY|BALANCED` allowlist를 그대로 사용하고 provider/model/hash는 공개 type에 포함하지 않는다.
+  - 분석 당시 provenance는 서버 불변식이 보장하므로 detail parser는 이후 변경된 canonical evidence 상태를 수용하고 UI가 현재 상태를 별도로 설명한다.
+- Issues encountered:
+  - 1차 validator가 `REJECTED`·`SOURCE_DELETED` historical ref를 invalid server response로 거부하는 문제를 확인해 과도한 refinement를 제거했다.
+- Validation:
+  - historical evidence contract/client request·invalid response tests와 Frontend 전체 169 tests가 통과했다.
+- Next steps:
+  - P7 계약은 Backend OpenAPI 구현 뒤 추가한다.
 
 ## [2026-07-28] Session Summary (Agent Run 오류 사용자 문구 정리)
 

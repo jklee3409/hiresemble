@@ -2,7 +2,21 @@
 
 ## Overview
 
-P3 Agent Run list/detail projection, drawer와 Document·Job snapshot-first SSE 복구 기반이 구현됐다.
+P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
+
+## [2026-07-29] Session Summary (AI 작업 내역 용어·공고 분석 resource 연결)
+
+- What was done:
+  - sidebar·mobile·목록·상세·filter·빈 상태·pagination의 `분석 기록`을 `AI 작업 내역` 계열로 통일했다.
+  - `JOB_ANALYSIS` Run은 결과를 복제하지 않고 `/jobs/:jobId/analysis` 연결만 제공하며 terminal 뒤 analysis query를 invalidate한다.
+- Key decisions:
+  - `/agent-runs` route·API·DTO와 workflow/status 의미는 변경하지 않는다.
+- Issues encountered:
+  - 기존 Document E2E accessible name도 같은 용어로 갱신했다.
+- Validation:
+  - Agent Run unit/component, reconnect·WAITING·retry·cancel fixture와 P6 Chromium 3/3이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-28] Session Summary (분석 상세 내부 실행 정보 제거)
 

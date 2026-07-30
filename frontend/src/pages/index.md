@@ -1,8 +1,8 @@
-# P1~P5 Page 안내
+# P1~P6 Page 안내
 
 ## 디렉터리 목적
 
-P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5 Job page 및 전용 404를 관리한다.
+P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5~P6 Job·Analysis page 및 전용 404를 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -21,6 +21,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·마감일과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict
+- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): 분석 실행·Run 진행·Eligibility/fit score·criterion/evidence·OUTDATED·이력
 - [`RootRedirectPage.vue`](RootRedirectPage.vue): 인증 bootstrap 대기 shell
 - [`NotFoundPage.vue`](NotFoundPage.vue): 전용 404
 - [`authFlow.test.ts`](authFlow.test.ts): 가입·로그인·field 오류 component 흐름
@@ -39,6 +40,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document와 P5
 ## 변경 시 주의사항
 
 - Dashboard의 명세상 전용 집계 endpoint는 아직 구현되지 않았다. 현재 API의 `totalElements`와 반환된 최근 항목만 표시하고 paginated `items.length`를 전체 수치로 사용하지 않는다.
+- 공고 분석 결과는 해당 Job child page에서만 표시하며 Agent Run 목록·상세에 결과 전체를 복제하지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에서 추출되는 근거를 사용자 소유 resource로 관리한다.
+ P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에서 추출되는 근거를 사용자 소유 resource로 관리하고, P6 공고 분석에 owner-scoped 최소 snapshot을 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -19,10 +19,12 @@ P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에
 - 자격증·어학·수상의 증빙 문서는 같은 사용자 active Document만 허용하고 document evidence는 PENDING으로 적용한다.
 - 삭제 문서 evidence는 참조가 없으면 삭제하고 참조가 있으면 동일 ID의 `SOURCE_DELETED` read-only tombstone으로 전환한다.
 - 모든 단건 조회와 mutation은 Session principal의 사용자 ID를 함께 사용한다.
+- 공고 분석에는 canonical profile hash와 `VERIFIED` evidence의 ID·version·hash·provenance만 제공하며 profile entity와 원문 전체를 노출하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
 - 인증 사용자 ID는 [`../auth/`](../auth/index.md)의 Session principal에서 받는다.
+- P6 공고 분석 query 경계는 [`../job/application/port/`](../job/application/port/index.md)가 정의하고 이 영역의 application service가 구현한다.
 - 기본 불변식은 [`../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql), document owner FK와 tombstone 보강은 [`../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql`](../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql)에 의존한다.
 - 공개 계약은 [`../../../../../../../docs/spec/api.md`](../../../../../../../docs/spec/api.md)와 [`../../../../../../../docs/spec/db.md`](../../../../../../../docs/spec/db.md)를 따른다.
 

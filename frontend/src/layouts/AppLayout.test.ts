@@ -34,10 +34,12 @@ describe('AppLayout', () => {
       '내 지원 정보',
       '이력서·자료',
       '관심 공고',
-      '분석 기록',
+      'AI 작업 내역',
     ])
     expect(wrapper.text()).not.toContain('자기소개서')
     expect(wrapper.text()).not.toContain('면접 준비')
+    expect(document.title).toBe('내 지원 정보 | Hiresemble')
+    expect(document.activeElement).toBe(wrapper.get('#app-content').element)
     wrapper.unmount()
   })
 

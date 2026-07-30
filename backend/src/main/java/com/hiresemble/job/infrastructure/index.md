@@ -2,13 +2,14 @@
 
 ## 디렉터리 목적
 
-P5 Job JDBC store, Scheduler/fetch/cost 설정과 SSRF-safe HTTP(S) page fetch adapter를 소유한다.
+P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store·비용 설정, SSRF-safe HTTP(S) page fetch adapter를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - `JobStore`: owner-scoped CRUD·목록 count·history·conditional close SQL
+- `JobAnalysisStore`: owner-scoped immutable analysis·criteria·provenance·secondary Run link SQL
 - `SecureJobPageFetchAdapter`: DNS 검증 주소 고정, redirect 재검사와 bounded HTML fetch
-- `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAiCostProperties`: 검증된 설정
+- `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAiCostProperties`, `JobAnalysisAiCostProperties`: 검증된 설정
 - `JobInfrastructureConfiguration`: Clock과 Job infrastructure bean 조립
 - [`progress.md`](progress.md): infrastructure 구현 상태
 
@@ -18,7 +19,7 @@ P5 Job JDBC store, Scheduler/fetch/cost 설정과 SSRF-safe HTTP(S) page fetch a
 
 ## 다른 디렉터리와의 의존 관계
 
-[`../application/`](../application/index.md)의 store/fetch 사용처를 제공하고 V6 schema에 의존한다.
+[`../application/`](../application/index.md)의 store/fetch 사용처를 제공하고 V6~V7 schema에 의존한다.
 
 ## 변경 시 주의사항
 

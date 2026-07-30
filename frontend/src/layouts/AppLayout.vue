@@ -12,7 +12,7 @@ const navItems = [
   { to: '/profile/basic', label: '내 지원 정보', icon: 'profile', match: '/profile' },
   { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
-  { to: '/agent-runs', label: '분석 기록', icon: 'runs', match: '/agent-runs' },
+  { to: '/agent-runs', label: 'AI 작업 내역', icon: 'runs', match: '/agent-runs' },
 ] as const
 
 const authStore = useAuthStore()
@@ -23,6 +23,7 @@ const logoutError = ref('')
 const mobileNavOpen = ref(false)
 const mobileNavTrigger = ref<HTMLButtonElement | null>(null)
 const mobileNavPanel = ref<HTMLElement | null>(null)
+const workspaceContent = ref<HTMLElement | null>(null)
 let bodyOverflowBeforeDrawer = ''
 
 const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
@@ -40,7 +41,12 @@ const AgentRunProgressDrawer = defineAsyncComponent(
 
 watch(
   () => route.fullPath,
-  () => closeMobileNav(false),
+  () => {
+    closeMobileNav(false)
+    document.title = `${String(route.meta.title ?? 'Hiresemble')} | Hiresemble`
+    void nextTick(() => workspaceContent.value?.focus())
+  },
+  { immediate: true },
 )
 
 watch(mobileNavOpen, async (open) => {
@@ -207,7 +213,7 @@ async function logout(): Promise<void> {
         </p>
       </header>
 
-      <main id="app-content" class="workspace-content" tabindex="-1">
+      <main id="app-content" ref="workspaceContent" class="workspace-content" tabindex="-1">
         <RouterView />
       </main>
     </div>

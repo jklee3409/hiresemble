@@ -5,12 +5,27 @@ import com.hiresemble.job.api.JobDtos.JobDetailDto;
 import com.hiresemble.job.api.JobDtos.JobSummaryDto;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
 import java.util.List;
+import com.hiresemble.job.application.JobAnalysisApplicationService;
+import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSummary;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
 public final class JobApiMapper {
 
+    private final JobAnalysisApplicationService analysisService;
+    private final JobAnalysisApiMapper analysisMapper;
+
+    public JobApiMapper(
+            JobAnalysisApplicationService analysisService,
+            JobAnalysisApiMapper analysisMapper) {
+        this.analysisService = analysisService;
+        this.analysisMapper = analysisMapper;
+    }
+
     public JobSummaryDto summary(JobRecord job) {
+        Optional<JobAnalysisSummary> latest =
+                analysisService.latestSummary(job.userId(), job.id());
         return new JobSummaryDto(
                 job.id(),
                 job.companyName(),
@@ -21,9 +36,9 @@ public final class JobApiMapper {
                 job.submittedAt(),
                 job.deadlineAt(),
                 job.deadlineSource(),
-                null,
-                false,
-                List.of(),
+                latest.map(JobAnalysisSummary::fitScore).orElse(null),
+                latest.map(JobAnalysisSummary::analysisOutdated).orElse(false),
+                latest.map(JobAnalysisSummary::outdatedReasons).orElse(List.of()),
                 null,
                 0,
                 job.version(),
@@ -32,6 +47,8 @@ public final class JobApiMapper {
     }
 
     public JobDetailDto detail(JobRecord job) {
+        Optional<JobAnalysisSummary> latest =
+                analysisService.latestSummary(job.userId(), job.id());
         return new JobDetailDto(
                 job.id(),
                 job.companyName(),
@@ -42,9 +59,9 @@ public final class JobApiMapper {
                 job.submittedAt(),
                 job.deadlineAt(),
                 job.deadlineSource(),
-                null,
-                false,
-                List.of(),
+                latest.map(JobAnalysisSummary::fitScore).orElse(null),
+                latest.map(JobAnalysisSummary::analysisOutdated).orElse(false),
+                latest.map(JobAnalysisSummary::outdatedReasons).orElse(List.of()),
                 null,
                 0,
                 job.version(),
@@ -60,7 +77,7 @@ public final class JobApiMapper {
                 error(job),
                 job.closedAt(),
                 job.closedReason(),
-                null,
+                latest.map(analysisMapper::summary).orElse(null),
                 null,
                 null,
                 null);

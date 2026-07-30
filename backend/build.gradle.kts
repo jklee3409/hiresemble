@@ -83,6 +83,7 @@ tasks.withType<Test>().configureEach {
 tasks.named<Test>("test") {
     exclude("**/P4BrowserE2eTest.class")
     exclude("**/P5BrowserE2eTest.class")
+    exclude("**/P6BrowserE2eTest.class")
 }
 
 tasks.register<Test>("p4BrowserE2eTest") {
@@ -100,5 +101,14 @@ tasks.register<Test>("p5BrowserE2eTest") {
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     include("**/P5BrowserE2eTest.class")
+    shouldRunAfter(tasks.named("test"))
+}
+
+tasks.register<Test>("p6BrowserE2eTest") {
+    group = "verification"
+    description = "Runs the isolated P6 Spring, PostgreSQL, Fake AI, Vue, SSE, and Chromium E2E."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/P6BrowserE2eTest.class")
     shouldRunAfter(tasks.named("test"))
 }

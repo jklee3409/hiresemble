@@ -641,6 +641,21 @@ public class ProfileStore {
                 .optional();
     }
 
+    public List<EvidenceRecord> findVerifiedEvidenceForAnalysis(UUID userId) {
+        return jdbcClient
+                .sql("""
+                        SELECT *, metadata::text AS metadata_text
+                        FROM profile_evidence
+                        WHERE user_id=:userId
+                          AND verification_status='VERIFIED'
+                          AND source_deleted_at IS NULL
+                        ORDER BY id
+                        """)
+                .param("userId", userId)
+                .query(this::evidence)
+                .list();
+    }
+
     public Optional<EvidenceRecord> updateEvidence(
             UUID userId, UUID id, EvidenceWrite command, long version, Instant now) {
         return jdbcClient

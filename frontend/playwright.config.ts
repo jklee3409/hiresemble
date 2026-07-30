@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const configuredFrontendPort = process.env.P5_FRONTEND_PORT ?? process.env.P4_FRONTEND_PORT
+const configuredFrontendPort =
+  process.env.P6_FRONTEND_PORT ?? process.env.P5_FRONTEND_PORT ?? process.env.P4_FRONTEND_PORT
 const requestedFrontendPort = Number(configuredFrontendPort ?? '5173')
 if (
   !Number.isInteger(requestedFrontendPort) ||
@@ -10,11 +11,14 @@ if (
   throw new Error('The configured frontend port must be an integer between 1 and 65535.')
 }
 const frontendBaseUrl =
+  process.env.P6_FRONTEND_BASE_URL ??
   process.env.P5_FRONTEND_BASE_URL ??
   process.env.P4_FRONTEND_BASE_URL ??
   `http://127.0.0.1:${requestedFrontendPort}`
 const skipWebServer =
-  process.env.P5_SKIP_WEB_SERVER === 'true' || process.env.P4_SKIP_WEB_SERVER === 'true'
+  process.env.P6_SKIP_WEB_SERVER === 'true' ||
+  process.env.P5_SKIP_WEB_SERVER === 'true' ||
+  process.env.P4_SKIP_WEB_SERVER === 'true'
 
 export default defineConfig({
   testDir: './e2e',

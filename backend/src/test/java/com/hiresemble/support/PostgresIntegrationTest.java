@@ -42,6 +42,13 @@ public abstract class PostgresIntegrationTest {
     @BeforeEach
     void cleanApplicationTables() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbcTemplate.execute("""
+                    TRUNCATE TABLE
+                        job_analysis_evidence_links,
+                        job_analysis_score_criteria,
+                        job_analyses
+                    CASCADE
+                    """);
             jdbcTemplate.update("DELETE FROM spring_session_attributes");
             jdbcTemplate.update("DELETE FROM spring_session");
             jdbcTemplate.update("DELETE FROM object_deletion_outbox");

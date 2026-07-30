@@ -178,7 +178,7 @@ describe('authentication route policy', () => {
     expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
   })
 
-  it('protects P5 Job routes and redirects the base detail to overview without future P6 children', async () => {
+  it('protects P6 Job routes, keeps the base redirect on overview, and resolves analysis', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     vi.mocked(authApi.login).mockResolvedValueOnce(session('user-1'))
@@ -191,7 +191,8 @@ describe('authentication route policy', () => {
 
     expect(router.currentRoute.value.name).toBe('job-overview')
     expect(router.currentRoute.value.fullPath).toBe(`/jobs/${jobId}/overview`)
-    expect(router.resolve(`/jobs/${jobId}/analysis`).name).toBe('not-found')
+    expect(router.resolve(`/jobs/${jobId}/analysis`).name).toBe('job-analysis')
+    expect(router.resolve(`/jobs/${jobId}/analysis`).meta.profileRecommended).toBe(true)
   })
 
   it('adds lazy Document, Job and Agent Run pages while preserving earlier routes', () => {
@@ -217,6 +218,7 @@ describe('authentication route policy', () => {
     expect(jobDetailLayout?.children?.map((route) => route.name)).toEqual([
       'job-detail',
       'job-overview',
+      'job-analysis',
     ])
     expect(children.map((route) => route.name)).toEqual(
       expect.arrayContaining([

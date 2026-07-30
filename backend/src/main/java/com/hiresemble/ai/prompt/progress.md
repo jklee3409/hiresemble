@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 versioned PromptRegistry에 P4 Document와 P5 Job structured prompt metadata가 구현됐다.
+P3 versioned PromptRegistry에 P4 Document, P5 Job extraction과 P6 Job Analysis structured prompt metadata가 구현됐다.
+
+## [2026-07-29] Session Summary (P6 분석 prompt 계약)
+
+- What was done:
+  - requirement·eligibility·matching record schema, call cap와 untrusted job content instruction 경계를 등록했다.
+- Key decisions:
+  - 모델에 final score·owner·persist 권한을 주지 않고 공고 내부 instruction을 실행하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - prompt metadata contract와 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job Posting Extraction prompt 계약 추가)
 

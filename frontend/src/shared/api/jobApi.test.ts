@@ -95,6 +95,74 @@ describe('P5 Job API', () => {
     vi.spyOn(apiClient, 'get').mockResolvedValueOnce({ items: [{ id: 'not-a-uuid' }] })
     await expect(jobApi.listJobs()).rejects.toMatchObject({ code: 'INVALID_SERVER_RESPONSE' })
   })
+
+  it('maps the three P6 analysis operations with exact allowlisted request and sort values', async () => {
+    const post = vi.spyOn(apiClient.client, 'post').mockResolvedValue({
+      status: 202,
+      data: {
+        agentRunId: uuid(20),
+        status: 'QUEUED',
+        resourceType: 'JOB',
+        resourceId: uuid(1),
+        replayed: false,
+      },
+    })
+    const get = vi
+      .spyOn(apiClient, 'get')
+      .mockResolvedValueOnce({
+        items: [analysisSummary()],
+        page: 0,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1,
+      })
+      .mockResolvedValueOnce(analysisDetail())
+
+    await expect(
+      jobApi.analyzeJob(
+        uuid(1),
+        { qualityMode: 'BALANCED', forceReanalyze: false, jobVersion: 3 },
+        'job-analysis:key-1234',
+      ),
+    ).resolves.toMatchObject({ resourceType: 'JOB', resourceId: uuid(1) })
+    await jobApi.listJobAnalyses(uuid(1), {
+      page: 0,
+      size: 20,
+      sort: 'analysisVersion,desc',
+    })
+    await jobApi.getLatestJobAnalysis(uuid(1))
+
+    expect(post).toHaveBeenCalledWith(
+      `/jobs/${uuid(1)}/analysis`,
+      { qualityMode: 'BALANCED', forceReanalyze: false, jobVersion: 3 },
+      { headers: { 'Idempotency-Key': 'job-analysis:key-1234' } },
+    )
+    expect(get).toHaveBeenNthCalledWith(1, `/jobs/${uuid(1)}/analyses`, {
+      params: { page: 0, size: 20, sort: 'analysisVersion,desc' },
+    })
+    expect(get).toHaveBeenNthCalledWith(2, `/jobs/${uuid(1)}/analyses/latest`)
+  })
+
+  it('rejects a P6 accepted response that links a different resource', async () => {
+    vi.spyOn(apiClient.client, 'post').mockResolvedValue({
+      status: 202,
+      data: {
+        agentRunId: uuid(20),
+        status: 'QUEUED',
+        resourceType: 'JOB',
+        resourceId: uuid(2),
+        replayed: false,
+      },
+    })
+
+    await expect(
+      jobApi.analyzeJob(
+        uuid(1),
+        { qualityMode: 'ECONOMY', forceReanalyze: true, jobVersion: 3 },
+        'job-analysis:key-1234',
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_SERVER_RESPONSE' })
+  })
 })
 
 const now = '2026-07-27T00:00:00Z'
@@ -136,6 +204,33 @@ function detail() {
     coverLetterId: null,
     latestQuestionSetId: null,
     latestMockSessionId: null,
+  }
+}
+
+function analysisSummary() {
+  return {
+    id: uuid(10),
+    analysisVersion: 1,
+    eligibility: 'CONDITIONAL',
+    fitScore: 72.5,
+    analysisOutdated: false,
+    outdatedReasons: [],
+    createdAt: now,
+    agentRunId: uuid(20),
+  }
+}
+
+function analysisDetail() {
+  return {
+    ...analysisSummary(),
+    scoreBreakdown: [],
+    requiredQualifications: [],
+    preferredQualifications: [],
+    responsibilities: [],
+    strengths: [],
+    gaps: [],
+    matchedEvidenceRefs: [],
+    analysisSummary: null,
   }
 }
 

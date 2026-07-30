@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 Document와 P5 Job pipeline을 격리 PostgreSQL 18+pgvector·MinIO·Spring·Vue·Fake gateway·Chromium으로 검증한다.
+P4 Document, P5 Job과 P6 Job Analysis pipeline을 격리 PostgreSQL 18+pgvector·MinIO·Spring·Vue·Fake gateway·Chromium으로 검증한다.
+
+## [2026-07-29] Session Summary (P6 실제 Backend·Frontend 분석 E2E harness)
+
+- What was done:
+  - `p6BrowserE2eTest`가 PostgreSQL·Spring async runtime·Fake Chat/Embedding·Vue·Chromium을 연결하고 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리를 실행하도록 추가했다.
+- Key decisions:
+  - direct career VERIFIED evidence를 사용해 Object Storage 없이 P6 RAG application 경계를 검증하고 실제 provider 호출은 금지한다.
+- Issues encountered:
+  - 1차 locator 충돌을 보정한 2차 실행에서 비공개 evidence GET assertion이 500을 반환했다. 공개 PUT endpoint 404 assertion으로 수정했지만 자동 재검증 상한 때문에 세 번째 실행은 하지 않았다.
+- Validation:
+  - 2차 Playwright에서 근거 부족 test 1/1은 통과했고 정상 test는 마지막 evidence 격리 assertion 전까지 분석·reuse·재분석·공고/분석/Run 404를 통과했다.
+- Next steps:
+  - 수정된 evidence PUT owner 404와 wrapper DB assertion을 향후 단일 실행으로 확인한다.
 
 ## [2026-07-27] Session Summary (P5 실제 Backend·Frontend Job E2E)
 

@@ -7,13 +7,19 @@ import {
   createJobIdempotencyKey,
   deleteJob,
   getJob,
+  getLatestJobAnalysis,
+  analyzeJob,
+  listJobAnalyses,
   listJobs,
   retryJobExtraction,
   updateJob,
   updateJobStatus,
   type JobListParams,
+  type JobAnalysisListParams,
 } from '@/shared/api/jobApi'
+import type { AgentRunListParams } from '@/shared/api/agentRunApi'
 import type {
+  AnalyzeJobRequest,
   CreateJobRequest,
   JobDetailDto,
   JobStatus,
@@ -29,6 +35,15 @@ export const jobQueryKeys = {
   },
   detail(userId: string, jobId: string) {
     return ['user', userId, 'job', jobId] as const
+  },
+  analysisRoot(userId: string, jobId: string) {
+    return ['user', userId, 'job', jobId, 'analyses'] as const
+  },
+  analysisList(userId: string, jobId: string, filters: JobAnalysisListParams) {
+    return [...this.analysisRoot(userId, jobId), 'list', filters] as const
+  },
+  latestAnalysis(userId: string, jobId: string) {
+    return ['user', userId, 'job', jobId, 'analysis', 'latest'] as const
   },
 }
 
@@ -66,6 +81,46 @@ export function useLatestJobRunQuery(
     sort: 'queuedAt,desc' as const,
   }))
   return useAgentRunListQuery(userId, filters)
+}
+
+export function useLatestJobAnalysisRunQuery(
+  userId: MaybeRefOrGetter<string>,
+  jobId: MaybeRefOrGetter<string>,
+) {
+  const filters = computed<AgentRunListParams>(() => ({
+    workflowType: ['JOB_ANALYSIS'],
+    resourceType: 'JOB',
+    resourceId: toValue(jobId),
+    page: 0,
+    size: 1,
+    sort: 'queuedAt,desc' as const,
+  }))
+  return useAgentRunListQuery(userId, filters)
+}
+
+export function useJobAnalysisHistoryQuery(
+  userId: MaybeRefOrGetter<string>,
+  jobId: MaybeRefOrGetter<string>,
+  filters: MaybeRefOrGetter<JobAnalysisListParams>,
+) {
+  return useQuery({
+    queryKey: computed(() =>
+      jobQueryKeys.analysisList(toValue(userId), toValue(jobId), toValue(filters)),
+    ),
+    queryFn: () => listJobAnalyses(toValue(jobId), toValue(filters)),
+    enabled: computed(() => toValue(userId) !== '' && toValue(jobId) !== ''),
+  })
+}
+
+export function useLatestJobAnalysisQuery(
+  userId: MaybeRefOrGetter<string>,
+  jobId: MaybeRefOrGetter<string>,
+) {
+  return useQuery({
+    queryKey: computed(() => jobQueryKeys.latestAnalysis(toValue(userId), toValue(jobId))),
+    queryFn: () => getLatestJobAnalysis(toValue(jobId)),
+    enabled: computed(() => toValue(userId) !== '' && toValue(jobId) !== ''),
+  })
 }
 
 export function useCreateJobMutation(userId: MaybeRefOrGetter<string>) {
@@ -112,6 +167,35 @@ export function useRetryJobExtractionMutation(userId: MaybeRefOrGetter<string>) 
   })
 }
 
+export function useAnalyzeJobMutation(userId: MaybeRefOrGetter<string>) {
+  const cache = useQueryClient()
+  const idempotencyKeys = new Map<string, string>()
+  return useMutation({
+    mutationFn: (input: { jobId: string; request: AnalyzeJobRequest }) => {
+      const identity = [
+        input.jobId,
+        input.request.jobVersion,
+        input.request.qualityMode,
+        input.request.forceReanalyze,
+      ].join('/')
+      const key = idempotencyKeys.get(identity) ?? createJobIdempotencyKey('analysis')
+      idempotencyKeys.set(identity, key)
+      return analyzeJob(input.jobId, input.request, key).then((accepted) => {
+        idempotencyKeys.delete(identity)
+        return accepted
+      })
+    },
+    onSuccess: async (_accepted, input) => {
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: agentRunQueryKeys.root(toValue(userId)) }),
+        cache.invalidateQueries({
+          queryKey: agentRunQueryKeys.relatedResource(toValue(userId), 'JOB', input.jobId),
+        }),
+      ])
+    },
+  })
+}
+
 export function useDeleteJobMutation(userId: MaybeRefOrGetter<string>) {
   const cache = useQueryClient()
   return useMutation({
@@ -139,6 +223,25 @@ export async function invalidateJobAndRunQueries(
 ): Promise<void> {
   await Promise.all([
     cache.invalidateQueries({ queryKey: jobQueryKeys.root(userId) }),
+    cache.invalidateQueries({ queryKey: jobQueryKeys.analysisRoot(userId, jobId) }),
+    cache.invalidateQueries({ queryKey: jobQueryKeys.latestAnalysis(userId, jobId) }),
+    cache.invalidateQueries({ queryKey: agentRunQueryKeys.root(userId) }),
+    cache.invalidateQueries({
+      queryKey: agentRunQueryKeys.relatedResource(userId, 'JOB', jobId),
+    }),
+  ])
+}
+
+export async function invalidateJobAnalysisQueries(
+  cache: Pick<QueryClient, 'invalidateQueries'>,
+  userId: string,
+  jobId: string,
+): Promise<void> {
+  await Promise.all([
+    cache.invalidateQueries({ queryKey: jobQueryKeys.detail(userId, jobId) }),
+    cache.invalidateQueries({ queryKey: jobQueryKeys.root(userId) }),
+    cache.invalidateQueries({ queryKey: jobQueryKeys.analysisRoot(userId, jobId) }),
+    cache.invalidateQueries({ queryKey: jobQueryKeys.latestAnalysis(userId, jobId) }),
     cache.invalidateQueries({ queryKey: agentRunQueryKeys.root(userId) }),
     cache.invalidateQueries({
       queryKey: agentRunQueryKeys.relatedResource(userId, 'JOB', jobId),

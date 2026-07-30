@@ -15,7 +15,7 @@
 
 ## 구성 요소 역할
 
-registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. P4 `DOCUMENT_INGESTION`과 P5 `JOB_POSTING_EXTRACTION`은 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다.
+registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. 외부 gateway 호출 뒤 성공·재사용 checkpoint와 domain apply는 하나의 `SERIALIZABLE` transaction으로 완료된다. P4 `DOCUMENT_INGESTION`, P5 `JOB_POSTING_EXTRACTION`, P6 `JOB_ANALYSIS`는 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -24,7 +24,7 @@ registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run applica
 
 ## 변경 시 주의사항
 
-전체 HTML, 전체 prompt와 provider response를 저장·로그하지 않는다. 실제 provider adapter는 해당 phase에서 가격·policy·heartbeat 계약과 함께 추가하며 기본값은 계속 `none`이다.
+전체 HTML·문서, 전체 prompt와 provider response를 저장·로그하지 않는다. P6 분석은 VERIFIED evidence만 positive provenance로 사용하고 final score·owner·persist를 모델에 위임하지 않는다. 실제 provider adapter 기본값은 계속 `none`이다.
 
 ## 관련 규칙 및 문서
 
