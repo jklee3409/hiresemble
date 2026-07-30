@@ -19,6 +19,10 @@ public final class CanonicalWorkflowDefinitions {
     public static final String JOB_POSTING_EXTRACTION_VERSION =
             "job-posting-extraction-v1";
     public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
+    public static final String COVER_LETTER_GENERATION_VERSION =
+            "cover-letter-generation-v1";
+    public static final String COVER_LETTER_VERIFICATION_VERSION =
+            "cover-letter-verification-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -36,14 +40,8 @@ public final class CanonicalWorkflowDefinitions {
                         "FINALIZE_DOCUMENT"),
                 jobPostingExtraction(),
                 jobAnalysis(),
-                definition(WorkflowType.COVER_LETTER_GENERATION, allQuality(),
-                        "BUILD_GENERATION_CONTEXT", "PLAN_QUESTIONS", "ANALYZE_QUESTION",
-                        "RETRIEVE_EVIDENCE", "ALLOCATE_EXPERIENCES", "WRITE_ANSWER",
-                        "FACT_CHECK_ANSWER", "APPLY_ANSWER_VERSION"),
-                definition(WorkflowType.COVER_LETTER_VERIFICATION, allQuality(),
-                        "LOAD_ANSWER_VERSION", "BUILD_PROVENANCE_CONTEXT", "CHECK_FACTS",
-                        "CHECK_REQUIREMENTS_AND_LENGTH", "AGGREGATE_VERIFICATION",
-                        "PERSIST_VERIFICATION"),
+                coverLetterGeneration(),
+                coverLetterVerification(),
                 definition(WorkflowType.INTERVIEW_PREPARATION, economyBalanced(),
                         "VALIDATE_PREREQUISITES", "BUILD_PUBLIC_SEARCH_PLAN", "SEARCH_OFFICIAL_SOURCES",
                         "SEARCH_INTERVIEW_SOURCES", "DEDUPE_CLASSIFY_SOURCES", "ASSESS_SOURCE_COVERAGE",
@@ -215,6 +213,174 @@ public final class CanonicalWorkflowDefinitions {
                                 Set.of(),
                                 ModelTier.LOW_COST,
                                 weights.get(7))));
+    }
+
+    private static WorkflowDefinition coverLetterGeneration() {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(8);
+        return new WorkflowDefinition(
+                WorkflowType.COVER_LETTER_GENERATION,
+                COVER_LETTER_GENERATION_VERSION,
+                true,
+                allQuality(),
+                List.of(
+                        coverLetterStep(
+                                "BUILD_GENERATION_CONTEXT",
+                                "cover-generation-build-output-v1",
+                                Set.of(),
+                                0,
+                                1,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(0)),
+                        coverLetterStep(
+                                "PLAN_QUESTIONS",
+                                "cover-generation-plan-output-v1",
+                                Set.of(),
+                                1,
+                                1,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(1)),
+                        coverLetterStep(
+                                "ANALYZE_QUESTION",
+                                "cover-generation-question-analysis-output-v1",
+                                Set.of(),
+                                1,
+                                20,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(2)),
+                        coverLetterStep(
+                                "RETRIEVE_EVIDENCE",
+                                "cover-generation-retrieval-output-v1",
+                                Set.of("EMBEDDING"),
+                                1,
+                                20,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(3)),
+                        coverLetterStep(
+                                "ALLOCATE_EXPERIENCES",
+                                "cover-generation-allocation-output-v1",
+                                Set.of(),
+                                1,
+                                1,
+                                RETRYABLE,
+                                ModelTier.LOW_COST,
+                                weights.get(4)),
+                        coverLetterStep(
+                                "WRITE_ANSWER",
+                                "cover-generation-answer-output-v1",
+                                Set.of(),
+                                1,
+                                20,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(5)),
+                        coverLetterStep(
+                                "FACT_CHECK_ANSWER",
+                                "cover-generation-fact-check-output-v1",
+                                Set.of(),
+                                1,
+                                20,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(6)),
+                        coverLetterStep(
+                                "APPLY_ANSWER_VERSION",
+                                "cover-generation-apply-output-v1",
+                                Set.of(),
+                                0,
+                                20,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(7))));
+    }
+
+    private static WorkflowDefinition coverLetterVerification() {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(6);
+        return new WorkflowDefinition(
+                WorkflowType.COVER_LETTER_VERIFICATION,
+                COVER_LETTER_VERIFICATION_VERSION,
+                true,
+                allQuality(),
+                List.of(
+                        coverLetterStep(
+                                "LOAD_ANSWER_VERSION",
+                                "cover-verification-load-output-v1",
+                                Set.of(),
+                                0,
+                                1,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(0)),
+                        coverLetterStep(
+                                "BUILD_PROVENANCE_CONTEXT",
+                                "cover-verification-provenance-output-v1",
+                                Set.of(),
+                                0,
+                                1,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(1)),
+                        coverLetterStep(
+                                "CHECK_FACTS",
+                                "cover-verification-facts-output-v1",
+                                Set.of(),
+                                1,
+                                1,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(2)),
+                        coverLetterStep(
+                                "CHECK_REQUIREMENTS_AND_LENGTH",
+                                "cover-verification-requirements-output-v1",
+                                Set.of(),
+                                1,
+                                1,
+                                RETRYABLE,
+                                ModelTier.BALANCED,
+                                weights.get(3)),
+                        coverLetterStep(
+                                "AGGREGATE_VERIFICATION",
+                                "cover-verification-aggregate-output-v1",
+                                Set.of(),
+                                0,
+                                1,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(4)),
+                        coverLetterStep(
+                                "PERSIST_VERIFICATION",
+                                "cover-verification-persist-output-v1",
+                                Set.of(),
+                                0,
+                                1,
+                                Set.of(),
+                                ModelTier.LOW_COST,
+                                weights.get(5))));
+    }
+
+    private static StepDefinition coverLetterStep(
+            String key,
+            String outputSchemaVersion,
+            Set<String> tools,
+            int modelCalls,
+            int maxFanOut,
+            Set<FailureKind> retryableFailures,
+            ModelTier preferredTier,
+            BigDecimal weight) {
+        return new StepDefinition(
+                key,
+                agentName(key),
+                "cover-letter-input-v1",
+                outputSchemaVersion,
+                tools,
+                modelCalls,
+                maxFanOut,
+                preferredTier,
+                retryableFailures,
+                weight);
     }
 
     private static StepDefinition analysisStep(

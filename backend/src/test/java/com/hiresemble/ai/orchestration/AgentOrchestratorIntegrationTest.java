@@ -23,8 +23,10 @@ import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AgentStepStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.PartialResult;
 import com.hiresemble.agentrun.domain.model.RequiredUserAction;
 import com.hiresemble.agentrun.domain.model.RequiredUserActionType;
+import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.UsageType;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.agentrun.infrastructure.worker.AgentRunReconciler;
@@ -93,6 +95,8 @@ import tools.jackson.databind.ObjectMapper;
 class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
     private static final String WORKFLOW_VERSION = "p3-fixture-v1";
+    private static final String FAN_OUT_WORKFLOW_VERSION =
+            "p7-fan-out-fixture-v1";
     private static final String INPUT_HASH = "a".repeat(64);
     private static final String OUTPUT_HASH = "b".repeat(64);
 
@@ -149,6 +153,92 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForList(
                 "SELECT DISTINCT model_policy_version FROM agent_steps WHERE agent_run_id = ?",
                 Long.class, run.id())).containsExactly(modelPolicyVersion);
+    }
+
+    @Test
+    void seededRetrySuccessAndResultReferenceRemainInTerminalPartialResult()
+            throws Exception {
+        WorkflowLaunchResult launch =
+                launch(AiQualityMode.ECONOMY, INPUT_HASH);
+        UUID answerVersionId = UUID.randomUUID();
+        PartialResult seeded = new PartialResult(
+                List.of("previous-question"),
+                List.of(),
+                List.of(new ResourceReference(
+                        "COVER_LETTER_ANSWER_VERSION",
+                        answerVersionId,
+                        "자기소개서 답변 버전")));
+        jdbcTemplate.update(
+                """
+                UPDATE agent_runs
+                SET partial_result_json = CAST(? AS jsonb)
+                WHERE user_id = ? AND id = ?
+                """,
+                objectMapper.writeValueAsString(seeded),
+                userId,
+                launch.agentRunId());
+
+        execute(launch.agentRunId(), fixtureOrchestrator(false, false));
+
+        AgentRunSnapshot completed = run(launch.agentRunId());
+        assertThat(completed.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(completed.partialResult().succeededScopeKeys())
+                .containsExactly("previous-question");
+        assertThat(completed.partialResult().failedScopeKeys()).isEmpty();
+        assertThat(completed.partialResult().resultRefs())
+                .singleElement()
+                .satisfies(reference -> {
+                    assertThat(reference.resourceType())
+                            .isEqualTo("COVER_LETTER_ANSWER_VERSION");
+                    assertThat(reference.resourceId())
+                            .isEqualTo(answerVersionId);
+                });
+    }
+
+    @Test
+    void questionLocalDomainFailureKeepsSiblingResultAndTerminatesPartialFailure() {
+        UUID succeededQuestionId = UUID.randomUUID();
+        UUID failedQuestionId = UUID.randomUUID();
+        UUID answerVersionId = UUID.randomUUID();
+        WorkflowLaunchResult launch = workflowLauncher.launch(
+                new WorkflowLaunchCommand(
+                        userId,
+                        WorkflowType.COVER_LETTER_GENERATION,
+                        FAN_OUT_WORKFLOW_VERSION,
+                        "9".repeat(64),
+                        objectMapper
+                                .createObjectNode()
+                                .put("fixtureRef", "p7-fan-out"),
+                        AiQualityMode.BALANCED,
+                        BigDecimal.ZERO.setScale(6),
+                        null,
+                        null));
+
+        execute(
+                launch.agentRunId(),
+                fanOutOrchestrator(
+                        succeededQuestionId,
+                        failedQuestionId,
+                        answerVersionId));
+
+        AgentRunSnapshot failed = run(launch.agentRunId());
+        assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(failed.safeError().code())
+                .isEqualTo("COVER_LETTER_GENERATION_PARTIAL_FAILURE");
+        assertThat(failed.retryable()).isFalse();
+        assertThat(failed.partialResult().succeededScopeKeys())
+                .containsExactly(succeededQuestionId.toString());
+        assertThat(failed.partialResult().failedScopeKeys())
+                .containsExactly(failedQuestionId.toString());
+        assertThat(failed.partialResult().resultRefs())
+                .singleElement()
+                .satisfies(reference -> assertThat(reference.resourceId())
+                        .isEqualTo(answerVersionId));
+        assertThat(failed.steps())
+                .extracting(step -> step.scopeKey() + ":" + step.status())
+                .containsExactlyInAnyOrder(
+                        succeededQuestionId + ":SUCCEEDED",
+                        failedQuestionId + ":FAILED");
     }
 
     @Test
@@ -364,7 +454,10 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
         fixtureOrchestrator(false, false).execute(claim);
 
-        assertThat(run(runId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        AgentRunSnapshot restarted = run(runId);
+        assertThat(restarted.status())
+                .as(restarted.toString())
+                .isEqualTo(AgentRunStatus.SUCCEEDED);
         assertThat(domainApply.appliedCount()).isEqualTo(1);
         assertThat(domainApply.applyCallCount()).isEqualTo(1);
         assertThat(domainApply.committedMarkerCount()).isEqualTo(1);
@@ -565,6 +658,86 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 completionTransaction);
     }
 
+    private AgentOrchestrator fanOutOrchestrator(
+            UUID succeededQuestionId,
+            UUID failedQuestionId,
+            UUID answerVersionId) {
+        WorkflowDefinition fanOut = new WorkflowDefinition(
+                WorkflowType.COVER_LETTER_GENERATION,
+                FAN_OUT_WORKFLOW_VERSION,
+                false,
+                EnumSet.allOf(AiQualityMode.class),
+                List.of(new StepDefinition(
+                        "WRITE_ANSWER",
+                        "FanOutFixture",
+                        "input-v1",
+                        "output-v1",
+                        Set.of(),
+                        0,
+                        20,
+                        ModelTier.LOW_COST,
+                        Set.of(),
+                        new BigDecimal("100"))));
+        WorkflowStepExecutor<FixtureOutput> executor =
+                new FanOutFixtureExecutor(
+                        succeededQuestionId,
+                        failedQuestionId,
+                        answerVersionId);
+        ExecutableWorkflowContribution contribution =
+                new ExecutableWorkflowContribution(
+                        WorkflowType.COVER_LETTER_GENERATION,
+                        FAN_OUT_WORKFLOW_VERSION,
+                        List.of(new ExecutableWorkflowStep(
+                                "WRITE_ANSWER", executor)));
+        List<WorkflowDefinition> definitions =
+                new ArrayList<>(CanonicalWorkflowDefinitions.all());
+        definitions.add(fanOut);
+        PromptRegistry promptRegistry = new PromptRegistry(List.of(
+                new PromptDefinition(
+                        new PromptKey(
+                                WorkflowType.COVER_LETTER_GENERATION,
+                                FAN_OUT_WORKFLOW_VERSION,
+                                "WRITE_ANSWER"),
+                        "p7-fan-out-fixture-prompt-v1",
+                        FixtureInput.class,
+                        FixtureOutput.class,
+                        "output-v1",
+                        Set.of(),
+                        1,
+                        1,
+                        0,
+                        "Execute the bounded local fan-out fixture.")));
+        DisabledAiGateways disabled = new DisabledAiGateways();
+        return new AgentOrchestrator(
+                new WorkflowRegistry(definitions, List.of(contribution)),
+                contextBuilder,
+                new PolicyModelRouter(new ModelPolicy(
+                        modelPolicyVersion,
+                        true,
+                        "fixture-provider",
+                        "low",
+                        "balanced",
+                        "high",
+                        Set.of(WorkflowType.COVER_LETTER_GENERATION))),
+                promptRegistry,
+                new StructuredOutputValidator(objectMapper),
+                chatGateway,
+                disabled,
+                disabled,
+                runQueryPort,
+                runStatePort,
+                stepCheckpointPort,
+                usageRecorderPort,
+                domainApply,
+                cancellationPort,
+                leaseHeartbeatPort,
+                new BudgetGuard(budgetReservationPort),
+                objectMapper,
+                Clock.systemUTC(),
+                List.of(),
+                new SpringStepCompletionTransaction(transactionManager));
+    }
+
     private WorkflowDefinition fixtureDefinition() {
         Set<FailureKind> retryable = EnumSet.of(
                 FailureKind.RATE_LIMIT, FailureKind.PROVIDER_5XX, FailureKind.NETWORK,
@@ -749,6 +922,120 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 JsonNode minimalOutput, StepExecutionContext context) {
             return stepKey.equals("APPLY_FIXTURE")
                     ? Optional.of(new DomainApplyPlan("FIXTURE", resourceId, 0)) : Optional.empty();
+        }
+    }
+
+    private final class FanOutFixtureExecutor
+            implements WorkflowStepExecutor<FixtureOutput> {
+
+        private final UUID succeededQuestionId;
+        private final UUID failedQuestionId;
+        private final UUID answerVersionId;
+
+        private FanOutFixtureExecutor(
+                UUID succeededQuestionId,
+                UUID failedQuestionId,
+                UUID answerVersionId) {
+            this.succeededQuestionId = succeededQuestionId;
+            this.failedQuestionId = failedQuestionId;
+            this.answerVersionId = answerVersionId;
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            return prepareInputs(context).getFirst();
+        }
+
+        @Override
+        public List<StepInput> prepareInputs(
+                StepExecutionContext context) {
+            return List.of(
+                    input(context, succeededQuestionId),
+                    input(context, failedQuestionId));
+        }
+
+        private StepInput input(
+                StepExecutionContext context, UUID questionId) {
+            return new StepInput(
+                    questionId.toString(),
+                    objectMapper
+                            .createObjectNode()
+                            .put("questionId", questionId.toString()),
+                    context.run().id() + ":" + questionId,
+                    objectMapper
+                            .createObjectNode()
+                            .put("questionId", questionId.toString()),
+                    null,
+                    0);
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            if (failedQuestionId
+                    .toString()
+                    .equals(invocation.input().scopeKey())) {
+                throw AiExecutionException.nonRetryable(
+                        FailureKind.DOMAIN_VALIDATION,
+                        "P7_FIXTURE_QUESTION_INVALID",
+                        "해당 문항을 생성하지 못했습니다.");
+            }
+            return successResponse(null);
+        }
+
+        @Override
+        public Contract<FixtureOutput> outputContract() {
+            return new Contract<>(
+                    FixtureOutput.class,
+                    "output-v1",
+                    tree -> {
+                        if (!tree.isObject()
+                                || !tree.has("resultRef")
+                                || !tree.has("resultHash")
+                                || !tree.has("valid")) {
+                            throw new IllegalArgumentException();
+                        }
+                    },
+                    output -> {},
+                    output -> {},
+                    output -> {});
+        }
+
+        @Override
+        public JsonNode minimalOutput(
+                FixtureOutput output, ObjectMapper mapper) {
+            return mapper.createObjectNode()
+                    .put("resultRef", output.resultRef())
+                    .put("resultHash", output.resultHash())
+                    .put("valid", output.valid());
+        }
+
+        @Override
+        public Optional<PartialResult> partialResult(
+                FixtureOutput output,
+                JsonNode minimalOutput,
+                StepExecutionContext context) {
+            return Optional.of(new PartialResult(
+                    List.of(context.scopeKey()),
+                    List.of(),
+                    List.of(new ResourceReference(
+                            "COVER_LETTER_ANSWER_VERSION",
+                            answerVersionId,
+                            "자기소개서 답변 버전"))));
+        }
+
+        @Override
+        public Optional<PartialResult> partialResultFromMinimal(
+                JsonNode minimalOutput, StepExecutionContext context) {
+            return partialResult(null, minimalOutput, context);
+        }
+
+        @Override
+        public boolean continueAfterScopeFailure(
+                AiExecutionException failure,
+                StepExecutionContext context) {
+            return context.scopeKey() != null
+                    && failure.failureKind()
+                            == FailureKind.DOMAIN_VALIDATION;
         }
     }
 

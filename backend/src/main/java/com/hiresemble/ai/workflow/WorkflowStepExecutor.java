@@ -11,6 +11,7 @@ import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.prompt.PromptRegistry.PromptDefinition;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,6 +23,17 @@ import tools.jackson.databind.ObjectMapper;
 public interface WorkflowStepExecutor<T> {
 
     StepInput prepare(StepExecutionContext context);
+
+    /**
+     * Returns the deterministic, bounded inputs for this fixed step.
+     *
+     * <p>The default preserves the original one-step/one-input contract. A canonical fan-out
+     * executor returns its already validated scope list in stable domain order; the orchestrator,
+     * not a model, owns iteration and the registry's {@code maxFanOut} bound.
+     */
+    default List<StepInput> prepareInputs(StepExecutionContext context) {
+        return List.of(prepare(context));
+    }
 
     AiGatewayResponse invoke(GatewayInvocation invocation);
 
@@ -41,6 +53,30 @@ public interface WorkflowStepExecutor<T> {
     default Optional<DomainApplyPlan> domainApplyFromMinimal(
             JsonNode minimalOutput, StepExecutionContext context) {
         return Optional.empty();
+    }
+
+    /**
+     * Completes a fresh step inside the checkpoint transaction.
+     *
+     * <p>Workflows whose Backend command returns the durable result identifier may override this
+     * method and return a reference-only checkpoint output built from that command result. Existing
+     * workflows continue through {@link #domainApply(Object, JsonNode, StepExecutionContext)}.
+     */
+    default DomainStepCompletion completeFresh(
+            T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {
+        return new DomainStepCompletion(
+                minimalOutput,
+                domainApply(validatedOutput, minimalOutput, context),
+                partialResult(validatedOutput, minimalOutput, context).orElse(null));
+    }
+
+    /** Completes a reused step inside the same atomic checkpoint/domain boundary. */
+    default DomainStepCompletion completeReused(
+            JsonNode minimalOutput, StepExecutionContext context) {
+        return new DomainStepCompletion(
+                minimalOutput,
+                domainApplyFromMinimal(minimalOutput, context),
+                partialResultFromMinimal(minimalOutput, context).orElse(null));
     }
 
     /**
@@ -81,23 +117,108 @@ public interface WorkflowStepExecutor<T> {
         return Optional.empty();
     }
 
+    /** Reconstructs reference-only partial progress after a committed checkpoint restart/reuse. */
+    default Optional<PartialResult> partialResultFromMinimal(
+            JsonNode minimalOutput, StepExecutionContext context) {
+        return Optional.empty();
+    }
+
+    /**
+     * Allows only a bounded scope failure to be isolated from sibling scopes.
+     *
+     * <p>The default remains fail-fast. P7 generation opts in only for its canonical question
+     * fan-out and the terminal Run is still FAILED when any isolated scope remains failed.
+     */
+    default boolean continueAfterScopeFailure(
+            com.hiresemble.ai.execution.AiExecutionException failure,
+            StepExecutionContext context) {
+        return false;
+    }
+
     record StepExecutionContext(
             AgentRunSnapshot run,
             ContextSnapshot contextSnapshot,
             Map<String, JsonNode> upstreamOutputs,
-            Map<String, Object> ephemeralOutputs) {
+            Map<String, Object> ephemeralOutputs,
+            String scopeKey) {
         public StepExecutionContext {
             Objects.requireNonNull(run, "run");
             Objects.requireNonNull(contextSnapshot, "contextSnapshot");
             upstreamOutputs = upstreamOutputs == null ? Map.of() : Map.copyOf(upstreamOutputs);
             ephemeralOutputs = ephemeralOutputs == null ? Map.of() : Map.copyOf(ephemeralOutputs);
+            if (scopeKey != null && (scopeKey.isBlank() || scopeKey.length() > 100)) {
+                throw new IllegalArgumentException("scope key is invalid");
+            }
         }
 
         public StepExecutionContext(
                 AgentRunSnapshot run,
                 ContextSnapshot contextSnapshot,
                 Map<String, JsonNode> upstreamOutputs) {
-            this(run, contextSnapshot, upstreamOutputs, Map.of());
+            this(run, contextSnapshot, upstreamOutputs, Map.of(), null);
+        }
+
+        public StepExecutionContext(
+                AgentRunSnapshot run,
+                ContextSnapshot contextSnapshot,
+                Map<String, JsonNode> upstreamOutputs,
+                Map<String, Object> ephemeralOutputs) {
+            this(run, contextSnapshot, upstreamOutputs, ephemeralOutputs, null);
+        }
+
+        public StepExecutionContext forScope(String selectedScopeKey) {
+            return new StepExecutionContext(
+                    run,
+                    contextSnapshot,
+                    upstreamOutputs,
+                    ephemeralOutputs,
+                    selectedScopeKey);
+        }
+
+        public JsonNode upstream(String stepKey) {
+            return upstreamOutputs.get(outputKey(stepKey, null));
+        }
+
+        public JsonNode upstream(String stepKey, String selectedScopeKey) {
+            return upstreamOutputs.get(outputKey(stepKey, selectedScopeKey));
+        }
+
+        public Object ephemeral(String stepKey) {
+            return ephemeralOutputs.get(outputKey(stepKey, null));
+        }
+
+        public Object ephemeral(String stepKey, String selectedScopeKey) {
+            return ephemeralOutputs.get(outputKey(stepKey, selectedScopeKey));
+        }
+
+        public Map<String, JsonNode> scopedUpstream(String stepKey) {
+            return scopedValues(upstreamOutputs, stepKey);
+        }
+
+        public Map<String, Object> scopedEphemeral(String stepKey) {
+            return scopedValues(ephemeralOutputs, stepKey);
+        }
+
+        public static String outputKey(String stepKey, String selectedScopeKey) {
+            if (stepKey == null || stepKey.isBlank()) {
+                throw new IllegalArgumentException("step key is invalid");
+            }
+            return selectedScopeKey == null
+                    ? stepKey
+                    : stepKey + "\u001f" + selectedScopeKey;
+        }
+
+        private static <V> Map<String, V> scopedValues(
+                Map<String, V> values, String stepKey) {
+            String prefix = stepKey + "\u001f";
+            java.util.LinkedHashMap<String, V> selected = new java.util.LinkedHashMap<>();
+            values.entrySet().stream()
+                    .filter(entry -> entry.getKey().startsWith(prefix))
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> selected.put(
+                            entry.getKey().substring(prefix.length()),
+                            entry.getValue()));
+            return Map.copyOf(selected);
         }
     }
 
@@ -149,6 +270,19 @@ public interface WorkflowStepExecutor<T> {
                     || resourceId == null || expectedResourceVersion < 0) {
                 throw new IllegalArgumentException("domain apply plan is invalid");
             }
+        }
+    }
+
+    record DomainStepCompletion(
+            JsonNode minimalOutput,
+            Optional<DomainApplyPlan> genericDomainApply,
+            PartialResult partialResult) {
+        public DomainStepCompletion {
+            if (minimalOutput == null || !minimalOutput.isObject()) {
+                throw new IllegalArgumentException("domain completion output is invalid");
+            }
+            genericDomainApply =
+                    genericDomainApply == null ? Optional.empty() : genericDomainApply;
         }
     }
 }

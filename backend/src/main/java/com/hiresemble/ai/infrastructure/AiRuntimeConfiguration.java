@@ -5,14 +5,17 @@ import com.hiresemble.agentrun.application.port.AgentRunLeaseHeartbeatPort;
 import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
 import com.hiresemble.agentrun.application.port.AgentRunStatePort;
 import com.hiresemble.agentrun.application.port.AgentStepCheckpointPort;
+import com.hiresemble.agentrun.application.port.AiPreferenceQueryPort;
 import com.hiresemble.agentrun.application.port.DomainResultApplyPort;
 import com.hiresemble.agentrun.application.port.UsageRecorderPort;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
+import com.hiresemble.ai.context.CoverLetterGenerationContextBuilder;
+import com.hiresemble.ai.context.CoverLetterVerificationContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
-import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
 import com.hiresemble.ai.context.JobAnalysisContextBuilder;
+import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
 import com.hiresemble.ai.context.WorkflowContextBuilder;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.model.ModelRouter;
@@ -25,19 +28,26 @@ import com.hiresemble.ai.orchestration.WorkflowFailureHandler;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
+import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
-import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
 import com.hiresemble.ai.prompt.JobAnalysisPromptDefinitions;
+import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow;
+import com.hiresemble.ai.workflow.CoverLetterVerificationFailureHandler;
+import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow;
 import com.hiresemble.ai.workflow.JobPostingExtractionFailureHandler;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow;
 import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
+import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
+import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.job.application.port.JobPageFetchGateway;
@@ -92,16 +102,39 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    CoverLetterGenerationWorkflow coverLetterGenerationWorkflow(
+            CoverLetterQueryPort queryPort,
+            CoverLetterCommandPort commandPort,
+            JobAnalysisEmbeddingQueryPort embeddingQueryPort,
+            ObjectMapper objectMapper) {
+        return new CoverLetterGenerationWorkflow(
+                queryPort, commandPort, embeddingQueryPort, objectMapper);
+    }
+
+    @Bean
+    CoverLetterVerificationWorkflow coverLetterVerificationWorkflow(
+            CoverLetterQueryPort queryPort,
+            CoverLetterCommandPort commandPort,
+            ObjectMapper objectMapper) {
+        return new CoverLetterVerificationWorkflow(
+                queryPort, commandPort, objectMapper);
+    }
+
+    @Bean
     WorkflowRegistry workflowRegistry(
             DocumentIngestionWorkflow documentWorkflow,
             JobPostingExtractionWorkflow jobWorkflow,
-            JobAnalysisWorkflow jobAnalysisWorkflow) {
+            JobAnalysisWorkflow jobAnalysisWorkflow,
+            CoverLetterGenerationWorkflow coverLetterGenerationWorkflow,
+            CoverLetterVerificationWorkflow coverLetterVerificationWorkflow) {
         return new WorkflowRegistry(
                 CanonicalWorkflowDefinitions.all(),
                 List.of(
                         documentWorkflow.contribution(),
                         jobWorkflow.contribution(),
-                        jobAnalysisWorkflow.contribution()));
+                        jobAnalysisWorkflow.contribution(),
+                        coverLetterGenerationWorkflow.contribution(),
+                        coverLetterVerificationWorkflow.contribution()));
     }
 
     @Bean
@@ -110,6 +143,8 @@ public class AiRuntimeConfiguration {
         prompts.addAll(DocumentIngestionPromptDefinitions.all());
         prompts.addAll(JobPostingExtractionPromptDefinitions.all());
         prompts.addAll(JobAnalysisPromptDefinitions.all());
+        prompts.addAll(CoverLetterGenerationPromptDefinitions.all());
+        prompts.addAll(CoverLetterVerificationPromptDefinitions.all());
         return new PromptRegistry(prompts);
     }
 
@@ -118,13 +153,19 @@ public class AiRuntimeConfiguration {
             DocumentWorkflowQueryPort documentQueryPort,
             JobWorkflowQueryPort jobQueryPort,
             JobAnalysisQueryPort jobAnalysisQueryPort,
+            CoverLetterQueryPort coverLetterQueryPort,
+            AiPreferenceQueryPort preferenceQueryPort,
             Environment environment) {
         long version = environment.getProperty(
                 "hiresemble.ai.model-policy-version", Long.class, 1L);
         return new WorkflowContextBuilder(
                 new DocumentIngestionContextBuilder(documentQueryPort, version),
                 new JobPostingExtractionContextBuilder(jobQueryPort, version),
-                new JobAnalysisContextBuilder(jobAnalysisQueryPort, version));
+                new JobAnalysisContextBuilder(jobAnalysisQueryPort, version),
+                new CoverLetterGenerationContextBuilder(
+                        coverLetterQueryPort, preferenceQueryPort, version),
+                new CoverLetterVerificationContextBuilder(
+                        coverLetterQueryPort, preferenceQueryPort, version));
     }
 
     @Bean
@@ -178,6 +219,12 @@ public class AiRuntimeConfiguration {
             JobWorkflowQueryPort queryPort,
             JobWorkflowCommandPort commandPort) {
         return new JobPostingExtractionFailureHandler(queryPort, commandPort);
+    }
+
+    @Bean
+    WorkflowFailureHandler coverLetterVerificationFailureHandler(
+            CoverLetterCommandPort commandPort) {
+        return new CoverLetterVerificationFailureHandler(commandPort);
     }
 
     @Bean

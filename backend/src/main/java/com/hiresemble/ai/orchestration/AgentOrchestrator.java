@@ -21,6 +21,7 @@ import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AgentStepStatus;
 import com.hiresemble.agentrun.domain.model.ModelTier;
 import com.hiresemble.agentrun.domain.model.PartialResult;
+import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.SafeError;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
@@ -47,6 +48,7 @@ import com.hiresemble.ai.workflow.WorkflowRegistry.WorkflowDefinition;
 import com.hiresemble.ai.workflow.WorkflowRegistry.WorkflowConfigurationException;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainApplyPlan;
+import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainStepCompletion;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.GatewayInvocation;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepExecutionContext;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepInput;
@@ -57,10 +59,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -186,7 +192,10 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         Map<String, JsonNode> upstreamOutputs = new HashMap<>();
         Map<String, Object> ephemeralOutputs = new HashMap<>();
         BigDecimal completedWeight = BigDecimal.ZERO;
-        PartialResult partialResult = null;
+        PartialAccumulator partial = new PartialAccumulator();
+        partial.merge(claimed.run().partialResult());
+        Set<String> failedScopes = resumedFailedScopes(definition, claimed.run());
+        failedScopes.forEach(partial::resumeFailure);
         List<StepDefinition> definitions = definition.steps();
 
         for (int index = 0; index < definitions.size(); index++) {
@@ -200,148 +209,286 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
 
             StepDefinition stepDefinition = definitions.get(index);
             ExecutableWorkflowStep executableStep = contribution.steps().get(index);
-            StepExecutionContext executionContext =
+            StepExecutionContext preparationContext =
                     new StepExecutionContext(run, context, upstreamOutputs, ephemeralOutputs);
-            StepInput input = executableStep.executor().prepare(executionContext);
             PromptDefinition prompt = promptRegistry.require(
                     run.workflowType(), run.workflowVersion(), stepDefinition.stepKey());
             validatePromptContract(stepDefinition, prompt);
-            String inputHash = inputHash(run, context, stepDefinition, prompt, input);
+            List<StepInput> inputs =
+                    List.copyOf(executableStep.executor().prepareInputs(preparationContext));
+            validateFanOut(stepDefinition, inputs);
 
-            Optional<ReusableStepSnapshot> reusable = executableStep.executor().reusable()
-                    ? runQueryPort.findReusableStep(
-                            run.userId(), stepDefinition.stepKey(), input.scopeKey(), inputHash,
-                            run.requestedQualityMode())
-                    : Optional.empty();
-            Optional<AgentStepSnapshot> completedInThisRun =
-                    latestStep(run, stepDefinition.stepKey(), input.scopeKey())
-                    .filter(step -> step.status() == AgentStepStatus.SUCCEEDED
-                            || step.status() == AgentStepStatus.REUSED);
-            if (completedInThisRun.isPresent()) {
-                ReusableStepSnapshot output = reusable.orElseThrow(() ->
-                        AiExecutionException.nonRetryable(
-                                FailureKind.CONFIGURATION,
-                                "AI_STEP_CHECKPOINT_INCOMPLETE",
-                                "저장된 AI 단계 결과를 복구하지 못했습니다."));
-                upstreamOutputs.put(stepDefinition.stepKey(), output.minimalOutput());
-                ephemeralOutputs.put(
-                        stepDefinition.stepKey(),
-                        executableStep.executor().ephemeralOutputFromMinimal(output.minimalOutput()));
+            BigDecimal weightBeforeStep = completedWeight;
+            if (inputs.isEmpty()) {
                 completedWeight = completedWeight.add(stepDefinition.progressWeight());
-                continue;
-            }
-            if (reusable.isPresent()) {
-                if (completeCancellationIfRequested(
-                        current(run.userId(), run.id()), claimed.claimToken())) {
-                    return;
-                }
-                try {
-                    stepCompletionTransaction.execute(() -> {
-                        AgentStepSnapshot reused = stepCheckpointPort.reuse(
-                                startCommand(
-                                        run,
-                                        claimed.claimToken(),
-                                        stepDefinition,
-                                        prompt,
-                                        input,
-                                        inputHash,
-                                        context.modelPolicyVersion(),
-                                        1),
-                                reusable.get());
-                        applyReused(
-                                executableStep.executor(),
-                                reusable.get().minimalOutput(),
-                                executionContext,
-                                run,
-                                reused,
-                                inputHash);
-                    });
-                } catch (RuntimeException exception) {
-                    AiExecutionException failure = completionFailure(exception);
-                    AgentRunSnapshot afterRollback = current(run.userId(), run.id());
-                    if (completeCancellationIfRequested(
-                            afterRollback, claimed.claimToken())) {
-                        return;
-                    }
-                    AgentStepSnapshot failed = startOrResumePending(
-                            afterRollback,
-                            claimed.claimToken(),
-                            stepDefinition,
-                            prompt,
-                            input,
-                            inputHash,
-                            context.modelPolicyVersion(),
-                            1);
-                    checkpointFailure(
-                            afterRollback,
-                            claimed.claimToken(),
-                            failed,
-                            failure);
-                    throw failure;
-                }
-                upstreamOutputs.put(stepDefinition.stepKey(), reusable.get().minimalOutput());
-                ephemeralOutputs.put(
+                updateProgress(
+                        run.userId(),
+                        run.id(),
+                        claimed.claimToken(),
                         stepDefinition.stepKey(),
-                        executableStep.executor().ephemeralOutputFromMinimal(
-                                reusable.get().minimalOutput()));
-                completedWeight = completedWeight.add(stepDefinition.progressWeight());
-                updateProgress(run.userId(), run.id(), claimed.claimToken(), stepDefinition.stepKey(),
                         completedWeight.intValue());
                 continue;
             }
 
-            if (input.waitsForUser()) {
-                AgentStepSnapshot waitingStep = startOrResumePending(
-                        run, claimed.claimToken(), stepDefinition, prompt, input, inputHash,
-                        context.modelPolicyVersion(), 1);
-                stepCheckpointPort.checkpoint(new StepCheckpointCommand(
-                        run.userId(), run.id(), waitingStep.id(), claimed.claimToken(),
-                        AgentStepStatus.WAITING_USER, null, null, null, null, null, clock.instant()));
-                AgentRunSnapshot beforeWaiting = current(run.userId(), run.id());
-                budgetGuard.releaseUnused(beforeWaiting, clock.instant());
-                AgentRunSnapshot released = current(run.userId(), run.id());
-                runStatePort.transition(new AgentRunTransitionCommand(
-                        released.userId(), released.id(), claimed.claimToken(), released.stateVersion(),
-                        AgentRunStatus.WAITING_USER, stepDefinition.stepKey(),
-                        completedWeight.intValue(), released.highestModelTierUsed(),
-                        released.actualCostUsd(), false, input.requiredUserAction(), null, null,
-                        clock.instant()));
-                return;
-            }
+            for (int scopeIndex = 0; scopeIndex < inputs.size(); scopeIndex++) {
+                StepInput input = inputs.get(scopeIndex);
+                String scopeKey = stepDefinition.maxFanOut() > 1
+                        ? input.scopeKey()
+                        : null;
+                if (scopeKey != null && failedScopes.contains(scopeKey)) {
+                    updateFanOutProgress(
+                            run,
+                            claimed.claimToken(),
+                            stepDefinition,
+                            weightBeforeStep,
+                            scopeIndex + 1,
+                            inputs.size());
+                    continue;
+                }
 
-            StepResult result = executeWithAttempts(
-                    claimed, definition, stepDefinition, executableStep.executor(),
-                    prompt, input, inputHash, executionContext);
-            if (result.cancelledOrTerminal()) return;
-            if (result.requiredUserAction() != null) {
-                AgentRunSnapshot beforeWaiting = current(run.userId(), run.id());
-                budgetGuard.releaseUnused(beforeWaiting, clock.instant());
-                AgentRunSnapshot released = current(run.userId(), run.id());
-                runStatePort.transition(new AgentRunTransitionCommand(
-                        released.userId(), released.id(), claimed.claimToken(),
-                        released.stateVersion(), AgentRunStatus.WAITING_USER,
-                        stepDefinition.stepKey(), completedWeight.intValue(),
-                        released.highestModelTierUsed(), released.actualCostUsd(), false,
-                        result.requiredUserAction(), null, partialResult, clock.instant()));
-                return;
+                AgentRunSnapshot scopeRun = current(run.userId(), run.id());
+                if (scopeRun.status().isTerminal()) return;
+                if (completeCancellationIfRequested(scopeRun, claimed.claimToken())) return;
+                StepExecutionContext executionContext = new StepExecutionContext(
+                                scopeRun, context, upstreamOutputs, ephemeralOutputs)
+                        .forScope(scopeKey);
+                String inputHash =
+                        inputHash(scopeRun, context, stepDefinition, prompt, input);
+                StepResult result;
+                try {
+                    result = executeStepInput(
+                            claimed,
+                            definition,
+                            stepDefinition,
+                            executableStep.executor(),
+                            prompt,
+                            input,
+                            inputHash,
+                            executionContext);
+                } catch (AiExecutionException failure) {
+                    if (scopeKey == null
+                            || !executableStep
+                                    .executor()
+                                    .continueAfterScopeFailure(failure, executionContext)) {
+                        throw failure;
+                    }
+                    failedScopes.add(scopeKey);
+                    partial.fail(scopeKey, failure);
+                    updateFanOutProgress(
+                            scopeRun,
+                            claimed.claimToken(),
+                            stepDefinition,
+                            weightBeforeStep,
+                            scopeIndex + 1,
+                            inputs.size());
+                    continue;
+                }
+                if (result.cancelledOrTerminal()) return;
+                if (result.requiredUserAction() != null) {
+                    AgentRunSnapshot beforeWaiting =
+                            current(scopeRun.userId(), scopeRun.id());
+                    budgetGuard.releaseUnused(beforeWaiting, clock.instant());
+                    AgentRunSnapshot released =
+                            current(scopeRun.userId(), scopeRun.id());
+                    runStatePort.transition(new AgentRunTransitionCommand(
+                            released.userId(),
+                            released.id(),
+                            claimed.claimToken(),
+                            released.stateVersion(),
+                            AgentRunStatus.WAITING_USER,
+                            stepDefinition.stepKey(),
+                            fanOutProgress(
+                                    weightBeforeStep,
+                                    stepDefinition.progressWeight(),
+                                    scopeIndex,
+                                    inputs.size()),
+                            released.highestModelTierUsed(),
+                            released.actualCostUsd(),
+                            false,
+                            result.requiredUserAction(),
+                            null,
+                            partial.valueOrNull(),
+                            clock.instant()));
+                    return;
+                }
+                String outputKey =
+                        StepExecutionContext.outputKey(stepDefinition.stepKey(), scopeKey);
+                upstreamOutputs.put(outputKey, result.minimalOutput());
+                ephemeralOutputs.put(outputKey, result.ephemeralOutput());
+                partial.merge(result.partialResult());
+                updateFanOutProgress(
+                        scopeRun,
+                        claimed.claimToken(),
+                        stepDefinition,
+                        weightBeforeStep,
+                        scopeIndex + 1,
+                        inputs.size());
             }
-            upstreamOutputs.put(stepDefinition.stepKey(), result.minimalOutput());
-            ephemeralOutputs.put(stepDefinition.stepKey(), result.ephemeralOutput());
-            if (result.partialResult() != null) partialResult = result.partialResult();
-            completedWeight = completedWeight.add(stepDefinition.progressWeight());
-            updateProgress(run.userId(), run.id(), claimed.claimToken(), stepDefinition.stepKey(),
-                    completedWeight.intValue());
+            completedWeight = weightBeforeStep.add(stepDefinition.progressWeight());
         }
 
         AgentRunSnapshot completed = current(claimed.run().userId(), claimed.run().id());
+        if (partial.hasFailures()) {
+            completePartialFailure(completed, claimed.claimToken(), partial);
+            return;
+        }
         budgetGuard.settleSuccess(completed, clock.instant());
         completed = current(completed.userId(), completed.id());
         runStatePort.transition(new AgentRunTransitionCommand(
                 completed.userId(), completed.id(), claimed.claimToken(), completed.stateVersion(),
                 AgentRunStatus.SUCCEEDED, completed.currentStep(), 100,
                 completed.highestModelTierUsed(), completed.actualCostUsd(), false,
-                null, null, partialResult == null ? completed.partialResult() : partialResult,
+                null,
+                null,
+                partial.valueOrNull() == null
+                        ? completed.partialResult()
+                        : partial.valueOrNull(),
                 clock.instant()));
+    }
+
+    private StepResult executeStepInput(
+            ClaimedAgentRun claimed,
+            WorkflowDefinition definition,
+            StepDefinition stepDefinition,
+            WorkflowStepExecutor<?> executor,
+            PromptDefinition prompt,
+            StepInput input,
+            String inputHash,
+            StepExecutionContext executionContext) {
+        AgentRunSnapshot run = executionContext.run();
+        Optional<ReusableStepSnapshot> reusable = executor.reusable()
+                ? runQueryPort.findReusableStep(
+                        run.userId(),
+                        stepDefinition.stepKey(),
+                        input.scopeKey(),
+                        inputHash,
+                        run.requestedQualityMode())
+                : Optional.empty();
+        Optional<AgentStepSnapshot> completedInThisRun = executor.reusable()
+                ? latestStep(run, stepDefinition.stepKey(), input.scopeKey())
+                        .filter(step -> step.status() == AgentStepStatus.SUCCEEDED
+                                || step.status() == AgentStepStatus.REUSED)
+                : Optional.empty();
+        if (completedInThisRun.isPresent()) {
+            ReusableStepSnapshot output = reusable.orElseThrow(() ->
+                    AiExecutionException.nonRetryable(
+                            FailureKind.CONFIGURATION,
+                            "AI_STEP_CHECKPOINT_INCOMPLETE",
+                            "저장된 AI 단계 결과를 복구하지 못했습니다."));
+            return new StepResult(
+                    output.minimalOutput(),
+                    executor.ephemeralOutputFromMinimal(output.minimalOutput()),
+                    executorPartialResultFromMinimal(
+                                    executor, output.minimalOutput(), executionContext)
+                            .orElse(null),
+                    null,
+                    false);
+        }
+        if (reusable.isPresent()) {
+            if (completeCancellationIfRequested(
+                    current(run.userId(), run.id()), claimed.claimToken())) {
+                return StepResult.terminal();
+            }
+            AtomicReference<DomainStepCompletion> completion = new AtomicReference<>();
+            try {
+                stepCompletionTransaction.execute(() -> {
+                    DomainStepCompletion domainCompletion =
+                            executorCompleteReused(
+                                    executor,
+                                    reusable.get().minimalOutput(),
+                                    executionContext);
+                    if (!domainCompletion
+                            .minimalOutput()
+                            .equals(reusable.get().minimalOutput())) {
+                        throw new WorkflowConfigurationException(
+                                "AI_REUSED_OUTPUT_MUTATION_INVALID");
+                    }
+                    AgentStepSnapshot reused = stepCheckpointPort.reuse(
+                            startCommand(
+                                    run,
+                                    claimed.claimToken(),
+                                    stepDefinition,
+                                    prompt,
+                                    input,
+                                    inputHash,
+                                    executionContext.contextSnapshot().modelPolicyVersion(),
+                                    1),
+                            reusable.get());
+                    domainApply(
+                            domainCompletion.genericDomainApply(),
+                            run,
+                            reused,
+                            inputHash,
+                            domainCompletion.minimalOutput());
+                    completion.set(domainCompletion);
+                });
+            } catch (RuntimeException exception) {
+                AiExecutionException failure = completionFailure(exception);
+                AgentRunSnapshot afterRollback = current(run.userId(), run.id());
+                if (completeCancellationIfRequested(
+                        afterRollback, claimed.claimToken())) {
+                    return StepResult.terminal();
+                }
+                AgentStepSnapshot failed = startOrResumePending(
+                        afterRollback,
+                        claimed.claimToken(),
+                        stepDefinition,
+                        prompt,
+                        input,
+                        inputHash,
+                        executionContext.contextSnapshot().modelPolicyVersion(),
+                        1);
+                checkpointFailure(
+                        afterRollback,
+                        claimed.claimToken(),
+                        failed,
+                        failure);
+                throw failure;
+            }
+            DomainStepCompletion domainCompletion = completion.get();
+            return new StepResult(
+                    domainCompletion.minimalOutput(),
+                    executor.ephemeralOutputFromMinimal(
+                            domainCompletion.minimalOutput()),
+                    domainCompletion.partialResult(),
+                    null,
+                    false);
+        }
+
+        if (input.waitsForUser()) {
+            AgentStepSnapshot waitingStep = startOrResumePending(
+                    run,
+                    claimed.claimToken(),
+                    stepDefinition,
+                    prompt,
+                    input,
+                    inputHash,
+                    executionContext.contextSnapshot().modelPolicyVersion(),
+                    1);
+            stepCheckpointPort.checkpoint(new StepCheckpointCommand(
+                    run.userId(),
+                    run.id(),
+                    waitingStep.id(),
+                    claimed.claimToken(),
+                    AgentStepStatus.WAITING_USER,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    clock.instant()));
+            return StepResult.waiting(null, null, input.requiredUserAction());
+        }
+
+        return executeWithAttempts(
+                claimed,
+                definition,
+                stepDefinition,
+                executor,
+                prompt,
+                input,
+                inputHash,
+                executionContext);
     }
 
     private StepResult executeWithAttempts(
@@ -404,44 +551,47 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                             requiredAction.get());
                 }
                 Object ephemeralOutput = executorEphemeralOutput(executor, validated);
-                PartialResult stepPartialResult = executorPartialResult(
-                                executor, validated, minimalOutput, executionContext)
-                        .orElse(null);
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
                 AgentRunSnapshot completionRun = run;
+                AtomicReference<DomainStepCompletion> completion = new AtomicReference<>();
                 try {
                     stepCompletionTransaction.execute(() -> {
+                        DomainStepCompletion domainCompletion = executorCompleteFresh(
+                                executor,
+                                validated,
+                                minimalOutput,
+                                executionContext);
+                        domainApply(
+                                domainCompletion.genericDomainApply(),
+                                completionRun,
+                                step,
+                                inputHash,
+                                domainCompletion.minimalOutput());
                         stepCheckpointPort.checkpoint(new StepCheckpointCommand(
                                 completionRun.userId(),
                                 completionRun.id(),
                                 step.id(),
                                 claimed.claimToken(),
                                 AgentStepStatus.SUCCEEDED,
-                                sha256(minimalOutput.toString()),
-                                minimalOutput,
+                                sha256(domainCompletion.minimalOutput().toString()),
+                                domainCompletion.minimalOutput(),
                                 route.tier(),
                                 null,
                                 null,
                                 clock.instant()));
-                        applyFresh(
-                                executor,
-                                validated,
-                                minimalOutput,
-                                executionContext,
-                                completionRun,
-                                step,
-                                inputHash);
+                        completion.set(domainCompletion);
                     });
                 } catch (RuntimeException exception) {
                     throw completionFailure(exception);
                 }
                 activeStep = false;
+                DomainStepCompletion domainCompletion = completion.get();
                 return new StepResult(
-                        minimalOutput,
+                        domainCompletion.minimalOutput(),
                         ephemeralOutput,
-                        stepPartialResult,
+                        domainCompletion.partialResult(),
                         null,
                         false);
             } catch (AiExecutionException exception) {
@@ -566,8 +716,113 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     private void updateProgress(
             UUID userId, UUID runId, UUID claimToken, String stepKey, int progress) {
         AgentRunSnapshot current = current(userId, runId);
+        int bounded = Math.min(progress, 99);
+        if (bounded <= current.progressPercent()) {
+            return;
+        }
         runStatePort.updateProgress(userId, runId, claimToken, current.stateVersion(),
-                stepKey, Math.min(progress, 99), clock.instant());
+                stepKey, bounded, clock.instant());
+    }
+
+    private void validateFanOut(
+            StepDefinition definition, List<StepInput> inputs) {
+        if (inputs == null
+                || inputs.size() > definition.maxFanOut()
+                || (definition.maxFanOut() == 1 && inputs.size() != 1)
+                || (definition.maxFanOut() > 1
+                        && inputs.stream().anyMatch(input -> input.scopeKey() == null))) {
+            throw new WorkflowConfigurationException("AI_WORKFLOW_FANOUT_INVALID");
+        }
+        Set<String> scopes = new java.util.HashSet<>();
+        if (inputs.stream().anyMatch(input -> !scopes.add(input.scopeKey()))) {
+            throw new WorkflowConfigurationException("AI_WORKFLOW_FANOUT_SCOPE_DUPLICATE");
+        }
+    }
+
+    private void updateFanOutProgress(
+            AgentRunSnapshot run,
+            UUID claimToken,
+            StepDefinition definition,
+            BigDecimal weightBeforeStep,
+            int completedScopes,
+            int totalScopes) {
+        updateProgress(
+                run.userId(),
+                run.id(),
+                claimToken,
+                definition.stepKey(),
+                fanOutProgress(
+                        weightBeforeStep,
+                        definition.progressWeight(),
+                        completedScopes,
+                        totalScopes));
+    }
+
+    private int fanOutProgress(
+            BigDecimal weightBeforeStep,
+            BigDecimal stepWeight,
+            int completedScopes,
+            int totalScopes) {
+        if (totalScopes < 1 || completedScopes < 0 || completedScopes > totalScopes) {
+            throw new WorkflowConfigurationException("AI_WORKFLOW_FANOUT_PROGRESS_INVALID");
+        }
+        return weightBeforeStep
+                .add(stepWeight
+                        .multiply(BigDecimal.valueOf(completedScopes))
+                        .divide(
+                                BigDecimal.valueOf(totalScopes),
+                                6,
+                                java.math.RoundingMode.DOWN))
+                .intValue();
+    }
+
+    private Set<String> resumedFailedScopes(
+            WorkflowDefinition definition, AgentRunSnapshot run) {
+        Set<String> fanOutSteps = definition.steps().stream()
+                .filter(step -> step.maxFanOut() > 1)
+                .map(StepDefinition::stepKey)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<String, AgentStepSnapshot> latestByStepAndScope = new HashMap<>();
+        run.steps().stream()
+                .filter(step -> step.scopeKey() != null
+                        && fanOutSteps.contains(step.stepKey()))
+                .forEach(step -> latestByStepAndScope.merge(
+                        step.stepKey() + "\u001f" + step.scopeKey(),
+                        step,
+                        (left, right) -> left.attempt() >= right.attempt()
+                                ? left
+                                : right));
+        LinkedHashSet<String> failed = new LinkedHashSet<>();
+        latestByStepAndScope.values().stream()
+                .filter(step -> step.status() == AgentStepStatus.FAILED)
+                .sorted(java.util.Comparator.comparing(AgentStepSnapshot::scopeKey))
+                .forEach(step -> failed.add(step.scopeKey()));
+        return failed;
+    }
+
+    private void completePartialFailure(
+            AgentRunSnapshot run,
+            UUID claimToken,
+            PartialAccumulator partial) {
+        budgetGuard.releaseUnused(run, clock.instant());
+        AgentRunSnapshot released = current(run.userId(), run.id());
+        runStatePort.transition(new AgentRunTransitionCommand(
+                released.userId(),
+                released.id(),
+                claimToken,
+                released.stateVersion(),
+                AgentRunStatus.FAILED,
+                released.currentStep(),
+                100,
+                released.highestModelTierUsed(),
+                released.actualCostUsd(),
+                partial.retryable(),
+                null,
+                new SafeError(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다."),
+                partial.valueOrNull(),
+                clock.instant()));
     }
 
     private boolean completeCancellationIfRequested(AgentRunSnapshot run, UUID claimToken) {
@@ -619,29 +874,6 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         } catch (RuntimeException ignored) {
             // Reconciliation may have completed the same interruption.
         }
-    }
-
-    private void applyFresh(
-            WorkflowStepExecutor<?> executor,
-            Object validated,
-            JsonNode minimalOutput,
-            StepExecutionContext context,
-            AgentRunSnapshot run,
-            AgentStepSnapshot step,
-            String inputHash) {
-        domainApply(executorDomainApply(executor, validated, minimalOutput, context),
-                run, step, inputHash, minimalOutput);
-    }
-
-    private void applyReused(
-            WorkflowStepExecutor<?> executor,
-            JsonNode minimalOutput,
-            StepExecutionContext context,
-            AgentRunSnapshot run,
-            AgentStepSnapshot step,
-            String inputHash) {
-        domainApply(executor.domainApplyFromMinimal(minimalOutput, context),
-                run, step, inputHash, minimalOutput);
     }
 
     private void domainApply(
@@ -704,12 +936,20 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Optional<DomainApplyPlan> executorDomainApply(
+    private DomainStepCompletion executorCompleteFresh(
             WorkflowStepExecutor executor,
             Object value,
             JsonNode minimalOutput,
             StepExecutionContext context) {
-        return executor.domainApply(value, minimalOutput, context);
+        return executor.completeFresh(value, minimalOutput, context);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private DomainStepCompletion executorCompleteReused(
+            WorkflowStepExecutor executor,
+            JsonNode minimalOutput,
+            StepExecutionContext context) {
+        return executor.completeReused(minimalOutput, context);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -727,12 +967,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Optional<PartialResult> executorPartialResult(
+    private Optional<PartialResult> executorPartialResultFromMinimal(
             WorkflowStepExecutor executor,
-            Object value,
             JsonNode minimalOutput,
             StepExecutionContext context) {
-        return executor.partialResult(value, minimalOutput, context);
+        return executor.partialResultFromMinimal(minimalOutput, context);
     }
 
     private void applyFailureHandlers(AgentRunSnapshot run, AiExecutionException failure) {
@@ -809,6 +1048,60 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 FailureKind.DOMAIN_VALIDATION,
                 "AI_DOMAIN_COMMAND_INVALID",
                 "AI 결과를 현재 리소스에 적용할 수 없습니다.");
+    }
+
+    private static final class PartialAccumulator {
+        private final LinkedHashSet<String> succeeded = new LinkedHashSet<>();
+        private final LinkedHashSet<String> failed = new LinkedHashSet<>();
+        private final LinkedHashMap<String, ResourceReference> resultRefs =
+                new LinkedHashMap<>();
+        private boolean retryable = true;
+
+        private void merge(PartialResult value) {
+            if (value == null) return;
+            for (String scopeKey : value.succeededScopeKeys()) {
+                failed.remove(scopeKey);
+                succeeded.add(scopeKey);
+            }
+            for (String scopeKey : value.failedScopeKeys()) {
+                succeeded.remove(scopeKey);
+                failed.add(scopeKey);
+            }
+            for (ResourceReference reference : value.resultRefs()) {
+                resultRefs.put(
+                        reference.resourceType() + ":" + reference.resourceId(),
+                        reference);
+            }
+        }
+
+        private void fail(String scopeKey, AiExecutionException failure) {
+            succeeded.remove(scopeKey);
+            failed.add(scopeKey);
+            retryable &= failure.retryable();
+        }
+
+        private void resumeFailure(String scopeKey) {
+            succeeded.remove(scopeKey);
+            failed.add(scopeKey);
+        }
+
+        private boolean hasFailures() {
+            return !failed.isEmpty();
+        }
+
+        private boolean retryable() {
+            return retryable;
+        }
+
+        private PartialResult valueOrNull() {
+            if (succeeded.isEmpty() && failed.isEmpty() && resultRefs.isEmpty()) {
+                return null;
+            }
+            return new PartialResult(
+                    List.copyOf(succeeded),
+                    List.copyOf(failed),
+                    List.copyOf(resultRefs.values()));
+        }
     }
 
     private record StepResult(
