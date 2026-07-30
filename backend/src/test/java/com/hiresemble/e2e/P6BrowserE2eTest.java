@@ -143,7 +143,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject("""
                         SELECT count(*) FROM agent_runs
                         WHERE workflow_type='JOB_ANALYSIS' AND status='FAILED'
-                          AND safe_error_code='INSUFFICIENT_JOB_DATA'
+                          AND error_code='INSUFFICIENT_JOB_DATA'
                         """, Long.class))
                 .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
