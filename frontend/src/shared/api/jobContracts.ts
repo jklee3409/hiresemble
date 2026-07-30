@@ -29,6 +29,7 @@ export const FIT_CRITERION_CATEGORIES = [
 ] as const
 export const MATCH_LEVELS = ['MATCHED', 'PARTIAL', 'MISSING', 'UNKNOWN'] as const
 export const JOB_ANALYSIS_QUALITY_MODES = ['ECONOMY', 'BALANCED'] as const
+export const COVER_LETTER_STATUSES = ['DRAFT', 'FINALIZED', 'ARCHIVED'] as const
 export const EVIDENCE_SOURCE_TYPES = [
   'EDUCATION',
   'CERTIFICATION',
@@ -177,7 +178,7 @@ const jobSummaryFields = {
   latestFitScore: scoreSchema.nullable(),
   analysisOutdated: z.boolean(),
   outdatedReasons: outdatedReasonsSchema,
-  coverLetterStatus: z.null(),
+  coverLetterStatus: z.enum(COVER_LETTER_STATUSES).nullable(),
   interviewPreparationCount: z.literal(0),
   version: versionSchema,
   createdAt: instantSchema,

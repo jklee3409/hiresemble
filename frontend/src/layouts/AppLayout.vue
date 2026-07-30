@@ -12,6 +12,12 @@ const navItems = [
   { to: '/profile/basic', label: '내 지원 정보', icon: 'profile', match: '/profile' },
   { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
+  {
+    to: '/cover-letters',
+    label: '자기소개서',
+    icon: 'cover-letter',
+    match: '/cover-letters',
+  },
   { to: '/agent-runs', label: 'AI 작업 내역', icon: 'runs', match: '/agent-runs' },
 ] as const
 
@@ -31,6 +37,7 @@ const pageContext = computed(() => {
   if (route.path.startsWith('/profile') || route.path === '/onboarding') return '나의 경험'
   if (route.path.startsWith('/documents')) return '이력서와 자료'
   if (route.path.startsWith('/jobs')) return '지원할 공고'
+  if (route.path.startsWith('/cover-letters')) return '지원 문서'
   if (route.path.startsWith('/agent-runs')) return '준비 진행 상황'
   return '지원 현황과 다음 할 일'
 })

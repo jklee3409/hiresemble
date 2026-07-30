@@ -304,6 +304,46 @@ describe('AgentRunStreamController', () => {
     expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId, 'analyses'])
     expect(invalidations).toContainEqual(['user', 'user-1', 'job', jobId, 'analysis', 'latest'])
   })
+
+  it('invalidates cover-letter list and detail after waiting or terminal generation events', () => {
+    const coverLetterId = '00000000-0000-4000-8000-000000000013'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({
+      workflowType: 'COVER_LETTER_GENERATION',
+      resourceType: 'COVER_LETTER',
+      resourceId: coverLetterId,
+    })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('waiting_user', waitingEvent(2))
+
+    expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetters'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetter', coverLetterId])
+
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(3, 'SUCCEEDED'),
+      resourceType: 'COVER_LETTER',
+      resourceId: coverLetterId,
+    })
+
+    expect(invalidations).toContainEqual([
+      'user',
+      'user-1',
+      'resource',
+      'COVER_LETTER',
+      coverLetterId,
+    ])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetters'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetter', coverLetterId])
+  })
 })
 
 describe('mergeAgentRunEvent', () => {

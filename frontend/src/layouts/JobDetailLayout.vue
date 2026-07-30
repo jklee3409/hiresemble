@@ -5,7 +5,11 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 
 const route = useRoute()
-const activeTab = computed(() => (route.name === 'job-analysis' ? 'analysis' : 'overview'))
+const activeTab = computed(() => {
+  if (route.name === 'job-analysis') return 'analysis'
+  if (route.name === 'job-cover-letter') return 'cover-letter'
+  return 'overview'
+})
 </script>
 
 <template>
@@ -30,6 +34,14 @@ const activeTab = computed(() => (route.name === 'job-analysis' ? 'analysis' : '
         :aria-current="activeTab === 'analysis' ? 'page' : undefined"
       >
         공고 분석
+      </RouterLink>
+      <RouterLink
+        class="job-detail-tab"
+        :class="{ 'job-detail-tab--active': activeTab === 'cover-letter' }"
+        :to="{ name: 'job-cover-letter', params: { jobId: route.params.jobId } }"
+        :aria-current="activeTab === 'cover-letter' ? 'page' : undefined"
+      >
+        자기소개서
       </RouterLink>
     </nav>
     <RouterView />

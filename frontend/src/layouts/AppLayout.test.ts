@@ -23,7 +23,7 @@ describe('AppLayout', () => {
     document.body.style.overflow = ''
   })
 
-  it('marks the current primary navigation item without exposing future menus', async () => {
+  it('marks the current primary navigation item and exposes P7 without future menus', async () => {
     const { wrapper } = await mountLayout('/profile/basic')
 
     const activeDesktopLink = wrapper.get('.sidebar-nav__link[aria-current="page"]')
@@ -34,9 +34,9 @@ describe('AppLayout', () => {
       '내 지원 정보',
       '이력서·자료',
       '관심 공고',
+      '자기소개서',
       'AI 작업 내역',
     ])
-    expect(wrapper.text()).not.toContain('자기소개서')
     expect(wrapper.text()).not.toContain('면접 준비')
     expect(document.title).toBe('내 지원 정보 | Hiresemble')
     expect(document.activeElement).toBe(wrapper.get('#app-content').element)
@@ -101,6 +101,7 @@ async function mountLayout(path: string) {
           },
           { path: 'documents', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },
+          { path: 'cover-letters', component: DashboardPage },
           { path: 'agent-runs', component: DashboardPage },
           { path: 'onboarding', component: ProfilePage },
         ],

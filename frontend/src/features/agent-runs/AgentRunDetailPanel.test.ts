@@ -62,6 +62,24 @@ describe('AgentRunDetailPanel', () => {
     expect(wrapper.text()).not.toContain('부족한 점')
   })
 
+  it('links a cover-letter run back to the canonical editor without copying answer content', () => {
+    const wrapper = mount(AgentRunDetailPanel, {
+      props: {
+        run: agentRunDetail({
+          workflowType: 'COVER_LETTER_VERIFICATION',
+          resourceType: 'COVER_LETTER',
+          resourceId: '60000000-0000-4000-8000-000000000001',
+        }),
+        connectionState: 'connected',
+      },
+      global,
+    })
+
+    expect(wrapper.text()).toContain('자기소개서 보기')
+    expect(wrapper.text()).not.toContain('답변 본문')
+    expect(wrapper.text()).not.toContain('검증 제안')
+  })
+
   it('shows a safe WAITING_USER action, disables generic retry, and trusts server cancellable', async () => {
     const wrapper = mount(AgentRunDetailPanel, {
       props: {

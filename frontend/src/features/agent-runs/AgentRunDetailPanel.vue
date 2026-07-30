@@ -52,6 +52,14 @@ const jobAnalysisRoute = computed(() =>
     ? { name: 'job-analysis', params: { jobId: props.run.resourceId } }
     : null,
 )
+const coverLetterRoute = computed(() =>
+  props.run.resourceType === 'COVER_LETTER' && props.run.resourceId !== null
+    ? {
+        name: 'cover-letter-edit',
+        params: { coverLetterId: props.run.resourceId },
+      }
+    : null,
+)
 const connectionMessage = computed(() => {
   if (props.connectionState === 'reconnecting') {
     return '진행 상황을 다시 확인하는 중이에요. 마지막으로 확인한 상태는 그대로 유지돼요.'
@@ -119,6 +127,13 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
             :to="jobAnalysisRoute"
           >
             공고 분석 보기
+          </RouterLink>
+          <RouterLink
+            v-else-if="coverLetterRoute"
+            class="button button--secondary"
+            :to="coverLetterRoute"
+          >
+            자기소개서 보기
           </RouterLink>
           <button
             v-if="canRetry"

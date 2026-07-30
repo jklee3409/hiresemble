@@ -19,6 +19,12 @@ vi.mock('@/features/agent-runs/queries', () => ({
           resourceType: 'JOB',
           resourceId: '50000000-0000-4000-8000-000000000001',
         }),
+        agentRunSummary('SUCCEEDED', {
+          id: '10000000-0000-4000-8000-000000000002',
+          workflowType: 'COVER_LETTER_GENERATION',
+          resourceType: 'COVER_LETTER',
+          resourceId: '60000000-0000-4000-8000-000000000001',
+        }),
       ],
       page: 0,
       size: 20,
@@ -43,6 +49,11 @@ describe('AgentRunListPage URL state', () => {
           name: 'job-analysis',
           component: { template: '<div />' },
         },
+        {
+          path: '/cover-letters/:coverLetterId/edit',
+          name: 'cover-letter-edit',
+          component: { template: '<div />' },
+        },
       ],
     })
     await router.push(
@@ -57,6 +68,9 @@ describe('AgentRunListPage URL state', () => {
     expect(
       wrapper.get('a[href="/jobs/50000000-0000-4000-8000-000000000001/analysis"]').text(),
     ).toBe('공고 분석')
+    expect(
+      wrapper.get('a[href="/cover-letters/60000000-0000-4000-8000-000000000001/edit"]').text(),
+    ).toBe('자기소개서')
     expect(wrapper.text()).toContain('USD 0.010000')
 
     const sort = wrapper.findAll('select')[1]

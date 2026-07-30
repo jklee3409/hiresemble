@@ -169,7 +169,25 @@ export const routes: RouteRecordRaw[] = [
             component: () => import('@/pages/JobAnalysisPage.vue'),
             meta: { title: '공고 분석', profileRecommended: true },
           },
+          {
+            path: 'cover-letter',
+            name: 'job-cover-letter',
+            component: () => import('@/pages/JobCoverLetterPage.vue'),
+            meta: { title: '자기소개서', profileRecommended: true },
+          },
         ],
+      },
+      {
+        path: 'cover-letters',
+        name: 'cover-letters',
+        component: () => import('@/pages/CoverLetterListPage.vue'),
+        meta: { title: '자기소개서', profileRecommended: true },
+      },
+      {
+        path: 'cover-letters/:coverLetterId/edit',
+        name: 'cover-letter-edit',
+        component: () => import('@/pages/CoverLetterEditPage.vue'),
+        meta: { title: '자기소개서 편집', profileRecommended: true },
       },
       {
         path: 'agent-runs',

@@ -13,6 +13,7 @@ import {
   type AgentStepDto,
 } from '@/shared/api/agentRunContracts'
 import { getAgentRun } from '@/shared/api/agentRunApi'
+import { coverLetterQueryKeys } from '@/features/cover-letters/queries'
 import { documentQueryKeys } from '@/features/documents/queries'
 import { jobQueryKeys } from '@/features/jobs/queries'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
@@ -222,7 +223,9 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
     )
     if (
       run.status === 'WAITING_USER' &&
-      (run.resourceType === 'DOCUMENT' || run.resourceType === 'JOB') &&
+      (run.resourceType === 'DOCUMENT' ||
+        run.resourceType === 'JOB' ||
+        run.resourceType === 'COVER_LETTER') &&
       run.resourceId !== null
     ) {
       if (run.resourceType === 'DOCUMENT') {
@@ -232,7 +235,7 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         void this.options.cache.invalidateQueries({
           queryKey: documentQueryKeys.detail(this.options.userId, run.resourceId),
         })
-      } else {
+      } else if (run.resourceType === 'JOB') {
         void this.options.cache.invalidateQueries({
           queryKey: jobQueryKeys.root(this.options.userId),
         })
@@ -250,6 +253,13 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
             queryKey: jobQueryKeys.latestAnalysis(this.options.userId, run.resourceId),
           })
         }
+      } else {
+        void this.options.cache.invalidateQueries({
+          queryKey: coverLetterQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: coverLetterQueryKeys.detail(this.options.userId, run.resourceId),
+        })
       }
     }
   }
@@ -303,6 +313,13 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
             queryKey: jobQueryKeys.latestAnalysis(this.options.userId, run.resourceId),
           })
         }
+      } else if (run.resourceType === 'COVER_LETTER') {
+        void this.options.cache.invalidateQueries({
+          queryKey: coverLetterQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: coverLetterQueryKeys.detail(this.options.userId, run.resourceId),
+        })
       }
     }
   }

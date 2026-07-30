@@ -226,6 +226,13 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
             >
               공고 분석
             </RouterLink>
+            <RouterLink
+              v-else-if="run.resourceType === 'COVER_LETTER' && run.resourceId"
+              class="button button--secondary button--compact"
+              :to="{ name: 'cover-letter-edit', params: { coverLetterId: run.resourceId } }"
+            >
+              자기소개서
+            </RouterLink>
           </div>
         </div>
         <div class="run-row__progress" aria-label="진행률">

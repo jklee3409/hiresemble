@@ -11,6 +11,7 @@ describe('safeReturnTo', () => {
     ['/documents?parseStatus=PARSED', '/documents?parseStatus=PARSED'],
     ['/jobs?status=CLOSED', '/jobs?status=CLOSED'],
     ['/jobs/new', '/jobs/new'],
+    ['/cover-letters?status=DRAFT', '/cover-letters?status=DRAFT'],
   ])('accepts registered auth-required paths: %s', (candidate, expected) => {
     expect(safeReturnTo(candidate, 'https://hiresemble.example')).toBe(expected)
   })
@@ -33,7 +34,7 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo('/documents/not-a-uuid', 'https://hiresemble.example')).toBeNull()
   })
 
-  it('accepts only the implemented Job base, overview and analysis UUID routes', () => {
+  it('accepts only the implemented Job base, overview, analysis and cover-letter UUID routes', () => {
     const id = '10000000-0000-4000-8000-000000000001'
     expect(safeReturnTo(`/jobs/${id}`, 'https://hiresemble.example')).toBe(`/jobs/${id}`)
     expect(safeReturnTo(`/jobs/${id}/overview?run=${id}`, 'https://hiresemble.example')).toBe(
@@ -42,8 +43,18 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo(`/jobs/${id}/analysis`, 'https://hiresemble.example')).toBe(
       `/jobs/${id}/analysis`,
     )
-    expect(safeReturnTo(`/jobs/${id}/cover-letter`, 'https://hiresemble.example')).toBeNull()
+    expect(safeReturnTo(`/jobs/${id}/cover-letter`, 'https://hiresemble.example')).toBe(
+      `/jobs/${id}/cover-letter`,
+    )
     expect(safeReturnTo('/jobs/not-a-uuid/overview', 'https://hiresemble.example')).toBeNull()
+  })
+
+  it('accepts only UUID cover-letter editor routes', () => {
+    const id = '10000000-0000-4000-8000-000000000001'
+    expect(safeReturnTo(`/cover-letters/${id}/edit`, 'https://hiresemble.example')).toBe(
+      `/cover-letters/${id}/edit`,
+    )
+    expect(safeReturnTo('/cover-letters/not-a-uuid/edit', 'https://hiresemble.example')).toBeNull()
   })
 
   it.each([
