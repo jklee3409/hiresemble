@@ -9,8 +9,49 @@
 - `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
 - `job-analysis.spec.ts`가 fixture로 P6 결과·OUTDATED·접근성·desktop/mobile overflow를 검증한다.
 - `job-analysis.actual.spec.ts`가 P6 실제 Backend 분석·reuse·재분석·근거 부족·owner 격리를 검증하도록 구성되어 있다.
+- `cover-letter.actual.spec.ts`가 P7 실제 생성·문항·partial AI·version·검증·finalize·restore·archive·근거 수명주기·owner 격리를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-30] Session Summary (P7 actual 문항 409 재적용 회귀)
+
+- What was done:
+  - 사용자가 편집 중인 문항을 API에서 먼저 변경해 실제 `PUT 409`를 만든 뒤 최신 server 내용·길이·메모와 최초 browser snapshot을 비교하고 명시적 재적용 `PUT 200`을 검증했다.
+- Key decisions:
+  - 제목 충돌과 별도로 nested question CAS 충돌을 actual Backend·PostgreSQL 환경에서 검증한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `p7BrowserE2eTest --rerun-tasks --info --no-daemon --console=plain`: Chromium 1/1, JUnit wrapper·후속 DB assertion PASS, `BUILD SUCCESSFUL in 1m 11s`.
+  - 같은 final source의 P6 회귀는 Chromium 2/2와 DB assertion이 통과했다.
+- Next steps:
+  - 최종 read-only validator 재판정을 기다린다.
+
+## [2026-07-30] Session Summary (P7 actual Chromium 전체 시나리오)
+
+- What was done:
+  - 가입→근거→공고 분석→자기소개서 생성→문항→partial generation/retry→사용자 저장→검증→복원→최종화·보관과 source deletion·owner isolation을 자동화했다.
+- Key decisions:
+  - role/label 기반 locator와 mutation별 server/UI postcondition을 사용하고 실제 유료 provider는 호출하지 않는다.
+- Issues encountered:
+  - number input parser TypeError와 응답 대기 race를 발견해 source 회귀와 명시적 후속 상태 대기로 보정했다.
+- Validation:
+  - Backend wrapper에서 Chromium 1/1과 후속 DB assertions가 통과했고 1440/390px horizontal overflow가 0이었다.
+- Next steps:
+  - 독립 validator 판정을 반영한다.
+
+## [2026-07-30] Session Summary (P6 actual Chromium 최종 통과)
+
+- What was done:
+  - 수정된 공개 evidence PUT 404 assertion을 포함한 `job-analysis.actual.spec.ts` 전체를 current source에서 실행했다.
+- Key decisions:
+  - 실제 provider 없이 Backend test-scope Fake Chat·Embedding과 격리 PostgreSQL만 사용했다.
+- Issues encountered:
+  - 최종 Browser 시나리오 자체에는 문제가 없었고 최초 wrapper 실패는 후속 DB assertion 오타였다.
+- Validation:
+  - 정상 분석·reuse·OUTDATED·재분석·owner 격리와 근거 부족 실패 시나리오 Chromium 2/2 통과.
+- Next steps:
+  - P7 actual 시나리오는 P7 수직 기능 구현 뒤 별도 spec과 Backend wrapper로 추가한다.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis fixture·actual E2E)
 

@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-07-30] Session Summary (자기소개서 navigation icon)
+
+- What was done:
+  - AppIcon의 현재 제품 allowlist에 자기소개서 navigation용 document-edit glyph를 추가했다.
+- Key decisions:
+  - 장식 icon은 accessible name을 소유하지 않고 실제 link text가 의미를 제공한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - AppLayout component와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (공용 검증 Focus·Control 언어 통합)
 
 - What was done:

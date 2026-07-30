@@ -2,7 +2,20 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P5 jobs feature까지 구현되어 있다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P7 cover-letters feature까지 구현되어 있다.
+
+## [2026-07-30] Session Summary (P7 cover-letters feature)
+
+- What was done:
+  - filter·query, TipTap content, user/base-version session draft, 409 비교, generation/verification monitor와 관련 component test를 추가했다.
+- Key decisions:
+  - 서버 authoritative content/version을 보존하고 suggestion 적용은 editor만 변경하며 자동 저장하지 않는다.
+- Issues encountered:
+  - 실제 form number input 타입 결함을 component regression으로 고정했다.
+- Validation:
+  - cover-letter feature tests, Frontend 전체 204 tests와 actual P7 E2E가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-28] Session Summary (Feature Presentation B2C 용어 통일)
 

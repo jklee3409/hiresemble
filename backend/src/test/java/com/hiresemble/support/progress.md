@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P5 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+P1~P7 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter table 격리 지원)
+
+- What was done:
+  - acknowledgement·verification·evidence link·answer version·question·cover letter와 typed resource cleanup 순서를 추가했다.
+- Key decisions:
+  - immutable trigger가 운영 계약을 유지하도록 FK 역순 TRUNCATE test 격리를 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Backend 전체 377 tests가 반복 가능한 격리 상태로 통과했다.
+- Next steps:
+  - 새 migration table은 FK 역순 cleanup에 함께 반영한다.
 
 ## [2026-07-27] Session Summary (P5 Job table 격리 지원)
 

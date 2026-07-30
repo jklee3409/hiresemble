@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 핵심 사용자 여정과 responsive shell을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 UI shell, P2 profile, P3 Agent Run fixture, P4 Document·P5 Job 실제 Backend pipeline과 P6 분석 fixture/actual 시나리오가 구현되어 있다.
+이 디렉터리는 Hiresemble의 핵심 사용자 여정과 responsive shell을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 UI shell, P2 profile, P3 Agent Run fixture, P4~P7 실제 Backend pipeline과 P6 분석 fixture가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,17 +16,19 @@
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                 | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                       |
 | [`job-analysis.spec.ts`](job-analysis.spec.ts)               | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                 |
 | [`job-analysis.actual.spec.ts`](job-analysis.actual.spec.ts) | 실제 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리                                            |
+| [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts) | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리                         |
 | [`index.md`](index.md)                                       | E2E 영역의 책임과 의존 관계 설명                                                                |
 | [`progress.md`](progress.md)                                 | E2E 구현 상태와 검증 이력 추적                                                                  |
 | [`../playwright.config.ts`](../playwright.config.ts)         | test directory, Chromium project, Vite web server와 artifact 정책 설정                          |
 
-현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run, P4 Document, P5 Job과 P6 Job Analysis spec을 관리한다.
+현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run과 P4~P7 actual spec을 관리한다.
 
 ## 구성 요소 역할
 
 - P4 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - P5 actual spec은 Backend 주도 격리 PostgreSQL·Fake URL fetch·Fake Chat 환경에서만 활성화한다.
 - P6 actual spec은 Backend 주도 격리 PostgreSQL·Fake Chat/Embedding 환경에서만 활성화한다.
+- P7 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - unit/component test로 확인하기 어려운 route 이동, form 상호작용, 화면 상태 연결을 다룬다.
 - UI shell fixture는 Backend 없이 인증·profile·Document·Job·active Run 응답을 가로채 데이터가 있는 dashboard, profile desktop navigation·mobile selector, 추천 keyboard 선택, focus 복원, password 표시와 reduced-motion을 검증한다.
 - Playwright 설정은 테스트 전에 Vite 개발 서버를 시작하고 Chromium desktop 환경을 사용한다.

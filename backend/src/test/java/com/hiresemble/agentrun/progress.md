@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run domain·PostgreSQL·API·SSE 통합 검증이 구현됐다.
+P3 Agent Run domain·PostgreSQL·API·SSE와 P4~P7 typed resource 통합 검증이 구현됐다.
+
+## [2026-07-30] Session Summary (Cover Letter Agent Run 통합 검증)
+
+- What was done:
+  - generation cover letter link, verification answer version link, owner isolation, retry lineage·partial seed·cancel과 raw content 부재를 검증했다.
+- Key decisions:
+  - Run은 진행·비용·resource link만 소유하고 자기소개서 결과 본문을 저장하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `CoverLetterAgentRunIntegrationTest`와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-19] Session Summary (Agent Run P3 통합 테스트 구현)
 

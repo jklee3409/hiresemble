@@ -2,7 +2,20 @@
 
 ## Overview
 
-Agent Run JDBC 저장·조회와 Document·Job typed resource owner resolution을 관리한다.
+Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Answer Version typed resource owner resolution을 관리한다.
+
+## [2026-07-30] Session Summary (P7 resource owner·retry seed persistence)
+
+- What was done:
+  - Cover Letter/Answer Version owner resolution, secondary result refs와 predecessor partial result seed 조회를 repository에 추가했다.
+- Key decisions:
+  - owner 조건은 typed aggregate join으로 강제하고 결과 본문 대신 ID·상태·scope만 metadata에 저장한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 사용자 A/B resource 404, partial retry 중복 version 부재와 Agent Run 통합 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job typed resource owner resolution 연결)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `AI 작업 내역` navigation, Job Analysis tab과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`AI 작업 내역` navigation, Job Analysis/Cover Letter tab과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 navigation·Job tab)
+
+- What was done:
+  - AppLayout desktop/mobile navigation에 자기소개서를 추가하고 JobDetailLayout에 공고 정보·공고 분석·자기소개서 세 tab을 연결했다.
+- Key decisions:
+  - AI 작업 내역은 별도 보조 메뉴로 유지하고 P8 면접 준비 tab은 만들지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - layout/router component tests와 P7 actual 1440/390px overflow·keyboard navigation이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 Job tab·AI 작업 내역 navigation)
 

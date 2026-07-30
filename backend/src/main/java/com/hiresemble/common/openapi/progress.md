@@ -2,7 +2,33 @@
 
 ## Overview
 
-P1~P5 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+P1~P7 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+
+## [2026-07-30] Session Summary (P7 VerificationDto suggestion 제약 보강)
+
+- What was done:
+  - `VerificationDto.suggestions`에 `maxItems=20`, item `minLength=1`, `maxLength=1000`을 공개 schema로 추가했다.
+- Key decisions:
+  - 생성 OpenAPI가 annotation을 실제 반영하는지 JSON schema path에서 직접 검증한다.
+- Issues encountered:
+  - 1차 validator에서 field set은 맞았지만 array/item 범위가 문서에 빠진 점을 확인했다.
+- Validation:
+  - OpenAPI contract test와 전체 Backend check가 통과했으며 operations/paths는 70/51로 유지됐다.
+- Next steps:
+  - None.
+
+## [2026-07-30] Session Summary (P7 Cover Letter OpenAPI)
+
+- What was done:
+  - Cover Letters tag, Session/CSRF security와 endpoint별 400·401·403·404·409·429·503 응답을 등록했다.
+- Key decisions:
+  - 성공 DTO는 Controller operation을 원천으로 유지하고 customizer는 공통 오류·security만 보강한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 실제 Spring mapping과 생성 OpenAPI가 정확히 51 paths/70 operations로 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (Job OpenAPI 공통 오류·security 연결)
 

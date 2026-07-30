@@ -14,7 +14,7 @@ PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 �
 
 ## 구성 요소 역할
 
-DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P6 `JOB_ANALYSIS` Run은 공고를 primary resource로 유지하고 성공한 immutable 분석을 secondary typed resource로 연결한다.
+DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P7 generation은 자기소개서를, verification은 immutable answer version을 typed resource로 연결하고 결과 본문은 복제하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

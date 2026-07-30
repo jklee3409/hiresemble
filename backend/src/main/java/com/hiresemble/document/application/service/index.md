@@ -9,6 +9,7 @@ com.hiresemble.document.application.service package는 use case, transaction 또
 | 파일 | 역할 |
 | ---- | ---- |
 | [DocumentApplicationService.java](DocumentApplicationService.java) | Service 책임 구현 |
+| [DocumentCoverLetterEvidenceSearchAdapter.java](DocumentCoverLetterEvidenceSearchAdapter.java) | P7 masked chunk candidate 검색 adapter |
 | [DocumentChunker.java](DocumentChunker.java) | Service 책임 구현 |
 | [DocumentCreationService.java](DocumentCreationService.java) | Service 책임 구현 |
 | [DocumentMutationService.java](DocumentMutationService.java) | Service 책임 구현 |

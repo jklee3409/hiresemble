@@ -2,7 +2,35 @@
 
 ## Overview
 
-P1 인증부터 P6 Job 목록·등록·overview·analysis, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+P1 인증부터 P7 Cover Letter 목록·공고 context·canonical editor, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-07-30] Session Summary (P7 editor 409 비교·재적용 보강)
+
+- What was done:
+  - 문항 field, 전체 정렬, current answer content와 lifecycle 상태를 operation별 최신 server snapshot과 최초 사용자 snapshot으로 비교한다.
+  - 질문·정렬·답변 충돌의 재적용과 취소를 각각 검증하고 actual E2E에 실제 문항 409를 추가했다.
+- Key decisions:
+  - 재적용은 사용자의 명시적 버튼 동작이며 refetch나 Vue Query mutation이 자동으로 overwrite하지 않는다.
+- Issues encountered:
+  - answer 취소 시 Vue Proxy를 직접 복제하지 않고 canonical plain document로 동기화하도록 보정했다.
+- Validation:
+  - page 대상 409 tests와 전체 Frontend 53 files/211 tests, P7 actual Chromium 1/1이 통과했다.
+- Next steps:
+  - 최종 read-only validator 재판정을 기다린다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 세 화면)
+
+- What was done:
+  - 전체 목록, 공고별 상태/생성 진입과 문항 navigator·TipTap·근거·검증·version drawer를 갖춘 canonical editor를 구현했다.
+  - question CRUD/order, generation partial result/retry, 명시적 save/restore/verify, warning acknowledgement/finalize와 archive read-only를 연결했다.
+- Key decisions:
+  - 공고 tab에 editor를 복제하지 않고 archived 상세은 mutation을 비활성화하며 조건부 unarchive만 제공한다.
+- Issues encountered:
+  - 실제 question maxLength number input parser 오류와 mutation UI race를 보정했다.
+- Validation:
+  - page/component tests, P7 actual 전체 시나리오와 1440/390px overflow가 통과했다.
+- Next steps:
+  - 독립 validator 판정을 반영한다.
 
 ## [2026-07-29] Session Summary (P6 공고별 분석 결과 페이지)
 

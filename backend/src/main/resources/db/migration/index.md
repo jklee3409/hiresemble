@@ -15,6 +15,7 @@
 | [`V5__create_documents_evidence_and_storage_outbox.sql`](V5__create_documents_evidence_and_storage_outbox.sql)     | P4 Document·chunk·typed Run link·Object outbox       |
 | [`V6__create_job_postings_and_extend_agent_resources.sql`](V6__create_job_postings_and_extend_agent_resources.sql) | P5 Company·Job·status history와 typed Job Run link   |
 | [`V7__create_job_analyses_and_provenance.sql`](V7__create_job_analyses_and_provenance.sql)                         | P6 immutable analysis·criterion·evidence·Run lineage |
+| [`V8__create_cover_letters_versions_and_verifications.sql`](V8__create_cover_letters_versions_and_verifications.sql) | P7 Cover Letter·question·version·verification·Run link |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -27,7 +28,8 @@
 - V5는 Document·revision text·`vector(1536)` chunk·Object deletion outbox·typed Run link와 profile document owner FK를 추가한다.
 - V6는 Company·Job Posting·status history, owner 복합 FK, canonical active unique와 typed Job Agent Run link를 추가한다.
 - V7은 immutable Job Analysis version·score criterion·VERIFIED evidence provenance와 secondary typed analysis Run link를 추가한다.
-- 자기소개서·research·interview schema는 P7 이후 forward migration으로 남긴다.
+- V8은 자기소개서 active cardinality, 질문, immutable answer version·evidence provenance·verification·acknowledgement와 typed Run resource를 추가한다.
+- research·interview schema는 P8 이후 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계
 

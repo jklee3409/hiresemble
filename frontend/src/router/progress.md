@@ -3,8 +3,21 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job overview/analysis route 및 전용 404가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job detail child만 허용한다.
+- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter route 및 전용 404가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter detail child만 허용한다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 route 3개)
+
+- What was done:
+  - `/jobs/:jobId/cover-letter`, `/cover-letters`, `/cover-letters/:coverLetterId/edit` lazy route·meta와 returnTo allowlist를 추가했다.
+- Key decisions:
+  - 공고 child는 context page, 별도 edit route는 canonical editor이며 P8 route를 추가하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - router/returnTo tests와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 공고 분석 child route)
 

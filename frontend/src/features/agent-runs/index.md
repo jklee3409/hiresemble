@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`AI 작업 내역` 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 Document·Job·Job Analysis resource SSE 복구 상태 machine을 소유한다.
+`AI 작업 내역` 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 Document·Job·Job Analysis·Cover Letter resource SSE 복구 상태 machine을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,7 +16,7 @@
 
 ## 구성 요소 역할
 
-Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다. Document·Job stream은 terminal·WAITING_USER에서 관련 REST query만 invalidate하고 `JOB_ANALYSIS` 결과는 공고 분석 화면 링크로만 연결한다.
+Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다. terminal·WAITING_USER에서 관련 REST query만 invalidate하고 Cover Letter 결과는 자기소개서 또는 answer version link로만 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -26,7 +26,7 @@ Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run busin
 
 ## 변경 시 주의사항
 
-provider/model·quality tier·비용 예약값, prompt, hash, raw JSON, claim·lease와 분석 결과 전체를 표시하지 않는다. SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
+provider/model·quality tier·비용 예약값, prompt, hash, raw JSON, claim·lease와 분석·자기소개서 결과 전체를 표시하지 않는다. SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
 
 ## 관련 규칙 및 문서
 

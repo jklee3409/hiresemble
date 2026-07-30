@@ -4,9 +4,22 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V6 migration이 P1~~P5 schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V8 migration이 P1~~P7 schema를 관리한다.
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-07-30] Session Summary (P7 V8·Cover Letter runtime 설정)
+
+- What was done:
+  - V8 migration과 generation·verification 비용 예약의 안전한 환경 override를 추가했다.
+- Key decisions:
+  - 기본 provider는 `none`, 기본 테스트 외 유료 호출은 비활성으로 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Spring context·`ddl-auto=validate`, Backend 전체 check와 `docker compose config --quiet`가 통과했다.
+- Next steps:
+  - 운영 provider 가격·키는 별도 승인 전까지 설정하지 않는다.
 
 ## [2026-07-28] Session Summary (로컬 idempotency HMAC profile 추가)
 

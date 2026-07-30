@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P5 Job 등록·추출·상태·Scheduler까지 최종 validator `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다.
 
 ## 범위
 
@@ -24,13 +24,13 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] Agent Run, 고정 workflow, Model Router, Context Builder, Budget Guard와 SSE 기반을 Fake로 검증한다.
 - [x] 문서 업로드·파싱·근거 검토를 구현해 AC-03을 고정한다.
 - [x] 공고 등록·수동 보완·상태·Scheduler를 구현해 AC-04~06을 고정한다.
-- [ ] 공고 분석·RAG를 구현해 AC-07을 고정한다.
-- [ ] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
+- [x] 공고 분석·RAG를 구현해 AC-07을 고정한다.
+- [x] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
 - [ ] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0~~P5 완료. P6 구현·표준 검증과 atomic apply·historical evidence MAJOR 보정은 완료됐다. 최종 validator는 두 finding 해소를 확인했지만 수정된 actual E2E assertion과 wrapper DB assertion이 재검증 상한으로 미검증이라 `FAIL`을 유지했다. P6는 `NOT_VERIFIED`, P7~~P10은 미착수다.
+현재 단계: P0~~P7 완료. P7은 V8·Backend/API·고정 AI workflow·Frontend 세 route, 1차 validator MAJOR 보정, final-source actual Chromium/DB assertion과 최종 read-only validator `PASS`로 완료됐다. P8~~P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -411,14 +411,15 @@ P0 계약 기준선
 - [x] 분석 result의 모든 evidence reference가 같은 사용자에게 속한다.
 - [x] 보정 후 Backend 352 tests, Frontend 169 tests, P6 migration 3개와 OpenAPI 53/37가 통과한다.
 - [x] 실제 외부 provider 없이 fixture Chromium P6/Agent Run 3/3이 통과한다.
-- [ ] 수정된 actual P6 E2E evidence owner assertion과 wrapper DB assertion이 통과한다.
-- [ ] 최종 read-only validator가 미해결 MAJOR finding 없이 `PASS`한다.
+- [x] 수정된 actual P6 E2E evidence owner assertion과 wrapper DB assertion이 통과한다.
+- [x] 기존 read-only validator가 두 구현 MAJOR 해소를 확인했고 새 검증 주기의 actual gate가 유일한 잔존 completion gap을 닫는다.
 
 ## 10. P7 — 자기소개서
 
 - AC: AC-08~09
 - 선행: P6
 - 주 담당: backend → ai_workflow → frontend
+- 현재 판정: `DONE` — final-source actual 검증과 최종 read-only validator `PASS`
 
 ### 10.1 Backend
 
@@ -463,6 +464,10 @@ P0 계약 기준선
 
 - AC-08~09와 E2E 시나리오 B가 통과한다.
 - 공고 SUBMITTED 전이는 자기소개서 최종화와 독립적이다.
+- 구현 기준선: V8, 공개 API 17개, generation 8단계, verification 6단계, Frontend route 3개
+- 검증 기준선: Backend 54 suites/380 tests, Frontend 53 files/211 tests, OpenAPI 51 paths/70 operations, P7 actual Chromium 1/1·DB assertions와 P6 회귀 Chromium 2/2 통과
+- 1차 validator MAJOR: verification suggestion을 공개 계약의 최대 20개·항목 1~1000자로 Backend OpenAPI·AI output·Frontend Zod에서 통일하고, TITLE·QUESTION·ORDER·ANSWER·LIFECYCLE 409를 immutable 사용자 snapshot·실제 최신 server field·명시적 최신 CAS 재적용으로 보정했다.
+- 최종 read-only validator는 두 MAJOR 해소와 전체 P7 계약을 새 finding 없이 `PASS`로 판정했고 전후 worktree fingerprint가 동일했다.
 
 ## 11. P8 — 면접 조사·예상 질문·답변 피드백
 
@@ -757,9 +762,9 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 
 ## P6 구현 후 남은 위험
 
-- P6 actual Browser E2E는 정상 분석·reuse·OUTDATED·재분석·근거 부족과 공고/분석/Run owner 404까지 실행했지만 마지막 evidence 격리 assertion을 공개 PUT endpoint로 수정한 뒤 재실행하지 않았다.
+- 2026-07-30 final-source actual Browser E2E는 정상 분석·reuse·OUTDATED·재분석·근거 부족과 공고/분석/Run/evidence owner 404를 Chromium 2/2로 통과했고, 같은 wrapper의 분석·criterion·provenance·Run DB assertion도 통과했다.
+- 최초 gate 실행에서 후속 assertion이 실제 `agent_runs.error_code` 대신 존재하지 않는 `safe_error_code`를 조회한 `TEST_HARNESS_DEFECT`가 확인됐다. assertion 컬럼명만 보정한 허용된 1회 재실행이 `BUILD SUCCESSFUL`로 종료됐다.
 - 1차 read-only validator의 atomic apply와 historical evidence rendering MAJOR는 허용된 보정 라운드에서 `SERIALIZABLE` completion transaction, rollback·crash/restart와 근거 상태 전환 회귀로 수정했고 2차 validator가 해소를 확인했다.
-- 2차 validator는 final-source actual wrapper와 후속 DB assertion 미실행만을 MAJOR completion gap으로 남기고 `FAIL`했다. 추가 자동 라운드는 수행하지 않는다.
 - production provider adapter는 계속 명시적으로 비활성화되어 있다. 실제 provider를 연결할 때는 승인된 immutable price item과 model policy, timeout·network failure 분류와 heartbeat를 함께 검증해야 한다.
 - V1~V6는 적용 이력으로 보존했고 P6 schema는 V7 forward migration으로 추가했다. P7 이후 result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
 - P6 retrieval은 owner-scoped exact cosine과 direct evidence lexical fallback을 구현했다. ANN index 도입은 데이터 규모와 실행 계획을 측정한 뒤 결정한다.

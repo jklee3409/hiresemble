@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
+P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter resource 연결)
+
+- What was done:
+  - generation/verification workflow label, cover letter·answer version resource 이동과 terminal query invalidation을 추가했다.
+- Key decisions:
+  - 자기소개서 결과 본문은 AI 작업 내역에 복제하지 않고 진행·오류·비용·resource link만 표시한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Agent Run detail/stream unit test와 P7 actual 진행·resource link 시나리오가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (AI 작업 내역 용어·공고 분석 resource 연결)
 

@@ -2,26 +2,26 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble SPA의 P1 인증부터 P6 Job Analysis까지 route table, browser history, metadata, guard와 안전한 `returnTo` 검증을 관리한다.
+이 디렉터리는 Hiresemble SPA의 P1 인증부터 P7 Cover Letter까지 route table, browser history, metadata, guard와 안전한 `returnTo` 검증을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                   | 역할                                              |
-| -------------------------------------- | ------------------------------------------------- |
-| [`index.ts`](index.ts)                 | 인증·profile·Agent Run·Document·Job route와 guard |
-| [`returnTo.ts`](returnTo.ts)           | 등록된 보호 path만 허용하는 redirect 검증         |
-| [`router.test.ts`](router.test.ts)     | public-only·auth-required·401·shell·404 test      |
-| [`returnTo.test.ts`](returnTo.test.ts) | scheme·host·control·미등록 path 거부 test         |
-| [`index.md`](index.md)                 | Router 영역의 구조와 변경 원칙 설명               |
-| [`progress.md`](progress.md)           | Route와 guard 구현 상태 추적                      |
+| 경로                                   | 역할                                                           |
+| -------------------------------------- | -------------------------------------------------------------- |
+| [`index.ts`](index.ts)                 | 인증·profile·Agent Run·Document·Job·Cover Letter route와 guard |
+| [`returnTo.ts`](returnTo.ts)           | 등록된 보호 path만 허용하는 redirect 검증                      |
+| [`router.test.ts`](router.test.ts)     | public-only·auth-required·401·shell·404 test                   |
+| [`returnTo.test.ts`](returnTo.test.ts) | scheme·host·control·미등록 path 거부 test                      |
+| [`index.md`](index.md)                 | Router 영역의 구조와 변경 원칙 설명                            |
+| [`progress.md`](progress.md)           | Route와 guard 구현 상태 추적                                   |
 
 현재 하위 디렉터리는 없다.
 
 ## 구성 요소 역할
 
-- `index.ts`는 `/`, 인증, onboarding, dashboard, deep-link 가능한 7개 `/profile` section, lazy `/agent-runs`·`/documents`·`/jobs`와 `/jobs/:jobId/analysis` route 및 전용 404를 등록한다.
+- `index.ts`는 `/`, 인증, onboarding, dashboard, deep-link 가능한 7개 `/profile` section, lazy `/agent-runs`·`/documents`·`/jobs`·`/cover-letters`와 Job analysis/cover-letter child 및 canonical editor route를 등록한다.
 - public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
-- `returnTo`는 dashboard·onboarding·등록된 profile·Agent Run·Document·Job overview/analysis의 same-origin path만 허용한다.
+- `returnTo`는 dashboard·onboarding·등록된 profile·Agent Run·Document·Job·Cover Letter의 same-origin path만 허용한다.
 - route name, path, page import와 layout 경계를 한눈에 추적할 수 있는 진입점 역할을 한다.
 
 ## 다른 디렉터리와의 의존 관계
@@ -34,7 +34,7 @@
 
 - dashboard meta와 navigation 명칭은 `지원 홈`으로 통일한다. 별도 집계 endpoint가 구현되기 전에는 현재 owner-scoped API total과 최근 항목만 사용하고 가상 KPI를 만들지 않는다.
 - profile 미완료 상태를 보호 route hard gate로 사용하지 않는다.
-- P7 자기소개서와 P8 면접 child route를 선행 등록하지 않는다.
+- P8 면접 child route를 선행 등록하지 않는다.
 - guard에서 도메인 데이터 조회나 서버 권한 판단을 중복 구현하지 않는다.
 - 사용자가 북마크하거나 외부에서 접근할 수 있는 path 변경은 호환성과 redirect 필요성을 검토한다.
 - route component가 늘어나면 초기 bundle 영향을 고려해 lazy import를 사용한다.

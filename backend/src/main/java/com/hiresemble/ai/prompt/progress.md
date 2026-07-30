@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 versioned PromptRegistry에 P4 Document, P5 Job extraction과 P6 Job Analysis structured prompt metadata가 구현됐다.
+P3 versioned PromptRegistry에 P4 Document부터 P7 Cover Letter까지 structured prompt metadata가 구현됐다.
+
+## [2026-07-30] Session Summary (P7 생성·검증 structured prompt)
+
+- What was done:
+  - question plan/analysis, evidence allocation, answer/fact-check와 verification fact/requirement/aggregate record schema를 등록했다.
+- Key decisions:
+  - evidence ID는 typed field로 전달하고 모델이 source·createdBy·finalization을 지정하지 못하게 한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - schema version·invalid output·timeout/retry와 workflow contract 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 분석 prompt 계약)
 

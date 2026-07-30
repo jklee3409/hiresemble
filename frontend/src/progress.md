@@ -4,8 +4,21 @@
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
-- P1 auth·Session부터 P5 `features/jobs`, API·page·lazy route 구현·테스트가 있다.
-- 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job 화면과 공용 제품 UI 기반이 있으며 Dashboard 집계·P6 분석·AI 설정 기능은 아직 없다.
+- P1 auth·Session부터 P7 `features/cover-letters`, API·page·lazy route 구현·테스트가 있다.
+- 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter 화면과 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·P8 면접·AI 설정 기능은 아직 없다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter Vue source)
+
+- What was done:
+  - typed API, cover-letter feature, 세 lazy route/page, App/Job layout navigation과 actual E2E를 추가했다.
+- Key decisions:
+  - 서버 상태는 Vue Query, 브라우저 입력 중 본문만 sessionStorage로 관리하고 Pinia/localStorage에는 저장하지 않는다.
+- Issues encountered:
+  - number input runtime 타입을 string으로 가정한 parser를 string/number 공용으로 보정했다.
+- Validation:
+  - Frontend 53 files/204 tests, lint·format·typecheck·build와 P7 actual Chromium 1/1이 통과했다.
+- Next steps:
+  - 독립 validator 판정을 반영한다.
 
 ## [2026-07-28] Session Summary (Hiresemble Blue UI와 통합 프로필 Source 적용)
 

@@ -3,9 +3,66 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P6 Job Analysis typed client·Vue Query·SSE terminal invalidation까지 구현되어 있다.
-- `/agent-runs`, `/documents`, `/jobs`와 `/jobs/:jobId/analysis`는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 42 files/169 tests, P6·Agent Run fixture Chromium 3개와 P2~P5 actual E2E가 있다. P6 actual E2E source는 추가됐지만 수정된 evidence 격리 assertion은 재실행하지 않았다.
+- P1 auth부터 P7 Cover Letter typed client·Vue Query·TipTap editor·session draft·SSE terminal invalidation까지 구현되어 있다.
+- `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`와 공고 분석·자기소개서 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 53 files/211 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+
+## [2026-07-30] Session Summary (P7 Frontend 최종 validator PASS)
+
+- What was done:
+  - 최종 read-only validator가 route 3개, canonical editor, sessionStorage draft, archived read-only, historical evidence와 작업별 409 비교·재적용을 독립 재검증했다.
+- Key decisions:
+  - 자기소개서 결과는 `/agent-runs`에 복제하지 않고 resource link만 유지한다.
+- Issues encountered:
+  - 새 finding 없음.
+- Validation:
+  - Validator `PASS`; Frontend 53 files/211 tests와 lint·format·typecheck·build, P7 actual Chromium 1/1 PASS.
+- Next steps:
+  - P8 UI는 Backend 공개 계약이 별도 단계에서 고정되기 전 추가하지 않는다.
+
+## [2026-07-30] Session Summary (P7 409 비교·suggestion 계약 보정)
+
+- What was done:
+  - verification suggestion schema를 최대 20개·항목 1~1000자로 고정하고 20/21개·1000/1001자 경계 테스트를 추가했다.
+  - TITLE·QUESTION·ORDER·ANSWER·LIFECYCLE mutation마다 최초 사용자 입력을 immutable snapshot으로 보존하고 실제 최신 server field 비교, 최신 CAS 재적용과 취소 동작을 분리했다.
+  - actual E2E에 제목 외 실제 문항 충돌과 refetch 뒤 사용자 snapshot 재적용을 추가했다.
+- Key decisions:
+  - 충돌 refetch가 form/editor를 갱신해도 retry closure는 reactive 값을 읽지 않으며 사용자가 `최신 버전에 재적용`을 선택할 때만 저장된 snapshot을 사용한다.
+- Issues encountered:
+  - Vue Proxy를 직접 `structuredClone`할 수 없는 답변 취소 테스트를 plain TipTap snapshot 복제로 보정했다.
+- Validation:
+  - `corepack pnpm check`: 53 files/211 tests와 ESLint·Prettier·vue-tsc·Vite build 통과.
+  - P7 actual Chromium 1/1에서 문항 `409`의 server field 비교와 immutable 재적용 `200`, 1440/390px overflow가 통과했다.
+- Next steps:
+  - 최종 read-only validator 재판정을 기다린다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 목록·공고 tab·편집 화면)
+
+- What was done:
+  - `/cover-letters`, `/jobs/:jobId/cover-letter`, `/cover-letters/:coverLetterId/edit` route와 navigation, 목록 filter·archive, 공고 상태 tab과 canonical editor를 구현했다.
+  - TipTap 답변, question CRUD/order, evidence 선택, generation partial result, version save/compare/restore, verification·finalize, archive read-only와 sessionStorage draft·409 재적용을 연결했다.
+- Key decisions:
+  - URL query가 목록 filter 원천이고, browser draft는 user/question/base version별 sessionStorage에만 두며 server save·delete·archive·logout·401에서 제거한다.
+- Issues encountered:
+  - 실제 number input의 Vue runtime 값 타입 불일치를 string/number parser와 form 제출 component test로 보정했다.
+- Validation:
+  - `corepack pnpm check`에서 53 files/204 tests, lint·format·typecheck·production build가 통과했다.
+  - P7 actual Chromium 1/1에서 전체 시나리오와 1440/390px overflow·사용자 격리가 통과했다.
+- Next steps:
+  - 독립 validator 판정 후 P7 상태를 확정한다.
+
+## [2026-07-30] Session Summary (P6 final-source Frontend actual E2E 종료)
+
+- What was done:
+  - Backend 주도 wrapper에서 현재 `job-analysis.actual.spec.ts`의 정상 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리를 실행했다.
+- Key decisions:
+  - 공개 PUT evidence endpoint를 통한 타 사용자 404 assertion을 유지하고 비계약 단건 GET을 다시 도입하지 않았다.
+- Issues encountered:
+  - Browser 시나리오는 첫 gate부터 exit 0이었고 실패는 wrapper DB 컬럼명에 한정됐다.
+- Validation:
+  - 최종 wrapper의 Playwright Chromium 2/2 통과, Vite process 정상 종료.
+- Next steps:
+  - P7 Frontend는 Backend DTO가 고정된 뒤 세 신규 route와 자기소개서 draft·version·verification UX를 구현한다.
 
 ## [2026-07-29] Session Summary (P6 공고 분석 화면·AI 작업 내역 연결)
 

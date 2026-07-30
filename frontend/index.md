@@ -2,31 +2,31 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증부터 P5 Job 목록·등록·overview·상태·추출 복구 흐름과 현재 API 기반 지원 대시보드가 구현되어 있다.
+이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증부터 P7 자기소개서 목록·공고 맥락·canonical editor·검증·version·보관 흐름과 현재 API 기반 지원 대시보드가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                           | 역할                                                                  |
-| ---------------------------------------------- | --------------------------------------------------------------------- |
-| [`src/`](src/)                                 | Vue 애플리케이션 진입점, 루트 컴포넌트, router와 전역 style           |
-| [`e2e/`](e2e/)                                 | Playwright UI shell·Agent Run fixture와 실제 profile·Document·Job E2E |
-| [`package.json`](package.json)                 | 의존성, Node/pnpm 요구 버전, 개발·검증 script                         |
-| [`pnpm-lock.yaml`](pnpm-lock.yaml)             | 재현 가능한 의존성 버전 잠금                                          |
-| [`vite.config.ts`](vite.config.ts)             | Vue/Tailwind plugin, alias, 개발 서버와 `/api` proxy 설정             |
-| [`vitest.config.ts`](vitest.config.ts)         | jsdom unit/component 설정과 Playwright E2E 수집 제외                  |
-| [`playwright.config.ts`](playwright.config.ts) | Chromium E2E project와 Vite web server 설정                           |
-| [`eslint.config.js`](eslint.config.js)         | TypeScript와 Vue lint 규칙                                            |
-| [`tsconfig.json`](tsconfig.json)               | 애플리케이션·도구 TypeScript 설정 연결                                |
-| [`.env.example`](.env.example)                 | API base URL과 개발 proxy target 예시                                 |
-| [`progress.md`](progress.md)                   | 프론트엔드 모듈의 현재 상태와 검증 이력                               |
+| 경로                                           | 역할                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`src/`](src/)                                 | Vue 애플리케이션 진입점, 루트 컴포넌트, router와 전역 style                        |
+| [`e2e/`](e2e/)                                 | Playwright UI shell·Agent Run fixture와 실제 profile·Document·Job·Cover Letter E2E |
+| [`package.json`](package.json)                 | 의존성, Node/pnpm 요구 버전, 개발·검증 script                                      |
+| [`pnpm-lock.yaml`](pnpm-lock.yaml)             | 재현 가능한 의존성 버전 잠금                                                       |
+| [`vite.config.ts`](vite.config.ts)             | Vue/Tailwind plugin, alias, 개발 서버와 `/api` proxy 설정                          |
+| [`vitest.config.ts`](vitest.config.ts)         | jsdom unit/component 설정과 Playwright E2E 수집 제외                               |
+| [`playwright.config.ts`](playwright.config.ts) | Chromium E2E project와 Vite web server 설정                                        |
+| [`eslint.config.js`](eslint.config.js)         | TypeScript와 Vue lint 규칙                                                         |
+| [`tsconfig.json`](tsconfig.json)               | 애플리케이션·도구 TypeScript 설정 연결                                             |
+| [`.env.example`](.env.example)                 | API base URL과 개발 proxy target 예시                                              |
+| [`progress.md`](progress.md)                   | 프론트엔드 모듈의 현재 상태와 검증 이력                                            |
 
 ## 구성 요소 역할
 
 - `src/main.ts`가 공유 Pinia·QueryClient, Router와 401 reset을 조립한다. 현재 PrimeVue component 사용처가 없어 전역 theme plugin은 초기화하지 않는다.
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
-- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증 상태와 typed profile·Agent Run·Document·Job transport를 관리한다.
+- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증 상태와 typed profile·Agent Run·Document·Job·Job Analysis·Cover Letter transport를 관리한다.
 - `src/styles`와 `src/shared/ui`가 Hiresemble Blue 기반 제품 design token, BrandMark, 공통 form/action/status/state·motion pattern을 제공한다.
-- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, 단일 편집 영역의 Career Profile Workspace, 진행 중인 분석 drawer, Document 검토와 Job 수명주기 흐름을 제공한다.
+- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace, AI 작업 drawer, Document 검토, Job 분석과 자기소개서 편집·검증·version 흐름을 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 
@@ -39,7 +39,7 @@
 
 ## 변경 시 주의사항
 
-- Dashboard는 현재 Backend에 별도 `/dashboard` endpoint가 없으므로 profile·Document·Job·Agent Run API의 owner-scoped `totalElements`와 최근 항목만 사용한다. 명세의 미구현 집계 field, AI 설정과 P6 이후 route를 가짜 데이터·placeholder로 선행 구현하지 않는다.
+- Dashboard는 현재 Backend에 별도 `/dashboard` endpoint가 없으므로 구현된 owner-scoped API의 `totalElements`와 최근 항목만 사용한다. 명세의 미구현 집계 field, AI 설정과 P8 이후 route를 가짜 데이터·placeholder로 선행 구현하지 않는다.
 - 서버 상태는 Vue Query, 꼭 필요한 클라이언트 전역 상태만 Pinia로 관리한다.
 - `pnpm-lock.yaml`을 직접 편집하지 않고 pnpm을 통해 갱신한다.
 - `frontend/` 아래 Markdown도 Prettier 검사 대상이 될 수 있으므로 문서 변경 후 `corepack pnpm check`를 확인한다.

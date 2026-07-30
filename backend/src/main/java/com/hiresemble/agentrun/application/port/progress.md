@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-30] Session Summary (AI preference query port 공개)
+
+- What was done:
+  - P7 generation·verification이 공개 quality mode와 HIGH_QUALITY 사용자 허용 여부를 조회하는 최소 port를 추가했다.
+- Key decisions:
+  - AI workflow는 preference store를 직접 참조하지 않고 typed query만 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - HIGH_QUALITY gate·budget failure와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 port package 분리)
 
 - What was done:

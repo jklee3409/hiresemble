@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 provenance-only ContextBuilder와 Document·Job extraction·Job Analysis owner/version/hash snapshot이 구현됐다.
+P3 provenance-only ContextBuilder와 Document·Job·Cover Letter owner/version/hash snapshot이 구현됐다.
+
+## [2026-07-30] Session Summary (Cover Letter generation·verification context)
+
+- What was done:
+  - 공고·latest analysis·질문/current version·선택/현재 VERIFIED evidence와 immutable answer provenance의 P7 context builder를 추가했다.
+- Key decisions:
+  - masked chunk와 답변 본문은 필요한 step 메모리에만 두고 durable context에는 hash·ID·상태만 저장한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - owner/version snapshot, SOURCE_DELETED 제외와 workflow 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (Job Analysis context builder)
 

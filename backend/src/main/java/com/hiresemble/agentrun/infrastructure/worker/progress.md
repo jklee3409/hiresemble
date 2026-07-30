@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.infrastructure.worker package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-30] Session Summary (P7 stale Run compensation)
+
+- What was done:
+  - stale reconciliation terminal 전환이 공통 interruption compensation을 사용하도록 연결했다.
+- Key decisions:
+  - verification PENDING과 budget reservation이 stale Run 뒤 남지 않게 기존 stable terminal 의미를 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - reconciler·verification compensation과 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 worker package 분리)
 
 - What was done:

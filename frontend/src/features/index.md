@@ -11,6 +11,7 @@
 - [`agent-runs/`](agent-runs/index.md): P3 목록·상세 projection, SSE 복구와 Progress Drawer
 - [`documents/`](documents/index.md): P4 문서 upload·query·상태·SSE invalidation과 delete cleanup
 - [`jobs/`](jobs/index.md): P5 공고 filter·query·상태·version conflict·Agent Run monitor
+- [`cover-letters/`](cover-letters/index.md): P7 자기소개서 filter·query·TipTap·draft·conflict·Run monitor
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -20,6 +21,7 @@
 - Agent Run feature는 DB snapshot을 반영한 Vue Query cache와 연결 복구 상태를 분리한다.
 - Documents feature는 user-scoped REST 상태를 원천으로 삼고 Agent Run stream을 query invalidation 신호로만 사용한다.
 - Jobs feature는 URL query를 filter 원천으로 삼고 업무 상태와 추출 상태를 별도 계약으로 유지한다.
+- Cover Letter feature는 server version과 session draft를 분리하고 generation·verification 결과를 관련 resource query invalidation으로만 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6 분석용 canonical profile·`VERIFIED` evidence snapshot query를 제공한다.
+P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` evidence snapshot query를 제공한다.
+
+## [2026-07-30] Session Summary (P7 evidence provenance 삭제 참조)
+
+- What was done:
+  - 문서 evidence 삭제가 Job Analysis뿐 아니라 Cover Letter answer provenance 참조도 확인하도록 다중 reference contributor를 연결했다.
+- Key decisions:
+  - 참조된 evidence ID는 삭제하지 않고 `SOURCE_DELETED` tombstone으로 전환해 과거 answer/verification link를 보존한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 문서 삭제→historical provenance 유지→새 generation 제외 실제 E2E와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 프로필·승인 근거 snapshot 경계)
 

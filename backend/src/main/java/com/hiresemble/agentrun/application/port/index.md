@@ -18,6 +18,7 @@ com.hiresemble.agentrun.application.port package는 application과 외부 구현
 | [AgentRunResumePort.java](AgentRunResumePort.java) | Port 책임 구현 |
 | [AgentRunRetryPort.java](AgentRunRetryPort.java) | Port 책임 구현 |
 | [AgentRunStatePort.java](AgentRunStatePort.java) | Port 책임 구현 |
+| [AiPreferenceQueryPort.java](AiPreferenceQueryPort.java) | 품질 모드·HIGH_QUALITY 허용 여부 조회 |
 | [AgentStepCheckpointPort.java](AgentStepCheckpointPort.java) | Port 책임 구현 |
 | [BudgetReservationPort.java](BudgetReservationPort.java) | Port 책임 구현 |
 | [DomainResultApplyPort.java](DomainResultApplyPort.java) | Port 책임 구현 |

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-production 기본 gateway를 외부 네트워크 없는 disabled adapter로 제공하고 실행 가능한 Document·Job extraction·Job Analysis contribution을 runtime에 조립한다.
+production 기본 gateway를 외부 네트워크 없는 disabled adapter로 제공하고 실행 가능한 Document·Job·Cover Letter contribution을 runtime에 조립한다.
 
 ## 주요 파일 및 하위 디렉터리
 

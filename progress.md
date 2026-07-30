@@ -8,9 +8,81 @@
 - P3 PostgreSQL Agent Run 수명주기, 고정 Fake workflow, 비용 예약·정산, SSE와 Frontend 복구 기반이 최종 validator `PASS`로 완료됐다.
 - P4 Document upload·parse·storage·Fake AI 근거 pipeline과 Frontend 목록·상세·검토가 최종 validator `PASS`로 완료됐다.
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
-- P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능과 두 구현 MAJOR 보정은 완료됐지만 final-source actual E2E 미검증으로 최종 validator `FAIL`이며 P6는 `NOT_VERIFIED`다.
-- 공개 Spring/OpenAPI는 P6 공고 분석 3개를 포함해 총 53 operations·37 paths다.
-- Dashboard 전용 집계·자기소개서·면접과 실제 provider는 아직 없다.
+- P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
+- P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
+- 공개 Spring/OpenAPI는 P7 자기소개서 17개를 포함해 총 70 operations·51 paths다.
+- Dashboard 전용 집계·면접과 실제 provider는 아직 없다.
+
+## [2026-07-30] Session Summary (P7 최종 validator PASS·완료)
+
+- What was done:
+  - 허용된 두 번째 read-only validator가 두 MAJOR 해소, P7 전체 계약·범위·DB·API·AI·Frontend와 actual 증거를 독립 재검증해 새 finding 없이 `PASS`를 반환했다.
+  - validator 전후 204개 변경 항목의 all-file fingerprint가 `2006b09883a04155a4e90aeb0996f5b2f76d9ae5`로 동일함을 확인하고 P7 상태를 `DONE`으로 확정했다.
+- Key decisions:
+  - P7 완료는 구현 완료가 아니라 Backend·Frontend 전체 검사, P7 actual·DB assertion, 최종 source P6 회귀와 독립 validator가 모두 통과한 상태를 뜻한다.
+  - P8은 다음 단계로만 기록하며 이번 작업에서는 route·API·migration·구현을 시작하지 않는다.
+- Issues encountered:
+  - `codex doctor`의 로컬 설치 경로·thread rollout scan 경고는 validator가 저장소 또는 P7 결함이 아닌 환경 경고로 확인했다.
+- Validation:
+  - Validator `PASS`, finding 0, files changed 0.
+  - Backend 54 suites/380 tests, Frontend 53 files/211 tests, OpenAPI 51 paths/70 operations, P7 Chromium 1/1·DB assertions와 P6 Chromium 2/2·DB assertions가 통과했다.
+- Next steps:
+  - 다음 구현 단계는 P8 면접 준비이며 별도 요청에서 계약을 다시 고정한 뒤 시작한다.
+
+## [2026-07-30] Session Summary (P7 validator MAJOR 보정·final-source 재검증)
+
+- What was done:
+  - 1차 read-only validator가 지적한 verification suggestion 계약 불일치와 일반화된 409 비교 UI를 공개 계약 기준으로 보정했다.
+  - Backend OpenAPI, AI structured output, Frontend Zod를 suggestion 최대 20개·항목 1~1000자로 통일하고 TITLE·QUESTION·ORDER·ANSWER·LIFECYCLE별 immutable 사용자 snapshot과 최신 server CAS 재적용을 구현했다.
+  - verification 집계가 두 유효 단계의 제안을 합칠 때도 공개 최대 20개를 넘지 않도록 제한하고 경계 회귀를 추가했다.
+- Key decisions:
+  - 409는 자동 재시도하지 않으며 실제 최신 server field와 최초 제출 snapshot을 비교한 뒤 사용자의 명시적 재적용에서만 최신 CAS를 결합한다.
+  - 첫 validator FAIL은 숨기지 않고 허용된 단일 보정 라운드로 처리했으며 최종 validator 전에는 P7을 `DONE`으로 올리지 않는다.
+- Issues encountered:
+  - 질문 refetch가 편집 form을 갱신해도 재적용 대상이 reactive 값으로 바뀌지 않도록 작업별 snapshot을 mutation 전에 고정했다.
+- Validation:
+  - Backend `check` 54 suites/380 tests, Frontend `check` 53 files/211 tests, OpenAPI 51 paths/70 operations가 통과했다.
+  - P7 actual Chromium 1/1은 실제 문항 `PUT 409 → 사용자 재적용 PUT 200`과 후속 DB assertion을 포함해 통과했고, 같은 source의 P6 회귀 Chromium 2/2와 DB assertion도 통과했다.
+  - `docker compose config --quiet`, `git diff --check`, P8·raw HTML·prompt/response log·localStorage 본문 정적 감사가 통과했다.
+- Next steps:
+  - 변경 불가 read-only validator를 한 번 재실행해 최종 P7 판정을 고정한다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 수직 기능 구현·actual 검증)
+
+- What was done:
+  - V8 owner-scoped schema, 자기소개서·문항·immutable answer version·provenance·verification·finalize/archive API와 application port를 구현했다.
+  - 고정 generation 8단계·verification 6단계, 문항별 partial success/retry·restart-safe apply와 `/cover-letters`·공고 tab·canonical editor·session draft·409 비교 UX를 연결했다.
+  - 실제 PostgreSQL·MinIO·Fake AI·Spring·Vue·Chromium 시나리오로 생성→문항→부분 생성→수정 저장→검증→복원→최종화→보관·근거 수명주기·사용자 격리를 검증했다.
+- Key decisions:
+  - server가 answer source·TipTap canonical 글자 수·verification freshness·finalization을 결정하며 AI는 Backend query/command port만 사용한다.
+  - 과거 provenance는 유지하고 현재 `REJECTED|SOURCE_DELETED` 근거는 새 생성·검증에서 제외한다. 공고 `SUBMITTED` 전이는 자기소개서 최종화와 분리한다.
+- Issues encountered:
+  - actual E2E에서 Vue number input을 문자열로만 처리한 form parser 오류를 발견해 string/number 공용 parsing과 component regression으로 보정했다.
+  - 초기 E2E 대기는 mutation 응답과 UI postcondition을 명시적으로 기다리도록 보강했다.
+  - 최종 개인정보 감사에서 verification provenance claim text의 checkpoint 경로를 발견해 해당 로컬 단계를 non-reusable로 만들고 hash·ID·count만 저장하도록 보정했다.
+- Validation:
+  - `backend\gradlew.bat check`: 54 suites/377 tests, 실패·오류·skip 0.
+  - `corepack pnpm check`: 53 files/204 tests, lint·format·typecheck·build 통과.
+  - P7 actual Chromium 1/1과 wrapper DB assertions, 최종 source P6 회귀 Chromium 2/2와 DB assertions, OpenAPI 51 paths/70 operations, `docker compose config --quiet`, `git diff --check`가 통과했다.
+- Next steps:
+  - 독립 read-only validator 판정 후 P7 완료 여부를 확정한다.
+
+## [2026-07-30] Session Summary (P6 final-source actual 검증 게이트 종료)
+
+- What was done:
+  - 현재 `main@0ad9bdec5a2abf806b9c812c705c00c48e5217db`에서 P6 actual wrapper를 재실행해 정상 분석·reuse·OUTDATED·재분석·근거 부족과 공고·분석·evidence·Run owner 격리 시나리오를 닫았다.
+  - 최초 실행에서 후속 DB assertion의 잘못된 `safe_error_code` 컬럼명을 실제 V4 계약인 `error_code`로 한정 보정했다.
+- Key decisions:
+  - 실패는 제품 동작이 아니라 `TEST_HARNESS_DEFECT`로 분류했고 assertion 1줄 외 P6 구현·공개 계약은 변경하지 않았다.
+  - 기존 validator가 atomic apply와 historical evidence MAJOR 해소를 이미 확인했고 유일한 잔존 사유였던 final-source actual 증거가 닫혀 P6를 `DONE`으로 판정했다.
+- Issues encountered:
+  - 첫 wrapper에서 Playwright 2개는 exit 0이었지만 존재하지 않는 DB 컬럼 조회로 JUnit wrapper가 실패했다.
+- Validation:
+  - `.\gradlew.bat p6BrowserE2eTest --rerun-tasks --info --no-daemon --console=plain`: Chromium 2/2, JUnit 1/1과 모든 후속 DB assertion 통과, `BUILD SUCCESSFUL in 1m 18s`.
+  - Spring·Vite·Chromium·Testcontainers 소유 프로세스가 종료됐고 `git diff --check`가 통과했다.
+  - 고정 SHA-256: V7 `7D7B0088…EB217C`, P6 wrapper `8E1B74D3…205240`, actual spec `68FF147E…F559547`, JobAnalysisWorkflow `6D7B8242…A81C10`.
+- Next steps:
+  - P7 계약을 고정한 뒤 자기소개서 Backend → AI workflow·Frontend → 독립 validator 순서로 구현한다.
 
 ## [2026-07-29] Session Summary (P6 공고 분석·RAG 수직 기능 구현)
 

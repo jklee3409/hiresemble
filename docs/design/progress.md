@@ -2,7 +2,59 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~P5는 최종 validator `PASS`로 완료됐고 P6–P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~P7이 final-source actual 검증과 독립 validator `PASS`로 완료됐고 P8~P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-07-30] Session Summary (P7 완료 상태 반영)
+
+- What was done:
+  - 두 번째 read-only validator의 finding 없는 `PASS`와 전후 fingerprint 불변을 구현 계획의 P7 완료 상태에 반영했다.
+- Key decisions:
+  - P7을 완료하고 P8을 다음 단계로 표시하되 P8 구현은 이번 범위에서 시작하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Validator `PASS`; Backend 380 tests, Frontend 211 tests, OpenAPI 70/51, P7 actual 1/1·P6 회귀 2/2와 DB assertions 통과.
+- Next steps:
+  - 별도 요청에서 P8 면접 준비 계약을 고정한다.
+
+## [2026-07-30] Session Summary (P7 validator 보정·재검증 상태 반영)
+
+- What was done:
+  - 구현 계획에 1차 validator의 suggestion 제약·409 UX 두 MAJOR, 단일 보정 라운드와 final-source 재검증 증거를 반영했다.
+- Key decisions:
+  - 보정 뒤 실제 검증이 모두 통과했어도 두 번째 read-only validator PASS 전에는 P7 완료 checkbox를 선택하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Backend 54 suites/380 tests, Frontend 53 files/211 tests, OpenAPI 70/51, P7 actual Chromium 1/1·P6 회귀 2/2와 DB assertions를 최신 로그와 대조했다.
+- Next steps:
+  - 최종 validator 재실행 결과로 P7 완료 또는 미검증 상태를 고정한다.
+
+## [2026-07-30] Session Summary (P7 구현·actual 검증 상태 반영)
+
+- What was done:
+  - 구현 계획에 P7 V8·17 API·고정 generation/verification workflow·세 route와 actual E2E 증거를 반영했다.
+- Key decisions:
+  - actual 검증이 통과했어도 독립 validator 전에는 P7 완료 checkbox와 P8 선행 완료 상태를 올리지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Backend 377 tests, Frontend 204 tests, OpenAPI 70/51, P7 actual Chromium 1/1·P6 회귀 2/2와 DB assertions를 실제 로그와 대조했다.
+- Next steps:
+  - validator PASS일 때만 P7을 완료로 기록하고 다음 단계가 P8임을 표시한다.
+
+## [2026-07-30] Session Summary (P6 actual gate 완료 상태 반영)
+
+- What was done:
+  - 구현 계획의 P6 체크리스트와 현재 단계를 final-source actual Chromium·DB assertion 결과에 맞췄다.
+- Key decisions:
+  - 기존 validator가 두 구현 MAJOR 해소를 확인했고 유일한 잔존 completion gap이던 actual wrapper가 통과해 P6를 완료로 전환했다.
+- Issues encountered:
+  - 첫 gate는 wrapper DB 컬럼명 오타로 실패해 `TEST_HARNESS_DEFECT` 1줄만 보정했다.
+- Validation:
+  - P6 Playwright 2/2, JUnit wrapper 1/1과 후속 DB assertions, process cleanup, `git diff --check`를 대조했다.
+- Next steps:
+  - P7은 P6 공개 분석·provenance 계약을 변경하지 않고 새 cover letter migration·API·workflow·화면으로 진행한다.
 
 ## [2026-07-27] Session Summary (P5 완료 상태와 P6 경계 반영)
 

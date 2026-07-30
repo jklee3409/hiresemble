@@ -20,7 +20,7 @@ com.hiresemble.agentrun.infrastructure.persistence package는 JDBC/JPA 기반 �
 ## 구성 요소 역할
 
 - JDBC/JPA 기반 저장·조회 구현과 mapping을 소유한다.
-- `JdbcAgentRunRepository`는 Document와 Job typed resource의 owner-scoped 목록·상세·SSE 조회를 해석한다.
+- `JdbcAgentRunRepository`는 Document·Job·Cover Letter·Answer Version typed resource의 owner-scoped 목록·상세·SSE 조회와 retry seed를 해석한다.
 
 ## 다른 디렉터리와의 의존 관계
 

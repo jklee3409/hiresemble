@@ -2,7 +2,33 @@
 
 ## Overview
 
-Backend P1~P6 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-30] Session Summary (P7 verification suggestion 경계 정합)
+
+- What was done:
+  - `VerificationDto.suggestions` Zod schema를 최대 20개·항목 1~1000자로 활성 API 계약과 일치시켰다.
+- Key decisions:
+  - 20개·1000자는 허용하고 21개·1001자는 server response parsing 단계에서 거부한다.
+- Issues encountered:
+  - 1차 validator에서 기존 client가 100개·2000자를 허용해 Backend 공개 계약보다 느슨한 점을 확인했다.
+- Validation:
+  - 20/21개·1000/1001자 contract tests와 전체 Frontend 53 files/211 tests가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-30] Session Summary (P7 Cover Letter typed contract·client)
+
+- What was done:
+  - canonical 상태·source·verification·issue, summary/detail/question/version DTO의 strict Zod schema와 공개 API 17개 client를 추가했다.
+- Key decisions:
+  - client는 source/createdBy를 save request에 보내지 않고 Idempotency-Key·cover/question/current version CAS를 명시한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - contract/client invalid response·header/body tests와 Frontend 전체 211 tests가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis typed contract·client)
 

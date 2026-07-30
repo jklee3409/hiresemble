@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-30] Session Summary (Document evidence reference contributor 확장)
+
+- What was done:
+  - `DocumentEvidenceService`가 여러 `EvidenceReferenceQueryPort` 구현을 조회해 downstream provenance를 보존하도록 확장했다.
+- Key decisions:
+  - 하나라도 참조하면 hard delete 대신 동일 ID `SOURCE_DELETED` 전환을 적용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job Analysis·Cover Letter 참조 회귀와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 service package 분리)
 
 - What was done:

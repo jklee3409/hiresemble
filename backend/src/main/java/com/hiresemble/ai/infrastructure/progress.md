@@ -2,7 +2,20 @@
 
 ## Overview
 
-local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job extraction·Job Analysis contribution이 runtime에 등록돼 있다.
+local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job·Cover Letter contribution이 runtime에 등록돼 있다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter runtime wiring)
+
+- What was done:
+  - generation/verification context·prompt·workflow·failure handler와 Cover Letter ports를 canonical runtime registry에 조립했다.
+- Key decisions:
+  - production gateway 기본값은 disabled로 유지하고 Fake AI는 test/E2E scope에서만 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Spring context, workflow registry와 Backend 전체 check가 통과했다.
+- Next steps:
+  - 실제 provider 활성화는 별도 승인 전까지 금지한다.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis runtime wiring)
 

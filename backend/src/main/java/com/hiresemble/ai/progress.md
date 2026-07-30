@@ -2,7 +2,22 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document, P5 Job extraction과 P6 Job Analysis workflow가 연결됐고 실제 provider adapter는 없다.
+P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document, P5 Job, P6 Job Analysis와 P7 Cover Letter generation·verification workflow가 연결됐고 실제 provider adapter는 없다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter generation·verification workflow)
+
+- What was done:
+  - 정확한 generation 8단계와 verification 6단계, typed structured output, bounded question fan-out과 Backend command-only apply를 추가했다.
+  - 문항별 partial success, retry seed reuse, restart idempotency와 verification failure/cancel compensation을 기존 orchestrator에 연결했다.
+- Key decisions:
+  - 현재 VERIFIED evidence만 긍정 근거로 사용하고 masked chunk는 탐색·모순 확인의 ephemeral context로 제한한다.
+  - provider 호출은 transaction 밖에서 수행하고 checkpoint와 answer/verification apply를 원자적으로 완료한다.
+- Issues encountered:
+  - 성공 scope retry가 중복 version을 만들지 않도록 predecessor partial result를 새 Run seed에 병합했다.
+- Validation:
+  - Cover Letter workflow·orchestrator·Agent Run 테스트와 Backend 전체 377 tests, actual P7 partial success/retry DB assertions가 통과했다.
+- Next steps:
+  - 실제 provider 연결은 별도 승인·가격 정책 없이는 활성화하지 않는다.
 
 ## [2026-07-29] Session Summary (P6 JOB_ANALYSIS 고정 workflow·RAG)
 

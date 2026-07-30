@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-canonical registry coverage와 Document·Job metadata·contribution 불변식을 검증한다.
+canonical registry coverage와 Document·Job·Cover Letter metadata·contribution 불변식을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -10,11 +10,14 @@ canonical registry coverage와 Document·Job metadata·contribution 불변식을
 - [`document/`](document/index.md): P4 ingestion 성공·resume·partial failure 검증
 - `JobPostingExtractionWorkflowContractTest`: P5 고정 순서·prompt/schema·privacy 계약
 - `JobPostingExtractionOrchestratorIntegrationTest`: P5 성공·waiting·retry·cancel·reuse 통합 계약
+- `CoverLetterGenerationWorkflowTest`: P7 8단계·partial success/retry·restart
+- `CoverLetterVerificationWorkflowTest`: P7 6단계·issue·compensation
+- `CoverLetterWorkflowContractTest`: 공개 step·structured output·privacy 계약
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할
 
-8개 type, duplicate key, weight와 executable sequence를 고정하고 Job workflow의 실제 5단계 contribution을 검증한다.
+8개 type, duplicate key, weight와 executable sequence를 고정하고 P7 generation 8단계·verification 6단계 contribution을 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

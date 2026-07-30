@@ -8,7 +8,7 @@ P5~P6 Job·Job Analysis HTTP 요청·응답·OpenAPI metadata와 application 결
 
 - `JobController`: Job 공개 API 10개와 실제 HTTP status
 - `JobRequests`, `JobAnalysisRequests`: 생성·수정·상태·분석 request validation
-- `JobDtos`, `JobAnalysisDtos`: P5~P6 공개 생성·목록·상세·분석 DTO
+- `JobDtos`, `JobAnalysisDtos`: P5~P6 공개 생성·목록·상세·분석 DTO와 P7 cover letter 진입용 최소 projection
 - `JobApiMapper`, `JobAnalysisApiMapper`: application projection의 공개 DTO 변환
 - [`progress.md`](progress.md): API 구현 상태
 

@@ -2,7 +2,33 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint 회귀와 P1~P5 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint 회귀와 P1~P7 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-07-30] Session Summary (P7 VerificationDto suggestion schema 경계)
+
+- What was done:
+  - 생성 OpenAPI의 `VerificationDto.suggestions`가 `maxItems=20`, item `minLength=1`, `maxLength=1000`을 노출하는지 직접 검증한다.
+- Key decisions:
+  - 공개 schema의 array/item 제약도 DTO field·operation count와 같은 안정 계약으로 취급한다.
+- Issues encountered:
+  - 1차 validator가 누락된 array/item schema 제약을 MAJOR 계약 불일치로 식별했다.
+- Validation:
+  - OpenAPI integration test와 전체 Backend 54 suites/380 tests가 통과했고 70 operations/51 paths를 유지한다.
+- Next steps:
+  - None.
+
+## [2026-07-30] Session Summary (P7 포함 70-operation OpenAPI 검증)
+
+- What was done:
+  - Cover Letter 17개 operationId·request·response·enum·security와 P8 경로 부재를 고정했다.
+- Key decisions:
+  - 실제 Spring mapping과 생성 문서 path/operation 수를 모두 직접 계산한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - OpenAPI 70 operations/51 paths와 Swagger UI 회귀가 Backend check에서 통과했다.
+- Next steps:
+  - P8 공개 API가 구현되기 전 경로를 추가하지 않는다.
 
 ## [2026-07-27] Session Summary (P5 포함 50-operation OpenAPI 검증)
 

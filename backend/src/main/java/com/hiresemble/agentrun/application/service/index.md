@@ -13,6 +13,7 @@ com.hiresemble.agentrun.application.service package는 use case, transaction 또
 | [AgentRunResumeService.java](AgentRunResumeService.java) | Service 책임 구현 |
 | [AgentRunRetryService.java](AgentRunRetryService.java) | Service 책임 구현 |
 | [AgentRunRetryTransaction.java](AgentRunRetryTransaction.java) | Service 책임 구현 |
+| [AgentRunInterruptionService.java](AgentRunInterruptionService.java) | 실패·취소 resource compensation 조정 |
 | [AiPreferenceRegistrationService.java](AiPreferenceRegistrationService.java) | Service 책임 구현 |
 | [WorkflowLauncherService.java](WorkflowLauncherService.java) | Service 책임 구현 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |

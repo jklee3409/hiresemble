@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4 Document, P5 Job과 P6 Job Analysis typed resource 연결이 구현됐으며 실제 provider는 비활성 상태다.
+P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P7 typed resource 연결이 구현됐으며 실제 provider는 비활성 상태다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter typed resource·partial retry)
+
+- What was done:
+  - generation Run을 cover letter, verification Run을 immutable answer version과 연결하고 retry partial result seed와 interruption compensation을 추가했다.
+- Key decisions:
+  - 자기소개서 본문·prompt는 Run metadata에 복제하지 않고 화면 이동에 필요한 typed resource link만 공개한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Cover Letter Agent Run 통합, retry lineage·cancel·owner isolation과 Backend 전체 377 tests가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis resource·retry 연결)
 

@@ -4,6 +4,19 @@
 
 P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약이 구현됐다.
 
+## [2026-07-30] Session Summary (P7 자기소개서 진입 projection)
+
+- What was done:
+  - Job detail mapping에 현재 자기소개서 상태·ID를 최소 projection으로 연결했다.
+- Key decisions:
+  - 자기소개서 전체 결과나 P8 field를 Job DTO에 복제하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job DTO/API 회귀, OpenAPI 70 operations/51 paths와 P7 actual 공고 tab이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-29] Session Summary (P6 Job Analysis API 3개)
 
 - What was done:

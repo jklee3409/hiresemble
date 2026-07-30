@@ -21,11 +21,12 @@ P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조�
 - [`../agentrun/`](../agentrun/index.md)과 typed Job resource·Run 수명주기를 연결한다.
 - [`../ai/`](../ai/index.md)은 Job application port를 통해 고정 추출·분석 workflow를 실행한다.
 - [`../profile/`](../profile/index.md)과 [`../document/`](../document/index.md)의 owner-scoped profile/evidence·embedding query를 분석 snapshot과 RAG에 사용한다.
+- [`../coverletter/`](../coverletter/index.md)은 최신 공고·분석·requirement와 `analysisOutdated` projection을 생성·검증 context에서 조회한다.
 - 공개 계약은 [`../../../../../../../docs/spec/api.md`](../../../../../../../docs/spec/api.md)와 [`../../../../../../../docs/spec/db.md`](../../../../../../../docs/spec/db.md)를 따른다.
 
 ## 변경 시 주의사항
 
-P7 이후 자기소개서·면접 계약을 선행 추가하지 않는다. 외부 URL·AI 호출은 DB transaction 밖에서 수행하고 공고·문서 원문, 전체 prompt·provider response를 로그에 남기지 않는다.
+Cover Letter 상세에 필요한 최소 P7 projection만 공개하고 P8 면접 계약을 선행 추가하지 않는다. 외부 URL·AI 호출은 DB transaction 밖에서 수행하고 공고·문서 원문, 전체 prompt·provider response를 로그에 남기지 않는다.
 
 ## 관련 규칙 및 문서
 

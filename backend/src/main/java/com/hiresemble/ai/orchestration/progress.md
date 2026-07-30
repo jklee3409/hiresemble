@@ -2,7 +2,21 @@
 
 ## Overview
 
-P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply, P6 deterministic reuse provider-skip 및 atomic completion 경계가 구현됐다.
+P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply, P6~P7 deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
+
+## [2026-07-30] Session Summary (P7 partial scope retry·interruption 경계)
+
+- What was done:
+  - predecessor partial result seed를 retry Run에 전달하고 성공 scope checkpoint/domain result를 재사용하도록 orchestration context를 확장했다.
+  - 실패·취소 시 workflow resource compensation을 단일 interruption service로 연결했다.
+- Key decisions:
+  - fresh/reused checkpoint와 domain apply의 기존 `SERIALIZABLE` 원자성을 유지하고 provider 호출은 transaction 밖에 둔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - partial success·retry·cancel·restart·commit interruption 회귀와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 reuse provider routing·atomic completion 보강)
 

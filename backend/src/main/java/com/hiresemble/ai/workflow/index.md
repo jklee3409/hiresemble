@@ -12,12 +12,15 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `JobPostingExtractionWorkflow`: P5 URL fetch부터 사용자 override 병합·domain apply까지의 5단계 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - `JobAnalysisWorkflow`: P6 owner-scoped snapshot·verified RAG·결정론적 score·command-only persist 8단계 contribution
+- `CoverLetterGenerationWorkflow`: P7 generation 8단계 bounded fan-out·partial apply contribution
+- `CoverLetterVerificationWorkflow`: P7 immutable answer verification 6단계 contribution
+- `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상
 - [`document/`](document/index.md): P4 `DOCUMENT_INGESTION` 8단계 contribution과 실패 보상
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할
 
-step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 progress weight를 검증한다. Document, Job extraction과 Job Analysis는 application port를 통해 실제 aggregate에 연결한다.
+step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 progress weight를 검증한다. Document, Job과 Cover Letter workflow는 각 application port를 통해 실제 aggregate에 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -25,7 +28,7 @@ step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 p
 
 ## 변경 시 주의사항
 
-duplicate step key와 weight 합 오류를 거부하고 handler가 없는 canonical workflow를 executable로 등록하지 않는다. `JOB_ANALYSIS` 공개 step key 8개를 추가·삭제하지 않고 모델 출력 숫자를 final fit score로 사용하지 않는다.
+duplicate step key와 weight 합 오류를 거부하고 handler가 없는 canonical workflow를 executable로 등록하지 않는다. `JOB_ANALYSIS` 8개, generation 8개, verification 6개 공개 step key를 변경하지 않고 모델이 domain source·finalization을 결정하지 않게 한다.
 
 ## 관련 규칙 및 문서
 

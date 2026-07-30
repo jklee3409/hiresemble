@@ -2,12 +2,13 @@
 
 ## 디렉터리 목적
 
-P3 Agent Run domain, PostgreSQL runtime, API·SSE, budget, retry·cancel과 복구 계약을 검증한다.
+P3 Agent Run domain, PostgreSQL runtime, API·SSE, budget, retry·cancel·복구와 P4~P7 typed resource 계약을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`domain/`](domain/index.md): 전체 상태 전이 단위 테스트
 - `AgentRun*IntegrationTest`: claim·budget·retry·cancel·SSE PostgreSQL 테스트
+- `CoverLetterAgentRunIntegrationTest`: generation/verification resource·lineage·owner·privacy
 - `AgentRunIntegrationSupport`: 격리 fixture
 - [`progress.md`](progress.md): 검증 이력
 

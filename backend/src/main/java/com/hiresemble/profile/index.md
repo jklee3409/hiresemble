@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
- P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에서 추출되는 근거를 사용자 소유 resource로 관리하고, P6 공고 분석에 owner-scoped 최소 snapshot을 제공한다.
+P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에서 추출되는 근거를 사용자 소유 resource로 관리하고, P6 공고 분석·P7 자기소개서에 owner-scoped 현재 `VERIFIED` snapshot을 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -25,6 +25,7 @@
 
 - 인증 사용자 ID는 [`../auth/`](../auth/index.md)의 Session principal에서 받는다.
 - P6 공고 분석 query 경계는 [`../job/application/port/`](../job/application/port/index.md)가 정의하고 이 영역의 application service가 구현한다.
+- P7 자기소개서는 기존 evidence query와 document 삭제 참조 경계를 통해 현재 상태와 historical provenance를 분리한다.
 - 기본 불변식은 [`../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql), document owner FK와 tombstone 보강은 [`../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql`](../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql)에 의존한다.
 - 공개 계약은 [`../../../../../../../docs/spec/api.md`](../../../../../../../docs/spec/api.md)와 [`../../../../../../../docs/spec/db.md`](../../../../../../../docs/spec/db.md)를 따른다.
 

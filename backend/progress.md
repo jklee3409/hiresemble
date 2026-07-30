@@ -3,9 +3,66 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증 5개, P2 profile 25개, P3 Agent Run 5개, P4 Document 8개와 P5~P6 Job 10개 API가 구현되어 있다.
-- V1~V6를 byte 단위로 보존한 V7 migration이 immutable Job Analysis·criterion·evidence provenance와 typed analysis Run link를 추가한다.
-- 생성 OpenAPI는 정확히 53 operations/37 paths이며 실제 provider는 계속 비활성이다.
+- P1 인증부터 P6 Job Analysis와 P7 Cover Letter 17개 API까지 총 70 operations/51 paths가 구현되어 있다.
+- V1~V7을 byte 단위로 보존한 V8 migration이 Cover Letter·question·immutable answer/provenance/verification과 typed Run link를 추가한다.
+- Backend 전체 54 suites/380 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+
+## [2026-07-30] Session Summary (P7 Backend 최종 validator PASS)
+
+- What was done:
+  - 최종 read-only validator가 V8·17 API·owner scope·immutable version/verification·generation 8단계·verification 6단계와 suggestion 보정을 재검증했다.
+- Key decisions:
+  - V1~V7은 HEAD와 동일하게 보존하고 P7 schema는 V8 forward migration으로 완료한다.
+- Issues encountered:
+  - 새 finding 없음.
+- Validation:
+  - Validator `PASS`; Backend 54 suites/380 tests, OpenAPI 51 paths/70 operations, P7/P6 actual wrapper·DB assertions PASS.
+- Next steps:
+  - P8 전에는 research/interview schema나 API를 추가하지 않는다.
+
+## [2026-07-30] Session Summary (P7 validator 계약 보정·Backend 재검증)
+
+- What was done:
+  - `VerificationDto.suggestions` OpenAPI를 최대 20개·항목 1~1000자로 명시하고 generation fact-check와 verification check/aggregate structured output도 같은 경계로 통일했다.
+  - verification aggregate가 facts와 requirements의 유효 제안을 합쳐도 20개를 넘지 않도록 facts 우선의 결정론적 제한을 적용했다.
+- Key decisions:
+  - 공개 DTO, OpenAPI, AI step output과 persistence command가 하나의 suggestion 계약을 사용하며 모델 단계별 입력이 유효해도 집계 결과가 공개 계약을 깨지 않게 한다.
+- Issues encountered:
+  - 1차 validator에서 Backend command는 정확했지만 OpenAPI annotation과 AI 중간 output이 더 넓게 허용되는 MAJOR 불일치를 확인했다.
+- Validation:
+  - `.\gradlew.bat check --console=plain --no-daemon`: 54 suites/380 tests, failure·error·skip 0.
+  - P7 actual wrapper 1/1·후속 DB assertion과 P6 회귀 wrapper 1/1(Chromium 2/2)·후속 DB assertion, OpenAPI 51 paths/70 operations가 통과했다.
+- Next steps:
+  - 최종 read-only validator 재판정을 기다린다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter Backend·AI workflow 구현·검증)
+
+- What was done:
+  - V8, `coverletter` domain/application/API/store, generation·verification port와 typed Agent Run resource를 구현했다.
+  - generation 8단계·verification 6단계, partial success/retry reuse, failure compensation와 immutable apply를 기존 orchestrator에 연결했다.
+- Key decisions:
+  - owner 복합 FK·partial unique·immutable DB 규칙과 application CAS를 함께 사용하고 provider 호출은 transaction 밖에서 실행한다.
+- Issues encountered:
+  - actual Browser form parser 결함은 Frontend에서 보정했으며 Backend 공개 계약 변경은 필요하지 않았다.
+  - verification provenance claim text가 step checkpoint에 남을 수 있는 경로를 제거하고 최소 출력 privacy 회귀를 추가했다.
+- Validation:
+  - `.\gradlew.bat check` 54 suites/377 tests, P7 actual wrapper·DB assertions와 P6 actual regression, OpenAPI 51 paths/70 operations가 통과했다.
+- Next steps:
+  - 독립 validator 판정 후 P7 상태를 확정한다.
+
+## [2026-07-30] Session Summary (P6 actual wrapper와 DB assertion 종료)
+
+- What was done:
+  - P6 Spring·PostgreSQL·Fake AI·Vue·Chromium wrapper를 current source에서 재실행하고 후속 분석·criterion·provenance·Agent Run assertion까지 닫았다.
+  - DB harness가 존재하지 않는 `safe_error_code`를 조회한 부분을 실제 V4 `agent_runs.error_code`로 보정했다.
+- Key decisions:
+  - 제품 결함이 아닌 `TEST_HARNESS_DEFECT`로 분류하고 운영 코드·migration·API·workflow는 변경하지 않았다.
+- Issues encountered:
+  - 첫 실행은 Playwright exit 0 뒤 DB 컬럼명 오류로 실패했다.
+- Validation:
+  - 보정 후 `p6BrowserE2eTest --rerun-tasks --info --no-daemon --console=plain`: JUnit 1/1, Playwright 2/2, DB assertions 통과와 `BUILD SUCCESSFUL`.
+- Next steps:
+  - P7은 새 forward migration과 `coverletter` application port를 P6 계약 위에 추가한다.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis Backend·AI workflow 구현)
 

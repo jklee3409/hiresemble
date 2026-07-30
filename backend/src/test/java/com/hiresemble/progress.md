@@ -2,7 +2,35 @@
 
 ## Overview
 
-P1 인증·공통, P2 profile, P3 Agent Run·AI runtime과 P4 Document·migration·실제 E2E 테스트를 기능별로 구성한다.
+P1 인증·공통부터 P7 Cover Letter·migration·actual E2E 테스트를 기능별로 구성한다.
+
+## [2026-07-30] Session Summary (P7 validator 보정 회귀·final-source E2E)
+
+- What was done:
+  - verification suggestion 20/21개·1000/1001자, aggregate 합산 20개 제한과 OpenAPI item 제약 회귀를 추가했다.
+  - 실제 문항 409 비교·재적용이 추가된 P7 wrapper와 P6 회귀 wrapper를 final source에서 재실행했다.
+- Key decisions:
+  - 1차 validator finding을 재현하는 경계는 domain apply/persist 전에 검증하고 Browser 충돌은 실제 nested resource CAS로 검증한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Backend 54 suites/380 tests, failure·error·skip 0.
+  - P7 Chromium 1/1·DB assertions와 P6 Chromium 2/2·DB assertions가 통과했다.
+- Next steps:
+  - 최종 read-only validator 재판정을 반영한다.
+
+## [2026-07-30] Session Summary (P7 Backend·workflow·actual E2E 검증)
+
+- What was done:
+  - Cover Letter API/application/domain/migration/finalization, AI workflow, Agent Run resource와 실제 Browser wrapper 테스트를 추가했다.
+- Key decisions:
+  - PostgreSQL/MinIO/Fake AI/Vue/Chromium을 wrapper가 격리 실행하고 실제 유료 provider는 사용하지 않는다.
+- Issues encountered:
+  - 실제 form parser 결함과 UI 대기 race를 actual E2E에서 발견해 frontend 회귀와 명시적 postcondition으로 보정했다.
+- Validation:
+  - Backend 54 suites/380 tests, P7 Chromium 1/1·DB assertions와 P6 회귀 Chromium 2/2가 통과했다.
+- Next steps:
+  - 독립 validator 판정을 반영한다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

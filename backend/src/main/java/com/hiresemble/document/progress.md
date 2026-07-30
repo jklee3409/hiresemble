@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석용 active-generation embedding 검색 adapter를 제공한다.
+P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석과 P7 자기소개서용 active-generation 검색 adapter를 제공한다.
+
+## [2026-07-30] Session Summary (P7 자기소개서 masked chunk 검색·삭제 provenance)
+
+- What was done:
+  - Cover Letter evidence candidate search port를 구현하고 문서 삭제가 자기소개서 historical provenance 참조도 확인하도록 연결했다.
+- Key decisions:
+  - masked chunk는 탐색·모순 확인에만 제공하고 `SOURCE_DELETED` evidence는 새 생성·검증 positive context에서 제외한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - source 삭제 후 historical link 보존·새 generation 차단 actual E2E와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 공고 분석 embedding 검색 adapter)
 

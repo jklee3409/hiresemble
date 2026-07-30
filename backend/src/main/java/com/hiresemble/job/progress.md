@@ -4,6 +4,19 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결이 구현됐다.
 
+## [2026-07-30] Session Summary (P7 Cover Letter용 공고 projection)
+
+- What was done:
+  - 공고 상세 DTO에 현재 자기소개서 진입 상태를 연결하고 P7 context가 최신 분석·requirement·OUTDATED projection을 owner scope로 조회하도록 최소 경계를 제공했다.
+- Key decisions:
+  - P6 immutable 분석 계약은 변경하지 않고 P8 면접·research field를 추가하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Job API 회귀, P7 actual 생성 context와 최종 source P6 actual Chromium 2/2가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-29] Session Summary (P6 immutable 공고 분석 도메인·API)
 
 - What was done:

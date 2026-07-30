@@ -9,7 +9,23 @@
 - `V5__create_documents_evidence_and_storage_outbox.sql`은 P4 문서·text·chunk·Object outbox·typed Run link와 evidence document FK를 생성한다.
 - `V6__create_job_postings_and_extend_agent_resources.sql`은 P5 Company·Job·status history와 typed Job Run link를 생성한다.
 - `V7__create_job_analyses_and_provenance.sql`은 P6 immutable analysis·criterion·VERIFIED evidence provenance와 typed analysis Run link를 생성한다.
-- 자기소개서·면접 등 P7 이후 table은 구현하지 않았다.
+- `V8__create_cover_letters_versions_and_verifications.sql`은 P7 자기소개서·질문·immutable answer/provenance/verification과 typed Run link를 생성한다.
+- 면접 등 P8 이후 table은 구현하지 않았다.
+
+## [2026-07-30] Session Summary (P7 Cover Letter V8 migration)
+
+- What was done:
+  - `cover_letters`, questions, immutable answer versions·evidence links·verifications·acknowledgements와 Cover Letter/Answer Version Agent Run resource를 V8로 추가했다.
+- Key decisions:
+  - 모든 사용자 콘텐츠와 교차 참조에 owner 복합 FK를 적용하고 active cover letter·question order·current answer는 partial unique로 제한한다.
+  - answer version·verification·acknowledgement는 immutable history로 보존하고 soft-deleted question의 provenance를 삭제하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 빈 DB V1→V8, populated V7→V8, cross-user·enum·partial unique·immutability negative와 V1~V7 SHA-256 불변이 통과했다.
+  - `ddl-auto=validate`, Backend 전체 377 tests와 actual P7 DB assertions가 통과했다.
+- Next steps:
+  - P8 schema는 V8을 수정하지 않고 새 forward migration으로 추가한다.
 
 ## [2026-07-29] Session Summary (P6 Job Analysis V7 migration)
 
