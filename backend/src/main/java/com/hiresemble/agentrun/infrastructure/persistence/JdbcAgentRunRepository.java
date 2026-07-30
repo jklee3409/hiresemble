@@ -15,6 +15,7 @@ import com.hiresemble.agentrun.application.command.WorkflowLaunchCommand;
 import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.PartialResult;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
@@ -34,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Repository
 public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQueryPort {
@@ -97,7 +99,8 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 .update();
         if (command.resource() != null
                 && ("DOCUMENT".equals(command.resource().resourceType())
-                        || "JOB".equals(command.resource().resourceType()))) {
+                        || "JOB".equals(command.resource().resourceType())
+                        || "COVER_LETTER".equals(command.resource().resourceType()))) {
             insertTypedLink(
                     command.userId(),
                     agentRunId,
@@ -115,6 +118,13 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
             AgentRunSnapshot predecessor,
             long budgetPolicyVersion,
             Instant queuedAt) {
+        UUID retryVerificationId = "COVER_LETTER".equals(predecessor.resourceType())
+                        && predecessor.workflowType()
+                                == WorkflowType.COVER_LETTER_VERIFICATION
+                ? UUID.randomUUID()
+                : null;
+        JsonNode retryInput = retryInput(predecessor, retryVerificationId);
+        PartialResult retryPartialResult = retryPartialResult(predecessor);
         int inserted = jdbcClient.sql("""
                             INSERT INTO agent_runs (
                                 id, user_id, workflow_type, status, current_step, progress_percent,
@@ -122,14 +132,15 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                                 budget_policy_version, price_version, requested_quality_mode,
                                 highest_model_tier_used, estimated_cost_usd, reserved_cost_usd,
                                 actual_cost_usd, resource_type, resource_id, retry_of_run_id,
-                                root_run_id, run_attempt_no, retryable_failure, state_version,
-                                queued_at, updated_at
+                                root_run_id, run_attempt_no, retryable_failure,
+                                partial_result_json, state_version, queued_at, updated_at
                             ) VALUES (
                                 :id, :userId, :workflowType, 'QUEUED', NULL, 0,
                                 :workflowVersion, :inputHash, CAST(:inputRefs AS jsonb),
                                 :budgetPolicyVersion, :priceVersion, :qualityMode,
                                 NULL, :estimatedCost, 0, 0, :resourceType, :resourceId, :retryOf,
-                                :rootRunId, :runAttemptNo, false, 0, :queuedAt, :queuedAt
+                                :rootRunId, :runAttemptNo, false,
+                                CAST(:partialResult AS jsonb), 0, :queuedAt, :queuedAt
                             )
                             ON CONFLICT (user_id, retry_of_run_id)
                                 WHERE retry_of_run_id IS NOT NULL
@@ -140,7 +151,7 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                     .param("workflowType", predecessor.workflowType().name())
                     .param("workflowVersion", predecessor.workflowVersion())
                     .param("inputHash", predecessor.canonicalInputHash())
-                    .param("inputRefs", mapper.write(predecessor.inputReferenceSnapshot()))
+                    .param("inputRefs", mapper.write(retryInput))
                     .param("budgetPolicyVersion", budgetPolicyVersion)
                     .param("priceVersion", predecessor.priceVersion())
                     .param("qualityMode", predecessor.requestedQualityMode() == null
@@ -151,6 +162,11 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                     .param("retryOf", predecessor.id())
                     .param("rootRunId", predecessor.rootRunId())
                     .param("runAttemptNo", predecessor.runAttemptNo() + 1)
+                    .param(
+                            "partialResult",
+                            retryPartialResult == null
+                                    ? null
+                                    : mapper.write(retryPartialResult))
                     .param("queuedAt", utc(queuedAt))
                     .update();
         if (inserted == 1) {
@@ -239,6 +255,55 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 } else {
                     throw new IllegalStateException(
                             "unsupported workflow owns a typed job retry resource");
+                }
+            } else if ("COVER_LETTER".equals(predecessor.resourceType())) {
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,cover_letter_id,
+                                    primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,cover_letter_id,
+                                       true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='COVER_LETTER' AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException(
+                            "cover letter retry is missing its typed resource link");
+                }
+                boolean active = jdbcClient.sql("""
+                                SELECT EXISTS (
+                                    SELECT 1 FROM cover_letters
+                                    WHERE user_id=:userId AND id=:coverLetterId
+                                      AND status IN ('DRAFT','FINALIZED')
+                                )
+                                """)
+                        .param("userId", predecessor.userId())
+                        .param("coverLetterId", predecessor.resourceId())
+                        .query(Boolean.class)
+                        .single();
+                if (!active) {
+                    throw new IllegalStateException("cover letter retry resource is not active");
+                }
+                if (predecessor.workflowType() == WorkflowType.COVER_LETTER_VERIFICATION) {
+                    copyVerificationRetryState(
+                            predecessor,
+                            successorId,
+                            retryVerificationId,
+                            queuedAt);
+                } else if (predecessor.workflowType()
+                        == WorkflowType.COVER_LETTER_GENERATION) {
+                    copyGenerationRetryResults(predecessor, successorId, queuedAt);
+                } else {
+                    throw new IllegalStateException(
+                            "unsupported workflow owns a typed cover letter retry resource");
                 }
             }
             return findByOwner(predecessor.userId(), successorId).orElseThrow();
@@ -386,6 +451,7 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
         String resourceColumn = switch (resourceType) {
             case "DOCUMENT" -> "document_id";
             case "JOB" -> "job_posting_id";
+            case "COVER_LETTER" -> "cover_letter_id";
             default -> throw new IllegalArgumentException("unsupported typed resource");
         };
         String insertSql = """
@@ -403,6 +469,163 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
                 .update();
         if (inserted != 1) {
             throw new IllegalStateException("typed Agent Run resource link was not created");
+        }
+    }
+
+    private JsonNode retryInput(AgentRunSnapshot predecessor, UUID retryVerificationId) {
+        if ("COVER_LETTER".equals(predecessor.resourceType())
+                && predecessor.workflowType() == WorkflowType.COVER_LETTER_GENERATION) {
+            return generationRetryInput(predecessor);
+        }
+        if (retryVerificationId == null) {
+            return predecessor.inputReferenceSnapshot();
+        }
+        if (!(predecessor.inputReferenceSnapshot() instanceof ObjectNode objectNode)) {
+            throw new IllegalStateException(
+                    "cover letter verification retry input must be an object");
+        }
+        ObjectNode copied = objectNode.deepCopy();
+        copied.put("verificationId", retryVerificationId.toString());
+        return copied;
+    }
+
+    private JsonNode generationRetryInput(AgentRunSnapshot predecessor) {
+        if (!(predecessor.inputReferenceSnapshot() instanceof ObjectNode objectNode)) {
+            throw new IllegalStateException(
+                    "cover letter generation retry input must be an object");
+        }
+        long originalVersion = objectNode.path("coverLetterVersion").asLong(-1);
+        if (originalVersion < 0) {
+            throw new IllegalStateException(
+                    "cover letter generation retry is missing its accepted version");
+        }
+        int lineageAppliedAnswers = jdbcClient.sql("""
+                        SELECT count(DISTINCT verification.answer_version_id)
+                        FROM agent_runs lineage
+                        JOIN cover_letter_verifications verification
+                          ON verification.user_id=lineage.user_id
+                         AND verification.agent_run_id=lineage.id
+                        WHERE lineage.user_id=:userId
+                          AND lineage.root_run_id=:rootRunId
+                          AND lineage.workflow_type='COVER_LETTER_GENERATION'
+                          AND lineage.run_attempt_no <= :runAttemptNo
+                        """)
+                .param("userId", predecessor.userId())
+                .param("rootRunId", predecessor.rootRunId())
+                .param("runAttemptNo", predecessor.runAttemptNo())
+                .query(Integer.class)
+                .single();
+        long currentVersion = jdbcClient.sql("""
+                        SELECT version FROM cover_letters
+                        WHERE user_id=:userId AND id=:coverLetterId
+                        """)
+                .param("userId", predecessor.userId())
+                .param("coverLetterId", predecessor.resourceId())
+                .query(Long.class)
+                .optional()
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (currentVersion != originalVersion + lineageAppliedAnswers) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        return predecessor.inputReferenceSnapshot();
+    }
+
+    private PartialResult retryPartialResult(AgentRunSnapshot predecessor) {
+        if (!"COVER_LETTER".equals(predecessor.resourceType())
+                || predecessor.workflowType() != WorkflowType.COVER_LETTER_GENERATION
+                || predecessor.partialResult() == null) {
+            return null;
+        }
+        PartialResult previous = predecessor.partialResult();
+        if (previous.succeededScopeKeys().isEmpty() && previous.resultRefs().isEmpty()) {
+            return null;
+        }
+        return new PartialResult(
+                previous.succeededScopeKeys(),
+                List.of(),
+                previous.resultRefs());
+    }
+
+    private void copyGenerationRetryResults(
+            AgentRunSnapshot predecessor, UUID successorId, Instant queuedAt) {
+        List<UUID> answerVersionIds = jdbcClient.sql("""
+                        SELECT DISTINCT link.cover_letter_answer_version_id
+                        FROM agent_run_resource_links link
+                        WHERE link.user_id=:userId AND link.agent_run_id=:predecessorId
+                          AND link.resource_kind='COVER_LETTER_ANSWER_VERSION'
+                        ORDER BY link.cover_letter_answer_version_id
+                        """)
+                .param("userId", predecessor.userId())
+                .param("predecessorId", predecessor.id())
+                .query(UUID.class)
+                .list();
+        for (UUID answerVersionId : answerVersionIds) {
+            jdbcClient.sql("""
+                            INSERT INTO agent_run_resource_links (
+                                id,user_id,agent_run_id,resource_kind,
+                                cover_letter_answer_version_id,primary_resource,created_at
+                            ) VALUES (
+                                :id,:userId,:successorId,'COVER_LETTER_ANSWER_VERSION',
+                                :answerVersionId,false,:createdAt
+                            )
+                            """)
+                    .param("id", UUID.randomUUID())
+                    .param("userId", predecessor.userId())
+                    .param("successorId", successorId)
+                    .param("answerVersionId", answerVersionId)
+                    .param("createdAt", utc(queuedAt))
+                    .update();
+        }
+    }
+
+    private void copyVerificationRetryState(
+            AgentRunSnapshot predecessor,
+            UUID successorId,
+            UUID verificationId,
+            Instant queuedAt) {
+        int answerLinked = jdbcClient.sql("""
+                        INSERT INTO agent_run_resource_links (
+                            id,user_id,agent_run_id,resource_kind,
+                            cover_letter_answer_version_id,primary_resource,created_at
+                        )
+                        SELECT :id,user_id,:successorId,resource_kind,
+                               cover_letter_answer_version_id,false,:createdAt
+                        FROM agent_run_resource_links
+                        WHERE user_id=:userId AND agent_run_id=:predecessorId
+                          AND resource_kind='COVER_LETTER_ANSWER_VERSION'
+                          AND NOT primary_resource
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("successorId", successorId)
+                .param("createdAt", utc(queuedAt))
+                .param("userId", predecessor.userId())
+                .param("predecessorId", predecessor.id())
+                .update();
+        if (answerLinked != 1) {
+            throw new IllegalStateException(
+                    "cover letter verification retry requires one answer version link");
+        }
+        int pendingInserted = jdbcClient.sql("""
+                        INSERT INTO cover_letter_verifications (
+                            id,user_id,answer_version_id,agent_run_id,status,
+                            issues,suggestions,verified_claims,created_at
+                        )
+                        SELECT :verificationId,user_id,cover_letter_answer_version_id,
+                               :successorId,'PENDING','[]'::jsonb,'[]'::jsonb,
+                               '[]'::jsonb,:createdAt
+                        FROM agent_run_resource_links
+                        WHERE user_id=:userId AND agent_run_id=:successorId
+                          AND resource_kind='COVER_LETTER_ANSWER_VERSION'
+                          AND NOT primary_resource
+                        """)
+                .param("verificationId", verificationId)
+                .param("successorId", successorId)
+                .param("createdAt", utc(queuedAt))
+                .param("userId", predecessor.userId())
+                .update();
+        if (pendingInserted != 1) {
+            throw new IllegalStateException(
+                    "cover letter verification retry pending state was not created");
         }
     }
 

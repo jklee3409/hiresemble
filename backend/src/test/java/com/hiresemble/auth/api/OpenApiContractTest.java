@@ -39,7 +39,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyFiftyThreeP1ThroughP6OperationsAndThirtySevenPaths() {
+    void liveSpringMappingsHaveExactlySeventyP1ThroughP7OperationsAndFiftyOnePaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -55,20 +55,25 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(37);
-        assertThat(operations[0]).isEqualTo(53);
+        assertThat(paths).hasSize(51);
+        assertThat(operations[0]).isEqualTo(70);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyFiftyThreeP1ThroughP6Operations()
+    void generatedOpenApiHasStableMetadataAndExactlySeventyP1ThroughP7Operations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.5");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.7");
         assertThat(fieldValues(document.get("tags"), "name"))
                 .containsExactlyInAnyOrder(
-                        "Authentication", "Profile", "Agent Runs", "Documents", "Jobs");
+                        "Authentication",
+                        "Profile",
+                        "Agent Runs",
+                        "Documents",
+                        "Jobs",
+                        "Cover Letters");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -114,8 +119,22 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/jobs/{jobId}/retry-extraction",
                         "/api/v1/jobs/{jobId}/analysis",
                         "/api/v1/jobs/{jobId}/analyses",
-                        "/api/v1/jobs/{jobId}/analyses/latest");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(53);
+                        "/api/v1/jobs/{jobId}/analyses/latest",
+                        "/api/v1/jobs/{jobId}/cover-letter",
+                        "/api/v1/cover-letters",
+                        "/api/v1/cover-letters/{coverLetterId}",
+                        "/api/v1/cover-letters/{coverLetterId}/questions",
+                        "/api/v1/cover-letters/{coverLetterId}/questions/{questionId}",
+                        "/api/v1/cover-letters/{coverLetterId}/questions/order",
+                        "/api/v1/cover-letters/{coverLetterId}/generate",
+                        "/api/v1/cover-letter-questions/{questionId}/versions",
+                        "/api/v1/cover-letter-questions/{questionId}/versions/{versionId}/restore",
+                        "/api/v1/cover-letter-answer-versions/{versionId}/verify",
+                        "/api/v1/cover-letter-answer-versions/{versionId}/verifications",
+                        "/api/v1/cover-letters/{coverLetterId}/finalize",
+                        "/api/v1/cover-letters/{coverLetterId}/archive",
+                        "/api/v1/cover-letters/{coverLetterId}/unarchive");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(70);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -187,6 +206,88 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "/api/v1/jobs/{jobId}/analyses/latest",
                 "get",
                 "getLatestJobAnalysis");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/jobs/{jobId}/cover-letter",
+                "post",
+                "createCoverLetter");
+        assertCoverLetterOperation(
+                document, "/api/v1/cover-letters", "get", "listCoverLetters");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}",
+                "get",
+                "getCoverLetter");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}",
+                "put",
+                "updateCoverLetter");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/questions",
+                "post",
+                "createCoverLetterQuestion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/questions/{questionId}",
+                "put",
+                "updateCoverLetterQuestion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/questions/{questionId}",
+                "delete",
+                "deleteCoverLetterQuestion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/questions/order",
+                "patch",
+                "reorderCoverLetterQuestions");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/generate",
+                "post",
+                "generateCoverLetter");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letter-questions/{questionId}/versions",
+                "get",
+                "listCoverLetterAnswerVersions");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letter-questions/{questionId}/versions",
+                "post",
+                "saveCoverLetterAnswerVersion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letter-questions/{questionId}/versions/{versionId}/restore",
+                "post",
+                "restoreCoverLetterAnswerVersion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letter-answer-versions/{versionId}/verify",
+                "post",
+                "verifyCoverLetterAnswerVersion");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letter-answer-versions/{versionId}/verifications",
+                "get",
+                "listCoverLetterVerifications");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/finalize",
+                "post",
+                "finalizeCoverLetter");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/archive",
+                "post",
+                "archiveCoverLetter");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/{coverLetterId}/unarchive",
+                "post",
+                "unarchiveCoverLetter");
         assertResponseCodes(
                 document.at("/paths/~1api~1v1~1jobs~1{jobId}~1analysis/post"),
                 "202", "400", "401", "403", "404", "409", "429", "503");
@@ -278,6 +379,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(jobMutationSecurity).hasSize(1);
         assertThat(fieldNames(jobMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        JsonNode coverLetterMutationSecurity =
+                document.at("/paths/~1api~1v1~1cover-letter-questions~1{questionId}~1versions/post/security");
+        assertThat(coverLetterMutationSecurity).hasSize(1);
+        assertThat(fieldNames(coverLetterMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
     }
 
     @Test
@@ -311,6 +417,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "claimToken", "claimedBy", "leaseExpiresAt", "heartbeatAt",
                         "canonicalInputHash", "inputReferenceSnapshot", "priceVersion",
                         "provider", "model", "promptVersion", "reusedStepId", "outputJson");
+        JsonNode verificationSuggestions =
+                schemas.at("/VerificationDto/properties/suggestions");
+        assertThat(verificationSuggestions.at("/maxItems").asInt()).isEqualTo(20);
+        assertThat(verificationSuggestions.at("/items/minLength").asInt()).isEqualTo(1);
+        assertThat(verificationSuggestions.at("/items/maxLength").asInt()).isEqualTo(1000);
 
         assertThat(fieldNames(schemas.at("/ProfileDto/properties")))
                 .containsExactlyInAnyOrder(
@@ -483,6 +594,16 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.get("description").asText()).isNotBlank();
         assertThat(operation.at("/tags/0").asText()).isEqualTo("Jobs");
+    }
+
+    private void assertCoverLetterOperation(
+            JsonNode document, String path, String method, String operationId) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
+        assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo("Cover Letters");
     }
 
     private int operationCount(JsonNode paths) {

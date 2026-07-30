@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.5",
-                description = "P5 authentication, profile, Agent Run, document, and job APIs. Successful DTOs are returned directly without an envelope."),
+                version = "1.7",
+                description = "P7 authentication, profile, Agent Run, document, job analysis, and cover letter APIs. Successful DTOs are returned directly without an envelope."),
         tags = {
             @Tag(
                     name = "Authentication",
@@ -47,7 +47,10 @@ import org.springframework.context.annotation.Configuration;
                     description = "Owner-scoped upload, parsing, text, download, and deletion pipeline."),
             @Tag(
                     name = "Jobs",
-                    description = "Owner-scoped job registration, extraction, status, and deadline lifecycle.")
+                    description = "Owner-scoped job registration, extraction, status, deadline, and analysis lifecycle."),
+            @Tag(
+                    name = "Cover Letters",
+                    description = "Owner-scoped cover letter questions, immutable answer versions, verification, and lifecycle.")
         })
 @SecuritySchemes({
     @SecurityScheme(
@@ -79,7 +82,13 @@ public class OpenApiConfiguration {
                             || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"))
                             || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST)
                             || (path.startsWith("/api/v1/documents") && method != HttpMethod.GET)
-                            || (path.startsWith("/api/v1/jobs") && method != HttpMethod.GET);
+                            || (path.startsWith("/api/v1/jobs") && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/cover-letters")
+                                    && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/cover-letter-questions")
+                                    && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/cover-letter-answer-versions")
+                                    && method != HttpMethod.GET);
                     if (protectedMutation) {
                         operation.setSecurity(List.of(new SecurityRequirement()
                                 .addList("sessionCookie")

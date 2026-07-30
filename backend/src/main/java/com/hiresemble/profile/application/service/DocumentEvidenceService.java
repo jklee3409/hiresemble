@@ -29,15 +29,15 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
 
     private static final Pattern NUMBER = Pattern.compile("(?<![\\p{L}\\p{N}])\\d+(?:[.,]\\d+)?%?");
     private final ProfileStore store;
-    private final EvidenceReferenceQueryPort referenceQuery;
+    private final List<EvidenceReferenceQueryPort> referenceQueries;
     private final ObjectMapper objectMapper;
 
     public DocumentEvidenceService(
             ProfileStore store,
-            EvidenceReferenceQueryPort referenceQuery,
+            List<EvidenceReferenceQueryPort> referenceQueries,
             ObjectMapper objectMapper) {
         this.store = store;
-        this.referenceQuery = referenceQuery;
+        this.referenceQueries = List.copyOf(referenceQueries);
         this.objectMapper = objectMapper;
     }
 
@@ -80,7 +80,8 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
     @Transactional
     public void handleDocumentDeletion(UUID userId, UUID documentId, Instant deletedAt) {
         for (EvidenceRecord evidence : store.findDocumentEvidence(userId, documentId)) {
-            if (referenceQuery.isReferenced(userId, evidence.id())) {
+            if (referenceQueries.stream()
+                    .anyMatch(query -> query.isReferenced(userId, evidence.id()))) {
                 store.tombstoneEvidence(userId, evidence.id(), deletedAt);
             } else {
                 store.deleteEvidence(userId, evidence.id());

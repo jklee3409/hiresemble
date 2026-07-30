@@ -1,6 +1,7 @@
 package com.hiresemble.job.api;
 
 import com.hiresemble.agentrun.api.dto.SafeErrorDto;
+import com.hiresemble.coverletter.domain.CoverLetterStatus;
 import com.hiresemble.job.domain.ClosedReason;
 import com.hiresemble.job.domain.DeadlineSource;
 import com.hiresemble.job.domain.JobDescriptionSource;
@@ -38,7 +39,7 @@ public final class JobDtos {
             @Schema(nullable = true, minimum = "0", maximum = "100") java.math.BigDecimal latestFitScore,
             boolean analysisOutdated,
             List<OutdatedReason> outdatedReasons,
-            @Schema(nullable = true) String coverLetterStatus,
+            @Schema(nullable = true) CoverLetterStatus coverLetterStatus,
             @Schema(minimum = "0") int interviewPreparationCount,
             long version,
             Instant createdAt,
@@ -62,7 +63,7 @@ public final class JobDtos {
             @Schema(nullable = true, minimum = "0", maximum = "100") java.math.BigDecimal latestFitScore,
             boolean analysisOutdated,
             List<OutdatedReason> outdatedReasons,
-            @Schema(nullable = true) String coverLetterStatus,
+            @Schema(nullable = true) CoverLetterStatus coverLetterStatus,
             @Schema(minimum = "0") int interviewPreparationCount,
             long version,
             Instant createdAt,

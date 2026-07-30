@@ -1,6 +1,8 @@
 package com.hiresemble.job.api;
 
 import com.hiresemble.agentrun.api.dto.SafeErrorDto;
+import com.hiresemble.coverletter.application.CoverLetterApplicationService;
+import com.hiresemble.coverletter.application.CoverLetterApplicationService.CoverLetterStatusProjection;
 import com.hiresemble.job.api.JobDtos.JobDetailDto;
 import com.hiresemble.job.api.JobDtos.JobSummaryDto;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
@@ -15,17 +17,22 @@ public final class JobApiMapper {
 
     private final JobAnalysisApplicationService analysisService;
     private final JobAnalysisApiMapper analysisMapper;
+    private final CoverLetterApplicationService coverLetterService;
 
     public JobApiMapper(
             JobAnalysisApplicationService analysisService,
-            JobAnalysisApiMapper analysisMapper) {
+            JobAnalysisApiMapper analysisMapper,
+            CoverLetterApplicationService coverLetterService) {
         this.analysisService = analysisService;
         this.analysisMapper = analysisMapper;
+        this.coverLetterService = coverLetterService;
     }
 
     public JobSummaryDto summary(JobRecord job) {
         Optional<JobAnalysisSummary> latest =
                 analysisService.latestSummary(job.userId(), job.id());
+        Optional<CoverLetterStatusProjection> coverLetter =
+                coverLetterService.activeStatusForJob(job.userId(), job.id());
         return new JobSummaryDto(
                 job.id(),
                 job.companyName(),
@@ -39,7 +46,7 @@ public final class JobApiMapper {
                 latest.map(JobAnalysisSummary::fitScore).orElse(null),
                 latest.map(JobAnalysisSummary::analysisOutdated).orElse(false),
                 latest.map(JobAnalysisSummary::outdatedReasons).orElse(List.of()),
-                null,
+                coverLetter.map(CoverLetterStatusProjection::status).orElse(null),
                 0,
                 job.version(),
                 job.createdAt(),
@@ -49,6 +56,8 @@ public final class JobApiMapper {
     public JobDetailDto detail(JobRecord job) {
         Optional<JobAnalysisSummary> latest =
                 analysisService.latestSummary(job.userId(), job.id());
+        Optional<CoverLetterStatusProjection> coverLetter =
+                coverLetterService.activeStatusForJob(job.userId(), job.id());
         return new JobDetailDto(
                 job.id(),
                 job.companyName(),
@@ -62,7 +71,7 @@ public final class JobApiMapper {
                 latest.map(JobAnalysisSummary::fitScore).orElse(null),
                 latest.map(JobAnalysisSummary::analysisOutdated).orElse(false),
                 latest.map(JobAnalysisSummary::outdatedReasons).orElse(List.of()),
-                null,
+                coverLetter.map(CoverLetterStatusProjection::status).orElse(null),
                 0,
                 job.version(),
                 job.createdAt(),
@@ -78,7 +87,7 @@ public final class JobApiMapper {
                 job.closedAt(),
                 job.closedReason(),
                 latest.map(analysisMapper::summary).orElse(null),
-                null,
+                coverLetter.map(CoverLetterStatusProjection::coverLetterId).orElse(null),
                 null,
                 null);
     }

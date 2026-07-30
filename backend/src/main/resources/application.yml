@@ -111,6 +111,12 @@ hiresemble:
     ai-cost:
       estimated-cost-usd: ${JOB_AI_ESTIMATED_COST_USD:0.000000}
       price-version: ${JOB_AI_PRICE_VERSION:0}
+  cover-letter:
+    ai-cost:
+      generation-estimated-cost-usd: ${COVER_LETTER_GENERATION_ESTIMATED_COST_USD:0.000000}
+      generation-price-version: ${COVER_LETTER_GENERATION_PRICE_VERSION:0}
+      verification-estimated-cost-usd: ${COVER_LETTER_VERIFICATION_ESTIMATED_COST_USD:0.000000}
+      verification-price-version: ${COVER_LETTER_VERIFICATION_PRICE_VERSION:0}
   job-deadline-scheduler:
     cron: ${JOB_DEADLINE_SCHEDULER_CRON:0 0 * * * *}
     batch-size: ${JOB_DEADLINE_SCHEDULER_BATCH_SIZE:100}
