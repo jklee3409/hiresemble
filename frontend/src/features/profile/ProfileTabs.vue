@@ -9,37 +9,30 @@ const sections = [
   {
     to: '/profile/basic',
     label: '기본 정보',
-    description: '소개와 희망 조건',
   },
   {
     to: '/profile/education',
     label: '학력',
-    description: '학교와 전공',
   },
   {
     to: '/profile/careers',
     label: '경력',
-    description: '회사·역할·성과',
   },
   {
     to: '/profile/certifications',
     label: '자격증',
-    description: '자격과 증빙 자료',
   },
   {
     to: '/profile/languages',
     label: '어학',
-    description: '시험과 점수',
   },
   {
     to: '/profile/awards',
     label: '수상',
-    description: '수상 이력과 설명',
   },
   {
     to: '/profile/evidence',
     label: '경험 정보',
-    description: '자료에서 정리한 내용',
   },
 ] as const
 
@@ -58,7 +51,6 @@ function changeSection(event: Event): void {
     <div class="profile-outline__intro">
       <p class="profile-outline__eyebrow">프로필 관리</p>
       <h2>내 지원 정보</h2>
-      <p>필요한 항목부터 정리해 여러 지원에 활용하세요.</p>
     </div>
 
     <nav class="profile-outline__desktop" aria-label="프로필 메뉴">
@@ -68,10 +60,7 @@ function changeSection(event: Event): void {
         :to="section.to"
         class="profile-outline__link"
       >
-        <span>
-          <strong>{{ section.label }}</strong>
-          <small>{{ section.description }}</small>
-        </span>
+        <strong>{{ section.label }}</strong>
         <span v-if="route.path === section.to" class="profile-outline__current">현재</span>
       </RouterLink>
     </nav>
@@ -85,19 +74,17 @@ function changeSection(event: Event): void {
         @change="changeSection"
       >
         <option v-for="section in sections" :key="section.to" :value="section.to">
-          {{ section.label }} · {{ section.description }}
+          {{ section.label }}
         </option>
       </select>
     </label>
-
-    <p class="profile-outline__note">저장한 내용부터 바로 지원 준비에 활용돼요.</p>
   </aside>
 </template>
 
 <style scoped>
 .profile-outline {
   position: sticky;
-  top: 1.5rem;
+  top: calc(4.5rem + var(--space-5));
   align-self: start;
   border-right: 1px solid var(--color-border);
   padding-right: var(--space-5);
@@ -122,13 +109,6 @@ function changeSection(event: Event): void {
   letter-spacing: -0.03em;
 }
 
-.profile-outline__intro p:last-child {
-  margin: 0.5rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.55;
-}
-
 .profile-outline__desktop {
   display: grid;
   gap: var(--space-1);
@@ -136,7 +116,7 @@ function changeSection(event: Event): void {
 
 .profile-outline__link {
   display: grid;
-  min-height: 3.5rem;
+  min-height: 3rem;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
@@ -163,11 +143,6 @@ function changeSection(event: Event): void {
   color: var(--hs-blue-800);
 }
 
-.profile-outline__link strong,
-.profile-outline__link small {
-  display: block;
-}
-
 .profile-outline__current {
   color: var(--color-brand);
   font-size: 0.6875rem;
@@ -178,23 +153,8 @@ function changeSection(event: Event): void {
   font-size: 0.875rem;
 }
 
-.profile-outline__link small {
-  margin-top: 0.1rem;
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  line-height: 1.35;
-}
-
 .profile-outline__mobile {
   display: none;
-}
-
-.profile-outline__note {
-  margin: 0;
-  color: var(--color-muted);
-  padding: var(--space-5) var(--space-3) 0;
-  font-size: 0.75rem;
-  line-height: 1.55;
 }
 
 @media (max-width: 63.99rem) {
@@ -205,8 +165,7 @@ function changeSection(event: Event): void {
   }
 
   .profile-outline__intro,
-  .profile-outline__desktop,
-  .profile-outline__note {
+  .profile-outline__desktop {
     display: none;
   }
 

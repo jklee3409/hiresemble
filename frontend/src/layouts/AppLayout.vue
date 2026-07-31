@@ -51,7 +51,7 @@ watch(
   () => {
     closeMobileNav(false)
     document.title = `${String(route.meta.title ?? 'Hiresemble')} | Hiresemble`
-    void nextTick(() => workspaceContent.value?.focus())
+    void nextTick(() => workspaceContent.value?.focus({ preventScroll: true }))
   },
   { immediate: true },
 )

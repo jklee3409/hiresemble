@@ -216,6 +216,7 @@ export function createAppRouter(options?: { history?: RouterHistory; pinia?: Pin
   const router = createRouter({
     history: options?.history ?? createWebHistory(import.meta.env.BASE_URL),
     routes,
+    scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
   })
   const authStore = useAuthStore(pinia)
 
