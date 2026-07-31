@@ -4,6 +4,19 @@
 
 com.hiresemble.auth.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (AuthService 닉네임 use case)
+
+- What was done:
+  - `currentUser` read-only 조회와 `updateDisplayName` transaction을 추가하고 저장 후 CurrentUserDto projection을 반환했다.
+- Key decisions:
+  - 입력 trim은 service 경계에서도 적용해 저장값을 canonical form으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Persistence·다중 Session integration과 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 service package 분리)
 
 - What was done:

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증 Controller와 request·response DTO의 공개 HTTP·Swagger 계약을 소유한다. 현재 P1 구현과 검증 상태만 기록한다.
+P1 인증과 계정 닉네임 변경 Controller·request·response DTO의 공개 HTTP·Swagger 계약을 소유한다.
+
+## [2026-07-31] Session Summary (Account display-name HTTP 계약)
+
+- What was done:
+  - `/api/v1/account/display-name` PATCH Controller와 validation request DTO를 추가하고 CurrentUserDto 직접 응답을 문서화했다.
+- Key decisions:
+  - Session Cookie와 CSRF를 같은 OpenAPI requirement 객체에서 AND로 요구한다.
+- Issues encountered:
+  - Operation description 누락을 첫 OpenAPI 검증에서 발견해 보완했다.
+- Validation:
+  - Auth·OpenAPI integration과 Backend 54 suites/382 tests가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

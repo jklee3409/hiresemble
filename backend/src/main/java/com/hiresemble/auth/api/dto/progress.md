@@ -4,6 +4,19 @@
 
 com.hiresemble.auth.api.dto package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (DisplayNameUpdateRequest)
+
+- What was done:
+  - trim 후 1~100자이며 제어 문자와 `/`, `\`를 거부하는 닉네임 변경 request record를 추가했다.
+- Key decisions:
+  - Signup displayName과 같은 공개 validation 경계를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 400 field error와 OpenAPI request schema, 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 dto package 분리)
 
 - What was done:

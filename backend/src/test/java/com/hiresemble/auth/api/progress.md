@@ -2,7 +2,21 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint 회귀와 P1~P7 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P7 OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-07-31] Session Summary (닉네임 변경·71-operation OpenAPI)
+
+- What was done:
+  - 닉네임 trim·DB 저장·두 Session 최신 projection과 validation·401·403 회귀를 추가했다.
+  - 실제 Spring mapping과 생성 OpenAPI를 71 operations/52 paths, request·response·security schema로 고정했다.
+- Key decisions:
+  - Session principal이 과거 닉네임을 보유한 조건을 두 번째 login으로 재현하고 `/auth/me` DB projection을 검증한다.
+- Issues encountered:
+  - 새 operation description 누락으로 첫 OpenAPI test가 실패했고 annotation 보완 뒤 재검증에 통과했다.
+- Validation:
+  - `.\gradlew.bat check --console=plain --no-daemon`: 54 suites/382 tests, failure·error·skip 0.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 VerificationDto suggestion schema 경계)
 

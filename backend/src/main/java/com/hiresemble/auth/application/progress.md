@@ -2,7 +2,20 @@
 
 ## Overview
 
-가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정하고 기본 profile·AI preference 등록을 각 service에 위임한다.
+가입·로그인·로그아웃·현재 사용자 조회·닉네임 변경 transaction과 SecurityContext·CSRF Session 전이를 조정하고 기본 profile·AI preference 등록을 각 service에 위임한다.
+
+## [2026-07-31] Session Summary (DB 기반 사용자 projection·닉네임 transaction)
+
+- What was done:
+  - 사용자 ID로 active user를 다시 조회하는 current projection과 display-name update transaction을 추가했다.
+- Key decisions:
+  - user 없음·inactive는 stale 인증으로 보고 공통 `AUTHENTICATION_REQUIRED`를 반환한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 다중 Session 최신 닉네임·401 회귀와 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

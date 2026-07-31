@@ -2,7 +2,20 @@
 
 ## Overview
 
-여러 화면이 공유하는 P1 인증부터 P5 Job HTTP 계약, Session cleanup port와 비도메인 UI primitive를 관리한다.
+여러 화면이 공유하는 P1 인증부터 P7 Cover Letter HTTP 계약, Session cleanup port와 비도메인 UI primitive를 관리한다.
+
+## [2026-07-31] Session Summary (계정 닉네임 typed client)
+
+- What was done:
+  - 공용 API 계약에 display-name request와 CSRF 보호 PATCH client를 추가했다.
+- Key decisions:
+  - Profile DTO에 계정 field를 섞지 않고 account endpoint를 별도 transport로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - API/store unit test와 Frontend 53 files/214 tests가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (공용 UI 표현 기반 추가)
 

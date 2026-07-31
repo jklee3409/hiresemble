@@ -6,6 +6,20 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1 인증부터 P5 공고 등록·분석 기반까지이며 Dashboard 집계와 P6 이후 기능은 아직 없다.
 
+## [2026-07-31] Session Summary (프로필 닉네임·내비게이션 화면 계약)
+
+- What was done:
+  - `/profile/basic` Form과 API 목록에 닉네임 및 `PATCH /account/display-name`을 연결했다.
+  - Desktop 프로필 내비게이션은 부가 설명 없이 항목명만 표시하고 첫 진입 화면에 전체 항목을 노출하도록 명시했다.
+- Key decisions:
+  - `/settings/account`의 목표 계약은 유지하면서 현재 구현된 프로필 기본 정보에서도 같은 account endpoint를 재사용한다.
+- Issues encountered:
+  - 기존 API 명세에는 닉네임 endpoint가 있었지만 profile page 명세의 Form·API 연결이 누락되어 있었다.
+- Validation:
+  - `page.md`와 `api.md`의 endpoint·field 명칭 정합성을 검색하고 Frontend 전체 check를 통과했다.
+- Next steps:
+  - 비밀번호 변경·회원 탈퇴는 별도 요청과 구현 단계 전까지 목표 계약으로만 유지한다.
+
 ## [2026-07-28] Session Summary (닉네임·졸업 예정/완료 사용자 의미 보정)
 
 - What was done:

@@ -6,8 +6,8 @@ P1 현재 인증 사용자와 unknown·authenticated·anonymous 상태를 Pinia�
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`auth.ts`](auth.ts): bootstrap·signup·login·logout·401 reset store
-- [`auth.test.ts`](auth.test.ts): 상태 전이·cleanup·두 사용자 격리 test
+- [`auth.ts`](auth.ts): bootstrap·signup·login·logout·닉네임 projection 갱신·401 reset store
+- [`auth.test.ts`](auth.test.ts): 상태 전이·닉네임 갱신·cleanup·두 사용자 격리 test
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

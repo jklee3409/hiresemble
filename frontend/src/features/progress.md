@@ -4,6 +4,19 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P7 cover-letters feature까지 구현되어 있다.
 
+## [2026-07-31] Session Summary (프로필 닉네임·내비게이션 규칙)
+
+- What was done:
+  - Auth feature에 재사용 가능한 nickname schema를 추가하고 Profile feature navigation을 label-only 구조와 header-safe sticky offset으로 보정했다.
+- Key decisions:
+  - 가입과 프로필 변경은 같은 `displayName` validation 경계를 공유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 관련 feature unit test와 Frontend 53 files/214 tests가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 cover-letters feature)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-07-31] Session Summary (닉네임 변경 request·client)
+
+- What was done:
+  - `DisplayNameUpdateRequest`와 CSRF bootstrap 뒤 `/account/display-name`을 호출하는 typed PATCH client를 추가했다.
+- Key decisions:
+  - 성공 응답은 공통 envelope 없이 Backend의 직접 `CurrentUserDto`를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth API 소비 store test와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 verification suggestion 경계 정합)
 
 - What was done:

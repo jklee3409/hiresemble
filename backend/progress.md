@@ -3,9 +3,26 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P6 Job Analysis와 P7 Cover Letter 17개 API까지 총 70 operations/51 paths가 구현되어 있다.
+- P1 인증부터 P6 Job Analysis, P7 Cover Letter 17개와 계정 닉네임 변경까지 총 71 operations/52 paths가 구현되어 있다.
 - V1~V7을 byte 단위로 보존한 V8 migration이 Cover Letter·question·immutable answer/provenance/verification과 typed Run link를 추가한다.
-- Backend 전체 54 suites/380 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+- Backend 전체 54 suites/382 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+
+## [2026-07-31] Session Summary (계정 닉네임 변경 API)
+
+- What was done:
+  - `PATCH /api/v1/account/display-name`의 validation DTO·Controller·transactional service와 `users.display_name` 상태 전이를 구현했다.
+  - `GET /auth/me`를 DB 기반 projection으로 전환해 같은 사용자의 기존 Session에서도 변경된 닉네임을 조회하도록 했다.
+  - Account mutation의 Session+CSRF OpenAPI AND requirement와 71 operations/52 paths 기준선을 고정했다.
+- Key decisions:
+  - 기존 `users.display_name varchar(100)`을 사용하므로 Flyway migration은 추가하지 않는다.
+  - inactive·삭제된 사용자 ID는 인증 정보가 유효하지 않은 것으로 처리해 공통 401 계약을 유지한다.
+- Issues encountered:
+  - 새 OpenAPI operation description 누락으로 첫 contract test가 실패해 annotation을 보완하고 허용된 단일 재검증으로 통과했다.
+- Validation:
+  - `.\gradlew.bat check --console=plain --no-daemon`: 54 suites/382 tests, failure·error·skip 0.
+  - Auth 다중 Session·trim·persistence·validation·401·403과 OpenAPI 71/52 계약이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 Backend 최종 validator PASS)
 

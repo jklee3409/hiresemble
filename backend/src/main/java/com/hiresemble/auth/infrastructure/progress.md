@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 users credential·상태의 JPA mapping과 repository만 소유한다. `user_profiles` 영속성은 P2 profile 영역으로 이동했다.
+P1 users credential·상태·표시 이름의 JPA mapping과 repository만 소유한다. `user_profiles` 영속성은 P2 profile 영역으로 이동했다.
+
+## [2026-07-31] Session Summary (사용자 표시 이름 상태 전이)
+
+- What was done:
+  - 기존 `users.display_name`과 `updated_at`을 함께 변경하는 Entity 상태 전이를 추가했다.
+- Key decisions:
+  - V2의 varchar(100) column을 그대로 사용해 migration을 추가하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PostgreSQL integration에서 trim 저장값과 조회값을 확인하고 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

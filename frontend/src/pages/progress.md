@@ -4,6 +4,20 @@
 
 P1 인증부터 P7 Cover Letter 목록·공고 context·canonical editor, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-31] Session Summary (프로필 기본 정보·필터 간격 보정)
+
+- What was done:
+  - Profile 기본 정보 저장 bar에 좌우 border·radius·16px padding을 적용하고 닉네임 입력을 기존 단일 저장 action에 통합했다.
+  - Cover Letter 목록의 검색·상태·정렬·적용 control grid에 12px gap을 추가했다.
+- Key decisions:
+  - Profile 본문 저장 성공 뒤 nickname만 실패하면 부분 성공 alert를 보여 주고 nickname dirty 상태를 유지한다.
+- Issues encountered:
+  - 실행 중인 기존 Backend가 새 account endpoint 전 source여서 browser API 결합 대신 Frontend unit과 Backend integration을 각각 검증했다.
+- Validation:
+  - Page tests와 Frontend 53 files/214 tests, 1440×1000 save bar inset·filter gap 실측이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 editor 409 비교·재적용 보강)
 
 - What was done:

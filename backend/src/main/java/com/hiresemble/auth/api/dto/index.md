@@ -6,14 +6,15 @@ com.hiresemble.auth.api.dto package는 외부 request·response와 event의 타�
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AuthSessionDto.java](AuthSessionDto.java) | DTO 책임 구현 |
-| [CsrfDto.java](CsrfDto.java) | DTO 책임 구현 |
-| [CurrentUserDto.java](CurrentUserDto.java) | DTO 책임 구현 |
-| [LoginRequest.java](LoginRequest.java) | DTO 책임 구현 |
-| [SignupRequest.java](SignupRequest.java) | DTO 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                           | 역할                        |
+| -------------------------------------------------------------- | --------------------------- |
+| [AuthSessionDto.java](AuthSessionDto.java)                     | DTO 책임 구현               |
+| [CsrfDto.java](CsrfDto.java)                                   | DTO 책임 구현               |
+| [CurrentUserDto.java](CurrentUserDto.java)                     | DTO 책임 구현               |
+| [DisplayNameUpdateRequest.java](DisplayNameUpdateRequest.java) | 닉네임 변경 요청 계약       |
+| [LoginRequest.java](LoginRequest.java)                         | DTO 책임 구현               |
+| [SignupRequest.java](SignupRequest.java)                       | DTO 책임 구현               |
+| [progress.md](progress.md)                                     | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할
 

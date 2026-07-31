@@ -4,6 +4,19 @@
 
 com.hiresemble.auth.infrastructure.persistence package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (UserEntity 닉네임 변경)
+
+- What was done:
+  - 표시 이름과 갱신 시각을 함께 적용하는 `changeDisplayName`을 추가했다.
+- Key decisions:
+  - Repository query나 schema를 확장하지 않고 JPA dirty checking과 명시적 flush를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AuthIntegrationTest의 DB 직접 assertion과 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 persistence package 분리)
 
 - What was done:

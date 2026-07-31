@@ -4,6 +4,20 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-31] Session Summary (프로필 전체 내비게이션 첫 화면 노출)
+
+- What was done:
+  - Desktop profile outline의 모든 부가 설명·footer note를 제거하고 항목명과 현재 위치만 남겼다.
+  - sticky top을 global header 높이에 맞추고 행 높이를 축소해 첫 진입에서 7개 항목 전체가 화면 안에 들어오도록 했다.
+- Key decisions:
+  - Mobile native selector와 7개 deep link·`aria-current` 계약은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Navigation unit test와 Playwright CLI 1440×1000에서 sidebar top 108px·bottom 541.64px, viewport 1000px를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (평면 Profile Navigation·희망 조건 입력)
 
 - What was done:

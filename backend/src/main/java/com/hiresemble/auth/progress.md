@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1의 사용자 가입, Session 인증과 현재 사용자 projection을 구성하며 가입 기본 프로필과 P3 AI preference 생성을 각 application 경계에 위임한다.
+P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과 닉네임 변경을 구성하며 가입 기본 프로필과 P3 AI preference 생성을 각 application 경계에 위임한다.
+
+## [2026-07-31] Session Summary (현재 사용자 닉네임 변경)
+
+- What was done:
+  - 계정 닉네임 PATCH와 DB 기반 `/auth/me` projection을 Controller·DTO·service·persistence 경계에 구현했다.
+- Key decisions:
+  - 다중 Session의 serialized principal을 갱신하지 않고 각 projection 조회가 DB 최신값을 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth integration과 전체 Backend 54 suites/382 tests가 통과했다.
+- Next steps:
+  - 비밀번호 변경·탈퇴는 별도 승인 전 구현하지 않는다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-Signup·login의 client 입력 schema와 Backend UTF-8 byte 계약을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+Signup·login과 프로필 닉네임 변경의 client 입력 schema, Backend UTF-8 byte·표시 이름 계약을 관리한다.
+
+## [2026-07-31] Session Summary (프로필 닉네임 validation 재사용)
+
+- What was done:
+  - Signup의 display-name schema를 공통화하고 프로필 저장에서 사용할 `validateDisplayNameForm`과 trim·blank·100자·제어 문자·경로 구분자 테스트를 추가했다.
+- Key decisions:
+  - Frontend 문구는 닉네임을 사용하되 공개 request field `displayName`은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth validation tests와 Frontend 53 files/214 tests가 통과했다.
+- Next steps:
+  - Backend 표시 이름 제약이 바뀌면 Signup과 Profile 소비자를 함께 갱신한다.
 
 ## [2026-07-28] Session Summary (이메일 형식·닉네임 검증 명시)
 

@@ -6,14 +6,14 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                   | 역할                                                           |
-| -------------------------------------- | -------------------------------------------------------------- |
-| [`index.ts`](index.ts)                 | 인증·profile·Agent Run·Document·Job·Cover Letter route와 guard |
-| [`returnTo.ts`](returnTo.ts)           | 등록된 보호 path만 허용하는 redirect 검증                      |
-| [`router.test.ts`](router.test.ts)     | public-only·auth-required·401·shell·404 test                   |
-| [`returnTo.test.ts`](returnTo.test.ts) | scheme·host·control·미등록 path 거부 test                      |
-| [`index.md`](index.md)                 | Router 영역의 구조와 변경 원칙 설명                            |
-| [`progress.md`](progress.md)           | Route와 guard 구현 상태 추적                                   |
+| 경로                                   | 역할                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| [`index.ts`](index.ts)                 | 인증·profile·Agent Run·Document·Job·Cover Letter route, scroll과 guard |
+| [`returnTo.ts`](returnTo.ts)           | 등록된 보호 path만 허용하는 redirect 검증                              |
+| [`router.test.ts`](router.test.ts)     | public-only·auth-required·401·shell·404 test                           |
+| [`returnTo.test.ts`](returnTo.test.ts) | scheme·host·control·미등록 path 거부 test                              |
+| [`index.md`](index.md)                 | Router 영역의 구조와 변경 원칙 설명                                    |
+| [`progress.md`](progress.md)           | Route와 guard 구현 상태 추적                                           |
 
 현재 하위 디렉터리는 없다.
 
@@ -21,6 +21,7 @@
 
 - `index.ts`는 `/`, 인증, onboarding, dashboard, deep-link 가능한 7개 `/profile` section, lazy `/agent-runs`·`/documents`·`/jobs`·`/cover-letters`와 Job analysis/cover-letter child 및 canonical editor route를 등록한다.
 - public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
+- 새 route 진입은 문서 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 - `returnTo`는 dashboard·onboarding·등록된 profile·Agent Run·Document·Job·Cover Letter의 same-origin path만 허용한다.
 - route name, path, page import와 layout 경계를 한눈에 추적할 수 있는 진입점 역할을 한다.
 

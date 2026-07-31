@@ -4,6 +4,19 @@
 
 P1~P7 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
 
+## [2026-07-31] Session Summary (Account mutation security)
+
+- What was done:
+  - `/api/v1/account` mutation을 Session Cookie+CSRF AND security customizer 범위에 추가했다.
+- Key decisions:
+  - 성공·오류 schema는 Controller annotation을 원천으로 두고 customizer는 security 결합만 보강한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 생성 OpenAPI 71 operations/52 paths와 account security requirement가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 VerificationDto suggestion 제약 보강)
 
 - What was done:

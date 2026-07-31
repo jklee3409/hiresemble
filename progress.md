@@ -10,8 +10,27 @@
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
-- 공개 Spring/OpenAPI는 P7 자기소개서 17개를 포함해 총 70 operations·51 paths다.
+- 공개 Spring/OpenAPI는 P7 자기소개서 17개와 계정 닉네임 변경을 포함해 총 71 operations·52 paths다.
 - Dashboard 전용 집계·면접과 실제 provider는 아직 없다.
+
+## [2026-07-31] Session Summary (프로필 UI 정리·닉네임 변경)
+
+- What was done:
+  - 프로필 하위 내비게이션의 부가 설명을 제거하고 첫 진입 scroll·focus와 sticky offset을 보정해 전체 항목이 고정 헤더 아래 한 화면에 노출되도록 했다.
+  - 프로필 저장 바의 좌우 테두리·내부 여백을 복구하고 자기소개서 검색·상태·정렬 filter 사이에 12px 간격을 적용했다.
+  - 프로필 기본 정보의 단일 저장 action에 닉네임 변경을 연결하고 `PATCH /api/v1/account/display-name`과 DB 기반 최신 사용자 projection을 구현했다.
+- Key decisions:
+  - 프로필 본문과 닉네임은 하나의 사용자 action으로 검증하되, 본문 저장 성공 뒤 닉네임만 실패하면 부분 저장을 알리고 닉네임 dirty 상태를 유지한다.
+  - Session principal을 일괄 교체하지 않고 `GET /auth/me`가 사용자 ID로 DB를 다시 조회해 모든 Session에 최신 닉네임을 제공한다.
+- Issues encountered:
+  - OpenAPI 첫 검증에서 새 operation description 누락을 발견해 보완한 뒤 단일 재검증으로 통과했다.
+  - 브라우저가 연결된 기존 8080 서버는 변경 전 process여서 새 경로가 404였고, 최신 source API는 Spring 통합 테스트로 검증했다.
+- Validation:
+  - Backend `.\gradlew.bat check --console=plain --no-daemon`: 54 suites/382 tests, failure·error·skip 0, OpenAPI 71 operations/52 paths.
+  - Frontend `corepack pnpm check`: 53 files/214 tests, lint·format·typecheck·build 통과.
+  - Playwright CLI 1440×1000 실브라우저 검수에서 profile sidebar 7개 전체 노출, save bar 좌우 1px border·16px padding, Cover Letter filter 간 12px gap을 확인했다.
+- Next steps:
+  - 로컬에서 이미 실행 중인 Backend process는 새 닉네임 endpoint를 사용하려면 최신 source로 재시작한다.
 
 ## [2026-07-30] Session Summary (P7 최종 validator PASS·완료)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 현재 인증 사용자와 unknown·authenticated·anonymous 상태를 Pinia로 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+현재 인증 사용자와 unknown·authenticated·anonymous 상태, 닉네임 변경 뒤 사용자 projection을 Pinia로 관리한다.
+
+## [2026-07-31] Session Summary (현재 사용자 닉네임 projection 갱신)
+
+- What was done:
+  - Auth store에 display-name update action을 추가하고 성공한 `CurrentUserDto`로 header·sidebar 소비 projection을 즉시 교체했다.
+- Key decisions:
+  - 닉네임만 store에 별도 복제하지 않고 current user DTO를 원자적으로 갱신한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Store projection test와 Frontend 53 files/214 tests가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-19] Session Summary (P1 auth store 구현)
 

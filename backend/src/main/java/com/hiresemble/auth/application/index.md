@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-가입·로그인·로그아웃 transaction과 SecurityContext·CSRF Session 전이를 조정한다.
+가입·로그인·로그아웃·현재 사용자 조회·닉네임 변경 transaction과 SecurityContext·CSRF Session 전이를 조정한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,6 +13,7 @@
 
 - 사용자 JPA 저장, 프로필 등록 위임, password 검증, Session ID rotation과 SecurityContext 저장의 순서를 명시적으로 관리한다.
 - Session 저장 실패 시 in-memory 인증 상태를 폐기해 request-end 재저장을 차단한다.
+- 현재 사용자 projection은 DB에서 다시 읽어 여러 Session에서도 최신 닉네임을 반환한다.
 
 ## 다른 디렉터리와의 의존 관계
 

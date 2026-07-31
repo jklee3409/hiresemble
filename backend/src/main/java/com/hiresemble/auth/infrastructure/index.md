@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 users credential·상태의 JPA mapping 및 repository를 소유한다.
+P1 users credential·상태·표시 이름의 JPA mapping 및 repository를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 

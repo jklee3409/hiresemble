@@ -10,7 +10,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document, P5~P
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·대표 학력·희망 조건·문서 이동/추후 입력 P2 흐름
 - [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 상태 기반 다음 할 일과 신규 사용자 시작 화면
-- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 단일 편집 영역과 명시적 저장 상태·409 재적용
+- [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 닉네임·기본 정보·자기소개·희망 조건 단일 편집 영역과 명시적 저장 상태·409 재적용
 - [`DashboardPage.test.ts`](DashboardPage.test.ts): 신규·기존 사용자, 사용자 이름 fallback과 부분 조회 오류 대시보드 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력·경력·자격증·어학·수상 목록·form·삭제·409 재적용
 - [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): Workspace 안의 자료 기반 경험 정보 filter·편집·검토와 read-only 상태
@@ -23,7 +23,7 @@ P1 인증·보호 shell, P2 onboarding·profile, P3 Agent Run, P4 Document, P5~P
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict
 - [`JobAnalysisPage.vue`](JobAnalysisPage.vue): 분석 실행·Run 진행·Eligibility/fit score·criterion/evidence·OUTDATED·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
-- [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 전체 목록 URL filter·상태·archive/unarchive
+- [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
 - [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 문항·TipTap·evidence·AI·version·verification·finalize canonical editor
 - [`RootRedirectPage.vue`](RootRedirectPage.vue): 인증 bootstrap 대기 shell
 - [`NotFoundPage.vue`](NotFoundPage.vue): 전용 404

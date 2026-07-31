@@ -202,10 +202,13 @@ Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지
 
 # 5. 프로필
 
+Desktop 프로필 하위 내비게이션은 부가 설명 없이 항목명만 표시하고, 첫 진입 시 모든 항목이 고정 헤더 아래 화면에 한 번에 노출되도록 한다.
+
 ## 5.1 `/profile/basic`
 
 ### Form
 
+- 닉네임
 - 이름
 - 간단 소개
 - 졸업(예정)일
@@ -215,6 +218,7 @@ Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지
 
 API:
 
+- `PATCH /account/display-name`
 - `GET /profile`
 - `PUT /profile`
 

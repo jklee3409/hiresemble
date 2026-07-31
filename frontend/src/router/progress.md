@@ -5,6 +5,20 @@
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
 - `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter detail child만 허용한다.
+- 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
+
+## [2026-07-31] Session Summary (첫 route 진입 scroll 기준)
+
+- What was done:
+  - Router `scrollBehavior`에 saved position 복원과 새 navigation `top: 0` 기준을 추가했다.
+- Key decisions:
+  - Browser back/forward는 기존 위치를 보존하고 새 profile 진입만 상단에서 시작한다.
+- Issues encountered:
+  - jsdom은 `window.scrollTo` 미구현 안내를 출력하지만 test failure 없이 browser 동작은 정상이다.
+- Validation:
+  - Frontend 전체 check와 Playwright CLI profile 첫 진입 `scrollY=0` 검수가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 자기소개서 route 3개)
 

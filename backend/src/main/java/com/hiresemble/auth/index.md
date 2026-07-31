@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1의 사용자 가입, Session 인증과 현재 사용자 projection을 도메인 경계별로 구성한다.
+P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과 계정 닉네임 변경을 도메인 경계별로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,6 +16,7 @@ P1의 사용자 가입, Session 인증과 현재 사용자 projection을 도메�
 ## 구성 요소 역할
 
 - HTTP 입력은 application use case로 전달하고 사용자 entity는 공개 응답에 직접 노출하지 않는다.
+- 닉네임 변경 뒤 `GET /auth/me`는 Session principal의 과거 값이 아니라 현재 DB projection을 반환한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -25,7 +26,7 @@ P1의 사용자 가입, Session 인증과 현재 사용자 projection을 도메�
 ## 변경 시 주의사항
 
 - 가입 시 기본 프로필 생성은 [`../profile/`](../profile/index.md)의 등록 경계를 호출하고, 프로필 CRUD를 인증 영역에 중복 구현하지 않는다.
-- 계정 변경, 탈퇴와 Dashboard API를 이 영역에 선행 추가하지 않는다.
+- 승인된 닉네임 변경 외 비밀번호 변경·탈퇴와 Dashboard API를 선행 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

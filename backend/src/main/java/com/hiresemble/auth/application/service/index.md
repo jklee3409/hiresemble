@@ -6,11 +6,11 @@ com.hiresemble.auth.application.service package는 use case, transaction 또는 
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AuthService.java](AuthService.java) | Service 책임 구현 |
-| [CsrfTokenService.java](CsrfTokenService.java) | Service 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                           | 역할                                                 |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| [AuthService.java](AuthService.java)           | 가입·로그인·현재 사용자 조회·닉네임 변경 transaction |
+| [CsrfTokenService.java](CsrfTokenService.java) | Service 책임 구현                                    |
+| [progress.md](progress.md)                     | 이 package의 이동·검증 이력                          |
 
 ## 구성 요소 역할
 

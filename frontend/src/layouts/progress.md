@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`AI 작업 내역` navigation, Job Analysis/Cover Letter tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-31] Session Summary (Route focus scroll 간섭 제거)
+
+- What was done:
+  - 보호 route 전환 뒤 main focus가 페이지 상단 scroll 결정을 덮어쓰지 않도록 `focus({ preventScroll: true })`를 적용했다.
+- Key decisions:
+  - Keyboard focus 이동은 유지하고 scroll 위치는 Router가 단독으로 결정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 check와 실제 profile 첫 진입 `scrollY=0` 검수가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 자기소개서 navigation·Job tab)
 
 - What was done:

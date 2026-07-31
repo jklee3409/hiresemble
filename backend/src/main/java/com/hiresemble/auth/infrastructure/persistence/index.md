@@ -6,11 +6,11 @@ com.hiresemble.auth.infrastructure.persistence package는 JDBC/JPA 기반 저장
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [UserEntity.java](UserEntity.java) | Persistence 책임 구현 |
-| [UserRepository.java](UserRepository.java) | Persistence 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                       | 역할                                              |
+| ------------------------------------------ | ------------------------------------------------- |
+| [UserEntity.java](UserEntity.java)         | 사용자 persistence와 로그인·닉네임 변경 상태 전이 |
+| [UserRepository.java](UserRepository.java) | Persistence 책임 구현                             |
+| [progress.md](progress.md)                 | 이 package의 이동·검증 이력                       |
 
 ## 구성 요소 역할
 

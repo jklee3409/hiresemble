@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-여러 화면이 공유하는 P1 인증부터 P5 Job HTTP 계약, Session cleanup port와 제품 UI primitive를 관리한다.
+여러 화면이 공유하는 P1 인증부터 P7 Cover Letter HTTP 계약, Session cleanup port와 제품 UI primitive를 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`api/`](api/index.md): typed Axios·CSRF·오류·인증·프로필·Agent Run·Document·Job API
+- [`api/`](api/index.md): typed Axios·CSRF·오류·인증·계정·프로필·Agent Run·Document·Job·Cover Letter API
 - [`session/`](session/index.md): logout·401·사용자 전환 cleanup 순서
 - [`ui/`](ui/index.md): icon·page header·status·state·pagination 공용 표현
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

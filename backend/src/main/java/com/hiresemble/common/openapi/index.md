@@ -14,7 +14,7 @@ com.hiresemble.common.openapi package는 P1~P7 공개 OpenAPI metadata와 Sessio
 ## 구성 요소 역할
 
 - 공개 OpenAPI metadata와 Session·CSRF security scheme 설정을 소유한다.
-- Profile·Document·Job·Cover Letter별 공통 오류 응답과 mutation CSRF 요구를 보강한다.
+- Account·Profile·Document·Job·Cover Letter별 공통 오류 응답과 mutation CSRF 요구를 보강한다.
 
 ## 다른 디렉터리와의 의존 관계
 

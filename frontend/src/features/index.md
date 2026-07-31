@@ -6,7 +6,7 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`auth/`](auth/index.md): P1 인증 Form 입력 schema와 byte validation
+- [`auth/`](auth/index.md): P1 인증과 프로필 닉네임 Form 입력 schema·byte validation
 - [`profile/`](profile/index.md): P2 프로필 Zod·query key·version 충돌·공용 입력 UI
 - [`agent-runs/`](agent-runs/index.md): P3 목록·상세 projection, SSE 복구와 Progress Drawer
 - [`documents/`](documents/index.md): P4 문서 upload·query·상태·SSE invalidation과 delete cleanup

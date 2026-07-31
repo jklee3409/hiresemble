@@ -5,7 +5,23 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P7 Cover Letter typed client·Vue Query·TipTap editor·session draft·SSE terminal invalidation까지 구현되어 있다.
 - `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`와 공고 분석·자기소개서 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 53 files/211 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+- Vitest 53 files/214 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+
+## [2026-07-31] Session Summary (프로필 화면·닉네임 편집 보정)
+
+- What was done:
+  - 프로필 navigation을 설명 없는 7개 항목으로 축약하고 첫 route 진입 scroll과 focus를 보정했다.
+  - 기본 정보 save bar 좌우 잘림과 자기소개서 filter 간격을 수정하고, 기존 저장 action에 nickname validation·API·store projection 갱신을 연결했다.
+- Key decisions:
+  - 새 전용 설정 화면을 복제하지 않고 프로필 기본 정보에서 profile DTO와 account display-name 요청을 조정한다.
+  - route 이동 focus는 `preventScroll`을 사용하고 browser history 저장 위치 외 새 진입만 상단으로 이동한다.
+- Issues encountered:
+  - 실브라우저의 기존 Backend process가 변경 전 source여서 닉네임 API 결합은 unit·Spring integration으로 분리 검증했다.
+- Validation:
+  - `corepack pnpm check`: ESLint·Prettier·vue-tsc·53 files/214 tests·Vite build 통과.
+  - Playwright CLI 1440×1000에서 profile sidebar 전체 노출, save bar 좌우 inset과 Cover Letter filter 12px gap을 확인했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 Frontend 최종 validator PASS)
 

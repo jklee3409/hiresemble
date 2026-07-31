@@ -2,12 +2,12 @@
 
 ## 디렉터리 목적
 
-Signup·login의 client 입력 schema와 Backend UTF-8 byte 계약을 관리한다.
+Signup·login과 프로필 닉네임 변경의 client 입력 schema, Backend UTF-8 byte·표시 이름 계약을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`formValidation.ts`](formValidation.ts): Zod form schema와 TextEncoder byte 검사
-- [`formValidation.test.ts`](formValidation.test.ts): credential 경계와 consent·confirm 테스트
+- [`formValidation.ts`](formValidation.ts): 인증·닉네임 Zod form schema와 TextEncoder byte 검사
+- [`formValidation.test.ts`](formValidation.test.ts): credential·닉네임 경계와 consent·confirm 테스트
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
