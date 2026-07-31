@@ -345,6 +345,7 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
   display: grid;
   grid-template-columns: minmax(14rem, 1.5fr) minmax(10rem, 0.7fr) minmax(10rem, 0.8fr) auto;
   align-items: end;
+  gap: var(--space-3);
 }
 
 .cover-list__notice,
