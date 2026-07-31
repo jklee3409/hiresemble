@@ -41,7 +41,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlySeventyThreeOperationsAndFiftyThreePaths() {
+    void liveSpringMappingsHaveExactlyEightyFourOperationsAndSixtyThreePaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -57,17 +57,17 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(53);
-        assertThat(operations[0]).isEqualTo(73);
+        assertThat(paths).hasSize(63);
+        assertThat(operations[0]).isEqualTo(84);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlySeventyThreeOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyEightyFourOperations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.7");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.8");
         assertThat(fieldValues(document.get("tags"), "name"))
                 .containsExactlyInAnyOrder(
                         "Authentication",
@@ -75,7 +75,9 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "Agent Runs",
                         "Documents",
                         "Jobs",
-                        "Cover Letters");
+                        "Cover Letters",
+                        "Interview preparation",
+                        "Interview research");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -137,8 +139,18 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/cover-letter-answer-versions/{versionId}/verifications",
                         "/api/v1/cover-letters/{coverLetterId}/finalize",
                         "/api/v1/cover-letters/{coverLetterId}/archive",
-                        "/api/v1/cover-letters/{coverLetterId}/unarchive");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(73);
+                        "/api/v1/cover-letters/{coverLetterId}/unarchive",
+                        "/api/v1/jobs/{jobId}/interview-preparations",
+                        "/api/v1/interview-question-sets",
+                        "/api/v1/interview-question-sets/{questionSetId}",
+                        "/api/v1/research-runs/{researchRunId}",
+                        "/api/v1/research-runs/{researchRunId}/sources",
+                        "/api/v1/research-runs/{researchRunId}/retry",
+                        "/api/v1/interview-questions/{questionId}",
+                        "/api/v1/interview-questions/{questionId}/answer-versions",
+                        "/api/v1/interview-answer-versions/{versionId}/feedback",
+                        "/api/v1/interview-answer-versions/{versionId}/feedbacks");
+        assertThat(operationCount(document.get("paths"))).isEqualTo(84);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -296,6 +308,87 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "/api/v1/cover-letters/{coverLetterId}/unarchive",
                 "post",
                 "unarchiveCoverLetter");
+        assertInterviewOperation(
+                document,
+                "/api/v1/jobs/{jobId}/interview-preparations",
+                "post",
+                "createInterviewPreparation",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-question-sets",
+                "get",
+                "listInterviewQuestionSets",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-question-sets/{questionSetId}",
+                "get",
+                "getInterviewQuestionSet",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/research-runs/{researchRunId}",
+                "get",
+                "getResearchRun",
+                "Interview research");
+        assertInterviewOperation(
+                document,
+                "/api/v1/research-runs/{researchRunId}/sources",
+                "get",
+                "listResearchSources",
+                "Interview research");
+        assertInterviewOperation(
+                document,
+                "/api/v1/research-runs/{researchRunId}/retry",
+                "post",
+                "retryResearchRun",
+                "Interview research");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-questions/{questionId}",
+                "get",
+                "getInterviewQuestion",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-questions/{questionId}/answer-versions",
+                "get",
+                "listInterviewAnswerVersions",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-questions/{questionId}/answer-versions",
+                "post",
+                "createInterviewAnswerVersion",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-answer-versions/{versionId}/feedback",
+                "post",
+                "createInterviewAnswerFeedback",
+                "Interview preparation");
+        assertInterviewOperation(
+                document,
+                "/api/v1/interview-answer-versions/{versionId}/feedbacks",
+                "get",
+                "listInterviewAnswerFeedbacks",
+                "Interview preparation");
+        assertResponseCodes(
+                document.at(
+                        "/paths/~1api~1v1~1jobs~1{jobId}~1interview-preparations/post"),
+                "202", "400", "401", "403", "404", "409", "429", "503");
+        assertResponseCodes(
+                document.at("/paths/~1api~1v1~1interview-question-sets/get"),
+                "200", "400", "401", "404");
+        assertResponseCodes(
+                document.at(
+                        "/paths/~1api~1v1~1interview-questions~1{questionId}~1answer-versions/post"),
+                "201", "400", "401", "403", "404", "409");
+        assertResponseCodes(
+                document.at(
+                        "/paths/~1api~1v1~1interview-answer-versions~1{versionId}~1feedback/post"),
+                "202", "400", "401", "403", "404", "429", "503");
         assertResponseCodes(
                 document.at("/paths/~1api~1v1~1jobs~1{jobId}~1analysis/post"),
                 "202", "400", "401", "403", "404", "409", "429", "503");
@@ -400,6 +493,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(coverLetterMutationSecurity).hasSize(1);
         assertThat(fieldNames(coverLetterMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        JsonNode interviewMutationSecurity =
+                document.at(
+                        "/paths/~1api~1v1~1interview-answer-versions~1{versionId}~1feedback/post/security");
+        assertThat(interviewMutationSecurity).hasSize(1);
+        assertThat(fieldNames(interviewMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
     }
 
     @Test
@@ -440,6 +539,20 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(verificationSuggestions.at("/maxItems").asInt()).isEqualTo(20);
         assertThat(verificationSuggestions.at("/items/minLength").asInt()).isEqualTo(1);
         assertThat(verificationSuggestions.at("/items/maxLength").asInt()).isEqualTo(1000);
+        assertThat(schemas.at("/InterviewAnswerVersionDto/properties/content/maxLength")
+                        .asInt())
+                .isEqualTo(20000);
+        assertThat(schemas.at("/InterviewFeedbackDto/properties/scores/minItems")
+                        .asInt())
+                .isEqualTo(1);
+        assertThat(schemas.at("/InterviewFeedbackDto/properties/scores/maxItems")
+                        .asInt())
+                .isEqualTo(20);
+        assertThat(schemas.at("/InterviewFeedbackDto/properties/revisedExample/maxLength")
+                        .asInt())
+                .isEqualTo(10000);
+        assertThat(fieldNames(schemas.at("/ResearchSourceDto/properties")))
+                .doesNotContain("providerRank", "provider", "rawContent");
 
         assertThat(fieldNames(schemas.at("/ProfileDto/properties")))
                 .containsExactlyInAnyOrder(
@@ -634,6 +747,20 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.at("/tags/0").asText()).isEqualTo("Cover Letters");
     }
 
+    private void assertInterviewOperation(
+            JsonNode document,
+            String path,
+            String method,
+            String operationId,
+            String tag) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
+        assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo(tag);
+    }
+
     private int operationCount(JsonNode paths) {
         int count = 0;
         for (JsonNode path : paths) {
@@ -648,6 +775,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
 
     private void assertResponseCodes(JsonNode operation, String... expectedCodes) {
         assertThat(fieldNames(operation.get("responses")))
+                .as(operation.path("operationId").asText())
                 .containsExactlyInAnyOrder(expectedCodes);
     }
 

@@ -150,7 +150,7 @@ public class JobExtractionMutationService
     }
 
     @Override
-    public void requireActiveOwner(UUID userId, UUID resourceId) {
+    public void requireActiveOwner(UUID userId, String resourceType, UUID resourceId) {
         active(userId, resourceId);
     }
 

@@ -117,6 +117,12 @@ hiresemble:
       generation-price-version: ${COVER_LETTER_GENERATION_PRICE_VERSION:0}
       verification-estimated-cost-usd: ${COVER_LETTER_VERIFICATION_ESTIMATED_COST_USD:0.000000}
       verification-price-version: ${COVER_LETTER_VERIFICATION_PRICE_VERSION:0}
+  interview:
+    ai-cost:
+      preparation-estimated-cost-usd: ${INTERVIEW_PREPARATION_ESTIMATED_COST_USD:0.000000}
+      preparation-price-version: ${INTERVIEW_PREPARATION_PRICE_VERSION:0}
+      feedback-estimated-cost-usd: ${INTERVIEW_FEEDBACK_ESTIMATED_COST_USD:0.000000}
+      feedback-price-version: ${INTERVIEW_FEEDBACK_PRICE_VERSION:0}
   job-deadline-scheduler:
     cron: ${JOB_DEADLINE_SCHEDULER_CRON:0 0 * * * *}
     batch-size: ${JOB_DEADLINE_SCHEDULER_BATCH_SIZE:100}
@@ -140,4 +146,6 @@ hiresemble:
     reconciliation-batch-size: ${AGENT_RECONCILIATION_BATCH_SIZE:50}
     worker-id: ${AGENT_WORKER_ID:local-worker}
   search:
+    provider: ${WEB_SEARCH_PROVIDER:none}
     tavily-api-key: ${TAVILY_API_KEY:}
+    tavily-endpoint: ${TAVILY_ENDPOINT:https://api.tavily.com/search}

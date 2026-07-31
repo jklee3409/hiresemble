@@ -58,7 +58,7 @@ public class AgentRunApplicationService {
                     .filter(candidate -> candidate.supports(resourceType))
                     .findFirst()
                     .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-            resolver.requireActiveOwner(userId, resourceId);
+            resolver.requireActiveOwner(userId, resourceType, resourceId);
         }
         return queryPort.findPage(new AgentRunListCriteria(
                 userId,

@@ -23,6 +23,10 @@ public final class CanonicalWorkflowDefinitions {
             "cover-letter-generation-v1";
     public static final String COVER_LETTER_VERIFICATION_VERSION =
             "cover-letter-verification-v1";
+    public static final String INTERVIEW_PREPARATION_VERSION =
+            "interview-preparation-v1";
+    public static final String INTERVIEW_ANSWER_FEEDBACK_VERSION =
+            "interview-answer-feedback-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -42,17 +46,92 @@ public final class CanonicalWorkflowDefinitions {
                 jobAnalysis(),
                 coverLetterGeneration(),
                 coverLetterVerification(),
-                definition(WorkflowType.INTERVIEW_PREPARATION, economyBalanced(),
-                        "VALIDATE_PREREQUISITES", "BUILD_PUBLIC_SEARCH_PLAN", "SEARCH_OFFICIAL_SOURCES",
-                        "SEARCH_INTERVIEW_SOURCES", "DEDUPE_CLASSIFY_SOURCES", "ASSESS_SOURCE_COVERAGE",
-                        "BUILD_QUESTION_CONTEXT", "GENERATE_QUESTIONS",
-                        "VALIDATE_QUESTION_PROVENANCE", "PERSIST_RESEARCH_AND_QUESTION_SET"),
-                definition(WorkflowType.INTERVIEW_ANSWER_FEEDBACK, allQuality(),
-                        "LOAD_ANSWER_VERSION", "BUILD_FEEDBACK_CONTEXT", "ANALYZE_ANSWER",
-                        "VALIDATE_FEEDBACK", "PERSIST_FEEDBACK"),
+                interviewPreparation(),
+                interviewAnswerFeedback(),
                 definition(WorkflowType.MOCK_INTERVIEW_FEEDBACK, Set.of(AiQualityMode.BALANCED),
                         "LOAD_SESSION_SNAPSHOT", "ANALYZE_TURNS", "SYNTHESIZE_SESSION_FEEDBACK",
                         "VALIDATE_FEEDBACK", "PERSIST_FEEDBACK"));
+    }
+
+    private static WorkflowDefinition interviewPreparation() {
+        String[] keys = {
+            "VALIDATE_PREREQUISITES",
+            "BUILD_PUBLIC_SEARCH_PLAN",
+            "SEARCH_OFFICIAL_SOURCES",
+            "SEARCH_INTERVIEW_SOURCES",
+            "DEDUPE_CLASSIFY_SOURCES",
+            "ASSESS_SOURCE_COVERAGE",
+            "BUILD_QUESTION_CONTEXT",
+            "GENERATE_QUESTIONS",
+            "VALIDATE_QUESTION_PROVENANCE",
+            "PERSIST_RESEARCH_AND_QUESTION_SET"
+        };
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
+        List<StepDefinition> steps = new ArrayList<>(keys.length);
+        for (int index = 0; index < keys.length; index++) {
+            String key = keys[index];
+            boolean search = key.startsWith("SEARCH_");
+            boolean generate = "GENERATE_QUESTIONS".equals(key);
+            steps.add(new StepDefinition(
+                    key,
+                    agentName(key),
+                    "interview-preparation-input-v1",
+                    interviewPreparationOutputSchema(key),
+                    search ? Set.of("WEB_SEARCH") : Set.of(),
+                    search || generate ? 1 : 0,
+                    1,
+                    generate ? ModelTier.BALANCED : ModelTier.LOW_COST,
+                    search || generate ? RETRYABLE : Set.of(),
+                    weights.get(index)));
+        }
+        return new WorkflowDefinition(
+                WorkflowType.INTERVIEW_PREPARATION,
+                INTERVIEW_PREPARATION_VERSION,
+                true,
+                economyBalanced(),
+                steps);
+    }
+
+    private static String interviewPreparationOutputSchema(String key) {
+        if ("PERSIST_RESEARCH_AND_QUESTION_SET".equals(key)) {
+            return "interview-persist-preparation-output-v1";
+        }
+        return "interview-"
+                + key.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
+                + "-output-v1";
+    }
+
+    private static WorkflowDefinition interviewAnswerFeedback() {
+        String[] keys = {
+            "LOAD_ANSWER_VERSION",
+            "BUILD_FEEDBACK_CONTEXT",
+            "ANALYZE_ANSWER",
+            "VALIDATE_FEEDBACK",
+            "PERSIST_FEEDBACK"
+        };
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
+        List<StepDefinition> steps = new ArrayList<>(keys.length);
+        for (int index = 0; index < keys.length; index++) {
+            String key = keys[index];
+            boolean analyze = "ANALYZE_ANSWER".equals(key);
+            steps.add(new StepDefinition(
+                    key,
+                    agentName(key),
+                    "interview-feedback-input-v1",
+                    "interview-" + key.toLowerCase().replace('_', '-') + "-output-v1",
+                    Set.of(),
+                    analyze ? 1 : 0,
+                    1,
+                    analyze ? ModelTier.BALANCED : ModelTier.LOW_COST,
+                    analyze ? RETRYABLE : Set.of(),
+                    weights.get(index)));
+        }
+        return new WorkflowDefinition(
+                WorkflowType.INTERVIEW_ANSWER_FEEDBACK,
+                INTERVIEW_ANSWER_FEEDBACK_VERSION,
+                true,
+                allQuality(),
+                steps);
     }
 
     private static WorkflowDefinition definition(

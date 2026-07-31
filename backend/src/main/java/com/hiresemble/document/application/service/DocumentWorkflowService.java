@@ -298,7 +298,7 @@ public class DocumentWorkflowService
     }
 
     @Override
-    public void requireActiveOwner(UUID userId, UUID resourceId) {
+    public void requireActiveOwner(UUID userId, String resourceType, UUID resourceId) {
         snapshot(userId, resourceId);
     }
 

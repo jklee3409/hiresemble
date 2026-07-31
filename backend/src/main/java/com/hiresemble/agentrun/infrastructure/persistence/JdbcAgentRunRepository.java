@@ -101,9 +101,13 @@ public class JdbcAgentRunRepository
                 .param("queuedAt", utc(queuedAt))
                 .update();
         if (command.resource() != null
-                && ("DOCUMENT".equals(command.resource().resourceType())
-                        || "JOB".equals(command.resource().resourceType())
-                        || "COVER_LETTER".equals(command.resource().resourceType()))) {
+                && Set.of(
+                                "DOCUMENT",
+                                "JOB",
+                                "COVER_LETTER",
+                                "QUESTION_SET",
+                                "INTERVIEW_ANSWER_VERSION")
+                        .contains(command.resource().resourceType())) {
             insertTypedLink(
                     command.userId(),
                     agentRunId,
@@ -308,6 +312,47 @@ public class JdbcAgentRunRepository
                     throw new IllegalStateException(
                             "unsupported workflow owns a typed cover letter retry resource");
                 }
+            } else if ("INTERVIEW_ANSWER_VERSION".equals(predecessor.resourceType())) {
+                if (predecessor.workflowType() != WorkflowType.INTERVIEW_ANSWER_FEEDBACK) {
+                    throw new IllegalStateException(
+                            "unsupported workflow owns an interview answer retry resource");
+                }
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,
+                                    interview_answer_version_id,primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,
+                                       interview_answer_version_id,true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='INTERVIEW_ANSWER_VERSION'
+                                  AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException(
+                            "interview answer retry is missing its typed resource link");
+                }
+                boolean active = jdbcClient.sql("""
+                                SELECT EXISTS (
+                                    SELECT 1 FROM interview_answer_versions
+                                    WHERE user_id=:userId AND id=:answerVersionId
+                                )
+                                """)
+                        .param("userId", predecessor.userId())
+                        .param("answerVersionId", predecessor.resourceId())
+                        .query(Boolean.class)
+                        .single();
+                if (!active) {
+                    throw new IllegalStateException(
+                            "interview answer retry resource is missing");
+                }
             }
             return findByOwner(predecessor.userId(), successorId).orElseThrow();
         }
@@ -495,6 +540,8 @@ public class JdbcAgentRunRepository
             case "DOCUMENT" -> "document_id";
             case "JOB" -> "job_posting_id";
             case "COVER_LETTER" -> "cover_letter_id";
+            case "QUESTION_SET" -> "question_set_id";
+            case "INTERVIEW_ANSWER_VERSION" -> "interview_answer_version_id";
             default -> throw new IllegalArgumentException("unsupported typed resource");
         };
         String insertSql = """

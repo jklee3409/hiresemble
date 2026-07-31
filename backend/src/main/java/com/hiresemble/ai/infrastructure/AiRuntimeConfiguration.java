@@ -14,6 +14,8 @@ import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.CoverLetterGenerationContextBuilder;
 import com.hiresemble.ai.context.CoverLetterVerificationContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
+import com.hiresemble.ai.context.InterviewFeedbackContextBuilder;
+import com.hiresemble.ai.context.InterviewPreparationContextBuilder;
 import com.hiresemble.ai.context.JobAnalysisContextBuilder;
 import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
 import com.hiresemble.ai.context.WorkflowContextBuilder;
@@ -31,6 +33,8 @@ import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
+import com.hiresemble.ai.prompt.InterviewAnswerFeedbackPromptDefinitions;
+import com.hiresemble.ai.prompt.InterviewPreparationPromptDefinitions;
 import com.hiresemble.ai.prompt.JobAnalysisPromptDefinitions;
 import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
@@ -39,6 +43,9 @@ import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow;
 import com.hiresemble.ai.workflow.CoverLetterVerificationFailureHandler;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow;
+import com.hiresemble.ai.workflow.InterviewAnswerFeedbackWorkflow;
+import com.hiresemble.ai.workflow.InterviewPreparationFailureHandler;
+import com.hiresemble.ai.workflow.InterviewPreparationWorkflow;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow;
 import com.hiresemble.ai.workflow.JobPostingExtractionFailureHandler;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow;
@@ -56,6 +63,8 @@ import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort;
 import com.hiresemble.job.application.port.JobAnalysisQueryPort;
 import com.hiresemble.job.application.port.JobWorkflowCommandPort;
 import com.hiresemble.job.application.port.JobWorkflowQueryPort;
+import com.hiresemble.interview.application.port.InterviewWorkflowCommandPort;
+import com.hiresemble.interview.application.port.InterviewWorkflowQueryPort;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,12 +130,33 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    InterviewPreparationWorkflow interviewPreparationWorkflow(
+            InterviewWorkflowQueryPort queryPort,
+            InterviewWorkflowCommandPort commandPort,
+            ObjectMapper objectMapper,
+            Clock clock) {
+        return new InterviewPreparationWorkflow(
+                queryPort, commandPort, objectMapper, clock);
+    }
+
+    @Bean
+    InterviewAnswerFeedbackWorkflow interviewAnswerFeedbackWorkflow(
+            InterviewWorkflowQueryPort queryPort,
+            InterviewWorkflowCommandPort commandPort,
+            ObjectMapper objectMapper) {
+        return new InterviewAnswerFeedbackWorkflow(
+                queryPort, commandPort, objectMapper);
+    }
+
+    @Bean
     WorkflowRegistry workflowRegistry(
             DocumentIngestionWorkflow documentWorkflow,
             JobPostingExtractionWorkflow jobWorkflow,
             JobAnalysisWorkflow jobAnalysisWorkflow,
             CoverLetterGenerationWorkflow coverLetterGenerationWorkflow,
-            CoverLetterVerificationWorkflow coverLetterVerificationWorkflow) {
+            CoverLetterVerificationWorkflow coverLetterVerificationWorkflow,
+            InterviewPreparationWorkflow interviewPreparationWorkflow,
+            InterviewAnswerFeedbackWorkflow interviewAnswerFeedbackWorkflow) {
         return new WorkflowRegistry(
                 CanonicalWorkflowDefinitions.all(),
                 List.of(
@@ -134,7 +164,9 @@ public class AiRuntimeConfiguration {
                         jobWorkflow.contribution(),
                         jobAnalysisWorkflow.contribution(),
                         coverLetterGenerationWorkflow.contribution(),
-                        coverLetterVerificationWorkflow.contribution()));
+                        coverLetterVerificationWorkflow.contribution(),
+                        interviewPreparationWorkflow.contribution(),
+                        interviewAnswerFeedbackWorkflow.contribution()));
     }
 
     @Bean
@@ -145,6 +177,8 @@ public class AiRuntimeConfiguration {
         prompts.addAll(JobAnalysisPromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationPromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationPromptDefinitions.all());
+        prompts.addAll(InterviewPreparationPromptDefinitions.all());
+        prompts.addAll(InterviewAnswerFeedbackPromptDefinitions.all());
         return new PromptRegistry(prompts);
     }
 
@@ -154,6 +188,7 @@ public class AiRuntimeConfiguration {
             JobWorkflowQueryPort jobQueryPort,
             JobAnalysisQueryPort jobAnalysisQueryPort,
             CoverLetterQueryPort coverLetterQueryPort,
+            InterviewWorkflowQueryPort interviewQueryPort,
             AiPreferenceQueryPort preferenceQueryPort,
             Environment environment) {
         long version = environment.getProperty(
@@ -165,7 +200,10 @@ public class AiRuntimeConfiguration {
                 new CoverLetterGenerationContextBuilder(
                         coverLetterQueryPort, preferenceQueryPort, version),
                 new CoverLetterVerificationContextBuilder(
-                        coverLetterQueryPort, preferenceQueryPort, version));
+                        coverLetterQueryPort, preferenceQueryPort, version),
+                new InterviewPreparationContextBuilder(interviewQueryPort, version),
+                new InterviewFeedbackContextBuilder(
+                        interviewQueryPort, preferenceQueryPort, version));
     }
 
     @Bean
@@ -225,6 +263,12 @@ public class AiRuntimeConfiguration {
     WorkflowFailureHandler coverLetterVerificationFailureHandler(
             CoverLetterCommandPort commandPort) {
         return new CoverLetterVerificationFailureHandler(commandPort);
+    }
+
+    @Bean
+    WorkflowFailureHandler interviewPreparationFailureHandler(
+            InterviewWorkflowCommandPort commandPort) {
+        return new InterviewPreparationFailureHandler(commandPort);
     }
 
     @Bean

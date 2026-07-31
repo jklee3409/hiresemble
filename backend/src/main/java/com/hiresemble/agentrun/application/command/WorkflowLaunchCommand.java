@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
 
 public record WorkflowLaunchCommand(
+        UUID requestedAgentRunId,
         UUID userId,
         WorkflowType workflowType,
         String workflowVersion,
@@ -30,5 +31,28 @@ public record WorkflowLaunchCommand(
                 || (estimatedCostUsd.signum() > 0 && priceVersion == null)) {
             throw new IllegalArgumentException("workflow launch command is invalid");
         }
+    }
+
+    public WorkflowLaunchCommand(
+            UUID userId,
+            WorkflowType workflowType,
+            String workflowVersion,
+            String canonicalInputHash,
+            JsonNode inputReferenceSnapshot,
+            AiQualityMode requestedQualityMode,
+            BigDecimal estimatedCostUsd,
+            Long priceVersion,
+            ResourceReference resource) {
+        this(
+                null,
+                userId,
+                workflowType,
+                workflowVersion,
+                canonicalInputHash,
+                inputReferenceSnapshot,
+                requestedQualityMode,
+                estimatedCostUsd,
+                priceVersion,
+                resource);
     }
 }

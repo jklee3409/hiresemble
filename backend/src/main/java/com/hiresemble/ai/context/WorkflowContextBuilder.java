@@ -13,6 +13,8 @@ public final class WorkflowContextBuilder implements ContextBuilder {
     private final ContextBuilder jobAnalysis;
     private final ContextBuilder coverLetterGeneration;
     private final ContextBuilder coverLetterVerification;
+    private final ContextBuilder interviewPreparation;
+    private final ContextBuilder interviewFeedback;
 
     public WorkflowContextBuilder(
             ContextBuilder documentIngestion,
@@ -23,6 +25,8 @@ public final class WorkflowContextBuilder implements ContextBuilder {
                 jobPostingExtraction,
                 jobAnalysis,
                 unsupported(),
+                unsupported(),
+                unsupported(),
                 unsupported());
     }
 
@@ -32,11 +36,31 @@ public final class WorkflowContextBuilder implements ContextBuilder {
             ContextBuilder jobAnalysis,
             ContextBuilder coverLetterGeneration,
             ContextBuilder coverLetterVerification) {
+        this(
+                documentIngestion,
+                jobPostingExtraction,
+                jobAnalysis,
+                coverLetterGeneration,
+                coverLetterVerification,
+                unsupported(),
+                unsupported());
+    }
+
+    public WorkflowContextBuilder(
+            ContextBuilder documentIngestion,
+            ContextBuilder jobPostingExtraction,
+            ContextBuilder jobAnalysis,
+            ContextBuilder coverLetterGeneration,
+            ContextBuilder coverLetterVerification,
+            ContextBuilder interviewPreparation,
+            ContextBuilder interviewFeedback) {
         this.documentIngestion = Objects.requireNonNull(documentIngestion);
         this.jobPostingExtraction = Objects.requireNonNull(jobPostingExtraction);
         this.jobAnalysis = Objects.requireNonNull(jobAnalysis);
         this.coverLetterGeneration = Objects.requireNonNull(coverLetterGeneration);
         this.coverLetterVerification = Objects.requireNonNull(coverLetterVerification);
+        this.interviewPreparation = Objects.requireNonNull(interviewPreparation);
+        this.interviewFeedback = Objects.requireNonNull(interviewFeedback);
     }
 
     @Override
@@ -48,6 +72,8 @@ public final class WorkflowContextBuilder implements ContextBuilder {
             case JOB_ANALYSIS -> jobAnalysis.build(request);
             case COVER_LETTER_GENERATION -> coverLetterGeneration.build(request);
             case COVER_LETTER_VERIFICATION -> coverLetterVerification.build(request);
+            case INTERVIEW_PREPARATION -> interviewPreparation.build(request);
+            case INTERVIEW_ANSWER_FEEDBACK -> interviewFeedback.build(request);
             default -> throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
                 "AI_CONTEXT_NOT_CONFIGURED",

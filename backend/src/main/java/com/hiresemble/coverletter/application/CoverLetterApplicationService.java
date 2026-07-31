@@ -996,7 +996,7 @@ public class CoverLetterApplicationService
 
     @Override
     @Transactional(readOnly = true)
-    public void requireActiveOwner(UUID userId, UUID resourceId) {
+    public void requireActiveOwner(UUID userId, String resourceType, UUID resourceId) {
         requireCover(userId, resourceId);
     }
 

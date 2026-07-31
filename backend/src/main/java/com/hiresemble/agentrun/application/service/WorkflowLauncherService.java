@@ -51,7 +51,9 @@ public class WorkflowLauncherService implements WorkflowLauncher {
     public WorkflowLaunchResult launch(WorkflowLaunchCommand command) {
         Instant now = clock.instant();
         BudgetPolicySnapshot policy = budgetPort.activePolicy(command.userId());
-        UUID runId = UUID.randomUUID();
+        UUID runId = command.requestedAgentRunId() == null
+                ? UUID.randomUUID()
+                : command.requestedAgentRunId();
         creationPort.createQueued(runId, command, policy.version(), now);
         budgetPort.reserve(new BudgetReservationRequest(
                 command.userId(), runId, command.workflowType().name(),
