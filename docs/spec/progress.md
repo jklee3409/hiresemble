@@ -6,6 +6,33 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1 인증부터 P5 공고 등록·분석 기반까지이며 Dashboard 집계와 P6 이후 기능은 아직 없다.
 
+## [2026-07-31] Session Summary (닉네임 Modal·최종 학력 계산 계약)
+
+- What was done:
+  - 기능·API·DB·페이지 명세에 `EducationLevel`, read-only 최종 학력 flag, 단계별 자동 판정과 legacy backfill을 반영했다.
+  - 기본 정보 닉네임 제거·상단 Modal, 승인·거절 전용 안내, AI 작업 간소화 문구와 관심 공고 active hover를 동기화했다.
+- Key decisions:
+  - `isPrimary`는 write 계약에서 제거하고 서버 계산 projection으로만 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend·Frontend 전체 check와 개발 DB V11 결과를 명세와 대조했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (학력 근거 제외·AI 작업 내역 삭제 명세)
+
+- What was done:
+  - `functional.md`, `api.md`, `db.md`, `page.md`에 대외활동 명칭·UI, 학력 근거 생성/추출 금지, 문서 AI 근거 전용 승인·거절·confidence 의미와 Agent Run history delete를 동기화했다.
+- Key decisions:
+  - provenance 관계가 깊은 기존 학력 근거와 Agent Run은 ID·audit을 보존한 tombstone/soft delete로 처리하고 owner-visible API에서 제외한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 385 tests, Frontend 전체 215 tests와 개발 DB V9~V10 결과를 계약과 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (프로필 닉네임·내비게이션 화면 계약)
 
 - What was done:

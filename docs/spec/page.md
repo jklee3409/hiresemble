@@ -100,7 +100,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 - 현재 페이지 제목
 - 진행 중 Agent Run 알림
-- 사용자 메뉴
+- 클릭 시 닉네임 수정 Modal을 여는 사용자 닉네임
 - 로그아웃
 
 ### 공통 상태 UI
@@ -155,7 +155,7 @@ Frontend의 TypeScript type과 runtime validation은 [`api.md`](api.md) 2장의 
 단계:
 
 1. 기본 프로필
-2. 대표 학력
+2. 최종 학력
 3. 희망 직무·산업·지역
 4. 이력서 또는 포트폴리오 업로드
 5. 추후 입력 선택
@@ -168,7 +168,7 @@ API:
 
 문서 분석은 완료를 기다리지 않고 대시보드로 이동 가능.
 
-가입 직후만 `/onboarding`으로 이동한다. 이후에는 프로필 완료 여부로 route를 강제 redirect하지 않는다. `legalName`, 희망 직무·산업·지역 각 1개, 대표 학력 1개 중 부족 항목과 충족 항목당 20%인 완료율을 경고·프로필 이동 링크와 함께 표시하되 공고·분석·자기소개서·면접 진입을 일괄 차단하지 않는다.
+가입 직후만 `/onboarding`으로 이동한다. 이후에는 프로필 완료 여부로 route를 강제 redirect하지 않는다. `legalName`, 희망 직무·산업·지역 각 1개, 서버가 계산한 최종 학력 1개 중 부족 항목과 충족 항목당 20%인 완료율을 경고·프로필 이동 링크와 함께 표시하되 공고·분석·자기소개서·면접 진입을 일괄 차단하지 않는다.
 
 ---
 
@@ -208,7 +208,6 @@ Desktop 프로필 하위 내비게이션은 부가 설명 없이 항목명만 �
 
 ### Form
 
-- 닉네임
 - 이름
 - 간단 소개
 - 졸업(예정)일
@@ -218,16 +217,22 @@ Desktop 프로필 하위 내비게이션은 부가 설명 없이 항목명만 �
 
 API:
 
-- `PATCH /account/display-name`
 - `GET /profile`
 - `PUT /profile`
+
+기본 정보 Form의 변경 상태와 `변경 사항 저장` action은 모든 입력 항목 뒤 페이지 하단에 둔다.
+닉네임은 기본 정보 Form에 포함하지 않는다. 보호 화면 상단의 현재 닉네임을 누르면 접근 가능한 Modal을 열고 `PATCH /account/display-name`으로 별도 저장한다.
 
 ## 5.2 `/profile/education`
 
 - 학력 카드 목록
 - 추가·수정 Modal
-- 대표 학력 배지
+- 서버가 계산한 `최종 학력` 배지
 - 삭제 확인
+- `고등학교 < 대학교(전문학사) < 대학교(학사) < 대학원(석사) < 대학원(박사)` 학력 단계 선택
+- 재학 상태는 `재학`, `휴학`, `졸업 예정`, `졸업`, `중퇴`로 표시하고 server enum 문자열을 화면에 노출하지 않음
+
+사용자가 최종 학력을 직접 지정하는 action은 제공하지 않는다. 생성·수정·삭제 후 서버가 가장 높은 학력 단계를 다시 계산하고 같은 단계에서는 상태·날짜·등록 순서로 결정한다.
 
 API:
 
@@ -254,23 +259,25 @@ API:
 
 ## 5.7 `/profile/evidence`
 
+화면 명칭은 `대외활동`이며 학력 source와 교육·학력 category는 표시하지 않는다.
+
 ### Filter
 
 - 상태: PENDING, VERIFIED, REJECTED, SOURCE_DELETED
 - 카테고리
 - 출처 문서
+- 각 dropdown·입력·action 사이에 공통 spacing 적용
 
 ### Evidence Card
 
 - 제목
 - 근거 내용
 - 출처 유형·연결 문서·원천 삭제 여부
-- 신뢰도
+- AI 추출 신뢰도 또는 직접 입력 표시
 - 수정
-- 승인
-- 거절
+- 문서 AI 추출 근거의 승인·거절
 
-`SOURCE_DELETED` card는 원천 삭제 marker와 과거 사용처만 읽기 전용으로 표시하고 수정·승인·거절 action을 숨긴다.
+문서 AI 추출 근거만 승인·거절 action을 제공한다. 상단 안내는 승인 시 사용 범위와 거절 시 제외된다는 내용만 두 개의 구분된 항목으로 표시한다. `VERIFIED`만 후속 AI 작업에 사용하고 `REJECTED`는 제외한다. 직접 입력 근거는 기본 승인 상태라 수정만 제공한다. confidence는 card metadata에서 추출 확신도로 표시하며 사실 여부를 보증하지 않는다. `SOURCE_DELETED` card는 원천 삭제 marker와 과거 사용처만 읽기 전용으로 표시하고 수정·승인·거절 action을 숨긴다.
 
 API:
 
@@ -334,6 +341,8 @@ API:
 - 지원 중 (`IN_PROGRESS`)
 - 서류 제출 (`SUBMITTED`)
 - 마감 (`CLOSED`)
+
+선택된 Tab은 hover 중에도 brand 배경과 흰색 글자를 유지한다.
 
 ### Filter
 
@@ -692,11 +701,18 @@ API 요청 시 각각 canonical API parameter 이름으로 변환한다.
 - 실패·중단 Filter
 - 비용과 재시도 가능 여부
 - 상세 실행 이동
+- terminal 작업의 개별 삭제
+- 현재 페이지 terminal 작업 선택·전체 선택과 최대 100개 일괄 삭제
 - `JOB_ANALYSIS` 작업은 결과 전체를 중복 표시하지 않고 해당 `/jobs/:jobId/analysis`로 이동하는 resource link 제공
 
 API:
 
 - `GET /agent-runs`
+- `DELETE /agent-runs/:id`
+- `POST /agent-runs/bulk-delete`
+
+active 작업은 삭제할 수 없고 종료 뒤에만 삭제할 수 있다. 삭제 성공 시 목록·상세 cache에서 제거하되 실행 결과와 비용 audit이 보존된다는 확인 문구를 표시한다.
+선택 control은 `선택`, 선택 삭제 button은 `삭제(선택 수)`로 간결하게 표시한다.
 
 ---
 

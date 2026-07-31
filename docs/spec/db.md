@@ -72,6 +72,7 @@
 | `ai_usage_records.usage_type`              | `CHAT`, `EMBEDDING`, `SEARCH`                                                                                                                                                                           |
 | `account_deletion_tasks.status`            | `QUEUED`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `DEAD`                                                                                                                                                  |
 | `educations.education_status`              | `ENROLLED`, `LEAVE_OF_ABSENCE`, `EXPECTED_GRADUATION`, `GRADUATED`, `WITHDRAWN`                                                                                                                         |
+| `educations.education_level`               | `OTHER`, `HIGH_SCHOOL`, `ASSOCIATE`, `BACHELOR`, `MASTER`, `DOCTORATE`                                                                                                                                  |
 | `cover_letter_answer_versions.created_by`  | `USER`, `AI`                                                                                                                                                                                            |
 
 표의 scalar enum column은 명시적 `CHECK`를 갖는다. JSON 안의 `VerificationIssueCode`, `IssueSeverity`, `MockFeedbackCategory`는 versioned JSON schema와 domain validation으로 같은 값을 강제한다. `OutdatedReason`, `RequiredUserActionType`, `ProfileCompletionItem`은 저장 enum이 아닌 계산 projection이다.
@@ -118,17 +119,17 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 ### 3.3 구조화 프로필 table
 
-모두 `id,user_id,version,created_at,updated_at,deleted_at NULL`, `UNIQUE(user_id,id)`와 user FK를 가진다. 일반 목록·대표 학력·직접 evidence 동기화는 `deleted_at IS NULL` row만 사용한다.
+모두 `id,user_id,version,created_at,updated_at,deleted_at NULL`, `UNIQUE(user_id,id)`와 user FK를 가진다. 일반 목록과 최종 학력은 `deleted_at IS NULL` row만 사용하며, 직접 evidence 동기화는 학력을 제외한 자격증·어학·수상·경력의 active row에만 적용한다.
 
-| table             | domain column·상한                                                                                                                                                                                                                                       | 핵심 제약                                                                                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `educations`      | `school_name varchar(200)`, `major varchar(200) NULL`, `degree varchar(100) NULL`, `education_status varchar(30)`, `admission_date/graduation_date date NULL`, `gpa/gpa_scale numeric(5,2) NULL`, `is_primary boolean`, `description varchar(5000) NULL` | 날짜 순서, 둘 중 하나만 있는 GPA 금지, `gpa 0..10`, `gpa_scale 0.01..10`, `gpa<=gpa_scale`, `(user_id) WHERE is_primary AND deleted_at IS NULL` partial unique |
-| `certifications`  | `name varchar(200)`, `issuer/credential_number varchar(200) NULL`, `acquired_date/expires_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                              | document 복합 FK, 둘 다 있으면 만료>=취득                                                                                                                      |
-| `language_scores` | `test_name/score varchar(100)`, `grade varchar(100) NULL`, `tested_at/expires_at date NULL`, `evidence_document_id uuid NULL`                                                                                                                            | document 복합 FK, 둘 다 있으면 만료>=응시                                                                                                                      |
-| `awards`          | `name varchar(200)`, `organizer varchar(200) NULL`, `awarded_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                           | document 복합 FK                                                                                                                                               |
-| `careers`         | `organization varchar(200)`, `position varchar(200) NULL`, `employment_type varchar(50) NULL`, `started_at/ended_at date NULL`, `is_current boolean`, `responsibilities/achievements varchar(20000) NULL`                                                | current면 end null, 날짜 둘 다 있으면 역전 금지                                                                                                                |
+| table             | domain column·상한                                                                                                                                                                                                                                                                      | 핵심 제약                                                                                                                                                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `educations`      | `school_name varchar(200)`, `major varchar(200) NULL`, `degree varchar(100) NULL`, `education_level varchar(30)`, `education_status varchar(30)`, `admission_date/graduation_date date NULL`, `gpa/gpa_scale numeric(5,2) NULL`, `is_primary boolean`, `description varchar(5000) NULL` | 날짜 순서, 둘 중 하나만 있는 GPA 금지, `gpa 0..10`, `gpa_scale 0.01..10`, `gpa<=gpa_scale`, level/status CHECK, `(user_id) WHERE is_primary AND deleted_at IS NULL` partial unique. 사용자 profile row lock 아래 `학력 단계 > 상태 > 날짜 > 등록 시각`으로 최종 학력을 재계산 |
+| `certifications`  | `name varchar(200)`, `issuer/credential_number varchar(200) NULL`, `acquired_date/expires_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                             | document 복합 FK, 둘 다 있으면 만료>=취득                                                                                                                                                                                                                                     |
+| `language_scores` | `test_name/score varchar(100)`, `grade varchar(100) NULL`, `tested_at/expires_at date NULL`, `evidence_document_id uuid NULL`                                                                                                                                                           | document 복합 FK, 둘 다 있으면 만료>=응시                                                                                                                                                                                                                                     |
+| `awards`          | `name varchar(200)`, `organizer varchar(200) NULL`, `awarded_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                                                          | document 복합 FK                                                                                                                                                                                                                                                              |
+| `careers`         | `organization varchar(200)`, `position varchar(200) NULL`, `employment_type varchar(50) NULL`, `started_at/ended_at date NULL`, `is_current boolean`, `responsibilities/achievements varchar(20000) NULL`                                                                               | current면 end null, 날짜 둘 다 있으면 역전 금지                                                                                                                                                                                                                               |
 
-구조화 row 저장·수정·삭제와 직접 입력 `profile_evidence` 동기화는 한 transaction이다.
+자격증·어학·수상·경력 row 저장·수정·삭제와 직접 입력 `profile_evidence` 동기화는 한 transaction이다. 학력은 구조화 row로만 유지하고 evidence를 생성하지 않는다.
 
 구조화 source row를 soft delete하면 과거 job/cover/interview/mock provenance가 참조한 동기화 evidence는 원문 없는 `SOURCE_DELETED` tombstone으로 보존하고 미참조 evidence는 삭제한다. tombstone은 terminal·read-only이며 구조화 source의 `deleted_at`과 같은 transaction에서 반영한다.
 
@@ -165,6 +166,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 - 참조 여부는 job analysis, cover answer, interview question과 mock session의 typed evidence link 존재로 판정한다.
 - 직접 입력 evidence는 document 삭제의 영향을 받지 않는다.
 - `SOURCE_DELETED` evidence는 terminal·read-only여서 content 수정이나 `VERIFIED|REJECTED` 전이를 허용하지 않는다.
+- 학력 source와 교육·학력 category는 active evidence로 허용하지 않는다. 기존 row는 source/document 연결, title/content, metadata, confidence를 제거한 `SOURCE_DELETED` tombstone으로 전환해 provenance ID만 보존하며 일반 조회와 분석에서는 제외한다.
 
 ### 4.5 `object_deletion_outbox`
 
@@ -308,7 +310,7 @@ Unique `(user_id,http_method,route_scope,resource_scope_id,idempotency_key)`. Ro
 
 ### 9.2 `agent_runs`
 
-`id,user_id,workflow_type,status,current_step NULL`, `progress_percent integer CHECK 0..100`, `workflow_version,input_hash,budget_policy_version,requested_quality_mode NULL,highest_model_tier_used NULL`, `estimated_cost_usd/reserved_cost_usd/actual_cost_usd numeric(12,6) CHECK >=0`, `retry_of_run_id NULL,root_run_id,run_attempt_no`, `error_code varchar(100) NULL,error_message_safe varchar(500) NULL,partial_result_json NULL,claim_token NULL,claimed_by NULL,lease_expires_at NULL,heartbeat_at NULL,cancel_requested_at NULL,waiting_reason NULL,state_version,queued_at,started_at NULL,completed_at NULL,updated_at`.
+`id,user_id,workflow_type,status,current_step NULL`, `progress_percent integer CHECK 0..100`, `workflow_version,input_hash,budget_policy_version,requested_quality_mode NULL,highest_model_tier_used NULL`, `estimated_cost_usd/reserved_cost_usd/actual_cost_usd numeric(12,6) CHECK >=0`, `retry_of_run_id NULL,root_run_id,run_attempt_no`, `error_code varchar(100) NULL,error_message_safe varchar(500) NULL,partial_result_json NULL,claim_token NULL,claimed_by NULL,lease_expires_at NULL,heartbeat_at NULL,cancel_requested_at NULL,waiting_reason NULL,state_version,queued_at,started_at NULL,completed_at NULL,updated_at,deleted_at NULL`.
 
 - retry predecessor 복합 FK와 root lineage를 보존하고 `UNIQUE(user_id,retry_of_run_id) WHERE retry_of_run_id IS NOT NULL`로 모든 resource/generic retry 진입점이 predecessor당 successor를 하나만 만들게 한다. 호환되는 후속 retry는 같은 successor를 반환하고 option 충돌은 거부한다.
 - claim은 조건부 update 또는 `FOR UPDATE SKIP LOCKED`, heartbeat 15초, lease 60초, reconciliation 30초다.
@@ -316,6 +318,7 @@ Unique `(user_id,http_method,route_scope,resource_scope_id,idempotency_key)`. Ro
 - user retry는 새 run, WAITING_USER resume은 같은 run이다.
 - cancel terminal 처리와 processing resource의 마지막 안정 상태 복원은 한 transaction이다. Job extraction은 usable source가 있으면 `EXTRACTED|MANUAL_INPUT_PROVIDED`, 없으면 `NEEDS_MANUAL_INPUT`; document parse는 같은 revision의 committed text/chunk가 있으면 `PARSED`, 없으면 `UPLOADED`; evidence extraction은 같은 revision의 prior 성공 snapshot이 있으면 `SUCCEEDED`, 없으면 `NOT_STARTED`로 복원한다.
 - interview preparation cancel은 research run을 `CANCELLED`로 끝내고 preallocated question set은 질문·source link 없는 read-only cancelled 결과로 남긴다. interview answer feedback은 row를 만들지 않고, mock feedback은 session `feedback_status=CANCELLED`, cover verification은 연결 PENDING verification을 `FAILED`로 종결한다. reconciliation도 terminal run과 processing resource 불일치를 같은 mapping으로 복구한다.
+- `deleted_at`은 terminal 상태와 non-null `completed_at`을 가진 row에만 설정한다. owner-visible 조회는 `deleted_at IS NULL`만 반환하며 history delete는 run/step, retry/root lineage, typed resource link, idempotency, budget reservation·usage를 물리 삭제하지 않는다.
 
 ### 9.3 `agent_run_resource_links`
 
@@ -376,7 +379,8 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 7. document delete는 API 즉시 404, Object/text/chunk/embedding purge, 참조 evidence tombstone, 미참조 evidence 삭제다.
 8. boot 시 configured embedding model dimension과 `vector(1536)` typmod가 다르면 fail fast한다.
 9. live chunk 50,000개 이상 또는 대표 query p95가 200ms를 초과할 때만 별도 migration으로 HNSW를 검토한다.
-10. model·dimension 변경은 새 generation과 typed vector column/index 생성→backfill→검증→active switch→cleanup 순서다.
+10. Agent Run history delete는 terminal row의 `deleted_at`만 원자 갱신하고 audit·lineage FK row는 보존한다.
+11. model·dimension 변경은 새 generation과 typed vector column/index 생성→backfill→검증→active switch→cleanup 순서다.
 
 ## 13. 향후 migration 책임
 
@@ -385,7 +389,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
 | identity/session/idempotency | users, profile base, Spring Session ownership, idempotency, 독립 deletion task   |
-| structured profile           | profile 5종, direct evidence, version·대표 학력 unique                           |
+| structured profile           | profile 5종, direct evidence, version·서버 계산 최종 학력 unique                 |
 | Agent runtime/budget         | run/step claim·retry·cancel, policy, price, ledger, reservation, usage           |
 | documents/evidence           | 두 상태 축, owner FK, text/chunk, vector(1536), Object outbox                    |
 | jobs/analysis                | canonical active unique, 두 상태 축, history, rubric·provenance                  |

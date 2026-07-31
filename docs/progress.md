@@ -4,6 +4,32 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P5가 완료됐고 P6–P10은 미착수다.
 
+## [2026-07-31] Session Summary (최종 학력·헤더 닉네임 계약 동기화)
+
+- What was done:
+  - 네 기준 명세에 상단 닉네임 Modal과 서버 계산 최종 학력의 API·DB·화면 경계를 반영했다.
+- Key decisions:
+  - 학력 hierarchy와 tie-break를 서버·migration·명세에서 같은 순서로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - V11 upgrade test, 개발 DB 보정 결과와 Frontend/Backend 전체 검증을 대조했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (대외활동·Agent Run 삭제 계약 동기화)
+
+- What was done:
+  - 기능·API·DB·페이지 명세에 학력 evidence 제외, 문서 AI 근거 전용 승인·거절·confidence 의미와 terminal Agent Run 개별/선택 삭제를 반영했다.
+- Key decisions:
+  - 학력 구조화 정보는 유지하되 대외활동 evidence와 문서 추출 대상에서 제외하고, 작업 내역 삭제는 audit 보존 soft delete로 계약화했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현 코드·OpenAPI 73 operations/53 paths, V9~V10 schema와 네 기준 명세 표현을 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (프로필 사용자 용어 계약 동기화)
 
 - What was done:

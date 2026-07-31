@@ -10,8 +10,45 @@
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
-- 공개 Spring/OpenAPI는 P7 자기소개서 17개와 계정 닉네임 변경을 포함해 총 71 operations·52 paths다.
+- 공개 Spring/OpenAPI는 P7 자기소개서 17개, 계정 닉네임 변경과 Agent Run history delete를 포함해 총 73 operations·53 paths다.
 - Dashboard 전용 집계·면접과 실제 provider는 아직 없다.
+
+## [2026-07-31] Session Summary (헤더 닉네임·최종 학력 자동 판정 UI)
+
+- What was done:
+  - 대외활동 안내를 승인·거절 두 항목으로 정리하고, AI 작업 선택/삭제 문구와 관심 공고 active hover를 보정했다.
+  - 기본 정보의 닉네임 field를 제거하고 상단 닉네임 클릭 Modal로 옮겼으며, 학력 단계와 서버 계산 최종 학력 배지를 추가했다.
+  - V11에서 기존 학력 단계를 backfill하고 현재 개발 DB까지 단계·상태·날짜 순으로 최종 학력을 재계산했다.
+- Key decisions:
+  - 최종 학력은 `고등학교 < 전문학사 < 학사 < 석사 < 박사`를 우선하고 같은 단계에서는 상태·날짜·등록 순서로 결정하며 client의 수동 지정은 허용하지 않는다.
+  - 사용자 요청대로 서브 에이전트 없이 단일 에이전트에서 구현·검증했다.
+- Issues encountered:
+  - AppLayout CSS media query 닫힘 누락을 production build에서 발견해 보정했다.
+  - 연결 가능한 실제 브라우저가 없어 Browser 기반 시각 검증은 수행하지 못했고 component tests와 production build로 대체했다.
+- Validation:
+  - Backend `.\gradlew.bat check`, Frontend `corepack pnpm check`, V11 migration upgrade test와 개발 DB Flyway 11·최종 학력 invariant를 검증했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (대외활동·학력 제외와 AI 작업 내역 삭제)
+
+- What was done:
+  - 프로필 기본 정보 저장 영역을 Form 하단으로 이동하고, 경험 정보를 대외활동으로 바꾸며 filter 간격과 학력 상태 한국어 표시를 보정했다.
+  - 학력 direct evidence 생성·동기화를 제거하고 문서 추출 교육 category까지 server·DB에서 차단했으며 기존 개발 DB의 학력 근거를 비식별 tombstone으로 전환했다.
+  - terminal AI 작업 내역을 개별 또는 현재 페이지 선택으로 삭제하는 owner-scoped soft delete API·UI를 추가했다.
+- Key decisions:
+  - 승인·거절은 AI 문서 추출의 오탐을 검토하고 `VERIFIED`만 공고 분석·자기소개서·면접에 쓰는 핵심 경계라 유지하되 직접 입력 근거에서는 UI를 숨기고 API도 거부했다.
+  - 신뢰도는 문서 추출 확신도이지 사실 보증 점수가 아니며, Agent Run 삭제는 비용·lineage·산출물 audit을 보존하는 terminal-only soft delete로 정의했다.
+  - 사용자 요청에 따라 서브 에이전트 없이 단일 에이전트로 구현·검증했다.
+- Issues encountered:
+  - V9 초안의 deferred profile trigger 순서 문제는 적용 전 보정했고, V10 적용용 non-web bootRun은 migration 성공 뒤 `HttpSecurity` bean 부재로 종료됐다.
+  - Frontend 전체 check 중 수정 파일 4개와 마지막 학력 상태 mapping 1개의 Prettier 차이를 각각 대상 파일 format으로 해소한 뒤 재검증했다.
+- Validation:
+  - Backend `.\gradlew.bat check`: 54 suites, 385 tests 모두 통과.
+  - Frontend `corepack pnpm check`: 53 files, 215 tests, typecheck·lint·format·production build 모두 통과.
+  - `docker compose config --quiet`, `git diff --check` 통과. 개발 PostgreSQL Flyway V9·V10 성공, active 학력 evidence 0건·sanitized tombstone 1건·차단 constraint 1개를 확인했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (프로필 UI 정리·닉네임 변경)
 

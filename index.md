@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 P7 자기소개서 17개와 계정 닉네임 변경을 포함해 총 71 operations/52 paths다. Frontend에는 인증·onboarding·profile과 lazy `/agent-runs`·`/documents`·`/jobs`·`/cover-letters` 목록·상세·분석·편집, 복구 가능한 SSE UI가 있으며 `/dashboard`는 별도 집계 endpoint 없이 현재 구현된 owner-scoped API의 `totalElements`와 최근 항목을 조합해 지원 현황을 제공한다.
+공개 HTTP 범위는 P7 자기소개서 17개, 계정 닉네임 변경과 Agent Run history delete를 포함해 총 73 operations/53 paths다. Frontend에는 인증·onboarding·profile과 lazy `/agent-runs`·`/documents`·`/jobs`·`/cover-letters` 목록·상세·분석·편집, 복구 가능한 SSE UI가 있으며 `/dashboard`는 별도 집계 endpoint 없이 현재 구현된 owner-scoped API의 `totalElements`와 최근 항목을 조합해 지원 현황을 제공한다.
 
 ## 변경 시 주의사항
 
