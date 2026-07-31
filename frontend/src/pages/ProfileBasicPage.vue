@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { validateDisplayNameForm } from '@/features/auth/formValidation'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import StringListInput from '@/features/profile/StringListInput.vue'
 import VersionConflictPanel from '@/features/profile/VersionConflictPanel.vue'
@@ -18,12 +17,7 @@ import {
 } from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import { type ProfileFormValues, validateProfileForm } from '@/features/profile/schemas'
-import type {
-  DisplayNameUpdateRequest,
-  ProfileCompletionItem,
-  ProfileDto,
-  ProfileWrite,
-} from '@/shared/api/contracts'
+import type { ProfileCompletionItem, ProfileDto, ProfileWrite } from '@/shared/api/contracts'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
@@ -37,7 +31,7 @@ const completionLabels: Record<ProfileCompletionItem, string> = {
   DESIRED_ROLE: '희망 직무',
   DESIRED_INDUSTRY: '희망 산업',
   DESIRED_LOCATION: '희망 지역',
-  PRIMARY_EDUCATION: '먼저 보여 줄 학력',
+  PRIMARY_EDUCATION: '최종 학력',
 }
 
 const conflictFields = [
@@ -56,8 +50,6 @@ const userId = computed(() => authStore.currentUser?.id ?? '')
 const queryKey = computed(() => profileQueryKeys.profile(userId.value))
 const form = reactive<ProfileFormValues>(emptyForm())
 const baselineSignature = ref('')
-const displayName = ref('')
-const displayNameBaseline = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const message = ref('')
 const generalError = ref('')
@@ -66,10 +58,7 @@ const formSignature = computed(() => signature(form))
 const isProfileDirty = computed(
   () => baselineSignature.value !== '' && formSignature.value !== baselineSignature.value,
 )
-const isDisplayNameDirty = computed(
-  () => displayNameBaseline.value !== '' && displayName.value !== displayNameBaseline.value,
-)
-const isDirty = computed(() => isProfileDirty.value || isDisplayNameDirty.value)
+const isDirty = isProfileDirty
 
 const profileQuery = useQuery({
   queryKey,
@@ -91,20 +80,7 @@ watch(
   { immediate: true },
 )
 
-watch(
-  () => authStore.currentUser?.displayName,
-  (currentDisplayName) => {
-    if (
-      currentDisplayName !== undefined &&
-      (displayNameBaseline.value === '' || !isDisplayNameDirty.value)
-    ) {
-      loadDisplayName(currentDisplayName)
-    }
-  },
-  { immediate: true },
-)
-
-watch([formSignature, displayName], () => {
+watch(formSignature, () => {
   if (isDirty.value) message.value = ''
 })
 
@@ -116,14 +92,7 @@ const saveMutation = useMutation({
   },
 })
 
-const displayNameMutation = useMutation({
-  mutationFn: (request: DisplayNameUpdateRequest) => authStore.updateDisplayName(request),
-  onSuccess: (user) => {
-    loadDisplayName(user.displayName)
-  },
-})
-
-const isSaving = computed(() => saveMutation.isPending.value || displayNameMutation.isPending.value)
+const isSaving = saveMutation.isPending
 
 const completionPercent = computed(() => {
   const missing = profileQuery.data.value?.missingCompletionItems.length ?? 5
@@ -144,59 +113,31 @@ async function save(continueToEducation = false): Promise<void> {
     return
   }
 
-  const profileValidation = isProfileDirty.value ? validateProfileForm(form) : null
-  const displayNameValidation = isDisplayNameDirty.value
-    ? validateDisplayNameForm({ displayName: displayName.value })
-    : null
-  fieldErrors.value = {
-    ...(profileValidation?.fieldErrors ?? {}),
-    ...(displayNameValidation?.fieldErrors ?? {}),
-  }
-  if (profileValidation?.data === null || displayNameValidation?.data === null) {
+  const profileValidation = validateProfileForm(form)
+  fieldErrors.value = profileValidation.fieldErrors
+  if (profileValidation.data === null) {
     await nextTick()
     focusFirstInvalidControl()
     return
   }
 
-  const profileRequest = profileValidation?.data ?? null
-  const displayNameRequest = displayNameValidation?.data ?? null
-
-  if (profileRequest !== null) {
-    try {
-      await saveMutation.mutateAsync(profileRequest)
-    } catch (error) {
-      const apiError = normalizeApiError(error)
-      fieldErrors.value = {
-        ...fieldErrors.value,
-        ...fieldErrorsToRecord(apiError.fieldErrors),
-      }
-      if (isVersionConflict(apiError)) {
-        const latest = await profileApi.getProfile()
-        queryClient.setQueryData(queryKey.value, latest)
-        conflict.value = { draft: { ...profileRequest }, latest }
-        generalError.value = '최신 프로필과 내 입력을 비교해 다시 적용해 주세요.'
-        return
-      }
-      generalError.value = apiError.message
+  try {
+    await saveMutation.mutateAsync(profileValidation.data)
+  } catch (error) {
+    const apiError = normalizeApiError(error)
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      ...fieldErrorsToRecord(apiError.fieldErrors),
+    }
+    if (isVersionConflict(apiError)) {
+      const latest = await profileApi.getProfile()
+      queryClient.setQueryData(queryKey.value, latest)
+      conflict.value = { draft: { ...profileValidation.data }, latest }
+      generalError.value = '최신 프로필과 내 입력을 비교해 다시 적용해 주세요.'
       return
     }
-  }
-
-  if (displayNameRequest !== null) {
-    try {
-      await displayNameMutation.mutateAsync(displayNameRequest)
-    } catch (error) {
-      const apiError = normalizeApiError(error)
-      fieldErrors.value = {
-        ...fieldErrors.value,
-        ...fieldErrorsToRecord(apiError.fieldErrors),
-      }
-      generalError.value =
-        profileRequest === null
-          ? apiError.message
-          : `프로필 정보는 저장했지만 닉네임을 저장하지 못했어요. ${apiError.message}`
-      return
-    }
+    generalError.value = apiError.message
+    return
   }
 
   fieldErrors.value = {}
@@ -216,11 +157,6 @@ function loadProfile(profile: ProfileDto): void {
     version: profile.version,
   })
   baselineSignature.value = signature(form)
-}
-
-function loadDisplayName(value: string): void {
-  displayName.value = value
-  displayNameBaseline.value = value
 }
 
 function cancelConflict(): void {
@@ -309,25 +245,6 @@ function emptyForm(): ProfileFormValues {
       </StatePanel>
 
       <template v-else>
-        <div class="profile-savebar">
-          <div class="profile-savebar__status" role="status" aria-live="polite">
-            <span :class="{ 'profile-savebar__dot--dirty': isDirty }" aria-hidden="true" />
-            <div>
-              <strong>{{ saveStatus }}</strong>
-              <small>자동 저장되지 않아요. 변경 후 직접 저장해 주세요.</small>
-            </div>
-          </div>
-          <button
-            type="submit"
-            form="profile-basic-form"
-            class="button button--primary"
-            :disabled="!isDirty || isSaving"
-          >
-            <span v-if="isSaving" class="button-spinner" aria-hidden="true" />
-            {{ isSaving ? '저장 중…' : '변경 내용 저장' }}
-          </button>
-        </div>
-
         <aside
           v-if="profileQuery.data.value && !profileQuery.data.value.profileCompleted"
           class="profile-completion-note"
@@ -373,35 +290,9 @@ function emptyForm(): ProfileFormValues {
           <section class="profile-editor__section" aria-labelledby="profile-identity-heading">
             <header class="profile-editor__section-heading">
               <h2 id="profile-identity-heading">기본 정보</h2>
-              <p>서비스에 표시할 닉네임과 지원서에 사용할 기본 정보를 입력하세요.</p>
+              <p>지원서에 공통으로 사용할 이름과 졸업 정보를 입력하세요.</p>
             </header>
             <div class="profile-editor__fields profile-editor__fields--two">
-              <div class="field">
-                <label class="field-label" for="profile-displayName">닉네임</label>
-                <input
-                  id="profile-displayName"
-                  v-model="displayName"
-                  class="control"
-                  maxlength="100"
-                  autocomplete="nickname"
-                  :aria-invalid="Boolean(fieldErrors.displayName)"
-                  :aria-describedby="
-                    fieldErrors.displayName
-                      ? 'profile-displayName-help profile-displayName-error'
-                      : 'profile-displayName-help'
-                  "
-                />
-                <p id="profile-displayName-help" class="field-help">
-                  헤더와 지원 홈에 표시되는 이름이에요.
-                </p>
-                <p
-                  v-if="fieldErrors.displayName"
-                  id="profile-displayName-error"
-                  class="field-error"
-                >
-                  {{ fieldErrors.displayName }}
-                </p>
-              </div>
               <div class="field">
                 <label class="field-label" for="profile-legalName">이름</label>
                 <input
@@ -524,7 +415,7 @@ function emptyForm(): ProfileFormValues {
           </section>
 
           <footer class="profile-editor__footer">
-            <p>다음 항목에서 학력과 대표 학력을 이어서 관리할 수 있어요.</p>
+            <p>다음 항목에서 학력을 등록하면 최종 학력이 자동으로 정해져요.</p>
             <button
               type="button"
               class="button button--secondary"
@@ -536,6 +427,25 @@ function emptyForm(): ProfileFormValues {
             </button>
           </footer>
         </form>
+
+        <div class="profile-savebar">
+          <div class="profile-savebar__status" role="status" aria-live="polite">
+            <span :class="{ 'profile-savebar__dot--dirty': isDirty }" aria-hidden="true" />
+            <div>
+              <strong>{{ saveStatus }}</strong>
+              <small>자동 저장되지 않아요. 변경 후 직접 저장해 주세요.</small>
+            </div>
+          </div>
+          <button
+            type="submit"
+            form="profile-basic-form"
+            class="button button--primary"
+            :disabled="!isDirty || isSaving"
+          >
+            <span v-if="isSaving" class="button-spinner" aria-hidden="true" />
+            {{ isSaving ? '저장 중…' : '변경 사항 저장' }}
+          </button>
+        </div>
       </template>
     </div>
   </section>
@@ -570,9 +480,6 @@ function emptyForm(): ProfileFormValues {
 }
 
 .profile-savebar {
-  position: sticky;
-  top: calc(4.5rem + var(--space-2));
-  z-index: 12;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -783,10 +690,6 @@ function emptyForm(): ProfileFormValues {
 }
 
 @media (max-width: 639px) {
-  .profile-savebar {
-    top: calc(4rem + var(--space-2));
-  }
-
   .profile-savebar__status small {
     display: none;
   }

@@ -5,7 +5,37 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P7 Cover Letter typed client·Vue Query·TipTap editor·session draft·SSE terminal invalidation까지 구현되어 있다.
 - `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`와 공고 분석·자기소개서 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 53 files/214 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+- Vitest 53 files/215 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+
+## [2026-07-31] Session Summary (닉네임 Modal·최종 학력 UI 보정)
+
+- What was done:
+  - 상단 닉네임을 accessible Modal trigger로 바꾸고 기본 정보 Form에서는 닉네임 입력을 제거했다.
+  - 대외활동 승인·거절 안내, AI 작업 선택/삭제 문구, 관심 공고 active hover와 최종 학력 단계·배지를 반영했다.
+- Key decisions:
+  - 최종 학력은 response의 read-only `isPrimary`만 표시하고 수동 대표 지정 control은 제공하지 않는다.
+- Issues encountered:
+  - production build에서 AppLayout media query 닫힘 누락을 발견해 수정했다.
+- Validation:
+  - `corepack pnpm check`: 53 files/216 tests, lint·format·typecheck·production build 통과.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (대외활동 UI·AI 작업 내역 삭제)
+
+- What was done:
+  - 기본 정보 savebar를 Form 하단으로 이동하고 경험 정보를 대외활동으로 변경했으며 filter gap과 학력 상태 한국어 mapping을 적용했다.
+  - 문서 AI 근거에만 승인·거절을 노출하고 직접 입력·AI confidence 의미를 구분해 안내했다.
+  - Agent Run 목록에 terminal row 개별 삭제, 현재 페이지 선택·전체 선택과 일괄 삭제를 추가했다.
+- Key decisions:
+  - active Agent Run checkbox와 삭제 action은 비활성화하고 mutation 성공 시 detail cache 제거와 owner root invalidation을 수행한다.
+  - server enum은 list subtitle과 409 conflict 양쪽에서 사용자 문구로 변환한다.
+- Issues encountered:
+  - 전체 check 중 수정 파일 4개와 마지막 학력 상태 mapping 1개의 Prettier 경고를 각각 대상 파일만 format해 해소했다.
+- Validation:
+  - `corepack pnpm check`: ESLint, Prettier, typecheck, 53 files/215 tests, production build 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (프로필 화면·닉네임 편집 보정)
 

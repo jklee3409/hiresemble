@@ -47,6 +47,7 @@ describe('P2 onboarding', () => {
       schoolName: 'School',
       major: null,
       degree: null,
+      educationLevel: 'BACHELOR',
       educationStatus: 'ENROLLED',
       admissionDate: null,
       graduationDate: null,
@@ -94,7 +95,7 @@ describe('P2 onboarding', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.createEducation).toHaveBeenCalledWith(
-      expect.objectContaining({ schoolName: 'School', isPrimary: true }),
+      expect.objectContaining({ schoolName: 'School', educationLevel: 'BACHELOR' }),
     )
 
     await addDesired(wrapper, '#onboarding-desiredRoles', 'Backend')

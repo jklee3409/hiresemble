@@ -4,6 +4,32 @@
 
 Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-07-31] Session Summary (최종 학력 transport 계약)
+
+- What was done:
+  - Education request·response type에 `EducationLevel`을 추가하고 request `isPrimary`를 제거했다.
+- Key decisions:
+  - response의 `isPrimary`는 read-only server projection으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - profile API contract test, typecheck와 전체 Frontend check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (Agent Run history delete client)
+
+- What was done:
+  - 개별 DELETE와 `{agentRunIds}` bulk-delete POST client를 추가했다.
+- Key decisions:
+  - 기존 CSRF interceptor와 void 204 transport 계약을 재사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run API client test와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (닉네임 변경 request·client)
 
 - What was done:

@@ -32,7 +32,7 @@ const sections = [
   },
   {
     to: '/profile/evidence',
-    label: '경험 정보',
+    label: '대외활동',
   },
 ] as const
 

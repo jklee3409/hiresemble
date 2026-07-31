@@ -146,12 +146,12 @@ function education(): EducationCreateRequest {
     schoolName: 'School',
     major: null,
     degree: null,
+    educationLevel: 'BACHELOR',
     educationStatus: 'ENROLLED',
     admissionDate: null,
     graduationDate: null,
     gpa: null,
     gpaScale: null,
-    isPrimary: true,
     description: null,
   }
 }

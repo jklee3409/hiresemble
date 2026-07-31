@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import AppLayout from './AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -67,6 +67,42 @@ describe('AppLayout', () => {
     expect(document.body.style.overflow).toBe('')
     wrapper.unmount()
   })
+
+  it('updates the nickname from the header modal and returns focus to the trigger', async () => {
+    const { wrapper, authStore } = await mountLayout('/dashboard')
+    const trigger = wrapper.get<HTMLButtonElement>('.header-user')
+    const updateDisplayName = vi
+      .spyOn(authStore, 'updateDisplayName')
+      .mockImplementation(async (request) => {
+        const updated = { ...authStore.currentUser!, displayName: request.displayName }
+        authStore.currentUser = updated
+        return updated
+      })
+
+    trigger.element.focus()
+    await trigger.trigger('click')
+    await nextTick()
+
+    const dialog = document.body.querySelector<HTMLElement>('.nickname-modal')
+    const input = dialog?.querySelector<HTMLInputElement>('#nickname-modal-input')
+    expect(dialog?.getAttribute('role')).toBe('dialog')
+    expect(dialog?.getAttribute('aria-modal')).toBe('true')
+    expect(document.activeElement).toBe(input)
+
+    if (input === undefined || input === null) throw new Error('nickname input is missing')
+    input.value = '  새 닉네임  '
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    dialog
+      ?.querySelector<HTMLFormElement>('form')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(updateDisplayName).toHaveBeenCalledWith({ displayName: '새 닉네임' })
+    expect(document.body.querySelector('.nickname-modal')).toBeNull()
+    expect(trigger.text()).toContain('새 닉네임')
+    expect(document.activeElement).toBe(trigger.element)
+    wrapper.unmount()
+  })
 })
 
 async function mountLayout(path: string) {
@@ -123,5 +159,5 @@ async function mountLayout(path: string) {
     },
   })
   await flushPromises()
-  return { wrapper, router }
+  return { wrapper, router, authStore }
 }

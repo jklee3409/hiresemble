@@ -5,6 +5,7 @@ import type {
   CareerCreateRequest,
   CertificationCreateRequest,
   EducationCreateRequest,
+  EducationLevel,
   EducationStatus,
   LanguageScoreCreateRequest,
   ProfileWrite,
@@ -29,12 +30,12 @@ export interface EducationFormValues {
   schoolName: string
   major: string
   degree: string
+  educationLevel: EducationLevel
   educationStatus: EducationStatus
   admissionDate: string
   graduationDate: string
   gpa: string
   gpaScale: string
-  isPrimary: boolean
   description: string
 }
 
@@ -109,6 +110,14 @@ const educationSchema = z
     schoolName: requiredText(200),
     major: optionalText(200),
     degree: optionalText(100),
+    educationLevel: z.enum([
+      'OTHER',
+      'HIGH_SCHOOL',
+      'ASSOCIATE',
+      'BACHELOR',
+      'MASTER',
+      'DOCTORATE',
+    ]),
     educationStatus: z.enum([
       'ENROLLED',
       'LEAVE_OF_ABSENCE',
@@ -120,7 +129,6 @@ const educationSchema = z
     graduationDate: optionalDate,
     gpa: z.string().trim(),
     gpaScale: z.string().trim(),
-    isPrimary: z.boolean(),
     description: optionalText(5000),
   })
   .superRefine((value, context) => {
@@ -243,12 +251,12 @@ export function validateEducationForm(
       schoolName: parsed.data.schoolName,
       major: nullable(parsed.data.major),
       degree: nullable(parsed.data.degree),
+      educationLevel: parsed.data.educationLevel,
       educationStatus: parsed.data.educationStatus,
       admissionDate: nullable(parsed.data.admissionDate),
       graduationDate: nullable(parsed.data.graduationDate),
       gpa: parsed.data.gpa === '' ? null : Number(parsed.data.gpa),
       gpaScale: parsed.data.gpaScale === '' ? null : Number(parsed.data.gpaScale),
-      isPrimary: parsed.data.isPrimary,
       description: nullable(parsed.data.description),
     },
   }

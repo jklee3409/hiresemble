@@ -122,7 +122,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'profile/evidence',
         name: 'profile-evidence',
         component: ProfileEvidencePage,
-        meta: { title: '경험 정보', profileRecommended: true },
+        meta: { title: '대외활동', profileRecommended: true },
       },
       {
         path: 'documents',

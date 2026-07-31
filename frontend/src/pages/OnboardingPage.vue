@@ -46,12 +46,12 @@ const educationForm = reactive<EducationFormValues>({
   schoolName: '',
   major: '',
   degree: '',
+  educationLevel: 'BACHELOR',
   educationStatus: 'ENROLLED',
   admissionDate: '',
   graduationDate: '',
   gpa: '',
   gpaScale: '',
-  isPrimary: true,
   description: '',
 })
 const fieldErrors = ref<Record<string, string>>({})
@@ -60,7 +60,7 @@ const message = ref('')
 const profileConflict = ref<{ draft: Record<string, unknown>; latest: ProfileDto } | null>(null)
 const steps = [
   { number: 1, label: '기본 정보', description: '이름과 소개' },
-  { number: 2, label: '먼저 보여 줄 학력', description: '주요 교육 이력' },
+  { number: 2, label: '최종 학력', description: '가장 높은 교육 단계' },
   { number: 3, label: '희망 조건', description: '관심 있는 분야' },
   { number: 4, label: '자료 등록', description: '이력서·포트폴리오' },
 ] as const
@@ -139,7 +139,7 @@ async function saveProfile(nextStep: number): Promise<void> {
 async function saveEducation(): Promise<void> {
   fieldErrors.value = {}
   generalError.value = ''
-  const validation = validateEducationForm({ ...educationForm, isPrimary: true })
+  const validation = validateEducationForm(educationForm)
   fieldErrors.value = validation.fieldErrors
   if (validation.data === null) {
     await nextTick()
@@ -147,7 +147,7 @@ async function saveEducation(): Promise<void> {
     return
   }
   try {
-    await educationMutation.mutateAsync({ ...validation.data, isPrimary: true })
+    await educationMutation.mutateAsync(validation.data)
     await educationQuery.refetch()
     await profileQuery.refetch()
     step.value = 3
@@ -158,7 +158,7 @@ async function saveEducation(): Promise<void> {
   }
 }
 
-function useExistingPrimary(): void {
+function useExistingFinalEducation(): void {
   step.value = 3
 }
 
@@ -237,7 +237,7 @@ async function retryLoad(): Promise<void> {
       class="onboarding-state"
       kind="loading"
       title="입력한 정보를 불러오는 중…"
-      description="저장한 프로필과 먼저 보여 줄 학력을 확인하고 있어요."
+      description="저장한 프로필과 최종 학력을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="hasLoadError"
@@ -342,8 +342,10 @@ async function retryLoad(): Promise<void> {
       <header class="section-header">
         <div>
           <p class="page-eyebrow">2 / 4</p>
-          <h3 class="section-title">먼저 보여 줄 학력</h3>
-          <p class="section-description">지원할 때 먼저 보여 줄 학력을 정해 주세요.</p>
+          <h3 class="section-title">최종 학력</h3>
+          <p class="section-description">
+            학력 단계를 선택하면 등록된 항목 중 가장 높은 단계를 최종 학력으로 표시해요.
+          </p>
         </div>
       </header>
       <div
@@ -351,8 +353,8 @@ async function retryLoad(): Promise<void> {
         class="alert alert--success"
       >
         <AppIcon name="check" />
-        <span>이미 먼저 보여 줄 학력이 있어요.</span>
-        <button type="button" class="text-link" @click="useExistingPrimary">
+        <span>이미 최종 학력으로 표시된 항목이 있어요.</span>
+        <button type="button" class="text-link" @click="useExistingFinalEducation">
           저장된 학력 사용하기
         </button>
       </div>
@@ -371,6 +373,21 @@ async function retryLoad(): Promise<void> {
         }}</span>
       </div>
       <div class="onboarding-form-grid">
+        <div class="field">
+          <label class="field-label" for="onboarding-educationLevel">학력 단계</label>
+          <select
+            id="onboarding-educationLevel"
+            v-model="educationForm.educationLevel"
+            class="control"
+          >
+            <option value="HIGH_SCHOOL">고등학교</option>
+            <option value="ASSOCIATE">대학교(전문학사)</option>
+            <option value="BACHELOR">대학교(학사)</option>
+            <option value="MASTER">대학원(석사)</option>
+            <option value="DOCTORATE">대학원(박사)</option>
+            <option value="OTHER">기타 교육</option>
+          </select>
+        </div>
         <div class="field">
           <label class="field-label" for="onboarding-major">전공</label>
           <input

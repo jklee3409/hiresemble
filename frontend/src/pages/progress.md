@@ -4,6 +4,36 @@
 
 P1 인증부터 P7 Cover Letter 목록·공고 context·canonical editor, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-07-31] Session Summary (최종 학력·UI 문구와 hover 보정)
+
+- What was done:
+  - 기본 정보 닉네임 field와 수동 대표 학력 action을 제거하고 학력 단계·최종 학력 badge를 추가했다.
+  - 승인·거절 안내 card, AI 작업 `선택`/`삭제(n)` 문구와 관심 공고 active hover를 보정했다.
+- Key decisions:
+  - 서버가 계산한 `isPrimary`만 최종 학력 badge로 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - page/layout targeted 24 tests와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (프로필 하단 저장·대외활동·작업 삭제)
+
+- What was done:
+  - 기본 정보 savebar를 모든 입력 뒤로 이동하고 대외활동 filter gap, 학력 상태 한국어 표시와 승인·confidence 안내를 적용했다.
+  - legacy 응답에 EDUCATION source가 섞여도 대외활동 card 목록에서 렌더링하지 않는 client guard를 추가했다.
+  - terminal Agent Run 개별 삭제, 현재 페이지 선택·전체 선택 및 선택 삭제 UI를 추가했다.
+- Key decisions:
+  - 직접 입력 근거는 이미 VERIFIED라 승인·거절을 숨기고 문서 AI 추출 근거에만 검토 action을 표시한다.
+  - 작업 삭제 확인문은 실행 결과와 비용 audit이 보존됨을 알린다.
+- Issues encountered:
+  - 전체 check 중 수정 파일 4개와 마지막 학력 상태 mapping 1개의 Prettier 경고는 대상 파일 format 뒤 해소했다.
+- Validation:
+  - page targeted 13 tests와 Frontend 전체 53 files/215 tests·production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (프로필 기본 정보·필터 간격 보정)
 
 - What was done:

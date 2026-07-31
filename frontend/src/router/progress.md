@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-07-31] Session Summary (대외활동 route meta)
+
+- What was done:
+  - `/profile/evidence`의 shell/header meta title을 `경험 정보`에서 `대외활동`으로 바꾸고 route test를 추가했다.
+- Key decisions:
+  - route path·name·guard·returnTo는 유지해 deep link 호환성을 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router/profile targeted 16 tests와 Frontend 전체 53 files/215 tests·production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (첫 route 진입 scroll 기준)
 
 - What was done:

@@ -206,6 +206,7 @@ describe('authentication route policy', () => {
     const listRoute = children.find((route) => route.name === 'agent-runs')
     const detailRoute = children.find((route) => route.name === 'agent-run-detail')
     const documentsRoute = children.find((route) => route.name === 'documents')
+    const profileEvidenceRoute = children.find((route) => route.name === 'profile-evidence')
     const documentDetailRoute = children.find((route) => route.name === 'document-detail')
     const jobsRoute = children.find((route) => route.name === 'jobs')
     const jobNewRoute = children.find((route) => route.name === 'job-new')
@@ -214,6 +215,7 @@ describe('authentication route policy', () => {
     const coverLetterEditRoute = children.find((route) => route.name === 'cover-letter-edit')
 
     expect(typeof documentsRoute?.component).toBe('function')
+    expect(profileEvidenceRoute?.meta?.title).toBe('대외활동')
     expect(typeof documentDetailRoute?.component).toBe('function')
     expect(typeof listRoute?.component).toBe('function')
     expect(typeof detailRoute?.component).toBe('function')

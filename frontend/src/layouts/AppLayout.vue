@@ -2,9 +2,10 @@
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import { validateDisplayNameForm } from '@/features/auth/formValidation'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import BrandMark from '@/shared/ui/BrandMark.vue'
-import { authErrorMessage, normalizeApiError } from '@/shared/api/errors'
+import { authErrorMessage, fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const navItems = [
@@ -30,7 +31,15 @@ const mobileNavOpen = ref(false)
 const mobileNavTrigger = ref<HTMLButtonElement | null>(null)
 const mobileNavPanel = ref<HTMLElement | null>(null)
 const workspaceContent = ref<HTMLElement | null>(null)
-let bodyOverflowBeforeDrawer = ''
+const nicknameModalOpen = ref(false)
+const nickname = ref('')
+const nicknameFieldError = ref('')
+const nicknameGeneralError = ref('')
+const nicknameSaving = ref(false)
+const nicknameTrigger = ref<HTMLElement | null>(null)
+const nicknameDialog = ref<HTMLElement | null>(null)
+const nicknameInput = ref<HTMLInputElement | null>(null)
+let bodyOverflowBeforeOverlay = ''
 
 const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
 const pageContext = computed(() => {
@@ -42,6 +51,7 @@ const pageContext = computed(() => {
   return '지원 현황과 다음 할 일'
 })
 const userInitial = computed(() => authStore.currentUser?.displayName.trim().charAt(0) || 'H')
+const overlayOpen = computed(() => mobileNavOpen.value || nicknameModalOpen.value)
 const AgentRunProgressDrawer = defineAsyncComponent(
   () => import('@/features/agent-runs/AgentRunProgressDrawer.vue'),
 )
@@ -50,6 +60,7 @@ watch(
   () => route.fullPath,
   () => {
     closeMobileNav(false)
+    closeNicknameModal(false)
     document.title = `${String(route.meta.title ?? 'Hiresemble')} | Hiresemble`
     void nextTick(() => workspaceContent.value?.focus({ preventScroll: true }))
   },
@@ -58,20 +69,32 @@ watch(
 
 watch(mobileNavOpen, async (open) => {
   if (open) {
-    bodyOverflowBeforeDrawer = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     await nextTick()
     mobileNavPanel.value?.querySelector<HTMLElement>('[data-mobile-nav-first]')?.focus()
+  }
+})
+
+watch(nicknameModalOpen, async (open) => {
+  if (!open) return
+  await nextTick()
+  nicknameInput.value?.focus()
+  nicknameInput.value?.select()
+})
+
+watch(overlayOpen, (open) => {
+  if (open) {
+    bodyOverflowBeforeOverlay = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return
   }
-  document.body.style.overflow = bodyOverflowBeforeDrawer
+  document.body.style.overflow = bodyOverflowBeforeOverlay
 })
 
 document.addEventListener('keydown', onDocumentKeydown)
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown)
-  document.body.style.overflow = bodyOverflowBeforeDrawer
+  document.body.style.overflow = bodyOverflowBeforeOverlay
 })
 
 function isNavActive(match: string): boolean {
@@ -89,17 +112,29 @@ function closeMobileNav(restoreFocus = true): void {
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
+  if (nicknameModalOpen.value) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeNicknameModal()
+      return
+    }
+    trapFocus(event, nicknameDialog.value)
+    return
+  }
   if (!mobileNavOpen.value) return
   if (event.key === 'Escape') {
     event.preventDefault()
     closeMobileNav()
     return
   }
-  if (event.key !== 'Tab' || mobileNavPanel.value === null) return
+  trapFocus(event, mobileNavPanel.value)
+}
 
+function trapFocus(event: KeyboardEvent, container: HTMLElement | null): void {
+  if (event.key !== 'Tab' || container === null) return
   const focusable = Array.from(
-    mobileNavPanel.value.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     ),
   )
   if (focusable.length === 0) return
@@ -111,6 +146,53 @@ function onDocumentKeydown(event: KeyboardEvent): void {
   } else if (!event.shiftKey && document.activeElement === last) {
     event.preventDefault()
     first?.focus()
+  }
+}
+
+function openNicknameModal(event?: Event): void {
+  const currentTarget = event?.currentTarget
+  nicknameTrigger.value =
+    currentTarget instanceof HTMLElement && currentTarget.closest('.mobile-drawer') === null
+      ? currentTarget
+      : mobileNavTrigger.value
+  closeMobileNav(false)
+  nickname.value = authStore.currentUser?.displayName ?? ''
+  nicknameFieldError.value = ''
+  nicknameGeneralError.value = ''
+  nicknameModalOpen.value = true
+}
+
+function closeNicknameModal(restoreFocus = true): void {
+  if (!nicknameModalOpen.value) return
+  nicknameModalOpen.value = false
+  nicknameFieldError.value = ''
+  nicknameGeneralError.value = ''
+  if (restoreFocus) void nextTick(() => nicknameTrigger.value?.focus())
+}
+
+async function saveNickname(): Promise<void> {
+  nicknameFieldError.value = ''
+  nicknameGeneralError.value = ''
+  const validation = validateDisplayNameForm({ displayName: nickname.value })
+  if (validation.data === null) {
+    nicknameFieldError.value = validation.fieldErrors.displayName ?? '닉네임을 확인해 주세요.'
+    await nextTick()
+    nicknameInput.value?.focus()
+    return
+  }
+
+  nicknameSaving.value = true
+  try {
+    await authStore.updateDisplayName(validation.data)
+    closeNicknameModal()
+  } catch (error) {
+    const apiError = normalizeApiError(error)
+    nicknameFieldError.value = fieldErrorsToRecord(apiError.fieldErrors).displayName ?? ''
+    if (nicknameFieldError.value === '') {
+      nicknameGeneralError.value = authErrorMessage(apiError)
+    }
+  } finally {
+    nicknameSaving.value = false
   }
 }
 
@@ -200,10 +282,17 @@ async function logout(): Promise<void> {
 
         <div class="workspace-header__actions">
           <AgentRunProgressDrawer />
-          <div class="header-user" aria-label="현재 사용자">
+          <button
+            type="button"
+            class="header-user"
+            :aria-label="`닉네임 수정: ${authStore.currentUser?.displayName ?? ''}`"
+            aria-haspopup="dialog"
+            @click="openNicknameModal"
+          >
             <span class="user-avatar user-avatar--small" aria-hidden="true">{{ userInitial }}</span>
-            <span>{{ authStore.currentUser?.displayName }}</span>
-          </div>
+            <span class="header-user__name">{{ authStore.currentUser?.displayName }}</span>
+            <span class="header-user__hint" aria-hidden="true">수정</span>
+          </button>
           <button
             type="button"
             class="button button--ghost header-logout"
@@ -282,15 +371,93 @@ async function logout(): Promise<void> {
               <AppIcon name="profile" />
               <span>온보딩 다시 보기</span>
             </RouterLink>
-            <div class="mobile-drawer__user">
+            <button
+              type="button"
+              class="mobile-drawer__user mobile-drawer__user--button"
+              aria-haspopup="dialog"
+              @click="openNicknameModal"
+            >
               <span class="user-avatar" aria-hidden="true">{{ userInitial }}</span>
               <span>
                 <strong>{{ authStore.currentUser?.displayName }}</strong>
-                <small>{{ authStore.currentUser?.email }}</small>
+                <small>닉네임 수정</small>
               </span>
-            </div>
+            </button>
           </div>
         </aside>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="nicknameModalOpen" class="nickname-modal-layer">
+        <button
+          type="button"
+          class="nickname-modal-overlay"
+          aria-label="닉네임 수정 닫기"
+          :disabled="nicknameSaving"
+          @click="closeNicknameModal()"
+        />
+        <section
+          ref="nicknameDialog"
+          class="nickname-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nickname-modal-title"
+          aria-describedby="nickname-modal-description"
+        >
+          <header class="nickname-modal__header">
+            <div>
+              <p class="page-eyebrow">계정 표시 정보</p>
+              <h2 id="nickname-modal-title">닉네임 수정</h2>
+            </div>
+            <button
+              type="button"
+              class="button button--ghost button--icon"
+              aria-label="닉네임 수정 닫기"
+              :disabled="nicknameSaving"
+              @click="closeNicknameModal()"
+            >
+              <AppIcon name="close" />
+            </button>
+          </header>
+          <form class="nickname-modal__form" novalidate @submit.prevent="saveNickname">
+            <p id="nickname-modal-description" class="nickname-modal__description">
+              변경한 닉네임은 헤더와 지원 홈에 바로 표시돼요.
+            </p>
+            <label class="field" for="nickname-modal-input">
+              <span class="field__label">닉네임</span>
+              <input
+                id="nickname-modal-input"
+                ref="nicknameInput"
+                v-model="nickname"
+                class="control"
+                maxlength="100"
+                autocomplete="nickname"
+                :aria-invalid="Boolean(nicknameFieldError)"
+                :aria-describedby="nicknameFieldError ? 'nickname-modal-error' : undefined"
+              />
+              <span v-if="nicknameFieldError" id="nickname-modal-error" class="field-error">
+                {{ nicknameFieldError }}
+              </span>
+            </label>
+            <p v-if="nicknameGeneralError" class="alert alert--danger" role="alert">
+              {{ nicknameGeneralError }}
+            </p>
+            <footer class="nickname-modal__actions">
+              <button
+                type="button"
+                class="button button--secondary"
+                :disabled="nicknameSaving"
+                @click="closeNicknameModal()"
+              >
+                취소
+              </button>
+              <button type="submit" class="button button--primary" :disabled="nicknameSaving">
+                {{ nicknameSaving ? '저장 중…' : '저장' }}
+              </button>
+            </footer>
+          </form>
+        </section>
       </div>
     </Teleport>
   </div>
@@ -529,9 +696,35 @@ async function logout(): Promise<void> {
   display: none;
   align-items: center;
   gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
   color: var(--color-ink-soft);
+  padding: 0.25rem 0.4rem;
   font-size: 0.8125rem;
   font-weight: 620;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.header-user:hover,
+.header-user:focus-visible {
+  border-color: var(--color-border);
+  background: var(--color-neutral-soft);
+}
+
+.header-user__name {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user__hint {
+  color: var(--color-brand-ink);
+  font-size: 0.6875rem;
 }
 
 .workspace-header__error {
@@ -671,6 +864,83 @@ async function logout(): Promise<void> {
   .header-user {
     display: flex;
   }
+}
+
+.mobile-drawer__user--button {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.mobile-drawer__user--button:hover,
+.mobile-drawer__user--button:focus-visible {
+  background: var(--color-neutral-soft);
+}
+
+.nickname-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.nickname-modal-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: rgb(9 14 32 / 58%);
+  padding: 0;
+}
+
+.nickname-modal {
+  position: relative;
+  width: min(28rem, 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.nickname-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-5);
+}
+
+.nickname-modal__header h2 {
+  margin: var(--space-1) 0 0;
+  color: var(--color-ink);
+  font-size: 1.25rem;
+}
+
+.nickname-modal__form {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.nickname-modal__description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+}
+
+.nickname-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
 @media (min-width: 1024px) {

@@ -33,7 +33,7 @@ describe('Career Profile Workspace navigation', () => {
       '자격증',
       '어학',
       '수상',
-      '경험 정보',
+      '대외활동',
     ])
     expect(wrapper.find('small').exists()).toBe(false)
     expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('경력')

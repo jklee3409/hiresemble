@@ -4,6 +4,32 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-07-31] Session Summary (학력 단계 validation)
+
+- What was done:
+  - 교육 Form schema에 필수 `EducationLevel`을 추가하고 수동 `isPrimary` 입력을 제거했다.
+- Key decisions:
+  - 사용자 선택값은 API enum으로 전달하되 화면에는 한국어 단계명을 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - schema tests와 Frontend 전체 typecheck가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (대외활동 명칭·학력 상태 표시)
+
+- What was done:
+  - 내비게이션의 경험 정보를 대외활동으로 바꾸고 Version conflict field에 display formatter를 지원했다.
+- Key decisions:
+  - 학력 enum은 일반 카드와 conflict 비교 모두 동일한 한국어 label을 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - profile component/page tests와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (프로필 전체 내비게이션 첫 화면 노출)
 
 - What was done:

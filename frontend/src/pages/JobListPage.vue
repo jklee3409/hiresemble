@@ -406,6 +406,11 @@ function extractionTone(
   color: white;
 }
 
+.job-tab--active:hover {
+  background: var(--color-brand-hover);
+  color: white;
+}
+
 .job-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

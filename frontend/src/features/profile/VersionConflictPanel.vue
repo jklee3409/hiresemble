@@ -8,6 +8,7 @@ import { reapplySelectedFields } from './conflict'
 interface ConflictField {
   key: string
   label: string
+  format?: (value: unknown) => string
 }
 
 const props = defineProps<{
@@ -25,7 +26,8 @@ const selected = reactive<Record<string, boolean>>(
   Object.fromEntries(props.fields.map((field) => [field.key, true])),
 )
 
-function display(value: unknown): string {
+function display(field: ConflictField, value: unknown): string {
+  if (field.format !== undefined) return field.format(value)
   if (value === null || value === undefined || value === '') return '비어 있음'
   if (Array.isArray(value)) return value.length === 0 ? '비어 있음' : value.join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
@@ -68,11 +70,11 @@ function reapply(): void {
         </label>
         <div class="conflict-value conflict-value--draft">
           <span>내 미저장 값</span>
-          <p>{{ display(draft[field.key]) }}</p>
+          <p>{{ display(field, draft[field.key]) }}</p>
         </div>
         <div class="conflict-value">
           <span>최근 저장된 값</span>
-          <p>{{ display(latest[field.key]) }}</p>
+          <p>{{ display(field, latest[field.key]) }}</p>
         </div>
       </li>
     </ul>

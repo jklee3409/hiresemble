@@ -49,12 +49,12 @@ describe('P2 profile Zod schemas', () => {
       schoolName: 'School',
       major: '',
       degree: '',
+      educationLevel: 'BACHELOR' as const,
       educationStatus: 'GRADUATED' as const,
       admissionDate: '2025-03-01',
       graduationDate: '2024-02-01',
       gpa: '4.2',
       gpaScale: '4.0',
-      isPrimary: true,
       description: '',
     }
     const invalid = validateEducationForm(base)
@@ -71,7 +71,7 @@ describe('P2 profile Zod schemas', () => {
         gpa: '3.8',
         gpaScale: '4.5',
       }).data,
-    ).toMatchObject({ gpa: 3.8, gpaScale: 4.5, isPrimary: true })
+    ).toMatchObject({ gpa: 3.8, gpaScale: 4.5, educationLevel: 'BACHELOR' })
   })
 
   it('validates certification and language expiry dates', () => {

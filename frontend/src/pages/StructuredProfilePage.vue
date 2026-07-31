@@ -44,6 +44,23 @@ import { useAuthStore } from '@/stores/auth'
 
 export type ResourceKind = 'education' | 'certification' | 'language' | 'award' | 'career'
 
+const educationStatusLabels: Record<EducationDto['educationStatus'], string> = {
+  ENROLLED: '재학',
+  LEAVE_OF_ABSENCE: '휴학',
+  EXPECTED_GRADUATION: '졸업 예정',
+  GRADUATED: '졸업',
+  WITHDRAWN: '중퇴',
+}
+
+const educationLevelLabels: Record<EducationDto['educationLevel'], string> = {
+  OTHER: '기타 교육',
+  HIGH_SCHOOL: '고등학교',
+  ASSOCIATE: '대학교(전문학사)',
+  BACHELOR: '대학교(학사)',
+  MASTER: '대학원(석사)',
+  DOCTORATE: '대학원(박사)',
+}
+
 type StructuredCreateRequest =
   | EducationCreateRequest
   | CertificationCreateRequest
@@ -202,33 +219,6 @@ async function remove(item: StructuredProfileDto): Promise<void> {
   }
 }
 
-async function makePrimary(item: EducationDto): Promise<void> {
-  const request: EducationCreateRequest = {
-    schoolName: item.schoolName,
-    major: item.major,
-    degree: item.degree,
-    educationStatus: item.educationStatus,
-    admissionDate: item.admissionDate,
-    graduationDate: item.graduationDate,
-    gpa: item.gpa,
-    gpaScale: item.gpaScale,
-    isPrimary: true,
-    description: item.description,
-  }
-  try {
-    await saveMutation.mutateAsync({ id: item.id, version: item.version, request })
-    await refreshAfterMutation()
-    message.value = '먼저 보여 줄 학력을 변경했어요.'
-  } catch (error) {
-    const apiError = normalizeApiError(error)
-    await resourceQuery.refetch()
-    generalError.value =
-      apiError.code === 'RESOURCE_STATE_CONFLICT'
-        ? '먼저 보여 줄 학력이 다른 곳에서 변경됐어요. 최신 목록을 확인해 주세요.'
-        : apiError.message
-  }
-}
-
 function cancelConflict(): void {
   const latest = conflict.value?.latest
   conflict.value = null
@@ -284,12 +274,12 @@ function emptyForm(): FormModel {
     schoolName: '',
     major: '',
     degree: '',
+    educationLevel: 'BACHELOR',
     educationStatus: 'ENROLLED',
     admissionDate: '',
     graduationDate: '',
     gpa: '',
     gpaScale: '',
-    isPrimary: false,
     description: '',
     evidenceDocumentId: '',
     name: '',
@@ -441,7 +431,12 @@ function resourceSubtitle(kind: ResourceKind, item: StructuredProfileDto): strin
   switch (kind) {
     case 'education': {
       const education = item as EducationDto
-      return [education.major, education.degree, education.educationStatus]
+      return [
+        educationLevelLabels[education.educationLevel],
+        education.major,
+        education.degree,
+        educationStatusLabel(education.educationStatus),
+      ]
         .filter(Boolean)
         .join(' · ')
     }
@@ -474,12 +469,12 @@ function resourceToForm(kind: ResourceKind, item: StructuredProfileDto): Partial
         schoolName: value.schoolName,
         major: value.major ?? '',
         degree: value.degree ?? '',
+        educationLevel: value.educationLevel,
         educationStatus: value.educationStatus,
         admissionDate: value.admissionDate ?? '',
         graduationDate: value.graduationDate ?? '',
         gpa: value.gpa?.toString() ?? '',
         gpaScale: value.gpaScale?.toString() ?? '',
-        isPrimary: value.isPrimary,
         description: value.description ?? '',
       }
     }
@@ -532,18 +527,38 @@ function resourceToForm(kind: ResourceKind, item: StructuredProfileDto): Partial
   }
 }
 
-function fieldsForKind(kind: ResourceKind): Array<{ key: string; label: string }> {
-  const common: Record<ResourceKind, Array<{ key: string; label: string }>> = {
+function educationStatusLabel(value: unknown): string {
+  return typeof value === 'string' &&
+    Object.prototype.hasOwnProperty.call(educationStatusLabels, value)
+    ? educationStatusLabels[value as EducationDto['educationStatus']]
+    : '알 수 없는 상태'
+}
+
+function fieldsForKind(
+  kind: ResourceKind,
+): Array<{ key: string; label: string; format?: (value: unknown) => string }> {
+  const common: Record<
+    ResourceKind,
+    Array<{ key: string; label: string; format?: (value: unknown) => string }>
+  > = {
     education: [
       { key: 'schoolName', label: '학교명' },
       { key: 'major', label: '전공' },
-      { key: 'degree', label: '학위' },
-      { key: 'educationStatus', label: '상태' },
+      {
+        key: 'educationLevel',
+        label: '학력 단계',
+        format: (value) =>
+          typeof value === 'string' &&
+          Object.prototype.hasOwnProperty.call(educationLevelLabels, value)
+            ? educationLevelLabels[value as EducationDto['educationLevel']]
+            : '기타 교육',
+      },
+      { key: 'degree', label: '학위·과정명' },
+      { key: 'educationStatus', label: '상태', format: educationStatusLabel },
       { key: 'admissionDate', label: '입학일' },
       { key: 'graduationDate', label: '졸업(예정)일' },
       { key: 'gpa', label: '학점' },
       { key: 'gpaScale', label: '기준 학점' },
-      { key: 'isPrimary', label: '먼저 보여 줄 학력' },
       { key: 'description', label: '설명' },
     ],
     certification: [
@@ -595,7 +610,7 @@ const resourceLabels: Record<
 > = {
   education: {
     title: '학력',
-    description: '지원할 때 먼저 보여 줄 학력을 정리해 두세요.',
+    description: '학력 단계를 기준으로 서버가 최종 학력을 자동으로 표시해요.',
     add: '학력 추가',
     sorts: [
       { value: 'createdAt,desc', label: '최근 등록순' },
@@ -734,7 +749,21 @@ const resourceLabels: Record<
               >전공<input v-model="form.major" class="control" maxlength="200"
             /></label>
             <label class="field"
-              >학위<input v-model="form.degree" class="control" maxlength="100"
+              >학력 단계<select v-model="form.educationLevel" class="control">
+                <option value="HIGH_SCHOOL">고등학교</option>
+                <option value="ASSOCIATE">대학교(전문학사)</option>
+                <option value="BACHELOR">대학교(학사)</option>
+                <option value="MASTER">대학원(석사)</option>
+                <option value="DOCTORATE">대학원(박사)</option>
+                <option value="OTHER">기타 교육</option>
+              </select></label
+            >
+            <label class="field"
+              >학위·과정명<input
+                v-model="form.degree"
+                class="control"
+                maxlength="100"
+                placeholder="예: 컴퓨터공학 학사"
             /></label>
             <label class="field"
               >재학 상태<select v-model="form.educationStatus" class="control">
@@ -768,10 +797,6 @@ const resourceLabels: Record<
                 class="field-error"
                 >{{ fieldErrors.gpaScale }}</span
               ></label
-            >
-            <label class="check-row form-span"
-              ><input v-model="form.isPrimary" class="checkbox-control" type="checkbox" />먼저 보여
-              줄 학력으로 설정</label
             >
             <label class="field form-span"
               >설명<textarea v-model="form.description" class="control min-h-24" maxlength="5000" />
@@ -1007,7 +1032,7 @@ const resourceLabels: Record<
                 <span
                   v-if="kind === 'education' && (item as EducationDto).isPrimary"
                   class="status-badge status-badge--brand"
-                  >먼저 보여 줄 학력</span
+                  >최종 학력</span
                 >
               </div>
               <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">
@@ -1015,14 +1040,6 @@ const resourceLabels: Record<
               </p>
             </div>
             <div class="structured-item__actions">
-              <button
-                v-if="kind === 'education' && !(item as EducationDto).isPrimary"
-                type="button"
-                class="button button--secondary button--compact"
-                @click="makePrimary(item as EducationDto)"
-              >
-                대표로 설정
-              </button>
               <button
                 type="button"
                 class="button button--ghost button--compact"

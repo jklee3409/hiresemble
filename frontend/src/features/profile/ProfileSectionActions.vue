@@ -11,7 +11,7 @@ const sections = [
   { to: '/profile/certifications', label: '자격증' },
   { to: '/profile/languages', label: '어학' },
   { to: '/profile/awards', label: '수상' },
-  { to: '/profile/evidence', label: '경험 정보' },
+  { to: '/profile/evidence', label: '대외활동' },
 ] as const
 
 const currentIndex = computed(() => sections.findIndex((section) => section.to === route.path))

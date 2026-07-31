@@ -51,6 +51,8 @@ export type ProfileCompletionItem =
 
 export type EducationStatus =
   'ENROLLED' | 'LEAVE_OF_ABSENCE' | 'EXPECTED_GRADUATION' | 'GRADUATED' | 'WITHDRAWN'
+export type EducationLevel =
+  'OTHER' | 'HIGH_SCHOOL' | 'ASSOCIATE' | 'BACHELOR' | 'MASTER' | 'DOCTORATE'
 
 export type EvidenceSourceType =
   | 'EDUCATION'
@@ -108,6 +110,7 @@ export interface EducationDto extends VersionedProfileResource {
   schoolName: string
   major: string | null
   degree: string | null
+  educationLevel: EducationLevel
   educationStatus: EducationStatus
   admissionDate: string | null
   graduationDate: string | null
@@ -121,12 +124,12 @@ export interface EducationCreateRequest {
   schoolName: string
   major: string | null
   degree: string | null
+  educationLevel: EducationLevel
   educationStatus: EducationStatus
   admissionDate: string | null
   graduationDate: string | null
   gpa: number | null
   gpaScale: number | null
-  isPrimary: boolean
   description: string | null
 }
 

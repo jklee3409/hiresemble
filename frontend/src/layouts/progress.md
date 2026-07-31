@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`AI 작업 내역` navigation, Job Analysis/Cover Letter tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-07-31] Session Summary (상단 닉네임 수정 Modal)
+
+- What was done:
+  - header 닉네임과 mobile drawer 사용자 영역을 닉네임 수정 Modal trigger로 연결했다.
+- Key decisions:
+  - Modal은 validation, Escape·Tab focus trap, body scroll lock과 trigger focus 복원을 소유한다.
+- Issues encountered:
+  - CSS media query 닫힘 누락을 production build에서 발견해 보정했다.
+- Validation:
+  - `AppLayout.test.ts`의 Modal 저장·focus 회귀와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (Route focus scroll 간섭 제거)
 
 - What was done:

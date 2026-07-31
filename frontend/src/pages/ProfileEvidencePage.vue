@@ -16,6 +16,7 @@ import {
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -55,6 +56,10 @@ const evidenceQuery = useQuery({
   queryFn: () => profileApi.listEvidence(filters.value),
   enabled: computed(() => userId.value !== ''),
 })
+const visibleEvidenceItems = computed(
+  () =>
+    evidenceQuery.data.value?.items.filter((evidence) => evidence.sourceType !== 'EDUCATION') ?? [],
+)
 
 interface MetadataEntry extends EvidenceMetadataField {
   id: number
@@ -137,14 +142,14 @@ async function saveEdit(): Promise<void> {
     await editMutation.mutateAsync({ id: editingId.value, request })
     await evidenceQuery.refetch()
     editingId.value = null
-    message.value = '경험 정보를 저장했어요.'
+    message.value = '대외활동을 저장했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
     if (apiError.code === 'EVIDENCE_SOURCE_DELETED') {
       await evidenceQuery.refetch()
       editingId.value = null
-      generalError.value = '원본이 삭제된 경험 정보는 읽기만 할 수 있어요.'
+      generalError.value = '원본이 삭제된 대외활동은 읽기만 할 수 있어요.'
       return
     }
     if (isVersionConflict(apiError)) {
@@ -170,8 +175,7 @@ async function verify(
   try {
     await verificationMutation.mutateAsync({ evidence, nextStatus })
     await evidenceQuery.refetch()
-    message.value =
-      nextStatus === 'VERIFIED' ? '경험 정보를 승인했어요.' : '경험 정보를 거절했어요.'
+    message.value = nextStatus === 'VERIFIED' ? '대외활동을 승인했어요.' : '대외활동을 거절했어요.'
   } catch (error) {
     const apiError = normalizeApiError(error)
     await evidenceQuery.refetch()
@@ -247,6 +251,12 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
   )[value]
 }
 
+function canReviewEvidence(evidence: EvidenceDto): boolean {
+  return (
+    evidence.sourceType === 'DOCUMENT_CHUNK' && evidence.verificationStatus !== 'SOURCE_DELETED'
+  )
+}
+
 function statusTone(
   value: EvidenceVerificationStatus,
 ): 'neutral' | 'success' | 'danger' | 'warning' {
@@ -260,8 +270,11 @@ function statusTone(
   )[value]
 }
 
-function confidenceLabel(value: number | null): string {
-  return value === null ? '신뢰도 미산정' : `신뢰도 ${Math.round(value * 100)}%`
+function confidenceLabel(evidence: EvidenceDto): string {
+  if (evidence.sourceType !== 'DOCUMENT_CHUNK') return '직접 입력'
+  return evidence.confidence === null
+    ? 'AI 추출 신뢰도 미산정'
+    : `AI 추출 신뢰도 ${Math.round(evidence.confidence * 100)}%`
 }
 </script>
 
@@ -274,17 +287,33 @@ function confidenceLabel(value: number | null): string {
     <div class="profile-workspace-shell__content">
       <PageHeader
         heading-id="evidence-heading"
-        title="경험 정보"
-        description="내가 입력했거나 자료에서 찾은 경험을 확인하고 다듬어 보세요."
+        title="대외활동"
+        description="내가 입력했거나 자료에서 찾은 대외활동을 확인하고 다듬어 보세요."
         eyebrow="내 지원 정보"
       />
-      <p class="alert alert--info evidence-page__guidance">
-        직접 입력한 내용과 자료에서 찾은 경험을 함께 확인할 수 있어요. 원본이 삭제된 항목은 이전
-        기록을 위해 읽기 전용으로 남겨요.
-      </p>
+      <aside class="evidence-page__guidance" aria-label="AI 추출 정보 승인과 거절 안내">
+        <div class="evidence-guidance-item evidence-guidance-item--approve">
+          <span class="evidence-guidance-item__icon" aria-hidden="true">
+            <AppIcon name="check" />
+          </span>
+          <span>
+            <strong>승인</strong>
+            <small>공고 분석과 자기소개서 작성에 사용해요.</small>
+          </span>
+        </div>
+        <div class="evidence-guidance-item evidence-guidance-item--reject">
+          <span class="evidence-guidance-item__icon" aria-hidden="true">
+            <AppIcon name="close" />
+          </span>
+          <span>
+            <strong>거절</strong>
+            <small>AI 기능에서 해당 정보를 사용하지 않아요.</small>
+          </span>
+        </div>
+      </aside>
 
       <details class="filter-disclosure evidence-page__filters" open>
-        <summary>경험 정보 필터</summary>
+        <summary>대외활동 필터</summary>
         <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
           <label class="field">
             <span class="field__label">상태</span>
@@ -343,12 +372,12 @@ function confidenceLabel(value: number | null): string {
         v-if="editingId"
         class="evidence-editor section-surface"
         role="region"
-        aria-label="경험 정보 편집"
+        aria-label="대외활동 편집"
       >
         <div class="evidence-editor__header">
           <div>
             <p class="section-kicker">내용 다듬기</p>
-            <h3 class="section-title">경험 정보 편집</h3>
+            <h3 class="section-title">대외활동 편집</h3>
           </div>
           <button type="button" class="button button--ghost button--compact" @click="closeEdit">
             닫기
@@ -460,7 +489,7 @@ function confidenceLabel(value: number | null): string {
               class="button button--primary"
               :disabled="editMutation.isPending.value"
             >
-              {{ editMutation.isPending.value ? '저장 중…' : '경험 정보 저장' }}
+              {{ editMutation.isPending.value ? '저장 중…' : '대외활동 저장' }}
             </button>
             <button type="button" class="button button--secondary" @click="closeEdit">취소</button>
           </div>
@@ -471,14 +500,14 @@ function confidenceLabel(value: number | null): string {
         v-if="evidenceQuery.isPending.value"
         class="evidence-page__state"
         kind="loading"
-        title="경험 정보를 불러오는 중…"
+        title="대외활동을 불러오는 중…"
         description="저장된 출처와 검토 상태를 확인하고 있어요."
       />
       <StatePanel
         v-else-if="evidenceQuery.isError.value"
         class="evidence-page__state"
         kind="error"
-        title="경험 정보를 불러오지 못했어요."
+        title="대외활동을 불러오지 못했어요."
         description="잠시 후 다시 시도해 주세요."
       >
         <template #actions>
@@ -488,15 +517,15 @@ function confidenceLabel(value: number | null): string {
         </template>
       </StatePanel>
       <StatePanel
-        v-else-if="evidenceQuery.data.value?.items.length === 0"
+        v-else-if="visibleEvidenceItems.length === 0"
         class="evidence-page__state"
         kind="empty"
-        title="조건에 맞는 경험 정보가 없어요."
-        description="필터를 바꾸거나 프로필과 자료에 경험을 추가해 주세요."
+        title="조건에 맞는 대외활동이 없어요."
+        description="필터를 바꾸거나 프로필과 자료에 대외활동을 추가해 주세요."
       />
       <ul v-else class="evidence-list data-list">
         <li
-          v-for="evidence in evidenceQuery.data.value?.items"
+          v-for="evidence in visibleEvidenceItems"
           :key="evidence.id"
           class="evidence-card data-card"
           :data-testid="`evidence-card-${evidence.id}`"
@@ -521,7 +550,7 @@ function confidenceLabel(value: number | null): string {
                 </div>
                 <div>
                   <dt>신뢰도</dt>
-                  <dd>{{ confidenceLabel(evidence.confidence) }}</dd>
+                  <dd>{{ confidenceLabel(evidence) }}</dd>
                 </div>
               </dl>
             </div>
@@ -537,6 +566,7 @@ function confidenceLabel(value: number | null): string {
                 수정
               </button>
               <button
+                v-if="canReviewEvidence(evidence)"
                 type="button"
                 class="button button--secondary button--compact"
                 :disabled="verificationMutation.isPending.value"
@@ -545,6 +575,7 @@ function confidenceLabel(value: number | null): string {
                 승인
               </button>
               <button
+                v-if="canReviewEvidence(evidence)"
                 type="button"
                 class="button button--danger button--compact"
                 :disabled="verificationMutation.isPending.value"
@@ -568,7 +599,7 @@ function confidenceLabel(value: number | null): string {
         v-if="evidenceQuery.data.value && evidenceQuery.data.value.totalPages > 0"
         :page="page"
         :total-pages="evidenceQuery.data.value.totalPages"
-        label="경험 정보 페이지"
+        label="대외활동 페이지"
         @change="page = $event"
       />
       <ProfileSectionActions v-if="!editingId" />
@@ -589,7 +620,78 @@ function confidenceLabel(value: number | null): string {
 .evidence-filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(8rem, 0.7fr)) minmax(12rem, 1.4fr) auto;
+  gap: var(--space-3);
   align-items: end;
+}
+
+.evidence-page__guidance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-surface), var(--color-neutral-soft));
+  padding: var(--space-3);
+  box-shadow: var(--shadow-xs);
+}
+
+.evidence-guidance-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.evidence-guidance-item--approve {
+  border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border));
+}
+
+.evidence-guidance-item--reject {
+  border-color: color-mix(in srgb, var(--color-danger) 24%, var(--color-border));
+}
+
+.evidence-guidance-item__icon {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.evidence-guidance-item__icon .icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.evidence-guidance-item--approve .evidence-guidance-item__icon {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.evidence-guidance-item--reject .evidence-guidance-item__icon {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.evidence-guidance-item strong,
+.evidence-guidance-item small {
+  display: block;
+}
+
+.evidence-guidance-item strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+}
+
+.evidence-guidance-item small {
+  margin-top: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.55;
 }
 
 .evidence-page__filters > .evidence-filters {
@@ -719,6 +821,10 @@ function confidenceLabel(value: number | null): string {
 }
 
 @media (max-width: 40rem) {
+  .evidence-page__guidance {
+    grid-template-columns: 1fr;
+  }
+
   .evidence-filters {
     grid-template-columns: 1fr;
   }

@@ -66,7 +66,12 @@ describe('P2 profile pages', () => {
 
     expect(wrapper.text()).toContain('20%')
     expect(wrapper.text()).toContain('필수 항목 4개')
-    expect(wrapper.text()).toContain('먼저 보여 줄 학력')
+    expect(wrapper.text()).toContain('최종 학력')
+    expect(
+      wrapper.get('form').element.compareDocumentPosition(wrapper.get('.profile-savebar').element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(wrapper.get('.profile-savebar button').text()).toBe('변경 사항 저장')
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
     await wrapper.get('#profile-legalName').setValue('Updated User')
     expect(wrapper.text()).toContain('저장되지 않은 변경 사항')
@@ -88,27 +93,12 @@ describe('P2 profile pages', () => {
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
   })
 
-  it('updates the signed-in user nickname from the basic profile save action', async () => {
+  it('keeps nickname editing out of the basic profile form', async () => {
     vi.mocked(profileApi.getProfile).mockResolvedValue(profile())
     const wrapper = await mountPage(ProfileBasicPage)
-    const authStore = useAuthStore()
-    const updateDisplayName = vi
-      .spyOn(authStore, 'updateDisplayName')
-      .mockImplementation(async (request) => {
-        const updated = { ...authStore.currentUser!, displayName: request.displayName }
-        authStore.currentUser = updated
-        return updated
-      })
 
-    await wrapper.get('#profile-displayName').setValue('  새 닉네임  ')
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-
-    expect(profileApi.updateProfile).not.toHaveBeenCalled()
-    expect(updateDisplayName).toHaveBeenCalledWith({ displayName: '새 닉네임' })
-    expect(authStore.currentUser?.displayName).toBe('새 닉네임')
-    expect(wrapper.get<HTMLInputElement>('#profile-displayName').element.value).toBe('새 닉네임')
-    expect(wrapper.text()).toContain('저장 완료')
+    expect(wrapper.find('#profile-displayName').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('헤더와 지원 홈에 표시되는 이름')
   })
 
   it('moves to education only after the basic profile save succeeds', async () => {
@@ -177,7 +167,7 @@ describe('P2 profile pages', () => {
     expect(wrapper.get('#profile-legalName').attributes('aria-invalid')).toBe('true')
   })
 
-  it('supports education list/create/update/delete and primary selection', async () => {
+  it('supports education list/create/update/delete and shows the server-derived final education', async () => {
     const item = education()
     vi.mocked(profileApi.listEducations).mockResolvedValue(pageOf([item]))
     vi.mocked(profileApi.createEducation).mockResolvedValue({ ...item, id: 'new-id' })
@@ -191,22 +181,15 @@ describe('P2 profile pages', () => {
     const wrapper = await mountPage(StructuredProfilePage, { kind: 'education' })
 
     expect(wrapper.text()).toContain('School')
+    expect(wrapper.text()).toContain('졸업 예정')
+    expect(wrapper.text()).not.toContain('EXPECTED_GRADUATION')
+    expect(wrapper.text()).not.toContain('대표로 설정')
     await wrapper.get('button').trigger('click')
     await wrapper.get('#education-schoolName').setValue('New School')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.createEducation).toHaveBeenCalledWith(
-      expect.objectContaining({ schoolName: 'New School', isPrimary: false }),
-    )
-
-    const primaryButton = wrapper
-      .findAll('button')
-      .find((button) => button.text() === '대표로 설정')
-    await primaryButton?.trigger('click')
-    await flushPromises()
-    expect(profileApi.updateEducation).toHaveBeenCalledWith(
-      item.id,
-      expect.objectContaining({ isPrimary: true, version: item.version }),
+      expect.objectContaining({ schoolName: 'New School', educationLevel: 'BACHELOR' }),
     )
 
     const editButton = wrapper.findAll('button').find((button) => button.text() === '수정')
@@ -273,13 +256,38 @@ describe('P2 profile pages', () => {
 
   it('filters by document, edits, verifies, and renders SOURCE_DELETED evidence read-only', async () => {
     const active = evidence()
+    const direct = {
+      ...evidence(),
+      id: 'evidence-direct',
+      sourceType: 'CAREER' as const,
+      sourceEntityId: '00000000-0000-4000-8000-000000000103',
+      documentId: null,
+      confidence: null,
+      verificationStatus: 'VERIFIED' as const,
+      verifiedAt: '2026-07-19T00:00:00Z',
+    }
     const deleted = {
       ...evidence(),
       id: 'evidence-deleted',
+      sourceEntityId: null,
+      documentId: null,
+      confidence: null,
       verificationStatus: 'SOURCE_DELETED' as const,
       sourceDeletedAt: '2026-07-19T00:00:00Z',
     }
-    vi.mocked(profileApi.listEvidence).mockResolvedValue(pageOf([active, deleted]))
+    const educationEvidence = {
+      ...evidence(),
+      id: 'evidence-education',
+      sourceType: 'EDUCATION' as const,
+      sourceEntityId: null,
+      documentId: null,
+      evidenceCategory: 'EDUCATION',
+      verificationStatus: 'SOURCE_DELETED' as const,
+      sourceDeletedAt: '2026-07-19T00:00:00Z',
+    }
+    vi.mocked(profileApi.listEvidence).mockResolvedValue(
+      pageOf([active, direct, deleted, educationEvidence]),
+    )
     vi.mocked(profileApi.updateEvidence).mockResolvedValue({
       ...active,
       title: 'Edited',
@@ -311,7 +319,14 @@ describe('P2 profile pages', () => {
     )
     const wrapper = await mountPage(ProfileEvidencePage)
 
-    expect(wrapper.text()).toContain('직접 입력한 내용과 자료에서 찾은 경험')
+    expect(wrapper.get('.evidence-page__guidance').text()).toContain(
+      '승인공고 분석과 자기소개서 작성에 사용해요.',
+    )
+    expect(wrapper.get('.evidence-page__guidance').text()).toContain(
+      '거절AI 기능에서 해당 정보를 사용하지 않아요.',
+    )
+    expect(wrapper.get('.evidence-page__guidance').text()).not.toContain('신뢰도')
+    expect(wrapper.find('[data-testid="evidence-card-evidence-education"]').exists()).toBe(false)
     await wrapper.get('#evidence-document-filter').setValue('00000000-0000-4000-8000-000000000101')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -326,6 +341,11 @@ describe('P2 profile pages', () => {
       deletedCard
         .findAll('button')
         .filter((button) => ['수정', '승인', '거절'].includes(button.text())),
+    ).toHaveLength(0)
+    const directCard = wrapper.get('[data-testid="evidence-card-evidence-direct"]')
+    expect(directCard.text()).toContain('직접 입력')
+    expect(
+      directCard.findAll('button').filter((button) => ['승인', '거절'].includes(button.text())),
     ).toHaveLength(0)
 
     await wrapper.get('.evidence-filters select').setValue('REJECTED')
@@ -422,7 +442,8 @@ function education(): EducationDto {
     schoolName: 'School',
     major: 'Computer Science',
     degree: null,
-    educationStatus: 'ENROLLED',
+    educationLevel: 'BACHELOR',
+    educationStatus: 'EXPECTED_GRADUATION',
     admissionDate: null,
     graduationDate: null,
     gpa: null,
@@ -438,17 +459,17 @@ function education(): EducationDto {
 function evidence(): EvidenceDto {
   return {
     id: 'evidence-active',
-    sourceType: 'EDUCATION',
-    sourceEntityId: 'education-id',
-    documentId: null,
+    sourceType: 'DOCUMENT_CHUNK',
+    sourceEntityId: '00000000-0000-4000-8000-000000000102',
+    documentId: '00000000-0000-4000-8000-000000000101',
     sourceDeletedAt: null,
-    evidenceCategory: 'EDUCATION',
-    title: 'School evidence',
-    content: 'Education content',
-    metadata: { primary: true },
-    confidence: null,
-    verificationStatus: 'VERIFIED',
-    verifiedAt: '2026-07-19T00:00:00Z',
+    evidenceCategory: 'ACTIVITY',
+    title: 'Project activity',
+    content: 'Activity content',
+    metadata: { role: 'lead' },
+    confidence: 0.84,
+    verificationStatus: 'PENDING',
+    verifiedAt: null,
     version: 1,
     createdAt: '2026-07-19T00:00:00Z',
     updatedAt: '2026-07-19T00:00:00Z',
