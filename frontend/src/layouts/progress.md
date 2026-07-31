@@ -2,7 +2,20 @@
 
 ## Overview
 
-form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`AI 작업 내역` navigation, Job Analysis/Cover Letter tab과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`면접 준비`·`AI 작업 내역` navigation, Job Analysis/Cover Letter/Interview tab과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-07-31] Session Summary (P8 navigation·Job tab)
+
+- What was done:
+  - desktop/mobile 주요 navigation에 면접 준비를, Job detail tab에 면접 준비 route를 추가했다.
+- Key decisions:
+  - 기존 닉네임 Modal focus trap·Escape·body overflow와 route focus `preventScroll` 정책을 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - layout/router tests와 P8 actual desktop·mobile·200% scale focus/overflow 검증이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (상단 닉네임 수정 Modal)
 

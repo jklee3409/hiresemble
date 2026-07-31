@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 Document부터 P7 Cover Letter까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO·Spring·Vue·Fake gateway·Chromium으로 검증한다.
+P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
+
+## [2026-07-31] Session Summary (P8 Browser wrapper·DB audit)
+
+- What was done:
+  - 격리 PostgreSQL·Fake Chat/Search·Spring random port·Vue·Chromium을 조정하고 browser 종료 뒤 P8 provenance·version·lineage·usage를 DB에서 검증했다.
+- Key decisions:
+  - P8에 필요 없는 MinIO는 실행하지 않고 Playwright exit code와 DB assertion을 모두 task 결과로 판정한다.
+- Issues encountered:
+  - fixture terminal timestamp의 JVM/DB clock skew를 제품 로직 변경 없이 test helper에서 보정했다.
+- Validation:
+  - `p8BrowserE2eTest` Java 1/1·Chromium 1/1과 final-source P7/P6 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 문항 409 포함 final-source Browser E2E)
 

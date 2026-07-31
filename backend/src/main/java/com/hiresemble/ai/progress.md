@@ -2,7 +2,22 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document, P5 Job, P6 Job Analysis와 P7 Cover Letter generation·verification workflow가 연결됐고 실제 provider adapter는 없다.
+P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. Tavily adapter는 명시적 opt-in에서만 활성화된다.
+
+## [2026-07-31] Session Summary (P8 조사·질문·답변 피드백 workflow)
+
+- What was done:
+  - 정확한 preparation 10단계와 feedback 5단계, owner-scoped context·versioned prompt·structured output·failure compensation을 runtime에 등록했다.
+  - privacy-limited search plan, URL dedupe·source 분류·coverage와 typed evidence/source provenance 검증을 구현했다.
+- Key decisions:
+  - `LIMITED|NONE`은 성공 결과이고 모든 search 호출 장애만 `FAILED`이며 검색 본문은 untrusted data로만 취급한다.
+  - final education은 structured projection으로 사용하되 education evidence와 provenance로 위장하지 않는다.
+- Issues encountered:
+  - source가 같은 atomic apply에서 생성되는 경우 allowlist를 DB 선조회하지 않고 validated workflow input으로 검증하도록 보정했다.
+- Validation:
+  - workflow contract·boundary·WireMock Tavily tests와 P8 actual의 SUFFICIENT/LIMITED/NONE/FAILED·retry 분기가 통과했다.
+- Next steps:
+  - 실제 provider 활성화는 별도 운영 승인과 key 주입 뒤 수행한다.
 
 ## [2026-07-31] Session Summary (Document 학력 근거 추출 제외)
 

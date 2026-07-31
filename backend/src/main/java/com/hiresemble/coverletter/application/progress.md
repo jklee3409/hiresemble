@@ -4,6 +4,19 @@
 
 P7 자기소개서 application use case와 generation·verification port가 구현됐다.
 
+## [2026-07-31] Session Summary (P8 owner-aware resource resolver 연결)
+
+- What was done:
+  - Cover Letter·answer version Agent Run resource owner lookup을 강화된 user-aware resolver 계약에 맞췄다.
+- Key decisions:
+  - P7 공개 동작과 자기소개서 lifecycle은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 check와 final-source P7 actual Chromium 1/1·DB assertions가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 수명주기·AI application 경계)
 
 - What was done:

@@ -13,7 +13,21 @@
 - `V9__exclude_education_evidence_and_soft_delete_agent_runs.sql`은 학력 evidence 동기화를 제거하고 terminal Agent Run history soft delete를 추가한다.
 - `V10__exclude_document_education_evidence.sql`은 문서 교육 category 근거를 정리하고 새 active row를 차단한다.
 - `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
-- 면접 등 P8 이후 table은 구현하지 않았다.
+- `V12__create_interview_research_questions_and_feedback.sql`은 P8 조사·질문·immutable 답변·피드백과 typed Agent Run link를 생성한다.
+- P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-07-31] Session Summary (P8 조사·질문·답변·피드백 V12)
+
+- What was done:
+  - 11개 P8 table과 owner 복합 FK, source/topic·question provenance, answer current partial unique, immutable feedback와 typed resource 제약을 추가했다.
+- Key decisions:
+  - V1~~V11은 수정하지 않고 forward-only V12로 추가했으며 soft-deleted Agent Run이 domain row를 cascade 삭제하지 않게 했다.
+- Issues encountered:
+  - 순환 참조는 생성 순서와 deferred FK/trigger를 조합해 fresh·upgrade 모두 안전하게 적용했다.
+- Validation:
+  - 빈 DB와 populated V11→V12, cross-user 실패, V1~~V11 SHA-256 불변 테스트가 통과했다. V12 SHA-256은 `c7bc2332e5bcdfb112c91debe94f8cb98cebd6108dee5f96744c3ea17537c23f`다.
+- Next steps:
+  - P9 schema는 새 forward migration으로만 추가한다.
 
 ## [2026-07-31] Session Summary (최종 학력 V11 backfill)
 

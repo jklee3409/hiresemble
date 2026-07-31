@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -18,6 +18,8 @@ Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 - [`jobApi.ts`](jobApi.ts): Job 공개 API 10개, filter·version·idempotency consumer
 - [`coverLetterContracts.ts`](coverLetterContracts.ts): P7 상태·질문·version·verification strict Zod 계약
 - [`coverLetterApi.ts`](coverLetterApi.ts): Cover Letter 공개 API 17개, CAS·Idempotency consumer
+- [`interviewContracts.ts`](interviewContracts.ts): P8 조사·질문·답변·feedback strict Zod 계약
+- [`interviewApi.ts`](interviewApi.ts): P8 공개 API 11개, CAS·Idempotency consumer
 - [`errors.ts`](errors.ts): typed error·field mapping
 - [`http.test.ts`](http.test.ts): cookie·CSRF·401·409 transport test
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
@@ -34,7 +36,7 @@ Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 ## 변경 시 주의사항
 
 - 성공 envelope를 가정하거나 활성 phase 밖 endpoint function을 추가하지 않는다.
-- Agent Run 생성은 별도 공개 client로 만들지 않고 domain 202 응답의 Run ID를 사용한다. storage key·hash·provider metadata와 P8 이후 DTO를 type에 추가하지 않는다.
+- Agent Run 생성은 별도 공개 client로 만들지 않고 domain 202 응답의 Run ID를 사용한다. storage key·hash·provider metadata와 P9 이후 DTO를 type에 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

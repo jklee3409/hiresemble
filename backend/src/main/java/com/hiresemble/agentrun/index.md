@@ -14,7 +14,7 @@ PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 �
 
 ## 구성 요소 역할
 
-DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P7 generation은 자기소개서를, verification은 immutable answer version을 typed resource로 연결하고 결과 본문은 복제하지 않는다.
+DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P7은 자기소개서·답변 version을, P8은 question set·interview answer version을 typed resource로 연결하고 결과 본문은 복제하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -25,6 +25,7 @@ DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 �
 ## 변경 시 주의사항
 
 - terminal Run을 다시 열거나 stale RUNNING을 같은 Run의 QUEUED로 되돌리지 않는다.
+- history soft delete된 Run은 목록·상세·SSE·retry에서 숨기되 typed link·lineage·usage와 domain resource는 보존한다.
 - typed resource는 owner composite FK를 유지하고 실행 결과 본문을 Agent Run DTO에 복제하지 않는다.
 - 외부 호출은 DB transaction 밖에서 수행하고 상태 변경 event는 commit 뒤 발행한다.
 

@@ -2,9 +2,22 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document` package가 구현되어 있다.
-- 공통 오류·인증·프로필, durable Run·Step, fixed workflow·disabled gateway와 Document pipeline을 제공한다.
-- 성공 응답용 `BaseResponseDto`와 P5 이후 domain package는 존재하지 않는다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document`, P5~P6 `job`, P7 `coverletter`, P8 `research`·`interview` package가 구현되어 있다.
+- 공통 오류·인증·프로필, durable Run·Step, fixed workflow·network-disabled gateway와 P8까지의 수직 pipeline을 제공한다.
+- 성공 응답용 공통 envelope와 P9 mock interview domain은 존재하지 않는다.
+
+## [2026-07-31] Session Summary (P8 Research·Interview Java 영역 추가)
+
+- What was done:
+  - 실제 책임이 있는 `research`·`interview` 계층과 P8 AI·Agent Run 연결을 추가했다.
+- Key decisions:
+  - AI workflow는 JDBC 저장소를 직접 참조하지 않고 owner-scoped application query/command port만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - package compile, Backend 61 suites/407 tests와 P8 actual DB assertions가 통과했다.
+- Next steps:
+  - P9 package는 해당 단계 전까지 만들지 않는다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

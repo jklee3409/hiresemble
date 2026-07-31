@@ -2,7 +2,20 @@
 
 ## Overview
 
-Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Answer Version typed resource owner resolution을 관리한다.
+Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview Question Set·Answer Version typed resource owner resolution을 관리한다.
+
+## [2026-07-31] Session Summary (P8 typed link·owner visibility)
+
+- What was done:
+  - question set·interview answer version resource column, kind/column parity와 user-aware owner lookup을 JDBC projection에 추가했다.
+- Key decisions:
+  - `deleted_at`은 공개 Run 조회만 숨기고 P8 typed link·step·usage·lineage 내부 audit은 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - terminal history delete 뒤 Run API 404와 P8 domain/audit 보존 DB assertion이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (owner-visible terminal history soft delete)
 

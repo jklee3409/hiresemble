@@ -2,7 +2,23 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~P7이 final-source actual 검증과 독립 validator `PASS`로 완료됐고 P8~P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~~P8은 구현·final-source 검증과 single-agent read-only self-audit를 통과해 완료됐고 P9~~P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-07-31] Session Summary (P8 구현·final-source 검증 상태 반영)
+
+- What was done:
+  - 구현 계획에 V12·11 API·두 실행 workflow·Frontend 세 route와 P8/P7/P6 actual 증거를 반영했다.
+  - 1차 self-audit의 `FOLLOW_UP` output·foreign owner 404 finding과 한 번의 제한 보정 및 전체 재검증을 기록했다.
+  - 두 번째 self-audit의 finding 없는 `PASS`와 fingerprint 불변을 반영해 P8 완료 상태를 확정했다.
+- Key decisions:
+  - 독립 validator를 사용한 것으로 기록하지 않고 이번 단계의 최종 판정은 single-agent read-only self-audit로 명시한다.
+- Issues encountered:
+  - 1차의 두 finding은 허용된 한 번의 제한 보정으로 해소됐고 두 번째 감사에서는 새 finding이 없었다.
+- Validation:
+  - 제한 보정 후 Backend 61 suites/407 tests, Frontend 60 files/238 tests, OpenAPI 63/84와 P8/P7/P6 actual 결과를 실제 로그·XML과 대조했다.
+  - 두 번째 감사 전후 178개 변경 파일 fingerprint `6cc19fff43393713a8a1276297144f1bd916ca3bfe0155cc7140ef909d5eff08`이 동일했다.
+- Next steps:
+  - P9 모의 면접은 별도 단계로 남긴다.
 
 ## [2026-07-30] Session Summary (P7 완료 상태 반영)
 

@@ -3,9 +3,24 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P7 Cover Letter typed client·Vue Query·TipTap editor·session draft·SSE terminal invalidation까지 구현되어 있다.
-- `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`와 공고 분석·자기소개서 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 53 files/215 tests와 P2~P7 actual E2E가 있으며 P7 Chromium 1/1, 최종 source P6 회귀 Chromium 2/2와 최종 read-only validator가 통과했다.
+- P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
+- `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 60 files/238 tests와 P2~P8 actual E2E가 있으며 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
+
+## [2026-07-31] Session Summary (P8 면접 준비·질문·답변 피드백 UI)
+
+- What was done:
+  - 공고 면접 tab, 질문 세트 목록·상세, 출처 coverage, immutable 답변 version과 feedback 진행·이력을 기존 shell에 추가했다.
+- Key decisions:
+  - 답변 409는 mutation을 자동 재시도하지 않고 최초 사용자 snapshot과 최신 server content를 비교한 뒤 명시적 재적용만 허용한다.
+  - `qs*` URL namespace를 canonical API filter로 변환하며 P9 mock session UI는 만들지 않았다.
+- Issues encountered:
+  - P8 projection을 거부하던 과거 Job contract fixture를 현재 활성 계약으로 갱신했다.
+- Validation:
+  - `corepack pnpm check`: 60 files/238 tests, lint·format·typecheck·production build 통과. P8 actual은 desktop·mobile·200% scale과 overflow/focus를 검증했다.
+  - 두 번째 single-agent read-only self-audit는 새 finding 없이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (닉네임 Modal·최종 학력 UI 보정)
 

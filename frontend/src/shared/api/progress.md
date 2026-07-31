@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P7 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-07-31] Session Summary (P8 typed API·Zod 계약)
+
+- What was done:
+  - P8 11개 operation의 DTO/enum/Zod, filter mapping, Idempotency-Key·CSRF mutation client를 추가했다.
+- Key decisions:
+  - provider rank·internal tier/status는 공개 type에 넣지 않고 모든 상한·nullability를 OpenAPI와 맞춘다.
+- Issues encountered:
+  - 과거 Job contract fixture의 `interviewQuestionSetId` 비활성 기대를 현재 projection으로 갱신했다.
+- Validation:
+  - Interview API/contract tests와 auth user 전환 cache key 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (최종 학력 transport 계약)
 

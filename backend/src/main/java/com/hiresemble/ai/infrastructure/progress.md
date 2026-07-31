@@ -2,7 +2,20 @@
 
 ## Overview
 
-local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job·Cover Letter contribution이 runtime에 등록돼 있다.
+local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job·Cover Letter·Interview contribution이 runtime에 등록돼 있다. Tavily search adapter는 명시적 opt-in이다.
+
+## [2026-07-31] Session Summary (P8 runtime·Tavily opt-in wiring)
+
+- What was done:
+  - 두 P8 workflow/context/prompt/failure handler와 conditional Tavily adapter를 runtime configuration에 조립했다.
+- Key decisions:
+  - 기본 provider는 `none`, Tavily 활성화 시 key 누락은 fail-closed이며 중복 search bean을 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 기본 boot와 WireMock success·empty·malformed·429·5xx·timeout 테스트가 통과했다.
+- Next steps:
+  - 운영 provider 호출은 별도 승인 전까지 비활성으로 유지한다.
 
 ## [2026-07-30] Session Summary (P7 Cover Letter runtime wiring)
 

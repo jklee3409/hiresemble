@@ -2,7 +2,21 @@
 
 ## Overview
 
-canonical workflow definition과 Document·Job·Cover Letter executable contribution 분리가 구현됐다.
+canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
+
+## [2026-07-31] Session Summary (P8 preparation 10단계·feedback 5단계)
+
+- What was done:
+  - canonical exact step order, source coverage/provenance validation, feedback bound validation과 atomic persist/compensation을 구현했다.
+- Key decisions:
+  - coverage는 Java 결정론 정책으로 계산하고 성공 checkpoint에는 ID·hash·count·validation summary만 기록한다.
+- Issues encountered:
+  - persist 전 source ID 선조회는 같은 transaction 입력 allowlist로 바꿔 새 source provenance를 안전하게 검증했다.
+  - 1차 self-audit에서 request 금지 enum인 `FOLLOW_UP`을 생성 output에서도 거부하던 검증을 발견해 output 전용 질문은 허용하도록 보정했다.
+- Validation:
+  - 제한 보정 후 exact order/version, privacy, coverage, hallucinated/cross-user ID, output-only follow-up, output boundary, failure/cancel/restart 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (Cover Letter suggestion structured output 보정)
 

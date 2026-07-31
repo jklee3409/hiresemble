@@ -19,6 +19,7 @@
 | [`V9__exclude_education_evidence_and_soft_delete_agent_runs.sql`](V9__exclude_education_evidence_and_soft_delete_agent_runs.sql) | 학력 direct evidence 제거와 Agent Run history soft delete |
 | [`V10__exclude_document_education_evidence.sql`](V10__exclude_document_education_evidence.sql)                                   | 문서 추출 교육·학력 evidence 정리·DB 차단                 |
 | [`V11__derive_final_education.sql`](V11__derive_final_education.sql)                                                             | 학력 단계 backfill·제약과 최종 학력 재계산                |
+| [`V12__create_interview_research_questions_and_feedback.sql`](V12__create_interview_research_questions_and_feedback.sql)         | P8 조사·질문·답변 version·feedback·typed Run link         |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -35,7 +36,8 @@
 - V8은 자기소개서 active cardinality, 질문, immutable answer version·evidence provenance·verification·acknowledgement와 typed Run resource를 추가한다.
 - V9는 학력 evidence 동기화 의무를 제거하고 기존 학력 근거를 tombstone 처리하며 terminal Agent Run의 `deleted_at`을 추가한다.
 - V10은 문서 추출에서 생성된 교육·학력 category도 tombstone 처리하고 새 active row를 DB CHECK로 차단한다.
-- research·interview schema는 P8 이후 forward migration으로 남긴다.
+- V12는 조사 run/topic/source provenance, question set/question provenance, immutable answer version·feedback과 P8 typed Run link를 추가한다.
+- P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계
 

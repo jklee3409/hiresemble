@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·공통부터 P7 Cover Letter·migration·actual E2E 테스트를 기능별로 구성한다.
+P1 인증·공통부터 P8 Interview·migration·actual E2E 테스트를 기능별로 구성한다.
+
+## [2026-07-31] Session Summary (P8 Backend·AI·actual 검증)
+
+- What was done:
+  - Interview migration/API/workflow/Tavily와 P8 Browser wrapper 테스트를 추가하고 P7/P6 actual 회귀를 재실행했다.
+- Key decisions:
+  - 일반 `test`에서는 actual wrapper를 제외하고 명시적 `p8BrowserE2eTest`에서만 격리 browser stack을 실행한다.
+- Issues encountered:
+  - JVM과 PostgreSQL의 수 ms clock 차이를 terminal fixture의 `GREATEST(now(), queued_at)`로 제한 보정했다.
+- Validation:
+  - Backend 61 suites/407 tests, actual P8/P7/P6 Java wrapper 1/1·1/1·1/1과 Chromium 1/1·1/1·2/2 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 validator 보정 회귀·final-source E2E)
 

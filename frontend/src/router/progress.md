@@ -3,9 +3,22 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter route 및 전용 404가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter detail child만 허용한다.
+- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
+
+## [2026-07-31] Session Summary (P8 route·title·active state)
+
+- What was done:
+  - `/jobs/:jobId/interview`, `/interviews`, `/interview-question-sets/:questionSetId` lazy route와 사용자용 title을 추가했다.
+- Key decisions:
+  - P9 route는 추가하지 않고 safe returnTo·404·scrollBehavior 계약을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - router/navigation tests와 P8 actual route 진입이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (대외활동 route meta)
 

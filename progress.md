@@ -10,8 +10,30 @@
 - P5 Job 등록·URL 추출·상태·Scheduler와 Frontend 목록·등록·overview가 최종 validator `PASS`로 완료됐다.
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
-- 공개 Spring/OpenAPI는 P7 자기소개서 17개, 계정 닉네임 변경과 Agent Run history delete를 포함해 총 73 operations·53 paths다.
-- Dashboard 전용 집계·면접과 실제 provider는 아직 없다.
+- P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
+- 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
+- Dashboard 전용 집계·P9 모의 면접과 실제 provider 기본 활성화는 아직 없다.
+
+## [2026-07-31] Session Summary (P8 면접 조사·예상 질문·답변 피드백 구현)
+
+- What was done:
+  - V12 조사·질문·답변·피드백 schema, 공개 API 11개, 실행 가능한 준비 10단계·피드백 5단계 workflow와 Tavily opt-in adapter를 구현했다.
+  - 공고 면접 tab, 질문 세트 목록·상세, 출처 coverage, immutable 답변 version CAS와 feedback UI를 기존 responsive shell에 연결했다.
+  - P8 actual Browser E2E와 DB assertion을 추가하고 final source에서 P7/P6 actual 회귀까지 다시 실행했다.
+- Key decisions:
+  - 검색에는 공개 회사·직무 최소 정보만 전달하고 학력은 structured final education으로만 사용하며 education evidence tombstone을 positive provenance로 연결하지 않는다.
+  - Agent Run history soft delete는 P8 domain 결과를 보존하고 resource/generic retry는 공통 predecessor claim을 사용한다.
+  - 사용자 지시에 따라 분석부터 검증·문서화까지 서브 에이전트 없이 단일 에이전트가 순차 수행했다.
+- Issues encountered:
+  - actual E2E에서 persist 전 source allowlist 순서와 answer history SQL 공백 결함을 발견해 회귀 테스트와 함께 보정했다.
+  - 전체 test fixture의 JVM·DB clock 차이는 제품 결함이 아닌 `TEST_HARNESS_DEFECT`로 분류해 terminal 시각 helper만 보정했다.
+  - 1차 read-only self-audit에서 output 전용 `FOLLOW_UP` 거부와 foreign feedback/research retry의 quality 오류 선노출을 확인해 허용된 한 번의 제한 보정으로 owner 404 우선순위와 output 계약을 바로잡았다.
+- Validation:
+  - 제한 보정 뒤 Backend 61 suites/407 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8/P7/P6 actual Chromium 1/1·1/1·2/2와 DB assertions가 통과했다.
+  - `docker compose config --quiet`, `git diff --check`가 통과했고 Fake Chat/Search만 사용해 실제 OpenAI·Tavily 호출은 0회였다.
+  - 두 번째 single-agent read-only self-audit는 finding 0으로 통과했고 감사 전후 178개 변경 파일 fingerprint가 `6cc19fff43393713a8a1276297144f1bd916ca3bfe0155cc7140ef909d5eff08`로 동일했다.
+- Next steps:
+  - P9 모의 면접은 별도 요청에서 새 migration·API·workflow·화면으로 시작한다.
 
 ## [2026-07-31] Session Summary (헤더 닉네임·최종 학력 자동 판정 UI)
 

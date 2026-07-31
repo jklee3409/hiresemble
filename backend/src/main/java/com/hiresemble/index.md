@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`com.hiresemble`은 Spring Boot component scan의 기준이자 Hiresemble 업무 기능을 도메인별로 구성할 기본 package다. 현재 P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·version 영역까지 구현되어 있다.
+`com.hiresemble`은 Spring Boot component scan의 기준이자 Hiresemble 업무 기능을 도메인별로 구성할 기본 package다. 현재 P1 공통 HTTP·인증부터 P8 면접 조사·예상 질문·답변 피드백까지 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -15,8 +15,10 @@
 | [`agentrun/`](agentrun/)                                   | durable Run·Step, 비용, DB worker, API와 SSE                      |
 | [`ai/`](ai/)                                               | 고정 workflow, context·router·prompt·gateway 기반                 |
 | [`document/`](document/index.md)                           | 문서 upload·parse·text·chunk·storage·evidence·delete 수명주기     |
-| [`job/`](job/index.md)                                    | 공고 등록·추출·상태·분석·RAG·OUTDATED 수명주기                    |
+| [`job/`](job/index.md)                                     | 공고 등록·추출·상태·분석·RAG·OUTDATED 수명주기                    |
 | [`coverletter/`](coverletter/index.md)                     | 자기소개서·문항·답변 version·검증·최종화·보관 수명주기            |
+| [`research/`](research/index.md)                           | 면접 공개 조사 run·topic·source·coverage·retry 수명주기           |
+| [`interview/`](interview/index.md)                         | 면접 질문 set·질문·답변 version·feedback 수명주기                 |
 
 ## 구성 요소 역할
 
@@ -27,6 +29,7 @@
 - `agentrun`은 PostgreSQL 상태 원천과 application port를, `ai`는 repository 비의존 고정 orchestration을 소유한다.
 - `document`는 최초의 Agent Run typed aggregate와 Object Storage·parser·근거 pipeline을 소유한다.
 - `job`은 공고와 immutable 분석을, `coverletter`는 그 분석·현재 VERIFIED 근거를 소비하는 답변·검증 수명주기를 소유한다.
+- `research`와 `interview`는 공개 조사 provenance와 예상 질문·답변 version·feedback을 분리하되 하나의 preparation lineage로 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -36,7 +39,7 @@
 
 ## 변경 시 주의사항
 
-- `research`, `interview` 등 P8 이후 package는 아직 없으며 명세 존재를 구현 완료로 오해하지 않는다.
+- P9 mock session·turn package는 아직 없으며 P8 질문 set을 모의 면접 구현 완료로 오해하지 않는다.
 - `common`과 `ai`에는 기능 package의 계층 구조를 기계적으로 복제하지 않고, 실제 전문 책임과 파일이 없는 빈 package를 만들지 않는다.
 - API 성공 응답은 명세 DTO를 직접 반환하고, 생성·비동기·본문 없음 상태에 실제 201·202·204를 사용한다.
 - Service/Domain에서 HTTP DTO를 만들지 않으며, Security 오류도 ControllerAdvice가 처리한다고 가정하지 않는다.

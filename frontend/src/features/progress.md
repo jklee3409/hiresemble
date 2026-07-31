@@ -2,7 +2,20 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P7 cover-letters feature까지 구현되어 있다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews feature까지 구현되어 있다.
+
+## [2026-07-31] Session Summary (P8 interview feature 연결)
+
+- What was done:
+  - user-scoped query/filter, source presentation, question card, answer 409 conflict와 feedback run monitor를 추가했다.
+- Key decisions:
+  - immutable 사용자 snapshot은 화면 상태에만 유지하고 새 browser storage 체계를 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Interview feature/API component tests와 Frontend 60 files/238 tests가 통과했다.
+- Next steps:
+  - P9 feature는 해당 단계에서 추가한다.
 
 ## [2026-07-31] Session Summary (프로필 닉네임·내비게이션 규칙)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Registry와 P4~P7 workflow 계약·orchestrator 통합 테스트가 구현됐다.
+P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
+
+## [2026-07-31] Session Summary (P8 workflow 계약·경계)
+
+- What was done:
+  - exact step/version, BASIC/ADVANCED 상한, privacy, coverage, provenance, feedback 제약과 atomic restart 테스트를 추가했다.
+- Key decisions:
+  - 모든 provider 장애와 정상 empty를 분리하고 checkpoint 원문·provider 응답 부재를 검증한다.
+- Issues encountered:
+  - 1차 self-audit 보정으로 top-level output 전용 `FOLLOW_UP` 허용 회귀를 추가했다.
+- Validation:
+  - P8 workflow contract 3 tests, workflow integration 4 tests와 제한 보정 후 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 suggestion 경계 회귀)
 

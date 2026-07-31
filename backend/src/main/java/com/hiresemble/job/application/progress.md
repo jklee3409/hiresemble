@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계가 구현됐다.
+P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계와 P8 preparation projection port가 구현됐다.
+
+## [2026-07-31] Session Summary (P8 owner-aware Job resource 연결)
+
+- What was done:
+  - Job typed resource owner adapter를 강화된 user-aware resolver 계약에 맞추고 interview projection query를 제공했다.
+- Key decisions:
+  - 면접 준비 prerequisite는 P8 application service가 latest analysis·active cover letter와 함께 최종 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - cross-user 404, prerequisite와 final-source P6 actual 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 분석 application 경계)
 

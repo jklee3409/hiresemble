@@ -12,6 +12,7 @@
 - [`documents/`](documents/index.md): P4 문서 upload·query·상태·SSE invalidation과 delete cleanup
 - [`jobs/`](jobs/index.md): P5 공고 filter·query·상태·version conflict·Agent Run monitor
 - [`cover-letters/`](cover-letters/index.md): P7 자기소개서 filter·query·TipTap·draft·conflict·Run monitor
+- [`interviews/`](interviews/index.md): P8 질문 set filter·source·답변 version·409·feedback Run
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -22,6 +23,7 @@
 - Documents feature는 user-scoped REST 상태를 원천으로 삼고 Agent Run stream을 query invalidation 신호로만 사용한다.
 - Jobs feature는 URL query를 filter 원천으로 삼고 업무 상태와 추출 상태를 별도 계약으로 유지한다.
 - Cover Letter feature는 server version과 session draft를 분리하고 generation·verification 결과를 관련 resource query invalidation으로만 연결한다.
+- Interview feature는 answer version을 immutable하게 표시하고 409 사용자 snapshot·server current·명시적 재적용을 분리한다.
 
 ## 다른 디렉터리와의 의존 관계
 

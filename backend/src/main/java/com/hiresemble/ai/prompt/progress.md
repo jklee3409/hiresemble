@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 versioned PromptRegistry에 P4 Document부터 P7 Cover Letter까지 structured prompt metadata가 구현됐다.
+P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐다.
+
+## [2026-07-31] Session Summary (P8 versioned prompt)
+
+- What was done:
+  - public search plan·question generation과 immutable answer feedback prompt definition을 추가했다.
+- Key decisions:
+  - 검색 결과는 instruction이 아닌 untrusted data이며 개인 사실 ID는 server allowlist로만 허용한다.
+- Issues encountered:
+  - 1차 self-audit에서 `FOLLOW_UP`을 nested follow-up으로만 제한한 문구를 output 전용 canonical question type도 허용하도록 보정했다.
+- Validation:
+  - 제한 보정 후 exact prompt version·structured schema·민감정보 부재 계약 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (문서 학력 근거 추출 금지)
 

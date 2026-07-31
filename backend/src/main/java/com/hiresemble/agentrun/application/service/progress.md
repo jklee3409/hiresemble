@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (P8 공통 retry·requested run 조정)
+
+- What was done:
+  - preparation·feedback run 선할당과 contributor 기반 research/generic retry를 기존 application transaction에 통합했다.
+- Key decisions:
+  - predecessor 하나당 successor 하나라는 DB claim 뒤에만 새 P8 lineage를 생성한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - replay·conflict·cancel·reconciliation·history delete 통합 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (Agent Run 삭제 use case)
 
 - What was done:

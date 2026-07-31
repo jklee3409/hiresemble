@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 provenance-only ContextBuilder와 Document·Job·Cover Letter owner/version/hash snapshot이 구현됐다.
+P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview owner/version/hash snapshot이 구현됐다.
+
+## [2026-07-31] Session Summary (P8 preparation·feedback context)
+
+- What was done:
+  - 공고·분석·자기소개서 current answer·structured final education·non-education VERIFIED evidence와 immutable feedback 대상 답변 context를 추가했다.
+- Key decisions:
+  - 외부 검색에는 개인 profile·evidence·문서·답변 원문을 전달하지 않고 education tombstone은 positive provenance에서 제외한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - context owner·학력 projection·검색 query privacy 테스트와 P8 actual DB assertion이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (Cover Letter generation·verification context)
 

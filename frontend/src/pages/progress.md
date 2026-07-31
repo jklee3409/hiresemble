@@ -2,7 +2,21 @@
 
 ## Overview
 
-P1 인증부터 P7 Cover Letter 목록·공고 context·canonical editor, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+P1 인증부터 P8 Interview preparation·question set·answer feedback, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-07-31] Session Summary (P8 세 화면·답변 409 UX)
+
+- What was done:
+  - Job Interview tab, `/interviews`, question set 상세에서 준비·coverage/source·질문·답변 version·feedback 흐름을 구현했다.
+- Key decisions:
+  - `LIMITED|NONE`은 경고가 있는 성공으로, provider 장애는 안전한 오류·retry로 구분한다.
+  - 답변 충돌 취소는 server state로 동기화하고 재적용은 최신 parent와 최초 사용자 snapshot을 명시적으로 결합한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - page tests와 actual E2E의 SUFFICIENT·409·feedback·responsive 흐름이 통과했다.
+- Next steps:
+  - P9 mock interview 화면은 구현하지 않는다.
 
 ## [2026-07-31] Session Summary (최종 학력·UI 문구와 hover 보정)
 

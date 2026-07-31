@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P7 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+P1~P8 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+
+## [2026-07-31] Session Summary (P8 OpenAPI security·schema)
+
+- What was done:
+  - P8 mutation의 Session+CSRF/Idempotency header와 feedback nested collection/item 상한을 생성 schema에 반영했다.
+- Key decisions:
+  - Controller DTO가 성공 schema의 원천이고 customizer는 공통 security·상한 metadata만 보강한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 생성 OpenAPI 63 paths/84 operations와 exact P8 11개 operation 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (Account mutation security)
 

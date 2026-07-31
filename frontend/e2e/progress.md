@@ -10,8 +10,24 @@
 - `job-analysis.spec.ts`가 fixture로 P6 결과·OUTDATED·접근성·desktop/mobile overflow를 검증한다.
 - `job-analysis.actual.spec.ts`가 P6 실제 Backend 분석·reuse·재분석·근거 부족·owner 격리를 검증하도록 구성되어 있다.
 - `cover-letter.actual.spec.ts`가 P7 실제 생성·문항·partial AI·version·검증·finalize·restore·archive·근거 수명주기·owner 격리를 검증한다.
+- `interview-preparation.actual.spec.ts`가 P8 실제 조사·coverage·질문·답변 CAS·feedback·retry·history delete·owner 격리를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-07-31] Session Summary (P8 actual Chromium·DB assertion)
+
+- What was done:
+  - preparation→SUFFICIENT source→question→answer v1→실제 409 비교·재적용→version 고정 feedback과 LIMITED/NONE/FAILED·retry·owner/history-delete 분기를 자동화했다.
+  - 1440×1000, 390×844와 CDP page scale 200%에서 navigation·focus·Escape·overflow·핵심 action 접근성을 검증했다.
+- Key decisions:
+  - 격리 PostgreSQL·Spring random port·Fake Chat/Search·Vue dev server·Chromium 1 worker만 사용한다.
+- Issues encountered:
+  - actual이 source persist 순서와 answer history SQL 공백이라는 두 제품 결함을 재현해 수정 후 회귀로 고정했다.
+- Validation:
+  - `p8BrowserE2eTest`: Chromium 1/1과 typed provenance·current answer·feedback version·retry lineage·usage·history delete·education evidence DB assertions 통과.
+  - 같은 final source의 P7 Chromium 1/1, P6 Chromium 2/2 회귀가 통과했다.
+- Next steps:
+  - trace·screenshot은 검수용 build 산출물로만 유지하고 커밋하지 않는다.
 
 ## [2026-07-30] Session Summary (P7 actual 문항 409 재적용 회귀)
 

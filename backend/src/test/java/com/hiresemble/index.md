@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 인증·공통 기반, P2 프로필, P3 Agent Run·AI runtime, P4 Document와 실제 cross-stack E2E를 기능별로 구성한다.
+P1 인증·공통 기반부터 P8 면접 준비와 실제 cross-stack E2E까지 기능별로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,6 +13,9 @@ P1 인증·공통 기반, P2 프로필, P3 Agent Run·AI runtime, P4 Document와
 - [`agentrun/`](agentrun/index.md): 상태·claim·budget·retry·cancel·SSE 테스트
 - [`ai/`](ai/index.md): registry·router·validator·Fake workflow 테스트
 - [`document/`](document/index.md): 문서 API·parser·storage·embedding·outbox 테스트
+- [`job/`](job/index.md): 공고 등록·분석·provenance 테스트
+- [`coverletter/`](coverletter/index.md): 자기소개서 domain·API·workflow 테스트
+- [`interview/`](interview/index.md): P8 migration·API·retry·답변·feedback 테스트
 - [`e2e/`](e2e/index.md): PostgreSQL·MinIO·Spring·Vue·Chromium 실제 pipeline
 - [`support/`](support/index.md): 공유 PostgreSQL 통합 test 기반
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

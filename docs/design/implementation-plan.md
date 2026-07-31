@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다.
 
 ## 범위
 
@@ -26,11 +26,11 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] 공고 등록·수동 보완·상태·Scheduler를 구현해 AC-04~06을 고정한다.
 - [x] 공고 분석·RAG를 구현해 AC-07을 고정한다.
 - [x] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
-- [ ] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
+- [x] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0~~P7 완료. P7은 V8·Backend/API·고정 AI workflow·Frontend 세 route, 1차 validator MAJOR 보정, final-source actual Chromium/DB assertion과 최종 read-only validator `PASS`로 완료됐다. P8~~P10은 미착수다.
+현재 단계: P0~~P8 완료. P8은 V12·Backend/API·검색 포함 고정 AI workflow·Frontend 세 route, 제한 보정 후 final-source P8/P7/P6 actual Chromium/DB assertion과 두 번째 single-agent read-only self-audit를 통과했다. P9~~P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -474,6 +474,7 @@ P0 계약 기준선
 - AC: AC-10~11
 - 선행: P6, P7, P3
 - 주 담당: backend → ai_workflow → frontend
+- 현재 판정: `DONE` — 구현·final-source 검증·두 번째 single-agent read-only self-audit 통과
 
 ### 11.1 Backend
 
@@ -514,6 +515,11 @@ P0 계약 기준선
 ### 11.5 완료 조건
 
 - AC-10~11과 E2E 시나리오 C의 조사·답변 feedback 구간이 통과한다.
+- 구현 기준선: V12, 공개 API 11개, preparation 10단계, feedback 5단계, Frontend route 3개
+- 검증 기준선: Backend 61 suites/407 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations
+- 실제 외부 provider 없이 P8 actual Chromium 1/1과 DB assertions, final-source P7 Chromium 1/1 및 P6 Chromium 2/2 회귀가 통과했다.
+- 1차 single-agent read-only self-audit의 `FOLLOW_UP` output·foreign owner 404 finding을 한 번의 제한 보정으로 해소했고, 두 번째 감사는 새 finding 없이 `PASS`했다.
+- 두 번째 감사 전후 178개 변경 파일 fingerprint는 `6cc19fff43393713a8a1276297144f1bd916ca3bfe0155cc7140ef909d5eff08`로 동일했다.
 
 ## 12. P9 — 모의 면접
 

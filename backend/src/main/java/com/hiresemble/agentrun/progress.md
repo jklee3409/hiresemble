@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P7 typed resource 연결이 구현됐으며 실제 provider는 비활성 상태다.
+P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P8 typed resource 연결이 구현됐으며 deleted owner visibility와 domain 결과 보존을 유지한다.
+
+## [2026-07-31] Session Summary (P8 typed resource·공통 retry claim)
+
+- What was done:
+  - question set·answer version typed resource, requested run ID와 workflow별 retry contributor/options를 공통 retry transaction에 연결했다.
+- Key decisions:
+  - resource/generic retry는 predecessor unique claim 하나를 공유하고 owner resolver는 resource ID뿐 아니라 user ID도 함께 검증한다.
+- Issues encountered:
+  - UUID 충돌 가능성을 없애기 위해 owner resolver 계약을 `(userId, resourceType, resourceId)`로 강화했다.
+- Validation:
+  - retry replay·충돌·deleted predecessor 404와 history delete 뒤 P8 domain/audit 보존 테스트가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (terminal 작업 내역 soft delete)
 

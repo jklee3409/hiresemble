@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.command package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (P8 workflow launch identity)
+
+- What was done:
+  - P8가 domain resource와 Agent Run ID를 한 transaction에서 선할당할 수 있도록 launch command에 요청 run ID를 추가했다.
+- Key decisions:
+  - 기존 호출은 factory 기본 경로를 유지해 P4~P7 launch 계약을 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 61 suites/407 tests와 P8/P7/P6 actual이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 command package 분리)
 
 - What was done:

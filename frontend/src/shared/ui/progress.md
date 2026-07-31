@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-07-31] Session Summary (면접 준비 navigation icon)
+
+- What was done:
+  - AppIcon allowlist에 면접 준비 navigation glyph를 추가했다.
+- Key decisions:
+  - link text가 접근 가능한 이름을 제공하고 icon은 장식 역할만 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AppLayout component tests와 Frontend production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (자기소개서 navigation icon)
 
 - What was done:

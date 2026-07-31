@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약이 구현됐다.
+P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약과 P7/P8 child resource projection이 구현됐다.
+
+## [2026-07-31] Session Summary (P8 면접 준비 projection)
+
+- What was done:
+  - Job detail에 현재 사용 가능한 interview question set·research·Agent Run 최소 projection을 연결했다.
+- Key decisions:
+  - 내부 workflow step/provider는 노출하지 않고 면접 tab 진입에 필요한 owner-scoped ID·status만 반환한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job contract·P8 preparation page·OpenAPI 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 자기소개서 진입 projection)
 

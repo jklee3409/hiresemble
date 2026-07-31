@@ -3,9 +3,25 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P6 Job Analysis, P7 Cover Letter, 계정 닉네임 변경과 Agent Run history delete까지 총 73 operations/53 paths가 구현되어 있다.
-- V1~~V8을 보존한 V9~~V10 migration이 학력 evidence 제외와 terminal Agent Run history soft delete를 추가한다.
-- Backend 전체 54 suites/385 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+- P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
+- V1~~V11을 보존한 V12 migration이 조사·질문·답변·피드백 schema와 P8 typed Agent Run link를 추가한다.
+- Backend 전체 61 suites/407 tests와 final-source actual P8/P7/P6 wrapper가 통과했고 실제 provider는 기본 비활성이다.
+
+## [2026-07-31] Session Summary (P8 Backend·DB·API 수직 구현)
+
+- What was done:
+  - research/interview domain, V12, 공개 API 11개, preparation·feedback workflow command/query port와 Agent Run retry/resource 연동을 구현했다.
+- Key decisions:
+  - 모든 사용자 콘텐츠·교차 참조는 owner 복합 FK를 사용하고 answer/feedback/provenance는 immutable하게 보존한다.
+  - Tavily는 명시적 provider 설정에서만 활성화하고 key가 없으면 fail-closed한다.
+- Issues encountered:
+  - actual E2E가 source allowlist 적용 순서와 answer history SQL 공백 결함을 발견해 관련 통합 회귀를 추가했다.
+  - 1차 self-audit에서 output 전용 `FOLLOW_UP`과 foreign mutation의 owner 404 우선순위를 보정했다.
+- Validation:
+  - 제한 보정 후 `.\gradlew.bat check`: 61 suites/407 tests, failure·error·skip 0. P8/P7/P6 actual과 DB assertions도 통과했다.
+  - 두 번째 single-agent read-only self-audit는 새 finding 없이 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (서버 계산 최종 학력·V11)
 

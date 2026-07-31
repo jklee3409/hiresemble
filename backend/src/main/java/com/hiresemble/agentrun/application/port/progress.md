@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (P8 retry contributor·owner contract)
+
+- What was done:
+  - workflow별 successor resource 생성 contributor와 user-aware resource owner resolver 계약을 추가했다.
+- Key decisions:
+  - 동일 UUID가 다른 owner에 존재해도 caller owner와 typed resource가 함께 일치해야 한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - cross-user typed link·retry 404와 기존 resource 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (history deletion port)
 
 - What was done:

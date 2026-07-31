@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선부터 P7 자기소개서 생성·검증·버전 관리 수직 기능까지 final-source actual E2E와 독립 validator `PASS`로 완료됐으며 P8 이후는 미착수다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선부터 P8 면접 조사·예상 질문·답변 피드백까지 final-source actual E2E와 single-agent read-only self-audit를 통과해 완료됐다. P9 이후는 미착수다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 P7 자기소개서 17개, 계정 닉네임 변경과 Agent Run history delete를 포함해 총 73 operations/53 paths다. Frontend에는 인증·onboarding·profile과 lazy `/agent-runs`·`/documents`·`/jobs`·`/cover-letters` 목록·상세·분석·편집, 복구 가능한 SSE UI가 있으며 `/dashboard`는 별도 집계 endpoint 없이 현재 구현된 owner-scoped API의 `totalElements`와 최근 항목을 조합해 지원 현황을 제공한다.
+공개 HTTP 범위는 P8 면접 API 11개를 포함해 총 84 operations/63 paths다. Frontend에는 기존 업무 route와 `/interviews`, 공고 면접 tab, 질문 set 상세·답변 version·feedback UI가 있으며 `/dashboard`는 별도 집계 endpoint 없이 현재 구현된 owner-scoped API의 `totalElements`와 최근 항목을 조합해 지원 현황을 제공한다.
 
 ## 변경 시 주의사항
 
