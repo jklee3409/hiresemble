@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { agentRunDetail, RUN_ID } from '@/features/agent-runs/testFixtures'
 
-import { cancelAgentRun, createRetryIdempotencyKey, retryAgentRun } from './agentRunApi'
+import {
+  cancelAgentRun,
+  createRetryIdempotencyKey,
+  deleteAgentRun,
+  deleteAgentRuns,
+  retryAgentRun,
+} from './agentRunApi'
 import { apiClient } from './http'
 
 describe('Agent Run commands', () => {
@@ -36,5 +42,17 @@ describe('Agent Run commands', () => {
     await cancelAgentRun(RUN_ID, 3)
 
     expect(post).toHaveBeenCalledWith(`/agent-runs/${RUN_ID}/cancel`, { stateVersion: 3 })
+  })
+
+  it('uses individual DELETE and selected soft-delete commands', async () => {
+    const remove = vi.spyOn(apiClient, 'delete').mockResolvedValue(undefined)
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue(undefined)
+    const selected = [RUN_ID, '10000000-0000-4000-8000-000000000002']
+
+    await deleteAgentRun(RUN_ID)
+    await deleteAgentRuns(selected)
+
+    expect(remove).toHaveBeenCalledWith(`/agent-runs/${RUN_ID}`)
+    expect(post).toHaveBeenCalledWith('/agent-runs/bulk-delete', { agentRunIds: selected })
   })
 })

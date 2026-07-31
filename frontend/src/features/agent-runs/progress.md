@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
 
+## [2026-07-31] Session Summary (AI 작업 내역 삭제 mutation)
+
+- What was done:
+  - 개별·선택 history delete mutation과 성공 시 대상 detail cache 제거·owner root invalidation을 추가했다.
+- Key decisions:
+  - 삭제 UI는 terminal 상태에만 열고 서버가 최종 owner·state를 원자 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run page/API targeted tests와 Frontend 전체 215 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 Cover Letter resource 연결)
 
 - What was done:

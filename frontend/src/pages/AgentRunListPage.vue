@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
@@ -23,7 +23,11 @@ import {
   formatInstant,
   formatRunProgressLabel,
 } from '@/features/agent-runs/presentation'
-import { useAgentRunListQuery } from '@/features/agent-runs/queries'
+import {
+  useAgentRunListQuery,
+  useDeleteAgentRunMutation,
+  useDeleteSelectedAgentRunsMutation,
+} from '@/features/agent-runs/queries'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
@@ -35,9 +39,23 @@ const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const filters = computed(() => parseAgentRunFilters(route.query))
 const runs = useAgentRunListQuery(userId, filters)
+const deleteRun = useDeleteAgentRunMutation(userId)
+const deleteSelectedRuns = useDeleteSelectedAgentRunsMutation(userId)
+const selectedRunIds = ref<string[]>([])
+const commandMessage = ref('')
+const commandError = ref('')
 const errorMessage = computed(() =>
   runs.error.value ? normalizeApiError(runs.error.value).message : '',
 )
+const deletableRuns = computed(
+  () => runs.data.value?.items.filter((run) => canDelete(run.status)) ?? [],
+)
+const allDeletableSelected = computed(
+  () =>
+    deletableRuns.value.length > 0 &&
+    deletableRuns.value.every((run) => selectedRunIds.value.includes(run.id)),
+)
+const isDeleting = computed(() => deleteRun.isPending.value || deleteSelectedRuns.isPending.value)
 
 watch(
   () => route.query,
@@ -48,6 +66,14 @@ watch(
     }
   },
   { deep: true, immediate: true },
+)
+
+watch(
+  () => runs.data.value?.items.map((run) => `${run.id}:${run.status}`).join('|') ?? '',
+  () => {
+    const visibleDeletableIds = new Set(deletableRuns.value.map((run) => run.id))
+    selectedRunIds.value = selectedRunIds.value.filter((id) => visibleDeletableIds.has(id))
+  },
 )
 
 function replaceFilters(next: AgentRunListFilters): void {
@@ -108,6 +134,58 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       INTERRUPTED: 'warning',
     } as const
   )[value]
+}
+
+function canDelete(status: AgentRunStatus): boolean {
+  return ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(status)
+}
+
+function toggleSelected(runId: string, event: Event): void {
+  const checked = (event.target as HTMLInputElement).checked
+  selectedRunIds.value = checked
+    ? [...new Set([...selectedRunIds.value, runId])]
+    : selectedRunIds.value.filter((id) => id !== runId)
+}
+
+function toggleAllDeletable(event: Event): void {
+  const checked = (event.target as HTMLInputElement).checked
+  selectedRunIds.value = checked ? deletableRuns.value.map((run) => run.id) : []
+}
+
+async function removeOne(runId: string): Promise<void> {
+  if (!window.confirm('이 AI 작업 내역을 삭제할까요? 실행 결과와 비용 감사 기록은 보존돼요.')) {
+    return
+  }
+  commandMessage.value = ''
+  commandError.value = ''
+  try {
+    await deleteRun.mutateAsync(runId)
+    selectedRunIds.value = selectedRunIds.value.filter((id) => id !== runId)
+    commandMessage.value = 'AI 작업 내역을 삭제했어요.'
+  } catch (error) {
+    commandError.value = normalizeApiError(error).message
+  }
+}
+
+async function removeSelected(): Promise<void> {
+  const ids = [...selectedRunIds.value]
+  if (
+    ids.length === 0 ||
+    !window.confirm(
+      `선택한 AI 작업 내역 ${ids.length}개를 삭제할까요? 실행 결과와 비용 감사 기록은 보존돼요.`,
+    )
+  ) {
+    return
+  }
+  commandMessage.value = ''
+  commandError.value = ''
+  try {
+    await deleteSelectedRuns.mutateAsync(ids)
+    selectedRunIds.value = []
+    commandMessage.value = `AI 작업 내역 ${ids.length}개를 삭제했어요.`
+  } catch (error) {
+    commandError.value = normalizeApiError(error).message
+  }
 }
 </script>
 
@@ -179,6 +257,33 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
       </form>
     </details>
 
+    <div v-if="runs.data.value?.items.length" class="run-selection-toolbar section-surface">
+      <label class="run-selection-toolbar__all">
+        <input
+          class="checkbox-control"
+          type="checkbox"
+          :checked="allDeletableSelected"
+          :disabled="deletableRuns.length === 0 || isDeleting"
+          @change="toggleAllDeletable"
+        />
+        <span>선택</span>
+      </label>
+      <button
+        type="button"
+        class="button button--danger button--compact"
+        :disabled="selectedRunIds.length === 0 || isDeleting"
+        @click="removeSelected"
+      >
+        {{ isDeleting ? '삭제 중…' : `삭제(${selectedRunIds.length})` }}
+      </button>
+    </div>
+    <p v-if="commandMessage" class="alert alert--success run-list-page__message" role="status">
+      {{ commandMessage }}
+    </p>
+    <p v-if="commandError" class="alert alert--danger run-list-page__message" role="alert">
+      {{ commandError }}
+    </p>
+
     <StatePanel
       v-if="runs.isLoading.value"
       class="run-list-page__state"
@@ -203,6 +308,16 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
     <div v-else class="run-list data-list">
       <article v-for="run in runs.data.value?.items" :key="run.id" class="run-row data-card">
         <div class="run-row__header">
+          <label class="run-row__selection">
+            <input
+              class="checkbox-control"
+              type="checkbox"
+              :checked="selectedRunIds.includes(run.id)"
+              :disabled="!canDelete(run.status) || isDeleting"
+              :aria-label="`${WORKFLOW_LABELS[run.workflowType]} 작업 선택`"
+              @change="toggleSelected(run.id, $event)"
+            />
+          </label>
           <div class="run-row__identity">
             <div class="run-row__title">
               <h3>{{ WORKFLOW_LABELS[run.workflowType] }}</h3>
@@ -233,6 +348,17 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
             >
               자기소개서
             </RouterLink>
+            <button
+              type="button"
+              class="button button--danger button--compact"
+              :disabled="!canDelete(run.status) || isDeleting"
+              :title="
+                canDelete(run.status) ? undefined : '진행 중인 작업은 종료 후 삭제할 수 있어요.'
+              "
+              @click="removeOne(run.id)"
+            >
+              삭제
+            </button>
           </div>
         </div>
         <div class="run-row__progress" aria-label="진행률">
@@ -274,6 +400,8 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
 
 <style scoped>
 .run-list-page__filters,
+.run-selection-toolbar,
+.run-list-page__message,
 .run-list-page__state,
 .run-list {
   margin-top: var(--space-5);
@@ -335,6 +463,30 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
   gap: var(--space-3);
 }
 
+.run-selection-toolbar,
+.run-selection-toolbar__all {
+  display: flex;
+  align-items: center;
+}
+
+.run-selection-toolbar {
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.run-selection-toolbar__all {
+  cursor: pointer;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.run-row__selection {
+  align-self: flex-start;
+  padding-top: var(--space-1);
+}
+
 .run-row {
   padding: var(--space-5);
 }
@@ -353,6 +505,7 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
 }
 
 .run-row__identity {
+  flex: 1;
   min-width: 0;
 }
 
@@ -428,6 +581,11 @@ function statusTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'wa
 
   .run-row__header {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .run-selection-toolbar {
+    align-items: stretch;
     flex-direction: column;
   }
 

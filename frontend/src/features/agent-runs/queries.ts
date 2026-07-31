@@ -5,6 +5,8 @@ import type { AgentRunDetailDto } from '@/shared/api/agentRunContracts'
 import {
   cancelAgentRun,
   createRetryIdempotencyKey,
+  deleteAgentRun,
+  deleteAgentRuns,
   getAgentRun,
   listAgentRuns,
   retryAgentRun,
@@ -70,6 +72,36 @@ export function useCancelAgentRunMutation(userId: MaybeRefOrGetter<string>) {
     mutationFn: ({ agentRunId, stateVersion }: { agentRunId: string; stateVersion: number }) =>
       cancelAgentRun(agentRunId, stateVersion),
     onSuccess: (detail) => applyAgentRunDetail(cache, toValue(userId), detail),
+  })
+}
+
+export function useDeleteAgentRunMutation(userId: MaybeRefOrGetter<string>) {
+  const cache = useQueryClient()
+  return useMutation({
+    mutationFn: (agentRunId: string) => deleteAgentRun(agentRunId),
+    onSuccess: async (_result, agentRunId) => {
+      cache.removeQueries({
+        queryKey: agentRunQueryKeys.detail(toValue(userId), agentRunId),
+        exact: true,
+      })
+      await cache.invalidateQueries({ queryKey: agentRunQueryKeys.root(toValue(userId)) })
+    },
+  })
+}
+
+export function useDeleteSelectedAgentRunsMutation(userId: MaybeRefOrGetter<string>) {
+  const cache = useQueryClient()
+  return useMutation({
+    mutationFn: (agentRunIds: string[]) => deleteAgentRuns(agentRunIds),
+    onSuccess: async (_result, agentRunIds) => {
+      for (const agentRunId of agentRunIds) {
+        cache.removeQueries({
+          queryKey: agentRunQueryKeys.detail(toValue(userId), agentRunId),
+          exact: true,
+        })
+      }
+      await cache.invalidateQueries({ queryKey: agentRunQueryKeys.root(toValue(userId)) })
+    },
   })
 }
 

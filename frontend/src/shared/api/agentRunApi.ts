@@ -56,6 +56,14 @@ export function cancelAgentRun(
     .then((value) => parseServerResponse(agentRunDetailSchema, value))
 }
 
+export function deleteAgentRun(agentRunId: string): Promise<void> {
+  return apiClient.delete<void>(`/agent-runs/${encodeURIComponent(agentRunId)}`)
+}
+
+export function deleteAgentRuns(agentRunIds: string[]): Promise<void> {
+  return apiClient.post<void>('/agent-runs/bulk-delete', { agentRunIds })
+}
+
 export function createRetryIdempotencyKey(): string {
   return `agent-run-retry:${globalThis.crypto.randomUUID()}`
 }
