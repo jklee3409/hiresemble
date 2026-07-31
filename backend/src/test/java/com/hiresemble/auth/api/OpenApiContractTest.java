@@ -31,6 +31,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private static final String LOGIN_PATH = "/paths/~1api~1v1~1auth~1login/post";
     private static final String LOGOUT_PATH = "/paths/~1api~1v1~1auth~1logout/post";
     private static final String ME_PATH = "/paths/~1api~1v1~1auth~1me/get";
+    private static final String DISPLAY_NAME_PATH =
+            "/paths/~1api~1v1~1account~1display-name/patch";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -39,7 +41,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlySeventyP1ThroughP7OperationsAndFiftyOnePaths() {
+    void liveSpringMappingsHaveExactlySeventyOneP1ThroughP7OperationsAndFiftyTwoPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -55,12 +57,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(51);
-        assertThat(operations[0]).isEqualTo(70);
+        assertThat(paths).hasSize(52);
+        assertThat(operations[0]).isEqualTo(71);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlySeventyP1ThroughP7Operations()
+    void generatedOpenApiHasStableMetadataAndExactlySeventyOneP1ThroughP7Operations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -88,6 +90,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/auth/login",
                         "/api/v1/auth/logout",
                         "/api/v1/auth/me",
+                        "/api/v1/account/display-name",
                         "/api/v1/profile",
                         "/api/v1/profile/educations",
                         "/api/v1/profile/educations/{educationId}",
@@ -134,18 +137,20 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/cover-letters/{coverLetterId}/finalize",
                         "/api/v1/cover-letters/{coverLetterId}/archive",
                         "/api/v1/cover-letters/{coverLetterId}/unarchive");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(70);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(71);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
         assertOperation(document.at(LOGOUT_PATH), "logout");
         assertOperation(document.at(ME_PATH), "getCurrentUser");
+        assertOperation(document.at(DISPLAY_NAME_PATH), "updateDisplayName");
 
         assertResponseCodes(document.at(CSRF_PATH), "200", "500");
         assertResponseCodes(document.at(SIGNUP_PATH), "201", "400", "403", "409");
         assertResponseCodes(document.at(LOGIN_PATH), "200", "400", "401", "403");
         assertResponseCodes(document.at(LOGOUT_PATH), "204", "401", "403");
         assertResponseCodes(document.at(ME_PATH), "200", "401");
+        assertResponseCodes(document.at(DISPLAY_NAME_PATH), "200", "400", "401", "403");
 
         assertProfileOperation(document, "/api/v1/profile", "get", "getProfile");
         assertProfileOperation(document, "/api/v1/profile", "put", "updateProfile");
@@ -362,6 +367,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(logoutSecurity.get(0)))
                 .as("sessionCookie and csrfToken must share one requirement object for AND")
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        JsonNode displayNameMutationSecurity = document.at(DISPLAY_NAME_PATH).get("security");
+        assertThat(displayNameMutationSecurity).hasSize(1);
+        assertThat(fieldNames(displayNameMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
         JsonNode profileMutationSecurity =
                 document.at("/paths/~1api~1v1~1profile~1educations/post/security");
         assertThat(profileMutationSecurity).hasSize(1);
@@ -396,6 +405,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .containsExactlyInAnyOrder("headerName", "parameterName", "token");
         assertThat(fieldNames(schemas.at("/CurrentUserDto/properties")))
                 .containsExactlyInAnyOrder("id", "email", "displayName");
+        assertThat(fieldNames(schemas.at("/DisplayNameUpdateRequest/properties")))
+                .containsExactly("displayName");
         assertThat(fieldNames(schemas.at("/AuthSessionDto/properties")))
                 .containsExactlyInAnyOrder("user", "csrf");
         assertThat(fieldNames(schemas.at("/ErrorResponseDto/properties")))
@@ -498,6 +509,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseSchema(document, LOGOUT_PATH, "403", "ErrorResponseDto");
         assertResponseSchema(document, ME_PATH, "200", "CurrentUserDto");
         assertResponseSchema(document, ME_PATH, "401", "ErrorResponseDto");
+        assertResponseSchema(document, DISPLAY_NAME_PATH, "200", "CurrentUserDto");
+        assertResponseSchema(document, DISPLAY_NAME_PATH, "400", "ErrorResponseDto");
+        assertResponseSchema(document, DISPLAY_NAME_PATH, "401", "ErrorResponseDto");
+        assertResponseSchema(document, DISPLAY_NAME_PATH, "403", "ErrorResponseDto");
 
         assertThat(document.at(SIGNUP_PATH + "/requestBody/content/application~1json/schema/$ref")
                         .asText())
@@ -505,6 +520,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(document.at(LOGIN_PATH + "/requestBody/content/application~1json/schema/$ref")
                         .asText())
                 .endsWith("/LoginRequest");
+        assertThat(document.at(
+                                DISPLAY_NAME_PATH
+                                        + "/requestBody/content/application~1json/schema/$ref")
+                        .asText())
+                .endsWith("/DisplayNameUpdateRequest");
         JsonNode signupPassword = schemas.at("/SignupRequest/properties/password");
         JsonNode loginPassword = schemas.at("/LoginRequest/properties/password");
         assertThat(signupPassword.get("format").asText()).isEqualTo("password");
@@ -527,6 +547,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertNoDocumentedParameters(document.at(LOGIN_PATH));
         assertNoDocumentedParameters(document.at(LOGOUT_PATH));
         assertNoDocumentedParameters(document.at(ME_PATH));
+        assertNoDocumentedParameters(document.at(DISPLAY_NAME_PATH));
     }
 
     @Test

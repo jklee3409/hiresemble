@@ -79,6 +79,7 @@ public class OpenApiConfiguration {
         return openApi -> openApi.getPaths().forEach((path, pathItem) -> pathItem.readOperationsMap()
                 .forEach((method, operation) -> {
                     boolean protectedMutation = path.equals("/api/v1/auth/logout")
+                            || path.startsWith("/api/v1/account")
                             || (path.startsWith("/api/v1/profile") && !method.name().equals("GET"))
                             || (path.startsWith("/api/v1/agent-runs") && method == HttpMethod.POST)
                             || (path.startsWith("/api/v1/documents") && method != HttpMethod.GET)

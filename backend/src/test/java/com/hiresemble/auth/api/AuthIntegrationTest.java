@@ -1,9 +1,11 @@
 package com.hiresemble.auth.api;
 
 import com.hiresemble.auth.api.dto.LoginRequest;
+import com.hiresemble.auth.api.dto.DisplayNameUpdateRequest;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -420,6 +422,77 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.id").value(second.userId().toString()))
                 .andExpect(jsonPath("$.email").value("second@example.com"));
         assertThat(first.cookie().getValue()).isNotEqualTo(second.cookie().getValue());
+    }
+
+    @Test
+    void displayNameUpdateIsTrimmedPersistedAndVisibleFromEverySession() throws Exception {
+        String email = "display-name@example.com";
+        AuthenticatedSession first = authenticated(email, "Before");
+        MvcResult secondLogin = login(csrfSession(), email, "password-123", 200);
+        Cookie secondCookie = requiredSessionCookie(secondLogin);
+
+        MvcResult updated = mockMvc.perform(patch("/api/v1/account/display-name")
+                        .cookie(first.cookie())
+                        .header("X-CSRF-TOKEN", first.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DisplayNameUpdateRequest("  Updated Name  "))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(first.userId().toString()))
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.displayName").value("Updated Name"))
+                .andReturn();
+
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT display_name FROM users WHERE id = ?",
+                        String.class,
+                        first.userId()))
+                .isEqualTo("Updated Name");
+        mockMvc.perform(get("/api/v1/auth/me").cookie(first.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.displayName").value("Updated Name"));
+        mockMvc.perform(get("/api/v1/auth/me").cookie(secondCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.displayName").value("Updated Name"));
+        assertThat(json(updated).has("data")).isFalse();
+    }
+
+    @Test
+    void displayNameUpdateRequiresValidInputAuthenticationAndCsrf() throws Exception {
+        AuthenticatedSession authenticated =
+                authenticated("display-name-validation@example.com", "Before");
+        MvcResult invalid = mockMvc.perform(patch("/api/v1/account/display-name")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DisplayNameUpdateRequest("Unsafe/Name"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("displayName"))
+                .andReturn();
+        MvcResult missingCsrf = mockMvc.perform(patch("/api/v1/account/display-name")
+                        .cookie(authenticated.cookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DisplayNameUpdateRequest("Updated"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_INVALID"))
+                .andReturn();
+        CsrfSession anonymous = csrfSession();
+        MvcResult unauthenticated = mockMvc.perform(patch("/api/v1/account/display-name")
+                        .cookie(anonymous.cookie())
+                        .header("X-CSRF-TOKEN", anonymous.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DisplayNameUpdateRequest("Updated"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
+                .andReturn();
+
+        assertExactErrorFields(json(invalid));
+        assertExactErrorFields(json(missingCsrf));
+        assertExactErrorFields(json(unauthenticated));
     }
 
     @Test

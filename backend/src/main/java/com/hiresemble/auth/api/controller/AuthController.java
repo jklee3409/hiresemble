@@ -180,6 +180,6 @@ public class AuthController {
     })
     public CurrentUserDto me(
             @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser currentUser) {
-        return currentUser.toDto();
+        return authService.currentUser(currentUser.id());
     }
 }

@@ -83,6 +83,11 @@ public class UserEntity {
         updatedAt = now;
     }
 
+    public void changeDisplayName(String displayName, Instant now) {
+        this.displayName = displayName;
+        this.updatedAt = now;
+    }
+
     public UUID id() {
         return id;
     }

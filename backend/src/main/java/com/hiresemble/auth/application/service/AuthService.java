@@ -1,6 +1,7 @@
 package com.hiresemble.auth.application.service;
 
 import com.hiresemble.auth.api.dto.AuthSessionDto;
+import com.hiresemble.auth.api.dto.CurrentUserDto;
 import com.hiresemble.auth.api.dto.LoginRequest;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import com.hiresemble.auth.domain.model.UserStatus;
@@ -108,6 +109,19 @@ public class AuthService {
         SecurityContextHolder.clearContext();
     }
 
+    @Transactional(readOnly = true)
+    public CurrentUserDto currentUser(UUID userId) {
+        return principal(activeUser(userId)).toDto();
+    }
+
+    @Transactional
+    public CurrentUserDto updateDisplayName(UUID userId, String displayName) {
+        UserEntity user = activeUser(userId);
+        user.changeDisplayName(displayName.trim(), Instant.now());
+        userRepository.flush();
+        return principal(user).toDto();
+    }
+
     private void authenticate(
             AuthenticatedUser principal,
             HttpServletRequest request,
@@ -128,6 +142,15 @@ public class AuthService {
     private AuthenticatedUser principal(UserEntity user) {
         return new AuthenticatedUser(
                 user.id(), user.email(), user.displayName(), user.role(), user.status());
+    }
+
+    private UserEntity activeUser(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.AUTHENTICATION_REQUIRED));
+        if (user.status() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.AUTHENTICATION_REQUIRED);
+        }
+        return user;
     }
 
     private AuthSessionDto establishAuthenticatedSession(
