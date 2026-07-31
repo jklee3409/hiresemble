@@ -23,12 +23,12 @@ public final class ProfileCommands {
             String schoolName,
             String major,
             String degree,
+            EducationLevel educationLevel,
             EducationStatus educationStatus,
             LocalDate admissionDate,
             LocalDate graduationDate,
             BigDecimal gpa,
             BigDecimal gpaScale,
-            boolean primary,
             String description) {}
 
     public record CertificationWrite(

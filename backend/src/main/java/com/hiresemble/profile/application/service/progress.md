@@ -4,6 +4,33 @@
 
 com.hiresemble.profile.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (최종 학력 transaction 재계산)
+
+- What was done:
+  - 학력 생성·수정·삭제를 owner profile lock으로 직렬화하고 active 목록에서 최종 학력을 재계산했다.
+- Key decisions:
+  - 단계, 상태, 졸업일, 입학일, 등록 시각, ID 순서의 deterministic comparator를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 단계 상승·삭제 후 승계 Profile 통합 테스트와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (학력 동기화·문서 추출 차단)
+
+- What was done:
+  - 학력 생성·수정·대표 demotion·삭제에서 direct evidence 작업을 제거하고 교육 category 문서 후보를 validation 단계에서 거부했다.
+  - 승인·거절은 DOCUMENT_CHUNK만 허용하고 직접 입력 source 요청은 state conflict로 거부했다.
+- Key decisions:
+  - 후보 batch 전체를 실패시키지 않고 교육 후보만 rejected count에 포함해 나머지 근거를 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile·Document 통합 테스트와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (Document evidence reference contributor 확장)
 
 - What was done:

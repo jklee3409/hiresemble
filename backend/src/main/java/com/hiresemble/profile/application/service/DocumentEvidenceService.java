@@ -104,6 +104,9 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
             throw invalid();
         }
         String category = ProfilePolicy.requiredLabel(candidate.evidenceCategory(), 80);
+        if (ProfilePolicy.isEducationEvidenceCategory(category)) {
+            throw invalid();
+        }
         String title = ProfilePolicy.requiredLabel(candidate.title(), 250);
         String content = requiredContent(candidate.content());
         Map<String, Object> metadata = metadata(candidate.metadata(), candidate.validationWarning());

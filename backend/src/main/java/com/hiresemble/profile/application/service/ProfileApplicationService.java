@@ -4,7 +4,7 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
-import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
+import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
@@ -15,7 +15,6 @@ import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
 import com.hiresemble.profile.domain.model.ProfileCompletion;
-import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
@@ -25,10 +24,13 @@ import com.hiresemble.profile.domain.model.ProfileRecords.LanguageScoreRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.PageSlice;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileView;
+import com.hiresemble.profile.domain.policy.ProfilePolicy;
+import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,18 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ProfileApplicationService {
+
+    private static final Comparator<EducationRecord> FINAL_EDUCATION_ORDER = Comparator
+            .comparingInt((EducationRecord education) -> education.educationLevel().rank())
+            .thenComparingInt(education -> educationStatusRank(education.educationStatus()))
+            .thenComparing(
+                    EducationRecord::graduationDate,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(
+                    EducationRecord::admissionDate,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(EducationRecord::createdAt)
+            .thenComparing(EducationRecord::id);
 
     private static final Set<String> EDUCATION_SORTS =
             Set.of("createdAt,desc", "graduationDate,desc");
@@ -117,13 +131,10 @@ public class ProfileApplicationService {
         Instant now = Instant.now();
         UUID id = UUID.randomUUID();
         try {
-            if (command.primary()) {
-                demoteAndSynchronize(userId, null, now);
-            }
-            EducationRecord created = store.createEducation(id, userId, command, now);
-            store.createDirectEvidence(
-                    UUID.randomUUID(), userId, id, evidence(created), now);
-            return created;
+            requireProfileLock(userId);
+            store.createEducation(id, userId, command, now);
+            recalculateFinalEducation(userId, now);
+            return store.findEducation(userId, id).orElseThrow(this::notFound);
         } catch (DataIntegrityViolationException exception) {
             throw stateConflict(exception);
         }
@@ -133,17 +144,15 @@ public class ProfileApplicationService {
     public EducationRecord updateEducation(
             UUID userId, UUID educationId, EducationWrite input, long version) {
         EducationWrite command = education(input);
+        requireProfileLock(userId);
         EducationRecord current = store.findEducation(userId, educationId).orElseThrow(this::notFound);
         requireVersion(current.version(), version);
         Instant now = Instant.now();
         try {
-            if (command.primary()) {
-                demoteAndSynchronize(userId, educationId, now);
-            }
-            EducationRecord updated = store.updateEducation(userId, educationId, command, version, now)
+            store.updateEducation(userId, educationId, command, version, now)
                     .orElseThrow(this::versionConflict);
-            store.synchronizeDirectEvidence(userId, educationId, evidence(updated), now);
-            return updated;
+            recalculateFinalEducation(userId, now);
+            return store.findEducation(userId, educationId).orElseThrow(this::notFound);
         } catch (DataIntegrityViolationException exception) {
             throw stateConflict(exception);
         }
@@ -151,9 +160,14 @@ public class ProfileApplicationService {
 
     @Transactional
     public void deleteEducation(UUID userId, UUID educationId, long version) {
+        requireProfileLock(userId);
         EducationRecord record = store.findEducation(userId, educationId).orElseThrow(this::notFound);
         requireVersion(record.version(), version);
-        deleteSource("educations", userId, educationId, version, EvidenceSourceType.EDUCATION);
+        Instant now = Instant.now();
+        if (!store.softDeleteSource("educations", userId, educationId, version, now)) {
+            throw versionConflict();
+        }
+        recalculateFinalEducation(userId, now);
     }
 
     @Transactional(readOnly = true)
@@ -352,6 +366,9 @@ public class ProfileApplicationService {
         }
         EvidenceRecord current = store.findEvidence(userId, id).orElseThrow(this::notFound);
         requireEditable(current);
+        if (current.sourceType() != EvidenceSourceType.DOCUMENT_CHUNK) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
         requireVersion(current.version(), version);
         return store.verifyEvidence(userId, id, status, version, Instant.now())
                 .orElseThrow(this::versionConflict);
@@ -364,12 +381,12 @@ public class ProfileApplicationService {
                 ProfilePolicy.requiredLabel(input.schoolName(), 200),
                 ProfilePolicy.optionalLabel(input.major(), 200),
                 ProfilePolicy.optionalLabel(input.degree(), 100),
+                input.educationLevel(),
                 input.educationStatus(),
                 input.admissionDate(),
                 input.graduationDate(),
                 input.gpa(),
                 input.gpaScale(),
-                input.primary(),
                 ProfilePolicy.optionalBody(input.description(), 5000));
     }
 
@@ -418,10 +435,28 @@ public class ProfileApplicationService {
                 ProfilePolicy.optionalBody(input.achievements(), 20000));
     }
 
-    private void demoteAndSynchronize(UUID userId, UUID retainedEducationId, Instant now) {
-        for (EducationRecord demoted : store.demoteOtherPrimary(userId, retainedEducationId, now)) {
-            store.synchronizeDirectEvidence(userId, demoted.id(), evidence(demoted), now);
+    private void requireProfileLock(UUID userId) {
+        if (!store.lockProfile(userId)) {
+            throw notFound();
         }
+    }
+
+    private void recalculateFinalEducation(UUID userId, Instant now) {
+        UUID finalEducationId = store.listActiveEducations(userId).stream()
+                .max(FINAL_EDUCATION_ORDER)
+                .map(EducationRecord::id)
+                .orElse(null);
+        store.replacePrimaryEducation(userId, finalEducationId, now);
+    }
+
+    private static int educationStatusRank(EducationStatus status) {
+        return switch (status) {
+            case WITHDRAWN -> 0;
+            case LEAVE_OF_ABSENCE -> 10;
+            case ENROLLED -> 20;
+            case EXPECTED_GRADUATION -> 30;
+            case GRADUATED -> 40;
+        };
     }
 
     private void deleteSource(
@@ -435,13 +470,6 @@ public class ProfileApplicationService {
             throw versionConflict();
         }
         store.deleteDirectEvidence(userId, sourceType, id);
-    }
-
-    private DirectEvidenceData evidence(EducationRecord value) {
-        return DirectEvidenceFactory.education(
-                value.schoolName(), value.major(), value.degree(), value.educationStatus(),
-                value.admissionDate(), value.graduationDate(), value.gpa(), value.gpaScale(),
-                value.primary(), value.description());
     }
 
     private DirectEvidenceData evidence(CertificationRecord value) {

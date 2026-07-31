@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P3 Agent Run domain, PostgreSQL runtime, API·SSE, budget, retry·cancel·복구와 P4~P7 typed resource 계약을 검증한다.
+P3 Agent Run domain, PostgreSQL runtime, API·SSE, budget, retry·cancel·복구·terminal history soft delete와 P4~P7 typed resource 계약을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 

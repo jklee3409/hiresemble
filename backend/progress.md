@@ -3,9 +3,41 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P6 Job Analysis, P7 Cover Letter 17개와 계정 닉네임 변경까지 총 71 operations/52 paths가 구현되어 있다.
-- V1~V7을 byte 단위로 보존한 V8 migration이 Cover Letter·question·immutable answer/provenance/verification과 typed Run link를 추가한다.
-- Backend 전체 54 suites/382 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+- P1 인증부터 P6 Job Analysis, P7 Cover Letter, 계정 닉네임 변경과 Agent Run history delete까지 총 73 operations/53 paths가 구현되어 있다.
+- V1~~V8을 보존한 V9~~V10 migration이 학력 evidence 제외와 terminal Agent Run history soft delete를 추가한다.
+- Backend 전체 54 suites/385 tests와 final-source actual P7/P6 wrapper 및 최종 read-only validator가 통과했고 실제 provider는 계속 비활성이다.
+
+## [2026-07-31] Session Summary (서버 계산 최종 학력·V11)
+
+- What was done:
+  - 학력 write에 명시적 `EducationLevel`을 추가하고 create/update/delete transaction마다 final education을 다시 계산했다.
+  - V11로 legacy 학력 단계를 backfill하고 기존 `is_primary`를 단계·상태·날짜 순위로 보정했다.
+- Key decisions:
+  - 사용자 profile row lock으로 학력 mutation을 직렬화하고 request의 수동 primary flag를 제거했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `.\gradlew.bat check`, V10→V11 populated upgrade·empty migration test와 개발 DB Flyway 11 적용이 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (학력 evidence 제외·Agent Run history soft delete)
+
+- What was done:
+  - 학력 CRUD의 direct evidence 동기화를 제거하고 owner evidence 조회·분석 snapshot 및 문서 추출에서 교육 category를 제외했다.
+  - 승인·거절 API를 DOCUMENT_CHUNK 근거로 한정해 직접 입력 근거는 항상 사용자 확인 완료 상태로 유지했다.
+  - V9~V10으로 기존 학력 근거를 비식별 tombstone 처리하고 active 교육 category DB CHECK와 `agent_runs.deleted_at`을 추가했다.
+  - terminal run 개별·최대 100개 atomic 선택 삭제 API와 owner·상태·audit 보존 통합 테스트를 추가했다.
+- Key decisions:
+  - 학력 row 자체는 프로필 완료도와 공고 학력 조건에 계속 사용하되 대외활동 evidence에는 투영하지 않는다.
+  - Agent Run은 retry/root lineage, step, typed resource, idempotency, budget·usage FK가 깊어 물리 삭제하지 않는다.
+- Issues encountered:
+  - 개발 DB migration 실행용 non-web context는 V10 적용 성공 뒤 web security bean 부재로 실패했으며 schema는 정상 commit됐다.
+- Validation:
+  - `.\gradlew.bat check`: 54 suites, 385 tests 통과.
+  - 개발 DB Flyway V9·V10 success, active 학력 evidence 0건, tombstone 1건, 교육 category CHECK 설치 확인.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (계정 닉네임 변경 API)
 

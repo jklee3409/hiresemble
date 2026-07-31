@@ -3,6 +3,7 @@ package com.hiresemble.agentrun.api.controller;
 import com.hiresemble.agentrun.api.dto.AgentRunDetailDto;
 import com.hiresemble.agentrun.api.dto.AgentRunPageDto;
 import com.hiresemble.agentrun.api.dto.CancelAgentRunRequest;
+import com.hiresemble.agentrun.api.dto.DeleteAgentRunsRequest;
 import com.hiresemble.agentrun.api.dto.RunAcceptedDto;
 import com.hiresemble.agentrun.api.mapper.AgentRunApiMapper;
 import com.hiresemble.agentrun.api.sse.AgentRunSseService;
@@ -36,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -117,6 +119,45 @@ public class AgentRunController {
             @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable UUID agentRunId) {
         return mapper.detail(applicationService.detail(user.id(), agentRunId));
+    }
+
+    @DeleteMapping("/{agentRunId}")
+    @Operation(
+            operationId = "deleteAgentRun",
+            summary = "Delete an Agent Run from history",
+            description = "Soft-deletes one terminal Agent Run from user-visible history while preserving durable lineage, usage, and resource audit records.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Agent Run hidden from history", content = @Content),
+        @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "403", description = "CSRF invalid", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", description = "Agent Run not found", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "409", description = "Agent Run is not terminal", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public ResponseEntity<Void> delete(
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable UUID agentRunId) {
+        applicationService.delete(user.id(), agentRunId, clock.instant());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/bulk-delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            operationId = "deleteAgentRuns",
+            summary = "Delete selected Agent Runs from history",
+            description = "Atomically soft-deletes one to one hundred terminal Agent Runs owned by the authenticated user.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Selected Agent Runs hidden from history", content = @Content),
+        @ApiResponse(responseCode = "400", description = "Invalid selection", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "403", description = "CSRF invalid", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", description = "At least one Agent Run is not owned or visible", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "409", description = "At least one Agent Run is not terminal", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public ResponseEntity<Void> deleteSelected(
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody DeleteAgentRunsRequest request) {
+        applicationService.deleteAll(user.id(), request.agentRunIds(), clock.instant());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping(

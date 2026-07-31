@@ -1,6 +1,7 @@
 package com.hiresemble.profile.infrastructure.persistence;
 
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
+import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
@@ -129,9 +130,29 @@ public class ProfileStore {
                 .single());
     }
 
-    public List<EducationRecord> demoteOtherPrimary(
-            UUID userId, UUID retainedEducationId, Instant now) {
+    public boolean lockProfile(UUID userId) {
         return jdbcClient
+                .sql("SELECT 1 FROM user_profiles WHERE user_id = :userId FOR UPDATE")
+                .param("userId", userId)
+                .query(Integer.class)
+                .optional()
+                .isPresent();
+    }
+
+    public List<EducationRecord> listActiveEducations(UUID userId) {
+        return jdbcClient
+                .sql("""
+                        SELECT * FROM educations
+                        WHERE user_id = :userId AND deleted_at IS NULL
+                        """)
+                .param("userId", userId)
+                .query(this::education)
+                .list();
+    }
+
+    public void replacePrimaryEducation(UUID userId, UUID educationId, Instant now) {
+        UUID retainedId = educationId == null ? new UUID(0L, 0L) : educationId;
+        jdbcClient
                 .sql("""
                         UPDATE educations
                         SET is_primary = false, version = version + 1, updated_at = :now
@@ -139,13 +160,27 @@ public class ProfileStore {
                           AND is_primary
                           AND deleted_at IS NULL
                           AND id <> :retainedId
-                        RETURNING *
                         """)
                 .param("now", utc(now))
                 .param("userId", userId)
-                .param("retainedId", retainedEducationId == null ? new UUID(0L, 0L) : retainedEducationId)
-                .query(this::education)
-                .list();
+                .param("retainedId", retainedId)
+                .update();
+        if (educationId == null) {
+            return;
+        }
+        jdbcClient
+                .sql("""
+                        UPDATE educations
+                        SET is_primary = true, version = version + 1, updated_at = :now
+                        WHERE user_id = :userId
+                          AND id = :educationId
+                          AND NOT is_primary
+                          AND deleted_at IS NULL
+                        """)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("educationId", educationId)
+                .update();
     }
 
     public EducationRecord createEducation(
@@ -153,12 +188,12 @@ public class ProfileStore {
         return jdbcClient
                 .sql("""
                         INSERT INTO educations (
-                            id, user_id, school_name, major, degree, education_status,
+                            id, user_id, school_name, major, degree, education_level, education_status,
                             admission_date, graduation_date, gpa, gpa_scale, is_primary,
                             description, version, created_at, updated_at, deleted_at
                         ) VALUES (
-                            :id, :userId, :schoolName, :major, :degree, :educationStatus,
-                            :admissionDate, :graduationDate, :gpa, :gpaScale, :primary,
+                            :id, :userId, :schoolName, :major, :degree, :educationLevel, :educationStatus,
+                            :admissionDate, :graduationDate, :gpa, :gpaScale, false,
                             :description, 0, :now, :now, NULL
                         )
                         RETURNING *
@@ -168,12 +203,12 @@ public class ProfileStore {
                 .param("schoolName", command.schoolName())
                 .param("major", command.major())
                 .param("degree", command.degree())
+                .param("educationLevel", command.educationLevel().name())
                 .param("educationStatus", command.educationStatus().name())
                 .param("admissionDate", command.admissionDate())
                 .param("graduationDate", command.graduationDate())
                 .param("gpa", command.gpa())
                 .param("gpaScale", command.gpaScale())
-                .param("primary", command.primary())
                 .param("description", command.description())
                 .param("now", utc(now))
                 .query(this::education)
@@ -188,12 +223,12 @@ public class ProfileStore {
                         SET school_name = :schoolName,
                             major = :major,
                             degree = :degree,
+                            education_level = :educationLevel,
                             education_status = :educationStatus,
                             admission_date = :admissionDate,
                             graduation_date = :graduationDate,
                             gpa = :gpa,
                             gpa_scale = :gpaScale,
-                            is_primary = :primary,
                             description = :description,
                             version = version + 1,
                             updated_at = :now
@@ -203,12 +238,12 @@ public class ProfileStore {
                 .param("schoolName", command.schoolName())
                 .param("major", command.major())
                 .param("degree", command.degree())
+                .param("educationLevel", command.educationLevel().name())
                 .param("educationStatus", command.educationStatus().name())
                 .param("admissionDate", command.admissionDate())
                 .param("graduationDate", command.graduationDate())
                 .param("gpa", command.gpa())
                 .param("gpaScale", command.gpaScale())
-                .param("primary", command.primary())
                 .param("description", command.description())
                 .param("now", utc(now))
                 .param("userId", userId)
@@ -634,7 +669,20 @@ public class ProfileStore {
 
     public Optional<EvidenceRecord> findEvidence(UUID userId, UUID id) {
         return jdbcClient
-                .sql("SELECT *, metadata::text AS metadata_text FROM profile_evidence WHERE user_id=:userId AND id=:id")
+                .sql("""
+                        SELECT *, metadata::text AS metadata_text
+                        FROM profile_evidence
+                        WHERE user_id=:userId
+                          AND id=:id
+                          AND source_type <> 'EDUCATION'
+                          AND NOT (
+                              upper(regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g'))
+                                  IN ('EDUCATION', 'EDUCATIONHISTORY', 'EDUCATIONALBACKGROUND',
+                                      'ACADEMIC', 'ACADEMICBACKGROUND', 'ACADEMICRECORD')
+                              OR regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g')
+                                  IN ('학력', '학력사항', '학력정보', '교육', '교육이력', '교육사항')
+                          )
+                        """)
                 .param("userId", userId)
                 .param("id", id)
                 .query(this::evidence)
@@ -647,6 +695,14 @@ public class ProfileStore {
                         SELECT *, metadata::text AS metadata_text
                         FROM profile_evidence
                         WHERE user_id=:userId
+                          AND source_type <> 'EDUCATION'
+                          AND NOT (
+                              upper(regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g'))
+                                  IN ('EDUCATION', 'EDUCATIONHISTORY', 'EDUCATIONALBACKGROUND',
+                                      'ACADEMIC', 'ACADEMICBACKGROUND', 'ACADEMICRECORD')
+                              OR regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g')
+                                  IN ('학력', '학력사항', '학력정보', '교육', '교육이력', '교육사항')
+                          )
                           AND verification_status='VERIFIED'
                           AND source_deleted_at IS NULL
                         ORDER BY id
@@ -717,7 +773,18 @@ public class ProfileStore {
         String statusValue = status == null ? "" : status.name();
         String categoryValue = category == null ? "" : category;
         String documentValue = documentId == null ? "" : documentId.toString();
-        String where = "user_id=:userId AND (:status='' OR verification_status=:status) "
+        String where = """
+                user_id=:userId
+                AND source_type <> 'EDUCATION'
+                AND NOT (
+                    upper(regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g'))
+                        IN ('EDUCATION', 'EDUCATIONHISTORY', 'EDUCATIONALBACKGROUND',
+                            'ACADEMIC', 'ACADEMICBACKGROUND', 'ACADEMICRECORD')
+                    OR regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g')
+                        IN ('학력', '학력사항', '학력정보', '교육', '교육이력', '교육사항')
+                )
+                """
+                + "AND (:status='' OR verification_status=:status) "
                 + "AND (:category='' OR evidence_category=:category) "
                 + "AND (:documentId='' OR (source_type='DOCUMENT_CHUNK' AND document_id=CAST(:documentId AS uuid)))";
         List<EvidenceRecord> items = jdbcClient
@@ -861,6 +928,7 @@ public class ProfileStore {
                 resultSet.getString("school_name"),
                 resultSet.getString("major"),
                 resultSet.getString("degree"),
+                EducationLevel.valueOf(resultSet.getString("education_level")),
                 EducationStatus.valueOf(resultSet.getString("education_status")),
                 resultSet.getObject("admission_date", java.time.LocalDate.class),
                 resultSet.getObject("graduation_date", java.time.LocalDate.class),

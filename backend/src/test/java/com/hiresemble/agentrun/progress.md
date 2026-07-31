@@ -4,6 +4,19 @@
 
 P3 Agent Run domain·PostgreSQL·API·SSE와 P4~P7 typed resource 통합 검증이 구현됐다.
 
+## [2026-07-31] Session Summary (Agent Run history delete 통합 검증)
+
+- What was done:
+  - terminal 개별·선택 삭제, active conflict, foreign ID atomic rollback, 공개 조회 제외와 budget reservation 보존을 검증했다.
+- Key decisions:
+  - 물리 삭제가 아니라 `deleted_at`과 owner-visible behavior를 assertion 대상으로 삼았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `AgentRunApiSseIntegrationTest` 8 tests와 Backend 전체 385 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (Cover Letter Agent Run 통합 검증)
 
 - What was done:

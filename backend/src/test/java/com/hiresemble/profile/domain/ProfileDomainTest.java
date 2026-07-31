@@ -1,7 +1,6 @@
 package com.hiresemble.profile.domain;
 
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
-import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.ProfileCompletion;
 import com.hiresemble.profile.domain.model.ProfileCompletionItem;
@@ -86,12 +85,15 @@ class ProfileDomainTest {
     }
 
     @Test
-    void directEvidenceFactoryMapsEveryStructuredSourceAndBoundsGeneratedContent() {
-        assertThat(DirectEvidenceFactory.education(
-                                "School", null, null, EducationStatus.GRADUATED,
-                                null, null, null, null, true, null)
-                        .sourceType())
-                .isEqualTo(EvidenceSourceType.EDUCATION);
+    void educationEvidenceCategoriesAreRecognizedAcrossSupportedLabels() {
+        assertThat(ProfilePolicy.isEducationEvidenceCategory("EDUCATION_HISTORY")).isTrue();
+        assertThat(ProfilePolicy.isEducationEvidenceCategory(" academic-background ")).isTrue();
+        assertThat(ProfilePolicy.isEducationEvidenceCategory("학력 정보")).isTrue();
+        assertThat(ProfilePolicy.isEducationEvidenceCategory("PROJECT")).isFalse();
+    }
+
+    @Test
+    void directEvidenceFactoryMapsNonEducationStructuredSourcesAndBoundsGeneratedContent() {
         assertThat(DirectEvidenceFactory.certification(
                                 "Certificate", null, null, null, null, null)
                         .sourceType())

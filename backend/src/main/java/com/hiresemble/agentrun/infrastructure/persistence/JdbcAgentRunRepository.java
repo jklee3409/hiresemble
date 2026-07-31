@@ -2,6 +2,7 @@ package com.hiresemble.agentrun.infrastructure.persistence;
 
 import com.hiresemble.agentrun.application.port.AgentRunCreationPort;
 import com.hiresemble.agentrun.application.port.AgentRunEventPublisher;
+import com.hiresemble.agentrun.application.port.AgentRunHistoryDeletionPort;
 import com.hiresemble.agentrun.application.model.AgentRunEventType;
 import com.hiresemble.agentrun.application.model.AgentRunCommittedEvent;
 import com.hiresemble.agentrun.application.query.AgentRunListCriteria;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -38,7 +40,8 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 @Repository
-public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQueryPort {
+public class JdbcAgentRunRepository
+        implements AgentRunCreationPort, AgentRunQueryPort, AgentRunHistoryDeletionPort {
 
     private final JdbcClient jdbcClient;
     private final AgentRunJdbcMapper mapper;
@@ -309,11 +312,14 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
             return findByOwner(predecessor.userId(), successorId).orElseThrow();
         }
         AgentRunSnapshot existing = jdbcClient.sql("SELECT " + AgentRunJdbcMapper.RUN_COLUMNS
-                        + " FROM agent_runs r WHERE r.user_id = :userId AND r.retry_of_run_id = :predecessorId")
+                        + " FROM agent_runs r WHERE r.user_id = :userId"
+                        + " AND r.retry_of_run_id = :predecessorId AND r.deleted_at IS NULL")
                 .param("userId", predecessor.userId())
                 .param("predecessorId", predecessor.id())
                 .query((rs, row) -> mapper.run(rs, List.of()))
-                .single();
+                .optional()
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED));
         if (!compatibleRetry(existing, predecessor)) {
             throw new BusinessException(ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED);
         }
@@ -324,6 +330,42 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
     @Transactional(readOnly = true)
     public Optional<AgentRunSnapshot> findByOwner(UUID userId, UUID agentRunId) {
         return findRun(userId, agentRunId).map(run -> withSteps(run, findSteps(userId, agentRunId)));
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteTerminalRuns(
+            UUID userId, Set<UUID> agentRunIds, Instant deletedAt) {
+        List<DeletionCandidate> candidates = jdbcClient.sql("""
+                        SELECT id,status
+                        FROM agent_runs
+                        WHERE user_id=:userId AND id IN (:agentRunIds) AND deleted_at IS NULL
+                        FOR UPDATE
+                        """)
+                .param("userId", userId)
+                .param("agentRunIds", agentRunIds)
+                .query((rs, row) -> new DeletionCandidate(
+                        rs.getObject("id", UUID.class),
+                        AgentRunStatus.valueOf(rs.getString("status"))))
+                .list();
+        if (candidates.size() != agentRunIds.size()) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+        if (candidates.stream().anyMatch(candidate -> !candidate.status().isTerminal())) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        int updated = jdbcClient.sql("""
+                        UPDATE agent_runs
+                        SET deleted_at=:deletedAt
+                        WHERE user_id=:userId AND id IN (:agentRunIds) AND deleted_at IS NULL
+                        """)
+                .param("deletedAt", utc(deletedAt))
+                .param("userId", userId)
+                .param("agentRunIds", agentRunIds)
+                .update();
+        if (updated != agentRunIds.size()) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -400,7 +442,8 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
 
     private Optional<AgentRunSnapshot> findRun(UUID userId, UUID agentRunId) {
         String sql = "SELECT " + AgentRunJdbcMapper.RUN_COLUMNS
-                + " FROM agent_runs r WHERE r.user_id = :userId AND r.id = :agentRunId";
+                + " FROM agent_runs r WHERE r.user_id = :userId AND r.id = :agentRunId"
+                + " AND r.deleted_at IS NULL";
         return jdbcClient.sql(sql)
                 .param("userId", userId)
                 .param("agentRunId", agentRunId)
@@ -630,7 +673,8 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
     }
 
     private String where(AgentRunListCriteria criteria, Map<String, Object> parameters) {
-        StringBuilder where = new StringBuilder("WHERE r.user_id = :userId");
+        StringBuilder where =
+                new StringBuilder("WHERE r.user_id = :userId AND r.deleted_at IS NULL");
         appendEnumFilter(where, parameters, "workflow_type", "workflowType", criteria.workflowTypes());
         appendEnumFilter(where, parameters, "status", "status", criteria.statuses());
         if (criteria.resourceType() != null) {
@@ -680,4 +724,6 @@ public class JdbcAgentRunRepository implements AgentRunCreationPort, AgentRunQue
     private OffsetDateTime utc(Instant instant) {
         return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
+
+    private record DeletionCandidate(UUID id, AgentRunStatus status) {}
 }

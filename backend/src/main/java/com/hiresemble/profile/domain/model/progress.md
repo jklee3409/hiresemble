@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.domain.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (EducationLevel model)
+
+- What was done:
+  - `OTHER`부터 `DOCTORATE`까지 학력 단계와 비교 rank를 가진 domain enum을 추가했다.
+- Key decisions:
+  - 사용자 표시 label은 Frontend에 두고 Backend enum은 판정 순위만 소유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile, Profile 통합 테스트와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 model package 분리)
 
 - What was done:

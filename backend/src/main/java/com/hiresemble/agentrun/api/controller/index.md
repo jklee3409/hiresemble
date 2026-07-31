@@ -6,10 +6,10 @@ com.hiresemble.agentrun.api.controller package는 인증 context와 HTTP 입력�
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AgentRunController.java](AgentRunController.java) | Controller 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                               | 역할                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [AgentRunController.java](AgentRunController.java) | 목록·상세·SSE·retry·cancel과 terminal 작업 내역 개별/선택 soft delete HTTP 계약 |
+| [progress.md](progress.md)                         | 이 package의 이동·검증 이력                                                     |
 
 ## 구성 요소 역할
 

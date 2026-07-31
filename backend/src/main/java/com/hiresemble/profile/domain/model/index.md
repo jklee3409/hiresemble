@@ -6,21 +6,22 @@ com.hiresemble.profile.domain.model package는 해당 계층에서 사용하는 
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [DirectEvidenceData.java](DirectEvidenceData.java) | Model 책임 구현 |
-| [EducationStatus.java](EducationStatus.java) | Model 책임 구현 |
-| [EvidenceSourceType.java](EvidenceSourceType.java) | Model 책임 구현 |
-| [EvidenceVerificationStatus.java](EvidenceVerificationStatus.java) | Model 책임 구현 |
-| [ProfileCommands.java](ProfileCommands.java) | Model 책임 구현 |
-| [ProfileCompletion.java](ProfileCompletion.java) | Model 책임 구현 |
-| [ProfileCompletionItem.java](ProfileCompletionItem.java) | Model 책임 구현 |
-| [ProfileRecords.java](ProfileRecords.java) | Model 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                               | 역할                                       |
+| ------------------------------------------------------------------ | ------------------------------------------ |
+| [DirectEvidenceData.java](DirectEvidenceData.java)                 | Model 책임 구현                            |
+| [EducationLevel.java](EducationLevel.java)                         | 최종 학력 계산에 사용하는 학력 단계와 순위 |
+| [EducationStatus.java](EducationStatus.java)                       | Model 책임 구현                            |
+| [EvidenceSourceType.java](EvidenceSourceType.java)                 | Model 책임 구현                            |
+| [EvidenceVerificationStatus.java](EvidenceVerificationStatus.java) | Model 책임 구현                            |
+| [ProfileCommands.java](ProfileCommands.java)                       | Model 책임 구현                            |
+| [ProfileCompletion.java](ProfileCompletion.java)                   | Model 책임 구현                            |
+| [ProfileCompletionItem.java](ProfileCompletionItem.java)           | Model 책임 구현                            |
+| [ProfileRecords.java](ProfileRecords.java)                         | Model 책임 구현                            |
+| [progress.md](progress.md)                                         | 이 package의 이동·검증 이력                |
 
 ## 구성 요소 역할
 
-- 해당 계층에서 사용하는 상태·값·결과 모델을 소유한다.
+- 해당 계층에서 사용하는 상태·값·결과 모델과 학력 단계 순위를 소유한다.
 - 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

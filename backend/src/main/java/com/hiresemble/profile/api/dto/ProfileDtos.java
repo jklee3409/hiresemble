@@ -1,5 +1,6 @@
 package com.hiresemble.profile.api.dto;
 
+import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
@@ -44,12 +45,16 @@ public final class ProfileDtos {
             @Schema(minLength = 1, maxLength = 200) String schoolName,
             @Schema(nullable = true, maxLength = 200) String major,
             @Schema(nullable = true, maxLength = 100) String degree,
+            EducationLevel educationLevel,
             EducationStatus educationStatus,
             @Schema(nullable = true) LocalDate admissionDate,
             @Schema(nullable = true) LocalDate graduationDate,
             @Schema(nullable = true, minimum = "0", maximum = "10") BigDecimal gpa,
             @Schema(nullable = true, minimum = "0.01", maximum = "10") BigDecimal gpaScale,
-            boolean isPrimary,
+            @Schema(
+                            accessMode = Schema.AccessMode.READ_ONLY,
+                            description = "Whether this is the server-computed final education.")
+                    boolean isPrimary,
             @Schema(nullable = true, maxLength = 5000) String description,
             long version,
             Instant createdAt,

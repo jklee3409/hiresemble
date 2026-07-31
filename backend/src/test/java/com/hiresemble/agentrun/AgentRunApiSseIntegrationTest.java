@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -155,6 +156,80 @@ class AgentRunApiSseIntegrationTest extends AgentRunIntegrationSupport {
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("CANCELLED"))
                 .andExpect(jsonPath("$.cancellable").value(false));
+    }
+
+    @Test
+    void terminalHistorySupportsOwnerScopedIndividualAndAtomicSelectedSoftDeletion()
+            throws Exception {
+        UUID owner = seedUser("history-delete-owner@example.com");
+        UUID other = seedUser("history-delete-other@example.com");
+        UUID individual = failRetryableRun(owner);
+        UUID selectedOne = failRetryableRun(owner);
+        UUID selectedTwo = failRetryableRun(owner);
+        UUID foreign = failRetryableRun(other);
+        UUID active = launch(owner).agentRunId();
+
+        mockMvc.perform(delete("/api/v1/agent-runs/{id}", active)
+                        .with(authentication(authenticationFor(owner)))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("RESOURCE_STATE_CONFLICT"));
+        mockMvc.perform(delete("/api/v1/agent-runs/{id}", individual)
+                        .with(authentication(authenticationFor(owner)))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/agent-runs/{id}", individual)
+                        .with(authentication(authenticationFor(owner))))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/api/v1/agent-runs/bulk-delete")
+                        .with(authentication(authenticationFor(owner)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"agentRunIds":["%s","%s"]}
+                                """.formatted(selectedOne, foreign)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT deleted_at IS NULL FROM agent_runs WHERE id=?",
+                Boolean.class,
+                selectedOne)).isTrue();
+
+        mockMvc.perform(post("/api/v1/agent-runs/bulk-delete")
+                        .with(authentication(authenticationFor(owner)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"agentRunIds":["%s","%s"]}
+                                """.formatted(selectedOne, selectedTwo)))
+                .andExpect(status().isNoContent());
+
+        assertThat(jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM agent_runs
+                WHERE user_id=? AND id IN (?,?,?) AND deleted_at IS NOT NULL
+                """,
+                Long.class,
+                owner,
+                individual,
+                selectedOne,
+                selectedTwo)).isEqualTo(3L);
+        assertThat(jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM ai_budget_reservations
+                WHERE user_id=? AND agent_run_id IN (?,?,?)
+                """,
+                Long.class,
+                owner,
+                individual,
+                selectedOne,
+                selectedTwo)).isEqualTo(3L);
+        mockMvc.perform(get("/api/v1/agent-runs")
+                        .with(authentication(authenticationFor(owner)))
+                        .queryParam("status", "FAILED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test

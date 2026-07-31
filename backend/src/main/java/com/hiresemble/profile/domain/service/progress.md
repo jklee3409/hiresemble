@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.domain.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (학력 direct evidence factory 제거)
+
+- What was done:
+  - `DirectEvidenceFactory.education`을 제거하고 자격증·어학·수상·경력만 직접 근거로 생성하도록 축소했다.
+- Key decisions:
+  - 학력은 별도 구조화 프로필 책임으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile domain·API tests와 전체 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 service package 분리)
 
 - What was done:

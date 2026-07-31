@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -296,9 +297,13 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 new DocumentEvidenceCandidate(
                         "ACHIEVEMENT", "Invented result", "성과 999",
                         Map.of(), new BigDecimal("0.800"),
-                        List.of(chunks.getFirst().id()), 1, "not grounded")));
+                        List.of(chunks.getFirst().id()), 1, "not grounded"),
+                new DocumentEvidenceCandidate(
+                        "EDUCATION_HISTORY", "Education history", "성과 42",
+                        Map.of(), new BigDecimal("0.950"),
+                        List.of(chunks.getFirst().id()), 1, null)));
         assertThat(result.appliedEvidenceIds()).hasSize(1);
-        assertThat(result.rejectedCount()).isEqualTo(1);
+        assertThat(result.rejectedCount()).isEqualTo(2);
         assertThat(workflow.finalizeDocument(owner.userId(), documentId, runId).evidenceExtractionStatus())
                 .isEqualTo(EvidenceExtractionStatus.SUCCEEDED);
         assertThat(jdbcTemplate.queryForObject(
@@ -313,6 +318,16 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.items[0].verificationStatus").value("PENDING"));
+        mockMvc.perform(patch("/api/v1/profile/evidence/"
+                                + result.appliedEvidenceIds().getFirst()
+                                + "/verification")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"VERIFIED\",\"version\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.verificationStatus").value("VERIFIED"))
+                .andExpect(jsonPath("$.version").value(1));
         mockMvc.perform(get("/api/v1/profile/evidence").cookie(other.cookie())
                         .queryParam("documentId", documentId.toString()))
                 .andExpect(status().isNotFound());

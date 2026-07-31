@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (Agent Run 삭제 use case)
+
+- What was done:
+  - 개별 삭제를 선택 삭제로 합성하고 owner·시각·1~100개 non-null ID를 검증하는 use case를 추가했다.
+- Key decisions:
+  - terminal·visibility 판정과 transaction은 persistence port가 row lock 안에서 최종 확인한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - owner·active conflict·foreign atomic rollback 통합 테스트와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (Run interruption compensation 조정)
 
 - What was done:

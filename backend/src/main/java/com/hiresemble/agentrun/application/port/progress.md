@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (history deletion port)
+
+- What was done:
+  - owner와 대상 UUID set, 삭제 시각을 받는 `AgentRunHistoryDeletionPort`를 추가했다.
+- Key decisions:
+  - application은 삭제 정책을 표현하고 JDBC의 lock·atomic update 세부를 port 뒤에 둔다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend compile과 전체 385 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (AI preference query port 공개)
 
 - What was done:

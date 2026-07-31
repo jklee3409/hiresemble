@@ -12,6 +12,20 @@ import java.util.Set;
 
 public final class ProfilePolicy {
 
+    private static final Set<String> EDUCATION_EVIDENCE_CATEGORIES = Set.of(
+            "EDUCATION",
+            "EDUCATIONHISTORY",
+            "EDUCATIONALBACKGROUND",
+            "ACADEMIC",
+            "ACADEMICBACKGROUND",
+            "ACADEMICRECORD",
+            "학력",
+            "학력사항",
+            "학력정보",
+            "교육",
+            "교육이력",
+            "교육사항");
+
     private ProfilePolicy() {}
 
     public static String requiredLabel(String value, int maximumLength) {
@@ -79,6 +93,18 @@ public final class ProfilePolicy {
             throw invalid();
         }
         validateDateRange(start, end);
+    }
+
+    public static boolean isEducationEvidenceCategory(String value) {
+        if (value == null) {
+            return false;
+        }
+        String canonical = value.trim()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                .toUpperCase(Locale.ROOT);
+        return EDUCATION_EVIDENCE_CATEGORIES.contains(canonical);
     }
 
     private static String normalizeLabel(String value, int maximumLength) {

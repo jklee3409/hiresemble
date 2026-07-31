@@ -53,7 +53,11 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo("PRIMARY_EDUCATION");
         assertThat(json(profile).at("/desiredRoles/0").asText()).isEqualTo("Backend");
 
-        mutation(post("/api/v1/profile/educations").content(educationBody("School", true, null)), session, 201);
+        mutation(
+                post("/api/v1/profile/educations")
+                        .content(educationBody("School", "BACHELOR", null)),
+                session,
+                201);
 
         mockMvc.perform(get("/api/v1/profile").cookie(session.cookie()))
                 .andExpect(status().isOk())
@@ -62,14 +66,16 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void educationCrudSwitchesPrimaryAndKeepsOneVerifiedEvidencePerSource() throws Exception {
+    void educationCrudDerivesFinalEducationWithoutCreatingExperienceEvidence() throws Exception {
         Session session = authenticated("education@example.com");
         JsonNode first = json(mutation(
-                post("/api/v1/profile/educations").content(educationBody("First School", true, null)),
+                post("/api/v1/profile/educations")
+                        .content(educationBody("First High School", "HIGH_SCHOOL", null)),
                 session,
                 201));
         JsonNode second = json(mutation(
-                post("/api/v1/profile/educations").content(educationBody("Second School", true, null)),
+                post("/api/v1/profile/educations")
+                        .content(educationBody("Second University", "BACHELOR", null)),
                 session,
                 201));
 
@@ -82,31 +88,38 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
         JsonNode items = json(listResult).get("items");
         JsonNode demoted = find(items, first.get("id").asText());
         assertThat(demoted.get("isPrimary").asBoolean()).isFalse();
-        assertThat(demoted.get("version").asLong()).isEqualTo(1);
+        assertThat(demoted.get("version").asLong()).isEqualTo(2);
         assertThat(find(items, second.get("id").asText()).get("isPrimary").asBoolean()).isTrue();
 
         JsonNode updated = json(mutation(
                 put("/api/v1/profile/educations/" + first.get("id").asText())
-                        .content(educationBody("First Updated", false, demoted.get("version").asLong())),
+                        .content(educationBody(
+                                "First Graduate School",
+                                "DOCTORATE",
+                                demoted.get("version").asLong())),
                 session,
                 200));
-        assertThat(updated.get("version").asLong()).isEqualTo(2);
+        assertThat(updated.get("educationLevel").asText()).isEqualTo("DOCTORATE");
+        assertThat(updated.get("isPrimary").asBoolean()).isTrue();
 
-        JsonNode evidence = evidence(session, "EDUCATION");
-        assertThat(evidence.get("items")).hasSize(2);
-        assertThat(findBySource(evidence.get("items"), first.get("id").asText()).get("title").asText())
-                .isEqualTo("First Updated");
-        assertThat(findBySource(evidence.get("items"), first.get("id").asText())
-                        .get("verificationStatus")
-                        .asText())
-                .isEqualTo("VERIFIED");
+        assertThat(evidence(session, "EDUCATION").get("items")).isEmpty();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE source_type='EDUCATION'",
+                Long.class)).isZero();
 
         mutation(
                 delete("/api/v1/profile/educations/" + first.get("id").asText())
                         .queryParam("version", updated.get("version").asText()),
                 session,
                 204);
-        assertThat(evidence(session, "EDUCATION").get("items")).hasSize(1);
+        JsonNode remaining = json(mockMvc.perform(get("/api/v1/profile/educations")
+                        .cookie(session.cookie()))
+                .andExpect(status().isOk())
+                .andReturn())
+                .at("/items/0");
+        assertThat(remaining.get("id").asText()).isEqualTo(second.get("id").asText());
+        assertThat(remaining.get("isPrimary").asBoolean()).isTrue();
+        assertThat(evidence(session, "EDUCATION").get("items")).isEmpty();
     }
 
     @Test
@@ -164,7 +177,7 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void evidenceEditAndVerificationAreOverriddenByLaterSourceSynchronization() throws Exception {
+    void directEvidenceEditIsSynchronizedLaterAndCannotBeReviewed() throws Exception {
         Session session = authenticated("evidence@example.com");
         JsonNode career = create(session, "/careers", careerBody("Original Company", true, null));
         JsonNode evidence = findBySource(
@@ -180,13 +193,12 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
         assertThat(edited.get("title").asText()).isEqualTo("User title");
         assertThat(edited.at("/metadata/nullable").isNull()).isTrue();
 
-        JsonNode rejected = json(mutation(
+        MvcResult rejected = mutation(
                 patch("/api/v1/profile/evidence/" + evidence.get("id").asText() + "/verification")
                         .content("{\"status\":\"REJECTED\",\"version\":1}"),
                 session,
-                200));
-        assertThat(rejected.get("verificationStatus").asText()).isEqualTo("REJECTED");
-        assertThat(rejected.get("verifiedAt").isNull()).isTrue();
+                409);
+        assertThat(json(rejected).get("code").asText()).isEqualTo("RESOURCE_STATE_CONFLICT");
 
         update(
                 session,
@@ -198,7 +210,7 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
         assertThat(synchronizedEvidence.get("verificationStatus").asText()).isEqualTo("VERIFIED");
         assertThat(synchronizedEvidence.get("verifiedAt").isNull()).isFalse();
         assertThat(synchronizedEvidence.get("metadata").has("custom")).isFalse();
-        assertThat(synchronizedEvidence.get("version").asLong()).isEqualTo(3);
+        assertThat(synchronizedEvidence.get("version").asLong()).isEqualTo(2);
     }
 
     @Test
@@ -231,16 +243,43 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void legacyEducationEvidenceIsHiddenAndCannotBeMutated() throws Exception {
+        Session session = authenticated("legacy-education-evidence@example.com");
+        UUID evidenceId = UUID.randomUUID();
+        jdbcTemplate.update(
+                """
+                INSERT INTO profile_evidence (
+                    id,user_id,source_type,source_entity_id,document_id,evidence_category,title,content,
+                    metadata,confidence,verification_status,verified_at,source_deleted_at,version,created_at,updated_at
+                ) VALUES (?,?,'EDUCATION',NULL,NULL,'EDUCATION','[대외활동에서 제외된 학력 정보]',
+                          '[학력 정보는 구조화 프로필에서만 관리됩니다.]','{}',NULL,
+                          'SOURCE_DELETED',NULL,now(),1,now(),now())
+                """,
+                evidenceId,
+                session.userId());
+
+        assertThat(evidence(session, null).get("items")).isEmpty();
+        MvcResult edit = mutation(
+                put("/api/v1/profile/evidence/" + evidenceId)
+                        .content("{\"title\":\"Edit\",\"content\":\"Edit\",\"metadata\":{},\"version\":1}"),
+                session,
+                404);
+        assertThat(json(edit).get("code").asText()).isEqualTo("RESOURCE_NOT_FOUND");
+    }
+
+    @Test
     void ownerScopedQueriesHideForeignAndMissingIdsAndVersionConflictsAreExplicit() throws Exception {
         Session owner = authenticated("owner@example.com");
         Session stranger = authenticated("stranger@example.com");
-        JsonNode education = create(owner, "/educations", educationBody("Owner School", false, null));
+        JsonNode education =
+                create(owner, "/educations", educationBody("Owner School", "BACHELOR", null));
+        JsonNode career = create(owner, "/careers", careerBody("Owner Company", true, null));
         JsonNode evidence = findBySource(
-                evidence(owner, "EDUCATION").get("items"), education.get("id").asText());
+                evidence(owner, "CAREER").get("items"), career.get("id").asText());
 
         MvcResult foreignUpdate = mutation(
                 put("/api/v1/profile/educations/" + education.get("id").asText())
-                        .content(educationBody("Foreign", false, 0L)),
+                        .content(educationBody("Foreign", "BACHELOR", 0L)),
                 stranger,
                 404);
         assertThat(json(foreignUpdate).get("code").asText()).isEqualTo("RESOURCE_NOT_FOUND");
@@ -259,7 +298,7 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
 
         MvcResult stale = mutation(
                 put("/api/v1/profile/educations/" + education.get("id").asText())
-                        .content(educationBody("Stale", false, 99L)),
+                        .content(educationBody("Stale", "BACHELOR", 99L)),
                 owner,
                 409);
         assertThat(json(stale).get("code").asText()).isEqualTo("RESOURCE_VERSION_CONFLICT");
@@ -305,9 +344,10 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
                 .doesNotContain("SQL");
         mutation(
                 post("/api/v1/profile/educations").content("""
-                        {"schoolName":"School","major":null,"degree":null,"educationStatus":"GRADUATED",
+                        {"schoolName":"School","major":null,"degree":null,"educationLevel":"BACHELOR",
+                         "educationStatus":"GRADUATED",
                          "admissionDate":"2025-01-01","graduationDate":"2024-01-01","gpa":4.5,
-                         "gpaScale":4.0,"isPrimary":false,"description":null}
+                         "gpaScale":4.0,"description":null}
                         """),
                 session,
                 400);
@@ -427,13 +467,15 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
                 """.formatted(version);
     }
 
-    private String educationBody(String school, boolean primary, Long version) {
+    private String educationBody(String school, String educationLevel, Long version) {
         return """
-                {"schoolName":"%s","major":"Computer Science","degree":"Bachelor",
+                {"schoolName":"%s","major":"Computer Science","degree":"Computer Science",
+                 "educationLevel":"%s",
                  "educationStatus":"GRADUATED","admissionDate":"2020-03-01",
                  "graduationDate":"2024-02-29","gpa":4.0,"gpaScale":4.5,
-                 "isPrimary":%s,"description":"Education"%s}
-                """.formatted(school, primary, version == null ? "" : ",\"version\":" + version);
+                 "description":"Education"%s}
+                """.formatted(
+                school, educationLevel, version == null ? "" : ",\"version\":" + version);
     }
 
     private String certificationBody(String name, Long version) {

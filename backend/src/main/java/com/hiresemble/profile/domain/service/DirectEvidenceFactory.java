@@ -1,9 +1,7 @@
 package com.hiresemble.profile.domain.service;
 
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
-import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,35 +9,6 @@ import java.util.Map;
 public final class DirectEvidenceFactory {
 
     private DirectEvidenceFactory() {}
-
-    public static DirectEvidenceData education(
-            String schoolName,
-            String major,
-            String degree,
-            EducationStatus status,
-            LocalDate admissionDate,
-            LocalDate graduationDate,
-            BigDecimal gpa,
-            BigDecimal gpaScale,
-            boolean primary,
-            String description) {
-        Map<String, Object> metadata = metadata(
-                "schoolName", schoolName,
-                "major", major,
-                "degree", degree,
-                "educationStatus", status.name(),
-                "admissionDate", text(admissionDate),
-                "graduationDate", text(graduationDate),
-                "gpa", gpa,
-                "gpaScale", gpaScale,
-                "isPrimary", primary);
-        return data(
-                EvidenceSourceType.EDUCATION,
-                "EDUCATION",
-                schoolName,
-                firstContent(description, schoolName, major, degree, status.name()),
-                metadata);
-    }
 
     public static DirectEvidenceData certification(
             String name,

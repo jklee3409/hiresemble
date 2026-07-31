@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.api.controller package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (Agent Run history delete HTTP 계약)
+
+- What was done:
+  - `DELETE /agent-runs/{id}`와 `POST /agent-runs/bulk-delete`를 추가하고 204·validation·owner·state 오류를 OpenAPI로 명시했다.
+- Key decisions:
+  - 선택 삭제는 별도 POST command로 받아 body의 UUID set을 원자 처리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAPI 73 operations/53 paths와 Agent Run API 통합 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 controller package 분리)
 
 - What was done:

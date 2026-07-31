@@ -32,6 +32,7 @@ public final class ProfileRecords {
             String schoolName,
             String major,
             String degree,
+            EducationLevel educationLevel,
             EducationStatus educationStatus,
             LocalDate admissionDate,
             LocalDate graduationDate,

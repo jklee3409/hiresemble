@@ -7,7 +7,7 @@ P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P7 OpenAPI의 �
 ## 주요 파일 및 하위 디렉터리
 
 - [`AuthIntegrationTest.java`](AuthIntegrationTest.java): 가입·로그인·CSRF·Session·오류·Request ID 통합
-- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 71 operations/52 paths, DTO·enum·nullability, 금지 경로 부재와 Swagger UI 접근
+- [`OpenApiContractTest.java`](OpenApiContractTest.java): 정확히 73 operations/53 paths, DTO·enum·nullability, 금지 경로 부재와 Swagger UI 접근
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

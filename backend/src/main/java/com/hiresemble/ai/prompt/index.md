@@ -7,6 +7,7 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 ## 주요 파일 및 하위 디렉터리
 
 - `PromptRegistry`: immutable prompt definition lookup
+- `DocumentIngestionPromptDefinitions`: P4 문서 근거 추출 schema·cap과 학력 추출 금지 instruction
 - `JobPostingExtractionPromptDefinitions`: P5 추출 prompt version·output schema·call/token cap
 - `JobAnalysisPromptDefinitions`: P6 requirement·eligibility·matching structured schema와 외부 공고 instruction 격리
 - `CoverLetterGenerationPromptDefinitions`: P7 plan·question·allocation·answer·fact-check record schema

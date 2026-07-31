@@ -1,8 +1,8 @@
-# P1~P5 Migration 테스트 안내
+# P1~V11 Migration 테스트 안내
 
 ## 디렉터리 목적
 
-Flyway V1~V5 보존과 V6 P5 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V11 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,11 +11,13 @@ Flyway V1~V5 보존과 V6 P5 schema의 빈 DB·upgrade 경로를 실제 PostgreS
 - [`P3MigrationTest.java`](P3MigrationTest.java): 빈 DB·V1/V2/V3 upgrade, V1~V3 hash와 P3 constraint·범위
 - [`P4MigrationTest.java`](P4MigrationTest.java): 빈 DB·V1/V2/V3/V4 upgrade, V1~V4 hash와 P4 constraint·범위
 - [`P5MigrationTest.java`](P5MigrationTest.java): 빈 DB·V5 upgrade, V1~V5 hash와 P5 owner·상태·canonical constraint·범위
+- [`P6MigrationTest.java`](P6MigrationTest.java): P6 Job Analysis V7 migration·불변식
+- [`FinalEducationMigrationTest.java`](FinalEducationMigrationTest.java): 빈 DB V11과 populated V10 학력 단계 backfill·최종 학력 재계산
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- migration 적용 순서와 각 phase schema 범위가 계약을 넘지 않는지 독립 PostgreSQL DB에서 확인한다.
+- migration 적용 순서, 각 phase schema 범위와 V11 실제 데이터 보정이 계약을 넘지 않는지 독립 PostgreSQL DB에서 확인한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -24,7 +26,7 @@ Flyway V1~V5 보존과 V6 P5 schema의 빈 DB·upgrade 경로를 실제 PostgreS
 
 ## 변경 시 주의사항
 
-- 적용 이력 V1~V5를 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
+- 적용 이력 V1~V10을 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
 
 ## 관련 규칙 및 문서
 

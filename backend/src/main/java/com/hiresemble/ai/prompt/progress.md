@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P7 Cover Letter까지 structured prompt metadata가 구현됐다.
 
+## [2026-07-31] Session Summary (문서 학력 근거 추출 금지)
+
+- What was done:
+  - Document evidence extraction prompt에 학력·교육 이력 후보를 만들지 않는 instruction을 추가했다.
+- Key decisions:
+  - prompt만 신뢰하지 않고 application validation과 DB CHECK를 함께 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document workflow 통합 12 tests와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 생성·검증 structured prompt)
 
 - What was done:

@@ -41,7 +41,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlySeventyOneP1ThroughP7OperationsAndFiftyTwoPaths() {
+    void liveSpringMappingsHaveExactlySeventyThreeOperationsAndFiftyThreePaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -57,12 +57,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(52);
-        assertThat(operations[0]).isEqualTo(71);
+        assertThat(paths).hasSize(53);
+        assertThat(operations[0]).isEqualTo(73);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlySeventyOneP1ThroughP7Operations()
+    void generatedOpenApiHasStableMetadataAndExactlySeventyThreeOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -107,6 +107,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/profile/evidence/{evidenceId}/verification",
                         "/api/v1/agent-runs",
                         "/api/v1/agent-runs/{agentRunId}",
+                        "/api/v1/agent-runs/bulk-delete",
                         "/api/v1/agent-runs/{agentRunId}/events",
                         "/api/v1/agent-runs/{agentRunId}/retry",
                         "/api/v1/agent-runs/{agentRunId}/cancel",
@@ -137,7 +138,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/cover-letters/{coverLetterId}/finalize",
                         "/api/v1/cover-letters/{coverLetterId}/archive",
                         "/api/v1/cover-letters/{coverLetterId}/unarchive");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(71);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(73);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -179,6 +180,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}/verification", "patch", "verifyProfileEvidence");
         assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "get", "getAgentRun");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "delete", "deleteAgentRun");
+        assertAgentRunOperation(document, "/api/v1/agent-runs/bulk-delete", "post", "deleteAgentRuns");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/events", "get", "streamAgentRunEvents");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/retry", "post", "retryAgentRun");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}/cancel", "post", "cancelAgentRun");
@@ -306,6 +309,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "200", "400", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/get"),
                 "200", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}/delete"),
+                "204", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1bulk-delete/post"),
+                "204", "400", "401", "403", "404", "409");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1events/get"),
                 "200", "401", "404");
         assertResponseCodes(document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1retry/post"),
@@ -377,7 +384,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(profileMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
         JsonNode agentRunMutationSecurity =
-                document.at("/paths/~1api~1v1~1agent-runs~1{agentRunId}~1cancel/post/security");
+                document.at("/paths/~1api~1v1~1agent-runs~1bulk-delete/post/security");
         assertThat(agentRunMutationSecurity).hasSize(1);
         assertThat(fieldNames(agentRunMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");

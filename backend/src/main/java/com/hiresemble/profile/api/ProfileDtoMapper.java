@@ -40,9 +40,10 @@ final class ProfileDtoMapper {
 
     static EducationDto education(EducationRecord value) {
         return new EducationDto(
-                value.id(), value.schoolName(), value.major(), value.degree(), value.educationStatus(),
-                value.admissionDate(), value.graduationDate(), value.gpa(), value.gpaScale(),
-                value.primary(), value.description(), value.version(), value.createdAt(), value.updatedAt());
+                value.id(), value.schoolName(), value.major(), value.degree(), value.educationLevel(),
+                value.educationStatus(), value.admissionDate(), value.graduationDate(), value.gpa(),
+                value.gpaScale(), value.primary(), value.description(), value.version(),
+                value.createdAt(), value.updatedAt());
     }
 
     static CertificationDto certification(CertificationRecord value) {

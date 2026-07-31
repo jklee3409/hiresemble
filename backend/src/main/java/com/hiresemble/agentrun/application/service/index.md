@@ -6,17 +6,17 @@ com.hiresemble.agentrun.application.service package는 use case, transaction 또
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AgentRunApplicationService.java](AgentRunApplicationService.java) | Service 책임 구현 |
-| [AgentRunCancellationService.java](AgentRunCancellationService.java) | Service 책임 구현 |
-| [AgentRunResumeService.java](AgentRunResumeService.java) | Service 책임 구현 |
-| [AgentRunRetryService.java](AgentRunRetryService.java) | Service 책임 구현 |
-| [AgentRunRetryTransaction.java](AgentRunRetryTransaction.java) | Service 책임 구현 |
-| [AgentRunInterruptionService.java](AgentRunInterruptionService.java) | 실패·취소 resource compensation 조정 |
-| [AiPreferenceRegistrationService.java](AiPreferenceRegistrationService.java) | Service 책임 구현 |
-| [WorkflowLauncherService.java](WorkflowLauncherService.java) | Service 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                                         | 역할                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [AgentRunApplicationService.java](AgentRunApplicationService.java)           | owner 목록·상세와 terminal 작업 내역 개별/선택 삭제 use case |
+| [AgentRunCancellationService.java](AgentRunCancellationService.java)         | Service 책임 구현                                            |
+| [AgentRunResumeService.java](AgentRunResumeService.java)                     | Service 책임 구현                                            |
+| [AgentRunRetryService.java](AgentRunRetryService.java)                       | Service 책임 구현                                            |
+| [AgentRunRetryTransaction.java](AgentRunRetryTransaction.java)               | Service 책임 구현                                            |
+| [AgentRunInterruptionService.java](AgentRunInterruptionService.java)         | 실패·취소 resource compensation 조정                         |
+| [AiPreferenceRegistrationService.java](AiPreferenceRegistrationService.java) | Service 책임 구현                                            |
+| [WorkflowLauncherService.java](WorkflowLauncherService.java)                 | Service 책임 구현                                            |
+| [progress.md](progress.md)                                                   | 이 package의 이동·검증 이력                                  |
 
 ## 구성 요소 역할
 

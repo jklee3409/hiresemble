@@ -2,7 +2,21 @@
 
 ## Overview
 
-Flyway V1~V5 보존과 V6 P5 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V11 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-07-31] Session Summary (V11 최종 학력 migration 검증)
+
+- What was done:
+  - populated V10의 고등학교·학사·석사·박사를 backfill하고 박사가 최종 학력으로 재지정되는지 검증했다.
+  - 빈 DB V11의 non-null column과 level CHECK를 검증했다.
+- Key decisions:
+  - application 통합 테스트와 별도 container upgrade test로 기존 DB 보정 경계를 분리했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `FinalEducationMigrationTest` 2개와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (P5 V6 migration·불변식 검증)
 

@@ -6,10 +6,10 @@ com.hiresemble.profile.domain.policy package는 도메인 불변식과 계산 �
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [ProfilePolicy.java](ProfilePolicy.java) | Policy 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                     | 역할                                                  |
+| ---------------------------------------- | ----------------------------------------------------- |
+| [ProfilePolicy.java](ProfilePolicy.java) | 프로필 입력 불변식과 교육/학력 evidence category 판별 |
+| [progress.md](progress.md)               | 이 package의 이동·검증 이력                           |
 
 ## 구성 요소 역할
 

@@ -4,6 +4,20 @@
 
 Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Answer Version typed resource owner resolution을 관리한다.
 
+## [2026-07-31] Session Summary (owner-visible terminal history soft delete)
+
+- What was done:
+  - 선택 row를 `FOR UPDATE`로 잠근 뒤 전부 owner-visible·terminal인지 확인하고 `deleted_at`을 원자 설정했다.
+  - 목록·상세에서 deleted row를 제외하고 숨겨진 retry successor가 unique lineage를 점유한 경우 중복 생성을 거부했다.
+- Key decisions:
+  - 내부 audit 조회와 step 재사용은 보존하고 공개 owner 조회만 soft-delete filter를 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 삭제 뒤 404·목록 제외·budget reservation 보존과 전체 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 resource owner·retry seed persistence)
 
 - What was done:

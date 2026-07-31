@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime과 no-network gateway 기반에 P4 Document, P5 Job, P6 Job Analysis와 P7 Cover Letter generation·verification workflow가 연결됐고 실제 provider adapter는 없다.
 
+## [2026-07-31] Session Summary (Document 학력 근거 추출 제외)
+
+- What was done:
+  - 문서 근거 추출 prompt에서 학력·교육 이력을 제외하고 application·DB 방어와 계약을 맞췄다.
+- Key decisions:
+  - model instruction은 UX 유도 계층이며 최종 차단은 deterministic validation과 CHECK가 담당한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document integration 12 tests와 Backend 전체 385 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 Cover Letter generation·verification workflow)
 
 - What was done:

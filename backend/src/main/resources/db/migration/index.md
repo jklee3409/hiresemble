@@ -6,16 +6,19 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                                                                                               | 역할                                                 |
-| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| [`V1__enable_extensions.sql`](V1__enable_extensions.sql)                                                           | pgvector의 `vector` PostgreSQL extension 활성화      |
-| [`V2__create_identity_session_idempotency.sql`](V2__create_identity_session_idempotency.sql)                       | users·기본 profile·Spring Session·idempotency schema |
-| [`V3__create_structured_profiles_and_direct_evidence.sql`](V3__create_structured_profiles_and_direct_evidence.sql) | P2 기본·구조화 프로필과 직접 근거 schema·불변식      |
-| [`V4__create_agent_runtime_and_ai_budget.sql`](V4__create_agent_runtime_and_ai_budget.sql)                         | P3 Run·Step, AI policy·price·budget·usage schema     |
-| [`V5__create_documents_evidence_and_storage_outbox.sql`](V5__create_documents_evidence_and_storage_outbox.sql)     | P4 Document·chunk·typed Run link·Object outbox       |
-| [`V6__create_job_postings_and_extend_agent_resources.sql`](V6__create_job_postings_and_extend_agent_resources.sql) | P5 Company·Job·status history와 typed Job Run link   |
-| [`V7__create_job_analyses_and_provenance.sql`](V7__create_job_analyses_and_provenance.sql)                         | P6 immutable analysis·criterion·evidence·Run lineage |
-| [`V8__create_cover_letters_versions_and_verifications.sql`](V8__create_cover_letters_versions_and_verifications.sql) | P7 Cover Letter·question·version·verification·Run link |
+| 경로                                                                                                                             | 역할                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| [`V1__enable_extensions.sql`](V1__enable_extensions.sql)                                                                         | pgvector의 `vector` PostgreSQL extension 활성화           |
+| [`V2__create_identity_session_idempotency.sql`](V2__create_identity_session_idempotency.sql)                                     | users·기본 profile·Spring Session·idempotency schema      |
+| [`V3__create_structured_profiles_and_direct_evidence.sql`](V3__create_structured_profiles_and_direct_evidence.sql)               | P2 기본·구조화 프로필과 직접 근거 schema·불변식           |
+| [`V4__create_agent_runtime_and_ai_budget.sql`](V4__create_agent_runtime_and_ai_budget.sql)                                       | P3 Run·Step, AI policy·price·budget·usage schema          |
+| [`V5__create_documents_evidence_and_storage_outbox.sql`](V5__create_documents_evidence_and_storage_outbox.sql)                   | P4 Document·chunk·typed Run link·Object outbox            |
+| [`V6__create_job_postings_and_extend_agent_resources.sql`](V6__create_job_postings_and_extend_agent_resources.sql)               | P5 Company·Job·status history와 typed Job Run link        |
+| [`V7__create_job_analyses_and_provenance.sql`](V7__create_job_analyses_and_provenance.sql)                                       | P6 immutable analysis·criterion·evidence·Run lineage      |
+| [`V8__create_cover_letters_versions_and_verifications.sql`](V8__create_cover_letters_versions_and_verifications.sql)             | P7 Cover Letter·question·version·verification·Run link    |
+| [`V9__exclude_education_evidence_and_soft_delete_agent_runs.sql`](V9__exclude_education_evidence_and_soft_delete_agent_runs.sql) | 학력 direct evidence 제거와 Agent Run history soft delete |
+| [`V10__exclude_document_education_evidence.sql`](V10__exclude_document_education_evidence.sql)                                   | 문서 추출 교육·학력 evidence 정리·DB 차단                 |
+| [`V11__derive_final_education.sql`](V11__derive_final_education.sql)                                                             | 학력 단계 backfill·제약과 최종 학력 재계산                |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -28,7 +31,10 @@
 - V5는 Document·revision text·`vector(1536)` chunk·Object deletion outbox·typed Run link와 profile document owner FK를 추가한다.
 - V6는 Company·Job Posting·status history, owner 복합 FK, canonical active unique와 typed Job Agent Run link를 추가한다.
 - V7은 immutable Job Analysis version·score criterion·VERIFIED evidence provenance와 secondary typed analysis Run link를 추가한다.
+- V11은 `education_level`을 legacy degree·학교명에서 backfill하고 단계·상태·날짜 순으로 active 최종 학력을 재계산한다.
 - V8은 자기소개서 active cardinality, 질문, immutable answer version·evidence provenance·verification·acknowledgement와 typed Run resource를 추가한다.
+- V9는 학력 evidence 동기화 의무를 제거하고 기존 학력 근거를 tombstone 처리하며 terminal Agent Run의 `deleted_at`을 추가한다.
+- V10은 문서 추출에서 생성된 교육·학력 category도 tombstone 처리하고 새 active row를 DB CHECK로 차단한다.
 - research·interview schema는 P8 이후 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

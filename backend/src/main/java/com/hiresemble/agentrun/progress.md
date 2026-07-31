@@ -4,6 +4,19 @@
 
 P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P7 typed resource 연결이 구현됐으며 실제 provider는 비활성 상태다.
 
+## [2026-07-31] Session Summary (terminal 작업 내역 soft delete)
+
+- What was done:
+  - terminal Agent Run을 개별·최대 100개 선택해 owner-visible history에서 숨기는 API·application port·JDBC 처리를 추가했다.
+- Key decisions:
+  - run lineage·step·typed resource·idempotency·budget·usage는 보존하고 `deleted_at`만 설정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run API 통합 8 tests와 Backend 전체 385 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 Cover Letter typed resource·partial retry)
 
 - What was done:

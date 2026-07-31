@@ -3,7 +3,6 @@ package com.hiresemble.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -248,16 +247,15 @@ class JobAnalysisIntegrationTest extends PostgresIntegrationTest {
         var persisted = analysisService.persist(
                 owner.userId(), runId, command(snapshot, Eligibility.ELIGIBLE, verified));
 
-        mockMvc.perform(patch("/api/v1/profile/evidence/" + verified + "/verification")
-                        .cookie(owner.cookie())
-                        .header("X-CSRF-TOKEN", owner.csrfToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"status":"REJECTED","version":0}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.verificationStatus").value("REJECTED"))
-                .andExpect(jsonPath("$.version").value(1));
+        jdbcTemplate.update(
+                """
+                UPDATE profile_evidence
+                SET verification_status='REJECTED',verified_at=NULL,version=1,updated_at=?
+                WHERE user_id=? AND id=?
+                """,
+                java.sql.Timestamp.from(NOW.plusSeconds(1)),
+                owner.userId(),
+                verified);
 
         assertHistoricalEvidenceProjection(
                 owner,

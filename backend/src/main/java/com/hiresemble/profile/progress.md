@@ -2,7 +2,33 @@
 
 ## Overview
 
-P2 기본·구조화 프로필·direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` evidence snapshot query를 제공한다.
+P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
+
+## [2026-07-31] Session Summary (학력 단계 기반 최종 학력)
+
+- What was done:
+  - 학력 API·domain·service·persistence에 명시적 단계와 mutation 후 최종 학력 재계산을 연결했다.
+- Key decisions:
+  - profile owner row lock 아래 hierarchy와 tie-break를 적용해 concurrent mutation도 하나의 최종 학력만 남긴다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile 통합 테스트와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (학력 evidence 완전 제외)
+
+- What was done:
+  - 학력 CRUD의 direct evidence 생성을 제거하고 source/category 조회·분석·문서 추출 경로에서 학력을 제외했다.
+- Key decisions:
+  - 구조화 학력은 프로필 완료도에 유지하며 대외활동 evidence로는 만들지 않는다.
+- Issues encountered:
+  - 기존 학력 ID를 참조할 수 있는 provenance 때문에 물리 삭제 대신 비식별 tombstone migration을 사용했다.
+- Validation:
+  - Profile domain 6, API 10, Document 12 tests와 Backend 전체 385 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 evidence provenance 삭제 참조)
 

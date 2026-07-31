@@ -10,7 +10,42 @@
 - `V6__create_job_postings_and_extend_agent_resources.sql`은 P5 Company·Job·status history와 typed Job Run link를 생성한다.
 - `V7__create_job_analyses_and_provenance.sql`은 P6 immutable analysis·criterion·VERIFIED evidence provenance와 typed analysis Run link를 생성한다.
 - `V8__create_cover_letters_versions_and_verifications.sql`은 P7 자기소개서·질문·immutable answer/provenance/verification과 typed Run link를 생성한다.
+- `V9__exclude_education_evidence_and_soft_delete_agent_runs.sql`은 학력 evidence 동기화를 제거하고 terminal Agent Run history soft delete를 추가한다.
+- `V10__exclude_document_education_evidence.sql`은 문서 교육 category 근거를 정리하고 새 active row를 차단한다.
+- `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
 - 면접 등 P8 이후 table은 구현하지 않았다.
+
+## [2026-07-31] Session Summary (최종 학력 V11 backfill)
+
+- What was done:
+  - `education_level` column·CHECK를 추가하고 legacy degree·학교명으로 단계를 분류했다.
+  - active 학력을 단계·상태·날짜·등록 순으로 재정렬해 사용자별 최종 학력을 다시 지정했다.
+- Key decisions:
+  - 적용된 V1~V10은 수정하지 않고 forward-only V11로 기존 데이터와 partial unique index를 보정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 빈 DB, populated V10 upgrade와 개발 DB Flyway 11·사용자별 primary 1개 invariant가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (학력 evidence 정리·Agent Run soft delete V9~V10)
+
+- What was done:
+  - 학력 구조화 source의 deferred evidence trigger·unique 의무를 제거하고 기존 EDUCATION row를 비식별 `SOURCE_DELETED` tombstone으로 전환했다.
+  - 문서 추출 교육 category도 같은 방식으로 정리하고 active 교육 category CHECK를 추가했다.
+  - `agent_runs.deleted_at`, terminal/completed timestamp CHECK와 owner-visible partial index를 추가했다.
+- Key decisions:
+  - 적용된 V1~V8은 수정하지 않고, V9 적용 뒤 발견한 문서 category 경계는 V10 forward migration으로 보정했다.
+  - provenance FK와 비용 audit을 보존하기 위해 학력 근거와 Agent Run 모두 물리 삭제하지 않는다.
+- Issues encountered:
+  - V9 첫 로컬 시도는 pending deferred trigger event 때문에 rollback됐고 trigger disable 순서를 적용 전 수정해 재실행했다.
+  - non-web bootRun은 V10 적용 성공 뒤 `HttpSecurity` bean 부재로 종료됐다.
+- Validation:
+  - 빈 DB Testcontainers migration을 포함한 Backend 385 tests 통과.
+  - 개발 PostgreSQL Flyway V9·V10 success, active 학력 evidence 0·tombstone 1·차단 constraint 1 확인.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 Cover Letter V8 migration)
 

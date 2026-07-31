@@ -6,25 +6,26 @@ com.hiresemble.agentrun.api.dto package는 외부 request·response와 event의 
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AgentRunDetailDto.java](AgentRunDetailDto.java) | DTO 책임 구현 |
-| [AgentRunPageDto.java](AgentRunPageDto.java) | DTO 책임 구현 |
-| [AgentRunSummaryDto.java](AgentRunSummaryDto.java) | DTO 책임 구현 |
-| [AgentStepDto.java](AgentStepDto.java) | DTO 책임 구현 |
-| [CancelAgentRunRequest.java](CancelAgentRunRequest.java) | DTO 책임 구현 |
-| [HeartbeatEventDto.java](HeartbeatEventDto.java) | DTO 책임 구현 |
-| [PartialResultDto.java](PartialResultDto.java) | DTO 책임 구현 |
-| [ProgressEventDto.java](ProgressEventDto.java) | DTO 책임 구현 |
-| [RequiredUserActionDto.java](RequiredUserActionDto.java) | DTO 책임 구현 |
-| [ResourceRefDto.java](ResourceRefDto.java) | DTO 책임 구현 |
-| [RunAcceptedDto.java](RunAcceptedDto.java) | DTO 책임 구현 |
-| [SafeErrorDto.java](SafeErrorDto.java) | DTO 책임 구현 |
-| [SnapshotEventDto.java](SnapshotEventDto.java) | DTO 책임 구현 |
-| [StepEventDto.java](StepEventDto.java) | DTO 책임 구현 |
-| [TerminalEventDto.java](TerminalEventDto.java) | DTO 책임 구현 |
-| [WaitingUserEventDto.java](WaitingUserEventDto.java) | DTO 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                       | 역할                                         |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| [AgentRunDetailDto.java](AgentRunDetailDto.java)           | DTO 책임 구현                                |
+| [AgentRunPageDto.java](AgentRunPageDto.java)               | DTO 책임 구현                                |
+| [AgentRunSummaryDto.java](AgentRunSummaryDto.java)         | DTO 책임 구현                                |
+| [AgentStepDto.java](AgentStepDto.java)                     | DTO 책임 구현                                |
+| [CancelAgentRunRequest.java](CancelAgentRunRequest.java)   | DTO 책임 구현                                |
+| [DeleteAgentRunsRequest.java](DeleteAgentRunsRequest.java) | terminal 작업 내역 1~100개 선택 삭제 request |
+| [HeartbeatEventDto.java](HeartbeatEventDto.java)           | DTO 책임 구현                                |
+| [PartialResultDto.java](PartialResultDto.java)             | DTO 책임 구현                                |
+| [ProgressEventDto.java](ProgressEventDto.java)             | DTO 책임 구현                                |
+| [RequiredUserActionDto.java](RequiredUserActionDto.java)   | DTO 책임 구현                                |
+| [ResourceRefDto.java](ResourceRefDto.java)                 | DTO 책임 구현                                |
+| [RunAcceptedDto.java](RunAcceptedDto.java)                 | DTO 책임 구현                                |
+| [SafeErrorDto.java](SafeErrorDto.java)                     | DTO 책임 구현                                |
+| [SnapshotEventDto.java](SnapshotEventDto.java)             | DTO 책임 구현                                |
+| [StepEventDto.java](StepEventDto.java)                     | DTO 책임 구현                                |
+| [TerminalEventDto.java](TerminalEventDto.java)             | DTO 책임 구현                                |
+| [WaitingUserEventDto.java](WaitingUserEventDto.java)       | DTO 책임 구현                                |
+| [progress.md](progress.md)                                 | 이 package의 이동·검증 이력                  |
 
 ## 구성 요소 역할
 

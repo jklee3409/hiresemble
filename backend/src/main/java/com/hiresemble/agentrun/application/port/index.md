@@ -6,27 +6,28 @@ com.hiresemble.agentrun.application.port package는 application과 외부 구현
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [AgentRunCancellationPort.java](AgentRunCancellationPort.java) | Port 책임 구현 |
-| [AgentRunCreationPort.java](AgentRunCreationPort.java) | Port 책임 구현 |
-| [AgentRunDispatchPort.java](AgentRunDispatchPort.java) | Port 책임 구현 |
-| [AgentRunEventPublisher.java](AgentRunEventPublisher.java) | Port 책임 구현 |
-| [AgentRunLeaseHeartbeatPort.java](AgentRunLeaseHeartbeatPort.java) | Port 책임 구현 |
-| [AgentRunQueryPort.java](AgentRunQueryPort.java) | Port 책임 구현 |
-| [AgentRunResourceOwnerResolver.java](AgentRunResourceOwnerResolver.java) | Port 책임 구현 |
-| [AgentRunResumePort.java](AgentRunResumePort.java) | Port 책임 구현 |
-| [AgentRunRetryPort.java](AgentRunRetryPort.java) | Port 책임 구현 |
-| [AgentRunStatePort.java](AgentRunStatePort.java) | Port 책임 구현 |
-| [AiPreferenceQueryPort.java](AiPreferenceQueryPort.java) | 품질 모드·HIGH_QUALITY 허용 여부 조회 |
-| [AgentStepCheckpointPort.java](AgentStepCheckpointPort.java) | Port 책임 구현 |
-| [BudgetReservationPort.java](BudgetReservationPort.java) | Port 책임 구현 |
-| [DomainResultApplyPort.java](DomainResultApplyPort.java) | Port 책임 구현 |
-| [ResourceCompensationPort.java](ResourceCompensationPort.java) | Port 책임 구현 |
-| [UsageRecorderPort.java](UsageRecorderPort.java) | Port 책임 구현 |
-| [WorkflowExecutionPort.java](WorkflowExecutionPort.java) | Port 책임 구현 |
-| [WorkflowLauncher.java](WorkflowLauncher.java) | Port 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                                     | 역할                                      |
+| ------------------------------------------------------------------------ | ----------------------------------------- |
+| [AgentRunCancellationPort.java](AgentRunCancellationPort.java)           | Port 책임 구현                            |
+| [AgentRunCreationPort.java](AgentRunCreationPort.java)                   | Port 책임 구현                            |
+| [AgentRunDispatchPort.java](AgentRunDispatchPort.java)                   | Port 책임 구현                            |
+| [AgentRunEventPublisher.java](AgentRunEventPublisher.java)               | Port 책임 구현                            |
+| [AgentRunHistoryDeletionPort.java](AgentRunHistoryDeletionPort.java)     | owner terminal 작업 내역 soft delete 경계 |
+| [AgentRunLeaseHeartbeatPort.java](AgentRunLeaseHeartbeatPort.java)       | Port 책임 구현                            |
+| [AgentRunQueryPort.java](AgentRunQueryPort.java)                         | Port 책임 구현                            |
+| [AgentRunResourceOwnerResolver.java](AgentRunResourceOwnerResolver.java) | Port 책임 구현                            |
+| [AgentRunResumePort.java](AgentRunResumePort.java)                       | Port 책임 구현                            |
+| [AgentRunRetryPort.java](AgentRunRetryPort.java)                         | Port 책임 구현                            |
+| [AgentRunStatePort.java](AgentRunStatePort.java)                         | Port 책임 구현                            |
+| [AiPreferenceQueryPort.java](AiPreferenceQueryPort.java)                 | 품질 모드·HIGH_QUALITY 허용 여부 조회     |
+| [AgentStepCheckpointPort.java](AgentStepCheckpointPort.java)             | Port 책임 구현                            |
+| [BudgetReservationPort.java](BudgetReservationPort.java)                 | Port 책임 구현                            |
+| [DomainResultApplyPort.java](DomainResultApplyPort.java)                 | Port 책임 구현                            |
+| [ResourceCompensationPort.java](ResourceCompensationPort.java)           | Port 책임 구현                            |
+| [UsageRecorderPort.java](UsageRecorderPort.java)                         | Port 책임 구현                            |
+| [WorkflowExecutionPort.java](WorkflowExecutionPort.java)                 | Port 책임 구현                            |
+| [WorkflowLauncher.java](WorkflowLauncher.java)                           | Port 책임 구현                            |
+| [progress.md](progress.md)                                               | 이 package의 이동·검증 이력               |
 
 ## 구성 요소 역할
 

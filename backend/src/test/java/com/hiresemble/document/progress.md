@@ -4,6 +4,20 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-07-31] Session Summary (문서 교육 근거 후보 차단)
+
+- What was done:
+  - 정상·grounding 실패 후보와 함께 `EDUCATION_HISTORY` 후보가 개별 rejected되고 DB row를 만들지 않는 회귀를 추가했다.
+  - 생성된 DOCUMENT_CHUNK 근거가 공개 검토 API로 `PENDING→VERIFIED` 전이되는 경계를 검증했다.
+- Key decisions:
+  - 유효한 비학력 후보는 같은 batch에서 계속 적용되는 partial rejection을 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `DocumentIntegrationTest` 12 tests와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

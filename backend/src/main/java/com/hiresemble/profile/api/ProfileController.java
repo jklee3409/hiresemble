@@ -117,7 +117,7 @@ public class ProfileController {
     }
 
     @PostMapping(value = "/educations", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "createEducation", summary = "Create an education", description = "Creates one education and its VERIFIED direct evidence in one transaction.")
+    @Operation(operationId = "createEducation", summary = "Create an education", description = "Creates one structured education. Education is not mirrored into profile evidence.")
     @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = EducationDto.class)))
     public ResponseEntity<EducationDto> createEducation(
             @Valid @RequestBody EducationCreateRequest request,
@@ -128,7 +128,7 @@ public class ProfileController {
     }
 
     @PutMapping(value = "/educations/{educationId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "updateEducation", summary = "Update an education", description = "Updates the source and regenerates its direct evidence using optimistic versioning.")
+    @Operation(operationId = "updateEducation", summary = "Update an education", description = "Updates structured education using optimistic versioning without creating profile evidence.")
     public EducationDto updateEducation(
             @PathVariable UUID educationId,
             @Valid @RequestBody EducationUpdateRequest request,
@@ -137,7 +137,7 @@ public class ProfileController {
     }
 
     @DeleteMapping("/educations/{educationId}")
-    @Operation(operationId = "deleteEducation", summary = "Delete an education", description = "Soft-deletes the source and removes its unreferenced P2 direct evidence.")
+    @Operation(operationId = "deleteEducation", summary = "Delete an education", description = "Soft-deletes the structured education.")
     @ApiResponse(responseCode = "204", content = @Content)
     public ResponseEntity<Void> deleteEducation(
             @PathVariable UUID educationId,
@@ -308,7 +308,7 @@ public class ProfileController {
     }
 
     @GetMapping("/evidence")
-    @Operation(operationId = "listProfileEvidence", summary = "List profile evidence", description = "Lists owner-scoped evidence. A document filter returns only DOCUMENT_CHUNK evidence for that active document.")
+    @Operation(operationId = "listProfileEvidence", summary = "List profile evidence", description = "Lists owner-scoped non-education evidence. A document filter returns only DOCUMENT_CHUNK evidence for that active document.")
     public PageResponse<EvidenceDto> listEvidence(
             @RequestParam(required = false) EvidenceVerificationStatus verificationStatus,
             @RequestParam(required = false) @Size(min = 1, max = 80) String evidenceCategory,
@@ -333,7 +333,7 @@ public class ProfileController {
     }
 
     @PatchMapping(value = "/evidence/{evidenceId}/verification", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "verifyProfileEvidence", summary = "Verify or reject direct evidence", description = "Transitions active evidence to VERIFIED or REJECTED with optimistic versioning.")
+    @Operation(operationId = "verifyProfileEvidence", summary = "Review AI-extracted evidence", description = "Transitions active DOCUMENT_CHUNK evidence to VERIFIED or REJECTED with optimistic versioning. User-entered structured evidence is already VERIFIED and cannot be reviewed.")
     public EvidenceDto verifyEvidence(
             @PathVariable UUID evidenceId,
             @Valid @RequestBody EvidenceVerificationRequest request,
@@ -343,9 +343,10 @@ public class ProfileController {
 
     private EducationWrite education(ProfileRequests.EducationFields request) {
         return new EducationWrite(
-                request.schoolName(), request.major(), request.degree(), request.educationStatus(),
+                request.schoolName(), request.major(), request.degree(), request.educationLevel(),
+                request.educationStatus(),
                 request.admissionDate(), request.graduationDate(), request.gpa(), request.gpaScale(),
-                request.isPrimary(), request.description());
+                request.description());
     }
 
     private CertificationWrite certification(ProfileRequests.CertificationFields request) {

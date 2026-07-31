@@ -6,10 +6,10 @@ com.hiresemble.profile.domain.service package는 use case, transaction 또는 �
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [DirectEvidenceFactory.java](DirectEvidenceFactory.java) | Service 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                     | 역할                                       |
+| -------------------------------------------------------- | ------------------------------------------ |
+| [DirectEvidenceFactory.java](DirectEvidenceFactory.java) | 자격증·어학·수상·경력 direct evidence 생성 |
+| [progress.md](progress.md)                               | 이 package의 이동·검증 이력                |
 
 ## 구성 요소 역할
 

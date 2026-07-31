@@ -15,7 +15,7 @@ P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에
 ## 구성 요소 역할
 
 - 기본 프로필 완료 항목 다섯 개는 서버가 계산하며 미완료 상태는 route hard gate가 아니다.
-- 다섯 구조화 source는 생성·수정·삭제 때 연결된 direct evidence와 같은 transaction에서 동기화된다.
+- 학력은 단계·상태·날짜 순위로 최종 학력을 자동 계산하고, 나머지 네 구조화 source는 생성·수정·삭제 때 연결된 direct evidence와 같은 transaction에서 동기화된다.
 - 자격증·어학·수상의 증빙 문서는 같은 사용자 active Document만 허용하고 document evidence는 PENDING으로 적용한다.
 - 삭제 문서 evidence는 참조가 없으면 삭제하고 참조가 있으면 동일 ID의 `SOURCE_DELETED` read-only tombstone으로 전환한다.
 - 모든 단건 조회와 mutation은 Session principal의 사용자 ID를 함께 사용한다.
@@ -26,7 +26,7 @@ P2 기본 프로필, 학력·자격증·어학·수상·경력과 P4 Document에
 - 인증 사용자 ID는 [`../auth/`](../auth/index.md)의 Session principal에서 받는다.
 - P6 공고 분석 query 경계는 [`../job/application/port/`](../job/application/port/index.md)가 정의하고 이 영역의 application service가 구현한다.
 - P7 자기소개서는 기존 evidence query와 document 삭제 참조 경계를 통해 현재 상태와 historical provenance를 분리한다.
-- 기본 불변식은 [`../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql), document owner FK와 tombstone 보강은 [`../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql`](../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql)에 의존한다.
+- 기본 불변식은 [`../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql), document owner FK와 tombstone 보강은 [`../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql`](../../../../resources/db/migration/V5__create_documents_evidence_and_storage_outbox.sql), 최종 학력 단계·재계산은 [`../../../../resources/db/migration/V11__derive_final_education.sql`](../../../../resources/db/migration/V11__derive_final_education.sql)에 의존한다.
 - 공개 계약은 [`../../../../../../../docs/spec/api.md`](../../../../../../../docs/spec/api.md)와 [`../../../../../../../docs/spec/db.md`](../../../../../../../docs/spec/db.md)를 따른다.
 
 ## 변경 시 주의사항

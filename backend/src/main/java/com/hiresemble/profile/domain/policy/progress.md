@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.domain.policy package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (교육 evidence category 정책)
+
+- What was done:
+  - 영문 canonical·한국어 학력/교육 label을 separator와 대소문자 차이 없이 판별하는 정책을 추가했다.
+- Key decisions:
+  - 문서 후보 방어와 DB constraint가 같은 category 집합을 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - category 단위 회귀를 포함한 Profile domain 6 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 policy package 분리)
 
 - What was done:

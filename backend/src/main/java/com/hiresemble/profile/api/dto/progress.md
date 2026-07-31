@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.api.dto package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-07-31] Session Summary (Education DTO 단계 계약)
+
+- What was done:
+  - 교육 request에 필수 `EducationLevel`, response에 read-only final education flag를 반영했다.
+- Key decisions:
+  - client가 최종 학력 flag를 직접 쓰지 못하도록 request field를 제거했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile·OpenAPI contract와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 dto package 분리)
 
 - What was done:

@@ -1,5 +1,6 @@
 package com.hiresemble.profile.api.dto;
 
+import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,6 +37,8 @@ public final class ProfileRequests {
 
         String degree();
 
+        EducationLevel educationLevel();
+
         EducationStatus educationStatus();
 
         LocalDate admissionDate();
@@ -46,8 +49,6 @@ public final class ProfileRequests {
 
         BigDecimal gpaScale();
 
-        Boolean isPrimary();
-
         String description();
     }
 
@@ -56,12 +57,12 @@ public final class ProfileRequests {
             @NotBlank @Size(max = 200) String schoolName,
             @Schema(nullable = true) @Size(max = 200) String major,
             @Schema(nullable = true) @Size(max = 100) String degree,
+            @NotNull EducationLevel educationLevel,
             @NotNull EducationStatus educationStatus,
             @Schema(nullable = true) LocalDate admissionDate,
             @Schema(nullable = true) LocalDate graduationDate,
             @Schema(nullable = true) @DecimalMin("0.00") @DecimalMax("10.00") BigDecimal gpa,
             @Schema(nullable = true) @DecimalMin("0.01") @DecimalMax("10.00") BigDecimal gpaScale,
-            @NotNull Boolean isPrimary,
             @Schema(nullable = true) @Size(max = 5000) String description)
             implements EducationFields {}
 
@@ -70,12 +71,12 @@ public final class ProfileRequests {
             @NotBlank @Size(max = 200) String schoolName,
             @Schema(nullable = true) @Size(max = 200) String major,
             @Schema(nullable = true) @Size(max = 100) String degree,
+            @NotNull EducationLevel educationLevel,
             @NotNull EducationStatus educationStatus,
             @Schema(nullable = true) LocalDate admissionDate,
             @Schema(nullable = true) LocalDate graduationDate,
             @Schema(nullable = true) @DecimalMin("0.00") @DecimalMax("10.00") BigDecimal gpa,
             @Schema(nullable = true) @DecimalMin("0.01") @DecimalMax("10.00") BigDecimal gpaScale,
-            @NotNull Boolean isPrimary,
             @Schema(nullable = true) @Size(max = 5000) String description,
             @NotNull @PositiveOrZero Long version)
             implements EducationFields {}

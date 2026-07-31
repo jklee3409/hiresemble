@@ -6,12 +6,12 @@ com.hiresemble.profile.application.service package는 use case, transaction 또�
 
 ## 주요 파일 및 하위 디렉터리
 
-| 파일 | 역할 |
-| ---- | ---- |
-| [DocumentEvidenceService.java](DocumentEvidenceService.java) | Service 책임 구현 |
-| [ProfileApplicationService.java](ProfileApplicationService.java) | Service 책임 구현 |
-| [ProfileRegistrationService.java](ProfileRegistrationService.java) | Service 책임 구현 |
-| [progress.md](progress.md) | 이 package의 이동·검증 이력 |
+| 파일                                                               | 역할                                                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| [DocumentEvidenceService.java](DocumentEvidenceService.java)       | 문서 근거 검증·적용과 교육/학력 category 차단                                         |
+| [ProfileApplicationService.java](ProfileApplicationService.java)   | 구조화 프로필 CRUD, transaction 직렬화 최종 학력 계산과 비학력 direct evidence 동기화 |
+| [ProfileRegistrationService.java](ProfileRegistrationService.java) | Service 책임 구현                                                                     |
+| [progress.md](progress.md)                                         | 이 package의 이동·검증 이력                                                           |
 
 ## 구성 요소 역할
 

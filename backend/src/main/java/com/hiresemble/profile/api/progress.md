@@ -4,6 +4,32 @@
 
 P2 공개 프로필·direct evidence 25개 operation과 DTO·validation 경계가 구현되어 있다.
 
+## [2026-07-31] Session Summary (최종 학력 API projection)
+
+- What was done:
+  - Education write에 `educationLevel`을 추가하고 수동 `isPrimary` 입력을 제거했으며 DTO에는 계산 결과를 유지했다.
+- Key decisions:
+  - `isPrimary`는 OpenAPI read-only field로 명시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAPI·Profile 통합 테스트와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-07-31] Session Summary (비학력 evidence 공개 계약)
+
+- What was done:
+  - 학력 CRUD 설명에서 evidence 동기화를 제거하고 evidence 목록을 비학력, 승인·거절을 문서 AI 추출 전용 계약으로 명시했다.
+- Key decisions:
+  - legacy 학력 tombstone도 owner API에서 404/비노출로 처리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile API 10 tests와 OpenAPI contract 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:
