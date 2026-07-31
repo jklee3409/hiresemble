@@ -69,7 +69,7 @@ describe('P6 Job contracts', () => {
     ).toBe(false)
   })
 
-  it('accepts P6 analysis and P7 cover-letter projections while keeping P8 projections inactive', () => {
+  it('accepts P6 analysis, P7 cover-letter, and P8 interview projections', () => {
     const value = jobDetailSchema.parse(detail())
     expect(value.latestAnalysis).toBeNull()
     expect(value.coverLetterId).toBeNull()
@@ -94,12 +94,18 @@ describe('P6 Job contracts', () => {
         coverLetterId: uuid(20),
       }).success,
     ).toBe(true)
+    expect(
+      jobDetailSchema.safeParse({
+        ...detail(),
+        interviewPreparationCount: 1,
+        latestQuestionSetId: uuid(21),
+      }).success,
+    ).toBe(true)
     expect(jobDetailSchema.safeParse({ ...detail(), latestAnalysis: {} }).success).toBe(false)
     for (const override of [
       { latestFitScore: 101 },
       { outdatedReasons: ['NOT_A_REASON'] },
       { coverLetterStatus: 'DELETED' },
-      { interviewPreparationCount: 1 },
     ]) {
       expect(
         jobPageSchema.safeParse({

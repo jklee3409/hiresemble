@@ -19,6 +19,7 @@ const navItems = [
     icon: 'cover-letter',
     match: '/cover-letters',
   },
+  { to: '/interviews', label: '면접 준비', icon: 'interview', match: '/interview' },
   { to: '/agent-runs', label: 'AI 작업 내역', icon: 'runs', match: '/agent-runs' },
 ] as const
 
@@ -47,6 +48,9 @@ const pageContext = computed(() => {
   if (route.path.startsWith('/documents')) return '이력서와 자료'
   if (route.path.startsWith('/jobs')) return '지원할 공고'
   if (route.path.startsWith('/cover-letters')) return '지원 문서'
+  if (route.path.startsWith('/interviews') || route.path.startsWith('/interview-question-sets')) {
+    return '면접 조사와 예상 질문'
+  }
   if (route.path.startsWith('/agent-runs')) return '준비 진행 상황'
   return '지원 현황과 다음 할 일'
 })

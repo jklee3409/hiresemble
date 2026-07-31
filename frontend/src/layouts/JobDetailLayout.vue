@@ -8,6 +8,7 @@ const route = useRoute()
 const activeTab = computed(() => {
   if (route.name === 'job-analysis') return 'analysis'
   if (route.name === 'job-cover-letter') return 'cover-letter'
+  if (route.name === 'job-interview') return 'interview'
   return 'overview'
 })
 </script>
@@ -42,6 +43,14 @@ const activeTab = computed(() => {
         :aria-current="activeTab === 'cover-letter' ? 'page' : undefined"
       >
         자기소개서
+      </RouterLink>
+      <RouterLink
+        class="job-detail-tab"
+        :class="{ 'job-detail-tab--active': activeTab === 'interview' }"
+        :to="{ name: 'job-interview', params: { jobId: route.params.jobId } }"
+        :aria-current="activeTab === 'interview' ? 'page' : undefined"
+      >
+        면접 준비
       </RouterLink>
     </nav>
     <RouterView />

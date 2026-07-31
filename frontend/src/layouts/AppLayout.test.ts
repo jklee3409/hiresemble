@@ -23,7 +23,7 @@ describe('AppLayout', () => {
     document.body.style.overflow = ''
   })
 
-  it('marks the current primary navigation item and exposes P7 without future menus', async () => {
+  it('marks the current primary navigation item and exposes P8 without P9 menus', async () => {
     const { wrapper } = await mountLayout('/profile/basic')
 
     const activeDesktopLink = wrapper.get('.sidebar-nav__link[aria-current="page"]')
@@ -35,9 +35,10 @@ describe('AppLayout', () => {
       '이력서·자료',
       '관심 공고',
       '자기소개서',
+      '면접 준비',
       'AI 작업 내역',
     ])
-    expect(wrapper.text()).not.toContain('면접 준비')
+    expect(wrapper.text()).not.toContain('모의 면접')
     expect(document.title).toBe('내 지원 정보 | Hiresemble')
     expect(document.activeElement).toBe(wrapper.get('#app-content').element)
     wrapper.unmount()
@@ -65,6 +66,15 @@ describe('AppLayout', () => {
     expect(trigger.attributes('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger.element)
     expect(document.body.style.overflow).toBe('')
+    wrapper.unmount()
+  })
+
+  it('keeps interview question-set detail inside the interview navigation context', async () => {
+    const questionSetId = '00000000-0000-4000-8000-000000000099'
+    const { wrapper } = await mountLayout(`/interview-question-sets/${questionSetId}`)
+
+    expect(wrapper.get('.sidebar-nav__link[aria-current="page"]').text()).toBe('면접 준비')
+    expect(wrapper.get('.workspace-title p').text()).toBe('면접 조사와 예상 질문')
     wrapper.unmount()
   })
 
@@ -138,6 +148,8 @@ async function mountLayout(path: string) {
           { path: 'documents', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },
           { path: 'cover-letters', component: DashboardPage },
+          { path: 'interviews', component: DashboardPage },
+          { path: 'interview-question-sets/:questionSetId', component: DashboardPage },
           { path: 'agent-runs', component: DashboardPage },
           { path: 'onboarding', component: ProfilePage },
         ],

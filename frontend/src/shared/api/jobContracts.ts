@@ -179,7 +179,7 @@ const jobSummaryFields = {
   analysisOutdated: z.boolean(),
   outdatedReasons: outdatedReasonsSchema,
   coverLetterStatus: z.enum(COVER_LETTER_STATUSES).nullable(),
-  interviewPreparationCount: z.literal(0),
+  interviewPreparationCount: z.number().int().nonnegative(),
   version: versionSchema,
   createdAt: instantSchema,
   updatedAt: instantSchema,

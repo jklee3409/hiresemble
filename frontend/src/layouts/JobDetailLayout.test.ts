@@ -9,7 +9,7 @@ const Child = { template: '<section>child</section>' }
 const JOB_ID = '50000000-0000-4000-8000-000000000001'
 
 describe('JobDetailLayout', () => {
-  it('shows the P7 tabs with route-derived aria-current without exposing P8', async () => {
+  it('shows the P8 tabs with route-derived aria-current without exposing P9', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -20,6 +20,7 @@ describe('JobDetailLayout', () => {
             { path: 'overview', name: 'job-overview', component: Child },
             { path: 'analysis', name: 'job-analysis', component: Child },
             { path: 'cover-letter', name: 'job-cover-letter', component: Child },
+            { path: 'interview', name: 'job-interview', component: Child },
           ],
         },
         { path: '/jobs', name: 'jobs', component: Child },
@@ -34,9 +35,10 @@ describe('JobDetailLayout', () => {
       '공고 정보',
       '공고 분석',
       '자기소개서',
+      '면접 준비',
     ])
     expect(tabs.get('a[aria-current="page"]').text()).toBe('공고 정보')
-    expect(wrapper.text()).not.toContain('면접 준비')
+    expect(wrapper.text()).not.toContain('모의 면접')
 
     await router.push(`/jobs/${JOB_ID}/analysis`)
     await flushPromises()
@@ -46,5 +48,9 @@ describe('JobDetailLayout', () => {
     await router.push(`/jobs/${JOB_ID}/cover-letter`)
     await flushPromises()
     expect(tabs.get('a[aria-current="page"]').text()).toBe('자기소개서')
+
+    await router.push(`/jobs/${JOB_ID}/interview`)
+    await flushPromises()
+    expect(tabs.get('a[aria-current="page"]').text()).toBe('면접 준비')
   })
 })

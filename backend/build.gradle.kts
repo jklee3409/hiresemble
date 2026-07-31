@@ -85,6 +85,7 @@ tasks.named<Test>("test") {
     exclude("**/P5BrowserE2eTest.class")
     exclude("**/P6BrowserE2eTest.class")
     exclude("**/P7BrowserE2eTest.class")
+    exclude("**/P8BrowserE2eTest.class")
 }
 
 tasks.register<Test>("p4BrowserE2eTest") {
@@ -120,5 +121,14 @@ tasks.register<Test>("p7BrowserE2eTest") {
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     include("**/P7BrowserE2eTest.class")
+    shouldRunAfter(tasks.named("test"))
+}
+
+tasks.register<Test>("p8BrowserE2eTest") {
+    group = "verification"
+    description = "Runs the isolated P8 Spring, PostgreSQL, Fake Chat/Search, Vue, SSE, and Chromium E2E."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/P8BrowserE2eTest.class")
     shouldRunAfter(tasks.named("test"))
 }

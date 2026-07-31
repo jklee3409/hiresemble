@@ -27,7 +27,7 @@ describe('P7 cover letter public contracts', () => {
     expect(detail.questions[0]?.latestVerification?.issues[0]?.code).toBe('UNVERIFIED_CLAIM')
   })
 
-  it('accepts P7 Job projections while keeping P8 projections inactive', () => {
+  it('accepts the P8 Job question-set projections while keeping P9 nullable', () => {
     const base = {
       id: '00000000-0000-4000-8000-000000000001',
       companyName: 'Hiresemble',
@@ -62,7 +62,13 @@ describe('P7 cover letter public contracts', () => {
       latestMockSessionId: null,
     }
     expect(jobDetailSchema.parse(base).coverLetterStatus).toBe('DRAFT')
-    expect(jobDetailSchema.safeParse({ ...base, interviewPreparationCount: 1 }).success).toBe(false)
+    expect(
+      jobDetailSchema.safeParse({
+        ...base,
+        interviewPreparationCount: 1,
+        latestQuestionSetId: '00000000-0000-4000-8000-000000000003',
+      }).success,
+    ).toBe(true)
   })
 
   it('allows only the public TipTap node and mark allowlist', () => {

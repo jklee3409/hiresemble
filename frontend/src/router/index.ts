@@ -175,6 +175,12 @@ export const routes: RouteRecordRaw[] = [
             component: () => import('@/pages/JobCoverLetterPage.vue'),
             meta: { title: '자기소개서', profileRecommended: true },
           },
+          {
+            path: 'interview',
+            name: 'job-interview',
+            component: () => import('@/pages/JobInterviewPage.vue'),
+            meta: { title: '면접 준비', profileRecommended: true },
+          },
         ],
       },
       {
@@ -188,6 +194,18 @@ export const routes: RouteRecordRaw[] = [
         name: 'cover-letter-edit',
         component: () => import('@/pages/CoverLetterEditPage.vue'),
         meta: { title: '자기소개서 편집', profileRecommended: true },
+      },
+      {
+        path: 'interviews',
+        name: 'interviews',
+        component: () => import('@/pages/InterviewListPage.vue'),
+        meta: { title: '면접 준비', profileRecommended: true },
+      },
+      {
+        path: 'interview-question-sets/:questionSetId',
+        name: 'interview-question-set',
+        component: () => import('@/pages/InterviewQuestionSetPage.vue'),
+        meta: { title: '예상 질문 세트', profileRecommended: true },
       },
       {
         path: 'agent-runs',

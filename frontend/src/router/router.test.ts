@@ -178,7 +178,7 @@ describe('authentication route policy', () => {
     expect(router.currentRoute.value.fullPath).toBe('/profile/basic')
   })
 
-  it('protects P7 Job routes, keeps the base redirect on overview, and resolves analysis and cover letter', async () => {
+  it('protects P8 routes while preserving the Job overview redirect', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     vi.mocked(authApi.login).mockResolvedValueOnce(session('user-1'))
@@ -194,11 +194,15 @@ describe('authentication route policy', () => {
     expect(router.resolve(`/jobs/${jobId}/analysis`).name).toBe('job-analysis')
     expect(router.resolve(`/jobs/${jobId}/analysis`).meta.profileRecommended).toBe(true)
     expect(router.resolve(`/jobs/${jobId}/cover-letter`).name).toBe('job-cover-letter')
+    expect(router.resolve(`/jobs/${jobId}/interview`).name).toBe('job-interview')
     expect(router.resolve('/cover-letters').name).toBe('cover-letters')
     expect(router.resolve(`/cover-letters/${jobId}/edit`).name).toBe('cover-letter-edit')
+    expect(router.resolve('/interviews').name).toBe('interviews')
+    expect(router.resolve(`/interview-question-sets/${jobId}`).name).toBe('interview-question-set')
+    expect(router.resolve(`/mock-interviews/${jobId}`).name).toBe('not-found')
   })
 
-  it('adds lazy Document, Job, Cover Letter and Agent Run pages while preserving earlier routes', () => {
+  it('adds lazy P8 interview pages while preserving earlier routes', () => {
     const protectedShell = routes.find(
       (route) => route.path === '/' && route.meta?.requiresAuth === true,
     )
@@ -213,6 +217,8 @@ describe('authentication route policy', () => {
     const jobDetailLayout = children.find((route) => route.path === 'jobs/:jobId')
     const coverLettersRoute = children.find((route) => route.name === 'cover-letters')
     const coverLetterEditRoute = children.find((route) => route.name === 'cover-letter-edit')
+    const interviewsRoute = children.find((route) => route.name === 'interviews')
+    const questionSetRoute = children.find((route) => route.name === 'interview-question-set')
 
     expect(typeof documentsRoute?.component).toBe('function')
     expect(profileEvidenceRoute?.meta?.title).toBe('대외활동')
@@ -224,11 +230,14 @@ describe('authentication route policy', () => {
     expect(typeof jobDetailLayout?.component).toBe('function')
     expect(typeof coverLettersRoute?.component).toBe('function')
     expect(typeof coverLetterEditRoute?.component).toBe('function')
+    expect(typeof interviewsRoute?.component).toBe('function')
+    expect(typeof questionSetRoute?.component).toBe('function')
     expect(jobDetailLayout?.children?.map((route) => route.name)).toEqual([
       'job-detail',
       'job-overview',
       'job-analysis',
       'job-cover-letter',
+      'job-interview',
     ])
     expect(children.map((route) => route.name)).toEqual(
       expect.arrayContaining([
@@ -243,6 +252,8 @@ describe('authentication route policy', () => {
         'job-new',
         'cover-letters',
         'cover-letter-edit',
+        'interviews',
+        'interview-question-set',
         'agent-runs',
         'agent-run-detail',
       ]),

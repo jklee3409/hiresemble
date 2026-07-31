@@ -5,6 +5,7 @@ type AppIconName =
   | 'documents'
   | 'jobs'
   | 'cover-letter'
+  | 'interview'
   | 'runs'
   | 'menu'
   | 'close'
@@ -56,6 +57,10 @@ defineProps<{
     <template v-else-if="name === 'cover-letter'">
       <path d="M6 3h9l3 3v15H6z" />
       <path d="M14 3v5h5M9 12h6M9 16h6" />
+    </template>
+    <template v-else-if="name === 'interview'">
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M8 9h8M8 12h5" />
     </template>
     <template v-else-if="name === 'runs'">
       <path d="M4 6h10M4 12h16M4 18h10" />

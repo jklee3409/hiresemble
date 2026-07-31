@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const configuredFrontendPort =
+  process.env.P8_FRONTEND_PORT ??
   process.env.P7_FRONTEND_PORT ??
   process.env.P6_FRONTEND_PORT ??
   process.env.P5_FRONTEND_PORT ??
@@ -14,12 +15,14 @@ if (
   throw new Error('The configured frontend port must be an integer between 1 and 65535.')
 }
 const frontendBaseUrl =
+  process.env.P8_FRONTEND_BASE_URL ??
   process.env.P7_FRONTEND_BASE_URL ??
   process.env.P6_FRONTEND_BASE_URL ??
   process.env.P5_FRONTEND_BASE_URL ??
   process.env.P4_FRONTEND_BASE_URL ??
   `http://127.0.0.1:${requestedFrontendPort}`
 const skipWebServer =
+  process.env.P8_SKIP_WEB_SERVER === 'true' ||
   process.env.P7_SKIP_WEB_SERVER === 'true' ||
   process.env.P6_SKIP_WEB_SERVER === 'true' ||
   process.env.P5_SKIP_WEB_SERVER === 'true' ||
@@ -34,7 +37,10 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: frontendBaseUrl,
-    trace: process.env.P7_E2E_ENABLED === 'true' ? 'retain-on-failure' : 'on-first-retry',
+    trace:
+      process.env.P8_E2E_ENABLED === 'true' || process.env.P7_E2E_ENABLED === 'true'
+        ? 'retain-on-failure'
+        : 'on-first-retry',
   },
   projects: [
     {
