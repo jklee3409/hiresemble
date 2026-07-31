@@ -16,6 +16,7 @@ vi.mock('@/shared/api/authApi', () => ({
   signup: vi.fn(),
   login: vi.fn(),
   logout: vi.fn(),
+  updateDisplayName: vi.fn(),
 }))
 
 describe('auth store', () => {
@@ -110,6 +111,23 @@ describe('auth store', () => {
 
     expect(defaults.mutations?.retry).toBeUndefined()
     expect(applicationDefaults.mutations?.retry).toBe(false)
+  })
+
+  it('updates the current user projection after a nickname change', async () => {
+    const store = useAuthStore()
+    vi.mocked(authApi.login).mockResolvedValueOnce(session('user-1'))
+    vi.mocked(authApi.updateDisplayName).mockResolvedValueOnce({
+      ...session('user-1').user,
+      displayName: '새 닉네임',
+    })
+    await store.login({ email: 'one@example.com', password: 'password-123' })
+
+    await expect(store.updateDisplayName({ displayName: '새 닉네임' })).resolves.toMatchObject({
+      displayName: '새 닉네임',
+    })
+
+    expect(authApi.updateDisplayName).toHaveBeenCalledWith({ displayName: '새 닉네임' })
+    expect(store.currentUser?.displayName).toBe('새 닉네임')
   })
 })
 

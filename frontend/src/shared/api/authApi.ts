@@ -2,6 +2,7 @@ import type {
   AuthSessionDto,
   CsrfDto,
   CurrentUserDto,
+  DisplayNameUpdateRequest,
   LoginRequest,
   SignupRequest,
 } from './contracts'
@@ -32,4 +33,11 @@ export async function login(request: LoginRequest): Promise<AuthSessionDto> {
 export async function logout(): Promise<void> {
   await apiClient.ensureCsrf()
   await apiClient.post<void>('/auth/logout')
+}
+
+export async function updateDisplayName(
+  request: DisplayNameUpdateRequest,
+): Promise<CurrentUserDto> {
+  await apiClient.ensureCsrf()
+  return apiClient.patch<CurrentUserDto>('/account/display-name', request)
 }

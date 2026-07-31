@@ -6,6 +6,7 @@ import * as authApi from '@/shared/api/authApi'
 import type {
   AuthSessionDto,
   CurrentUserDto,
+  DisplayNameUpdateRequest,
   LoginRequest,
   SignupRequest,
 } from '@/shared/api/contracts'
@@ -111,6 +112,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateDisplayName(request: DisplayNameUpdateRequest): Promise<CurrentUserDto> {
+    const user = await authApi.updateDisplayName(request)
+    currentUser.value = user
+    return user
+  }
+
   async function handleUnauthorized(): Promise<void> {
     if (status.value === 'anonymous' && currentUser.value === null) {
       apiClient.clearCsrfToken()
@@ -128,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     signup,
     login,
     logout,
+    updateDisplayName,
     handleUnauthorized,
   }
 })

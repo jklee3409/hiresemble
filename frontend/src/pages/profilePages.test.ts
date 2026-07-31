@@ -88,6 +88,29 @@ describe('P2 profile pages', () => {
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
   })
 
+  it('updates the signed-in user nickname from the basic profile save action', async () => {
+    vi.mocked(profileApi.getProfile).mockResolvedValue(profile())
+    const wrapper = await mountPage(ProfileBasicPage)
+    const authStore = useAuthStore()
+    const updateDisplayName = vi
+      .spyOn(authStore, 'updateDisplayName')
+      .mockImplementation(async (request) => {
+        const updated = { ...authStore.currentUser!, displayName: request.displayName }
+        authStore.currentUser = updated
+        return updated
+      })
+
+    await wrapper.get('#profile-displayName').setValue('  새 닉네임  ')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(profileApi.updateProfile).not.toHaveBeenCalled()
+    expect(updateDisplayName).toHaveBeenCalledWith({ displayName: '새 닉네임' })
+    expect(authStore.currentUser?.displayName).toBe('새 닉네임')
+    expect(wrapper.get<HTMLInputElement>('#profile-displayName').element.value).toBe('새 닉네임')
+    expect(wrapper.text()).toContain('저장 완료')
+  })
+
   it('moves to education only after the basic profile save succeeds', async () => {
     const initial = profile()
     vi.mocked(profileApi.getProfile).mockResolvedValue(initial)

@@ -14,6 +14,10 @@ export interface LoginFormValues {
   password: string
 }
 
+export interface DisplayNameFormValues {
+  displayName: string
+}
+
 export interface ValidationResult<T> {
   data: T | null
   fieldErrors: Record<string, string>
@@ -58,20 +62,22 @@ const loginPasswordSchema = z.string().superRefine((password, context) => {
   }
 })
 
+const displayNameSchema = z
+  .string()
+  .trim()
+  .min(1, '닉네임을 입력해 주세요.')
+  .max(100, '닉네임은 100자 이하로 입력해 주세요.')
+  .refine(
+    (displayName) => !/[\p{Cc}/\\]/u.test(displayName),
+    '닉네임에 줄바꿈이나 /, \\를 사용할 수 없어요.',
+  )
+
 const signupSchema = z
   .object({
     email: emailSchema,
     password: signupPasswordSchema,
     passwordConfirm: z.string(),
-    displayName: z
-      .string()
-      .trim()
-      .min(1, '닉네임을 입력해 주세요.')
-      .max(100, '닉네임은 100자 이하로 입력해 주세요.')
-      .refine(
-        (displayName) => !/[\p{Cc}/\\]/u.test(displayName),
-        '닉네임에 줄바꿈이나 /, \\를 사용할 수 없어요.',
-      ),
+    displayName: displayNameSchema,
     termsAgreed: z.boolean().refine((agreed) => agreed, '필수 이용약관에 동의해 주세요.'),
     aiConsent: z.boolean().refine((agreed) => agreed, '필수 AI 처리 안내에 동의해 주세요.'),
   })
@@ -85,12 +91,22 @@ const loginSchema = z.object({
   password: loginPasswordSchema,
 })
 
+const displayNameFormSchema = z.object({
+  displayName: displayNameSchema,
+})
+
 export function validateSignupForm(values: SignupFormValues): ValidationResult<SignupFormValues> {
   return validate(signupSchema, values)
 }
 
 export function validateLoginForm(values: LoginFormValues): ValidationResult<LoginFormValues> {
   return validate(loginSchema, values)
+}
+
+export function validateDisplayNameForm(
+  values: DisplayNameFormValues,
+): ValidationResult<DisplayNameFormValues> {
+  return validate(displayNameFormSchema, values)
 }
 
 export function utf8ByteLength(value: string): number {

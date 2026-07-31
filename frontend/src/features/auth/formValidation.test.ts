@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateLoginForm, validateSignupForm } from './formValidation'
+import { validateDisplayNameForm, validateLoginForm, validateSignupForm } from './formValidation'
 
 describe('auth form validation', () => {
   it('matches the signup UTF-8 password byte boundaries', () => {
@@ -76,6 +76,21 @@ describe('auth form validation', () => {
       '이메일을 입력해 주세요.',
     )
     expect(signup('가가가').fieldErrors.password).not.toContain('바이트')
+  })
+
+  it('shares the trimmed nickname contract with account updates', () => {
+    expect(validateDisplayNameForm({ displayName: '  새 닉네임  ' }).data).toEqual({
+      displayName: '새 닉네임',
+    })
+    expect(validateDisplayNameForm({ displayName: '   ' }).fieldErrors.displayName).toBe(
+      '닉네임을 입력해 주세요.',
+    )
+    expect(validateDisplayNameForm({ displayName: 'a'.repeat(101) }).fieldErrors.displayName).toBe(
+      '닉네임은 100자 이하로 입력해 주세요.',
+    )
+    expect(validateDisplayNameForm({ displayName: '잘못된/닉네임' }).fieldErrors.displayName).toBe(
+      '닉네임에 줄바꿈이나 /, \\를 사용할 수 없어요.',
+    )
   })
 })
 

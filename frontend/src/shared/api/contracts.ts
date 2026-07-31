@@ -28,6 +28,10 @@ export interface LoginRequest {
   password: string
 }
 
+export interface DisplayNameUpdateRequest {
+  displayName: string
+}
+
 export interface FieldErrorDto {
   field: string
   reason: string
