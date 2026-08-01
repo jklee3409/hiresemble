@@ -4,6 +4,19 @@
 
 Chat·Embedding·Search gateway, multi-usage와 immutable price query 계약이 구현됐다.
 
+## [2026-08-01] Session Summary (ImageTextExtractionGateway 경계)
+
+- What was done:
+  - bounded image media, model/prompt/schema/price context와 `AiGatewayResponse` usage를 잇는 별도 capability port를 추가했다.
+- Key decisions:
+  - 외부 URL/data URL을 text JSON에 넣지 않고 byte array는 defensive copy한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - provider unit·workflow integration·전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (price-versioned multi-usage Provider port)
 
 - What was done:

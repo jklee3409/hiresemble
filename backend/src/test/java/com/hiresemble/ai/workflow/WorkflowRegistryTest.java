@@ -23,10 +23,11 @@ class WorkflowRegistryTest {
     void canonicalRegistryCoversExactlyEightTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(8);
-        assertThat(registry.definitions()).extracting(WorkflowDefinition::type)
+        assertThat(registry.definitions()).hasSize(9);
+        assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
+                .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());
-        assertThat(registry.definitions()).allSatisfy(definition -> {
+        assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical)).allSatisfy(definition -> {
             assertThat(definition.canonical()).isTrue();
             assertThat(definition.steps()).isNotEmpty();
             assertThat(definition.steps()).extracting(StepDefinition::stepKey).doesNotHaveDuplicates();
@@ -35,6 +36,13 @@ class WorkflowRegistryTest {
                     .reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("100");
             assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
         });
+        assertThat(registry.definitions().stream().filter(definition -> !definition.canonical()))
+                .singleElement()
+                .satisfies(definition -> {
+                    assertThat(definition.type()).isEqualTo(WorkflowType.JOB_POSTING_EXTRACTION);
+                    assertThat(definition.version()).isEqualTo("job-posting-extraction-v1");
+                    assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
+                });
     }
 
     @Test

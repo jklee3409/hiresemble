@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-01] Session Summary (공고 image capability·workflow v2)
+
+- What was done:
+  - 별도 image text gateway와 9단계 Job extraction v2 contribution을 runtime registry에 연결했다.
+- Key decisions:
+  - text-only ChatGateway는 변경하지 않고 image usage도 기존 run budget·usage recorder를 통과한다.
+- Issues encountered:
+  - legacy v1은 새 checkpoint로 해석하지 않도록 executable 없이 definition만 보존했다.
+- Validation:
+  - strict schema registry, provider 옵션, orchestrator retry/reuse와 전체 check 통과.
+- Next steps:
+  - live Provider 호출은 별도 승인 후 수행한다.
+
 ## [2026-08-01] Session Summary (workflow terminal partial 정책 분리)
 
 - What was done:

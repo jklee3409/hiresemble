@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-01] Session Summary (OpenAI image text adapter)
+
+- What was done:
+  - Spring AI byte-backed `Media`와 strict schema를 사용하는 image text adapter 및 disabled fallback을 추가했다.
+- Key decisions:
+  - raw URL 대신 검증 bytes만 전송하고 `maxRetries=0`, `store=false`, tool 0, 기존 chat token 가격 item을 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - media bytes, strict schema, retry/store option과 usage unit test 및 Bean matrix 통과.
+- Next steps:
+  - 실제 Provider 호출은 0회이며 별도 승인 전 실행하지 않는다.
+
 ## [2026-08-01] Session Summary (Chat finish reason과 usage 보존)
 
 - What was done:

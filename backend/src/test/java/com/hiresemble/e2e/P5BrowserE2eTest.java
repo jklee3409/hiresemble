@@ -56,6 +56,8 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
         registry.add("hiresemble.ai.model-policy-version", () -> "1");
         registry.add("hiresemble.job.ai-cost.estimated-cost-usd", () -> "0.000000");
         registry.add("hiresemble.job.ai-cost.price-version", () -> "0");
+        registry.add("hiresemble.job-page-fetch.min-dom-meaningful-characters", () -> "300");
+        registry.add("hiresemble.job-page-fetch.min-description-meaningful-characters", () -> "80");
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "100ms");
         registry.add("hiresemble.agent-runtime.reconciliation-interval", () -> "1s");
         registry.add("hiresemble.agent-runtime.heartbeat-interval", () -> "1s");
@@ -209,8 +211,14 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
                       <body>
                         <main>
                           <h1>Backend Engineer</h1>
-                          <p>Spring Boot, PostgreSQL, testing, and secure API ownership.</p>
-                          <p>This deterministic fixture contains enough visible text for extraction.</p>
+                          <p>Spring Boot와 PostgreSQL 기반의 안정적인 API를 설계하고 운영합니다.</p>
+                          <p>자동화 테스트, 코드 리뷰, 보안 점검, 관찰 가능성 개선과 장애 대응을 담당합니다.</p>
+                          <p>제품 팀과 요구사항을 정리하고 성능 병목을 분석하며 기술 의사결정을 문서화합니다.</p>
+                          <p>Java 서비스와 분산 시스템 운영 경험, 명확한 커뮤니케이션 역량이 필요합니다.</p>
+                          <p>배포 자동화, 용량 계획, 의존성 업그레이드, 데이터 모델링 경험을 우대합니다.</p>
+                          <p>채용 과정은 기술 대화, 실무 검토, 팀 인터뷰 순서로 진행되는 정규직 공고입니다.</p>
+                          <p>고객 문제를 주도적으로 해결하고 유지보수 가능한 구조와 측정 가능한 신뢰성을 추구합니다.</p>
+                          <p>This deterministic fixture contains enough visible job text for extraction and quality validation.</p>
                         </main>
                       </body>
                     </html>
@@ -239,18 +247,18 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
         @Override
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
-            String sanitizedText = request.input().path("sanitizedText").asText();
-            if (sanitizedText.isBlank()) {
-                throw new AssertionError("Fake Job Chat requires non-empty sanitized fixture text");
+            String sourceText = request.input().path("sourceText").asText();
+            if (sourceText.isBlank()) {
+                throw new AssertionError("Fake Job Chat requires non-empty source fixture text");
             }
-            boolean remoteFixture = sanitizedText.contains("Backend Engineer");
+            boolean remoteFixture = sourceText.contains("Backend Engineer");
             var output = new JobPostingExtractionWorkflow.ExtractedJobFields(
                     remoteFixture ? "Hiresemble Fixture" : null,
                     remoteFixture ? "Backend Engineer" : null,
                     remoteFixture ? "Backend Engineer" : null,
                     remoteFixture
-                            ? "Spring Boot와 PostgreSQL 기반 API를 설계하고 테스트 자동화를 수행합니다."
-                            : sanitizedText,
+                            ? "Spring Boot와 PostgreSQL 기반 API를 설계하고 운영하며 자동화 테스트, 코드 리뷰, 보안 점검, 관찰 가능성 개선, 장애 대응, 성능 분석과 기술 문서화를 제품 팀과 함께 수행합니다. 안정적인 배포와 유지보수 가능한 서비스 구조를 책임집니다."
+                            : sourceText,
                     Instant.parse("2026-12-31T15:00:00Z"),
                     new java.math.BigDecimal("0.950"),
                     remoteFixture ? "BACKEND" : null,

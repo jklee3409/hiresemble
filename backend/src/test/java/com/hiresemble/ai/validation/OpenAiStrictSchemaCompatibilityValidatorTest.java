@@ -7,6 +7,7 @@ import com.hiresemble.ai.prompt.CanonicalPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.OpenAiStrictSchemaCompatibilityValidator.StrictSchemaCompatibilityException;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
+import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.ai.workflow.document.DocumentEvidenceOutputPolicy;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
@@ -92,6 +93,7 @@ class OpenAiStrictSchemaCompatibilityValidatorTest {
     void canonicalRegistryCannotOmitAnImplementedStrictChatStep() {
         PromptRegistry registry = new PromptRegistry(CanonicalPromptDefinitions.all());
         Set<String> expected = CanonicalWorkflowDefinitions.all().stream()
+                .filter(WorkflowRegistry.WorkflowDefinition::canonical)
                 .filter(workflow -> workflow.type() != WorkflowType.MOCK_INTERVIEW_FEEDBACK)
                 .flatMap(workflow -> workflow.steps().stream()
                         .filter(step -> step.maxModelCalls() > 0)

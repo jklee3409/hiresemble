@@ -22,7 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class JobCreationService {
 
-    public static final String WORKFLOW_VERSION = "job-posting-extraction-v1";
+    public static final String WORKFLOW_VERSION = "job-posting-extraction-v2";
     private final JobStore store;
     private final WorkflowLauncher workflowLauncher;
     private final ObjectMapper objectMapper;

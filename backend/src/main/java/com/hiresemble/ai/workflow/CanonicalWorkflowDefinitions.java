@@ -17,6 +17,8 @@ public final class CanonicalWorkflowDefinitions {
 
     public static final String VERSION = "p0-contract-v1";
     public static final String JOB_POSTING_EXTRACTION_VERSION =
+            "job-posting-extraction-v2";
+    public static final String JOB_POSTING_EXTRACTION_LEGACY_VERSION =
             "job-posting-extraction-v1";
     public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
     public static final String COVER_LETTER_GENERATION_VERSION =
@@ -43,6 +45,7 @@ public final class CanonicalWorkflowDefinitions {
                         "EMBED_CHUNKS", "EXTRACT_EVIDENCE_CANDIDATES", "APPLY_EVIDENCE_CANDIDATES",
                         "FINALIZE_DOCUMENT"),
                 jobPostingExtraction(),
+                jobPostingExtractionLegacy(),
                 jobAnalysis(),
                 coverLetterGeneration(),
                 coverLetterVerification(),
@@ -179,7 +182,7 @@ public final class CanonicalWorkflowDefinitions {
     }
 
     private static WorkflowDefinition jobPostingExtraction() {
-        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(5);
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(9);
         return new WorkflowDefinition(
                 WorkflowType.JOB_POSTING_EXTRACTION,
                 JOB_POSTING_EXTRACTION_VERSION,
@@ -189,7 +192,7 @@ public final class CanonicalWorkflowDefinitions {
                         jobStep(
                                 "FETCH_JOB_PAGE",
                                 "job-fetch-input-v1",
-                                "job-fetch-output-v1",
+                                "job-fetch-output-v2",
                                 0,
                                 EnumSet.of(
                                         FailureKind.PROVIDER_5XX,
@@ -197,33 +200,58 @@ public final class CanonicalWorkflowDefinitions {
                                         FailureKind.TIMEOUT),
                                 weights.get(0)),
                         jobStep(
-                                "SANITIZE_PAGE_TEXT",
-                                "job-sanitize-input-v1",
-                                "job-sanitize-output-v1",
+                                "INSPECT_JOB_PAGE",
+                                "job-page-inspection-input-v2",
+                                "job-page-inspection-output-v2",
                                 0,
                                 Set.of(),
                                 weights.get(1)),
+                        jobStep("FETCH_JOB_IMAGES", "job-images-fetch-input-v2",
+                                "job-images-fetch-output-v2", 0,
+                                EnumSet.of(FailureKind.PROVIDER_5XX, FailureKind.NETWORK, FailureKind.TIMEOUT),
+                                weights.get(2)),
+                        jobStep("EXTRACT_JOB_IMAGE_TEXT", "job-image-text-input-v2",
+                                "job-image-text-output-v2", 1, RETRYABLE, weights.get(3)),
+                        jobStep("COMPOSE_JOB_SOURCE_TEXT", "job-source-compose-input-v2",
+                                "job-source-compose-output-v2", 0, Set.of(), weights.get(4)),
                         jobStep(
                                 "EXTRACT_JOB_FIELDS",
-                                "job-fields-input-v1",
-                                "job-fields-output-v1",
+                                "job-fields-input-v2",
+                                "job-fields-output-v2",
                                 1,
                                 RETRYABLE,
-                                weights.get(2)),
+                                weights.get(5)),
                         jobStep(
                                 "MERGE_USER_OVERRIDES",
                                 "job-merge-input-v1",
-                                "job-merge-output-v1",
+                                "job-merge-output-v2",
                                 0,
                                 Set.of(),
-                                weights.get(3)),
+                                weights.get(6)),
+                        jobStep("VALIDATE_JOB_EXTRACTION", "job-extraction-validation-input-v2",
+                                "job-extraction-validation-output-v2", 0, Set.of(), weights.get(7)),
                         jobStep(
                                 "APPLY_JOB_EXTRACTION",
                                 "job-apply-input-v1",
-                                "job-apply-output-v1",
+                                "job-apply-output-v2",
                                 0,
                                 Set.of(),
-                                weights.get(4))));
+                                weights.get(8))));
+    }
+
+    private static WorkflowDefinition jobPostingExtractionLegacy() {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(5);
+        return new WorkflowDefinition(
+                WorkflowType.JOB_POSTING_EXTRACTION,
+                JOB_POSTING_EXTRACTION_LEGACY_VERSION,
+                false,
+                economyBalanced(),
+                List.of(
+                        jobStep("FETCH_JOB_PAGE", "job-fetch-input-v1", "job-fetch-output-v1", 0, Set.of(), weights.get(0)),
+                        jobStep("SANITIZE_PAGE_TEXT", "job-sanitize-input-v1", "job-sanitize-output-v1", 0, Set.of(), weights.get(1)),
+                        jobStep("EXTRACT_JOB_FIELDS", "job-fields-input-v1", "job-fields-output-v1", 1, RETRYABLE, weights.get(2)),
+                        jobStep("MERGE_USER_OVERRIDES", "job-merge-input-v1", "job-merge-output-v1", 0, Set.of(), weights.get(3)),
+                        jobStep("APPLY_JOB_EXTRACTION", "job-apply-input-v1", "job-apply-output-v1", 0, Set.of(), weights.get(4))));
     }
 
     private static WorkflowDefinition jobAnalysis() {

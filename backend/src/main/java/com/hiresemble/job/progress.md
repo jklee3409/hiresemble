@@ -4,6 +4,19 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결이 구현됐다.
 
+## [2026-08-01] Session Summary (Job 공고 자동 추출 안전 경계 확장)
+
+- What was done:
+  - Job page fetch 결과에 safe charset metadata를 추가하고 공고 이미지 fetch port를 연결했다.
+- Key decisions:
+  - 공개 DTO·Job status enum·DB schema는 변경하지 않고 extraction 내부 계약만 v2로 올렸다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 check 69 suites/479 tests와 P5 Chromium 5/5 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 Cover Letter용 공고 projection)
 
 - What was done:

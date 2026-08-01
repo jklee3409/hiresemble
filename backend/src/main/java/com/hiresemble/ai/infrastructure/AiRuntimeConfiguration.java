@@ -28,6 +28,7 @@ import com.hiresemble.ai.orchestration.SpringStepCompletionTransaction;
 import com.hiresemble.ai.orchestration.StepCompletionTransaction;
 import com.hiresemble.ai.orchestration.WorkflowFailureHandler;
 import com.hiresemble.ai.port.ChatGateway;
+import com.hiresemble.ai.port.ImageTextExtractionGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.prompt.CanonicalPromptDefinitions;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -76,6 +78,12 @@ import tools.jackson.databind.ObjectMapper;
 /** Activates bounded Document and Job contributions; model gateways remain disabled by default. */
 @Configuration(proxyBeanMethods = false)
 public class AiRuntimeConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(ImageTextExtractionGateway.class)
+    ImageTextExtractionGateway disabledImageTextExtractionGateway() {
+        return new DisabledImageTextExtractionGateway();
+    }
 
     @Bean
     DocumentIngestionWorkflow documentIngestionWorkflow(
@@ -90,10 +98,20 @@ public class AiRuntimeConfiguration {
             JobWorkflowQueryPort queryPort,
             JobWorkflowCommandPort commandPort,
             JobPageFetchGateway fetchGateway,
+            com.hiresemble.job.application.port.JobImageFetchGateway imageFetchGateway,
+            ImageTextExtractionGateway imageTextExtractionGateway,
+            com.hiresemble.job.infrastructure.JobPageFetchProperties fetchProperties,
             ObjectMapper objectMapper,
             Clock clock) {
         return new JobPostingExtractionWorkflow(
-                queryPort, commandPort, fetchGateway, objectMapper, clock);
+                queryPort,
+                commandPort,
+                fetchGateway,
+                imageFetchGateway,
+                imageTextExtractionGateway,
+                fetchProperties,
+                objectMapper,
+                clock);
     }
 
     @Bean

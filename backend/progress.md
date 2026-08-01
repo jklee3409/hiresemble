@@ -4,8 +4,23 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
-- V1~V13을 보존한 V14 migration이 활성 embedding 정책 provider key를 `openai`로 canonicalize한다.
-- Backend 전체 68 suites/466 tests와 이전 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- V1~V15 migration이 적용됐고 V14는 embedding provider key canonicalization, V15는 사용자 직접 대외활동을 소유한다.
+- Backend 전체 69 suites/479 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (공고 charset·image extraction v2)
+
+- What was done:
+  - bounded raw HTML charset 탐지·strict decode와 JPEG/PNG image fetch, 별도 image text gateway, Job extraction v2 workflow를 구현했다.
+  - semantic null·손상 문자·description source 품질과 manual override/owner/version apply 검증을 추가했다.
+- Key decisions:
+  - Spring AI 2.0 byte-backed media, strict schema, retry 0, store false를 사용하고 image usage를 기존 chat token price item으로 기록한다.
+- Issues encountered:
+  - legacy v1 definition 때문에 canonical coverage 테스트가 2건 실패해 canonical 필터와 v1 non-executable 격리 assertion으로 보정했다.
+  - 최종 cache-free check에서 무관한 Interview timestamp 경계 테스트가 1회 간헐 실패했으나 단독 재현과 허용된 마지막 전체 재검증은 모두 통과했다.
+- Validation:
+  - `gradlew check --rerun-tasks --no-daemon --console=plain --max-workers=1`: 69 suites/479 tests, failure/error/skip 0. `p5BrowserE2eTest`: Chromium 5/5. 실제 Provider 호출 0회.
+- Next steps:
+  - 실제 Provider/외부 채용 사이트 live 호출은 별도 사용자 승인 후 수행한다.
 
 ## [2026-08-01] Session Summary (사용자 대외활동·소재 일괄 검토 계약)
 

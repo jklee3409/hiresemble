@@ -11,6 +11,8 @@ import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
 import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
+import com.hiresemble.ai.port.ImageTextExtractionGateway.ImageMedia;
+import com.hiresemble.ai.port.ImageTextExtractionGateway.ImageTextExtractionRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.prompt.PromptRegistry.PromptDefinition;
@@ -112,6 +114,33 @@ class SpringAiOpenAiGatewayTest {
                         new BigDecimal("0.000020"),
                         new BigDecimal("0.000001"),
                         new BigDecimal("0.000020"));
+    }
+
+    @Test
+    void imageExtractionUsesByteBackedMediaStrictSchemaAndNoProviderRetryOrStorage() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(new AssistantMessage("{\"status\":\"ok\"}"))),
+                ChatResponseMetadata.builder().build()));
+        var gateway = new SpringAiOpenAiImageTextExtractionGateway(
+                model, prices(), schemas(), Duration.ofSeconds(60));
+
+        gateway.extract(new ImageTextExtractionRequest(
+                "openai", "gpt-5-mini", "test-v1", "Read visible text only.",
+                List.of(new ImageMedia("I1", "image/png", new byte[] {1, 2, 3}, "a".repeat(64))),
+                "test-output-v1", Duration.ofSeconds(3), PRICE_VERSION, 32, TestOutput.class));
+
+        ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
+        verify(model).call(prompt.capture());
+        OpenAiChatOptions options = (OpenAiChatOptions) prompt.getValue().getOptions();
+        assertThat(options.getMaxRetries()).isZero();
+        assertThat(options.getStore()).isFalse();
+        assertThat(options.getOutputSchema()).contains("additionalProperties");
+        assertThat(prompt.getValue().getUserMessage().getMedia()).singleElement()
+                .satisfies(media -> {
+                    assertThat(media.getId()).isEqualTo("I1");
+                    assertThat(media.getDataAsByteArray()).containsExactly(1, 2, 3);
+                });
     }
 
     @Test

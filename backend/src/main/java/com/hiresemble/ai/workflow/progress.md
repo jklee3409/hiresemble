@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-01] Session Summary (JOB_POSTING_EXTRACTION v2 9단계)
+
+- What was done:
+  - fetch→inspect→image fetch→image text→compose→fields→override→validate→apply 순서를 구현했다.
+  - DOM metrics/candidate scoring, source tag 병합, semantic null/U+FFFD/본문 품질과 manual fallback을 고정했다.
+- Key decisions:
+  - text 충분 분기는 image call 없이 no-op이며 성공 image text는 content hash와 bounded text checkpoint로 재사용한다.
+- Issues encountered:
+  - 짧은 과거 synthetic fixture가 새 품질 기준에 걸려 fixture 전용 threshold를 명시했다.
+- Validation:
+  - text/image/manual/invalid/retry/restart 통합 테스트와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (명시적 terminal partial policy)
 
 - What was done:

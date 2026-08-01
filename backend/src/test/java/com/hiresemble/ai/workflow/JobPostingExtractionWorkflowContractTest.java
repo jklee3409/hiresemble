@@ -13,9 +13,13 @@ class JobPostingExtractionWorkflowContractTest {
 
     private static final List<String> EXPECTED = List.of(
             JobPostingExtractionWorkflow.FETCH_JOB_PAGE,
-            JobPostingExtractionWorkflow.SANITIZE_PAGE_TEXT,
+            JobPostingExtractionWorkflow.INSPECT_JOB_PAGE,
+            JobPostingExtractionWorkflow.FETCH_JOB_IMAGES,
+            JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT,
+            JobPostingExtractionWorkflow.COMPOSE_JOB_SOURCE_TEXT,
             JobPostingExtractionWorkflow.EXTRACT_JOB_FIELDS,
             JobPostingExtractionWorkflow.MERGE_USER_OVERRIDES,
+            JobPostingExtractionWorkflow.VALIDATE_JOB_EXTRACTION,
             JobPostingExtractionWorkflow.APPLY_JOB_EXTRACTION);
 
     @Test
@@ -33,13 +37,15 @@ class JobPostingExtractionWorkflowContractTest {
         assertThat(definition.steps().stream()
                         .filter(WorkflowRegistry.StepDefinition::requiresProvider)
                         .map(WorkflowRegistry.StepDefinition::stepKey))
-                .containsExactly(JobPostingExtractionWorkflow.EXTRACT_JOB_FIELDS);
+                .containsExactly(
+                        JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT,
+                        JobPostingExtractionWorkflow.EXTRACT_JOB_FIELDS);
         assertThat(definition.steps())
                 .allSatisfy(step -> assertThat(step.toolAllowlist()).isEqualTo(Set.of()));
         assertThat(definition.steps().stream()
                         .mapToInt(WorkflowRegistry.StepDefinition::maxModelCalls)
                         .sum())
-                .isEqualTo(1);
+                .isEqualTo(2);
     }
 
     @Test

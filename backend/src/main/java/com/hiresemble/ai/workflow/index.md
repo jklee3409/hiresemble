@@ -8,9 +8,9 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 
 - `WorkflowRegistry`: definition/contribution 검증
 - `TerminalPartialPolicy`: 실제 failed scope가 남은 terminal 결과의 workflow별 성공·실패·safe error·retry 정책
-- `CanonicalWorkflowDefinitions`: 8개 WorkflowType 고정 definition
+- `CanonicalWorkflowDefinitions`: 8개 WorkflowType canonical definition과 격리된 legacy version definition
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
-- `JobPostingExtractionWorkflow`: P5 URL fetch부터 사용자 override 병합·domain apply까지의 5단계 contribution
+- `JobPostingExtractionWorkflow`: P5 URL fetch, DOM/image inspection·fetch·text extraction·source compose, 사용자 override, 품질 검증과 domain apply까지의 9단계 v2 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - `JobAnalysisWorkflow`: P6 owner-scoped snapshot·verified RAG·결정론적 score·command-only persist 8단계 contribution
 - `CoverLetterGenerationWorkflow`: P7 generation 8단계 bounded fan-out·partial apply contribution과 Provider 전용 TipTap output→domain DTO mapping

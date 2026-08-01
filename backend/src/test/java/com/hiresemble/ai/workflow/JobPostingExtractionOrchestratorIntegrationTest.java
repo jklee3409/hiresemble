@@ -13,11 +13,13 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.orchestration.AgentOrchestrator;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
+import com.hiresemble.ai.port.ImageTextExtractionGateway;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractedJobFields;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.job.application.JobApplicationService;
 import com.hiresemble.job.application.model.JobApplicationResults.JobCreationAccepted;
 import com.hiresemble.job.application.port.JobPageFetchGateway;
+import com.hiresemble.job.application.port.JobImageFetchGateway;
 import com.hiresemble.job.application.port.JobPageFetchGateway.FetchResult;
 import com.hiresemble.job.application.port.JobPageFetchGateway.PageClassification;
 import com.hiresemble.job.domain.DeadlineSource;
@@ -52,7 +54,16 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
 
     private static final String RAW_SECRET = "RAW_HTML_ONLY_SECRET_7f2144";
     private static final String VISIBLE_PAGE_TEXT =
-            "Platform Backend Engineer Build and operate reliable Spring services for customers.";
+            """
+            Platform Backend Engineer builds and operates reliable Spring services for customers and partners.
+            The role designs APIs, reviews code, tests changes, monitors production, and improves database queries.
+            Candidates need Java, Spring Boot, PostgreSQL, distributed systems, automated testing, and security experience.
+            Engineers collaborate with product teams, improve observability, document decisions, and lead incident response.
+            This full-time role values maintainability, ownership, accessible communication, and measurable service reliability.
+            The hiring process includes a technical discussion, a practical review, and a final team conversation.
+            Responsibilities include capacity planning, dependency upgrades, performance analysis, and resilient deployment design.
+            Preferred experience includes cloud infrastructure, asynchronous messaging, and privacy-aware data processing.
+            """;
 
     @Autowired private JobApplicationService jobService;
     @Autowired private AgentRunStatePort runState;
@@ -61,6 +72,8 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     @Autowired private AgentOrchestrator orchestrator;
     @Autowired private FakeJobPageFetchGateway pageGateway;
     @Autowired private FakeChatGateway chatGateway;
+    @Autowired private FakeJobImageFetchGateway imageFetchGateway;
+    @Autowired private FakeImageTextExtractionGateway imageTextGateway;
 
     private UUID userId;
 
@@ -84,6 +97,8 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         userId = seedUser();
         pageGateway.reset();
         chatGateway.reset();
+        imageFetchGateway.calls.set(0);
+        imageTextGateway.reset();
     }
 
     @Test
@@ -108,9 +123,13 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         assertThat(run.steps()).extracting(step -> step.stepKey())
                 .containsExactly(
                         JobPostingExtractionWorkflow.FETCH_JOB_PAGE,
-                        JobPostingExtractionWorkflow.SANITIZE_PAGE_TEXT,
+                        JobPostingExtractionWorkflow.INSPECT_JOB_PAGE,
+                        JobPostingExtractionWorkflow.FETCH_JOB_IMAGES,
+                        JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT,
+                        JobPostingExtractionWorkflow.COMPOSE_JOB_SOURCE_TEXT,
                         JobPostingExtractionWorkflow.EXTRACT_JOB_FIELDS,
                         JobPostingExtractionWorkflow.MERGE_USER_OVERRIDES,
+                        JobPostingExtractionWorkflow.VALIDATE_JOB_EXTRACTION,
                         JobPostingExtractionWorkflow.APPLY_JOB_EXTRACTION);
         assertThat(job.status()).isEqualTo(JobStatus.IN_PROGRESS);
         assertThat(job.extractionStatus()).isEqualTo(JobExtractionStatus.EXTRACTED);
@@ -127,13 +146,13 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         assertThat(pageGateway.transactionObserved).isFalse();
         assertThat(chatGateway.transactionObserved).isFalse();
         assertThat(chatGateway.lastInput)
-                .contains(VISIBLE_PAGE_TEXT)
+                .contains("Platform Backend Engineer", "<job_page_dom_text>")
                 .doesNotContain(RAW_SECRET, "<script");
 
         String checkpoints = checkpoints(run.id());
         assertThat(checkpoints)
-                .contains(VISIBLE_PAGE_TEXT)
                 .doesNotContain(
+                        "Platform Backend Engineer",
                         RAW_SECRET,
                         "<html>",
                         "<script>",
@@ -177,7 +196,8 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
 
         AgentRunSnapshot completed = run(accepted.agentRunId());
         JobRecord job = jobService.detail(userId, accepted.jobId());
-        assertThat(completed.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(completed.status()).withFailMessage(completed::toString)
+                .isEqualTo(AgentRunStatus.SUCCEEDED);
         assertThat(job.extractionStatus())
                 .isEqualTo(JobExtractionStatus.MANUAL_INPUT_PROVIDED);
         assertThat(job.descriptionText()).isEqualTo(manualText);
@@ -195,7 +215,89 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
-    void repairableSemanticOutputFailsAfterOneGuidedRetryAndTerminalRetryReusesSanitizedStep() {
+    void imageOnlyPageRunsAutomaticImageBranchWithoutUserChoice() {
+        pageGateway.html = """
+                <html><head><title>채용 안내</title></head><body>
+                <nav>%s</nav><main><img src="/posting.png" width="1200" height="1800" alt="채용 공고"></main>
+                </body></html>
+                """.formatted("메뉴 회사소개 인재채용 고객센터 공지사항 ".repeat(12));
+        JobCreationAccepted accepted = create(null, null, null);
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot completed = run(accepted.agentRunId());
+        JobRecord job = jobService.detail(userId, accepted.jobId());
+        assertThat(completed.status()).withFailMessage(completed::toString)
+                .isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(job.extractionStatus()).isEqualTo(JobExtractionStatus.EXTRACTED);
+        assertThat(imageFetchGateway.calls).hasValue(1);
+        assertThat(imageTextGateway.calls).hasValue(1);
+        assertThat(chatGateway.lastInput).contains("job_page_image_text", "image_ref");
+    }
+
+    @Test
+    void imageOnlyPageWithEmptyImageTextWaitsForManualInputWithoutSavingBrokenText() {
+        pageGateway.html = """
+                <html><body><nav>%s</nav><img src="/posting.png" width="1200" height="1800"></body></html>
+                """.formatted("메뉴 회사소개 채용 공지 고객센터 ".repeat(12));
+        imageTextGateway.empty = true;
+        JobCreationAccepted accepted = create(null, null, null);
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot waiting = run(accepted.agentRunId());
+        JobRecord job = jobService.detail(userId, accepted.jobId());
+        assertThat(waiting.status()).isEqualTo(AgentRunStatus.WAITING_USER);
+        assertThat(waiting.currentStep()).isEqualTo(JobPostingExtractionWorkflow.COMPOSE_JOB_SOURCE_TEXT);
+        assertThat(job.extractionStatus()).isEqualTo(JobExtractionStatus.NEEDS_MANUAL_INPUT);
+        assertThat(job.descriptionText()).isNull();
+        assertThat(chatGateway.calls).hasValue(0);
+    }
+
+    @Test
+    void semanticNullOptionalFieldIsNormalizedButNullDescriptionRequiresManualInput() {
+        chatGateway.mode = ChatMode.NULL_OPTIONAL;
+        JobCreationAccepted accepted = create(null, null, null);
+        execute(accepted.agentRunId());
+        assertThat(run(accepted.agentRunId()).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(jobService.detail(userId, accepted.jobId()).title()).isNull();
+
+        chatGateway.mode = ChatMode.NULL_DESCRIPTION;
+        JobCreationAccepted invalid = create(null, null, null);
+        execute(invalid.agentRunId());
+        assertThat(run(invalid.agentRunId()).status()).isEqualTo(AgentRunStatus.WAITING_USER);
+        assertThat(jobService.detail(userId, invalid.jobId()).descriptionText()).isNull();
+    }
+
+    @Test
+    void terminalRetryReusesSuccessfulImageTextByImageContentHash() {
+        pageGateway.html = """
+                <html><body><nav>%s</nav><img src="/posting.png" width="1200" height="1800"></body></html>
+                """.formatted("메뉴 회사소개 채용 공지 고객센터 ".repeat(12));
+        chatGateway.mode = ChatMode.INVALID_STRUCTURED;
+        JobCreationAccepted accepted = create(null, null, null);
+        execute(accepted.agentRunId());
+        JobRecord failed = jobService.detail(userId, accepted.jobId());
+        assertThat(run(accepted.agentRunId()).status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(imageTextGateway.calls).hasValue(1);
+
+        chatGateway.mode = ChatMode.SUCCESS;
+        imageTextGateway.calls.set(0);
+        UUID successor = jobService.retryExtraction(
+                        userId, accepted.jobId(), failed.version(), "job-image-retry-" + UUID.randomUUID())
+                .body().agentRunId();
+        execute(successor);
+
+        assertThat(run(successor).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(imageTextGateway.calls).hasValue(0);
+        assertThat(run(successor).steps().stream()
+                        .filter(step -> step.stepKey().equals(JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT))
+                        .map(step -> step.status()))
+                .containsExactly(AgentStepStatus.REUSED);
+    }
+
+    @Test
+    void repairableSemanticOutputFailsAfterOneGuidedRetryAndTerminalRetryRefetchesEphemeralSource() {
         chatGateway.mode = ChatMode.INVALID_STRUCTURED;
         JobCreationAccepted accepted = create(null, null, null);
 
@@ -227,9 +329,9 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         assertThat(recovered.retryOfRunId()).isEqualTo(failed.id());
         assertThat(recovered.steps().stream()
                         .filter(step -> step.stepKey()
-                                .equals(JobPostingExtractionWorkflow.SANITIZE_PAGE_TEXT))
+                                .equals(JobPostingExtractionWorkflow.INSPECT_JOB_PAGE))
                         .map(step -> step.status()))
-                .containsExactly(AgentStepStatus.REUSED);
+                .containsExactly(AgentStepStatus.SUCCEEDED);
         assertThat(pageGateway.calls.get()).isEqualTo(2);
         assertThat(chatGateway.calls.get()).isEqualTo(1);
     }
@@ -344,6 +446,8 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     enum ChatMode {
         SUCCESS,
         INVALID_STRUCTURED,
+        NULL_OPTIONAL,
+        NULL_DESCRIPTION,
         RETRYABLE_TIMEOUT,
         NON_RETRYABLE
     }
@@ -361,6 +465,18 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         @Primary
         FakeChatGateway fakeJobChatGateway(ObjectMapper objectMapper) {
             return new FakeChatGateway(objectMapper);
+        }
+
+        @Bean
+        @Primary
+        FakeJobImageFetchGateway fakeJobImageFetchGateway() {
+            return new FakeJobImageFetchGateway();
+        }
+
+        @Bean
+        @Primary
+        FakeImageTextExtractionGateway fakeImageTextExtractionGateway(ObjectMapper objectMapper) {
+            return new FakeImageTextExtractionGateway(objectMapper);
         }
 
         @Bean
@@ -454,6 +570,17 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
                                 "FULL_TIME",
                                 "Seoul"), true),
                         java.util.List.of());
+                case NULL_OPTIONAL -> new AiGatewayResponse(
+                        json(new ExtractedJobFields(
+                                "AI Company", " null ", "AI Position",
+                                successOutput().descriptionText(), null, null,
+                                "SOFTWARE_ENGINEERING", "FULL_TIME", "Seoul"), true),
+                        java.util.List.of());
+                case NULL_DESCRIPTION -> new AiGatewayResponse(
+                        json(new ExtractedJobFields(
+                                "AI Company", "AI Posting Title", "AI Position", "null",
+                                null, null, "SOFTWARE_ENGINEERING", "FULL_TIME", "Seoul"), true),
+                        java.util.List.of());
                 case RETRYABLE_TIMEOUT -> throw AiExecutionException.retryable(
                         FailureKind.TIMEOUT,
                         "AI_PROVIDER_TIMEOUT",
@@ -470,7 +597,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
                     "AI Company",
                     "AI Posting Title",
                     "AI Position",
-                    "Build reliable Spring services, PostgreSQL data flows, and automated tests.",
+                    "Build and operate reliable Spring services, design PostgreSQL data flows, review APIs, improve observability, respond to incidents, and maintain comprehensive automated tests with the product engineering team.",
                     Instant.parse("2026-08-31T14:59:59Z"),
                     new BigDecimal("0.875"),
                     "SOFTWARE_ENGINEERING",
@@ -496,5 +623,43 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
                 throw new IllegalStateException(exception);
             }
         }
+    }
+
+    static final class FakeJobImageFetchGateway implements JobImageFetchGateway {
+        final AtomicInteger calls = new AtomicInteger();
+
+        @Override
+        public ImageAsset fetch(ImageCandidate candidate, Duration remainingDeadline) {
+            calls.incrementAndGet();
+            return new ImageAsset(candidate.imageRef(), "image/png", new byte[] {1, 2, 3},
+                    1200, 1800, "a".repeat(64));
+        }
+    }
+
+    static final class FakeImageTextExtractionGateway implements ImageTextExtractionGateway {
+        private final ObjectMapper objectMapper;
+        final AtomicInteger calls = new AtomicInteger();
+        volatile boolean empty;
+
+        FakeImageTextExtractionGateway(ObjectMapper objectMapper) { this.objectMapper = objectMapper; }
+
+        @Override public boolean available() { return true; }
+
+        @Override
+        public AiGatewayResponse extract(ImageTextExtractionRequest request) {
+            calls.incrementAndGet();
+            try {
+                var output = new JobPostingExtractionWorkflow.ImageTextOutput(empty
+                        ? java.util.List.of()
+                        : java.util.List.of(new JobPostingExtractionWorkflow.ImageTextItem(
+                                "백엔드 개발자를 채용합니다. Java와 Spring Boot 서비스 개발, PostgreSQL 데이터 모델링, 자동화 테스트, 운영 모니터링, 장애 대응, 협업 문서화 경험이 필요합니다. 주요 업무는 안정적인 API 설계와 성능 개선이며 정규직으로 근무합니다. 서비스 용량 계획, 보안 검토, 코드 리뷰, 배포 자동화, 기술 의사결정 기록을 담당하고 제품 조직과 함께 고객 문제를 해결합니다. 지원자는 분산 시스템 운영 경험과 명확한 커뮤니케이션 역량을 갖춰야 합니다.",
+                                false)));
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
+            } catch (Exception exception) {
+                throw new IllegalStateException(exception);
+            }
+        }
+
+        void reset() { calls.set(0); empty = false; }
     }
 }
