@@ -12,7 +12,7 @@ registry가 정한 순서를 application port로 실행하는 bounded AgentOrche
 
 ## 구성 요소 역할
 
-최대 3 attempt와 고정 step sequence를 실행하며 repository를 직접 사용하지 않는다. executor별 deterministic reuse branch는 registry의 call cap을 유지하면서 provider routing만 생략할 수 있다. provider 호출은 transaction 밖에서 수행하고 성공·재사용 완료 경계는 `SERIALIZABLE`로 commit한다.
+최대 3 attempt와 고정 step sequence를 실행하며 repository를 직접 사용하지 않는다. executor별 deterministic reuse branch는 registry의 call cap을 유지하면서 provider routing만 생략할 수 있다. provider 호출은 transaction 밖에서 수행하고 성공·실패 응답의 가격 item별 usage를 validation 전에 기록하며 성공·재사용 완료 경계는 `SERIALIZABLE`로 commit한다.
 
 ## 다른 디렉터리와의 의존 관계
 

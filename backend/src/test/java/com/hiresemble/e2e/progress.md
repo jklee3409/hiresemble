@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-01] Session Summary (P8.5 전체 actual 회귀)
+
+- What was done:
+  - Provider Bean·port 변경 뒤 P8/P7/P6/P5/P4 actual wrapper를 모두 재실행했다.
+- Key decisions:
+  - actual E2E는 계속 Fake/disabled gateway만 사용하며 외부 network를 금지한다.
+- Issues encountered:
+  - P7의 일시적 optimistic-lock race는 standalone 재검증으로 닫았고 P5의 과거 UI 문구 fixture는 현재 계약으로 보정했다.
+- Validation:
+  - P8 1/1, P7 1/1, P6 2/2, P5 5/5, P4 4/4가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 Browser wrapper·DB audit)
 
 - What was done:

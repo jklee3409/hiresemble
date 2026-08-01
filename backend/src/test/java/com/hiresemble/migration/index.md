@@ -1,8 +1,8 @@
-# P1~V11 Migration 테스트 안내
+# P1~V13 Migration 테스트 안내
 
 ## 디렉터리 목적
 
-Flyway 단계별 보존과 최신 V11 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V13 schema·immutable provider 가격을 실제 PostgreSQL에서 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,6 +13,8 @@ Flyway 단계별 보존과 최신 V11 schema의 빈 DB·upgrade 경로를 실제
 - [`P5MigrationTest.java`](P5MigrationTest.java): 빈 DB·V5 upgrade, V1~V5 hash와 P5 owner·상태·canonical constraint·범위
 - [`P6MigrationTest.java`](P6MigrationTest.java): P6 Job Analysis V7 migration·불변식
 - [`FinalEducationMigrationTest.java`](FinalEducationMigrationTest.java): 빈 DB V11과 populated V10 학력 단계 backfill·최종 학력 재계산
+- [`P8_5MigrationTest.java`](P8_5MigrationTest.java): V13 가격 item·불변성·provider call unique index
+- [`P8_5UpgradeMigrationTest.java`](P8_5UpgradeMigrationTest.java): populated V12→V13 보존과 V1~V12 SHA-256 불변
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

@@ -2,16 +2,20 @@
 
 ## 디렉터리 목적
 
-production disabled gateway가 network fallback 없이 안전하게 실패하는지 검증한다.
+local/offline Bean matrix, OpenAI Chat·Embedding request/usage, Tavily bounded HTTP와 Codex opt-in live gate를 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - `DisabledAiGatewaysTest`
+- `SpringAiOpenAiGatewayTest`
+- `TavilyWebSearchGatewayTest`
+- `LocalProviderBeanMatrixIntegrationTest`, `LocalOfflineBeanMatrixIntegrationTest`
+- `CodexRealProviderTest` (일반 check 제외)
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할
 
-세 gateway의 safe configuration failure를 고정한다.
+capability별 단일 Bean, hidden retry 0, strict output, vector shape, 가격 row와 network-disabled 기본 회귀를 고정한다.
 
 ## 다른 디렉터리와의 의존 관계
 

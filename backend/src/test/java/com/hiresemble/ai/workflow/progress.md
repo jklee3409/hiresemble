@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (다중 usage workflow 회귀)
+
+- What was done:
+  - Fake response를 다중 usage port에 맞추고 각 workflow의 price version 전달을 검증했다.
+- Key decisions:
+  - Fake는 test source에만 두며 실제 network client를 생성하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow tests와 P4~P8 actual이 모두 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 workflow 계약·경계)
 
 - What was done:

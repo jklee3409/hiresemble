@@ -20,6 +20,7 @@
 | [`V10__exclude_document_education_evidence.sql`](V10__exclude_document_education_evidence.sql)                                   | 문서 추출 교육·학력 evidence 정리·DB 차단                 |
 | [`V11__derive_final_education.sql`](V11__derive_final_education.sql)                                                             | 학력 단계 backfill·제약과 최종 학력 재계산                |
 | [`V12__create_interview_research_questions_and_feedback.sql`](V12__create_interview_research_questions_and_feedback.sql)         | P8 조사·질문·답변 version·feedback·typed Run link         |
+| [`V13__add_external_ai_provider_price_catalog.sql`](V13__add_external_ai_provider_price_catalog.sql)                             | P8.5 provider call identity와 immutable 가격 catalog      |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 

@@ -14,7 +14,21 @@
 - `V10__exclude_document_education_evidence.sql`은 문서 교육 category 근거를 정리하고 새 active row를 차단한다.
 - `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
 - `V12__create_interview_research_questions_and_feedback.sql`은 P8 조사·질문·immutable 답변·피드백과 typed Agent Run link를 생성한다.
+- `V13__add_external_ai_provider_price_catalog.sql`은 실제 OpenAI·Tavily immutable 가격 항목과 provider call usage identity를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-01] Session Summary (외부 Provider 가격 catalog V13)
+
+- What was done:
+  - price version `2026073101`, gpt-5-mini Chat 3종, text-embedding-3-small, Tavily BASIC·ADVANCED 가격과 usage call identity를 추가했다.
+- Key decisions:
+  - 공식 공개 가격을 2026-07-31 기준으로 고정하고 변경은 새 forward migration으로만 수행한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - fresh V1→V13, populated V12→V13, unique/FK와 V1~V12 SHA-256 불변 검증이 통과했다.
+- Next steps:
+  - 가격 변경 시 기존 row를 수정하지 않고 새 version을 추가한다.
 
 ## [2026-07-31] Session Summary (P8 조사·질문·답변·피드백 V12)
 

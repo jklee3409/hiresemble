@@ -2,7 +2,20 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P5가 완료됐고 P6–P10은 미착수다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 구현 완료·실호출 미검증이며 P9–P10은 미착수다.
+
+## [2026-08-01] Session Summary (P8.5 Provider 운영 문서)
+
+- What was done:
+  - 구현 계획·기술/DB 명세와 Provider 활성화 운영 문서를 local real/local-offline/test 격리 계약에 맞췄다.
+- Key decisions:
+  - configuration readiness와 bounded live verification 상태를 분리해 기록한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 코드·profile·V13·실행 결과와 문서 내용을 대조했다.
+- Next steps:
+  - live verification 통과 후 P8.5 상태를 DONE으로 전환한다.
 
 ## [2026-07-31] Session Summary (최종 학력·헤더 닉네임 계약 동기화)
 

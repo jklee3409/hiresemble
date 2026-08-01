@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P3 운영 코드와 분리된 JUnit·MockMvc·Testcontainers 검증 source set을 관리한다.
+P1~P8 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
+
+## [2026-08-01] Session Summary (P8.5 Provider 격리 검증)
+
+- What was done:
+  - provider adapter, Bean matrix, V13과 Codex bounded live harness 검증을 추가했다.
+- Key decisions:
+  - 일반 check·CI·P4~P8 actual은 환경 key 유무와 무관하게 provider를 `none`/Fake로 강제한다.
+- Issues encountered:
+  - 공유 PostgreSQL 연결 상한은 test process의 Hikari pool을 3으로 제한해 안정화했다.
+- Validation:
+  - Backend 67 suites/420 tests와 P4~P8 actual이 통과했다.
+- Next steps:
+  - live harness는 명시적 gate와 key가 있을 때만 한 번 실행한다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

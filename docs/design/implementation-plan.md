@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 고정하는 P9 선행 gate다.
 
 ## 범위
 
@@ -30,7 +30,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
 
-현재 단계: P0~~P8 완료. P8은 V12·Backend/API·검색 포함 고정 AI workflow·Frontend 세 route, 제한 보정 후 final-source P8/P7/P6 actual Chromium/DB assertion과 두 번째 single-agent read-only self-audit를 통과했다. P9~~P10은 미착수다.
+현재 단계: P0~~P8 완료. P8은 V12·Backend/API·검색 포함 고정 AI workflow·Frontend 세 route, 제한 보정 후 final-source P8/P7/P6 actual Chromium/DB assertion과 두 번째 single-agent read-only self-audit를 통과했다. P8.5 provider 연결 구현은 완료됐고 bounded live verification은 key/gate 부재 시 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P9~~P10은 미착수다.
 
 ## 1. 전체 선행 관계
 
@@ -520,6 +520,34 @@ P0 계약 기준선
 - 실제 외부 provider 없이 P8 actual Chromium 1/1과 DB assertions, final-source P7 Chromium 1/1 및 P6 Chromium 2/2 회귀가 통과했다.
 - 1차 single-agent read-only self-audit의 `FOLLOW_UP` output·foreign owner 404 finding을 한 번의 제한 보정으로 해소했고, 두 번째 감사는 새 finding 없이 `PASS`했다.
 - 두 번째 감사 전후 178개 변경 파일 fingerprint는 `6cc19fff43393713a8a1276297144f1bd916ca3bfe0155cc7140ef909d5eff08`로 동일했다.
+
+## 11.5. P8.5 — 외부 AI Provider 연결·로컬 개발 활성화 게이트
+
+- 선행: P3~P8
+- 후속: P9
+- 현재 판정: local 연결·Fake/WireMock 격리 구현 완료, bounded live verification 결과에 따라 `DONE` 또는 `IMPLEMENTED_NOT_LIVE_VERIFIED`
+
+### 11.5.1 실행 계약
+
+- `local`은 OpenAI Chat·Embedding과 Tavily Search adapter를 각 하나씩 생성하는 일반 개발 모드다. key·모델·가격 item·provider 정합성이 없으면 startup을 중단하고 disabled/Fake로 fallback하지 않는다.
+- AI 없이 Backend만 실행할 때는 `local-offline`을 명시하며 Chat·Embedding·Search를 모두 disabled로 둔다.
+- 일반 `test`, `ci`, `e2e`와 P4~P8 actual E2E는 Fake 또는 disabled gateway를 강제하고 실제 OpenAI·Tavily network를 금지한다.
+- owner-scoped `JdbcClient`/pgvector가 vector retrieval을 계속 소유하며 Spring AI VectorStore는 `none`이다.
+
+### 11.5.2 Provider·비용 계약
+
+- Chat은 요청별 model·timeout·max output과 Java record에서 생성한 strict JSON Schema를 사용하고 tool calling·streaming·response storage·provider retry를 끈다.
+- Embedding은 masked input의 batch/count/order, configured dimension과 finite vector를 검증하며 dimension 확인용 별도 호출을 하지 않는다.
+- Tavily는 HTTPS·redirect 금지, BASIC/ADVANCED 분리, `include_answer=false`, `include_raw_content=false`, 2MB bounded stream을 유지한다.
+- V13 immutable catalog `2026073101`과 run에 capture된 price version으로 Chat input/cached/output, Embedding input, Search BASIC/ADVANCED를 별도 usage row로 계산한다.
+- enabled local의 workflow 접수 예약은 기존 async run absolute cap USD 0.30 전액이며, 이보다 작은 estimate나 price version 불일치는 startup failure다.
+
+### 11.5.3 검증·완료 조건
+
+- local/local-offline Bean matrix, key 누락·unknown/inconsistent provider fail-closed, Spring AI request option, Tavily bounded response, 다중 usage·migration을 Fake/WireMock/PostgreSQL로 검증한다.
+- Codex 전용 real-provider task는 일반 check/CI에서 제외하고 synthetic non-PII만 사용한다. 정상 상한은 Chat 1 + Embedding 1 + Search 1, 수정 후 절대 상한은 capability별 2·총 6이며 성공 capability는 재호출하지 않는다.
+- key 또는 명시적 gate가 없어 live task가 실행되지 않으면 `IMPLEMENTED_NOT_LIVE_VERIFIED`, 세 capability가 상한 안에서 통과하면 `DONE`이다.
+- P9 모의 면접 코드는 이 단계에서 시작하지 않는다.
 
 ## 12. P9 — 모의 면접
 

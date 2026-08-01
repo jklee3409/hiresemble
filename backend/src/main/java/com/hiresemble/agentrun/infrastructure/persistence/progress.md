@@ -4,6 +4,19 @@
 
 Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview Question Set·Answer Version typed resource owner resolution을 관리한다.
 
+## [2026-08-01] Session Summary (다중 가격 usage ledger)
+
+- What was done:
+  - `ai_usage_records.provider_call_id`를 저장하고 동일 call·price item의 중복 기록을 DB identity와 맞췄다.
+- Key decisions:
+  - 입력·cached 입력·출력은 각각 exact price item을 참조하며 actual cost 합계에는 한 번씩만 반영한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - V13 migration test와 Agent Run ledger 통합 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 typed link·owner visibility)
 
 - What was done:

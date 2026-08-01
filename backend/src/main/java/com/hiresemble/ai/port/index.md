@@ -7,16 +7,16 @@ Chat, Embedding, Web Search를 provider-independent request·usage 계약으로 
 ## 주요 파일 및 하위 디렉터리
 
 - `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway`
-- `AiGatewayResponse`, `AiUsage`
+- `AiGatewayResponse`, `AiUsage`, `AiPriceCatalogQueryPort`
 - [`progress.md`](progress.md): port 상태
 
 ## 구성 요소 역할
 
-timeout·allowlist·단위 usage와 immutable price reference를 adapter 경계에 전달한다.
+timeout·allowlist·strict output type·run price version과 가격 item별 usage를 adapter 경계에 전달한다.
 
 ## 다른 디렉터리와의 의존 관계
 
-[`../infrastructure/`](../infrastructure/index.md)가 production disabled 구현을 제공한다.
+[`../infrastructure/`](../infrastructure/index.md)가 local real/offline disabled 구현과 JDBC 가격 조회를 제공한다.
 
 ## 변경 시 주의사항
 

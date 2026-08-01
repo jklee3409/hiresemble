@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V11 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V13 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-01] Session Summary (V13 가격·usage migration 검증)
+
+- What was done:
+  - fresh V1→V13과 populated V12→V13, catalog completeness와 usage identity 제약을 검증했다.
+- Key decisions:
+  - V1~V12 checksum 불변을 자동 검증한다.
+- Issues encountered:
+  - 1차 read-only self-audit에서 populated V12→V13과 V1~V12 checksum 자동 검증 누락을 발견해 제한 보정했다.
+- Validation:
+  - `P8_5MigrationTest`, `P8_5UpgradeMigrationTest`와 전체 Backend check가 통과했다.
+- Next steps:
+  - 새 가격은 새 migration/version으로만 추가한다.
 
 ## [2026-07-31] Session Summary (V11 최종 학력 migration 검증)
 

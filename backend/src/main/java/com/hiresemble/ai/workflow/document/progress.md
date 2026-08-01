@@ -4,6 +4,19 @@
 
 P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
 
+## [2026-08-01] Session Summary (실제 Embedding 가격 계약 연결)
+
+- What was done:
+  - 문서 ingestion의 Embedding 요청에 run 고정 price version을 전달했다.
+- Key decisions:
+  - masked chunk·순서·dimension 기존 계약은 그대로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - P4 actual Chromium 4/4와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-19] Session Summary (P4 DOCUMENT_INGESTION contribution 구현)
 
 - What was done:

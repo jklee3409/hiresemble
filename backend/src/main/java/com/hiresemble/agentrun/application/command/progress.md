@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.command package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (Provider call usage identity)
+
+- What was done:
+  - usage 기록 command에 nullable `providerCallId`를 추가했다.
+- Key decisions:
+  - 기존 Fake/cache usage는 null을 허용하고 실제 outbound call만 안전한 UUID로 묶는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 420 tests와 P4~P8 usage DB assertion이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 workflow launch identity)
 
 - What was done:

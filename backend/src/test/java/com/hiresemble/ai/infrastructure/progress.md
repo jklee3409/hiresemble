@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 disabled Chat·Embedding·Search와 P8 conditional Tavily search gateway 테스트가 구현됐다.
+disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
+
+## [2026-08-01] Session Summary (OpenAI·Tavily·Bean matrix 검증)
+
+- What was done:
+  - Spring AI mock, Tavily bounded stream/HTTPS/usage, local real Bean과 local-offline disabled Bean 검증을 추가했다.
+- Key decisions:
+  - Codex live test는 일반 test에서 제외하고 retry·loop 없이 capability별 최대 한 번만 호출한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - infrastructure focused tests와 Backend 전체 check가 통과했고 live task는 gate/key 부재로 호출 없이 skip됐다.
+- Next steps:
+  - 실제 key가 준비된 승인 환경에서 bounded live verification을 수행한다.
 
 ## [2026-07-31] Session Summary (Tavily WireMock 경계)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 fixed-sequence AgentOrchestrator와 checkpoint·usage·apply, P6~P7 deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
+fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
+
+## [2026-08-01] Session Summary (Provider multi-usage·failure accounting)
+
+- What was done:
+  - gateway response와 safe provider exception의 usage list를 validation/retry 전에 item별로 기록하도록 확장했다.
+- Key decisions:
+  - 호출 비용 합계를 한 번 top-up 검사한 뒤 row별로 누적한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - structured failure·retry·cancel·actual E2E 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 partial scope retry·interruption 경계)
 

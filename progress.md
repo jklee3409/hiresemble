@@ -12,7 +12,24 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
-- Dashboard 전용 집계·P9 모의 면접과 실제 provider 기본 활성화는 아직 없다.
+- P8.5 local 실제 provider 연결은 구현됐고 bounded live verification은 미실행이다. Dashboard 전용 집계와 P9 모의 면접은 아직 없다.
+
+## [2026-08-01] Session Summary (P8.5 외부 AI Provider 연결·로컬 활성화 gate)
+
+- What was done:
+  - Spring AI 2.0 OpenAI Chat·Embedding adapter, Tavily bounded stream, capability별 Bean, local/local-offline profile, V13 immutable 가격 catalog과 다중 usage ledger를 구현했다.
+  - Codex bounded live task와 운영 문서를 추가하고 P9는 시작하지 않았다.
+- Key decisions:
+  - `local`은 real OpenAI/Tavily를 fail-closed로, `local-offline`·test·CI·E2E는 disabled/Fake로 고정하고 Spring AI provider retry는 0으로 둔다.
+  - workflow 접수 예약은 기존 async run absolute cap USD 0.30 전액으로 고정한다.
+- Issues encountered:
+  - 전체 check의 Testcontainers 연결 상한을 test Hikari pool 3개로 조정했고, P5 actual의 과거 UI 문구 fixture를 현재 표시 계약에 맞췄다.
+  - 1차 read-only self-audit에서 populated V12→V13·V1~V12 checksum 전용 검증 누락을 발견해 한 번의 제한 보정으로 추가했다.
+- Validation:
+  - Backend 67 suites/420 tests, Frontend 60 files/238 tests, P8 1/1·P7 1/1·P6 2/2·P5 5/5·P4 4/4 actual, Compose·diff check가 통과했다.
+  - live gate/key가 없어 Codex real-provider task는 skip됐고 실제 외부 호출은 Chat 0, Embedding 0, Search 0이다.
+- Next steps:
+  - 승인된 key가 있는 환경에서 bounded live task를 capability별 1회 실행한 뒤 P9 착수 여부를 판정한다.
 
 ## [2026-07-31] Session Summary (P8 면접 조사·예상 질문·답변 피드백 구현)
 

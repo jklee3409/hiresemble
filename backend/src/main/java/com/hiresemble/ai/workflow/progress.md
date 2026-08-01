@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-01] Session Summary (price-versioned Provider 요청 연결)
+
+- What was done:
+  - P5~P8 Chat/Search 호출에 run 고정 price version, output type과 token bound를 전달했다.
+- Key decisions:
+  - workflow step·retry 상한은 유지하고 provider 내부 retry만 0회로 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow unit/integration와 P5~P8 actual 회귀가 통과했다.
+- Next steps:
+  - P9 workflow는 이번 범위에서 시작하지 않는다.
+
 ## [2026-07-31] Session Summary (P8 preparation 10단계·feedback 5단계)
 
 - What was done:

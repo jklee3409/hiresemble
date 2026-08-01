@@ -14,6 +14,19 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-01] Session Summary (P5 actual 현재 UI 계약 동기화)
+
+- What was done:
+  - P5 actual의 직접 입력 완료·URL 불러오기 성공 문구를 현재 제품 UI와 맞췄다.
+- Key decisions:
+  - 일시 toast 대신 지속되는 화면 상태와 API 결과를 판정한다.
+- Issues encountered:
+  - 과거 fixture 문구가 제품 동작과 어긋나 P8.5 전체 회귀에서 발견됐다.
+- Validation:
+  - P5 Chromium 5/5와 Frontend 60 files/238 tests가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 actual Chromium·DB assertion)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~~P8은 구현·final-source 검증과 single-agent read-only self-audit를 통과해 완료됐고 P9~~P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-01] Session Summary (P8.5 구현 계획 게이트)
+
+- What was done:
+  - P8과 P9 사이에 외부 Provider 연결·로컬 활성화 게이트를 공식 추가했다.
+- Key decisions:
+  - Fake/WireMock와 full regression 완료 후에도 key 기반 bounded live verification 전에는 `IMPLEMENTED_NOT_LIVE_VERIFIED`로 판정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현·profile·test matrix와 계획 완료 조건을 대조했다.
+- Next steps:
+  - P8.5 DONE 판정 전 bounded live verification이 필요하다.
+
 ## [2026-07-31] Session Summary (P8 구현·final-source 검증 상태 반영)
 
 - What was done:

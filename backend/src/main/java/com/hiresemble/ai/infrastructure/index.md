@@ -2,17 +2,20 @@
 
 ## 디렉터리 목적
 
-production 기본 gateway를 외부 네트워크 없는 disabled adapter로 제공하고 실행 가능한 Document·Job·Cover Letter contribution을 runtime에 조립한다.
+local OpenAI Chat·Embedding/Tavily Search adapter, 명시적 disabled adapter, 가격 조회와 fail-closed activation 검증을 제공하고 실행 가능한 workflow contribution을 runtime에 조립한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- `DisabledAiGateways`: Chat·Embedding·Search 공통 disabled adapter
+- `SpringAiOpenAiChatGateway`, `SpringAiOpenAiEmbeddingGateway`: Spring AI 2.0 운영 adapter
+- `TavilyWebSearchGateway`: HTTPS·bounded response 검색 adapter
+- `DisabledChatGateway`, `DisabledEmbeddingGateway`, `DisabledWebSearchGateway`: capability별 offline adapter
+- `AiProviderActivationValidator`, `JdbcAiPriceCatalogRepository`: 설정·immutable 가격 gate
 - `AiRuntimeConfiguration`: 고정 workflow contribution과 handler·registry 조립
 - [`progress.md`](progress.md): adapter 상태
 
 ## 구성 요소 역할
 
-provider가 구성되지 않은 실행을 안전한 configuration failure로 종료한다.
+local은 실제 Provider를 fail-closed로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -20,7 +23,7 @@ provider가 구성되지 않은 실행을 안전한 configuration failure로 종
 
 ## 변경 시 주의사항
 
-임의 fallback provider, API key 탐색과 network 호출을 추가하지 않는다.
+임의 fallback, key/raw prompt logging, provider retry와 무제한 response를 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

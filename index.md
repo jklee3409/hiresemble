@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선부터 P8 면접 조사·예상 질문·답변 피드백까지 final-source actual E2E와 single-agent read-only self-audit를 통과해 완료됐다. P9 이후는 미착수다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선부터 P8 면접 조사·예상 질문·답변 피드백까지 완료됐고, P8.5가 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 명시적 offline/test 격리를 제공한다. P9 이후는 미착수다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -24,7 +24,7 @@
 ```text
 frontend -- /api/v1, Session Cookie/CSRF --> backend
 backend  -- JDBC/Flyway -----------------> PostgreSQL + pgvector
-backend  -- fixed workflow ports --------> disabled/Fake test AI gateways
+backend  -- fixed workflow ports --------> local OpenAI/Tavily | offline/test disabled/Fake
 backend  -- S3 API ----------------------> MinIO (local)
 backend  -- optional SMTP ---------------> Mailpit (local)
 docs/spec -------------------------------> API·DB·화면·기술 계약

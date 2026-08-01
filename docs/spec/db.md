@@ -344,9 +344,9 @@ Unique `(user_id,agent_run_id,step_key,scope_key,attempt)`. `output_json`에는 
 - `ai_price_items`: provider, product, unit, unit_price와 price version. 외부 provider 단가를 이 명세에 금액으로 고정하지 않는다.
 - `ai_budget_ledgers`: `id,user_id,budget_date,budget_zone,spent_usd,reserved_usd,policy_version`; unique user/date/zone.
 - `ai_budget_reservations`: `id,user_id,operation_type,agent_run_id NULL,mock_turn_id NULL,reserved_usd,settled_usd,status,expires_at,budget_policy_version,price_version,timestamps`.
-- `ai_usage_records`: `id,user_id,agent_run_id NULL,agent_step_id NULL,mock_session_id NULL,mock_turn_id NULL,operation_type,usage_type(CHAT|EMBEDDING|SEARCH),provider,product,model_tier,unit counts,price_version,cost_usd,duration_ms,created_at`.
+- `ai_usage_records`: `id,user_id,agent_run_id NULL,agent_step_id NULL,mock_session_id NULL,mock_turn_id NULL,operation_type,usage_type(CHAT|EMBEDDING|SEARCH),provider,product,model_tier,unit counts,price_version,price_item_id,provider_call_id NULL,cost_usd,duration_ms,created_at`.
 
-chat input/cached input/output, embedding unit, BASIC/ADVANCED search를 모두 기록한다. 무료/cache hit도 0 cost usage row를 남긴다. 동기 mock turn usage는 run/step FK가 null이고 session/turn 복합 FK가 필수다.
+chat input/cached input/output, embedding unit, BASIC/ADVANCED search를 가격 item별 별도 row로 기록한다. 같은 provider 호출의 row는 `provider_call_id + price_item_id`로 중복 저장을 차단한다. 무료/cache hit도 0 cost usage row를 남긴다. 동기 mock turn usage는 run/step FK가 null이고 session/turn 복합 FK가 필수다.
 
 초기 상한은 user default daily 1.00, system daily max 2.00, async run max 0.30, mock turn 0.03, mock session sync total 0.30 USD다. 값은 code constant가 아니라 versioned policy다.
 

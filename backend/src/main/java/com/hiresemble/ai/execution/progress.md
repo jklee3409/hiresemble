@@ -4,6 +4,19 @@
 
 P3 retryable/non-retryable AI 오류 분류와 안전한 projection이 구현됐다.
 
+## [2026-08-01] Session Summary (실패 Provider usage 전달)
+
+- What was done:
+  - `AiExecutionException`이 secret·raw response 없이 이미 발생한 usage row를 전달하도록 확장했다.
+- Key decisions:
+  - Orchestrator가 실패·재시도 판정 전에 incurred usage를 먼저 기록한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - structured output 실패와 retry accounting을 포함한 Backend 420 tests가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-19] Session Summary (AI 오류 분류 경계 구현)
 
 - What was done:

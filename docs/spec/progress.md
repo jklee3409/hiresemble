@@ -4,7 +4,20 @@
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 기준 명세가 P0 승인 문서 버전 1.1로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1 인증부터 P5 공고 등록·분석 기반까지이며 Dashboard 집계와 P6 이후 기능은 아직 없다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1부터 P8까지이며 P8.5 Provider 연결은 구현됐지만 bounded live verification은 아직 없다.
+
+## [2026-08-01] Session Summary (외부 Provider 기술·DB 계약)
+
+- What was done:
+  - local 실제 Provider, offline/test 격리, V13 price version과 다중 usage ledger를 기술·DB 명세에 반영했다.
+- Key decisions:
+  - Spring AI VectorStore는 활성화하지 않고 기존 owner-scoped JDBC/pgvector 경계를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAPI 비변경, V1~V12 불변과 profile 설정을 코드와 대조했다.
+- Next steps:
+  - P9 명세 구현은 별도 요청에서 수행한다.
 
 ## [2026-07-31] Session Summary (닉네임 Modal·최종 학력 계산 계약)
 

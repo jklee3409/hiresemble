@@ -5,7 +5,20 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
 - V1~~V11을 보존한 V12 migration이 조사·질문·답변·피드백 schema와 P8 typed Agent Run link를 추가한다.
-- Backend 전체 61 suites/407 tests와 final-source actual P8/P7/P6 wrapper가 통과했고 실제 provider는 기본 비활성이다.
+- Backend 전체 67 suites/420 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (P8.5 Backend Provider runtime·V13)
+
+- What was done:
+  - OpenAI Chat·Embedding, Tavily, local/offline 설정, exact price query, usage call identity와 V13 catalog를 추가했다.
+- Key decisions:
+  - local real provider는 key·model·price·HTTPS·retry/store 정합성을 startup에서 검증한다.
+- Issues encountered:
+  - 공유 PostgreSQL container의 연결 상한을 test-only Hikari pool 3개로 안정화했다.
+- Validation:
+  - `gradlew check`: 67 suites/420 tests, failure·error·skip 0; P4~P8 actual도 모두 통과했다.
+- Next steps:
+  - key/gate가 준비되면 Codex bounded live verification을 1회 실행한다.
 
 ## [2026-07-31] Session Summary (P8 Backend·DB·API 수직 구현)
 

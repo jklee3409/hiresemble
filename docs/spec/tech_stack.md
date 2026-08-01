@@ -120,7 +120,7 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | PromptRegistry                     | 버전이 있는 프롬프트 관리                                  |
 | AiUsageRecorder                    | chat·embedding·search usage와 immutable 가격 version 기록  |
 
-Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. Structured Output은 `JSON Schema → Java record → workflow validator → domain command validator`를 모두 통과한 결과만 반영한다.
+Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. OpenAI adapter는 Spring AI 요청별 model·timeout·strict JSON Schema를 사용하고 provider retry·response storage·tool calling을 비활성화한다. Structured Output은 `JSON Schema → Java record → workflow validator → domain command validator`를 모두 통과한 결과만 반영한다.
 
 ### 4.3 문서 처리
 
@@ -424,7 +424,7 @@ API 요청
 | Frontend     | Vitest + Vue Test Utils   | form, enum, OUTDATED/coverage/feedback 상태, 409 비교, user cache/draft, SSE 복구                      |
 | E2E          | Playwright                | 가입→업로드→공고→자소서→면접, 두 사용자 404, logout/탈퇴 purge UI                                      |
 
-LLM 품질 테스트는 고정 Fixture와 평가 기준을 사용한다. local/CI의 chat·embedding·search provider는 명시적으로 활성화하지 않으면 `none`/Fake이며 실제 유료 API를 호출하지 않는다. timeout, 구조화 output 실패, 예산 부족과 prompt injection은 Fake/WireMock으로 재현한다.
+LLM 품질 테스트는 고정 Fixture와 평가 기준을 사용한다. 일반 `local`은 OpenAI Chat·Embedding과 Tavily Search를 활성화하고 key·가격·model 계약 누락 시 fail-closed한다. 네트워크 없는 로컬 실행은 `local-offline`을 명시한다. `test`, `ci`, `e2e`와 P4~P8 actual은 실제 key가 환경에 있어도 `none`/Fake를 강제하며 timeout, 구조화 output 실패, 예산 부족과 prompt injection은 Fake/WireMock으로 재현한다.
 
 ---
 

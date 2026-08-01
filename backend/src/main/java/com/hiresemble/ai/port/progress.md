@@ -2,7 +2,21 @@
 
 ## Overview
 
-P3 Chat·Embedding·Search gateway와 usage 계약이 구현됐다.
+Chat·Embedding·Search gateway, multi-usage와 immutable price query 계약이 구현됐다.
+
+## [2026-08-01] Session Summary (price-versioned multi-usage Provider port)
+
+- What was done:
+  - request에 run price version·strict output type·max output token을 추가하고 response를 `List<AiUsage>`로 분해했다.
+  - exact provider/product/unit 조회와 CEILING cost를 소유하는 `AiPriceCatalogQueryPort`를 추가했다.
+- Key decisions:
+  - 하나의 usage row는 하나의 price item만 참조한다.
+- Issues encountered:
+  - 기존 Fake fixture는 secondary constructor로 호환성을 유지했다.
+- Validation:
+  - 전체 420 tests와 adapter unit test가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 bounded search request)
 

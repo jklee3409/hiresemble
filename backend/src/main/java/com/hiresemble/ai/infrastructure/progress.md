@@ -2,7 +2,21 @@
 
 ## Overview
 
-local/production 기본 AI gateway는 network-free disabled 상태이고 Document·Job·Cover Letter·Interview contribution이 runtime에 등록돼 있다. Tavily search adapter는 명시적 opt-in이다.
+local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
+
+## [2026-08-01] Session Summary (OpenAI adapter·Tavily hardening·activation gate)
+
+- What was done:
+  - Spring AI Chat/Embedding adapter, JDBC price query, fail-closed validator와 capability별 disabled Bean을 구현했다.
+  - Tavily response를 2MB bounded stream으로 전환하고 HTTPS/test HTTP·outbound usage 계약을 보강했다.
+- Key decisions:
+  - request option은 model override, strict schema, `maxRetries=0`, `store=false`, `n=1`, tool none으로 고정한다.
+- Issues encountered:
+  - capability 분리 후 기존 Fake fixture의 누락 port를 test configuration에 명시했다.
+- Validation:
+  - OpenAI mock, Tavily WireMock/bounded stream, local/offline Bean matrix와 전체 Backend check가 통과했다.
+- Next steps:
+  - bounded live verification은 key/gate 준비 후 실행한다.
 
 ## [2026-07-31] Session Summary (P8 runtime·Tavily opt-in wiring)
 
