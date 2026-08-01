@@ -1,4 +1,4 @@
-# P1~P8 Layout 안내
+# 공개 인증·P1~P8 Layout 안내
 
 ## 디렉터리 목적
 
@@ -6,7 +6,7 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`PublicLayout.vue`](PublicLayout.vue): 비대칭 brand canvas와 form 우선 mobile signup/login shell
+- [`PublicLayout.vue`](PublicLayout.vue): `/` Landing과 분리된 비대칭 brand canvas, Landing 복귀 브랜드와 form 우선 mobile signup/login shell
 - [`AppLayout.vue`](AppLayout.vue): desktop 상단 navigation, mobile bottom navigation·focus-trapped 더보기, 단일 account menu와 닉네임 Modal
 - [`JobDetailLayout.vue`](JobDetailLayout.vue): 공통 공고 resource header, header offset sticky tab, 명확한 body gap과 Job detail outlet
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
@@ -15,6 +15,7 @@
 
 - Layout은 현재 구현 route의 active navigation, account 닉네임 Modal, logout과 최근 active Run query 기반 진행 중인 분석 drawer를 제공하고 page별 form 상태를 소유하지 않는다.
 - PublicLayout의 CSS node·orbit motion은 장식이며 `prefers-reduced-motion`에서 비활성화한다.
+- route meta title은 layout이 아니라 Router 공통 hook이 관리해 PublicLayout·AppLayout·404에서 같은 규칙을 사용한다.
 
 ## 다른 디렉터리와의 의존 관계
 

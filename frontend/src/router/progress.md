@@ -3,9 +3,23 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, `/guide`, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
+- anonymous `/` 공개 Landing, 인증, onboarding, `/guide`, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
+
+## [2026-08-02] Session Summary (공개 home·공통 route title 정책)
+
+- What was done:
+  - home component를 Landing으로 바꾸고 anonymous navigation을 허용하며 authenticated session은 bootstrap 뒤 dashboard로 replace했다.
+  - AppLayout의 title side effect를 Router `afterEach`로 옮겨 Landing·login·signup·보호 화면·404에 공통 적용했다.
+- Key decisions:
+  - 기존 auth bootstrap, publicOnly, requiresAuth, safe returnTo와 401/logout 보호 route 이탈 계약을 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router component test와 authenticated Landing flash 감시·anonymous returnTo Playwright가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (다시 볼 수 있는 이용 가이드 route)
 

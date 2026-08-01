@@ -8,11 +8,26 @@
 - `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
 - `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
 - `job-analysis.spec.ts`가 fixture로 P6 결과·OUTDATED·접근성·desktop/mobile overflow를 검증한다.
+- `landing.spec.ts`가 공개 진입, auth-aware `/`, 1440·390·320px와 Dashboard 0/3~3/3 fixture를 검증한다.
 - `job-analysis.actual.spec.ts`가 P6 실제 Backend 분석·reuse·재분석·근거 부족·owner 격리를 검증하도록 구성되어 있다.
 - `cover-letter.actual.spec.ts`가 P7 실제 생성·문항·partial AI·version·검증·finalize·restore·archive·근거 수명주기·owner 격리를 검증한다.
 - `interview-preparation.actual.spec.ts`가 P8 실제 조사·coverage·질문·답변 CAS·feedback·retry·history delete·owner 격리를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-08-02] Session Summary (공개 Landing·첫 사용 브라우저 회귀)
+
+- What was done:
+  - anonymous Landing→login→브랜드 복귀→signup, authenticated `/`의 무깜빡임 dashboard redirect와 보호 route returnTo를 자동화했다.
+  - Landing 1440·390·320px overflow·keyboard·anchor·reduced motion과 Dashboard 0/3~3/3 fixture를 추가했다.
+- Key decisions:
+  - 모든 API는 local route fixture로 차단하고 실제 AI·검색 Provider를 호출하지 않았다.
+- Issues encountered:
+  - 첫 실행의 CSS duration 표기와 query slash encoding assertion을 브라우저 표현에 독립적으로 보정했다.
+- Validation:
+  - Landing Chromium 6/6, 기존 UI shell 3/3, 구현 전 visual baseline 1/1과 Landing desktop/mobile·Public login·Dashboard 2/3 캡처 통과.
+- Next steps:
+  - 생성 screenshot은 `output/playwright/landing`의 검수 artifact로만 유지한다.
 
 ## [2026-08-02] Session Summary (자동 분석 journey·전후 화면 캡처)
 

@@ -1,18 +1,20 @@
-# P1~P8 Page 안내
+# 공개·P1~P8 Page 안내
 
 ## 디렉터리 목적
 
-P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedback page 및 전용 404까지 관리한다.
+공개 서비스 소개 Landing과 P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedback page 및 전용 404까지 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
+- [`LandingPage.vue`](LandingPage.vue): 가입 전 서비스 가치·5단계 이용 흐름·제품 preview·AI 활용 원칙과 login/signup CTA를 제공하는 공개 진입점
 - [`SignupPage.vue`](SignupPage.vue): 가입 Form과 onboarding 이동
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·학력 단계와 서버 계산 최종 학력·희망 조건·문서 이동/추후 입력 P2 흐름
 - [`GuidePage.vue`](GuidePage.vue): 실제 공통 UI mini preview로 내 정보→자료→자동 공고 분석→자기소개서→면접 순서를 안내하는 재방문 가능 가이드
-- [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 상태 기반 다음 할 일과 신규 사용자 시작 화면
+- [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 부분 완료·query unknown을 구분하는 3항목 첫 사용 체크리스트
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 편집 영역, Form 하단 저장 상태·409 재적용
-- [`DashboardPage.test.ts`](DashboardPage.test.ts): 신규·기존 사용자, 사용자 이름 fallback과 부분 조회 오류 대시보드 회귀
+- [`LandingPage.test.ts`](LandingPage.test.ts): 공개 CTA·semantic landmark·5단계·anchor·금지 문구와 보호 route 비노출 회귀
+- [`DashboardPage.test.ts`](DashboardPage.test.ts): 0/3~3/3·AI 작업·일반 현황 공존과 profile/document/job 부분 조회 오류 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력 단계·서버 계산 최종 학력, 경력·자격증·어학·수상 목록·form·삭제·409 재적용과 학력 상태 한국어 표시
 - [`ProfileActivitiesPage.vue`](ProfileActivitiesPage.vue): 문서 AI 추출 경험과 분리된 사용자 직접 대외활동 CRUD·소재 후보 사용 선택
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort와 terminal 작업 개별·현재 페이지 선택 삭제
@@ -29,7 +31,6 @@ P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedba
 - [`JobInterviewPage.vue`](JobInterviewPage.vue): 공고별 자기소개서·조사 품질·질문 조건 면접 준비 접수
 - [`InterviewListPage.vue`](InterviewListPage.vue): `qs*` URL filter·pagination·sort 기반 예상 질문 set 목록
 - [`InterviewQuestionSetPage.vue`](InterviewQuestionSetPage.vue): 조사 source·coverage·질문·답변 version·409·feedback 상세
-- [`RootRedirectPage.vue`](RootRedirectPage.vue): 인증 bootstrap 대기 shell
 - [`NotFoundPage.vue`](NotFoundPage.vue): 전용 404
 - [`authFlow.test.ts`](authFlow.test.ts): 가입·로그인·field 오류 component 흐름
 - [`onboardingFlow.test.ts`](onboardingFlow.test.ts), [`profilePages.test.ts`](profilePages.test.ts): P2 page 흐름
@@ -47,6 +48,7 @@ P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedba
 ## 변경 시 주의사항
 
 - Dashboard의 명세상 전용 집계 endpoint는 아직 구현되지 않았다. 현재 API의 `totalElements`와 반환된 최근 항목만 표시하고 paginated `items.length`를 전체 수치로 사용하지 않는다.
+- Landing의 주요 CTA는 `/signup`과 `/login`만 사용하고 보호 제품 route를 anonymous 사용자에게 직접 연결하지 않는다.
 - 공고 분석 결과는 해당 Job child page에서만 표시하며 Agent Run 목록·상세에 결과 전체를 복제하지 않는다.
 - 자기소개서 전체 editor는 canonical edit route에만 두고 공고 tab과 Agent Run에는 상태·resource link만 표시한다.
 - P8 `/interviews`는 예상 질문 set만 표시하며 P9 mock session placeholder를 만들지 않는다.

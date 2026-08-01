@@ -5,7 +5,22 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 64 files/249 tests와 P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 65 files/258 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (공개 Landing·Dashboard 첫 사용 흐름)
+
+- What was done:
+  - `LandingPage.vue`와 공개 route, 공통 title hook, 정확한 metadata를 추가하고 인증 form·onboarding·보호 guide 계약을 유지했다.
+  - Dashboard 시작 영역을 부분 완료와 query unknown을 구분하는 3항목 체크리스트로 바꾸고 일반 제품 현황을 항상 함께 표시했다.
+- Key decisions:
+  - 5단계 번호·아이콘·제목·핵심 설명만 `productJourney.ts`로 공유하고 공개 페이지에는 보호 route link를 두지 않았다.
+- Issues encountered:
+  - Chromium의 CSS duration 직렬화와 query slash encoding 차이를 E2E assertion에서 정규화했다.
+- Validation:
+  - `corepack pnpm check`: 65 files/258 tests, lint·format·typecheck·build 통과.
+  - `landing.spec.ts` Chromium 6/6, `ui-shell.spec.ts` 3/3과 1440·390·320px·4개 화면 캡처 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (전반 B2C UI·공고 자동 분석 UX)
 

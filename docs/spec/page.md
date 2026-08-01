@@ -1,6 +1,6 @@
 # 페이지 구조 명세서
 
-- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
+- 문서 버전: 1.3 (공개 Landing·첫 사용 흐름 계약)
 - Frontend: Vue 3 SPA
 - 기본 화면: Desktop First, 모바일 반응형
 - API Prefix: `/api/v1`
@@ -12,6 +12,7 @@
 
 ```text
 /
+├─ 공개 서비스 소개 Landing
 ├─ /signup
 ├─ /login
 ├─ /onboarding
@@ -65,7 +66,7 @@ Canonical redirect:
 
 | 입력                     | 결과                                                                |
 | ------------------------ | ------------------------------------------------------------------- |
-| `/`, anonymous           | `/login`                                                            |
+| `/`, anonymous           | 공개 서비스 소개 Landing                                            |
 | `/`, authenticated       | `/dashboard`                                                        |
 | `/signup`, authenticated | 방금 가입한 session이면 `/onboarding`, 그 외 `/dashboard`로 replace |
 | `/login`, authenticated  | 안전한 `returnTo` 또는 `/dashboard`로 replace                       |
@@ -77,14 +78,15 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 현재 실제 router는 `/settings/*`, `/backoffice/*`, `/mock-interviews/*`, `/jobs/:jobId/interview/mock/new`를 구현하지 않았다. 다음 표의 미래 route는 구현 전까지 목표 계약이며 현재 route처럼 취급하지 않는다.
 
-| Route group                              | Implementation status | Phase  | prerequisite API                                 |
-| ---------------------------------------- | --------------------- | ------ | ------------------------------------------------ |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8  | 현재 OpenAPI 63 paths/84 operations              |
-| `/settings/usage`                        | `PLANNED`             | P8.7   | `GET /settings/usage`, `/settings/usage/history` |
-| account, AI, privacy 설정 세 route       | `PLANNED`             | P10-A  | account, settings AI/privacy API                 |
-| `/jobs/:jobId/interview/mock/new`        | `PLANNED`             | P9     | mock session create                              |
-| `/mock-interviews/:sessionId`            | `PLANNED`             | P9     | mock session/start/message/complete/feedback     |
-| `/backoffice`와 모든 child               | `PLANNED`             | P8.9-A | `/api/v1/backoffice/**` ADMIN GET                |
+| Route group                                        | Implementation status | Phase     | prerequisite API                                 |
+| -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
+| `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 63 paths/84 operations              |
+| `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
+| account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
+| `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
+| `/mock-interviews/:sessionId`                      | `PLANNED`             | P9        | mock session/start/message/complete/feedback     |
+| `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A    | `/api/v1/backoffice/**` ADMIN GET                |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
 
@@ -92,7 +94,16 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 ## 2. 공통 Layout
 
-## 2.1 PublicLayout
+## 2.1 공개 LandingPage
+
+대상: anonymous `/`.
+
+- 서비스 가치, 해결하려는 문제, 내 정보→자료→공고 자동 분석→자기소개서→면접의 5단계, 사용자 중심 가치와 AI 활용 원칙을 설명한다.
+- 주요 action은 `/signup`과 `/login`만 제공하며 보호 route로 직접 연결하지 않는다.
+- semantic `header`, `main`, `section`, `footer`, skip link와 section anchor를 제공한다.
+- 로그인 사용자의 `/`는 인증 bootstrap 완료 뒤 component를 mount하기 전에 `/dashboard`로 replace한다.
+
+## 2.2 PublicLayout
 
 대상:
 
@@ -106,7 +117,9 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 - 개인정보·AI 처리 안내
 - 오류 메시지 영역
 
-## 2.2 AppLayout
+PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아간다. Landing은 인증 form 전용 PublicLayout 안에 넣지 않는다.
+
+## 2.3 AppLayout
 
 대상: 로그인 보호 페이지.
 
@@ -133,7 +146,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 Frontend의 TypeScript type과 runtime validation은 [`api.md`](api.md) 2장의 canonical enum 값을 이름과 의미까지 그대로 사용한다. 화면 전용 alias나 추가 상태를 만들지 않고 알 수 없는 값은 안전한 일반 상태와 갱신 안내로 처리한다. 특히 공고 업무·추출, 문서 parse·evidence 추출, 자기소개서, 조사 coverage, 모의 면접·feedback, Agent Run 상태 축을 서로 합치지 않는다.
 
-## 2.3 BackofficeLayout (`PLANNED` P8.9-A)
+## 2.4 BackofficeLayout (`PLANNED` P8.9-A)
 
 대상: `/backoffice/**` ADMIN route.
 
@@ -200,6 +213,8 @@ API:
 
 온보딩과 대시보드는 언제든 다시 볼 수 있는 `/guide` 진입점을 제공한다. 가이드는 내 정보→자료→공고 자동 분석→자기소개서→면접의 5단계를 실제 공통 UI component와 안전한 demo data로 만든 mini preview, 텍스트 설명과 route CTA로 보여 준다. 강제 tour나 영구 localStorage dismiss 상태는 사용하지 않는다.
 
+공개 `/`는 가입 전 서비스 가치와 이 5단계의 의미를 설명하지만 보호 route CTA를 제공하지 않는다. `/onboarding`은 가입 직후 실제 정보를 저장하는 제품 기능이고, `/guide`는 로그인 뒤 실제 기능 route로 이동하는 재방문 가이드다.
+
 ## 3.4 `/guide`
 
 - 5단계 전체 이용 순서와 단계별 실제 route CTA
@@ -210,6 +225,19 @@ API:
 ---
 
 # 4. 대시보드 `/dashboard`
+
+현재 구현은 별도 Dashboard API가 아직 없으므로 기존 owner-scoped profile·Document·Job·Agent Run query의 `totalElements`와 최근 항목을 조합한다. 목표 `GET /dashboard` projection은 P10-A 구현 전까지 `PLANNED`이며 현재 API처럼 취급하지 않는다.
+
+첫 사용 체크리스트:
+
+1. `profile.profileCompleted === true`: 기본 정보 준비 완료
+2. document `totalElements > 0`: 이력서 또는 포트폴리오 등록 완료
+3. job `totalElements > 0`: 첫 관심 공고 등록 완료
+
+- 완료 항목 수를 `n / 3`으로 표시하고 하나를 완료해도 남은 항목을 유지한다.
+- 세 항목을 모두 완료했을 때만 체크리스트를 숨기며 AI 작업 수는 표시 여부에 영향을 주지 않는다.
+- profile·document·job query 실패는 미완료나 0개로 계산하지 않고 항목별 `확인하지 못했어요`와 재조회 action을 제공한다.
+- 체크리스트와 일반 지원 현황, 다음 할 일, 최근 활동은 함께 표시한다. 영구 dismiss 상태와 profile 완료 route gate는 사용하지 않는다.
 
 ## 주요 카드
 
@@ -229,11 +257,11 @@ API:
 - 지원서 작성
 - 모의 면접 시작
 
-## API
+## 목표 API (`PLANNED` P10-A)
 
 - `GET /dashboard`
 
-Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지 않는다. 프로필 카드에는 완료율, 부족 항목과 `/profile/basic` 링크를 표시하며 미완료를 기능 차단으로 표현하지 않는다.
+목표 Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지 않는다. 현재 임시 구현도 `items.length`가 아니라 각 owner-scoped 목록의 `totalElements`를 사용한다. 프로필 카드에는 완료율, 부족 항목과 `/profile/basic` 링크를 표시하며 미완료를 기능 차단으로 표현하지 않는다.
 
 ---
 
@@ -958,8 +986,9 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 
 # 16. Route Guard
 
+- Public Landing: anonymous `/`; authenticated `/`는 `/dashboard`로 replace
 - Public Only: `/signup`, `/login`
-- Auth Required: 그 외
+- Auth Required: `/onboarding`, `/guide`, `/dashboard`와 그 밖의 현재 제품 route
 - Profile Recommended: 공고 분석·자기소개서·면접 기능
 - Profile Recommended는 완료율 표시와 경고뿐이며 `profileCompleted=false`로 강제 redirect하지 않음
 - 필수 데이터 부족 시 개별 workflow prerequisite에 따라 경고·409를 처리하고 프로필 이동 링크 제공
@@ -979,6 +1008,19 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 ---
 
 # 18. 핵심 E2E 시나리오
+
+## 공개 진입
+
+```text
+anonymous /
+→ Landing 확인
+→ 로그인
+→ PublicLayout 브랜드로 Landing 복귀
+→ 시작하기
+→ 회원가입
+```
+
+authenticated `/`는 Landing을 mount하지 않고 `/dashboard`로 replace하며, anonymous 보호 route는 안전한 `returnTo`와 함께 `/login`으로 이동한다.
 
 ## 시나리오 A
 

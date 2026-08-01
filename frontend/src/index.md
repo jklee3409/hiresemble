@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Vue 애플리케이션의 실행 코드와 타입 선언을 관리한다. P1 인증부터 P7 Cover Letter API·route·editor·SSE 상호작용까지 책임별 디렉터리로 구성한다.
+이 디렉터리는 Vue 애플리케이션의 실행 코드와 타입 선언을 관리한다. 공개 Landing부터 P1 인증과 현재 P8 제품 route·editor·SSE 상호작용까지 책임별 디렉터리로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -26,7 +26,7 @@
 - `main.ts`는 Pinia, Vue Router와 Vue Query를 한 곳에서 조립한다. 설치된 PrimeVue는 현재 component 사용처가 없어 전역 초기화하지 않는다.
 - `App.vue`는 route component가 표시될 최상위 outlet만 소유한다.
 - `env.d.ts`는 `VITE_API_BASE_URL`과 선택적 proxy target의 접근 타입을 고정한다.
-- `styles/main.css`와 `shared/ui`가 현재 route 전반의 Hiresemble Blue token, BrandMark, 44px control, status, loading·empty·error·motion 표현을 일관되게 제공한다.
+- `styles/main.css`와 `shared/ui`가 공개 Landing과 현재 route 전반의 Hiresemble Blue token, BrandMark, 44px control, status, 5단계 journey 정의, loading·empty·error·motion 표현을 일관되게 제공한다.
 - profile route는 URL deep link를 유지하면서 desktop 세로 outline과 mobile section selector로 하나의 Career Profile Workspace를 구성한다.
 - 세부 책임은 각 하위 디렉터리의 `index.md`에서 관리하며 P8 이후 빈 기능 계층은 만들지 않는다.
 

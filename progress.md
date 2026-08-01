@@ -15,6 +15,24 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (공개 Landing·첫 사용 체크리스트 도입)
+
+- What was done:
+  - anonymous `/`에 서비스 가치·5단계 이용 흐름·제품 preview·AI 활용 원칙과 login/signup CTA를 제공하는 공개 Landing을 추가했다.
+  - authenticated `/`의 bootstrap 선행 redirect, 공통 route title, PublicLayout Landing 복귀와 `/guide` 보호 CTA를 유지했다.
+  - Dashboard에 profile·Document·Job의 실제 query 상태 기반 0/3~3/3 체크리스트를 추가하고 일반 현황·다음 할 일·최근 활동과 공존시켰다.
+- Key decisions:
+  - Landing과 Guide는 canonical 5단계 정의만 공유하고 공개 CTA와 보호 route action·preview는 페이지별로 분리했다.
+  - query 실패는 미완료나 0개로 계산하지 않고 항목별 unknown·재조회 상태로 표시했다. Backend·DB·AI workflow 계약은 변경하지 않았다.
+- Issues encountered:
+  - in-app Browser 인스턴스가 없어 외부 서비스 화면을 이번 세션에서 다시 열지 못했고, 2026-08-02 저장소의 실제 Playwright 레퍼런스 조사 기록만 설계 근거로 사용했다.
+  - 첫 Playwright 실행의 reduced-motion 시간 문자열과 query URL encoding assertion 2건을 브라우저 표현에 독립적으로 보정했다.
+- Validation:
+  - Frontend `corepack pnpm check`: 65 files/258 tests, lint·format·typecheck·production build 통과.
+  - Playwright Landing 6/6, 기존 UI shell 3/3, 구현 전 visual baseline 1/1 통과. 1440·390·320px overflow, keyboard skip link, anchor, reduced motion, auth-aware `/`, 0/3~3/3과 4개 화면 캡처를 확인했다.
+- Next steps:
+  - 별도 Browser 인스턴스가 제공되면 국내 취업 서비스 공개 Landing의 최신 화면을 다시 확인할 수 있다.
+
 ## [2026-08-02] Session Summary (전반 UI/UX 재설계·공고 자동 분석 전환)
 
 - What was done:

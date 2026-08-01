@@ -6,14 +6,14 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                             | 역할                                                                                                             |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [`functional.md`](functional.md) | 회원·프로필·문서·공고·자기소개서·면접·Agent Run·운영 기반의 비즈니스 규칙, 사용자 여정과 AC-01–AC-17을 정의한다. |
-| [`api.md`](api.md)               | `/api/v1`, 현재 63/84 baseline과 phase별 `PLANNED` usage·failure·Backoffice 계약을 구분한다.                     |
-| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 논리 상태, 테이블·관계·제약, 트랜잭션과 데이터 보존 정책을 정의한다.                    |
-| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice route, layout, API 연결과 E2E를 정의한다.              |
-| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스 아키텍처, 기술 선택, 보안, AI workflow, 비용 제어, 테스트·배포 원칙과 MVP 제외 범위를 정의한다.  |
-| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                         |
+| 경로                             | 역할                                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [`functional.md`](functional.md) | 회원·프로필·문서·공고·자기소개서·면접·Agent Run·운영 기반의 비즈니스 규칙, 사용자 여정과 AC-01–AC-17을 정의한다.      |
+| [`api.md`](api.md)               | `/api/v1`, 현재 63/84 baseline과 phase별 `PLANNED` usage·failure·Backoffice 계약을 구분한다.                          |
+| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 논리 상태, 테이블·관계·제약, 트랜잭션과 데이터 보존 정책을 정의한다.                         |
+| [`page.md`](page.md)             | Vue SPA의 공개 Landing·실제 제품 route와 `PLANNED` settings/mock/Backoffice route, layout, API 연결과 E2E를 정의한다. |
+| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스 아키텍처, 기술 선택, 보안, AI workflow, 비용 제어, 테스트·배포 원칙과 MVP 제외 범위를 정의한다.       |
+| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                              |
 
 현재 관리 대상 하위 디렉터리는 없다.
 

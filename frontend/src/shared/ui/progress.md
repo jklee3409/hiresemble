@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-02] Session Summary (제품 5단계 canonical journey 정의)
+
+- What was done:
+  - Landing과 Guide가 공유하는 번호·아이콘·제목·핵심 설명을 `productJourney.ts`에 추가했다.
+- Key decisions:
+  - 보호 route·action과 page별 preview는 공용 정의에 넣지 않고 각 page가 소유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Landing·Guide component tests와 전체 typecheck·build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (PageHeader 책임별 variant)
 
 - What was done:

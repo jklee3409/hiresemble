@@ -2,9 +2,23 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 문서 버전 1.2로 동기화되어 있다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 page 명세는 공개 Landing·첫 사용 흐름 계약 1.3으로 갱신됐다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-02] Session Summary (공개 Landing·첫 사용 페이지 계약)
+
+- What was done:
+  - `page.md`에 anonymous/authenticated `/`, Landing·PublicLayout·onboarding·guide 역할과 Dashboard 3항목 체크리스트를 동기화했다.
+  - 현재 owner-scoped 목록 조합과 P10-A 목표 `GET /dashboard` 계약을 명시적으로 구분했다.
+- Key decisions:
+  - API·DB·AI workflow 공개 계약은 변경하지 않고 페이지 route·표시 정책만 갱신했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router·page 구현, 65 files/258 tests와 Playwright Landing 6/6을 명세와 대조했다.
+- Next steps:
+  - P10-A에서 canonical Dashboard API를 구현할 때 현재 조합 query를 교체한다.
 
 ## [2026-08-02] Session Summary (자동 분석·제품 UI 계약 동기화)
 

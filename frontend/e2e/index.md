@@ -17,6 +17,7 @@
 | [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                 |
 | [`job-auto-analysis.spec.ts`](job-auto-analysis.spec.ts)                       | 등록→서버 자동 BALANCED 분석→결과→자기소개서 이동·desktop/mobile fixture                        |
 | [`ui-redesign.visual.spec.ts`](ui-redesign.visual.spec.ts)                     | 안전한 고정 fixture의 주요 화면 1440/390px 전후 full-page 캡처                                  |
+| [`landing.spec.ts`](landing.spec.ts)                                           | anonymous Landing→login→복귀→signup, auth-aware `/`, 1440/390/320px와 Dashboard 0/3~3/3 fixture |
 | [`job-analysis.actual.spec.ts`](job-analysis.actual.spec.ts)                   | 실제 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리                                            |
 | [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts)                   | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리                         |
 | [`interview-preparation.actual.spec.ts`](interview-preparation.actual.spec.ts) | 실제 조사 coverage·source·질문·답변 409·feedback·retry·history delete·격리                      |

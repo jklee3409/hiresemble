@@ -5,7 +5,20 @@
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
 - P1 auth·Session부터 P7 `features/cover-letters`, API·page·lazy route 구현·테스트가 있다.
-- 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter 화면과 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·P8 면접·AI 설정 기능은 아직 없다.
+- 공개 Landing과 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계와 AI 설정 기능은 아직 없다.
+
+## [2026-08-02] Session Summary (공개 진입과 제품 첫 사용 Source)
+
+- What was done:
+  - Landing page·test, auth-aware home route, 공통 journey 정의와 Dashboard 부분 완료 체크리스트 source를 추가했다.
+- Key decisions:
+  - 공개 설명과 보호 제품 action의 책임을 route/page 경계에서 분리하고 새 store·dependency를 만들지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 65 files/258 tests와 production build, Chromium Landing·UI shell 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 Cover Letter Vue source)
 

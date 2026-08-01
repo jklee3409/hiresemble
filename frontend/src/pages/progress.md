@@ -2,7 +2,21 @@
 
 ## Overview
 
-P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-08-02] Session Summary (서비스 소개 Landing·Dashboard 체크리스트)
+
+- What was done:
+  - 서비스 가치, 문제, 5단계, 핵심 가치, AI 활용 원칙과 CTA를 semantic section으로 구성한 `LandingPage`를 추가했다.
+  - Dashboard의 신규 사용자 전용 분기를 제거하고 profile·Document·Job별 완료·미완료·unknown 상태를 표시하는 체크리스트를 일반 현황 위에 배치했다.
+- Key decisions:
+  - 세 항목 모두 완료할 때만 체크리스트를 숨기며 AI 작업 유무와 영구 dismiss 상태는 사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Landing·Dashboard·Guide component tests와 1440·390·320px Playwright, 시각 캡처가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (핵심 페이지 정보 구조·가이드)
 

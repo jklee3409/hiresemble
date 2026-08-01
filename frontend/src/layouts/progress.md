@@ -4,6 +4,20 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-02] Session Summary (인증 shell Landing 복귀·title 책임 분리)
+
+- What was done:
+  - PublicLayout의 desktop·mobile 브랜드가 공개 Landing으로 돌아가는 기존 link를 회귀 고정하고 인증 canvas copy를 Landing과 구분했다.
+  - AppLayout에서 route title 갱신을 제거해 Router 공통 hook이 모든 layout의 제목을 관리하게 했다.
+- Key decisions:
+  - PublicLayout은 login/signup form 전용 두 column 구조를 유지하고 Landing layout으로 확장하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PublicLayout·AppLayout component test와 desktop/mobile 인증 shell Playwright가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (제품 navigation·공고 상세 shell 재설계)
 
 - What was done:
