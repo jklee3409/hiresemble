@@ -13,8 +13,8 @@ test.describe('P5 actual Backend Job lifecycle', () => {
       descriptionText: manualDescription(),
     })
     expect(created.status).toBe(201)
-    await expect(page.getByTestId('job-extraction-status')).toContainText('수동 본문 입력')
-    await expect(page.getByRole('status')).toContainText('URL 추출 작업은 만들지 않았습니다')
+    await expect(page.getByTestId('job-extraction-status')).toContainText('직접 입력 완료')
+    await expect(page.getByRole('status')).toContainText('직접 입력한 본문으로 공고를 등록했어요.')
 
     await changeStatus(page, 'SUBMITTED', '서류 제출')
     const submitted = await getJson<JobDetail>(page, `/api/v1/jobs/${created.jobId}`)
@@ -39,8 +39,7 @@ test.describe('P5 actual Backend Job lifecycle', () => {
     })
     expect(created.status).toBe(202)
     expect(created.runId).toMatch(UUID_PATTERN)
-    await expect(page.getByText('URL 추출 작업을 시작했습니다')).toBeVisible()
-    await expect(page.getByTestId('job-extraction-status')).toContainText('URL 추출 완료', {
+    await expect(page.getByTestId('job-extraction-status')).toContainText('불러오기 완료', {
       timeout: 120_000,
     })
 
@@ -77,7 +76,7 @@ test.describe('P5 actual Backend Job lifecycle', () => {
       .getByRole('button', { name: '저장', exact: true })
       .click()
 
-    await expect(page.getByTestId('job-extraction-status')).toContainText('수동 본문 입력', {
+    await expect(page.getByTestId('job-extraction-status')).toContainText('직접 입력 완료', {
       timeout: 120_000,
     })
     await expect(runLink).toHaveAttribute('href', originalRunHref ?? '')
