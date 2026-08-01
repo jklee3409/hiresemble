@@ -15,6 +15,22 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (이력서 소재 검토·사용자 대외활동 B2C UX 보정)
+
+- What was done:
+  - 문서 등록·분석·소재 검토 흐름을 상태 중심으로 재구성하고 일괄 승인·제외·재검토, 전문 문서 패널, 접힌 AI 상세, 전역 토스트·확인 모달을 구현했다.
+  - AI 추출 경험과 분리된 사용자 직접 등록 대외활동 V15·소유권 기반 CRUD·소재 후보 정책을 Backend와 Frontend에 연결하고 기능·API·DB·페이지 명세를 동기화했다.
+- Key decisions:
+  - 문서 근거는 사용자 승인 항목만 활용하고, 직접 등록 대외활동은 `useAsMaterial=true`일 때만 동일한 verified snapshot을 통해 자소서·면접 후보가 되도록 했다.
+  - 월간 사용량 API가 없는 현재 계약에서는 USD 금액을 숨기고 작업 예약 한도 대비 집계 비율만 사실대로 표시한다.
+- Issues encountered:
+  - 실제 브라우저 검수에서 Agent Run 전체 오류의 기술 문구와 실패한 소재 요약의 부정확한 `정리 중` 표시를 발견해 사용자용 안전 문구와 실제 실패 상태로 보정했다.
+- Validation:
+  - Backend `gradlew check --rerun-tasks --no-daemon --console=plain --max-workers=1`: 69 suites/469 tests 통과. Frontend `corepack pnpm check`: 61 files/243 tests, lint·format·typecheck·build 통과. `docker compose config --quiet`, `git diff --check` 통과.
+  - local-offline Backend 8081과 Frontend 5174에서 실제 가입·대외활동 등록·새로고침 유지·삭제 모달 focus/ESC·TXT 업로드·분석 실패·재분석 확인·AI 상세 accordion·390px overflow를 Playwright로 확인했으며 외부 AI 호출은 0회였다.
+- Next steps:
+  - 월간 누적·전체 한도는 P8.7 집계 API가 구현될 때 연결하고, 실제 Provider가 허용된 환경에서 성공 분석 자료의 다중 소재 브라우저 흐름을 추가 검증한다.
+
 ## [2026-08-01] Session Summary (문서 candidate rejection terminal 오분류 보정)
 
 - What was done:

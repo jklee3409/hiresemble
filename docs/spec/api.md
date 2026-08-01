@@ -10,7 +10,7 @@
 
 이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다.
 
-현재 implemented baseline은 63 paths/84 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 이번 재설계에서 새로 추가하는 미래 경계는 13장에 phase와 `PLANNED`를 명시한다. 문서 추가만으로 implemented 숫자를 변경하지 않는다.
+현재 implemented baseline은 66 paths/90 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 새 미래 경계는 13장에 phase와 `PLANNED`를 명시한다.
 
 ## 1. 공통 HTTP 계약
 
@@ -299,8 +299,13 @@ signup은 `/onboarding`으로 이동한다. 이후 route는 `profileCompleted=fa
 | `POST /profile/careers`                             | `CareerWrite`                                               | 없음          | 201 `CareerDto`                      | 400             |
 | `PUT /profile/careers/{careerId}`                   | `CareerWrite`                                               | body version  | 200 `CareerDto`                      | 400/404/409     |
 | `DELETE /profile/careers/{careerId}`                | 없음                                                        | query version | 204                                  | 404/409         |
+| `GET /profile/activities`                           | page,size; sort `startedAt,desc` 또는 `createdAt,desc`      | 없음          | 200 `PageResponse<ActivityDto>`      | 400/401         |
+| `GET /profile/activities/{activityId}`              | 없음                                                        | 없음          | 200 `ActivityDto`                    | 404             |
+| `POST /profile/activities`                          | `ActivityWrite`                                             | 없음          | 201 `ActivityDto`                    | 400             |
+| `PUT /profile/activities/{activityId}`              | `ActivityWrite`                                             | body version  | 200 `ActivityDto`                    | 400/404/409     |
+| `DELETE /profile/activities/{activityId}`           | 없음                                                        | query version | 204                                  | 404/409         |
 
-자격증·어학·수상·경력 row 생성·수정·삭제와 직접 입력 evidence 동기화는 한 transaction이다. 학력 CRUD는 `profile_evidence`를 생성하거나 갱신하지 않는다.
+자격증·어학·수상·경력·대외활동 row 생성·수정·삭제와 직접 입력 evidence 동기화는 한 transaction이다. 학력 CRUD는 `profile_evidence`를 생성하거나 갱신하지 않는다. `ActivityWrite`는 `title 1..200`, `activityType`, `organizer 1..200`, `startedAt?`, `endedAt?`, `ongoing`, `role? <=200`, `description 1..10000`, `achievements? <=10000`, absolute HTTP(S) `relatedUrl? <=1000`, `useAsMaterial`을 가진다. `useAsMaterial=false`는 연결 evidence를 `REJECTED`, true는 `VERIFIED`로 동기화한다.
 
 ## 6. 문서·근거
 
@@ -316,9 +321,12 @@ signup은 `/onboarding`으로 이동한다. 이후 route는 `profileCompleted=fa
 | `DELETE /documents/{id}`                    | version query                                                                                                                                                                   | query version  | 204, 즉시 404                              | 404/409                               |
 | `GET /profile/evidence`                     | `verificationStatus?:EvidenceVerificationStatus`, `evidenceCategory?:string 1..80`, `documentId?:UUID`, page,size; sort `updatedAt,desc` 또는 `confidence,desc`                 | 없음           | 200 비학력 `PageResponse<EvidenceDto>`     | 400/401/404                           |
 | `PUT /profile/evidence/{id}`                | `title:string 1..250`, `content:string 1..20000`, `metadata:object <=16KiB`, `version:long`                                                                                     | body version   | 200 `EvidenceDto`                          | 400/404/409 `EVIDENCE_SOURCE_DELETED` |
-| `PATCH /profile/evidence/{id}/verification` | DOCUMENT_CHUNK만, `status`는 `VERIFIED` 또는 `REJECTED`, `version:long`                                                                                                         | body version   | 200 `EvidenceDto`                          | 400/404/409 source/state conflict     |
+| `PATCH /profile/evidence/{id}/verification` | DOCUMENT_CHUNK만, `status`는 `PENDING`, `VERIFIED` 또는 `REJECTED`, `version:long`                                                                                              | body version   | 200 `EvidenceDto`                          | 400/404/409 source/state conflict     |
+| `PATCH /profile/evidence/verification`      | 서로 다른 DOCUMENT_CHUNK `items:[{id,version}]` 1..100, `status`는 `PENDING`, `VERIFIED` 또는 `REJECTED`                                                                        | item versions  | 200 `EvidenceDto[]`, 전체 원자적 적용      | 400/404/409 source/state conflict     |
 
 `PARSED + evidenceExtractionStatus=FAILED`는 text를 유지한다. document 또는 구조화 profile source 삭제로 tombstone이 된 `SOURCE_DELETED` evidence는 읽기 전용이며 수정·승인·거절할 수 없다. document 삭제는 metadata를 즉시 숨기고 Object/text/chunk/embedding 삭제를 시작하며 보존 provenance는 `SOURCE_DELETED`만 반환한다. 학력 source 및 교육·학력 category evidence는 목록·상세·분석에서 반환하지 않고, 문서 추출 적용 단계와 DB 제약에서도 새 active row 생성을 거부한다.
+
+`DocumentSummaryDto`와 `DocumentDetailDto`는 사용자가 업로드한 실제 파일을 확인할 수 있도록 `originalFilename`을 반환한다. `displayName`은 사용자가 정한 자료 이름이며 storage key나 checksum은 계속 숨긴다.
 
 ## 7. 채용 공고
 

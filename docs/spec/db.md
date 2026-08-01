@@ -8,7 +8,7 @@
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 향후 Flyway가 구현해야 할 목표 데이터 계약이다. 현재 적용된 migration은 `V1__enable_extensions.sql`뿐이며 이 문서 변경은 table이나 migration 구현 완료를 뜻하지 않는다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 사용자 직접 대외활동을 추가한 V15이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
 
 ## 1. 공통 무결성·소유권
 
@@ -35,6 +35,7 @@
 | `job_postings.extraction_status`                     | `QUEUED`, `EXTRACTING`, `EXTRACTED`, `MANUAL_INPUT_PROVIDED`, `NEEDS_MANUAL_INPUT`, `FAILED`                                                                                                            |
 | `documents.parse_status`                             | `UPLOADED`, `PARSING`, `PARSED`, `NEEDS_MANUAL_TEXT`, `FAILED`                                                                                                                                          |
 | `documents.evidence_extraction_status`               | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
+| `activities.activity_type`                           | `CLUB`, `VOLUNTEERING`, `CONTEST`, `SUPPORTERS`, `PRESS_CORPS`, `STUDENT_COUNCIL`, `EDUCATION_PROGRAM`, `INTERNATIONAL`, `OTHER`                                                                        |
 | `profile_evidence.verification_status`               | `PENDING`, `VERIFIED`, `REJECTED`, `SOURCE_DELETED`                                                                                                                                                     |
 | `cover_letters.status`                               | `DRAFT`, `FINALIZED`, `ARCHIVED`                                                                                                                                                                        |
 | `cover_letter_answer_versions.source_type`           | `AI_GENERATED`, `USER_EDITED`, `AI_REVISED`, `RESTORED`                                                                                                                                                 |
@@ -52,7 +53,7 @@
 | 내부 tier                                            | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
 | `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
 | `documents.document_type`                            | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
-| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `DOCUMENT_CHUNK`, `MANUAL`                                                                                                           |
+| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `MANUAL`                                                                                               |
 | `job_postings.deadline_source`                       | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
 | `job_postings.closed_reason`                         | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
 | `job_postings.description_source`                    | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
@@ -123,17 +124,18 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 ### 3.3 구조화 프로필 table
 
-모두 `id,user_id,version,created_at,updated_at,deleted_at NULL`, `UNIQUE(user_id,id)`와 user FK를 가진다. 일반 목록과 최종 학력은 `deleted_at IS NULL` row만 사용하며, 직접 evidence 동기화는 학력을 제외한 자격증·어학·수상·경력의 active row에만 적용한다.
+모두 `id,user_id,version,created_at,updated_at,deleted_at NULL`, `UNIQUE(user_id,id)`와 user FK를 가진다. 일반 목록과 최종 학력은 `deleted_at IS NULL` row만 사용하며, 직접 evidence 동기화는 학력을 제외한 자격증·어학·수상·경력·대외활동의 active row에만 적용한다.
 
-| table             | domain column·상한                                                                                                                                                                                                                                                                      | 핵심 제약                                                                                                                                                                                                                                                                     |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `educations`      | `school_name varchar(200)`, `major varchar(200) NULL`, `degree varchar(100) NULL`, `education_level varchar(30)`, `education_status varchar(30)`, `admission_date/graduation_date date NULL`, `gpa/gpa_scale numeric(5,2) NULL`, `is_primary boolean`, `description varchar(5000) NULL` | 날짜 순서, 둘 중 하나만 있는 GPA 금지, `gpa 0..10`, `gpa_scale 0.01..10`, `gpa<=gpa_scale`, level/status CHECK, `(user_id) WHERE is_primary AND deleted_at IS NULL` partial unique. 사용자 profile row lock 아래 `학력 단계 > 상태 > 날짜 > 등록 시각`으로 최종 학력을 재계산 |
-| `certifications`  | `name varchar(200)`, `issuer/credential_number varchar(200) NULL`, `acquired_date/expires_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                             | document 복합 FK, 둘 다 있으면 만료>=취득                                                                                                                                                                                                                                     |
-| `language_scores` | `test_name/score varchar(100)`, `grade varchar(100) NULL`, `tested_at/expires_at date NULL`, `evidence_document_id uuid NULL`                                                                                                                                                           | document 복합 FK, 둘 다 있으면 만료>=응시                                                                                                                                                                                                                                     |
-| `awards`          | `name varchar(200)`, `organizer varchar(200) NULL`, `awarded_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                                                          | document 복합 FK                                                                                                                                                                                                                                                              |
-| `careers`         | `organization varchar(200)`, `position varchar(200) NULL`, `employment_type varchar(50) NULL`, `started_at/ended_at date NULL`, `is_current boolean`, `responsibilities/achievements varchar(20000) NULL`                                                                               | current면 end null, 날짜 둘 다 있으면 역전 금지                                                                                                                                                                                                                               |
+| table             | domain column·상한                                                                                                                                                                                                                                                                       | 핵심 제약                                                                                                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `educations`      | `school_name varchar(200)`, `major varchar(200) NULL`, `degree varchar(100) NULL`, `education_level varchar(30)`, `education_status varchar(30)`, `admission_date/graduation_date date NULL`, `gpa/gpa_scale numeric(5,2) NULL`, `is_primary boolean`, `description varchar(5000) NULL`  | 날짜 순서, 둘 중 하나만 있는 GPA 금지, `gpa 0..10`, `gpa_scale 0.01..10`, `gpa<=gpa_scale`, level/status CHECK, `(user_id) WHERE is_primary AND deleted_at IS NULL` partial unique. 사용자 profile row lock 아래 `학력 단계 > 상태 > 날짜 > 등록 시각`으로 최종 학력을 재계산 |
+| `certifications`  | `name varchar(200)`, `issuer/credential_number varchar(200) NULL`, `acquired_date/expires_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                              | document 복합 FK, 둘 다 있으면 만료>=취득                                                                                                                                                                                                                                     |
+| `language_scores` | `test_name/score varchar(100)`, `grade varchar(100) NULL`, `tested_at/expires_at date NULL`, `evidence_document_id uuid NULL`                                                                                                                                                            | document 복합 FK, 둘 다 있으면 만료>=응시                                                                                                                                                                                                                                     |
+| `awards`          | `name varchar(200)`, `organizer varchar(200) NULL`, `awarded_at date NULL`, `description varchar(5000) NULL`, `evidence_document_id uuid NULL`                                                                                                                                           | document 복합 FK                                                                                                                                                                                                                                                              |
+| `careers`         | `organization varchar(200)`, `position varchar(200) NULL`, `employment_type varchar(50) NULL`, `started_at/ended_at date NULL`, `is_current boolean`, `responsibilities/achievements varchar(20000) NULL`                                                                                | current면 end null, 날짜 둘 다 있으면 역전 금지                                                                                                                                                                                                                               |
+| `activities`      | `title varchar(200)`, `activity_type varchar(40)`, `organizer varchar(200)`, `started_at/ended_at date NULL`, `ongoing boolean`, `role varchar(200) NULL`, `description varchar(10000)`, `achievements varchar(10000) NULL`, `related_url varchar(1000) NULL`, `use_as_material boolean` | ongoing이면 end null, 날짜 역전 금지, absolute HTTP(S) URL application validation, owner별 active 조회 index                                                                                                                                                                  |
 
-자격증·어학·수상·경력 row 저장·수정·삭제와 직접 입력 `profile_evidence` 동기화는 한 transaction이다. 학력은 구조화 row로만 유지하고 evidence를 생성하지 않는다.
+자격증·어학·수상·경력·대외활동 row 저장·수정·삭제와 직접 입력 `profile_evidence` 동기화는 한 transaction이다. 학력은 구조화 row로만 유지하고 evidence를 생성하지 않는다. 대외활동은 특정 document FK를 갖지 않으며 document 삭제에 연쇄 삭제되지 않는다. `use_as_material=false`는 연결 ACTIVITY evidence를 `REJECTED`, true는 `VERIFIED`로 유지한다.
 
 구조화 source row를 soft delete하면 과거 job/cover/interview/mock provenance가 참조한 동기화 evidence는 원문 없는 `SOURCE_DELETED` tombstone으로 보존하고 미참조 evidence는 삭제한다. tombstone은 terminal·read-only이며 구조화 source의 `deleted_at`과 같은 transaction에서 반영한다.
 
@@ -168,7 +170,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 - document source는 document 복합 FK를 갖되 삭제 tombstone 보존을 위해 physical FK 동작은 evidence를 cascade하지 않는다.
 - 문서 삭제 시 참조된 evidence는 `id,user_id,source_type,evidence_category,verification_status=SOURCE_DELETED,source_deleted_at`과 provenance link만 남기는 최소 tombstone으로 바꾼다. title/content는 비식별 고정 marker, metadata는 빈 object, confidence·verified_at은 null로 치환하고 원문·page/chunk 위치는 제거한다. 미참조 document evidence는 삭제한다.
 - 참조 여부는 job analysis, cover answer, interview question과 mock session의 typed evidence link 존재로 판정한다.
-- 직접 입력 evidence는 document 삭제의 영향을 받지 않는다.
+- 직접 입력 evidence와 그 원본 대외활동은 document 삭제의 영향을 받지 않는다.
 - `SOURCE_DELETED` evidence는 terminal·read-only여서 content 수정이나 `VERIFIED|REJECTED` 전이를 허용하지 않는다.
 - 학력 source와 교육·학력 category는 active evidence로 허용하지 않는다. 기존 row는 source/document 연결, title/content, metadata, confidence를 제거한 `SOURCE_DELETED` tombstone으로 전환해 provenance ID만 보존하며 일반 조회와 분석에서는 제외한다.
 
@@ -439,7 +441,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-현재 latest implemented migration은 V14다. V1~V14는 수정하지 않는다. V14는 기존 embedding 정책 version 1의 `OpenAI` 값을 보존한 채 비활성화하고 canonical provider key `openai`를 사용하는 version 2를 활성화한다. 아래 P8.6 이후 번호와 filename은 `TENTATIVE`이며 phase 시작 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 사용자 직접 대외활동을 추가한 V15다. V1~V15는 수정하지 않는다. 이번 추가 UI/UX·데이터 보정은 기존 phase에 편입하지 않으며 아래 P8.6 이후 번호와 filename은 V16부터 `TENTATIVE`다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -450,12 +452,13 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | jobs/analysis                | canonical active unique, 두 상태 축, history, rubric·provenance                  |
 | cover letter                 | active partial unique, soft question, immutable answer/content/link/verification |
 | research/interview           | combined research, source links, answer/feedback, mock turn/message/feedback     |
-| P8.6, tentative V15          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V16          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| additional implemented V15   | 사용자 직접 대외활동, ACTIVITY source와 direct evidence 불변식                   |
+| P8.6, tentative V16          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V17          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V17        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-A, tentative V18        | USER/ADMIN role 확장, provisioning/access audit                                  |
 | P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V18                                     |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V19                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

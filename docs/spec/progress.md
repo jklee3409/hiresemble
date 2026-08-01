@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-01] Session Summary (자료 검토·직접 대외활동 추가 계약)
+
+- What was done:
+  - 기능·API·DB·페이지 명세에 문서 소재 batch review/re-review, 원본 파일명, 직접 대외활동 CRUD·소재 정책, 알림 접근성, AI 사용량 표현을 반영했다.
+- Key decisions:
+  - V15는 기존 단계가 아닌 추가 UX/데이터 구조 보정으로 기록하고 이후 tentative migration을 V16~V19로 이동했다.
+- Issues encountered:
+  - 월간 누적 한도 데이터는 현재 API에 없어 구현된 작업 단위 비율과 향후 집계 계약을 분리했다.
+- Validation:
+  - OpenAPI 66 paths/90 operations와 V15 구현, Frontend route·문구를 명세와 대조했다.
+- Next steps:
+  - P8.7에서 월간 사용량 API와 화면 계약을 확정한다.
+
 ## [2026-08-01] Session Summary (candidate filtering과 failed scope 의미 분리)
 
 - What was done:

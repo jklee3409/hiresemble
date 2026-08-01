@@ -23,7 +23,7 @@
 │  ├─ /profile/languages
 │  ├─ /profile/awards
 │  ├─ /profile/careers
-│  └─ /profile/evidence
+│  └─ /profile/activities
 ├─ /documents
 │  └─ /documents/:documentId
 ├─ /jobs
@@ -137,6 +137,8 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 - Agent Progress Drawer
 - Version Conflict 비교·재적용 Dialog
 - 인증 shell별 전용 404
+
+브라우저 기본 `alert`, `confirm`, `prompt`는 사용하지 않는다. 저장·승인·요청 성공은 Toast, 조회·네트워크 오류는 Toast 또는 해당 영역 메시지, 입력 오류는 field 인접 Inline Validation으로 구분한다. 자료·대외활동·AI 작업 삭제, 다시 분석, 승인 취소처럼 되돌리기 어렵거나 새 사용량이 생길 수 있는 동작은 Confirm Dialog를 사용한다. Dialog는 cancel에 초기 focus를 두고 Tab focus trap, ESC 닫기, 배경 클릭 취소와 trigger focus 복귀를 지원한다.
 
 Frontend의 TypeScript type과 runtime validation은 [`api.md`](api.md) 2장의 canonical enum 값을 이름과 의미까지 그대로 사용한다. 화면 전용 alias나 추가 상태를 만들지 않고 알 수 없는 값은 안전한 일반 상태와 갱신 안내로 처리한다. 특히 공고 업무·추출, 문서 parse·evidence 추출, 자기소개서, 조사 coverage, 모의 면접·feedback, Agent Run 상태 축을 서로 합치지 않는다.
 
@@ -292,33 +294,18 @@ API:
 
 경력 Timeline, 역할·성과 편집.
 
-## 5.7 `/profile/evidence`
+## 5.7 `/profile/activities`
 
-화면 명칭은 `대외활동`이며 학력 source와 교육·학력 category는 표시하지 않는다.
+사용자가 직접 입력한 대외활동만 관리하는 전용 화면이다. 문서에서 AI가 추출한 경험은 이 목록에 자동 편입하지 않으며 기존 `/profile/evidence` 화면 경로는 이 route로 redirect한다.
 
-### Filter
+- 활동 제목, 종류, 진행 주체, 기간, 진행 중 여부, 역할, 활동 내용, 성과, 관련 링크를 등록·수정한다.
+- 활동 종류는 동아리·봉사활동·공모전·서포터즈·기자단·학생회·교육 프로그램·해외 경험·기타다.
+- 제목·종류·진행 주체·활동 내용만 필수이며 오류는 각 입력 옆에 표시한다.
+- `자소서·면접 소재 후보로 사용`을 명시적으로 켠 활동만 후속 AI의 승인 소재 snapshot에 포함한다. 직접 등록했다는 이유만으로 자동 사용하지 않는다.
+- 빈 화면은 AI 추출 결과를 대신 표시하지 않고 첫 활동 등록 action과 향후 활용 의미를 안내한다.
+- 삭제 전 확인 Modal은 연결된 소재 후보도 함께 제거되지만 업로드 자료에는 영향이 없음을 설명한다.
 
-- 상태: PENDING, VERIFIED, REJECTED, SOURCE_DELETED
-- 카테고리
-- 출처 문서
-- 각 dropdown·입력·action 사이에 공통 spacing 적용
-
-### Evidence Card
-
-- 제목
-- 근거 내용
-- 출처 유형·연결 문서·원천 삭제 여부
-- AI 추출 신뢰도 또는 직접 입력 표시
-- 수정
-- 문서 AI 추출 근거의 승인·거절
-
-문서 AI 추출 근거만 승인·거절 action을 제공한다. 상단 안내는 승인 시 사용 범위와 거절 시 제외된다는 내용만 두 개의 구분된 항목으로 표시한다. `VERIFIED`만 후속 AI 작업에 사용하고 `REJECTED`는 제외한다. 직접 입력 근거는 기본 승인 상태라 수정만 제공한다. confidence는 card metadata에서 추출 확신도로 표시하며 사실 여부를 보증하지 않는다. `SOURCE_DELETED` card는 원천 삭제 marker와 과거 사용처만 읽기 전용으로 표시하고 수정·승인·거절 action을 숨긴다.
-
-API:
-
-- `GET /profile/evidence`
-- `PUT /profile/evidence/:id`
-- `PATCH /profile/evidence/:id/verification`
+API: `GET|POST /profile/activities`, `GET|PUT|DELETE /profile/activities/:id`.
 
 ---
 
@@ -335,7 +322,7 @@ API:
 - 파싱 상태
 - 근거 추출 상태
 - 업로드 일시
-- 재처리·다운로드·삭제
+- 다시 분석·원본 열기·삭제
 
 API:
 
@@ -349,12 +336,13 @@ API:
 
 ### 영역
 
-- 메타데이터
-- 파싱 상태와 오류
-- 추출 텍스트 Preview
+- 업로드한 원본 파일명·형식·크기·등록 시점·최근 분석 시점
+- `자료 확인`과 `경험·소재 정리`의 분리된 상태 및 안전한 오류
+- 원본 열기 action과 스크롤 가능한 추출 내용 Preview
 - 수동 텍스트 편집
-- 추출된 사용자 근거
-- Agent Run 링크
+- 기본 요약 상태와 별도의 접힌 분석 과정 상세
+- `검토 전`, `활용 승인`, `활용 제외`, `원본 삭제됨` 소재 검토 목록
+- 개별·선택·검토 전 전체 승인, 개별·선택 제외, 승인 취소 후 재검토
 
 API:
 
@@ -364,6 +352,8 @@ API:
 - `GET /profile/evidence?documentId=:id`
 
 `PARSED + evidenceExtractionStatus=FAILED`는 추출 text를 유지하고 문서 업로드 실패로 표시하지 않는다. safe error, Agent Run과 재처리 CTA를 제공한다. 문서 삭제 성공 즉시 상세·download·cache에서 제거하고 이후 404를 정상 삭제 결과로 처리한다.
+
+소재 영역은 승인된 내용만 자소서·면접 소재 후보로 사용한다는 정책과 남은 검토 수를 먼저 보여 준다. 활용 제외는 원본 자료나 분석 이력 삭제가 아니며 언제든 `PENDING`으로 돌려 재검토할 수 있다. 별도 `정리된 결과` 대형 section은 두지 않고 소재 card와 partial 경고에 통합한다.
 
 ---
 
@@ -734,7 +724,7 @@ API 요청 시 각각 canonical API parameter 이름으로 변환한다.
 
 - Workflow, 상태, 접수·최근 갱신 시각
 - 실패·중단 Filter
-- 비용과 재시도 가능 여부
+- 이번 작업의 한도 대비 사용량과 재시도 가능 여부
 - 상세 실행 이동
 - terminal 작업의 개별 삭제
 - 현재 페이지 terminal 작업 선택·전체 선택과 최대 100개 일괄 삭제
@@ -758,11 +748,10 @@ active 작업은 삭제할 수 없고 종료 뒤에만 삭제할 수 있다. 삭
 - Workflow 명
 - 상태
 - 진행률
-- 현재 단계
-- 단계 Timeline
+- 기본 접힘 상태의 사용자용 분석 과정
 - 모델 등급
 - 소요 시간
-- 비용
+- 이번 작업 사용량
 - 안전한 오류 메시지
 - 재시도·취소
 
@@ -773,13 +762,13 @@ API:
 - `POST /agent-runs/:id/retry`
 - `POST /agent-runs/:id/cancel`
 
-실패 단계의 내부 프롬프트·민감 데이터는 표시하지 않는다.
+실패 단계의 내부 프롬프트·민감 데이터·provider 오류·내부 step key는 표시하지 않는다. 세부 과정은 기본적으로 접고, 펼치면 `문서 내용 확인`, `주요 경험과 소재 정리`, `검토할 소재 구성`, `분석 결과 저장`처럼 사용자용 명칭으로 변환한다.
 
 연결 직후 `snapshot`을 원천으로 사용하고 `progress|step|waiting_user|heartbeat|terminal` event를 적용한다. `stateVersion`이 낮거나 같은 event는 무시한다. 1/2/5/10/30초 backoff로 재연결하고 3회 실패하면 5초 REST polling으로 전환한다. SSE 단절만으로 run 실패를 표시하지 않으며 terminal snapshot 뒤 stream을 닫고 resource query를 invalidate한다.
 
 `WAITING_USER`는 `requiredUserAction` deep link를 표시하고 일반 retry를 비활성화한다. `FAILED|INTERRUPTED`는 `retryable=true`, active run은 `cancellable=true`일 때만 action을 제공한다. provider/model, prompt, hash, reuse detail은 표시하지 않고 `highestModelTierUsed`만 안전한 모델 등급으로 보여 준다.
 
-`actualCostUsd`는 provider 청구서 확정액이나 사용자 청구 금액이 아니라 접수 시 고정된 price catalog로 계산한 내부 Provider 원가 estimate임을 비용 영역에 표시한다.
+현재 API가 제공하는 `actualCostUsd`와 `reservedCostUsd`는 사용자 결제액이 아니라 내부 Provider 원가 estimate와 작업별 reservation이다. 일반 화면에는 USD 금액을 직접 노출하지 않고 `이번 작업 사용량`을 reservation 대비 비율로만 표시하며, 이 비율이 월간 제품 한도나 결제 금액이 아님을 안내한다. 월간 누적·제품 잔여량은 P8.7 usage API가 구현되기 전 임의 값으로 표시하지 않는다.
 
 ---
 

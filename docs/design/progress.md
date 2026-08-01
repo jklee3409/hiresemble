@@ -4,6 +4,19 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-01] Session Summary (V15 추가 작업과 후속 migration 재배치)
+
+- What was done:
+  - 구현 계획과 운영 계약의 tentative migration 번호를 V16~V19로 재배치하고 V15 사용자 대외활동을 별도 추가 개선으로 기록했다.
+- Key decisions:
+  - 직접 등록 활동은 문서 workflow 결과가 아니라 profile-owned aggregate와 direct evidence projection으로 설계했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - DB 명세와 migration index, 후속 단계 문서의 번호를 교차 확인했다.
+- Next steps:
+  - 후속 단계 시작 전에 최신 migration 번호를 다시 확인한다.
+
 ## [2026-08-01] Session Summary (workflow-owned terminal partial 설계)
 
 - What was done:

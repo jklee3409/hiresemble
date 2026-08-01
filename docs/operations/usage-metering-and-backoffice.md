@@ -165,4 +165,4 @@ MRR, revenue, subscriber count, payment status, invoice와 refund는 표시하�
 | P8.8   | category/CTA matrix, 보존 안내, request ID, 접근성·한국어 문구, 내부 정보 비노출              |
 | P8.9-A | USER 403/404 정책, ADMIN 조회, cross-user isolation, access audit, 원문 비노출, lag/readiness |
 
-각 phase 시작 시 latest migration과 implemented OpenAPI baseline을 다시 확인한다. V14 embedding 정책 보정은 구현됐으며 미래 V15~V18과 API·route는 실제 merge 전까지 tentative/`PLANNED`로 유지한다.
+각 phase 시작 시 latest migration과 implemented OpenAPI baseline을 다시 확인한다. 사용자 직접 대외활동 V15까지 구현됐으며 미래 V16~V19와 API·route는 실제 merge 전까지 tentative/`PLANNED`로 유지한다.

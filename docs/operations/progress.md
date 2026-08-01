@@ -4,6 +4,19 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-01] Session Summary (AI 사용량 사용자 표현 경계)
+
+- What was done:
+  - 현재 작업 단위 예약/실집계 비율과 향후 월간 집계의 경계를 운영 문서에 반영하고 후속 migration 번호를 V17로 이동했다.
+- Key decisions:
+  - 실제 결제액이나 월간 총량으로 오해할 수 있는 USD 표시는 제공하지 않는다.
+- Issues encountered:
+  - 현재 public API에는 월간 누적·잔여 한도가 없다.
+- Validation:
+  - Agent Run DTO와 Frontend 표시, P8.7 운영 계약을 대조했다.
+- Next steps:
+  - P8.7에서 원화 참고 금액이 필요한지 가격·환율 정책과 함께 별도 결정한다.
+
 ## [2026-08-01] Session Summary (문서 terminal 보정 bounded handoff)
 
 - What was done:
