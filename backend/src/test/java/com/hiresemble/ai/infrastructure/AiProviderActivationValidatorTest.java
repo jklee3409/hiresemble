@@ -26,6 +26,20 @@ class AiProviderActivationValidatorTest {
     }
 
     @Test
+    void localRejectsOfficialOpenAiEndpointWithoutV1BasePath() {
+        MockEnvironment environment = localEnvironment()
+                .withProperty("spring.ai.openai.base-url", "https://api.openai.com")
+                .withProperty("spring.ai.openai.api-key", "synthetic-test-key")
+                .withProperty("hiresemble.search.tavily-api-key", "synthetic-test-key");
+
+        assertThatThrownBy(
+                        () -> new AiProviderActivationValidator(environment)
+                                .afterSingletonsInstantiated())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("/v1");
+    }
+
+    @Test
     void offlineRejectsAnyExternalProvider() {
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("hiresemble.ai.provider", "openai")
@@ -60,7 +74,7 @@ class AiProviderActivationValidatorTest {
                 .withProperty("spring.ai.model.chat", "openai")
                 .withProperty("spring.ai.model.embedding", "openai")
                 .withProperty("spring.ai.vectorstore.type", "none")
-                .withProperty("spring.ai.openai.base-url", "https://api.openai.com")
+                .withProperty("spring.ai.openai.base-url", "https://api.openai.com/v1")
                 .withProperty("spring.ai.openai.chat.options.max-retries", "0")
                 .withProperty("spring.ai.openai.embedding.options.max-retries", "0")
                 .withProperty("spring.ai.openai.chat.options.store", "false")

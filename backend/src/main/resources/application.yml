@@ -37,7 +37,7 @@ spring:
       embedding: ${AI_EMBEDDING_MODEL_PROVIDER:none}
     openai:
       api-key: ${AI_PROVIDER_API_KEY:local-not-configured}
-      base-url: ${AI_PROVIDER_BASE_URL:https://api.openai.com}
+      base-url: ${AI_PROVIDER_BASE_URL:https://api.openai.com/v1}
       chat:
         options:
           model: ${AI_MODEL_BALANCED:gpt-5-mini}

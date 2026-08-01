@@ -4,6 +4,19 @@
 
 P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
 
+## [2026-08-01] Session Summary (Embedding provider canonical key 적용)
+
+- What was done:
+  - active embedding policy 검증을 V14의 canonical `openai` key와 일치시켰다.
+- Key decisions:
+  - workflow와 gateway가 동일한 lowercase provider contract를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document ingestion 통합 테스트와 Backend 전체 check가 통과했다.
+- Next steps:
+  - quota 복구 후 실제 문서 embedding 수직 흐름을 검증한다.
+
 ## [2026-08-01] Session Summary (실제 Embedding 가격 계약 연결)
 
 - What was done:

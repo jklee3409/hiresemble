@@ -24,7 +24,7 @@ public final class DocumentEmbeddingPolicyValidator implements SmartInitializing
         }
         var policy = store.activeEmbeddingPolicy();
         if (policy.dimension() != DATABASE_DIMENSION
-                || !"OpenAI".equals(policy.provider())
+                || !"openai".equals(policy.provider())
                 || !"text-embedding-3-small".equals(policy.model())
                 || !"COSINE".equals(policy.distance())) {
             throw new IllegalStateException("DOCUMENT_EMBEDDING_POLICY_MISMATCH");

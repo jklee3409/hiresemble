@@ -68,7 +68,7 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
         }
         if ("openai".equals(provider)) {
             requireSecret("spring.ai.openai.api-key", "AI_PROVIDER_API_KEY");
-            requireHttps("spring.ai.openai.base-url");
+            requireOpenAiEndpoint("spring.ai.openai.base-url");
             if (!"0".equals(property("spring.ai.openai.chat.options.max-retries", "0"))
                     || !"0".equals(property(
                             "spring.ai.openai.embedding.options.max-retries", "0"))
@@ -175,10 +175,15 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
         }
     }
 
-    private void requireHttps(String name) {
+    private void requireOpenAiEndpoint(String name) {
         URI value = uri(name);
         if (!"https".equalsIgnoreCase(value.getScheme())) {
             throw invalid("OpenAI endpoint must use HTTPS");
+        }
+        String path = value.getPath();
+        if ("api.openai.com".equalsIgnoreCase(value.getHost())
+                && !("/v1".equals(path) || "/v1/".equals(path))) {
+            throw invalid("official OpenAI endpoint must include the /v1 base path");
         }
     }
 

@@ -798,7 +798,7 @@ public final class DocumentIngestionWorkflow {
 
     private void requireActivePolicy(EmbeddingPolicy policy) {
         if (policy == null || policy.version() < 1
-                || !"OpenAI".equals(policy.provider())
+                || !"openai".equals(policy.provider())
                 || !"text-embedding-3-small".equals(policy.model())
                 || policy.dimension() != EMBEDDING_DIMENSION
                 || !"cosine".equalsIgnoreCase(policy.distance()) || policy.generation() < 1) {

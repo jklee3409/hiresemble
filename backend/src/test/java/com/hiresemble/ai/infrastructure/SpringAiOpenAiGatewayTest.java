@@ -1,6 +1,7 @@
 package com.hiresemble.ai.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -8,12 +9,16 @@ import static org.mockito.Mockito.when;
 
 import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
 import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
+import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.openai.core.http.Headers;
+import com.openai.errors.OpenAIServiceException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -72,7 +77,8 @@ class SpringAiOpenAiGatewayTest {
         assertThat(options.getMaxCompletionTokens()).isEqualTo(32);
         assertThat(options.getN()).isEqualTo(1);
         assertThat(options.getStore()).isFalse();
-        assertThat(options.getParallelToolCalls()).isFalse();
+        assertThat(options.getParallelToolCalls()).isNull();
+        assertThat(options.getToolChoice()).isNull();
         assertThat(options.getOutputSchema()).contains("\"additionalProperties\" : false");
         assertThat(prompt.getValue().getSystemMessage().getText())
                 .isEqualTo("Return the required object.");
@@ -129,6 +135,70 @@ class SpringAiOpenAiGatewayTest {
                 .satisfies(usage -> {
                     assertThat(usage.embeddingUnits()).isEqualTo(25);
                     assertThat(usage.costUsd()).isEqualByComparingTo("0.000001");
+                });
+    }
+
+    @Test
+    void chatMapsProviderBadRequestWithoutExposingProviderPayload() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        OpenAIServiceException failure = mock(OpenAIServiceException.class);
+        when(failure.statusCode()).thenReturn(400);
+        when(failure.code()).thenReturn(Optional.of("unsupported_parameter"));
+        when(failure.param()).thenReturn(Optional.of("tool_choice"));
+        when(failure.headers()).thenReturn(
+                Headers.builder().put("x-request-id", "req_test").build());
+        when(model.call(any(Prompt.class))).thenThrow(failure);
+        var gateway = new SpringAiOpenAiChatGateway(
+                model, new ObjectMapper(), prices());
+
+        assertThatThrownBy(() -> gateway.chat(new ChatRequest(
+                        "openai",
+                        "gpt-5-mini",
+                        "test-v1",
+                        "Return the required object.",
+                        new ObjectMapper().createObjectNode().put("value", "untrusted"),
+                        "test-output-v1",
+                        Set.of(),
+                        0,
+                        Duration.ofSeconds(3),
+                        PRICE_VERSION,
+                        32,
+                        TestOutput.class)))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception -> {
+                    assertThat(exception.safeCode()).isEqualTo("AI_CHAT_REQUEST_REJECTED");
+                    assertThat(exception.getCause()).isNull();
+                });
+    }
+
+    @Test
+    void chatTreatsInsufficientProviderQuotaAsNonRetryableConfiguration() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        OpenAIServiceException failure = mock(OpenAIServiceException.class);
+        when(failure.statusCode()).thenReturn(429);
+        when(failure.code()).thenReturn(Optional.of("insufficient_quota"));
+        when(failure.param()).thenReturn(Optional.empty());
+        when(failure.headers()).thenReturn(Headers.builder().build());
+        when(model.call(any(Prompt.class))).thenThrow(failure);
+        var gateway = new SpringAiOpenAiChatGateway(
+                model, new ObjectMapper(), prices());
+
+        assertThatThrownBy(() -> gateway.chat(new ChatRequest(
+                        "openai",
+                        "gpt-5-mini",
+                        "test-v1",
+                        "Return the required object.",
+                        new ObjectMapper().createObjectNode().put("value", "untrusted"),
+                        "test-output-v1",
+                        Set.of(),
+                        0,
+                        Duration.ofSeconds(3),
+                        PRICE_VERSION,
+                        32,
+                        TestOutput.class)))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception -> {
+                    assertThat(exception.safeCode())
+                            .isEqualTo("AI_CHAT_PROVIDER_QUOTA_UNAVAILABLE");
+                    assertThat(exception.retryable()).isFalse();
                 });
     }
 

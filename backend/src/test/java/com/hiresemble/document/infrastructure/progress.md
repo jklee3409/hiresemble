@@ -4,6 +4,19 @@
 
 P4 parser·embedding policy·MinIO adapter 경계를 실제 dependency와 container로 검증한다.
 
+## [2026-08-01] Session Summary (Canonical embedding 정책 회귀)
+
+- What was done:
+  - version 2 `openai` 정책 성공과 legacy mixed-case 거절 테스트를 추가했다.
+- Key decisions:
+  - startup과 workflow의 provider key 계약을 동일하게 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document focused test와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

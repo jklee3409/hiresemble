@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V13 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V14 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-01] Session Summary (V14 embedding 정책 migration 검증)
+
+- What was done:
+  - latest active version 2 `openai`, legacy version 1 보존과 V13→V14 upgrade를 검증했다.
+- Key decisions:
+  - V1~V13 SHA-256을 불변 기준으로 확장했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - migration focused test와 Backend 전체 check가 통과했다.
+- Next steps:
+  - P8.6 시작 시 latest migration을 재확인한다.
 
 ## [2026-08-01] Session Summary (V13 가격·usage migration 검증)
 

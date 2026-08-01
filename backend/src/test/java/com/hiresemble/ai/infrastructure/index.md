@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-local/offline Bean matrix, OpenAI Chat·Embedding request/usage, Tavily bounded HTTP와 Codex opt-in live gate를 검증한다.
+local/offline Bean matrix, OpenAI Chat·Embedding request/usage·빈 tool option·safe rejection, Tavily bounded HTTP와 Codex opt-in live gate를 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 

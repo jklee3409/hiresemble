@@ -39,7 +39,8 @@ class P8_5UpgradeMigrationTest {
             Map.entry("V9__exclude_education_evidence_and_soft_delete_agent_runs.sql", "258a3ffa881a8fbb6f7ece7721039268abfaa866a9f21a0421cb411dfe50f282"),
             Map.entry("V10__exclude_document_education_evidence.sql", "97459fa2eda415f8713d7db1644560106bf663f79761ede5a2481be46cadda27"),
             Map.entry("V11__derive_final_education.sql", "eba74b4e91fc4d9b00ad8b7b32cd892b61b604b632c0c2d64b6d1f34d336d06e"),
-            Map.entry("V12__create_interview_research_questions_and_feedback.sql", "c7bc2332e5bcdfb112c91debe94f8cb98cebd6108dee5f96744c3ea17537c23f"));
+            Map.entry("V12__create_interview_research_questions_and_feedback.sql", "c7bc2332e5bcdfb112c91debe94f8cb98cebd6108dee5f96744c3ea17537c23f"),
+            Map.entry("V13__add_external_ai_provider_price_catalog.sql", "8af87f15f123388b095fcd62f339709e119847159a39a7db0aa01695264a104f"));
 
     @BeforeAll
     static void startPostgres() {
@@ -91,7 +92,27 @@ class P8_5UpgradeMigrationTest {
     }
 
     @Test
-    void v1ThroughV12MigrationResourcesKeepApprovedSha256() throws Exception {
+    void v13DatabaseSwitchesToCanonicalEmbeddingPolicyWithoutRewritingHistory()
+            throws Exception {
+        assertThat(flyway("13").migrate().success).isTrue();
+
+        Flyway upgraded = flyway("14");
+        assertThat(upgraded.migrate().success).isTrue();
+        assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+        assertThat(queryLong("""
+                SELECT count(*) FROM embedding_policy_versions
+                WHERE version=1 AND provider_key='OpenAI' AND NOT enabled
+                """))
+                .isEqualTo(1);
+        assertThat(queryLong("""
+                SELECT count(*) FROM embedding_policy_versions
+                WHERE version=2 AND provider_key='openai' AND enabled
+                """))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void v1ThroughV13MigrationResourcesKeepApprovedSha256() throws Exception {
         for (Map.Entry<String, String> entry : IMMUTABLE_MIGRATION_SHA256.entrySet()) {
             try (InputStream stream = getClass().getClassLoader().getResourceAsStream(
                     "db/migration/" + entry.getKey())) {

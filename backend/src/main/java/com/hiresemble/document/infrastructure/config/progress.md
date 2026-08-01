@@ -4,6 +4,19 @@
 
 com.hiresemble.document.infrastructure.config package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (V14 embedding 정책 startup 검증)
+
+- What was done:
+  - startup validator가 canonical `openai` 활성 정책만 허용하도록 갱신했다.
+- Key decisions:
+  - legacy `OpenAI` version 1은 활성 정책으로 재사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - validator unit test와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 config package 분리)
 
 - What was done:

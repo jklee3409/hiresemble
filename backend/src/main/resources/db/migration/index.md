@@ -21,6 +21,7 @@
 | [`V11__derive_final_education.sql`](V11__derive_final_education.sql)                                                             | 학력 단계 backfill·제약과 최종 학력 재계산                |
 | [`V12__create_interview_research_questions_and_feedback.sql`](V12__create_interview_research_questions_and_feedback.sql)         | P8 조사·질문·답변 version·feedback·typed Run link         |
 | [`V13__add_external_ai_provider_price_catalog.sql`](V13__add_external_ai_provider_price_catalog.sql)                             | P8.5 provider call identity와 immutable 가격 catalog      |
+| [`V14__canonicalize_openai_embedding_policy.sql`](V14__canonicalize_openai_embedding_policy.sql)                                 | OpenAI embedding provider key canonical 정책 전환         |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -38,6 +39,7 @@
 - V9는 학력 evidence 동기화 의무를 제거하고 기존 학력 근거를 tombstone 처리하며 terminal Agent Run의 `deleted_at`을 추가한다.
 - V10은 문서 추출에서 생성된 교육·학력 category도 tombstone 처리하고 새 active row를 DB CHECK로 차단한다.
 - V12는 조사 run/topic/source provenance, question set/question provenance, immutable answer version·feedback과 P8 typed Run link를 추가한다.
+- V14는 과거 embedding 정책 version 1을 보존·비활성화하고 canonical `openai` provider key의 version 2를 활성화한다.
 - P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

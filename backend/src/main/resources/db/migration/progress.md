@@ -15,7 +15,21 @@
 - `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
 - `V12__create_interview_research_questions_and_feedback.sql`은 P8 조사·질문·immutable 답변·피드백과 typed Agent Run link를 생성한다.
 - `V13__add_external_ai_provider_price_catalog.sql`은 실제 OpenAI·Tavily immutable 가격 항목과 provider call usage identity를 추가한다.
+- `V14__canonicalize_openai_embedding_policy.sql`은 legacy 정책을 보존하고 canonical `openai` version 2를 활성화한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-01] Session Summary (Embedding provider 정책 V14 전환)
+
+- What was done:
+  - version 1 `OpenAI`를 비활성화하고 version 2 `openai`를 활성화하는 forward migration을 추가했다.
+- Key decisions:
+  - immutable content는 수정하지 않고 허용된 enabled 상태만 전환한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - fresh latest와 populated V13→V14, V1~V13 SHA-256 보존 및 local DB 적용을 확인했다.
+- Next steps:
+  - P8.6 migration은 tentative V15부터 사용한다.
 
 ## [2026-08-01] Session Summary (외부 Provider 가격 catalog V13)
 

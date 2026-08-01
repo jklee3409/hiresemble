@@ -6,7 +6,7 @@ local OpenAI Chat·Embedding/Tavily Search adapter, 명시적 disabled adapter, 
 
 ## 주요 파일 및 하위 디렉터리
 
-- `SpringAiOpenAiChatGateway`, `SpringAiOpenAiEmbeddingGateway`: Spring AI 2.0 운영 adapter
+- `SpringAiOpenAiChatGateway`, `SpringAiOpenAiEmbeddingGateway`: Spring AI 2.0 운영 adapter, 빈 tool option 비전송과 safe Provider rejection 진단
 - `TavilyWebSearchGateway`: HTTPS·bounded response 검색 adapter
 - `DisabledChatGateway`, `DisabledEmbeddingGateway`, `DisabledWebSearchGateway`: capability별 offline adapter
 - `AiProviderActivationValidator`, `JdbcAiPriceCatalogRepository`: 설정·immutable 가격 gate

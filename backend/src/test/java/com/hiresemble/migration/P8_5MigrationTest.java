@@ -44,4 +44,20 @@ class P8_5MigrationTest extends PostgresIntegrationTest {
                         """, Integer.class))
                 .isEqualTo(1);
     }
+
+    @Test
+    void activeEmbeddingPolicyUsesCanonicalProviderKey() {
+        assertThat(jdbcTemplate.queryForObject("""
+                        SELECT version || ':' || provider_key || ':' || enabled
+                        FROM embedding_policy_versions
+                        WHERE enabled
+                        """, String.class))
+                .isEqualTo("2:openai:true");
+        assertThat(jdbcTemplate.queryForObject("""
+                        SELECT count(*)
+                        FROM embedding_policy_versions
+                        WHERE version=1 AND provider_key='OpenAI' AND NOT enabled
+                        """, Integer.class))
+                .isEqualTo(1);
+    }
 }

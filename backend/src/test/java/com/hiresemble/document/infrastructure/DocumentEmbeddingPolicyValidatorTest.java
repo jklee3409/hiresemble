@@ -3,6 +3,7 @@ package com.hiresemble.document.infrastructure;
 import com.hiresemble.document.infrastructure.config.DocumentEmbeddingPolicyValidator;
 import com.hiresemble.document.infrastructure.config.DocumentEmbeddingProperties;
 import com.hiresemble.document.infrastructure.persistence.DocumentStore;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -11,6 +12,19 @@ import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
 import org.junit.jupiter.api.Test;
 
 class DocumentEmbeddingPolicyValidatorTest {
+
+    @Test
+    void canonicalOpenAiPolicyPasses() {
+        DocumentEmbeddingProperties properties = new DocumentEmbeddingProperties();
+        DocumentStore store = mock(DocumentStore.class);
+        when(store.activeEmbeddingPolicy())
+                .thenReturn(new EmbeddingPolicy(
+                        2, "openai", "text-embedding-3-small", 1536, "COSINE", 1));
+
+        assertThatCode(() -> new DocumentEmbeddingPolicyValidator(properties, store)
+                        .afterSingletonsInstantiated())
+                .doesNotThrowAnyException();
+    }
 
     @Test
     void configuredDimensionMismatchFailsBeforeDatabaseUse() {
@@ -31,6 +45,20 @@ class DocumentEmbeddingPolicyValidatorTest {
         DocumentStore store = mock(DocumentStore.class);
         when(store.activeEmbeddingPolicy())
                 .thenReturn(new EmbeddingPolicy(1, "OpenAI", "other-model", 1536, "COSINE", 1));
+
+        assertThatThrownBy(() -> new DocumentEmbeddingPolicyValidator(properties, store)
+                        .afterSingletonsInstantiated())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("DOCUMENT_EMBEDDING_POLICY_MISMATCH");
+    }
+
+    @Test
+    void legacyMixedCaseProviderIsRejected() {
+        DocumentEmbeddingProperties properties = new DocumentEmbeddingProperties();
+        DocumentStore store = mock(DocumentStore.class);
+        when(store.activeEmbeddingPolicy())
+                .thenReturn(new EmbeddingPolicy(
+                        1, "OpenAI", "text-embedding-3-small", 1536, "COSINE", 1));
 
         assertThatThrownBy(() -> new DocumentEmbeddingPolicyValidator(properties, store)
                         .afterSingletonsInstantiated())

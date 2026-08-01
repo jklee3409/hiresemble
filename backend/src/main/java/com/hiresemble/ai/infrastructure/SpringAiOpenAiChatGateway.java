@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -34,6 +36,8 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 @ConditionalOnProperty(name = "hiresemble.ai.provider", havingValue = "openai")
 public final class SpringAiOpenAiChatGateway implements ChatGateway {
+
+    private static final Logger log = LoggerFactory.getLogger(SpringAiOpenAiChatGateway.class);
 
     private final OpenAiChatModel chatModel;
     private final ObjectMapper objectMapper;
@@ -71,8 +75,6 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 .maxCompletionTokens(request.maxOutputTokens())
                 .n(1)
                 .store(false)
-                .parallelToolCalls(false)
-                .toolChoice("none")
                 .outputSchema(schema)
                 .build();
         Prompt prompt = new Prompt(
@@ -115,7 +117,8 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         } catch (AiExecutionException exception) {
             throw exception;
         } catch (OpenAIServiceException exception) {
-            throw mapStatus(exception.statusCode());
+            logProviderFailure(exception);
+            throw mapStatus(exception);
         } catch (OpenAIIoException exception) {
             if (isTimeout(exception)) {
                 throw AiExecutionException.retryable(
@@ -206,8 +209,21 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 callId);
     }
 
-    private AiExecutionException mapStatus(int status) {
+    private AiExecutionException mapStatus(OpenAIServiceException exception) {
+        int status = exception.statusCode();
+        if (status == 400) {
+            return configuration("AI_CHAT_REQUEST_REJECTED");
+        }
+        if (status == 401 || status == 403) {
+            return configuration("AI_CHAT_CREDENTIALS_REJECTED");
+        }
+        if (status == 404) {
+            return configuration("AI_CHAT_MODEL_OR_ENDPOINT_NOT_FOUND");
+        }
         if (status == 429) {
+            if (exception.code().filter("insufficient_quota"::equals).isPresent()) {
+                return providerQuota();
+            }
             return AiExecutionException.retryable(
                     FailureKind.RATE_LIMIT,
                     "AI_CHAT_RATE_LIMITED",
@@ -222,11 +238,34 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         return configuration();
     }
 
+    private void logProviderFailure(OpenAIServiceException exception) {
+        String requestId = exception.headers().values("x-request-id").stream()
+                .findFirst()
+                .orElse("-");
+        log.warn(
+                "OpenAI chat request rejected: status={}, code={}, param={}, requestId={}",
+                exception.statusCode(),
+                exception.code().orElse("-"),
+                exception.param().orElse("-"),
+                requestId);
+    }
+
     private AiExecutionException configuration() {
+        return configuration("AI_CHAT_CONFIGURATION_INVALID");
+    }
+
+    private AiExecutionException configuration(String safeCode) {
         return AiExecutionException.nonRetryable(
                 FailureKind.CONFIGURATION,
-                "AI_CHAT_CONFIGURATION_INVALID",
+                safeCode,
                 "AI 응답 서비스 구성이 올바르지 않습니다.");
+    }
+
+    private AiExecutionException providerQuota() {
+        return AiExecutionException.nonRetryable(
+                FailureKind.CONFIGURATION,
+                "AI_CHAT_PROVIDER_QUOTA_UNAVAILABLE",
+                "AI 서비스 사용 가능 한도를 확인해 주세요.");
     }
 
     private AiExecutionException structured() {

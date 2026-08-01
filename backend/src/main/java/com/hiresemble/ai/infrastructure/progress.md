@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-01] Session Summary (OpenAI endpoint·요청 옵션·safe rejection 보정)
+
+- What was done:
+  - official base URL `/v1`, 빈 tool option 비전송, Chat·Embedding 4xx safe code와 status/code/param/request ID logging을 반영했다.
+- Key decisions:
+  - Provider body·prompt·secret은 기록하지 않는다.
+- Issues encountered:
+  - live OpenAI는 `insufficient_quota`, Tavily BASIC은 성공했다.
+- Validation:
+  - gateway/activation focused test와 Backend 67 suites/427 tests가 통과했다.
+- Next steps:
+  - OpenAI quota 복구 후 capability smoke를 재실행한다.
+
 ## [2026-08-01] Session Summary (OpenAI adapter·Tavily hardening·activation gate)
 
 - What was done:
