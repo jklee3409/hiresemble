@@ -20,16 +20,19 @@ public class JobCreationService {
     private final JobStore store;
     private final WorkflowLauncher workflowLauncher;
     private final JobExtractionLaunchFactory launchFactory;
+    private final JobAutoAnalysisRequestService autoAnalysis;
     private final Clock clock;
 
     public JobCreationService(
             JobStore store,
             WorkflowLauncher workflowLauncher,
             JobExtractionLaunchFactory launchFactory,
+            JobAutoAnalysisRequestService autoAnalysis,
             Clock clock) {
         this.store = store;
         this.workflowLauncher = workflowLauncher;
         this.launchFactory = launchFactory;
+        this.autoAnalysis = autoAnalysis;
         this.clock = clock;
     }
 
@@ -38,6 +41,7 @@ public class JobCreationService {
         Instant now = clock.instant();
         JobRecord job = store.create(command, now);
         if (command.descriptionText() != null) {
+            autoAnalysis.enqueue(job);
             return new CreatedJob(job, null);
         }
         WorkflowLaunchResult run = workflowLauncher.launch(

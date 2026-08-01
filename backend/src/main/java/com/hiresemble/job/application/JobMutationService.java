@@ -31,6 +31,7 @@ public class JobMutationService {
     private final AgentRunResumePort resumePort;
     private final AgentRunCancellationPort cancellationPort;
     private final AgentRunRetryTransaction retryTransaction;
+    private final JobAutoAnalysisRequestService autoAnalysis;
     private final Clock clock;
 
     public JobMutationService(
@@ -39,12 +40,14 @@ public class JobMutationService {
             AgentRunResumePort resumePort,
             AgentRunCancellationPort cancellationPort,
             AgentRunRetryTransaction retryTransaction,
+            JobAutoAnalysisRequestService autoAnalysis,
             Clock clock) {
         this.store = store;
         this.runQuery = runQuery;
         this.resumePort = resumePort;
         this.cancellationPort = cancellationPort;
         this.retryTransaction = retryTransaction;
+        this.autoAnalysis = autoAnalysis;
         this.clock = clock;
     }
 
@@ -82,7 +85,11 @@ public class JobMutationService {
             cancellationPort.requestCancellation(
                     userId, latest.id(), latest.stateVersion(), clock.instant());
         }
-        return store.findActive(userId, jobId).orElse(updated);
+        JobRecord currentResult = store.findActive(userId, jobId).orElse(updated);
+        if (description != null && !waitingForJobText) {
+            autoAnalysis.enqueue(currentResult);
+        }
+        return currentResult;
     }
 
     @Transactional

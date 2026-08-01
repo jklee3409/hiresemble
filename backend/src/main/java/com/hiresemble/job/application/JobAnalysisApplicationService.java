@@ -128,7 +128,7 @@ public class JobAnalysisApplicationService
                 RunAccepted.class,
                 () -> prepare(userId, jobId, jobVersion, qualityMode, forceReanalyze),
                 prepared -> {
-                    WorkflowLaunchResult run = launch(prepared);
+                    WorkflowLaunchResult run = launch(prepared, null);
                     RunAccepted response = new RunAccepted(
                             run.agentRunId(),
                             run.status(),
@@ -142,6 +142,17 @@ public class JobAnalysisApplicationService
                             run.agentRunId());
                 },
                 ignored -> {});
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public WorkflowLaunchResult launchAutomatic(
+            UUID userId, UUID jobId, long jobVersion, UUID requestedAgentRunId) {
+        if (requestedAgentRunId == null) {
+            throw new IllegalArgumentException("automatic analysis run id is required");
+        }
+        return launch(
+                prepare(userId, jobId, jobVersion, AiQualityMode.BALANCED, false),
+                requestedAgentRunId);
     }
 
     public JobAnalysisPage list(
@@ -390,7 +401,8 @@ public class JobAnalysisApplicationService
                 forceReanalyze ? UUID.randomUUID().toString() : null);
     }
 
-    private WorkflowLaunchResult launch(PreparedAnalysis prepared) {
+    private WorkflowLaunchResult launch(
+            PreparedAnalysis prepared, UUID requestedAgentRunId) {
         JobAnalysisSnapshot snapshot = prepared.snapshot();
         var input = objectMapper.createObjectNode()
                 .put("jobId", snapshot.jobId().toString())
@@ -416,6 +428,7 @@ public class JobAnalysisApplicationService
                         + "|nonce="
                         + (prepared.forceNonce() == null ? "-" : prepared.forceNonce()));
         return workflowLauncher.launch(new WorkflowLaunchCommand(
+                requestedAgentRunId,
                 snapshot.userId(),
                 WorkflowType.JOB_ANALYSIS,
                 WORKFLOW_VERSION,

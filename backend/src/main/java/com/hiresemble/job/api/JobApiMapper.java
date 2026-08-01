@@ -7,9 +7,12 @@ import com.hiresemble.interview.application.service.InterviewApplicationService;
 import com.hiresemble.interview.application.model.InterviewModels.InterviewJobProjection;
 import com.hiresemble.job.api.JobDtos.JobDetailDto;
 import com.hiresemble.job.api.JobDtos.JobSummaryDto;
+import com.hiresemble.job.api.JobDtos.AutomaticAnalysisDto;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
 import java.util.List;
 import com.hiresemble.job.application.JobAnalysisApplicationService;
+import com.hiresemble.job.application.JobAutoAnalysisRequestService;
+import com.hiresemble.job.application.model.JobAutoAnalysisModels.AutomaticAnalysisProjection;
 import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSummary;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -19,16 +22,19 @@ public final class JobApiMapper {
 
     private final JobAnalysisApplicationService analysisService;
     private final JobAnalysisApiMapper analysisMapper;
+    private final JobAutoAnalysisRequestService autoAnalysisService;
     private final CoverLetterApplicationService coverLetterService;
     private final InterviewApplicationService interviewService;
 
     public JobApiMapper(
             JobAnalysisApplicationService analysisService,
             JobAnalysisApiMapper analysisMapper,
+            JobAutoAnalysisRequestService autoAnalysisService,
             CoverLetterApplicationService coverLetterService,
             InterviewApplicationService interviewService) {
         this.analysisService = analysisService;
         this.analysisMapper = analysisMapper;
+        this.autoAnalysisService = autoAnalysisService;
         this.coverLetterService = coverLetterService;
         this.interviewService = interviewService;
     }
@@ -93,12 +99,26 @@ public final class JobApiMapper {
                 job.descriptionText(),
                 job.descriptionSource(),
                 error(job),
+                automaticAnalysis(job),
                 job.closedAt(),
                 job.closedReason(),
                 latest.map(analysisMapper::summary).orElse(null),
                 coverLetter.map(CoverLetterStatusProjection::coverLetterId).orElse(null),
                 interview.latestQuestionSetId(),
                 null);
+    }
+
+    private AutomaticAnalysisDto automaticAnalysis(JobRecord job) {
+        AutomaticAnalysisProjection projection = autoAnalysisService.projection(job);
+        return new AutomaticAnalysisDto(
+                projection.state(),
+                projection.qualityMode(),
+                projection.agentRunId(),
+                projection.safeError() == null
+                        ? null
+                        : new SafeErrorDto(
+                                projection.safeError().code(),
+                                projection.safeError().message()));
     }
 
     private SafeErrorDto error(JobRecord job) {

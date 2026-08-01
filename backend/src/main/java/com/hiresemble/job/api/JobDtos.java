@@ -9,6 +9,8 @@ import com.hiresemble.job.domain.JobExtractionStatus;
 import com.hiresemble.job.domain.JobStatus;
 import com.hiresemble.job.domain.OutdatedReason;
 import com.hiresemble.job.api.JobAnalysisDtos.JobAnalysisSummaryDto;
+import com.hiresemble.job.application.model.JobAutoAnalysisModels.AutomaticAnalysisState;
+import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -76,6 +78,7 @@ public final class JobDtos {
             @Schema(nullable = true, maxLength = 200000) String descriptionText,
             @Schema(nullable = true) JobDescriptionSource descriptionSource,
             @Schema(nullable = true) SafeErrorDto extractionError,
+            AutomaticAnalysisDto automaticAnalysis,
             @Schema(nullable = true) Instant closedAt,
             @Schema(nullable = true) ClosedReason closedReason,
             @Schema(nullable = true) JobAnalysisSummaryDto latestAnalysis,
@@ -86,6 +89,13 @@ public final class JobDtos {
             outdatedReasons = List.copyOf(outdatedReasons);
         }
     }
+
+    @Schema(name = "AutomaticAnalysisDto")
+    public record AutomaticAnalysisDto(
+            AutomaticAnalysisState state,
+            AiQualityMode qualityMode,
+            @Schema(nullable = true) UUID agentRunId,
+            @Schema(nullable = true) SafeErrorDto error) {}
 
     @Schema(name = "JobPageDto")
     public record JobPageDto(

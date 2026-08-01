@@ -610,13 +610,20 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "coverLetterStatus", "interviewPreparationCount", "version",
                         "createdAt", "updatedAt", "sourceUrl", "canonicalUrl",
                         "roleCategory", "employmentType", "location", "descriptionText",
-                        "descriptionSource", "extractionError", "closedAt", "closedReason",
+                        "descriptionSource", "extractionError", "automaticAnalysis",
+                        "closedAt", "closedReason",
                         "latestAnalysis", "coverLetterId", "latestQuestionSetId",
                         "latestMockSessionId")
                 .doesNotContain(
                         "contentHash", "companyUserOverride", "titleUserOverride",
                         "positionUserOverride", "deadlineUserOverride", "provider",
                         "storageKey");
+        assertThat(fieldNames(schemas.at("/AutomaticAnalysisDto/properties")))
+                .containsExactlyInAnyOrder("state", "qualityMode", "agentRunId", "error");
+        assertThat(schemas.at("/AutomaticAnalysisDto/properties/state/enum").toString())
+                .contains(
+                        "WAITING_FOR_CONTENT", "NOT_REQUESTED", "PENDING", "LAUNCHED",
+                        "BLOCKED", "SUPERSEDED");
         assertThat(document.toString())
                 .doesNotContain("/api/v1/dashboard")
                 .doesNotContain("/api/v1/settings/ai")

@@ -93,7 +93,20 @@ class JobIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM agent_runs WHERE user_id=?",
                 Long.class,
-                owner.userId())).isZero();
+                owner.userId())).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM job_auto_analysis_requests request
+                JOIN agent_runs run ON run.user_id=request.user_id AND run.id=request.agent_run_id
+                WHERE request.user_id=? AND request.job_posting_id=?
+                  AND request.job_version=0 AND request.status='LAUNCHED'
+                  AND request.quality_mode='BALANCED'
+                  AND run.workflow_type='JOB_ANALYSIS'
+                  AND run.requested_quality_mode='BALANCED'
+                """,
+                Long.class,
+                owner.userId(),
+                jobId)).isEqualTo(1L);
 
         MvcResult replay = create(owner, "manual-job-key-0001", body, 201);
         assertThat(json(replay).get("jobId").asText()).isEqualTo(jobId.toString());
@@ -220,6 +233,17 @@ class JobIntegrationTest extends PostgresIntegrationTest {
         assertThat(applied.extractionStatus()).isEqualTo(JobExtractionStatus.EXTRACTED);
         assertThat(applied.status()).isEqualTo(JobStatus.IN_PROGRESS);
         assertThat(applied.contentHash()).hasSize(64);
+        assertThat(jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM job_auto_analysis_requests
+                WHERE user_id=? AND job_posting_id=? AND job_version=?
+                  AND status='LAUNCHED' AND quality_mode='BALANCED'
+                  AND agent_run_id=id
+                """,
+                Long.class,
+                owner.userId(),
+                jobId,
+                applied.version())).isEqualTo(1L);
 
         mockMvc.perform(delete("/api/v1/jobs/" + jobId)
                         .queryParam("version", Long.toString(applied.version()))
@@ -287,6 +311,33 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 "SELECT latest_agent_run_id FROM job_postings WHERE id=?",
                 UUID.class,
                 waitingJob)).isEqualTo(waitingRun);
+        long completedVersion = jdbcTemplate.queryForObject(
+                "SELECT version FROM job_postings WHERE id=?", Long.class, waitingJob);
+        var completed = extraction.applyExtraction(
+                owner.userId(),
+                waitingJob,
+                waitingRun,
+                completedVersion,
+                new ExtractedFields(
+                        "Extracted Company",
+                        "Extracted Title",
+                        "Extracted Position",
+                        "The extracted fallback is ignored because the user supplied complete job text.",
+                        null,
+                        null,
+                        "SOFTWARE_ENGINEERING",
+                        "FULL_TIME",
+                        "Seoul"));
+        assertThat(jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM job_auto_analysis_requests
+                WHERE user_id=? AND job_posting_id=? AND job_version=?
+                  AND status='LAUNCHED'
+                """,
+                Long.class,
+                owner.userId(),
+                waitingJob,
+                completed.version())).isEqualTo(1L);
 
         JsonNode failedAccepted = json(create(
                 owner,

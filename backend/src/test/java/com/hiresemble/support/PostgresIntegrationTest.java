@@ -34,6 +34,7 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("hiresemble.idempotency.hmac-keys[1]", () -> "test-hmac-key-with-enough-entropy");
         registry.add("spring.session.jdbc.initialize-schema", () -> "never");
+        registry.add("hiresemble.job.auto-analysis.scan-interval", () -> "1h");
     }
 
     @Autowired protected JdbcTemplate jdbcTemplate;
@@ -66,6 +67,7 @@ public abstract class PostgresIntegrationTest {
             jdbcTemplate.update("DELETE FROM document_texts");
             jdbcTemplate.update("UPDATE documents SET latest_agent_run_id=NULL");
             jdbcTemplate.update("UPDATE job_postings SET latest_agent_run_id=NULL");
+            jdbcTemplate.update("DELETE FROM job_auto_analysis_requests");
             jdbcTemplate.update("DELETE FROM agent_run_resource_links");
             jdbcTemplate.update("DELETE FROM documents");
             jdbcTemplate.update("DELETE FROM job_status_history");

@@ -28,10 +28,13 @@ public class JobExtractionMutationService
 
     public static final String RESOURCE_TYPE = "JOB";
     private final JobStore store;
+    private final JobAutoAnalysisRequestService autoAnalysis;
     private final Clock clock;
 
-    public JobExtractionMutationService(JobStore store, Clock clock) {
+    public JobExtractionMutationService(
+            JobStore store, JobAutoAnalysisRequestService autoAnalysis, Clock clock) {
         this.store = store;
+        this.autoAnalysis = autoAnalysis;
         this.clock = clock;
     }
 
@@ -96,7 +99,7 @@ public class JobExtractionMutationService
         if (fields.deadlineAt() == null) {
             confidence = null;
         }
-        return store.applyExtraction(
+        JobRecord extracted = store.applyExtraction(
                         userId,
                         jobId,
                         agentRunId,
@@ -112,6 +115,8 @@ public class JobExtractionMutationService
                         optionalScalar(fields.location(), 200),
                         clock.instant())
                 .orElseThrow(this::staleWorkflow);
+        autoAnalysis.enqueue(extracted);
+        return extracted;
     }
 
     @Override

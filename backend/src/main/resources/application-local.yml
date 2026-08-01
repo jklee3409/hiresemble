@@ -14,6 +14,9 @@ hiresemble:
     ai-cost:
       estimated-cost-usd: ${JOB_AI_ESTIMATED_COST_USD:0.300000}
       price-version: ${JOB_AI_PRICE_VERSION:2026073101}
+    analysis-ai-cost:
+      estimated-cost-usd: ${JOB_ANALYSIS_AI_ESTIMATED_COST_USD:0.300000}
+      price-version: ${JOB_ANALYSIS_AI_PRICE_VERSION:2026073101}
   cover-letter:
     ai-cost:
       generation-estimated-cost-usd: ${COVER_LETTER_GENERATION_ESTIMATED_COST_USD:0.300000}
