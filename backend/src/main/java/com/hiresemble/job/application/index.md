@@ -8,6 +8,8 @@ P5 Job 생성·조회·수정·상태·추출 적용·Scheduler와 P6 분석 접
 
 - `JobApplicationService`: owner-scoped 목록·상세 조회
 - `JobCreationService`: canonical duplicate·idempotency·수동/비동기 생성
+- `JobExtractionLaunchFactory`: 신규·retry 공고 추출의 canonical v3 input snapshot/hash 생성
+- `JobPostingExtractionRetryContributor`: legacy terminal Run을 최신 workflow로 승격하고 predecessor unique·현재 Job·latest Run·QUEUED 계약 유지
 - `JobMutationService`: version 수정과 soft delete
 - `JobStatusService`: 사용자 상태 전이와 history transaction
 - `JobExtractionMutationService`: workflow snapshot·성공/실패/수동 resume 적용

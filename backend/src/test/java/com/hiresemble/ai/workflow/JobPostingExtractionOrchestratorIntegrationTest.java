@@ -32,6 +32,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -255,6 +256,113 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
+    void missingAndReorderedImageResultsKeepTrustedInputReferences() {
+        pageGateway.html = imageOnlyPage(3);
+        imageTextGateway.items = List.of(
+                imageItem("I3", words("gamma", 80)),
+                imageItem("I1", words("alpha", 80)));
+        JobCreationAccepted accepted = create(null, null, null);
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot completed = run(accepted.agentRunId());
+        assertThat(completed.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.lastInput)
+                .contains("image_ref=\\\"I1\\\"", "image_ref=\\\"I3\\\"")
+                .doesNotContain("image_ref=\\\"I2\\\"");
+        assertThat(chatGateway.lastInput.indexOf("image_ref=\\\"I1\\\""))
+                .isLessThan(chatGateway.lastInput.indexOf("image_ref=\\\"I3\\\""));
+        assertThat(checkpoints(accepted.agentRunId()))
+                .contains("\"imageRef\": \"I1\"", "\"imageRef\": \"I3\"")
+                .doesNotContain("posting.png", "https://", "base64", "bytes");
+    }
+
+    @Test
+    void unknownDuplicateBlankAndExcessImageReferencesFailClosed() {
+        List<List<JobPostingExtractionWorkflow.ImageTextItem>> invalidOutputs = List.of(
+                List.of(imageItem("I9", words("unknown", 120))),
+                List.of(
+                        imageItem("I1", words("first", 70)),
+                        imageItem("I1", words("second", 70))),
+                List.of(imageItem(" ", words("blank", 120))),
+                List.of(
+                        imageItem("I1", words("one", 40)),
+                        imageItem("I2", words("two", 40)),
+                        imageItem("I3", words("three", 40))));
+
+        for (int index = 0; index < invalidOutputs.size(); index++) {
+            pageGateway.html = imageOnlyPage(2);
+            imageTextGateway.items = invalidOutputs.get(index);
+            JobCreationAccepted accepted = create(null, null, null);
+
+            execute(accepted.agentRunId());
+
+            AgentRunSnapshot failed = run(accepted.agentRunId());
+            assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
+            assertThat(failed.safeError().code()).isEqualTo("AI_IMAGE_REFERENCE_INVALID");
+        }
+    }
+
+    @Test
+    void shortImageItemsAreAcceptedOnlyWhenTrustedAggregateMeetsFinalThreshold() {
+        assertImageAggregate(80, 80, AgentRunStatus.SUCCEEDED);
+        assertImageAggregate(30, 100, AgentRunStatus.SUCCEEDED);
+        assertImageAggregate(60, 59, AgentRunStatus.WAITING_USER);
+        assertImageAggregate(60, 60, AgentRunStatus.SUCCEEDED);
+        assertImageAggregate(60, 61, AgentRunStatus.SUCCEEDED);
+        assertImageAggregate(19, 101, AgentRunStatus.WAITING_USER);
+        assertImageAggregate(20, 100, AgentRunStatus.SUCCEEDED);
+    }
+
+    @Test
+    void repeatedCrossImageHeaderAndCorruptItemsDoNotInflateAggregate() {
+        pageGateway.html = imageOnlyPage(2);
+        String header = words("common", 60);
+        imageTextGateway.items = List.of(
+                imageItem("I1", header + "\n" + words("first", 10)),
+                imageItem("I2", header + "\n" + words("second", 10)));
+        JobCreationAccepted repeated = create(null, null, null);
+        execute(repeated.agentRunId());
+        assertThat(run(repeated.agentRunId()).status()).isEqualTo(AgentRunStatus.WAITING_USER);
+
+        pageGateway.html = imageOnlyPage(2);
+        imageTextGateway.items = List.of(
+                imageItem("I1", "null"),
+                imageItem("I2", words("healthy", 150)));
+        JobCreationAccepted semanticNull = create(null, null, null);
+        execute(semanticNull.agentRunId());
+        assertThat(run(semanticNull.agentRunId()).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.lastInput).contains("image_ref=\\\"I2\\\"")
+                .doesNotContain("image_ref=\\\"I1\\\"");
+
+        pageGateway.html = imageOnlyPage(2);
+        imageTextGateway.items = List.of(
+                imageItem("I1", "\ufffd".repeat(3) + words("broken", 120)),
+                imageItem("I2", words("healthy", 150)));
+        JobCreationAccepted replacement = create(null, null, null);
+        execute(replacement.agentRunId());
+        assertThat(run(replacement.agentRunId()).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.lastInput).contains("image_ref=\\\"I2\\\"")
+                .doesNotContain("image_ref=\\\"I1\\\"");
+    }
+
+    @Test
+    void mixedDomAndImageTextMayReachTheFinalAggregateThresholdTogether() {
+        pageGateway.html = """
+                <html><body><main><p>%s</p><p>%s</p>
+                <img src="/posting.png" width="1200" height="1800"></main></body></html>
+                """.formatted(words("domone", 35), words("domtwo", 35));
+        imageTextGateway.items = List.of(imageItem("I1", words("image", 70)));
+        JobCreationAccepted accepted = create(null, null, null);
+
+        execute(accepted.agentRunId());
+
+        assertThat(run(accepted.agentRunId()).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.lastInput)
+                .contains("job_page_dom_text", "image_ref=\\\"I1\\\"");
+    }
+
+    @Test
     void semanticNullOptionalFieldIsNormalizedButNullDescriptionRequiresManualInput() {
         chatGateway.mode = ChatMode.NULL_OPTIONAL;
         JobCreationAccepted accepted = create(null, null, null);
@@ -270,7 +378,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
-    void terminalRetryReusesSuccessfulImageTextByImageContentHash() {
+    void terminalRetryUsesFreshV3InputInsteadOfPredecessorImageCheckpoint() {
         pageGateway.html = """
                 <html><body><nav>%s</nav><img src="/posting.png" width="1200" height="1800"></body></html>
                 """.formatted("메뉴 회사소개 채용 공지 고객센터 ".repeat(12));
@@ -289,11 +397,11 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         execute(successor);
 
         assertThat(run(successor).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
-        assertThat(imageTextGateway.calls).hasValue(0);
+        assertThat(imageTextGateway.calls).hasValue(1);
         assertThat(run(successor).steps().stream()
                         .filter(step -> step.stepKey().equals(JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT))
                         .map(step -> step.status()))
-                .containsExactly(AgentStepStatus.REUSED);
+                .containsExactly(AgentStepStatus.SUCCEEDED);
     }
 
     @Test
@@ -418,6 +526,44 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
                 """,
                 String.class,
                 runId);
+    }
+
+    private void assertImageAggregate(
+            int firstMeaningful, int secondMeaningful, AgentRunStatus expectedStatus) {
+        pageGateway.html = imageOnlyPage(2);
+        imageTextGateway.items = List.of(
+                imageItem("I1", words("alpha", firstMeaningful)),
+                imageItem("I2", words("beta", secondMeaningful)));
+        JobCreationAccepted accepted = create(null, null, null);
+        execute(accepted.agentRunId());
+        assertThat(run(accepted.agentRunId()).status()).isEqualTo(expectedStatus);
+        if (expectedStatus == AgentRunStatus.SUCCEEDED) {
+            assertThat(jobService.detail(userId, accepted.jobId()).extractionStatus())
+                    .isEqualTo(JobExtractionStatus.EXTRACTED);
+        } else {
+            assertThat(jobService.detail(userId, accepted.jobId()).extractionStatus())
+                    .isEqualTo(JobExtractionStatus.NEEDS_MANUAL_INPUT);
+        }
+    }
+
+    private String imageOnlyPage(int count) {
+        StringBuilder images = new StringBuilder();
+        for (int index = 1; index <= count; index++) {
+            images.append("<img src=\"/posting-").append(index)
+                    .append(".png\" width=\"1200\" height=\"1800\">");
+        }
+        return "<html><body><main>" + images + "</main></body></html>";
+    }
+
+    private JobPostingExtractionWorkflow.ImageTextItem imageItem(
+            String reference, String text) {
+        return new JobPostingExtractionWorkflow.ImageTextItem(reference, text, false);
+    }
+
+    private String words(String token, int meaningfulCharacters) {
+        int full = meaningfulCharacters / token.length();
+        int remainder = meaningfulCharacters % token.length();
+        return (token + " ").repeat(full) + token.substring(0, remainder);
     }
 
     private UUID seedUser() {
@@ -640,6 +786,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         private final ObjectMapper objectMapper;
         final AtomicInteger calls = new AtomicInteger();
         volatile boolean empty;
+        volatile List<JobPostingExtractionWorkflow.ImageTextItem> items;
 
         FakeImageTextExtractionGateway(ObjectMapper objectMapper) { this.objectMapper = objectMapper; }
 
@@ -651,7 +798,9 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             try {
                 var output = new JobPostingExtractionWorkflow.ImageTextOutput(empty
                         ? java.util.List.of()
+                        : items != null ? items
                         : java.util.List.of(new JobPostingExtractionWorkflow.ImageTextItem(
+                                request.images().getFirst().imageRef(),
                                 "백엔드 개발자를 채용합니다. Java와 Spring Boot 서비스 개발, PostgreSQL 데이터 모델링, 자동화 테스트, 운영 모니터링, 장애 대응, 협업 문서화 경험이 필요합니다. 주요 업무는 안정적인 API 설계와 성능 개선이며 정규직으로 근무합니다. 서비스 용량 계획, 보안 검토, 코드 리뷰, 배포 자동화, 기술 의사결정 기록을 담당하고 제품 조직과 함께 고객 문제를 해결합니다. 지원자는 분산 시스템 운영 경험과 명확한 커뮤니케이션 역량을 갖춰야 합니다.",
                                 false)));
                 return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
@@ -660,6 +809,6 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             }
         }
 
-        void reset() { calls.set(0); empty = false; }
+        void reset() { calls.set(0); empty = false; items = null; }
     }
 }

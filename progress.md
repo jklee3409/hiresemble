@@ -15,6 +15,22 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (이미지형 채용 공고 추출 후속 계약 v3)
+
+- What was done:
+  - trusted `imageRef`, OpenAI adapter parity, legacy retry 승격, WebP와 짧은 이미지 aggregate를 Backend·AI workflow·문서에 구현했다.
+  - Frontend 공개 계약은 유지하고 기존 retry/manual CTA·step fallback·SSE 회귀를 전체 check로 확인했다.
+- Key decisions:
+  - canonical은 `job-posting-extraction-v3`, v1·v2는 non-executable legacy이며 DB migration·공개 OpenAPI 변경은 없다.
+  - 실제 OpenAI·외부 채용 사이트 호출 없이 Fake·synthetic WebP·mock model과 local E2E만 사용했다.
+- Issues encountered:
+  - 첫 전체 check에서 legacy definition 개수 assertion 1건과 무관한 Interview DB 간헐 실패 1건이 발생했다. assertion을 v1·v2 계약으로 고쳤고 Interview 단독 재실행과 최종 전체 check는 통과했다.
+  - 존재하지 않는 `spotlessApply` task와 두 번의 도구 실행 timeout은 검증 성공으로 기록하지 않았다.
+- Validation:
+  - Backend `check --rerun-tasks`: 70 suites/491 tests, failure/error/skip 0. Frontend `pnpm check`: 61 files/243 tests. P5 Chromium 5/5, Compose config, dependency/log/secret/diff 검증 통과.
+- Next steps:
+  - animated WebP와 이미지 기반 PDF OCR은 계속 제외하며 실제 Provider/live 공고 검증은 별도 경계로 남긴다.
+
 ## [2026-08-01] Session Summary (이미지형 채용 공고 자동 추출·문자셋 보정)
 
 - What was done:

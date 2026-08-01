@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (이미지 공고 extraction v3 문서 동기화)
+
+- What was done:
+  - 기능·페이지·기술·아키텍처·구현 계획에 trusted ref, Provider parity, retry 승격, WebP와 aggregate 정책을 반영했다.
+- Key decisions:
+  - migration/OpenAPI는 유지하고 실제 Provider/live 상태를 재판정하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 70 suites/491 tests, Frontend 61/243, P5 Chromium 5/5와 Markdown/diff 검증 통과.
+- Next steps:
+  - live Provider 검증은 별도 사용자 경계다.
+
 ## [2026-08-01] Session Summary (문서 filtering·terminal partial 계약 동기화)
 
 - What was done:

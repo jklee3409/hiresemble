@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-01] Session Summary (Job image prompt v3)
+
+- What was done:
+  - image prompt에 supplied local `imageRef` 보존·누락 허용·중복 금지·untrusted instruction 무시 계약을 추가했다.
+- Key decisions:
+  - URL·filename·Job ID·UUID 생성과 field 추론을 금지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - prompt/schema metadata contract와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (문서 evidence prompt v2)
 
 - What was done:

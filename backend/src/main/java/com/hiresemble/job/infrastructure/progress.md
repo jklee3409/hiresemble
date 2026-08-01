@@ -4,6 +4,19 @@
 
 P5 Job JDBC·Scheduler/fetch와 P6 immutable Analysis JDBC·비용 설정이 구현됐다.
 
+## [2026-08-01] Session Summary (정적 WebP 안전 fetch)
+
+- What was done:
+  - WebP MIME/Accept, RIFF size·WEBP magic, ImageIO decode·dimensions·pixel 검증을 추가했다.
+- Key decisions:
+  - Apache-2.0 pure-Java `webp-imageio:0.3.3` read path를 사용하고 animation은 fail closed한다.
+- Issues encountered:
+  - Java 기본 ImageIO만으로는 WebP reader가 없어 별도 plugin이 필요했다.
+- Validation:
+  - synthetic WebP 정상/mismatch/malformed/pixel, JPEG·PNG와 SSRF/redirect/timeout 회귀 및 dependencyInsight 통과.
+- Next steps:
+  - animated WebP와 writer 기능은 지원 범위가 아니다.
+
 ## [2026-08-01] Session Summary (HTML strict charset·이미지 fetch)
 
 - What was done:

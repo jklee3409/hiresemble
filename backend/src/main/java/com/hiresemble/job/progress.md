@@ -4,6 +4,19 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결이 구현됐다.
 
+## [2026-08-01] Session Summary (Job v3 retry·WebP 경계)
+
+- What was done:
+  - current Job snapshot 기반 v3 retry와 정적 WebP 안전 fetch를 Job 경계에 추가했다.
+- Key decisions:
+  - generic/resource retry는 predecessor unique successor를 공유하고 waiting manual input은 same-run resume이다.
+- Issues encountered:
+  - successor 연결로 증가한 Job version을 compatible replay와 실제 사용자 변경에서 구분했다.
+- Validation:
+  - v1/v2/current retry lineage·latest/QUEUED·budget unique와 WebP magic/decode/pixel 회귀, 전체 check 통과.
+- Next steps:
+  - animated WebP는 제외한다.
+
 ## [2026-08-01] Session Summary (Job 공고 자동 추출 안전 경계 확장)
 
 - What was done:

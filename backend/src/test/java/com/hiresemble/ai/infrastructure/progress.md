@@ -4,6 +4,19 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (OpenAI Chat/image parity 회귀)
+
+- What was done:
+  - 공통 status matrix, refusal·finish·cardinality·tool call·usage와 WebP Media 테스트를 추가했다.
+- Key decisions:
+  - 실제 Provider 대신 mock model/service fixture만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - focused tests와 Backend 전체 491 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (finish reason·usage 회귀)
 
 - What was done:

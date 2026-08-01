@@ -329,12 +329,12 @@ evidenceExtractionStatus: NOT_STARTED
 4. 수동 본문이 없으면 `status=IN_PROGRESS`, `extractionStatus=QUEUED`인 공고와 `JOB_POSTING_EXTRACTION` run을 같은 transaction에서 만들고 202를 반환한다.
 5. 비동기 분기에서 공고 전용 URL gateway가 HTTP(S) 단일 페이지의 bounded raw bytes를 가져오고 header·BOM·meta 우선순위로 strict decode한다.
 6. DOM visible text·main 영역·link density·중복·placeholder·손상 문자와 일반 이미지 후보를 검사해 text 충분, 이미지 보강 필요, 자동 추출 부족으로 분류한다.
-7. 이미지 보강이 필요하면 같은 DNS pinning·redirect 경계와 후보 전체가 공유하는 absolute deadline을 재사용해 ranked JPEG·PNG를 bounded fetch하고, 별도 image gateway가 bytes에서 보이는 텍스트만 추출한다.
-8. DOM과 이미지 텍스트를 source tag로 분리·중복 제거한 뒤 구조화 단계가 회사·직무·본문·마감일 후보를 만든다.
+7. 이미지 보강이 필요하면 같은 DNS pinning·redirect 경계와 후보 전체가 공유하는 absolute deadline을 재사용해 ranked JPEG·PNG·정적 WebP를 bounded fetch하고, 별도 image gateway가 bytes에서 보이는 텍스트만 추출한다.
+8. image gateway v3 output의 local `imageRef`를 input allowlist·중복·개수에 대해 검증하고 원래 입력 순서로 재정렬한다. 누락 reference는 유지한 채 DOM과 이미지 텍스트를 source tag로 분리하고 반복 line을 제거한다. item 20자와 aggregate 120자 기준을 분리해 통과한 source만 구조화 단계가 회사·직무·본문·마감일 후보로 만든다.
 9. 사용자 입력값을 자동 추출값보다 우선 병합하고 semantic null·U+FFFD·본문 품질을 검증한 성공 결과만 저장한다. 자동 경로가 부족하면 업무 상태를 유지한 채 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
 
 사용자 URL fetch는 검색 provider와 분리한다. private/link-local/loopback, 자격증명 포함 URL, redirect 후 재검증 실패, 응답 크기·시간 초과를 차단한다.
-이미지 URL도 Provider에 직접 넘기지 않고 Backend가 검증·다운로드한다. raw HTML, image bytes, Provider raw response는 log와 reusable checkpoint에 보존하지 않는다. 성공한 image step은 URL·bytes 없이 bounded 추출 text와 hash·길이·MIME·count만 checkpoint해 동일 content hash 재시작의 중복 Provider 호출을 막으며, 전체 OCR text는 log에 남기지 않는다.
+이미지 URL도 Provider에 직접 넘기지 않고 Backend가 검증·다운로드한다. raw HTML, image bytes, Provider raw response는 log와 reusable checkpoint에 보존하지 않는다. 성공한 image step은 URL·bytes 없이 bounded 추출 text·trusted reference와 hash·길이·MIME·count만 checkpoint해 동일 content hash 재시작의 중복 Provider 호출을 막으며, 전체 OCR text는 log에 남기지 않는다. text/image OpenAI adapter는 공통 safe failure 경계와 incurred usage 의미를 공유한다.
 
 ### 10.2 분석
 
@@ -635,6 +635,7 @@ Agent Run은 DB의 claim token, 60초 lease, 15초 heartbeat, cancel request와 
 - 비복구 validation·ownership·비용 오류는 자동 재시도하지 않는다.
 - `StepDefinition.maxModelCalls`는 한 persisted attempt 내부 호출 상한이고 automatic attempt는 별도 상한이다. 모든 Provider 호출과 model 승격은 attempt·usage를 소비한다.
 - `WAITING_USER`는 같은 run을 재개하고 terminal 사용자 retry는 lineage를 가진 새 run을 만든다.
+- `JOB_POSTING_EXTRACTION` terminal retry는 v1·v2를 포함한 predecessor를 최신 canonical v3으로 승격하고 현재 Job snapshot으로 input hash를 재작성한다. resource retry와 generic retry는 같은 predecessor unique successor·budget reservation·after-commit dispatch를 공유한다.
 - 재시도 전에 기존 성공 step의 input hash를 다시 검증한다.
 
 ### 15.4 SSE

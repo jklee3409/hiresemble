@@ -113,6 +113,23 @@ public class JobMutationService {
                     resumed.resourceId(),
                     false);
         }
+        if ((latest.status() == AgentRunStatus.QUEUED
+                        || latest.status() == AgentRunStatus.RUNNING)
+                && latest.retryOfRunId() != null) {
+            AgentRunSnapshot predecessor = runQuery.findByOwner(userId, latest.retryOfRunId())
+                    .orElseThrow(() -> new BusinessException(
+                            ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED));
+            long snapshottedJobVersion = latest.inputReferenceSnapshot() == null
+                    ? -1L : latest.inputReferenceSnapshot().path("jobVersion").asLong(-1L);
+            if (predecessor.workflowType() == WorkflowType.JOB_POSTING_EXTRACTION
+                    && predecessor.retryable()
+                    && latest.requestedQualityMode() == predecessor.requestedQualityMode()
+                    && current.version() == snapshottedJobVersion + 1L) {
+                return new WorkflowLaunchResult(
+                        latest.id(), latest.status(), latest.resourceType(), latest.resourceId(), false);
+            }
+            throw new BusinessException(ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED);
+        }
         if (latest.status() != AgentRunStatus.FAILED
                 && latest.status() != AgentRunStatus.INTERRUPTED) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);

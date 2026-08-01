@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
+import com.hiresemble.agentrun.application.port.AgentRunRetryPort;
 import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import com.hiresemble.common.exception.BusinessException;
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -61,6 +63,7 @@ class JobIntegrationTest extends PostgresIntegrationTest {
     @Autowired private JobStatusService statusService;
     @Autowired private JobStore store;
     @Autowired private BudgetReservationPort budgetReservations;
+    @Autowired private AgentRunRetryPort agentRunRetry;
 
     @DynamicPropertySource
     static void backgroundWorkersStayDeterministic(DynamicPropertyRegistry registry) {
@@ -296,7 +299,7 @@ class JobIntegrationTest extends PostgresIntegrationTest {
         budgetReservations.releaseUnused(owner.userId(), failedRun, NOW);
         jdbcTemplate.update(
                 """
-                UPDATE agent_runs SET status='FAILED',completed_at=?,
+                UPDATE agent_runs SET status='FAILED',workflow_version='job-posting-extraction-v1',completed_at=?,
                     error_code='JOB_PAGE_TIMEOUT',error_message_safe='Try extraction again.',
                     retryable_failure=true,state_version=state_version+1,updated_at=?
                 WHERE user_id=? AND id=?
@@ -316,6 +319,24 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 "SELECT retry_of_run_id FROM agent_runs WHERE id=?", UUID.class, successor))
                 .isEqualTo(failedRun);
         assertThat(jdbcTemplate.queryForObject(
+                "SELECT workflow_version FROM agent_runs WHERE id=?", String.class, successor))
+                .isEqualTo("job-posting-extraction-v3");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT workflow_version FROM agent_runs WHERE id=?", String.class, failedRun))
+                .isEqualTo("job-posting-extraction-v1");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT (input_reference_snapshot->>'jobVersion')::bigint FROM agent_runs WHERE id=?",
+                Long.class,
+                successor)).isEqualTo(failedState.version());
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT jsonb_exists(input_reference_snapshot,'canonicalUrlHash') FROM agent_runs WHERE id=?",
+                Boolean.class,
+                successor)).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT jsonb_exists(input_reference_snapshot,'sourceText') FROM agent_runs WHERE id=?",
+                Boolean.class,
+                successor)).isFalse();
+        assertThat(jdbcTemplate.queryForObject(
                 "SELECT latest_agent_run_id FROM job_postings WHERE id=?",
                 UUID.class,
                 failedJob)).isEqualTo(successor);
@@ -333,6 +354,127 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 Long.class,
                 owner.userId(),
                 failedRun)).isEqualTo(2L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM ai_budget_reservations WHERE agent_run_id=?",
+                Long.class,
+                successor)).isEqualTo(1L);
+
+        var genericReplay = agentRunRetry.retry(
+                owner.userId(), failedRun, "generic-after-resource-" + UUID.randomUUID());
+        assertThat(genericReplay.agentRunId()).isEqualTo(successor);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM agent_runs WHERE user_id=? AND root_run_id=?",
+                Long.class,
+                owner.userId(),
+                failedRun)).isEqualTo(2L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM ai_budget_reservations WHERE agent_run_id=?",
+                Long.class,
+                successor)).isEqualTo(1L);
+    }
+
+    @Test
+    void legacyInterruptedAndV2FailedRunsUpgradeToCanonicalV3WithFreshJobInput()
+            throws Exception {
+        Session owner = authenticated("job-legacy-retry-owner@example.com");
+        List<LegacyRetryCase> fixtures = List.of(
+                new LegacyRetryCase("job-posting-extraction-v1", "INTERRUPTED"),
+                new LegacyRetryCase("job-posting-extraction-v2", "FAILED"));
+
+        for (int index = 0; index < fixtures.size(); index++) {
+            LegacyRetryCase fixture = fixtures.get(index);
+            JsonNode accepted = json(create(
+                    owner,
+                    "legacy-retry-create-" + index,
+                    createBody("https://jobs.example.com/legacy-" + index,
+                            null, null, null, null),
+                    202));
+            UUID jobId = UUID.fromString(accepted.get("jobId").asText());
+            UUID predecessor = UUID.fromString(accepted.get("agentRunId").asText());
+            var failedJob = extraction.markFailed(owner.userId(), jobId, predecessor, 0);
+            budgetReservations.releaseUnused(owner.userId(), predecessor, NOW);
+            jdbcTemplate.update(
+                    """
+                    UPDATE agent_runs SET status=?,workflow_version=?,completed_at=?,
+                        error_code='JOB_PAGE_TIMEOUT',error_message_safe='Try extraction again.',
+                        retryable_failure=true,state_version=state_version+1,updated_at=?
+                    WHERE user_id=? AND id=?
+                    """,
+                    fixture.status(),
+                    fixture.version(),
+                    java.sql.Timestamp.from(NOW),
+                    java.sql.Timestamp.from(NOW),
+                    owner.userId(),
+                    predecessor);
+
+            var successor = agentRunRetry.retry(
+                    owner.userId(), predecessor, "legacy-generic-retry-" + index);
+
+            assertThat(successor.agentRunId()).isNotEqualTo(predecessor);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT workflow_version FROM agent_runs WHERE id=?",
+                    String.class,
+                    successor.agentRunId())).isEqualTo("job-posting-extraction-v3");
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT workflow_version FROM agent_runs WHERE id=?",
+                    String.class,
+                    predecessor)).isEqualTo(fixture.version());
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT status FROM agent_runs WHERE id=?", String.class, predecessor))
+                    .isEqualTo(fixture.status());
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT retry_of_run_id FROM agent_runs WHERE id=?",
+                    UUID.class,
+                    successor.agentRunId())).isEqualTo(predecessor);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT root_run_id FROM agent_runs WHERE id=?",
+                    UUID.class,
+                    successor.agentRunId())).isEqualTo(predecessor);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT run_attempt_no FROM agent_runs WHERE id=?",
+                    Integer.class,
+                    successor.agentRunId())).isEqualTo(2);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT (input_reference_snapshot->>'jobVersion')::bigint FROM agent_runs WHERE id=?",
+                    Long.class,
+                    successor.agentRunId())).isEqualTo(failedJob.version());
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT latest_agent_run_id FROM job_postings WHERE id=?",
+                    UUID.class,
+                    jobId)).isEqualTo(successor.agentRunId());
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT extraction_status FROM job_postings WHERE id=?",
+                    String.class,
+                    jobId)).isEqualTo("QUEUED");
+            if (index == 0) {
+                jdbcTemplate.update(
+                        """
+                        UPDATE agent_runs SET status='RUNNING',started_at=?,claim_token=?,
+                            claimed_by='retry-race-test',lease_expires_at=?,heartbeat_at=?,
+                            state_version=state_version+1,updated_at=? WHERE id=?
+                        """,
+                        java.sql.Timestamp.from(NOW),
+                        UUID.randomUUID(),
+                        java.sql.Timestamp.from(NOW.plusSeconds(60)),
+                        java.sql.Timestamp.from(NOW),
+                        java.sql.Timestamp.from(NOW),
+                        successor.agentRunId());
+                long currentVersion = jdbcTemplate.queryForObject(
+                        "SELECT version FROM job_postings WHERE id=?", Long.class, jobId);
+                MvcResult resourceReplay = retry(
+                        owner,
+                        jobId,
+                        currentVersion,
+                        "resource-after-generic-" + UUID.randomUUID(),
+                        202);
+                assertThat(json(resourceReplay).get("agentRunId").asText())
+                        .isEqualTo(successor.agentRunId().toString());
+                assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM agent_runs WHERE root_run_id=?",
+                        Long.class,
+                        predecessor)).isEqualTo(2L);
+            }
+        }
     }
 
     @Test
@@ -652,6 +794,8 @@ class JobIntegrationTest extends PostgresIntegrationTest {
     }
 
     private record Session(Cookie cookie, String csrfToken, UUID userId) {}
+
+    private record LegacyRetryCase(String version, String status) {}
 
     @TestConfiguration(proxyBeanMethods = false)
     static class TestPorts {

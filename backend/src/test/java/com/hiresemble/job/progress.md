@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안 회귀 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (legacy Job retry upgrade 회귀)
+
+- What was done:
+  - v1 FAILED/INTERRUPTED, v2 FAILED, current retry와 endpoint 중복 방지를 검증했다.
+- Key decisions:
+  - old row 불변·current Job snapshot·latest/QUEUED·budget 1건을 DB로 확인한다.
+- Issues encountered:
+  - PostgreSQL JSON existence 검사는 JDBC placeholder와 충돌하지 않는 `jsonb_exists`를 사용했다.
+- Validation:
+  - focused와 전체 check, P5 Chromium 5/5 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Terminal retry fixture budget 불변식 보정)
 
 - What was done:

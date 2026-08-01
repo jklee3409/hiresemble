@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-01] Session Summary (OpenAI image/text safe failure parity)
+
+- What was done:
+  - status/code/param, timeout/network, refusal·finish·cardinality·tool call과 incurred usage를 공통 helper로 추출하고 WebP Media를 허용했다.
+- Key decisions:
+  - `insufficient_quota`는 non-retryable이며 diagnostic은 safe metadata만 기록한다.
+- Issues encountered:
+  - adapter 전체를 합치지 않고 실제 공유 책임만 package-private helper로 제한했다.
+- Validation:
+  - 공통 Provider matrix, response failure usage, maxRetries 0/store false/MIME와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (OpenAI image text adapter)
 
 - What was done:

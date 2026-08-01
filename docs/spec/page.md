@@ -405,6 +405,8 @@ API:
 
 진행 단계는 `공고 페이지 불러오기 → 공고 내용 확인 → 공고 이미지 읽기(필요한 경우) → 채용 정보 정리 → 결과 저장`처럼 사용자 용어로 표시한다. Provider, 내부 step key, OCR engine 이름은 노출하지 않는다.
 
+workflow v3도 공개 상태 enum과 단계 key를 바꾸지 않는다. 알려지지 않은 새 step key는 기존 안전한 fallback label로 표시하고, retry가 새 successor Run을 반환하면 해당 Run으로 진행 상태를 갱신한다. `NEEDS_MANUAL_INPUT`의 직접 입력 CTA, retryable Provider 실패의 재시도 CTA, SSE reconnect 상태는 서로 다른 의미로 유지한다.
+
 ## 7.2 `/jobs/new`
 
 ### 입력

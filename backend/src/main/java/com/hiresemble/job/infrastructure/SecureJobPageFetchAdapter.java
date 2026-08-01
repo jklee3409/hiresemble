@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import javax.net.ssl.SNIHostName;
@@ -34,6 +35,8 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -195,7 +198,9 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
                     .split(";", 2)[0]
                     .strip()
                     .toLowerCase(Locale.ROOT);
-            if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+            if (!contentType.equals("image/jpeg")
+                    && !contentType.equals("image/png")
+                    && !contentType.equals("image/webp")) {
                 close(response.body());
                 throw failure("JOB_IMAGE_CONTENT_TYPE_INVALID", false, null);
             }
@@ -215,22 +220,16 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             if (!magicMatches(contentType, bytes)) {
                 throw failure("JOB_IMAGE_MAGIC_MISMATCH", false, null);
             }
-            BufferedImage image;
-            try {
-                image = ImageIO.read(new ByteArrayInputStream(bytes));
-            } catch (IOException exception) {
-                throw failure("JOB_IMAGE_DECODE_INVALID", false, exception);
+            if (contentType.equals("image/webp") && animatedWebp(bytes)) {
+                throw failure("JOB_IMAGE_ANIMATION_UNSUPPORTED", false, null);
             }
-            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0
-                    || (long) image.getWidth() * image.getHeight() > properties.getMaxImagePixels()) {
-                throw failure("JOB_IMAGE_DIMENSIONS_INVALID", false, null);
-            }
+            ImageDimensions dimensions = decodeDimensions(bytes);
             return new ImageAsset(
                     candidate.imageRef(),
                     contentType,
                     bytes,
-                    image.getWidth(),
-                    image.getHeight(),
+                    dimensions.width(),
+                    dimensions.height(),
                     sha256(bytes));
         }
         throw failure("JOB_IMAGE_REDIRECT_LIMIT", false, null);
@@ -387,10 +386,66 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
                     && bytes[3] == 'G' && bytes[4] == 0x0d && bytes[5] == 0x0a
                     && bytes[6] == 0x1a && bytes[7] == 0x0a;
         }
+        if (contentType.equals("image/webp")) {
+            return bytes.length >= 20
+                    && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
+                    && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P'
+                    && unsignedLittleEndianInt(bytes, 4) == bytes.length - 8L;
+        }
         return bytes.length >= 4
                 && (bytes[0] & 0xff) == 0xff && (bytes[1] & 0xff) == 0xd8
                 && (bytes[bytes.length - 2] & 0xff) == 0xff
                 && (bytes[bytes.length - 1] & 0xff) == 0xd9;
+    }
+
+    private ImageDimensions decodeDimensions(byte[] bytes) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+            if (input == null) throw failure("JOB_IMAGE_DECODE_INVALID", false, null);
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw failure("JOB_IMAGE_DECODE_INVALID", false, null);
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width <= 0 || height <= 0
+                        || (long) width * height > properties.getMaxImagePixels()) {
+                    throw failure("JOB_IMAGE_DIMENSIONS_INVALID", false, null);
+                }
+                BufferedImage decoded = reader.read(0);
+                if (decoded == null || decoded.getWidth() != width || decoded.getHeight() != height) {
+                    throw failure("JOB_IMAGE_DECODE_INVALID", false, null);
+                }
+                return new ImageDimensions(width, height);
+            } finally {
+                reader.dispose();
+            }
+        } catch (JobPageFetchException exception) {
+            throw exception;
+        } catch (IOException | RuntimeException exception) {
+            throw failure("JOB_IMAGE_DECODE_INVALID", false, exception);
+        }
+    }
+
+    private boolean animatedWebp(byte[] bytes) {
+        int offset = 12;
+        while (offset + 8 <= bytes.length) {
+            String chunk = new String(bytes, offset, 4, StandardCharsets.US_ASCII);
+            long size = unsignedLittleEndianInt(bytes, offset + 4);
+            long next = (long) offset + 8L + size + (size & 1L);
+            if (next > bytes.length || next <= offset) return true;
+            if ("ANIM".equals(chunk) || "ANMF".equals(chunk)) return true;
+            offset = (int) next;
+        }
+        return offset != bytes.length;
+    }
+
+    private long unsignedLittleEndianInt(byte[] value, int offset) {
+        if (offset < 0 || offset + 4 > value.length) return -1L;
+        return (value[offset] & 0xffL)
+                | ((value[offset + 1] & 0xffL) << 8)
+                | ((value[offset + 2] & 0xffL) << 16)
+                | ((value[offset + 3] & 0xffL) << 24);
     }
 
     private JobPageFetchException remapImageFailure(JobPageFetchException failure) {
@@ -691,7 +746,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             }
             String request = "GET " + target + " HTTP/1.1\r\n"
                     + "Host: " + hostValue + "\r\n"
-                    + "Accept: text/html,application/xhtml+xml,image/jpeg,image/png\r\n"
+                    + "Accept: text/html,application/xhtml+xml,image/jpeg,image/png,image/webp\r\n"
                     + "Accept-Encoding: gzip, deflate\r\n"
                     + "User-Agent: HiresembleJobFetcher/1.0\r\n"
                     + "Connection: close\r\n\r\n";
@@ -891,6 +946,8 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             }
         }
     }
+
+    private record ImageDimensions(int width, int height) {}
 
     private static final class DeadlineInputStream extends FilterInputStream {
 

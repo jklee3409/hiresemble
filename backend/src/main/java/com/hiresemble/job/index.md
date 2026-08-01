@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조회·상태·추출·분석·Scheduler 도메인과 영속성·안전한 HTML/공고 이미지 URL fetch 경계를 소유한다. HTML은 bounded raw bytes에서 header·BOM·meta 문자셋을 strict decode하고, 이미지는 동일 SSRF·DNS pinning·redirect·deadline 경계에서 JPEG·PNG만 검증한다.
+P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조회·상태·추출·분석·Scheduler 도메인과 영속성·안전한 HTML/공고 이미지 URL fetch 경계를 소유한다. HTML은 bounded raw bytes에서 header·BOM·meta 문자셋을 strict decode하고, 이미지는 동일 SSRF·DNS pinning·redirect·deadline 경계에서 JPEG·PNG·정적 WebP를 검증한다. terminal 공고 추출 retry는 현재 Job snapshot으로 canonical v3 successor를 만든다.
 
 ## 주요 파일 및 하위 디렉터리
 

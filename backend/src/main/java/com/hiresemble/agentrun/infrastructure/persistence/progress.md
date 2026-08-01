@@ -4,6 +4,19 @@
 
 Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview Question Set·Answer Version typed resource owner resolution을 관리한다.
 
+## [2026-08-01] Session Summary (Job retry successor command persistence)
+
+- What was done:
+  - retry row가 contributor command의 workflow/input/quality/cost/resource를 원자 저장하도록 공통화했다.
+- Key decisions:
+  - predecessor unique와 compatible successor 확인, typed link·Job latest/QUEUED transaction을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 양방향 resource/generic retry, lineage·budget unique와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (다중 가격 usage ledger)
 
 - What was done:

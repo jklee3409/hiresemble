@@ -10,14 +10,12 @@ import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry;
 import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry.ValidatedSchema;
-import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.openai.errors.OpenAIIoException;
 import com.openai.errors.OpenAIServiceException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,82 +100,31 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
             List<AiUsage> usages = usages(
                     request, prices, responseUsage, elapsed(started));
             incurredUsages = usages;
-            if (response == null || response.getResults().size() != 1
-                    || response.hasToolCalls()) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_CHAT_COMPLETION_INCOMPLETE",
-                                "AI 응답이 정상적으로 완료되지 않았습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
-            var message = response.getResult().getOutput();
-            Object refusal = message.getMetadata().get("refusal");
-            SafeFinishReason finishReason = SafeFinishReason.from(
-                    response.getResult().getMetadata().getFinishReason());
-            if (refusal != null && !refusal.toString().isBlank()) {
-                throw AiExecutionException.nonRetryable(
-                        FailureKind.SAFETY,
-                        "AI_CHAT_SAFETY_BLOCKED",
-                        "AI가 안전 정책에 따라 응답을 생성하지 않았습니다.",
-                        usages);
-            }
-            if (finishReason == SafeFinishReason.LENGTH) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_CHAT_OUTPUT_TRUNCATED",
-                                "AI 응답이 허용된 출력 길이를 초과했습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
-            if (finishReason == SafeFinishReason.CONTENT_FILTER) {
-                throw AiExecutionException.nonRetryable(
-                        FailureKind.SAFETY,
-                        "AI_CHAT_SAFETY_BLOCKED",
-                        "AI가 안전 정책에 따라 응답을 생성하지 않았습니다.",
-                        usages);
-            }
-            if (finishReason == SafeFinishReason.INCOMPLETE) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_CHAT_COMPLETION_INCOMPLETE",
-                                "AI 응답이 정상적으로 완료되지 않았습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
-            String content = message.getText();
-            if (content == null || content.isBlank()) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_SO_JSON_NOT_PARSEABLE",
-                                "AI 결과 형식을 확인하지 못했습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
+            String content = OpenAiChatFailureSupport.requireCompletedText(
+                    response, usages, OpenAiChatFailureSupport.Capability.CHAT);
             return new AiGatewayResponse(content, usages);
         } catch (AiExecutionException exception) {
             throw exception;
         } catch (OpenAIServiceException exception) {
-            logProviderFailure(exception, schema);
-            throw mapStatus(exception);
+            OpenAiChatFailureSupport.logProviderFailure(
+                    log, exception, schema, OpenAiChatFailureSupport.Capability.CHAT);
+            throw OpenAiChatFailureSupport.mapServiceFailure(
+                    exception, OpenAiChatFailureSupport.Capability.CHAT);
         } catch (OpenAIIoException exception) {
-            if (isTimeout(exception)) {
-                throw AiExecutionException.retryable(
-                        FailureKind.TIMEOUT,
-                        "AI_CHAT_TIMEOUT",
-                        "AI 응답 시간이 초과되었습니다.");
+            if (OpenAiChatFailureSupport.isTimeout(exception)) {
+                throw OpenAiChatFailureSupport.timeout(
+                        OpenAiChatFailureSupport.Capability.CHAT, incurredUsages);
             }
-            throw AiExecutionException.retryable(
-                    FailureKind.NETWORK,
-                    "AI_CHAT_NETWORK_ERROR",
-                    "AI 응답 서비스에 연결하지 못했습니다.");
+            throw OpenAiChatFailureSupport.network(OpenAiChatFailureSupport.Capability.CHAT);
         } catch (RuntimeException exception) {
-            if (isTimeout(exception)) {
-                throw AiExecutionException.retryable(
-                        FailureKind.TIMEOUT,
-                        "AI_CHAT_TIMEOUT",
-                        "AI 응답 시간이 초과되었습니다.");
+            if (OpenAiChatFailureSupport.isTimeout(exception)) {
+                throw OpenAiChatFailureSupport.timeout(
+                        OpenAiChatFailureSupport.Capability.CHAT, incurredUsages);
             }
             throw AiExecutionException.deterministicStructuredOutput(
                             "AI_CHAT_RESPONSE_PROCESSING_FAILED",
                             "AI 응답을 안전하게 처리하지 못했습니다.",
-                            ValidationPhase.JAVA_BINDING)
+                            com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase.JAVA_BINDING)
                     .withIncurredUsages(incurredUsages);
         }
     }
@@ -250,57 +197,6 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 callId);
     }
 
-    private AiExecutionException mapStatus(OpenAIServiceException exception) {
-        int status = exception.statusCode();
-        if (status == 400) {
-            if (isStructuredSchemaRejection(exception)) {
-                return AiExecutionException.nonRetryable(
-                        FailureKind.STRUCTURED_SCHEMA,
-                        "AI_CHAT_STRUCTURED_SCHEMA_REJECTED",
-                        "AI 응답 형식 구성이 올바르지 않습니다.");
-            }
-            return configuration("AI_CHAT_REQUEST_REJECTED");
-        }
-        if (status == 401 || status == 403) {
-            return configuration("AI_CHAT_CREDENTIALS_REJECTED");
-        }
-        if (status == 404) {
-            return configuration("AI_CHAT_MODEL_OR_ENDPOINT_NOT_FOUND");
-        }
-        if (status == 429) {
-            if (exception.code().filter("insufficient_quota"::equals).isPresent()) {
-                return providerQuota();
-            }
-            return AiExecutionException.retryable(
-                    FailureKind.RATE_LIMIT,
-                    "AI_CHAT_RATE_LIMITED",
-                    "AI 응답 요청이 일시적으로 제한되었습니다.");
-        }
-        if (status >= 500) {
-            return AiExecutionException.retryable(
-                    FailureKind.PROVIDER_5XX,
-                    "AI_CHAT_PROVIDER_UNAVAILABLE",
-                    "AI 응답 서비스를 일시적으로 사용할 수 없습니다.");
-        }
-        return configuration();
-    }
-
-    private void logProviderFailure(
-            OpenAIServiceException exception, ValidatedSchema schema) {
-        String requestId = safeDiagnostic(exception.headers().values("x-request-id").stream()
-                .findFirst().orElse(null));
-        log.warn(
-                "OpenAI chat request rejected: status={}, code={}, param={}, requestId={}, schemaName={}, schemaVersion={}, schemaHash={}, contractName={}",
-                exception.statusCode(),
-                safeDiagnostic(exception.code().orElse(null)),
-                safeDiagnostic(exception.param().orElse(null)),
-                requestId,
-                StrictStructuredOutputSchemaRegistry.PROVIDER_SCHEMA_NAME,
-                schema.version(),
-                schema.hash(),
-                schema.contractName());
-    }
-
     private AiExecutionException configuration() {
         return configuration("AI_CHAT_CONFIGURATION_INVALID");
     }
@@ -312,64 +208,12 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 "AI 응답 서비스 구성이 올바르지 않습니다.");
     }
 
-    private AiExecutionException providerQuota() {
-        return AiExecutionException.nonRetryable(
-                FailureKind.CONFIGURATION,
-                "AI_CHAT_PROVIDER_QUOTA_UNAVAILABLE",
-                "AI 서비스 사용 가능 한도를 확인해 주세요.");
-    }
-
     private static long elapsed(long started) {
         return Math.max(0, (System.nanoTime() - started) / 1_000_000);
     }
 
     private static long nonNegative(Number value) {
         return value == null ? 0 : Math.max(0, value.longValue());
-    }
-
-    private static boolean isTimeout(Throwable value) {
-        for (Throwable current = value; current != null; current = current.getCause()) {
-            if (current instanceof java.net.http.HttpTimeoutException
-                    || current instanceof java.net.SocketTimeoutException) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String safeDiagnostic(String value) {
-        if (value == null || value.isBlank() || value.length() > 100
-                || !value.matches("[A-Za-z0-9_.\\-\\[\\]]+")) {
-            return "NOT_AVAILABLE";
-        }
-        return value;
-    }
-
-    private static boolean isStructuredSchemaRejection(OpenAIServiceException exception) {
-        String code = exception.code().orElse("");
-        String param = exception.param().orElse("");
-        return "invalid_json_schema".equals(code)
-                || code.contains("structured_schema")
-                || param.equals("response_format")
-                || param.startsWith("response_format.json_schema");
-    }
-
-    private enum SafeFinishReason {
-        STOP,
-        LENGTH,
-        CONTENT_FILTER,
-        NOT_AVAILABLE,
-        INCOMPLETE;
-
-        private static SafeFinishReason from(String value) {
-            if (value == null || value.isBlank()) return NOT_AVAILABLE;
-            return switch (value.toLowerCase(java.util.Locale.ROOT)) {
-                case "stop" -> STOP;
-                case "length" -> LENGTH;
-                case "content_filter" -> CONTENT_FILTER;
-                default -> INCOMPLETE;
-            };
-        }
     }
 
     private Duration boundedTimeout(Duration requested) {

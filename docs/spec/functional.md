@@ -280,6 +280,10 @@
 9. 회사명·직무명·마감일 사용자 입력값이 있으면 자동 추출값보다 우선
 10. semantic null·손상 문자·본문 품질 검증을 통과한 결과만 저장 및 사용자 확인
 
+이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 서버는 요청 allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item을 거부하고 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
+
+JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를 통과한 경우 자동 판독한다. 이미지 item은 meaningful character 20자부터 합산 후보가 되며, item 내부와 이미지 사이의 반복 line을 제거한 DOM·이미지 aggregate가 기존 본문 최소 120자를 충족할 때만 field extraction을 계속한다. 따라서 80자 이미지 두 장 또는 DOM 70자와 이미지 70자는 처리할 수 있지만, icon label·semantic null·손상 문자나 반복 header만으로 120자를 채운 경우는 `NEEDS_MANUAL_INPUT`으로 전환한다.
+
 공고 업무 상태는 항상 `IN_PROGRESS|SUBMITTED|CLOSED` 중 하나이며 URL 추출 상태와 분리한다.
 
 추출 상태:
@@ -300,6 +304,8 @@
 - 업무 상태는 유지하고 추출 상태를 `NEEDS_MANUAL_INPUT`으로 표시
 - 사용자가 공고 본문과 마감일을 직접 수정 가능
 - URL 등록 화면에는 OCR 여부나 이미지 공고 여부를 선택하는 control을 두지 않으며 수동 입력은 모든 자동 경로 뒤의 최종 fallback이다.
+
+terminal `FAILED|INTERRUPTED` 공고 추출 retry는 predecessor의 workflow version과 무관하게 최신 canonical `job-posting-extraction-v3` successor를 만들고 현재 Job version·canonical URL·사용자 override로 input snapshot/hash를 다시 만든다. v1·v2 checkpoint는 v3 input으로 재사용하지 않는다. 공고 전용 retry와 범용 Agent Run retry는 predecessor unique를 공유해 compatible 요청에는 같은 successor를 반환한다. `WAITING_USER`에서 사용자가 본문을 입력하는 흐름은 기존 run을 그대로 재개한다.
 
 ## JOB-002 공고 상태 관리
 

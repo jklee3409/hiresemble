@@ -17,6 +17,7 @@ public class JobPageFetchProperties {
     private long maxImagePixels = 40_000_000L;
     private int minDomMeaningfulCharacters = 600;
     private int minDescriptionMeaningfulCharacters = 120;
+    private int minImageItemMeaningfulCharacters = 20;
     private double maxReplacementCharacterRatio = 0.001d;
 
     public Duration getConnectTimeout() {
@@ -65,6 +66,8 @@ public class JobPageFetchProperties {
     public void setMinDomMeaningfulCharacters(int value) { minDomMeaningfulCharacters = value; }
     public int getMinDescriptionMeaningfulCharacters() { return minDescriptionMeaningfulCharacters; }
     public void setMinDescriptionMeaningfulCharacters(int value) { minDescriptionMeaningfulCharacters = value; }
+    public int getMinImageItemMeaningfulCharacters() { return minImageItemMeaningfulCharacters; }
+    public void setMinImageItemMeaningfulCharacters(int value) { minImageItemMeaningfulCharacters = value; }
     public double getMaxReplacementCharacterRatio() { return maxReplacementCharacterRatio; }
     public void setMaxReplacementCharacterRatio(double value) { maxReplacementCharacterRatio = value; }
 
@@ -94,6 +97,8 @@ public class JobPageFetchProperties {
                 || minDomMeaningfulCharacters > 5_000
                 || minDescriptionMeaningfulCharacters < 40
                 || minDescriptionMeaningfulCharacters > 2_000
+                || minImageItemMeaningfulCharacters < 10
+                || minImageItemMeaningfulCharacters > minDescriptionMeaningfulCharacters
                 || maxReplacementCharacterRatio < 0d
                 || maxReplacementCharacterRatio > 0.05d) {
             throw new IllegalStateException("job page fetch limits are invalid");

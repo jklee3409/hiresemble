@@ -171,6 +171,142 @@ class SecureJobPageFetchAdapterTest {
     }
 
     @Test
+    void validatedWebpIsDecodedAndMimeMagicMalformedAndPixelLimitsFailClosed() {
+        byte[] webp = webp(1200, 800);
+        var fetched = fixed(response(
+                        200,
+                        Map.of(
+                                "Content-Type", List.of("image/webp"),
+                                "Content-Length", List.of(Integer.toString(webp.length))),
+                        new ByteArrayInputStream(webp)))
+                .fetch(new ImageCandidate(
+                                "I2", URI.create("https://example.test/posting.webp"), 90),
+                        Duration.ofSeconds(5));
+
+        assertThat(fetched.imageRef()).isEqualTo("I2");
+        assertThat(fetched.mimeType()).isEqualTo("image/webp");
+        assertThat(fetched.width()).isEqualTo(1200);
+        assertThat(fetched.height()).isEqualTo(800);
+
+        assertThatThrownBy(() -> fixed(response(
+                                200,
+                                Map.of("Content-Type", List.of("image/png")),
+                                new ByteArrayInputStream(webp)))
+                        .fetch(new ImageCandidate(
+                                        "I2", URI.create("https://example.test/wrong.png"), 90),
+                                Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_MAGIC_MISMATCH"));
+
+        byte[] malformed = webp.clone();
+        malformed[12] = 'B';
+        assertThatThrownBy(() -> fixed(response(
+                                200,
+                                Map.of("Content-Type", List.of("image/webp")),
+                                new ByteArrayInputStream(malformed)))
+                        .fetch(new ImageCandidate(
+                                        "I2", URI.create("https://example.test/broken.webp"), 90),
+                                Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isIn("JOB_IMAGE_ANIMATION_UNSUPPORTED", "JOB_IMAGE_DECODE_INVALID"));
+
+        byte[] tooManyPixels = webp(1001, 1000);
+        JobPageFetchProperties limited = properties(Duration.ofMillis(100));
+        limited.setMaxImagePixels(1_000_000L);
+        SecureJobPageFetchAdapter pixelLimited = new SecureJobPageFetchAdapter(
+                limited,
+                host -> List.of(PUBLIC),
+                (uri, addresses, deadline) -> response(
+                        200,
+                        Map.of("Content-Type", List.of("image/webp")),
+                        new ByteArrayInputStream(tooManyPixels)));
+        assertThatThrownBy(() -> pixelLimited.fetch(new ImageCandidate(
+                                "I2", URI.create("https://example.test/large.webp"), 90),
+                        Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_DIMENSIONS_INVALID"));
+    }
+
+    @Test
+    void webpImageRedirectDeadlineByteAndPrivateAddressUseTheSharedSafeBoundary() {
+        byte[] webp = webp(640, 480);
+        Queue<SecureJobPageFetchAdapter.TransportResponse> responses = new ArrayDeque<>();
+        responses.add(response(
+                302,
+                Map.of("Location", List.of("/assets/final.webp")),
+                ""));
+        responses.add(response(
+                200,
+                Map.of("Content-Type", List.of("image/webp")),
+                new ByteArrayInputStream(webp)));
+        List<URI> requested = new ArrayList<>();
+        SecureJobPageFetchAdapter redirected = adapter(
+                host -> List.of(PUBLIC),
+                (uri, addresses, deadline) -> {
+                    requested.add(uri);
+                    return responses.remove();
+                });
+
+        var fetched = redirected.fetch(new ImageCandidate(
+                        "I1", URI.create("https://public.test/start.webp"), 90),
+                Duration.ofSeconds(5));
+
+        assertThat(requested).containsExactly(
+                URI.create("https://public.test/start.webp"),
+                URI.create("https://public.test/assets/final.webp"));
+        assertThat(fetched.mimeType()).isEqualTo("image/webp");
+
+        SecureJobPageFetchAdapter privateRedirect = adapter(
+                host -> host.equals("private.test")
+                        ? List.of(address("10.0.0.7"))
+                        : List.of(PUBLIC),
+                (uri, addresses, deadline) -> response(
+                        302,
+                        Map.of("Location", List.of("http://private.test/final.webp")),
+                        ""));
+        assertThatThrownBy(() -> privateRedirect.fetch(new ImageCandidate(
+                                "I1", URI.create("https://public.test/start.webp"), 90),
+                        Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_PAGE_URL_UNSAFE"));
+
+        SecureJobPageFetchAdapter timeout = adapter(
+                host -> List.of(PUBLIC),
+                (uri, addresses, deadline) -> {
+                    throw new HttpTimeoutException("image timeout fixture");
+                });
+        assertThatThrownBy(() -> timeout.fetch(new ImageCandidate(
+                                "I1", URI.create("https://public.test/slow.webp"), 90),
+                        Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_TIMEOUT"));
+
+        JobPageFetchProperties oneKib = properties(Duration.ofMillis(100));
+        oneKib.setMaxImageBytes(1024);
+        oneKib.setMaxTotalImageBytes(1024);
+        SecureJobPageFetchAdapter oversized = new SecureJobPageFetchAdapter(
+                oneKib,
+                host -> List.of(PUBLIC),
+                (uri, addresses, deadline) -> response(
+                        200,
+                        Map.of(
+                                "Content-Type", List.of("image/webp"),
+                                "Content-Length", List.of("1025")),
+                        new ByteArrayInputStream(new byte[0])));
+        assertThatThrownBy(() -> oversized.fetch(new ImageCandidate(
+                                "I1", URI.create("https://public.test/large.webp"), 90),
+                        Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_TOO_LARGE"));
+    }
+
+    @Test
     void loopbackAndRedirectToPrivateAddressAreRejectedBeforeTransport() {
         AtomicInteger calls = new AtomicInteger();
         SecureJobPageFetchAdapter loopback = adapter(
@@ -494,6 +630,20 @@ class SecureJobPageFetchAdapterTest {
         try {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             ImageIO.write(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), "png", output);
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    private static byte[] webp(int width, int height) {
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            boolean written = ImageIO.write(
+                    new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB),
+                    "webp",
+                    output);
+            if (!written) throw new IllegalStateException("WebP ImageIO writer unavailable");
             return output.toByteArray();
         } catch (IOException exception) {
             throw new IllegalStateException(exception);

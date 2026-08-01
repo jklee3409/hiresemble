@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-01] Session Summary (JOB_POSTING_EXTRACTION v3 trusted aggregate)
+
+- What was done:
+  - `ImageTextItem(imageRef,text,truncated)`, trusted 순서 복원, item 20자/aggregate 120자와 v3 checkpoint identity를 구현했다.
+- Key decisions:
+  - 누락 reference는 유지하고 cross-image 중복 line 제거 뒤 DOM과 합산한다. v1·v2 executable은 두지 않는다.
+- Issues encountered:
+  - mixed DOM 한 line fixture가 합산되지 않아 substantive fragment의 최소 line을 1로 계약에 맞췄다.
+- Validation:
+  - I1/I3 누락·재정렬, invalid refs, 19/20와 119/120/121 경계, 80+80·30+100·mixed·noise 테스트 및 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (JOB_POSTING_EXTRACTION v2 9단계)
 
 - What was done:

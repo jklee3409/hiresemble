@@ -5,7 +5,20 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
 - V1~V15 migration이 적용됐고 V14는 embedding provider key canonicalization, V15는 사용자 직접 대외활동을 소유한다.
-- Backend 전체 69 suites/479 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 70 suites/491 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (Job image extraction v3 후속 보정)
+
+- What was done:
+  - image reference·adapter failure/usage·retry upgrade·WebP·aggregate 품질 계약과 회귀 테스트를 구현했다.
+- Key decisions:
+  - v3만 executable이고 v1·v2는 immutable legacy다. migration과 OpenAPI path/operation은 변경하지 않았다.
+- Issues encountered:
+  - 첫 전체 check의 registry assertion과 무관한 Interview 간헐 실패는 수정/단독 재현 뒤 최종 전체 검증으로 해소했다.
+- Validation:
+  - `gradlew check --rerun-tasks --no-daemon --console=plain --max-workers=1`: 70 suites/491 tests, 0 failed. P5 Chromium 5/5. 실제 Provider 호출 0회.
+- Next steps:
+  - animated WebP·live Provider 검증은 현재 범위 밖이다.
 
 ## [2026-08-01] Session Summary (공고 charset·image extraction v2)
 

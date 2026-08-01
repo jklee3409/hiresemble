@@ -15,6 +15,8 @@ P5 Job URL filter·mutation과 P6 Analysis query·presentation·terminal invalid
 
 이미지형 공고 처리는 URL 등록 뒤 자동으로 분기하며 OCR 선택 control을 제공하지 않는다. 자동 판독 부족은 `NEEDS_MANUAL_INPUT`의 직접 입력 CTA로, 일시 기술 실패는 `FAILED`의 재시도와 직접 입력 CTA로 구분한다.
 
+Backend의 extraction v3·WebP·legacy retry 승격은 공개 상태와 step key를 바꾸지 않는다. retry 응답의 successor Run ID로 query를 갱신하고 알 수 없는 step은 공용 안전 fallback label을 사용한다.
+
 - `analysisPresentation.ts`: Eligibility·criterion·match·OUTDATED·analysis quality label
 - `*.test.ts`, `testFixtures.ts`: feature 계약 검증
 - [`progress.md`](progress.md): P5 feature 상태

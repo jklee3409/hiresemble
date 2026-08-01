@@ -7,7 +7,21 @@
 - `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 61 files/243 tests와 P2~P8 actual E2E가 있으며 P5 Chromium 5/5와 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
 
+## [2026-08-01] Session Summary (Job extraction v3 UI 회귀)
+
+- What was done:
+  - Backend v3가 공개 상태·step key를 바꾸지 않음을 확인하고 관련 index를 동기화했다.
+- Key decisions:
+  - OCR 선택 UI를 추가하지 않고 successor Run 갱신·safe fallback·manual/retry CTA·SSE reconnect 의미를 유지한다.
+- Issues encountered:
+  - None.
+
 ## [2026-08-01] Session Summary (이미지형 공고 자동 처리 UX)
+
+- Validation:
+  - `corepack pnpm check`: 61 files/243 tests, lint·format·typecheck·build 통과. P5 Chromium 5/5.
+- Next steps:
+  - None.
 
 - What was done:
   - v2 Job workflow step을 사용자용 `공고 페이지 불러오기/내용 확인/이미지 읽기/채용 정보 확인/결과 저장` 문구로 매핑했다.

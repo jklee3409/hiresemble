@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (workflow-specific retry command 경계)
+
+- What was done:
+  - retry creation port가 contributor가 만든 최신 `WorkflowLaunchCommand`를 받을 수 있게 확장했다.
+- Key decisions:
+  - 기존 일반 retry overload는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job legacy retry·기존 Agent Run retry 전체 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 retry contributor·owner contract)
 
 - What was done:

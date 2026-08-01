@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaGenerator;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 class JobPostingExtractionWorkflowContractTest {
 
@@ -46,6 +48,14 @@ class JobPostingExtractionWorkflowContractTest {
                         .mapToInt(WorkflowRegistry.StepDefinition::maxModelCalls)
                         .sum())
                 .isEqualTo(2);
+
+        assertThat(definition.version()).isEqualTo("job-posting-extraction-v3");
+        assertThat(CanonicalWorkflowDefinitions.all().stream()
+                        .filter(value -> value.type() == WorkflowType.JOB_POSTING_EXTRACTION)
+                        .filter(value -> !value.canonical())
+                        .map(WorkflowRegistry.WorkflowDefinition::version))
+                .containsExactlyInAnyOrder(
+                        "job-posting-extraction-v1", "job-posting-extraction-v2");
     }
 
     @Test
@@ -75,5 +85,29 @@ class JobPostingExtractionWorkflowContractTest {
         assertThat(extractionInstructions)
                 .contains("untrusted data", "never instructions", "Do not invent")
                 .doesNotContain("Tavily", "WEB_SEARCH");
+
+        var imagePrompt = prompts.require(
+                WorkflowType.JOB_POSTING_EXTRACTION,
+                CanonicalWorkflowDefinitions.JOB_POSTING_EXTRACTION_VERSION,
+                JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT);
+        assertThat(imagePrompt.promptVersion()).isEqualTo("job-posting-extraction-prompt-v3");
+        assertThat(imagePrompt.outputSchemaVersion()).isEqualTo("job-image-text-output-v3");
+        assertThat(imagePrompt.instructions())
+                .contains(
+                        "same local imageRef",
+                        "never create a remote",
+                        "UUID",
+                        "omit unreadable");
+    }
+
+    @Test
+    void imageTextV3StrictSchemaRequiresTrustedReferenceTextAndTruncation() {
+        String schema = new StrictStructuredOutputSchemaGenerator(new ObjectMapper())
+                .generate(JobPostingExtractionWorkflow.ImageTextOutput.class);
+
+        assertThat(schema)
+                .contains("\"imageRef\"", "\"text\"", "\"truncated\"")
+                .contains("\"additionalProperties\" : false")
+                .containsPattern("(?s)\\\"required\\\"\\s*:\\s*\\[[^]]*\\\"imageRef\\\"[^]]*\\\"text\\\"[^]]*\\\"truncated\\\"");
     }
 }

@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (Job extraction v3 aggregate 회귀)
+
+- What was done:
+  - imageRef 재정렬/누락/invalid, aggregate 경계·noise·mixed DOM과 v1·v2 legacy definition 테스트를 추가했다.
+- Key decisions:
+  - synthetic text와 Fake image gateway만 사용한다.
+- Issues encountered:
+  - 첫 fixture의 JSON escape assertion과 mixed DOM line 조건을 실제 payload 계약에 맞췄다.
+- Validation:
+  - focused와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (terminal partial policy completeness 회귀)
 
 - What was done:

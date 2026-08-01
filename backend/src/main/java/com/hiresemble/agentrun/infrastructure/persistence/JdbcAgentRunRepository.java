@@ -17,6 +17,7 @@ import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ModelTier;
 import com.hiresemble.agentrun.domain.model.PartialResult;
+import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
@@ -132,6 +133,56 @@ public class JdbcAgentRunRepository
                 : null;
         JsonNode retryInput = retryInput(predecessor, retryVerificationId);
         PartialResult retryPartialResult = retryPartialResult(predecessor);
+        WorkflowLaunchCommand command = new WorkflowLaunchCommand(
+                successorId,
+                predecessor.userId(),
+                predecessor.workflowType(),
+                predecessor.workflowVersion(),
+                predecessor.canonicalInputHash(),
+                retryInput,
+                predecessor.requestedQualityMode(),
+                predecessor.estimatedCostUsd(),
+                predecessor.priceVersion(),
+                predecessor.resourceType() == null ? null : new ResourceReference(
+                        predecessor.resourceType(), predecessor.resourceId(), null));
+        return createRetry(
+                successorId,
+                predecessor,
+                command,
+                budgetPolicyVersion,
+                queuedAt,
+                retryPartialResult,
+                retryVerificationId);
+    }
+
+    @Override
+    @Transactional
+    public AgentRunSnapshot createRetry(
+            UUID successorId,
+            AgentRunSnapshot predecessor,
+            WorkflowLaunchCommand successorCommand,
+            long budgetPolicyVersion,
+            Instant queuedAt) {
+        return createRetry(
+                successorId,
+                predecessor,
+                successorCommand,
+                budgetPolicyVersion,
+                queuedAt,
+                null,
+                null);
+    }
+
+    private AgentRunSnapshot createRetry(
+            UUID successorId,
+            AgentRunSnapshot predecessor,
+            WorkflowLaunchCommand command,
+            long budgetPolicyVersion,
+            Instant queuedAt,
+            PartialResult retryPartialResult,
+            UUID retryVerificationId) {
+        requireCompatibleRetryCommand(successorId, predecessor, command);
+        ResourceReference resource = command.resource();
         int inserted = jdbcClient.sql("""
                             INSERT INTO agent_runs (
                                 id, user_id, workflow_type, status, current_step, progress_percent,
@@ -155,17 +206,17 @@ public class JdbcAgentRunRepository
                             """)
                     .param("id", successorId)
                     .param("userId", predecessor.userId())
-                    .param("workflowType", predecessor.workflowType().name())
-                    .param("workflowVersion", predecessor.workflowVersion())
-                    .param("inputHash", predecessor.canonicalInputHash())
-                    .param("inputRefs", mapper.write(retryInput))
+                    .param("workflowType", command.workflowType().name())
+                    .param("workflowVersion", command.workflowVersion())
+                    .param("inputHash", command.canonicalInputHash())
+                    .param("inputRefs", mapper.write(command.inputReferenceSnapshot()))
                     .param("budgetPolicyVersion", budgetPolicyVersion)
-                    .param("priceVersion", predecessor.priceVersion())
-                    .param("qualityMode", predecessor.requestedQualityMode() == null
-                            ? null : predecessor.requestedQualityMode().name())
-                    .param("estimatedCost", predecessor.estimatedCostUsd())
-                    .param("resourceType", predecessor.resourceType())
-                    .param("resourceId", predecessor.resourceId())
+                    .param("priceVersion", command.priceVersion())
+                    .param("qualityMode", command.requestedQualityMode() == null
+                            ? null : command.requestedQualityMode().name())
+                    .param("estimatedCost", command.estimatedCostUsd())
+                    .param("resourceType", resource == null ? null : resource.resourceType())
+                    .param("resourceId", resource == null ? null : resource.resourceId())
                     .param("retryOf", predecessor.id())
                     .param("rootRunId", predecessor.rootRunId())
                     .param("runAttemptNo", predecessor.runAttemptNo() + 1)
@@ -365,7 +416,7 @@ public class JdbcAgentRunRepository
                 .optional()
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED));
-        if (!compatibleRetry(existing, predecessor)) {
+        if (!compatibleRetry(existing, command)) {
             throw new BusinessException(ErrorCode.AGENT_RUN_RETRY_ALREADY_CREATED);
         }
         return existing;
@@ -525,13 +576,38 @@ public class JdbcAgentRunRepository
                 run.completedAt(), run.updatedAt(), steps);
     }
 
-    private boolean compatibleRetry(AgentRunSnapshot successor, AgentRunSnapshot predecessor) {
-        return successor.workflowType() == predecessor.workflowType()
-                && successor.workflowVersion().equals(predecessor.workflowVersion())
-                && successor.canonicalInputHash().equals(predecessor.canonicalInputHash())
-                && successor.requestedQualityMode() == predecessor.requestedQualityMode()
-                && java.util.Objects.equals(successor.resourceType(), predecessor.resourceType())
-                && java.util.Objects.equals(successor.resourceId(), predecessor.resourceId());
+    private boolean compatibleRetry(
+            AgentRunSnapshot successor, WorkflowLaunchCommand command) {
+        ResourceReference resource = command.resource();
+        return successor.workflowType() == command.workflowType()
+                && successor.workflowVersion().equals(command.workflowVersion())
+                && successor.canonicalInputHash().equals(command.canonicalInputHash())
+                && successor.requestedQualityMode() == command.requestedQualityMode()
+                && java.util.Objects.equals(
+                        successor.resourceType(), resource == null ? null : resource.resourceType())
+                && java.util.Objects.equals(
+                        successor.resourceId(), resource == null ? null : resource.resourceId());
+    }
+
+    private void requireCompatibleRetryCommand(
+            UUID successorId,
+            AgentRunSnapshot predecessor,
+            WorkflowLaunchCommand command) {
+        ResourceReference resource = command.resource();
+        boolean resourceMismatch = predecessor.resourceType() == null
+                ? resource != null
+                : resource == null
+                        || !java.util.Objects.equals(
+                                predecessor.resourceType(), resource.resourceType())
+                        || !java.util.Objects.equals(
+                                predecessor.resourceId(), resource.resourceId());
+        if (command.requestedAgentRunId() != null
+                        && !successorId.equals(command.requestedAgentRunId())
+                || !predecessor.userId().equals(command.userId())
+                || predecessor.workflowType() != command.workflowType()
+                || resourceMismatch) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
     }
 
     private void insertTypedLink(

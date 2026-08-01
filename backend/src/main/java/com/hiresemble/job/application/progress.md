@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-01] Session Summary (Job extraction canonical retry contributor)
+
+- What was done:
+  - 신규·retry input factory와 Job 전용 retry contributor를 추가했다.
+- Key decisions:
+  - predecessor는 불변으로 두고 현재 Job version·URL·override hash로 v3 successor를 원자 생성한다.
+- Issues encountered:
+  - resource/generic 호출 순서 모두 같은 successor를 반환하도록 latest successor compatibility를 명시했다.
+- Validation:
+  - v1 FAILED, v1 INTERRUPTED, v2 FAILED, v3 retry와 양방향 endpoint 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 owner-aware Job resource 연결)
 
 - What was done:

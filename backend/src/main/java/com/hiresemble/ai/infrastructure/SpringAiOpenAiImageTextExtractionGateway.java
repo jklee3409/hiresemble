@@ -9,7 +9,6 @@ import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.ImageTextExtractionGateway;
 import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry;
-import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.openai.errors.OpenAIIoException;
 import com.openai.errors.OpenAIServiceException;
@@ -17,6 +16,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -35,6 +36,9 @@ import org.springframework.util.MimeTypeUtils;
 @ConditionalOnProperty(name = "hiresemble.ai.provider", havingValue = "openai")
 public final class SpringAiOpenAiImageTextExtractionGateway
         implements ImageTextExtractionGateway {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(SpringAiOpenAiImageTextExtractionGateway.class);
 
     private final OpenAiChatModel chatModel;
     private final AiPriceCatalogQueryPort priceCatalog;
@@ -85,45 +89,41 @@ public final class SpringAiOpenAiImageTextExtractionGateway
                 .outputSchema(schema.schema())
                 .build();
         long started = System.nanoTime();
+        List<AiUsage> incurredUsages = List.of();
         try {
             var response = chatModel.call(new Prompt(
                     List.of(new SystemMessage(request.instructions()), user), options));
             Usage metadata = response == null || response.getMetadata() == null
                     ? null : response.getMetadata().getUsage();
             List<AiUsage> usages = usages(request, prices, metadata, elapsed(started));
-            if (response == null || response.getResults().size() != 1 || response.hasToolCalls()) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_IMAGE_COMPLETION_INCOMPLETE",
-                                "공고 이미지 내용을 정상적으로 읽지 못했습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
-            String text = response.getResult().getOutput().getText();
-            if (text == null || text.isBlank()) {
-                throw AiExecutionException.deterministicStructuredOutput(
-                                "AI_IMAGE_OUTPUT_INVALID",
-                                "공고 이미지 결과 형식을 확인하지 못했습니다.",
-                                ValidationPhase.JSON_PARSE)
-                        .withIncurredUsages(usages);
-            }
+            incurredUsages = usages;
+            String text = OpenAiChatFailureSupport.requireCompletedText(
+                    response, usages, OpenAiChatFailureSupport.Capability.IMAGE_TEXT);
             return new AiGatewayResponse(text, usages);
         } catch (AiExecutionException exception) {
             throw exception;
         } catch (OpenAIServiceException exception) {
-            int status = exception.statusCode();
-            if (status == 429) throw retryable(FailureKind.RATE_LIMIT, "AI_IMAGE_RATE_LIMITED");
-            if (status >= 500) throw retryable(FailureKind.PROVIDER_5XX, "AI_IMAGE_PROVIDER_UNAVAILABLE");
-            throw AiExecutionException.nonRetryable(
-                    FailureKind.CONFIGURATION,
-                    "AI_IMAGE_REQUEST_REJECTED",
-                    "공고 이미지 처리 구성이 올바르지 않습니다.");
+            OpenAiChatFailureSupport.logProviderFailure(
+                    log, exception, schema, OpenAiChatFailureSupport.Capability.IMAGE_TEXT);
+            throw OpenAiChatFailureSupport.mapServiceFailure(
+                    exception, OpenAiChatFailureSupport.Capability.IMAGE_TEXT);
         } catch (OpenAIIoException exception) {
-            throw retryable(FailureKind.NETWORK, "AI_IMAGE_NETWORK_ERROR");
+            if (OpenAiChatFailureSupport.isTimeout(exception)) {
+                throw OpenAiChatFailureSupport.timeout(
+                        OpenAiChatFailureSupport.Capability.IMAGE_TEXT, incurredUsages);
+            }
+            throw OpenAiChatFailureSupport.network(
+                    OpenAiChatFailureSupport.Capability.IMAGE_TEXT);
         } catch (RuntimeException exception) {
+            if (OpenAiChatFailureSupport.isTimeout(exception)) {
+                throw OpenAiChatFailureSupport.timeout(
+                        OpenAiChatFailureSupport.Capability.IMAGE_TEXT, incurredUsages);
+            }
             throw AiExecutionException.deterministicStructuredOutput(
                     "AI_IMAGE_RESPONSE_PROCESSING_FAILED",
                     "공고 이미지 결과를 안전하게 처리하지 못했습니다.",
-                    ValidationPhase.JAVA_BINDING);
+                    com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase.JAVA_BINDING)
+                    .withIncurredUsages(incurredUsages);
         }
     }
 
@@ -133,7 +133,8 @@ public final class SpringAiOpenAiImageTextExtractionGateway
                 || request.images().stream().anyMatch(image -> image.bytes() == null
                         || image.bytes().length == 0
                         || !(image.mimeType().equals("image/jpeg")
-                                || image.mimeType().equals("image/png")))
+                                || image.mimeType().equals("image/png")
+                                || image.mimeType().equals("image/webp")))
                 || request.priceVersion() == null || request.outputType() == null
                 || request.timeout() == null || request.timeout().isNegative()
                 || request.timeout().isZero()) {
@@ -177,10 +178,6 @@ public final class SpringAiOpenAiImageTextExtractionGateway
                 unit == AiPriceUnit.CHAT_CACHED_INPUT_TOKEN ? units : 0,
                 unit == AiPriceUnit.CHAT_OUTPUT_TOKEN ? units : 0,
                 0, 0, quote.priceVersion(), quote.priceItemId(), quote.costFor(units), duration, callId);
-    }
-
-    private AiExecutionException retryable(FailureKind kind, String code) {
-        return AiExecutionException.retryable(kind, code, "공고 이미지 처리 서비스에 일시적으로 연결하지 못했습니다.");
     }
 
     private long nonNegative(Number value) { return value == null ? 0 : Math.max(0, value.longValue()); }

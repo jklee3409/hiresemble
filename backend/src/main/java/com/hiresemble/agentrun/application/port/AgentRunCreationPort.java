@@ -17,4 +17,11 @@ public interface AgentRunCreationPort {
             AgentRunSnapshot predecessor,
             long budgetPolicyVersion,
             Instant queuedAt);
+
+    AgentRunSnapshot createRetry(
+            UUID successorId,
+            AgentRunSnapshot predecessor,
+            WorkflowLaunchCommand successorCommand,
+            long budgetPolicyVersion,
+            Instant queuedAt);
 }

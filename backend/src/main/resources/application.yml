@@ -119,6 +119,7 @@ hiresemble:
     max-image-pixels: ${JOB_IMAGE_MAX_PIXELS:40000000}
     min-dom-meaningful-characters: ${JOB_PAGE_MIN_DOM_CHARACTERS:600}
     min-description-meaningful-characters: ${JOB_MIN_DESCRIPTION_CHARACTERS:120}
+    min-image-item-meaningful-characters: ${JOB_IMAGE_MIN_ITEM_MEANINGFUL_CHARACTERS:20}
     max-replacement-character-ratio: ${JOB_MAX_REPLACEMENT_RATIO:0.001}
   job:
     ai-cost:

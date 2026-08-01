@@ -68,7 +68,9 @@ class SpringAiOpenAiGatewayTest {
         when(nativeUsage.getCacheReadInputTokens()).thenReturn(20L);
         when(nativeUsage.getCompletionTokens()).thenReturn(10);
         when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
-                List.of(new Generation(new AssistantMessage("{\"status\":\"ok\"}"))),
+                List.of(new Generation(
+                        new AssistantMessage("{\"status\":\"ok\"}"),
+                        ChatGenerationMetadata.builder().finishReason("stop").build())),
                 ChatResponseMetadata.builder().usage(nativeUsage).build()));
         var gateway = new SpringAiOpenAiChatGateway(
                 model, new ObjectMapper(), prices(), schemas());
@@ -120,14 +122,18 @@ class SpringAiOpenAiGatewayTest {
     void imageExtractionUsesByteBackedMediaStrictSchemaAndNoProviderRetryOrStorage() {
         OpenAiChatModel model = mock(OpenAiChatModel.class);
         when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
-                List.of(new Generation(new AssistantMessage("{\"status\":\"ok\"}"))),
+                List.of(new Generation(
+                        new AssistantMessage("{\"status\":\"ok\"}"),
+                        ChatGenerationMetadata.builder().finishReason("stop").build())),
                 ChatResponseMetadata.builder().build()));
         var gateway = new SpringAiOpenAiImageTextExtractionGateway(
                 model, prices(), schemas(), Duration.ofSeconds(60));
 
         gateway.extract(new ImageTextExtractionRequest(
                 "openai", "gpt-5-mini", "test-v1", "Read visible text only.",
-                List.of(new ImageMedia("I1", "image/png", new byte[] {1, 2, 3}, "a".repeat(64))),
+                List.of(
+                        new ImageMedia("I1", "image/png", new byte[] {1, 2, 3}, "a".repeat(64)),
+                        new ImageMedia("I2", "image/webp", new byte[] {4, 5, 6}, "b".repeat(64))),
                 "test-output-v1", Duration.ofSeconds(3), PRICE_VERSION, 32, TestOutput.class));
 
         ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
@@ -136,11 +142,18 @@ class SpringAiOpenAiGatewayTest {
         assertThat(options.getMaxRetries()).isZero();
         assertThat(options.getStore()).isFalse();
         assertThat(options.getOutputSchema()).contains("additionalProperties");
-        assertThat(prompt.getValue().getUserMessage().getMedia()).singleElement()
-                .satisfies(media -> {
-                    assertThat(media.getId()).isEqualTo("I1");
-                    assertThat(media.getDataAsByteArray()).containsExactly(1, 2, 3);
-                });
+        assertThat(prompt.getValue().getUserMessage().getMedia())
+                .satisfiesExactly(
+                        media -> {
+                            assertThat(media.getId()).isEqualTo("I1");
+                            assertThat(media.getMimeType().toString()).isEqualTo("image/png");
+                            assertThat(media.getDataAsByteArray()).containsExactly(1, 2, 3);
+                        },
+                        media -> {
+                            assertThat(media.getId()).isEqualTo("I2");
+                            assertThat(media.getMimeType().toString()).isEqualTo("image/webp");
+                            assertThat(media.getDataAsByteArray()).containsExactly(4, 5, 6);
+                        });
     }
 
     @Test

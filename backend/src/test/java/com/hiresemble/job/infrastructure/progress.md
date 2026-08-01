@@ -4,6 +4,19 @@
 
 P5 URL fetch 보안·제한·페이지 분류 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (WebP fetch 회귀)
+
+- What was done:
+  - project-generated WebP 정상 decode, MIME/magic mismatch, malformed와 pixel limit fixture를 추가했다.
+- Key decisions:
+  - network 없이 in-memory transport와 synthetic image를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - WebP focused, JPEG·PNG 전체 회귀와 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-27] Session Summary (SSRF·deadline 회귀 검증)
 
 - What was done:

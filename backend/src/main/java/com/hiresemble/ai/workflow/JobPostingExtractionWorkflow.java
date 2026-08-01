@@ -234,15 +234,15 @@ public final class JobPostingExtractionWorkflow {
             return objectMapper.createObjectNode()
                     .put("jobId", job.jobId().toString())
                     .put("jobVersion", job.version())
-                    .put("sourceUrl", job.sourceUrl())
-                    .put("canonicalUrl", job.canonicalUrl());
+                    .put("sourceUrlHash", sha256(job.sourceUrl()))
+                    .put("canonicalUrlHash", sha256(job.canonicalUrl()));
         }
 
         protected final JsonNode semanticRefs(WorkflowSnapshot job) {
             return objectMapper.createObjectNode()
                     .put("jobId", job.jobId().toString())
-                    .put("sourceUrl", job.sourceUrl())
-                    .put("canonicalUrl", job.canonicalUrl());
+                    .put("sourceUrlHash", sha256(job.sourceUrl()))
+                    .put("canonicalUrlHash", sha256(job.canonicalUrl()));
         }
     }
 
@@ -251,7 +251,7 @@ public final class JobPostingExtractionWorkflow {
         private FetchJobPageExecutor() {
             super(
                     FETCH_JOB_PAGE,
-                    "job-fetch-output-v2",
+                    "job-fetch-output-v3",
                     FetchedJobPageOutput.class,
                     Set.of(
                             "jobId",
@@ -393,8 +393,8 @@ public final class JobPostingExtractionWorkflow {
                     .put("jobId", output.jobId().toString())
                     .put("jobVersion", output.jobVersion())
                     .put("sourceType", output.sourceType().name())
-                    .put("sourceUrl", output.sourceUrl())
-                    .put("finalUrl", output.finalUrl())
+                    .put("sourceUrlHash", sha256(output.sourceUrl()))
+                    .put("finalUrlHash", sha256(output.finalUrl()))
                     .put("classification", output.classification())
                     .put("httpStatus", output.httpStatus())
                     .put("retrievedAt", output.retrievedAt().toString())
@@ -493,7 +493,7 @@ public final class JobPostingExtractionWorkflow {
         private InspectJobPageExecutor() {
             super(
                     INSPECT_JOB_PAGE,
-                    "job-page-inspection-output-v2",
+                    "job-page-inspection-output-v3",
                     PageInspectionOutput.class,
                     Set.of(
                             "jobId",
@@ -516,7 +516,7 @@ public final class JobPostingExtractionWorkflow {
             JsonNode refs = semanticRefs(state.job());
             var values = (tools.jackson.databind.node.ObjectNode) refs;
             values.put("sourceType", fetched.sourceType().name())
-                    .put("finalUrl", fetched.finalUrl())
+                    .put("finalUrlHash", sha256(fetched.finalUrl()))
                     .put("contentLength", fetched.contentLength())
                     .put("contentHash", fetched.contentHash());
             InspectJobPageInput input = new InspectJobPageInput(
@@ -595,7 +595,7 @@ public final class JobPostingExtractionWorkflow {
     private final class FetchJobImagesExecutor extends JobExecutor<FetchedJobImagesOutput> {
 
         private FetchJobImagesExecutor() {
-            super(FETCH_JOB_IMAGES, "job-images-fetch-output-v2", FetchedJobImagesOutput.class,
+            super(FETCH_JOB_IMAGES, "job-images-fetch-output-v3", FetchedJobImagesOutput.class,
                     Set.of("jobId", "assets", "rejectedCount", "totalBytes"));
         }
 
@@ -694,7 +694,7 @@ public final class JobPostingExtractionWorkflow {
     private final class ExtractJobImageTextExecutor extends JobExecutor<ImageTextOutput> {
 
         private ExtractJobImageTextExecutor() {
-            super(EXTRACT_JOB_IMAGE_TEXT, "job-image-text-output-v2", ImageTextOutput.class,
+            super(EXTRACT_JOB_IMAGE_TEXT, "job-image-text-output-v3", ImageTextOutput.class,
                     Set.of("items"));
         }
 
@@ -708,11 +708,12 @@ public final class JobPostingExtractionWorkflow {
                     .put("imageCount", fetched.assets().size())
                     .put("imageContentHash", sha256(fetched.assets().stream()
                             .map(ImageAsset::contentHash).reduce("", (left, right) -> left + right)))
-                    .put("imagePolicyVersion", "job-image-policy-v1");
+                    .put("imagePolicyVersion", "job-image-policy-v3");
             return localInput(state, refs,
                     fetched.assets().stream().map(ImageAsset::contentHash)
                             .reduce("none", (left, right) -> left + "|" + right)
-                            + "|job-image-prompt-v1",
+                            + "|job-image-prompt-v3|item-min="
+                            + properties.getMinImageItemMeaningfulCharacters(),
                     tree(new ExtractJobImageTextInput(fetched.assets())));
         }
 
@@ -730,7 +731,7 @@ public final class JobPostingExtractionWorkflow {
             if (input.assets().isEmpty() || !imageTextExtractionGateway.available()) {
                 return localResponse(new ImageTextOutput(List.of()));
             }
-            return imageTextExtractionGateway.extract(new ImageTextExtractionRequest(
+            AiGatewayResponse response = imageTextExtractionGateway.extract(new ImageTextExtractionRequest(
                     invocation.modelRoute().providerKey(),
                     invocation.modelRoute().productKey(),
                     invocation.prompt().promptVersion(),
@@ -742,6 +743,20 @@ public final class JobPostingExtractionWorkflow {
                     invocation.executionContext().run().priceVersion(),
                     invocation.prompt().maxOutputTokens(),
                     invocation.prompt().outputType()));
+            try {
+                ImageTextOutput output = objectMapper.readValue(response.rawJson(), ImageTextOutput.class);
+                return new AiGatewayResponse(
+                        objectMapper.writeValueAsString(trustedImageTextOutput(input.assets(), output)),
+                        response.usages());
+            } catch (AiExecutionException exception) {
+                throw exception.withIncurredUsages(response.usages());
+            } catch (RuntimeException exception) {
+                throw AiExecutionException.deterministicStructuredOutput(
+                                "AI_IMAGE_OUTPUT_INVALID",
+                                "공고 이미지 결과 형식을 확인하지 못했습니다.",
+                                ValidationPhase.JAVA_BINDING)
+                        .withIncurredUsages(response.usages());
+            }
         }
 
         @Override
@@ -754,18 +769,44 @@ public final class JobPostingExtractionWorkflow {
         @Override
         protected void validateJavaRecord(ImageTextOutput output, StepExecutionContext context) {
             if (output.items() == null || output.items().size() > properties.getMaxImageCandidates()
-                    || output.items().stream().anyMatch(item -> item == null || item.text() == null
+                    || output.items().stream().anyMatch(item -> item == null
+                            || !validImageRef(item.imageRef()) || item.text() == null
+                            || item.text().isBlank()
                             || item.text().length() > MAX_SANITIZED_CHARACTERS
-                            || replacementRatio(item.text()) > properties.getMaxReplacementCharacterRatio())) {
+                            || item.text().chars().anyMatch(c -> Character.isISOControl(c)
+                                    && c != '\n' && c != '\r' && c != '\t'))) {
                 throw new IllegalArgumentException("image text output is invalid");
             }
+        }
+
+        private ImageTextOutput trustedImageTextOutput(
+                List<ImageAsset> assets, ImageTextOutput output) {
+            if (output == null || output.items() == null
+                    || output.items().size() > assets.size()) {
+                throw structuredFailure("AI_IMAGE_REFERENCE_INVALID");
+            }
+            Map<String, ImageTextItem> byReference = new LinkedHashMap<>();
+            Set<String> allowed = assets.stream().map(ImageAsset::imageRef)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            for (ImageTextItem item : output.items()) {
+                if (item == null || !validImageRef(item.imageRef())
+                        || !allowed.contains(item.imageRef())
+                        || byReference.putIfAbsent(item.imageRef(), item) != null) {
+                    throw structuredFailure("AI_IMAGE_REFERENCE_INVALID");
+                }
+            }
+            return new ImageTextOutput(assets.stream()
+                    .map(ImageAsset::imageRef)
+                    .map(byReference::get)
+                    .filter(Objects::nonNull)
+                    .toList());
         }
     }
 
     private final class ComposeJobSourceTextExecutor extends JobExecutor<ComposedJobSourceOutput> {
 
         private ComposeJobSourceTextExecutor() {
-            super(COMPOSE_JOB_SOURCE_TEXT, "job-source-compose-output-v2", ComposedJobSourceOutput.class,
+            super(COMPOSE_JOB_SOURCE_TEXT, "job-source-compose-output-v3", ComposedJobSourceOutput.class,
                     Set.of("jobId", "sourceText", "sourceTextHash", "domUsed", "imageUsed",
                             "manualSource", "truncated", "needsManualInput"));
         }
@@ -781,11 +822,15 @@ public final class JobPostingExtractionWorkflow {
             ((tools.jackson.databind.node.ObjectNode) refs)
                     .put("classification", inspection.classification().name())
                     .put("domTextHash", inspection.domTextHash())
-                    .put("imageTextHash", sha256(imageText.items().stream()
-                            .map(ImageTextItem::text).reduce("", (left, right) -> left + right)));
+                    .put("imageTextHash", imageTextHash(imageText))
+                    .put("composePolicyVersion", "job-source-compose-policy-v3")
+                    .put("imageItemMinimum", properties.getMinImageItemMeaningfulCharacters())
+                    .put("sourceMinimum", properties.getMinDescriptionMeaningfulCharacters());
             return localInput(state, refs,
                     inspection.classification() + "|" + inspection.domTextHash() + "|"
-                            + imageText.items().size(),
+                            + imageTextHash(imageText) + "|job-source-compose-policy-v3|"
+                            + properties.getMinImageItemMeaningfulCharacters() + "|"
+                            + properties.getMinDescriptionMeaningfulCharacters(),
                     tree(new ComposeJobSourceInput(inspection, imageText)));
         }
 
@@ -794,35 +839,54 @@ public final class JobPostingExtractionWorkflow {
             ComposeJobSourceInput input = read(
                     invocation.input().gatewayPayload(), ComposeJobSourceInput.class);
             PageInspectionOutput inspection = input.inspection();
-            List<String> imageTexts = input.imageText().items().stream()
-                    .map(ImageTextItem::text)
-                    .map(JobPostingExtractionWorkflow.this::normalizePlainText)
+            List<ImageTextItem> imageItems = input.imageText().items().stream()
+                    .map(item -> new ImageTextItem(
+                            item.imageRef(), deduplicateLines(item.text()), item.truncated()))
                     .filter(this::meaningfulImageText)
                     .toList();
             boolean domUsed = inspection.classification() == PageContentClassification.TEXT_SUFFICIENT
                     || (inspection.classification() == PageContentClassification.IMAGE_AUGMENTATION_REQUIRED
-                            && meaningfulCharacters(inspection.domText()) >= 120);
-            boolean imageUsed = !imageTexts.isEmpty();
-            boolean sufficient = inspection.classification() == PageContentClassification.TEXT_SUFFICIENT
-                    || (inspection.classification() == PageContentClassification.IMAGE_AUGMENTATION_REQUIRED
-                            && imageUsed);
+                            && meaningfulSourceFragment(inspection.domText()));
             StringBuilder source = new StringBuilder();
-            if (domUsed) source.append("<job_page_dom_text>\n")
-                    .append(deduplicateLines(inspection.domText()))
-                    .append("\n</job_page_dom_text>");
-            for (int index = 0; index < imageTexts.size(); index++) {
-                if (!source.isEmpty()) source.append("\n\n");
-                source.append("<job_page_image_text image_ref=\"I")
-                        .append(index + 1).append("\">\n")
-                        .append(deduplicateLines(imageTexts.get(index)))
-                        .append("\n</job_page_image_text>");
+            Map<String, String> seenLines = new LinkedHashMap<>();
+            List<String> aggregateParts = new ArrayList<>();
+            if (domUsed) {
+                String domText = deduplicateAgainst(inspection.domText(), seenLines);
+                if (!domText.isBlank()) {
+                    aggregateParts.add(domText);
+                    source.append("<job_page_dom_text>\n")
+                            .append(domText)
+                            .append("\n</job_page_dom_text>");
+                } else {
+                    domUsed = false;
+                }
             }
+            int acceptedImages = 0;
+            for (ImageTextItem item : imageItems) {
+                String imageText = deduplicateAgainst(item.text(), seenLines);
+                if (!meaningfulImageText(new ImageTextItem(
+                        item.imageRef(), imageText, item.truncated()))) continue;
+                if (!source.isEmpty()) source.append("\n\n");
+                source.append("<job_page_image_text image_ref=\"")
+                        .append(item.imageRef()).append("\">\n")
+                        .append(imageText)
+                        .append("\n</job_page_image_text>");
+                aggregateParts.add(imageText);
+                acceptedImages++;
+            }
+            boolean imageUsed = acceptedImages > 0;
             String text = source.toString();
             boolean truncated = text.length() > MAX_SANITIZED_CHARACTERS;
             if (truncated) text = text.substring(0, MAX_SANITIZED_CHARACTERS).stripTrailing();
             int sourceMinimum = inspection.sourceType() == JobContentSource.USER_PROVIDED_JOB_TEXT
                     ? 40 : properties.getMinDescriptionMeaningfulCharacters();
-            boolean needsManual = !sufficient || meaningfulCharacters(text) < sourceMinimum;
+            String aggregateText = String.join("\n", aggregateParts);
+            boolean sufficient = (domUsed || imageUsed)
+                    && meaningfulCharacters(aggregateText) >= sourceMinimum
+                    && meaningfulLineCount(aggregateText) > 0
+                    && replacementRatio(aggregateText)
+                            <= properties.getMaxReplacementCharacterRatio();
+            boolean needsManual = !sufficient;
             JobState current = state(invocation.executionContext());
             if (needsManual) {
                 commandPort.markNeedsManualInput(current.job().userId(), current.job().jobId(),
@@ -836,10 +900,14 @@ public final class JobPostingExtractionWorkflow {
                     truncated, needsManual));
         }
 
-        private boolean meaningfulImageText(String value) {
-            return !isSemanticNull(value)
-                    && meaningfulCharacters(value) >= properties.getMinDescriptionMeaningfulCharacters()
-                    && replacementRatio(value) <= properties.getMaxReplacementCharacterRatio();
+        private boolean meaningfulImageText(ImageTextItem item) {
+            String value = item.text();
+            return validImageRef(item.imageRef())
+                    && !isSemanticNull(value)
+                    && meaningfulCharacters(value)
+                            >= properties.getMinImageItemMeaningfulCharacters()
+                    && replacementRatio(value) <= properties.getMaxReplacementCharacterRatio()
+                    && !singleTokenNoise(value);
         }
 
         @Override
@@ -876,7 +944,7 @@ public final class JobPostingExtractionWorkflow {
         private ExtractJobFieldsExecutor() {
             super(
                     EXTRACT_JOB_FIELDS,
-                    "job-fields-output-v2",
+                    "job-fields-output-v3",
                     ExtractedJobFields.class,
                     fieldNames());
         }
@@ -946,7 +1014,7 @@ public final class JobPostingExtractionWorkflow {
         private MergeUserOverridesExecutor() {
             super(
                     MERGE_USER_OVERRIDES,
-                    "job-merge-output-v2",
+                    "job-merge-output-v3",
                     MergedJobFieldsOutput.class,
                     Set.of("jobId", "jobVersion", "fields", "mergeHash"));
         }
@@ -1036,7 +1104,7 @@ public final class JobPostingExtractionWorkflow {
             extends JobExecutor<ValidatedJobFieldsOutput> {
 
         private ValidateJobExtractionExecutor() {
-            super(VALIDATE_JOB_EXTRACTION, "job-extraction-validation-output-v2",
+            super(VALIDATE_JOB_EXTRACTION, "job-extraction-validation-output-v3",
                     ValidatedJobFieldsOutput.class,
                     Set.of("jobId", "jobVersion", "fields", "validationHash", "needsManualInput"));
         }
@@ -1110,7 +1178,7 @@ public final class JobPostingExtractionWorkflow {
         private ApplyJobExtractionExecutor() {
             super(
                     APPLY_JOB_EXTRACTION,
-                    "job-apply-output-v2",
+                    "job-apply-output-v3",
                     JobExtractionApplyOutput.class,
                     Set.of("jobId", "expectedJobVersion", "fields", "applyHash"));
         }
@@ -1326,6 +1394,26 @@ public final class JobPostingExtractionWorkflow {
                 .filter(c -> Character.isLetterOrDigit(c)).count();
     }
 
+    private int meaningfulLineCount(String value) {
+        return value == null ? 0 : (int) value.lines()
+                .map(String::strip)
+                .filter(line -> meaningfulCharacters(line) > 0)
+                .count();
+    }
+
+    private boolean meaningfulSourceFragment(String value) {
+        return !isSemanticNull(value)
+                && meaningfulCharacters(value) >= properties.getMinImageItemMeaningfulCharacters()
+                && meaningfulLineCount(value) >= 1
+                && replacementRatio(value) <= properties.getMaxReplacementCharacterRatio();
+    }
+
+    private boolean singleTokenNoise(String value) {
+        String normalized = normalizePlainText(value);
+        return !normalized.matches("(?s).*\\s+.*")
+                && meaningfulCharacters(normalized) <= 32;
+    }
+
     private boolean menuDominated(String value) {
         List<String> lines = value.lines().map(String::strip).filter(line -> !line.isBlank()).toList();
         if (lines.size() < 5) return false;
@@ -1494,6 +1582,29 @@ public final class JobPostingExtractionWorkflow {
             if (!normalized.isBlank()) unique.putIfAbsent(normalized.toLowerCase(Locale.ROOT), normalized);
         }
         return String.join("\n", unique.values());
+    }
+
+    private String deduplicateAgainst(String value, Map<String, String> seenLines) {
+        List<String> accepted = new ArrayList<>();
+        for (String line : deduplicateLines(value).lines().toList()) {
+            String key = line.strip().toLowerCase(Locale.ROOT);
+            if (!key.isBlank() && seenLines.putIfAbsent(key, line.strip()) == null) {
+                accepted.add(line.strip());
+            }
+        }
+        return String.join("\n", accepted);
+    }
+
+    private String imageTextHash(ImageTextOutput output) {
+        return sha256(output.items().stream()
+                .map(item -> item.imageRef() + "|" + item.text() + "|" + item.truncated())
+                .reduce("", (left, right) -> left + "|" + right));
+    }
+
+    private boolean validImageRef(String value) {
+        return value != null
+                && value.length() <= 32
+                && value.matches("[A-Za-z][A-Za-z0-9_-]{0,31}");
     }
 
     private String normalizePlainText(String value) {
@@ -1796,7 +1907,7 @@ public final class JobPostingExtractionWorkflow {
 
     public record ExtractJobImageTextInput(List<ImageAsset> assets) {}
 
-    public record ImageTextItem(String text, boolean truncated) {}
+    public record ImageTextItem(String imageRef, String text, boolean truncated) {}
 
     public record ImageTextOutput(List<ImageTextItem> items) {}
 

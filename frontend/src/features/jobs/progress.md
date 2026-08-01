@@ -4,7 +4,21 @@
 
 P5 Job filter·mutation·stream·version conflict와 P6 analysis query·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-01] Session Summary (v3 retry·상태 presentation 회귀)
+
+- What was done:
+  - v3 내부 변경 뒤 기존 Job 상태·retry·manual CTA presentation 계약을 검증했다.
+- Key decisions:
+  - 새 공개 enum/UI control은 추가하지 않는다.
+- Issues encountered:
+  - None.
+
 ## [2026-08-01] Session Summary (이미지형 공고 자동 처리 presentation)
+
+- Validation:
+  - Frontend 61 files/243 tests와 P5 Chromium 5/5 통과.
+- Next steps:
+  - None.
 
 - What was done:
   - 자동 처리·manual fallback 문구와 Job extraction 상태 presentation을 보정했다.

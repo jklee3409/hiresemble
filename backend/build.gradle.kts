@@ -24,6 +24,7 @@ val tikaVersion = "3.3.1"
 val pdfboxVersion = "3.0.8"
 val poiVersion = "5.5.1"
 val jsoupVersion = "1.22.2"
+val webpImageIoVersion = "0.3.3"
 val awsSdkVersion = "2.48.2"
 val testcontainersVersion = "2.0.5"
 val wiremockVersion = "3.13.2"
@@ -50,6 +51,7 @@ dependencies {
     implementation("org.apache.pdfbox:pdfbox:$pdfboxVersion")
     implementation("org.apache.poi:poi-ooxml:$poiVersion")
     implementation("org.jsoup:jsoup:$jsoupVersion")
+    implementation("io.github.darkxanter:webp-imageio:$webpImageIoVersion")
 
     implementation(platform("software.amazon.awssdk:bom:$awsSdkVersion"))
     implementation("software.amazon.awssdk:s3")

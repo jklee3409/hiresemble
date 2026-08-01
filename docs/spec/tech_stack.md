@@ -135,15 +135,16 @@ Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGat
 
 ### 4.3 문서 처리
 
-| 기술          | 용도                            |
-| ------------- | ------------------------------- |
-| Apache Tika   | MIME 탐지 및 공통 텍스트 추출   |
-| Apache PDFBox | PDF 페이지별 텍스트 추출        |
-| Apache POI    | DOCX 텍스트 추출                |
-| Jsoup         | 채용 공고 URL HTML 검사·DOM 정제·이미지 후보 탐지 |
-| SHA-256       | 중복 파일 및 중복 공고 감지     |
+| 기술                 | 용도                                                        |
+| -------------------- | ----------------------------------------------------------- |
+| Apache Tika          | MIME 탐지 및 공통 텍스트 추출                               |
+| Apache PDFBox        | PDF 페이지별 텍스트 추출                                    |
+| Apache POI           | DOCX 텍스트 추출                                            |
+| Jsoup                | 채용 공고 URL HTML 검사·DOM 정제·이미지 후보 탐지           |
+| webp-imageio `0.3.3` | 정적 WebP의 pure-Java ImageIO read/decode와 dimensions 검증 |
+| SHA-256              | 중복 파일 및 중복 공고 감지                                 |
 
-MVP 지원 파일은 `PDF`, `DOCX`, `TXT`이며, 업로드한 이미지 기반 PDF OCR, HWP, PPTX는 제외한다. 이 제외 범위와 별개로 공개 채용 공고 HTML 안의 JPEG·PNG 이미지 텍스트는 안전하게 다운로드한 bytes를 OpenAI image input으로 전달해 자동 추출한다. 텍스트 추출량이 기준 이하이면 `NEEDS_MANUAL_TEXT` 상태로 전환해 사용자가 텍스트를 직접 보완한다.
+MVP 지원 파일은 `PDF`, `DOCX`, `TXT`이며, 업로드한 이미지 기반 PDF OCR, HWP, PPTX는 제외한다. 이 제외 범위와 별개로 공개 채용 공고 HTML 안의 JPEG·PNG·정적 WebP 이미지 텍스트는 안전하게 다운로드한 bytes를 OpenAI image input으로 전달해 자동 추출한다. `webp-imageio`는 Apache-2.0, Maven Central 배포, Java 8 bytecode의 native binary 없는 ImageIO plugin이며 Java 21에서 read/decode를 사용한다. animated WebP는 지원하지 않고 fail closed한다. 텍스트 aggregate가 기준 이하이면 `NEEDS_MANUAL_INPUT` 상태로 전환해 사용자가 텍스트를 직접 보완한다.
 
 ### 4.4 외부 검색
 
@@ -289,7 +290,7 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 | WorkflowType                | 고정 step 순서                                                                                                                                                                                                                                                               |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DOCUMENT_INGESTION`        | `LOAD_DOCUMENT_SOURCE → EXTRACT_OR_ACCEPT_TEXT → MASK_TEXT → CHUNK_TEXT → EMBED_CHUNKS → EXTRACT_EVIDENCE_CANDIDATES → APPLY_EVIDENCE_CANDIDATES → FINALIZE_DOCUMENT`                                                                                                        |
-| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                         |
+| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                       |
 | `JOB_ANALYSIS`              | `BUILD_JOB_SNAPSHOT → EXTRACT_REQUIREMENTS → ASSESS_ELIGIBILITY → RETRIEVE_VERIFIED_EVIDENCE → MATCH_EVIDENCE → SCORE_FIT → VALIDATE_ANALYSIS → PERSIST_ANALYSIS`                                                                                                            |
 | `COVER_LETTER_GENERATION`   | `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*] → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → WRITE_ANSWER[*] → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`                                                                                           |
 | `COVER_LETTER_VERIFICATION` | `LOAD_ANSWER_VERSION → BUILD_PROVENANCE_CONTEXT → CHECK_FACTS → CHECK_REQUIREMENTS_AND_LENGTH → AGGREGATE_VERIFICATION → PERSIST_VERIFICATION`                                                                                                                               |
@@ -299,7 +300,9 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 공고 create에 usable 수동 본문이 있으면 `JOB_POSTING_EXTRACTION` run을 만들지 않고 `MANUAL_INPUT_PROVIDED`로 저장한다. 수동 본문이 없을 때만 위 extraction workflow를 enqueue한다.
 
-`job-posting-extraction-v2`는 raw bytes를 유지한 charset 우선순위(`HTTP header → BOM → meta → strict UTF-8 → 검증된 MS949 fallback`), DOM 품질 판정, 최대 6개/이미지당 5MiB/전체 20MiB의 JPEG·PNG fetch, 별도 `ImageTextExtractionGateway`, semantic null·U+FFFD·본문 품질 검증을 고정한다. text 충분 분기에서는 이미지 Provider를 호출하지 않는다. v1 정의는 과거 run 식별용 non-canonical 계약만 남기고 executable을 제공하지 않아 새 checkpoint 의미와 혼용하지 않는다.
+`job-posting-extraction-v3`는 raw bytes를 유지한 charset 우선순위(`HTTP header → BOM → meta → strict UTF-8 → 검증된 MS949 fallback`), DOM 품질 판정, 최대 6개/이미지당 5MiB/전체 20MiB의 JPEG·PNG·정적 WebP fetch, 별도 `ImageTextExtractionGateway`, trusted `imageRef`, item 20자/aggregate 120자 품질 검증을 고정한다. text 충분 분기에서는 이미지 Provider를 호출하지 않는다. v1·v2 정의는 과거 run 식별용 non-canonical 계약만 남기고 executable을 제공하지 않아 v3 checkpoint 의미와 혼용하지 않는다.
+
+OpenAI text Chat와 image text adapter는 service status/code/param, request ID, timeout/network, response cardinality, tool call, refusal와 finish reason을 같은 safe boundary에서 해석한다. 400 structured schema, credentials, model/endpoint, `insufficient_quota`, 일반 429, 5xx를 구분하며 quota는 자동 재시도하지 않는다. Provider usage를 읽은 뒤의 cardinality·refusal·finish·blank·parse·binding·workflow record 실패는 incurred usage를 보존한다. diagnostic에는 status와 safe code/param/request ID, schema name/version/hash, contract, capability만 남기고 body·prompt·OCR text·URL·image bytes는 기록하지 않는다.
 
 동기 mock start/message는 WorkflowType이나 Agent Run이 아니며 bounded turn executor와 `mock_interview_turns`를 사용한다. 회원 탈퇴도 Agent Run이 아니라 독립 deletion task다.
 
@@ -326,11 +329,11 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 결과다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않고 Agent Run의 `highestModelTierUsed`만 표시한다.
 
-| 공개 모드      | 내부 정책                                                                    |
-| -------------- | ---------------------------------------------------------------------------- |
+| 공개 모드      | 내부 정책                                                                                          |
+| -------------- | -------------------------------------------------------------------------------------------------- |
 | `ECONOMY`      | 생성·분석도 LOW_COST 우선, correction guidance가 있는 structured 의미 failure 때 BALANCED 1회 가능 |
-| `BALANCED`     | 추출·분류 LOW_COST, 분석·생성 BALANCED, HIGH_QUALITY 자동 승격 금지          |
-| `HIGH_QUALITY` | 전처리·검색·추출은 저비용, 허용 workflow의 최종 생성·검토만 HIGH_QUALITY     |
+| `BALANCED`     | 추출·분류 LOW_COST, 분석·생성 BALANCED, HIGH_QUALITY 자동 승격 금지                                |
+| `HIGH_QUALITY` | 전처리·검색·추출은 저비용, 허용 workflow의 최종 생성·검토만 HIGH_QUALITY                           |
 
 `HIGH_QUALITY`는 `highQualityEnabled=true`, 요청별 명시 선택, 비용 예약 성공을 모두 요구한다. 허용 workflow는 자기소개서 생성·검증과 면접 답변 feedback뿐이다. 공고 분석과 면접 준비는 `ECONOMY|BALANCED`, 문서·공고 추출은 내부 저비용 정책만 사용한다. 모의 면접 종합 feedback은 `BALANCED` 고정이다.
 

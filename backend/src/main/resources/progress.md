@@ -8,6 +8,19 @@
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
 
+## [2026-08-01] Session Summary (Job image item threshold 설정)
+
+- What was done:
+  - `JOB_IMAGE_MIN_ITEM_MEANINGFUL_CHARACTERS` 기본값 20을 설정 경계에 추가했다.
+- Key decisions:
+  - 최종 description 120자 기준과 별도 관리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - configuration binding과 전체 check, Compose config 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Job page/image bounded policy 설정)
 
 - What was done:

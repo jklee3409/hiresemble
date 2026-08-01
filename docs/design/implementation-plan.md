@@ -36,7 +36,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 69 suites/479 tests이며 Frontend 61 files/243 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이미지형 공고 보정의 실제 Provider 호출은 0회다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 70 suites/491 tests이며 Frontend 61 files/243 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이미지형 공고 v3 보정의 실제 Provider 호출은 0회다.
 
 ## 1. 전체 선행 관계
 
@@ -610,6 +610,17 @@ P0 계약 기준선
 - OpenAI image input은 별도 `ImageTextExtractionGateway`로 호출하며 provider retry 0, `store=false`, 기존 chat token price/usage를 재사용한다.
 - text-only는 image provider 0회, image-only·mixed는 DOM/OCR source label 병합, 자동 자료 부족은 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
 - schema와 공개 DTO 변경이 없어 migration을 추가하지 않았으며 latest V15와 P8.6 tentative V16 이후 번호를 유지한다.
+
+## 13.1-B 이미지 공고 후속 계약 보정 (`DONE`)
+
+- canonical workflow·prompt·image output·compose output을 v3으로 올리고 v1·v2는 executable 없는 immutable legacy definition으로 유지한다.
+- OCR output은 trusted local `imageRef`를 필수로 가지며 allowlist·중복·개수를 검증한 뒤 input 순서로 정렬한다. 누락 이미지는 reference를 당기지 않고 URL·bytes는 checkpoint에 저장하지 않는다.
+- text/image OpenAI adapter의 structured schema·credentials·model·quota·rate limit·5xx·timeout/network와 refusal·finish reason·usage 보존 의미를 공통 safe 경계로 통일한다.
+- Job 전용 retry contributor가 v1·v2·현재 terminal predecessor를 최신 v3과 현재 Job snapshot으로 승격하고 resource/generic retry의 predecessor unique successor를 공유한다. `WAITING_USER` manual body는 same-run resume을 유지한다.
+- WebP ImageIO plugin으로 RIFF/WEBP magic·정적 image decode·dimensions·pixel을 검증하고 JPEG·PNG와 같은 SSRF·byte·deadline 경계를 적용한다. item minimum 20자와 final aggregate 120자를 분리하고 cross-image 반복 line을 제거한다.
+- Frontend 공개 상태·step key는 변경하지 않았으며 기존 safe fallback label, 새 Run retry 갱신, manual CTA와 SSE reconnect 회귀를 유지한다.
+- Fake·synthetic image·mock model·WireMock 계열의 offline 검증만 사용했다. 사용자가 기존 live 경로를 별도 확인했으며 이 보정 작업은 실제 OpenAI Provider와 실제 채용 사이트를 재호출하거나 live 상태를 재판정하지 않는다.
+- DB migration과 공개 OpenAPI path/operation 변경은 없다.
 
 ## 14. P8.6 — 제품 기능 한도·metering 기반
 

@@ -4,7 +4,21 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-01] Session Summary (공고 image workflow v3·Provider parity)
+
+- What was done:
+  - trusted image output, aggregate compose와 text/image OpenAI 공통 failure·finish·usage 경계를 연결했다.
+- Key decisions:
+  - prompt/schema/policy identity를 v3로 올리고 response 이후 실패 usage를 보존한다.
+- Issues encountered:
+  - None.
+
 ## [2026-08-01] Session Summary (공고 image capability·workflow v2)
+
+- Validation:
+  - imageRef·status matrix·finish/refusal/cardinality·usage와 전체 491 tests 통과. 실제 Provider 호출 0회.
+- Next steps:
+  - None.
 
 - What was done:
   - 별도 image text gateway와 9단계 Job extraction v2 contribution을 runtime registry에 연결했다.
