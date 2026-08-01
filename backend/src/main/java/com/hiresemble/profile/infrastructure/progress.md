@@ -4,6 +4,19 @@
 
 P2 프로필·direct evidence의 owner-scoped JDBC 영속성과 optimistic mutation이 구현되어 있다.
 
+## [2026-08-01] Session Summary (대외활동 영속성과 evidence 동기화)
+
+- What was done:
+  - owner-scoped activity SQL CRUD, optimistic version, soft delete와 direct evidence upsert/delete를 ProfileStore에 추가했다.
+- Key decisions:
+  - 활동 삭제는 연결된 ACTIVITY evidence만 제거하고 document evidence와 원본은 건드리지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PostgreSQL 통합·migration 테스트와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

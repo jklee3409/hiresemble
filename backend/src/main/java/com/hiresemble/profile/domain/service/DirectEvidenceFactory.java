@@ -2,6 +2,7 @@ package com.hiresemble.profile.domain.service;
 
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
+import com.hiresemble.profile.domain.model.ActivityType;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -86,6 +87,38 @@ public final class DirectEvidenceFactory {
                         "startedAt", text(startedAt),
                         "endedAt", text(endedAt),
                         "isCurrent", current));
+    }
+
+    public static DirectEvidenceData activity(
+            String title,
+            ActivityType activityType,
+            String organizer,
+            LocalDate startedAt,
+            LocalDate endedAt,
+            boolean ongoing,
+            String role,
+            String description,
+            String achievements,
+            String relatedUrl) {
+        return data(
+                EvidenceSourceType.ACTIVITY,
+                "ACTIVITY",
+                title,
+                firstContent(
+                        joinBodies(description, achievements),
+                        title,
+                        organizer,
+                        role,
+                        text(startedAt),
+                        ongoing ? "ONGOING" : text(endedAt)),
+                metadata(
+                        "activityType", activityType.name(),
+                        "organizer", organizer,
+                        "startedAt", text(startedAt),
+                        "endedAt", text(endedAt),
+                        "ongoing", ongoing,
+                        "role", role,
+                        "relatedUrl", relatedUrl));
     }
 
     private static DirectEvidenceData data(

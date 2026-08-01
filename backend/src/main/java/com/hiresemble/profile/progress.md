@@ -4,6 +4,19 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-01] Session Summary (직접 대외활동과 소재 상태 경계)
+
+- What was done:
+  - 사용자 직접 대외활동 aggregate와 `ACTIVITY` evidence projection, PENDING 포함 검토 상태 변경 및 batch 검토를 profile 전 계층에 추가했다.
+- Key decisions:
+  - 활동 생명주기는 문서와 분리하고 소재 선택 상태만 verified evidence 경계에 반영한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile·Document 통합 테스트와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (document candidate rejection 분류)
 
 - What was done:

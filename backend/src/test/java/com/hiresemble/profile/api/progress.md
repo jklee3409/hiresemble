@@ -4,6 +4,19 @@
 
 P2 프로필 HTTP·transaction 통합 테스트가 구현되어 있다.
 
+## [2026-08-01] Session Summary (대외활동 CRUD·소재 후보 회귀)
+
+- What was done:
+  - 등록·조회·수정·삭제, owner isolation, false 제외·true 포함 verified snapshot 회귀를 추가했다.
+- Key decisions:
+  - 직접 등록 활동의 API와 소재 projection을 한 통합 시나리오에서 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - ProfileIntegrationTest와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (최종 학력 CRUD 재계산 회귀)
 
 - What was done:

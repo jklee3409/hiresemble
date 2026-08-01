@@ -6,6 +6,7 @@ public enum EvidenceSourceType {
     LANGUAGE_SCORE,
     AWARD,
     CAREER,
+    ACTIVITY,
     DOCUMENT_CHUNK,
     MANUAL
 }

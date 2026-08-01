@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 프로필·직접 근거의 HTTP status, validation, DTO와 OpenAPI operation 경계를 소유한다.
+프로필·사용자 직접 대외활동·문서 소재 검토의 HTTP status, validation, DTO와 OpenAPI operation 경계를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,6 +16,7 @@ P2 프로필·직접 근거의 HTTP status, validation, DTO와 OpenAPI operation
 - Controller는 Session 사용자 ID와 HTTP 입력을 application service에 전달하고 status·DTO만 변환한다.
 - 생성은 201, 조회·수정은 200, 삭제는 204를 사용한다.
 - 학력 write는 `educationLevel`을 받고, response의 `isPrimary`는 서버 계산 최종 학력을 read-only로 반환한다. 학력 CRUD는 구조화 프로필만 변경하고 evidence API는 학력 source/category를 반환하지 않는다.
+- 대외활동은 전용 5개 CRUD operation을 사용하고 문서 소재 검토는 단건 및 최대 100개 batch 상태 변경을 제공한다.
 
 ## 다른 디렉터리와의 의존 관계
 

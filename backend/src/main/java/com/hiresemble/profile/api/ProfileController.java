@@ -5,6 +5,7 @@ import com.hiresemble.profile.api.dto.ProfileRequests;
 import com.hiresemble.auth.security.AuthenticatedUser;
 import com.hiresemble.common.api.ErrorResponseDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.AwardDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.ActivityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CareerDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CertificationDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EducationDto;
@@ -12,6 +13,8 @@ import com.hiresemble.profile.api.dto.ProfileDtos.EvidenceDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.LanguageScoreDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.ProfileDto;
 import com.hiresemble.profile.api.dto.ProfileRequests.AwardCreateRequest;
+import com.hiresemble.profile.api.dto.ProfileRequests.ActivityCreateRequest;
+import com.hiresemble.profile.api.dto.ProfileRequests.ActivityUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.AwardUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.CareerCreateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.CareerUpdateRequest;
@@ -21,16 +24,19 @@ import com.hiresemble.profile.api.dto.ProfileRequests.EducationCreateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.EducationUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.EvidenceUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.EvidenceVerificationRequest;
+import com.hiresemble.profile.api.dto.ProfileRequests.EvidenceVerificationBatchRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.LanguageScoreCreateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.LanguageScoreUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.ProfileUpdateRequest;
 import com.hiresemble.profile.application.service.ProfileApplicationService;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CertificationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EducationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceVersion;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +52,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -307,6 +314,56 @@ public class ProfileController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/activities")
+    @Operation(operationId = "listActivities", summary = "List user-entered activities", description = "Lists only activities entered and owned by the authenticated user; document-extracted evidence is not projected here.")
+    public PageResponse<ActivityDto> listActivities(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "startedAt,desc") String sort,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ProfileDtoMapper.page(
+                service.listActivities(user.id(), page, size, sort), ProfileDtoMapper::activity);
+    }
+
+    @GetMapping("/activities/{activityId}")
+    @Operation(operationId = "getActivity", summary = "Get a user-entered activity", description = "Returns an owner-scoped activity detail or 404 for foreign and missing IDs.")
+    public ActivityDto getActivity(
+            @PathVariable UUID activityId,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ProfileDtoMapper.activity(service.getActivity(user.id(), activityId));
+    }
+
+    @PostMapping(value = "/activities", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "createActivity", summary = "Create an activity", description = "Creates a user-owned activity and a separate direct evidence candidate. It is usable by AI only when explicitly enabled.")
+    @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = ActivityDto.class)))
+    public ResponseEntity<ActivityDto> createActivity(
+            @Valid @RequestBody ActivityCreateRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ProfileDtoMapper.activity(service.createActivity(user.id(), activity(request))));
+    }
+
+    @PutMapping(value = "/activities/{activityId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "updateActivity", summary = "Update an activity", description = "Updates the owner-scoped activity and synchronizes its explicitly selected material status.")
+    public ActivityDto updateActivity(
+            @PathVariable UUID activityId,
+            @Valid @RequestBody ActivityUpdateRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ProfileDtoMapper.activity(service.updateActivity(
+                user.id(), activityId, activity(request), request.version()));
+    }
+
+    @DeleteMapping("/activities/{activityId}")
+    @Operation(operationId = "deleteActivity", summary = "Delete an activity", description = "Soft-deletes only the user-entered activity and removes its direct evidence candidate.")
+    @ApiResponse(responseCode = "204", content = @Content)
+    public ResponseEntity<Void> deleteActivity(
+            @PathVariable UUID activityId,
+            @RequestParam @PositiveOrZero long version,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        service.deleteActivity(user.id(), activityId, version);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/evidence")
     @Operation(operationId = "listProfileEvidence", summary = "List profile evidence", description = "Lists owner-scoped non-education evidence. A document filter returns only DOCUMENT_CHUNK evidence for that active document.")
     public PageResponse<EvidenceDto> listEvidence(
@@ -341,6 +398,22 @@ public class ProfileController {
         return ProfileDtoMapper.evidence(service.verifyEvidence(user.id(), evidenceId, request.status(), request.version()));
     }
 
+    @PatchMapping(value = "/evidence/verification", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "verifyProfileEvidenceBatch", summary = "Review multiple AI-extracted materials", description = "Atomically approves, excludes, or returns up to 100 active document materials to review with optimistic versions.")
+    public List<EvidenceDto> verifyEvidenceBatch(
+            @Valid @RequestBody EvidenceVerificationBatchRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return service.verifyEvidenceBatch(
+                        user.id(),
+                        request.items().stream()
+                                .map(item -> new EvidenceVersion(item.id(), item.version()))
+                                .toList(),
+                        request.status())
+                .stream()
+                .map(ProfileDtoMapper::evidence)
+                .toList();
+    }
+
     private EducationWrite education(ProfileRequests.EducationFields request) {
         return new EducationWrite(
                 request.schoolName(), request.major(), request.degree(), request.educationLevel(),
@@ -370,5 +443,12 @@ public class ProfileController {
         return new CareerWrite(
                 request.organization(), request.position(), request.employmentType(), request.startedAt(),
                 request.endedAt(), request.isCurrent(), request.responsibilities(), request.achievements());
+    }
+
+    private ActivityWrite activity(ProfileRequests.ActivityFields request) {
+        return new ActivityWrite(
+                request.title(), request.activityType(), request.organizer(), request.startedAt(),
+                request.endedAt(), request.ongoing(), request.role(), request.description(),
+                request.achievements(), request.relatedUrl(), request.useAsMaterial());
     }
 }

@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.hiresemble.auth.api.dto.SignupRequest;
+import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
+import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import java.util.UUID;
@@ -27,6 +29,7 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private ProfileAnalysisQueryPort profileAnalysisQuery;
 
     @Test
     void incompleteProfileIsReadableAndDoesNotGateOtherProfileRoutes() throws Exception {
@@ -211,6 +214,56 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
         assertThat(synchronizedEvidence.get("verifiedAt").isNull()).isFalse();
         assertThat(synchronizedEvidence.get("metadata").has("custom")).isFalse();
         assertThat(synchronizedEvidence.get("version").asLong()).isEqualTo(2);
+    }
+
+    @Test
+    void userEnteredActivityCrudIsOwnerScopedAndMaterialUseIsExplicit() throws Exception {
+        Session owner = authenticated("activity-owner@example.com");
+        Session stranger = authenticated("activity-stranger@example.com");
+
+        JsonNode created = create(owner, "/activities", activityBody("Open source club", false, null));
+        assertThat(created.get("activityType").asText()).isEqualTo("CLUB");
+        assertThat(created.get("useAsMaterial").asBoolean()).isFalse();
+        mockMvc.perform(get("/api/v1/profile/activities").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].title").value("Open source club"));
+        mockMvc.perform(get("/api/v1/profile/activities/" + created.get("id").asText())
+                        .cookie(stranger.cookie()))
+                .andExpect(status().isNotFound());
+
+        JsonNode candidate = findBySource(
+                evidence(owner, "ACTIVITY").get("items"), created.get("id").asText());
+        assertThat(candidate.get("verificationStatus").asText()).isEqualTo("REJECTED");
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .noneMatch(item -> item.sourceType() == EvidenceSourceType.ACTIVITY);
+
+        JsonNode updated = update(
+                owner,
+                "/activities/" + created.get("id").asText(),
+                activityBody("Open source community", true, created.get("version").asLong()));
+        assertThat(updated.get("useAsMaterial").asBoolean()).isTrue();
+        JsonNode enabled = findBySource(
+                evidence(owner, "ACTIVITY").get("items"), created.get("id").asText());
+        assertThat(enabled.get("verificationStatus").asText()).isEqualTo("VERIFIED");
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .anyMatch(item -> item.sourceType() == EvidenceSourceType.ACTIVITY
+                        && item.sourceEntityId().toString().equals(created.get("id").asText()));
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM profile_evidence WHERE user_id=? AND source_type='ACTIVITY' AND verification_status='VERIFIED'",
+                        Long.class,
+                        owner.userId()))
+                .isEqualTo(1L);
+
+        mutation(
+                delete("/api/v1/profile/activities/" + created.get("id").asText())
+                        .queryParam("version", updated.get("version").asText()),
+                owner,
+                204);
+        mockMvc.perform(get("/api/v1/profile/activities/" + created.get("id").asText())
+                        .cookie(owner.cookie()))
+                .andExpect(status().isNotFound());
+        assertThat(evidence(owner, "ACTIVITY").get("items")).isEmpty();
     }
 
     @Test
@@ -516,6 +569,19 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
                 organization,
                 current ? "null" : "\"2025-01-01\"",
                 current,
+                version == null ? "" : ",\"version\":" + version);
+    }
+
+    private String activityBody(String title, boolean useAsMaterial, Long version) {
+        return """
+                {"title":"%s","activityType":"CLUB","organizer":"University community",
+                 "startedAt":"2024-03-01","endedAt":null,"ongoing":true,"role":"Organizer",
+                 "description":"Organized weekly study sessions and shared learning notes.",
+                 "achievements":"Grew participation to 30 members.","relatedUrl":"https://example.com/activity",
+                 "useAsMaterial":%s%s}
+                """.formatted(
+                title,
+                useAsMaterial,
                 version == null ? "" : ",\"version\":" + version);
     }
 

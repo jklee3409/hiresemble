@@ -14,7 +14,8 @@ public final class DocumentApiMapper {
 
     public DocumentSummaryDto summary(DocumentRecord document) {
         return new DocumentSummaryDto(
-                document.id(), document.documentType(), document.displayName(), document.mimeType(),
+                document.id(), document.documentType(), document.originalFilename(),
+                document.displayName(), document.mimeType(),
                 document.fileSizeBytes(), document.parseStatus(), document.evidenceExtractionStatus(),
                 document.manualTextProvided(), error(document), document.latestAgentRunId(),
                 document.version(), document.uploadedAt(), document.updatedAt());
@@ -23,7 +24,8 @@ public final class DocumentApiMapper {
     public DocumentDetailDto detail(
             DocumentRecord document, Optional<DocumentTextRecord> text) {
         return new DocumentDetailDto(
-                document.id(), document.documentType(), document.displayName(), document.mimeType(),
+                document.id(), document.documentType(), document.originalFilename(),
+                document.displayName(), document.mimeType(),
                 document.fileSizeBytes(), document.parseStatus(), document.evidenceExtractionStatus(),
                 document.manualTextProvided(), error(document), document.latestAgentRunId(),
                 document.version(), document.uploadedAt(), document.updatedAt(),

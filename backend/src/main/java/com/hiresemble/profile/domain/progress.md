@@ -4,6 +4,19 @@
 
 P2 프로필 완료도와 구조화 source·direct evidence 불변식이 구현되어 있다.
 
+## [2026-08-01] Session Summary (대외활동 도메인 모델)
+
+- What was done:
+  - `ActivityType`, activity command/record와 `EvidenceSourceType.ACTIVITY`, direct evidence factory를 추가했다.
+- Key decisions:
+  - 활동 종류와 생성 출처를 enum으로 고정하고 문서 source id와 겹치지 않는 직접 근거로 만든다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend compile·domain 사용처·전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

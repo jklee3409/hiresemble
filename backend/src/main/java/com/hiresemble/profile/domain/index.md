@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 프로필 완료도, 학력 단계 순위, 구조화 resource 상태·날짜·GPA와 direct evidence 생성 규칙을 순수 Java 정책으로 표현한다.
+프로필 완료도, 학력 단계 순위, 구조화 resource·대외활동 상태·날짜·GPA와 direct evidence 생성 규칙을 순수 Java 정책으로 표현한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,6 +16,7 @@ P2 프로필 완료도, 학력 단계 순위, 구조화 resource 상태·날짜�
 - `LEGAL_NAME`, `DESIRED_ROLE`, `DESIRED_INDUSTRY`, `DESIRED_LOCATION`, `PRIMARY_EDUCATION` 충족 여부를 각각 20%로 계산한다.
 - 최종 학력 계산용 `EducationLevel` 순위를 도메인 값으로 제공한다.
 - source type별 direct evidence projection과 `VERIFIED` 재동기화 값을 생성한다.
+- 대외활동 종류와 ACTIVITY evidence projection은 문서 추출 source와 분리한다.
 
 ## 다른 디렉터리와의 의존 관계
 

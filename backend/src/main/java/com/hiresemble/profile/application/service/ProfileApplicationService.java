@@ -4,18 +4,22 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
+import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CertificationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EducationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceVersion;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
 import com.hiresemble.profile.domain.model.ProfileCompletion;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
@@ -28,6 +32,8 @@ import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,6 +71,7 @@ public class ProfileApplicationService {
     private static final Set<String> LANGUAGE_SORTS = Set.of("testedAt,desc", "createdAt,desc");
     private static final Set<String> AWARD_SORTS = Set.of("awardedAt,desc", "createdAt,desc");
     private static final Set<String> CAREER_SORTS = Set.of("startedAt,desc", "createdAt,desc");
+    private static final Set<String> ACTIVITY_SORTS = Set.of("startedAt,desc", "createdAt,desc");
     private static final Set<String> EVIDENCE_SORTS =
             Set.of("updatedAt,desc", "confidence,desc");
 
@@ -320,6 +327,50 @@ public class ProfileApplicationService {
     }
 
     @Transactional(readOnly = true)
+    public PageSlice<ActivityRecord> listActivities(
+            UUID userId, int page, int size, String sort) {
+        return store.listActivities(
+                userId, page, size, sort(sort, ACTIVITY_SORTS, "startedAt,desc"));
+    }
+
+    @Transactional(readOnly = true)
+    public ActivityRecord getActivity(UUID userId, UUID id) {
+        return store.findActivity(userId, id).orElseThrow(this::notFound);
+    }
+
+    @Transactional
+    public ActivityRecord createActivity(UUID userId, ActivityWrite input) {
+        ActivityWrite command = activity(input);
+        UUID id = UUID.randomUUID();
+        Instant now = Instant.now();
+        ActivityRecord created = store.createActivity(id, userId, command, now);
+        store.createDirectEvidence(
+                UUID.randomUUID(), userId, id, evidence(created), materialStatus(created.useAsMaterial()), now);
+        return created;
+    }
+
+    @Transactional
+    public ActivityRecord updateActivity(
+            UUID userId, UUID id, ActivityWrite input, long version) {
+        ActivityWrite command = activity(input);
+        ActivityRecord current = store.findActivity(userId, id).orElseThrow(this::notFound);
+        requireVersion(current.version(), version);
+        Instant now = Instant.now();
+        ActivityRecord updated = store.updateActivity(userId, id, command, version, now)
+                .orElseThrow(this::versionConflict);
+        store.synchronizeDirectEvidence(
+                userId, id, evidence(updated), materialStatus(updated.useAsMaterial()), now);
+        return updated;
+    }
+
+    @Transactional
+    public void deleteActivity(UUID userId, UUID id, long version) {
+        ActivityRecord record = store.findActivity(userId, id).orElseThrow(this::notFound);
+        requireVersion(record.version(), version);
+        deleteSource("activities", userId, id, version, EvidenceSourceType.ACTIVITY);
+    }
+
+    @Transactional(readOnly = true)
     public PageSlice<EvidenceRecord> listEvidence(
             UUID userId,
             EvidenceVerificationStatus status,
@@ -360,7 +411,8 @@ public class ProfileApplicationService {
             UUID id,
             EvidenceVerificationStatus status,
             long version) {
-        if (status != EvidenceVerificationStatus.VERIFIED
+        if (status != EvidenceVerificationStatus.PENDING
+                && status != EvidenceVerificationStatus.VERIFIED
                 && status != EvidenceVerificationStatus.REJECTED) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
@@ -372,6 +424,20 @@ public class ProfileApplicationService {
         requireVersion(current.version(), version);
         return store.verifyEvidence(userId, id, status, version, Instant.now())
                 .orElseThrow(this::versionConflict);
+    }
+
+    @Transactional
+    public List<EvidenceRecord> verifyEvidenceBatch(
+            UUID userId,
+            List<EvidenceVersion> items,
+            EvidenceVerificationStatus status) {
+        if (items == null || items.isEmpty() || items.size() > 100
+                || items.stream().map(EvidenceVersion::id).distinct().count() != items.size()) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        return items.stream()
+                .map(item -> verifyEvidence(userId, item.id(), status, item.version()))
+                .toList();
     }
 
     private EducationWrite education(EducationWrite input) {
@@ -435,6 +501,25 @@ public class ProfileApplicationService {
                 ProfilePolicy.optionalBody(input.achievements(), 20000));
     }
 
+    private ActivityWrite activity(ActivityWrite input) {
+        ProfilePolicy.validateCareer(input.startedAt(), input.endedAt(), input.ongoing());
+        if (input.activityType() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        return new ActivityWrite(
+                ProfilePolicy.requiredLabel(input.title(), 200),
+                input.activityType(),
+                ProfilePolicy.requiredLabel(input.organizer(), 200),
+                input.startedAt(),
+                input.endedAt(),
+                input.ongoing(),
+                ProfilePolicy.optionalLabel(input.role(), 200),
+                requiredBody(input.description(), 10000),
+                ProfilePolicy.optionalBody(input.achievements(), 10000),
+                optionalHttpUrl(input.relatedUrl()),
+                input.useAsMaterial());
+    }
+
     private void requireProfileLock(UUID userId) {
         if (!store.lockProfile(userId)) {
             throw notFound();
@@ -494,6 +579,18 @@ public class ProfileApplicationService {
                 value.endedAt(), value.current(), value.responsibilities(), value.achievements());
     }
 
+    private DirectEvidenceData evidence(ActivityRecord value) {
+        return DirectEvidenceFactory.activity(
+                value.title(), value.activityType(), value.organizer(), value.startedAt(), value.endedAt(),
+                value.ongoing(), value.role(), value.description(), value.achievements(), value.relatedUrl());
+    }
+
+    private EvidenceVerificationStatus materialStatus(boolean useAsMaterial) {
+        return useAsMaterial
+                ? EvidenceVerificationStatus.VERIFIED
+                : EvidenceVerificationStatus.REJECTED;
+    }
+
     private void requireActiveDocument(UUID userId, UUID documentId) {
         if (documentId != null) documentQueryPort.snapshot(userId, documentId);
     }
@@ -511,6 +608,28 @@ public class ProfileApplicationService {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
         return value;
+    }
+
+    private String requiredBody(String value, int maxLength) {
+        if (value == null || value.isBlank() || value.length() > maxLength || value.indexOf('\0') >= 0) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        return value.trim();
+    }
+
+    private String optionalHttpUrl(String value) {
+        String normalized = ProfilePolicy.optionalBody(value, 1000);
+        if (normalized == null) return null;
+        try {
+            URI uri = new URI(normalized);
+            if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                    || uri.getHost() == null) {
+                throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+            }
+            return uri.toASCIIString();
+        } catch (URISyntaxException exception) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, exception);
+        }
     }
 
     private Map<String, Object> validMetadata(Map<String, Object> metadata) {

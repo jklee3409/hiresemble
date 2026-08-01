@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-01] Session Summary (소재 batch 재검토·문서 삭제 독립성 회귀)
+
+- What was done:
+  - PENDING 재검토와 batch 상태 변경, 문서 삭제 후 직접 대외활동·ACTIVITY evidence 유지 회귀를 추가했다.
+- Key decisions:
+  - 문서와 직접 활동의 삭제 생명주기 분리를 테스트 계약으로 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - DocumentIntegrationTest와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (candidate rejection reason 집계 회귀)
 
 - What was done:

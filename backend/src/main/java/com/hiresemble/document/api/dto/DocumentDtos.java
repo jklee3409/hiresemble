@@ -26,6 +26,7 @@ public final class DocumentDtos {
     public record DocumentSummaryDto(
             UUID id,
             DocumentType documentType,
+            @Schema(minLength = 1, maxLength = 255) String originalFilename,
             @Schema(minLength = 1, maxLength = 255) String displayName,
             @Schema(minLength = 1, maxLength = 100) String mimeType,
             @Schema(minimum = "1", maximum = "20971520") long fileSizeBytes,
@@ -54,6 +55,7 @@ public final class DocumentDtos {
     public record DocumentDetailDto(
             UUID id,
             DocumentType documentType,
+            @Schema(minLength = 1, maxLength = 255) String originalFilename,
             @Schema(minLength = 1, maxLength = 255) String displayName,
             @Schema(minLength = 1, maxLength = 100) String mimeType,
             @Schema(minimum = "1", maximum = "20971520") long fileSizeBytes,

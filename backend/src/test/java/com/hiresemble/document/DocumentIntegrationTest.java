@@ -332,6 +332,16 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verificationStatus").value("VERIFIED"))
                 .andExpect(jsonPath("$.version").value(1));
+        mockMvc.perform(patch("/api/v1/profile/evidence/verification")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"items":[{"id":"%s","version":1}],"status":"PENDING"}
+                                """.formatted(result.appliedEvidenceIds().getFirst())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].verificationStatus").value("PENDING"))
+                .andExpect(jsonPath("$[0].version").value(2));
         mockMvc.perform(get("/api/v1/profile/evidence").cookie(other.cookie())
                         .queryParam("documentId", documentId.toString()))
                 .andExpect(status().isNotFound());
@@ -676,6 +686,19 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     @Test
     void deleteIsImmediateUsesOutboxAndSelectsDeleteOrTombstoneByReference() throws Exception {
         Session owner = authenticated("delete-owner@example.com");
+        JsonNode activity = json(mockMvc.perform(post("/api/v1/profile/activities")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Independent club","activityType":"CLUB",
+                                 "organizer":"University","startedAt":"2025-03-01",
+                                 "endedAt":null,"ongoing":true,"role":"Lead",
+                                 "description":"Organized weekly sessions","achievements":null,
+                                 "relatedUrl":null,"useAsMaterial":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn());
         JsonNode first = upload(owner, "delete-upload-key-01", "first.txt",
                 longText("first@example.com").getBytes(StandardCharsets.UTF_8), 202);
         UUID firstId = UUID.fromString(first.get("documentId").asText());
@@ -704,6 +727,16 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM document_chunks WHERE document_id=?", Long.class, firstId))
                 .isZero();
+        mockMvc.perform(get("/api/v1/profile/activities/" + activity.get("id").asText())
+                        .cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Independent club"));
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM profile_evidence
+                WHERE user_id=? AND source_type='ACTIVITY' AND source_entity_id=?
+                  AND verification_status='VERIFIED'
+                """, Long.class, owner.userId(), UUID.fromString(activity.get("id").asText())))
+                .isEqualTo(1L);
 
         String firstKey = "users/" + owner.userId() + "/documents/" + firstId + "/content";
         assertThat(storage.values).containsKey(firstKey);

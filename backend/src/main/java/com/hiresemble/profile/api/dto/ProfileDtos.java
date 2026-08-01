@@ -2,6 +2,7 @@ package com.hiresemble.profile.api.dto;
 
 import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
+import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCompletionItem;
@@ -113,6 +114,25 @@ public final class ProfileDtos {
             boolean isCurrent,
             @Schema(nullable = true, maxLength = 20000) String responsibilities,
             @Schema(nullable = true, maxLength = 20000) String achievements,
+            long version,
+            Instant createdAt,
+            Instant updatedAt) {}
+
+    @Schema(name = "ActivityDto")
+    public record ActivityDto(
+            UUID id,
+            @Schema(minLength = 1, maxLength = 200) String title,
+            ActivityType activityType,
+            @Schema(minLength = 1, maxLength = 200) String organizer,
+            @Schema(nullable = true) LocalDate startedAt,
+            @Schema(nullable = true) LocalDate endedAt,
+            boolean ongoing,
+            @Schema(nullable = true, maxLength = 200) String role,
+            @Schema(minLength = 1, maxLength = 10000) String description,
+            @Schema(nullable = true, maxLength = 10000) String achievements,
+            @Schema(nullable = true, maxLength = 1000) String relatedUrl,
+            @Schema(description = "Whether the user explicitly enabled this activity as an AI material candidate.")
+                    boolean useAsMaterial,
             long version,
             Instant createdAt,
             Instant updatedAt) {}

@@ -41,7 +41,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyEightyFourOperationsAndSixtyThreePaths() {
+    void liveSpringMappingsHaveExactlyNinetyOperationsAndSixtySixPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -57,12 +57,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(63);
-        assertThat(operations[0]).isEqualTo(84);
+        assertThat(paths).hasSize(66);
+        assertThat(operations[0]).isEqualTo(90);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyEightyFourOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyNinetyOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -104,7 +104,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/profile/awards/{awardId}",
                         "/api/v1/profile/careers",
                         "/api/v1/profile/careers/{careerId}",
+                        "/api/v1/profile/activities",
+                        "/api/v1/profile/activities/{activityId}",
                         "/api/v1/profile/evidence",
+                        "/api/v1/profile/evidence/verification",
                         "/api/v1/profile/evidence/{evidenceId}",
                         "/api/v1/profile/evidence/{evidenceId}/verification",
                         "/api/v1/agent-runs",
@@ -150,7 +153,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(84);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(90);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -187,7 +190,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/careers", "post", "createCareer");
         assertProfileOperation(document, "/api/v1/profile/careers/{careerId}", "put", "updateCareer");
         assertProfileOperation(document, "/api/v1/profile/careers/{careerId}", "delete", "deleteCareer");
+        assertProfileOperation(document, "/api/v1/profile/activities", "get", "listActivities");
+        assertProfileOperation(document, "/api/v1/profile/activities", "post", "createActivity");
+        assertProfileOperation(document, "/api/v1/profile/activities/{activityId}", "get", "getActivity");
+        assertProfileOperation(document, "/api/v1/profile/activities/{activityId}", "put", "updateActivity");
+        assertProfileOperation(document, "/api/v1/profile/activities/{activityId}", "delete", "deleteActivity");
         assertProfileOperation(document, "/api/v1/profile/evidence", "get", "listProfileEvidence");
+        assertProfileOperation(document, "/api/v1/profile/evidence/verification", "patch", "verifyProfileEvidenceBatch");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}", "put", "updateProfileEvidence");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}/verification", "patch", "verifyProfileEvidence");
         assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
@@ -574,12 +583,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(schemas.at("/EducationStatus/enum"))).isEmpty();
         assertThat(fieldNames(schemas.at("/DocumentSummaryDto/properties")))
                 .containsExactlyInAnyOrder(
-                        "id", "documentType", "displayName", "mimeType", "fileSizeBytes",
+                        "id", "documentType", "originalFilename", "displayName", "mimeType", "fileSizeBytes",
                         "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
                         "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt");
         assertThat(fieldNames(schemas.at("/DocumentDetailDto/properties")))
                 .containsExactlyInAnyOrder(
-                        "id", "documentType", "displayName", "mimeType", "fileSizeBytes",
+                        "id", "documentType", "originalFilename", "displayName", "mimeType", "fileSizeBytes",
                         "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
                         "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt",
                         "pageCount", "characterCount", "parsedAt");

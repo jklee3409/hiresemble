@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-P2 프로필 25개 operation의 HTTP·Session·CSRF·owner·version·비학력 evidence 동기화를 검증한다.
+프로필 31개 operation의 HTTP·Session·CSRF·owner·version·대외활동 및 비학력 evidence 동기화를 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileIntegrationTest.java`](ProfileIntegrationTest.java): 정상 DTO·status, validation, pagination·sort, owner 404, 409, 학력 단계별 최종 학력 재계산과 학력 제외 direct evidence 흐름
+- [`ProfileIntegrationTest.java`](ProfileIntegrationTest.java): 정상 DTO·status, validation, pagination·sort, owner 404, 409, 학력 단계별 최종 학력, 대외활동 CRUD·소재 선택과 batch 문서 검토 흐름
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

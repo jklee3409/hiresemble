@@ -13,7 +13,7 @@
 
 ## 구성 요소 역할
 
-multipart와 Idempotency-Key를 검증하고 비동기 command는 202, 삭제는 204, owner 불일치는 404로 반환한다.
+multipart와 Idempotency-Key를 검증하고 비동기 command는 202, 삭제는 204, owner 불일치는 404로 반환한다. 목록·상세 DTO는 표시 이름과 별도로 안전한 원본 파일명을 제공한다.
 
 ## 다른 디렉터리와의 의존 관계
 

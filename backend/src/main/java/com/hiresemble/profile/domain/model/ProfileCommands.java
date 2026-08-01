@@ -65,5 +65,20 @@ public final class ProfileCommands {
             String responsibilities,
             String achievements) {}
 
+    public record ActivityWrite(
+            String title,
+            ActivityType activityType,
+            String organizer,
+            LocalDate startedAt,
+            LocalDate endedAt,
+            boolean ongoing,
+            String role,
+            String description,
+            String achievements,
+            String relatedUrl,
+            boolean useAsMaterial) {}
+
     public record EvidenceWrite(String title, String content, Map<String, Object> metadata) {}
+
+    public record EvidenceVersion(UUID id, long version) {}
 }

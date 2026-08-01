@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-인증 사용자 기준 P2 프로필 use case와 P4 document evidence command/query, transaction, owner·version 경계를 조정한다.
+인증 사용자 기준 프로필·대외활동 use case와 document evidence command/query, transaction, owner·version 경계를 조정한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,6 +16,7 @@
 - mutation마다 expected version을 확인하고 source와 evidence 변경을 하나의 transaction에서 수행한다.
 - 다른 사용자·없는·삭제 Document를 구분하지 않는 404로 변환한다.
 - 성공한 document candidate는 PENDING으로 적용하고 `SOURCE_DELETED` evidence는 수정하지 않는다.
+- 사용자 직접 대외활동의 소재 사용 선택은 ACTIVITY evidence의 VERIFIED·REJECTED 상태와 같은 transaction에서 동기화한다.
 
 ## 다른 디렉터리와의 의존 관계
 

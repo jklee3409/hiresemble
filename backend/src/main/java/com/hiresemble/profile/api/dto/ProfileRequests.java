@@ -2,11 +2,14 @@ package com.hiresemble.profile.api.dto;
 
 import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
+import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -235,6 +238,61 @@ public final class ProfileRequests {
             @NotNull @PositiveOrZero Long version)
             implements CareerFields {}
 
+    public interface ActivityFields {
+        String title();
+
+        ActivityType activityType();
+
+        String organizer();
+
+        LocalDate startedAt();
+
+        LocalDate endedAt();
+
+        Boolean ongoing();
+
+        String role();
+
+        String description();
+
+        String achievements();
+
+        String relatedUrl();
+
+        Boolean useAsMaterial();
+    }
+
+    @Schema(name = "ActivityCreateRequest")
+    public record ActivityCreateRequest(
+            @NotBlank @Size(max = 200) String title,
+            @NotNull ActivityType activityType,
+            @NotBlank @Size(max = 200) String organizer,
+            @Schema(nullable = true) LocalDate startedAt,
+            @Schema(nullable = true) LocalDate endedAt,
+            @NotNull Boolean ongoing,
+            @Schema(nullable = true) @Size(max = 200) String role,
+            @NotBlank @Size(max = 10000) String description,
+            @Schema(nullable = true) @Size(max = 10000) String achievements,
+            @Schema(nullable = true) @Size(max = 1000) String relatedUrl,
+            @NotNull Boolean useAsMaterial)
+            implements ActivityFields {}
+
+    @Schema(name = "ActivityUpdateRequest")
+    public record ActivityUpdateRequest(
+            @NotBlank @Size(max = 200) String title,
+            @NotNull ActivityType activityType,
+            @NotBlank @Size(max = 200) String organizer,
+            @Schema(nullable = true) LocalDate startedAt,
+            @Schema(nullable = true) LocalDate endedAt,
+            @NotNull Boolean ongoing,
+            @Schema(nullable = true) @Size(max = 200) String role,
+            @NotBlank @Size(max = 10000) String description,
+            @Schema(nullable = true) @Size(max = 10000) String achievements,
+            @Schema(nullable = true) @Size(max = 1000) String relatedUrl,
+            @NotNull Boolean useAsMaterial,
+            @NotNull @PositiveOrZero Long version)
+            implements ActivityFields {}
+
     @Schema(name = "EvidenceUpdateRequest")
     public record EvidenceUpdateRequest(
             @NotBlank @Size(max = 250) String title,
@@ -245,5 +303,18 @@ public final class ProfileRequests {
     @Schema(name = "EvidenceVerificationRequest")
     public record EvidenceVerificationRequest(
             @NotNull EvidenceVerificationStatus status,
+            @NotNull @PositiveOrZero Long version) {}
+
+    @Schema(name = "EvidenceVerificationBatchRequest")
+    public record EvidenceVerificationBatchRequest(
+            @NotEmpty @Size(max = 100) List<@NotNull @Valid EvidenceVersionRef> items,
+            @NotNull EvidenceVerificationStatus status) {
+        public EvidenceVerificationBatchRequest {
+            items = items == null ? null : List.copyOf(items);
+        }
+    }
+
+    public record EvidenceVersionRef(
+            @NotNull UUID id,
             @NotNull @PositiveOrZero Long version) {}
 }

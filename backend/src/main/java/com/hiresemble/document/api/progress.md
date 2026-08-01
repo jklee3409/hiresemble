@@ -4,6 +4,19 @@
 
 P4 문서 공개 API 8개와 완전한 DTO·상태·오류 계약을 구현했다.
 
+## [2026-08-01] Session Summary (문서 원본 파일명 공개 projection)
+
+- What was done:
+  - 기존 저장된 `originalFilename`을 문서 목록·상세 DTO와 mapper에 추가했다.
+- Key decisions:
+  - 저장 계약은 바꾸지 않고 사용자 문서 패널에 필요한 안전한 파일 메타데이터만 additive 공개한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAPI·Document integration·Frontend contract test 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

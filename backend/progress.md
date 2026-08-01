@@ -7,6 +7,20 @@
 - V1~V13을 보존한 V14 migration이 활성 embedding 정책 provider key를 `openai`로 canonicalize한다.
 - Backend 전체 68 suites/466 tests와 이전 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-01] Session Summary (사용자 대외활동·소재 일괄 검토 계약)
+
+- What was done:
+  - `activities` V15, owner-scoped 대외활동 CRUD, `ACTIVITY` direct evidence projection, 소재 사용 여부와 일괄 검토 API, 문서 원본 파일명 응답을 추가했다.
+  - 문서 삭제가 직접 등록 활동에 영향을 주지 않고 다른 사용자 접근이 차단되며 verified snapshot에 선택된 활동만 포함되는 통합·migration·OpenAPI 회귀를 추가했다.
+- Key decisions:
+  - 대외활동은 문서에 종속되지 않는 별도 aggregate/table로 소유하고, 자소서·면접 기존 verified evidence 조회 경계에는 상태 projection으로만 합류시켰다.
+- Issues encountered:
+  - 전체 check에서 Interview 테스트 fixture의 DB 시계와 애플리케이션 시계 경계가 드물게 역전되어 terminal timestamp를 `GREATEST(now(), started_at)`로 고정했다.
+- Validation:
+  - `gradlew check --rerun-tasks --no-daemon --console=plain --max-workers=1`: 69 suites/469 tests, failure/error/skip 0.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Document partial rejection terminal 정책 보정)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P2 프로필과 direct evidence의 인증 사용자 use case 및 transaction 조정이 구현되어 있다.
 
+## [2026-08-01] Session Summary (대외활동 소유권·소재 선택 서비스)
+
+- What was done:
+  - 활동 CRUD transaction, 기간·URL 검증, 소재 사용 여부와 evidence 상태 동기화, batch 검토 서비스를 구현했다.
+- Key decisions:
+  - `useAsMaterial=false`는 REJECTED, true는 VERIFIED이며 문서 추출 근거만 PENDING 재검토를 허용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - owner isolation·snapshot·삭제 생명주기 통합 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 
 - What was done:

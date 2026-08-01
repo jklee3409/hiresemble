@@ -4,6 +4,19 @@
 
 Flyway 단계별 보존과 최신 V14 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
 
+## [2026-08-01] Session Summary (V15 대외활동 migration 검증)
+
+- What was done:
+  - 빈 DB와 V14 기존 profile evidence가 있는 DB의 V15 upgrade 검증을 추가했다.
+- Key decisions:
+  - 새 제약과 trigger가 기존 행을 보존하면서 ACTIVITY만 확장하는지 확인한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - UserActivityMigrationTest와 전체 migration suite 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (V14 embedding 정책 migration 검증)
 
 - What was done:

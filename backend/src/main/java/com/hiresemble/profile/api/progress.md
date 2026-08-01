@@ -4,6 +4,19 @@
 
 P2 공개 프로필·direct evidence 25개 operation과 DTO·validation 경계가 구현되어 있다.
 
+## [2026-08-01] Session Summary (대외활동 CRUD·소재 batch API)
+
+- What was done:
+  - `/profile/activities` 목록·상세·등록·수정·삭제와 `/profile/evidence/verification` batch API, 요청 검증과 DTO projection을 추가했다.
+- Key decisions:
+  - 모든 단건 접근은 인증 사용자 소유권을 확인하고 batch는 최대 100개·중복 금지로 제한한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAPI contract와 Profile integration 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (최종 학력 API projection)
 
 - What was done:

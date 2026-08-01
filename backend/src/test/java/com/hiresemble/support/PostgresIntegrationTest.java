@@ -78,6 +78,7 @@ public abstract class PostgresIntegrationTest {
             jdbcTemplate.update("DELETE FROM idempotency_records");
             jdbcTemplate.update("DELETE FROM agent_runs");
             jdbcTemplate.update("DELETE FROM user_ai_preferences");
+            jdbcTemplate.update("DELETE FROM activities");
             jdbcTemplate.update("DELETE FROM careers");
             jdbcTemplate.update("DELETE FROM awards");
             jdbcTemplate.update("DELETE FROM language_scores");

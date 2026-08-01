@@ -1,11 +1,13 @@
 package com.hiresemble.profile.infrastructure.persistence;
 
 import com.hiresemble.profile.domain.model.DirectEvidenceData;
+import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CertificationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EducationWrite;
@@ -13,6 +15,7 @@ import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
@@ -588,9 +591,94 @@ public class ProfileStore {
         return page(items, page, size, countActive("careers", userId));
     }
 
+    public ActivityRecord createActivity(
+            UUID id, UUID userId, ActivityWrite command, Instant now) {
+        return jdbcClient.sql("""
+                        INSERT INTO activities (
+                            id,user_id,title,activity_type,organizer,started_at,ended_at,ongoing,
+                            role,description,achievements,related_url,use_as_material,
+                            version,created_at,updated_at,deleted_at
+                        ) VALUES (
+                            :id,:userId,:title,:activityType,:organizer,:startedAt,:endedAt,:ongoing,
+                            :role,:description,:achievements,:relatedUrl,:useAsMaterial,
+                            0,:now,:now,NULL
+                        ) RETURNING *
+                        """)
+                .param("id", id)
+                .param("userId", userId)
+                .param("title", command.title())
+                .param("activityType", command.activityType().name())
+                .param("organizer", command.organizer())
+                .param("startedAt", command.startedAt())
+                .param("endedAt", command.endedAt())
+                .param("ongoing", command.ongoing())
+                .param("role", command.role())
+                .param("description", command.description())
+                .param("achievements", command.achievements())
+                .param("relatedUrl", command.relatedUrl())
+                .param("useAsMaterial", command.useAsMaterial())
+                .param("now", utc(now))
+                .query(this::activity)
+                .single();
+    }
+
+    public Optional<ActivityRecord> updateActivity(
+            UUID userId, UUID id, ActivityWrite command, long version, Instant now) {
+        return jdbcClient.sql("""
+                        UPDATE activities SET
+                            title=:title,activity_type=:activityType,organizer=:organizer,
+                            started_at=:startedAt,ended_at=:endedAt,ongoing=:ongoing,role=:role,
+                            description=:description,achievements=:achievements,related_url=:relatedUrl,
+                            use_as_material=:useAsMaterial,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:id AND version=:version AND deleted_at IS NULL
+                        RETURNING *
+                        """)
+                .param("title", command.title())
+                .param("activityType", command.activityType().name())
+                .param("organizer", command.organizer())
+                .param("startedAt", command.startedAt())
+                .param("endedAt", command.endedAt())
+                .param("ongoing", command.ongoing())
+                .param("role", command.role())
+                .param("description", command.description())
+                .param("achievements", command.achievements())
+                .param("relatedUrl", command.relatedUrl())
+                .param("useAsMaterial", command.useAsMaterial())
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("id", id)
+                .param("version", version)
+                .query(this::activity)
+                .optional();
+    }
+
+    public Optional<ActivityRecord> findActivity(UUID userId, UUID id) {
+        return jdbcClient.sql("SELECT * FROM activities WHERE user_id=:userId AND id=:id AND deleted_at IS NULL")
+                .param("userId", userId)
+                .param("id", id)
+                .query(this::activity)
+                .optional();
+    }
+
+    public PageSlice<ActivityRecord> listActivities(UUID userId, int page, int size, String sort) {
+        String order = switch (sort) {
+            case "startedAt,desc" -> "started_at DESC NULLS LAST, created_at DESC, id DESC";
+            case "createdAt,desc" -> "created_at DESC, id DESC";
+            default -> throw new IllegalArgumentException("unsupported activity sort");
+        };
+        List<ActivityRecord> items = jdbcClient
+                .sql("SELECT * FROM activities WHERE user_id=:userId AND deleted_at IS NULL ORDER BY %s LIMIT :size OFFSET :offset".formatted(order))
+                .param("userId", userId)
+                .param("size", size)
+                .param("offset", (long) page * size)
+                .query(this::activity)
+                .list();
+        return page(items, page, size, countActive("activities", userId));
+    }
+
     public boolean softDeleteSource(
             String table, UUID userId, UUID id, long version, Instant now) {
-        if (!List.of("educations", "certifications", "language_scores", "awards", "careers")
+        if (!List.of("educations", "certifications", "language_scores", "awards", "careers", "activities")
                 .contains(table)) {
             throw new IllegalArgumentException("unsupported profile source table");
         }
@@ -606,6 +694,17 @@ public class ProfileStore {
 
     public EvidenceRecord createDirectEvidence(
             UUID id, UUID userId, UUID sourceEntityId, DirectEvidenceData data, Instant now) {
+        return createDirectEvidence(
+                id, userId, sourceEntityId, data, EvidenceVerificationStatus.VERIFIED, now);
+    }
+
+    public EvidenceRecord createDirectEvidence(
+            UUID id,
+            UUID userId,
+            UUID sourceEntityId,
+            DirectEvidenceData data,
+            EvidenceVerificationStatus status,
+            Instant now) {
         return jdbcClient
                 .sql("""
                         INSERT INTO profile_evidence (
@@ -614,7 +713,7 @@ public class ProfileStore {
                             source_deleted_at,version,created_at,updated_at
                         ) VALUES (
                             :id,:userId,:sourceType,:sourceEntityId,NULL,:category,
-                            :title,:content,CAST(:metadata AS jsonb),NULL,'VERIFIED',:now,
+                            :title,:content,CAST(:metadata AS jsonb),NULL,:status,:verifiedAt,
                             NULL,0,:now,:now
                         ) RETURNING *, metadata::text AS metadata_text
                         """)
@@ -626,6 +725,8 @@ public class ProfileStore {
                 .param("title", data.title())
                 .param("content", data.content())
                 .param("metadata", json(data.metadata()))
+                .param("status", status.name())
+                .param("verifiedAt", status == EvidenceVerificationStatus.VERIFIED ? utc(now) : null)
                 .param("now", utc(now))
                 .query(this::evidence)
                 .single();
@@ -633,12 +734,22 @@ public class ProfileStore {
 
     public EvidenceRecord synchronizeDirectEvidence(
             UUID userId, UUID sourceEntityId, DirectEvidenceData data, Instant now) {
+        return synchronizeDirectEvidence(
+                userId, sourceEntityId, data, EvidenceVerificationStatus.VERIFIED, now);
+    }
+
+    public EvidenceRecord synchronizeDirectEvidence(
+            UUID userId,
+            UUID sourceEntityId,
+            DirectEvidenceData data,
+            EvidenceVerificationStatus status,
+            Instant now) {
         return jdbcClient
                 .sql("""
                         UPDATE profile_evidence
                         SET evidence_category=:category,title=:title,content=:content,
                             metadata=CAST(:metadata AS jsonb),confidence=NULL,
-                            verification_status='VERIFIED',verified_at=:now,source_deleted_at=NULL,
+                            verification_status=:status,verified_at=:verifiedAt,source_deleted_at=NULL,
                             version=version+1,updated_at=:now
                         WHERE user_id=:userId AND source_type=:sourceType AND source_entity_id=:sourceEntityId
                         RETURNING *, metadata::text AS metadata_text
@@ -647,6 +758,8 @@ public class ProfileStore {
                 .param("title", data.title())
                 .param("content", data.content())
                 .param("metadata", json(data.metadata()))
+                .param("status", status.name())
+                .param("verifiedAt", status == EvidenceVerificationStatus.VERIFIED ? utc(now) : null)
                 .param("now", utc(now))
                 .param("userId", userId)
                 .param("sourceType", data.sourceType().name())
@@ -890,7 +1003,7 @@ public class ProfileStore {
     }
 
     private long countActive(String table, UUID userId) {
-        if (!List.of("educations", "certifications", "language_scores", "awards", "careers")
+        if (!List.of("educations", "certifications", "language_scores", "awards", "careers", "activities")
                 .contains(table)) {
             throw new IllegalArgumentException("unsupported profile source table");
         }
@@ -979,6 +1092,19 @@ public class ProfileStore {
                 resultSet.getObject("started_at", java.time.LocalDate.class),
                 resultSet.getObject("ended_at", java.time.LocalDate.class), resultSet.getBoolean("is_current"),
                 resultSet.getString("responsibilities"), resultSet.getString("achievements"),
+                resultSet.getLong("version"), instant(resultSet, "created_at"), instant(resultSet, "updated_at"));
+    }
+
+    private ActivityRecord activity(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new ActivityRecord(
+                uuid(resultSet, "id"), uuid(resultSet, "user_id"), resultSet.getString("title"),
+                ActivityType.valueOf(resultSet.getString("activity_type")),
+                resultSet.getString("organizer"),
+                resultSet.getObject("started_at", java.time.LocalDate.class),
+                resultSet.getObject("ended_at", java.time.LocalDate.class),
+                resultSet.getBoolean("ongoing"), resultSet.getString("role"),
+                resultSet.getString("description"), resultSet.getString("achievements"),
+                resultSet.getString("related_url"), resultSet.getBoolean("use_as_material"),
                 resultSet.getLong("version"), instant(resultSet, "created_at"), instant(resultSet, "updated_at"));
     }
 

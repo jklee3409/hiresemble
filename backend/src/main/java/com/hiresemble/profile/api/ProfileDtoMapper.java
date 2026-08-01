@@ -2,6 +2,7 @@ package com.hiresemble.profile.api;
 
 import com.hiresemble.profile.api.dto.PageResponse;
 import com.hiresemble.profile.api.dto.ProfileDtos.AwardDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.ActivityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CareerDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CertificationDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EducationDto;
@@ -9,6 +10,7 @@ import com.hiresemble.profile.api.dto.ProfileDtos.EvidenceDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.LanguageScoreDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.ProfileDto;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
@@ -70,6 +72,13 @@ final class ProfileDtoMapper {
                 value.id(), value.organization(), value.position(), value.employmentType(), value.startedAt(),
                 value.endedAt(), value.current(), value.responsibilities(), value.achievements(), value.version(),
                 value.createdAt(), value.updatedAt());
+    }
+
+    static ActivityDto activity(ActivityRecord value) {
+        return new ActivityDto(
+                value.id(), value.title(), value.activityType(), value.organizer(), value.startedAt(),
+                value.endedAt(), value.ongoing(), value.role(), value.description(), value.achievements(),
+                value.relatedUrl(), value.useAsMaterial(), value.version(), value.createdAt(), value.updatedAt());
     }
 
     static EvidenceDto evidence(EvidenceRecord value) {

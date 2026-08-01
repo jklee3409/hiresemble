@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 기본·구조화 프로필과 direct evidence를 PostgreSQL에서 owner-scoped로 조회·변경한다.
+기본·구조화 프로필, 사용자 직접 대외활동과 direct evidence를 PostgreSQL에서 owner-scoped로 조회·변경한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -17,7 +17,7 @@ P2 기본·구조화 프로필과 direct evidence를 PostgreSQL에서 owner-scop
 ## 다른 디렉터리와의 의존 관계
 
 - transaction은 [`../application/`](../application/index.md)이 소유한다.
-- table·trigger·constraint는 [`../../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql`](../../../../../resources/db/migration/V3__create_structured_profiles_and_direct_evidence.sql)에 의존한다.
+- 기본 table·trigger는 V3, 사용자 대외활동과 ACTIVITY 불변식은 [`../../../../../resources/db/migration/V15__create_user_activities.sql`](../../../../../resources/db/migration/V15__create_user_activities.sql)에 의존한다.
 
 ## 변경 시 주의사항
 

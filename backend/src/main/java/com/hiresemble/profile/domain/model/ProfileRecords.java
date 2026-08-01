@@ -98,6 +98,24 @@ public final class ProfileRecords {
             Instant createdAt,
             Instant updatedAt) {}
 
+    public record ActivityRecord(
+            UUID id,
+            UUID userId,
+            String title,
+            ActivityType activityType,
+            String organizer,
+            LocalDate startedAt,
+            LocalDate endedAt,
+            boolean ongoing,
+            String role,
+            String description,
+            String achievements,
+            String relatedUrl,
+            boolean useAsMaterial,
+            long version,
+            Instant createdAt,
+            Instant updatedAt) {}
+
     public record EvidenceRecord(
             UUID id,
             UUID userId,

@@ -18,6 +18,19 @@
 - `V14__canonicalize_openai_embedding_policy.sql`은 legacy 정책을 보존하고 canonical `openai` version 2를 활성화한다.
 - P9 모의 면접 table은 구현하지 않았다.
 
+## [2026-08-01] Session Summary (V15 사용자 대외활동 스키마)
+
+- What was done:
+  - owner FK·기간 검증·소재 선택·soft delete/version을 갖는 `activities`와 ACTIVITY evidence 제약·deferred consistency trigger를 V15로 추가했다.
+- Key decisions:
+  - 적용된 V1~V14는 수정하지 않고 직접 활동을 문서 테이블과 분리했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 빈 DB V15와 V14 데이터 포함 upgrade migration 테스트 통과.
+- Next steps:
+  - 다음 migration은 V16부터 사용한다.
+
 ## [2026-08-01] Session Summary (Embedding provider 정책 V14 전환)
 
 - What was done:
