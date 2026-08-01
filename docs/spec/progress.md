@@ -2,9 +2,24 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 기준 명세가 P0 승인 문서 버전 1.1로 동기화되어 있다.
-- 기능 명세는 핵심 MVP 여정과 AC-01~AC-13을, 나머지 명세는 각각 HTTP 계약, 목표 데이터 모델, 화면 구조, 기술·품질 제약을 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. 현재 구현은 P1부터 P8까지이며 P8.5 Provider 연결은 구현됐지만 bounded live verification은 아직 없다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 문서 버전 1.2로 동기화되어 있다.
+- 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5는 실제 호출 0회인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-01] Session Summary (운영 기반 활성 명세 1.2 동기화)
+
+- What was done:
+  - 기능·DB·API·페이지·기술 명세에 기능 한도, usage accounting, 공통 실패 UX, ADMIN Backoffice와 P9/P10 소비 계약을 반영했다.
+  - AC-14~AC-17과 구현 상태·phase·선행 API가 명시된 미래 route/API/table을 추가했다.
+- Key decisions:
+  - 내부 Provider 원가는 사용자 청구액으로 노출하지 않고, 과금 가능 usage는 0원 정책 snapshot으로 보존한다.
+  - 현재 OpenAPI 기준선은 63 paths/84 operations로 유지하며 모든 미래 endpoint와 migration은 `PLANNED` 또는 tentative로 표시한다.
+- Issues encountered:
+  - 현재 router에는 settings, backoffice, mock-interviews route가 없어 모두 미래 계약으로만 기록했다.
+- Validation:
+  - 명세 간 AC·상태·phase·API/page 링크와 Markdown 형식을 검사했다.
+- Next steps:
+  - P8.6 구현 시 최신 migration과 실제 API 계약을 다시 확인한 뒤 계획을 구현 상태로 전환한다.
 
 ## [2026-08-01] Session Summary (외부 Provider 기술·DB 계약)
 

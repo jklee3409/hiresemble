@@ -1,6 +1,6 @@
 # 페이지 구조 명세서
 
-- 문서 버전: 1.1 (P0 승인 기준선)
+- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
 - Frontend: Vue 3 SPA
 - 기본 화면: Desktop First, 모바일 반응형
 - API Prefix: `/api/v1`
@@ -44,7 +44,18 @@
 └─ /settings
    ├─ /settings/account
    ├─ /settings/ai
+   ├─ /settings/usage
    └─ /settings/privacy
+
+/backoffice
+├─ /backoffice/overview
+├─ /backoffice/users
+├─ /backoffice/users/:userId
+├─ /backoffice/usage
+├─ /backoffice/ai-costs
+├─ /backoffice/agent-runs
+├─ /backoffice/failures
+└─ /backoffice/configuration
 
 unmatched /:pathMatch(.*)* → 전용 404
 ```
@@ -62,6 +73,19 @@ Canonical redirect:
 | `/settings`              | `/settings/account`                                                 |
 
 job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생성 child는 `interview/mock/new`만 허용한다. 타 사용자 UUID도 같은 404 화면을 사용한다.
+
+현재 실제 router는 `/settings/*`, `/backoffice/*`, `/mock-interviews/*`, `/jobs/:jobId/interview/mock/new`를 구현하지 않았다. 다음 표의 미래 route는 구현 전까지 목표 계약이며 현재 route처럼 취급하지 않는다.
+
+| Route group                              | Implementation status | Phase  | prerequisite API                                 |
+| ---------------------------------------- | --------------------- | ------ | ------------------------------------------------ |
+| 현재 `/signup`~`/agent-runs/:agentRunId` | `IMPLEMENTED`         | P1~P8  | 현재 OpenAPI 63 paths/84 operations              |
+| `/settings/usage`                        | `PLANNED`             | P8.7   | `GET /settings/usage`, `/settings/usage/history` |
+| account, AI, privacy 설정 세 route       | `PLANNED`             | P10-A  | account, settings AI/privacy API                 |
+| `/jobs/:jobId/interview/mock/new`        | `PLANNED`             | P9     | mock session create                              |
+| `/mock-interviews/:sessionId`            | `PLANNED`             | P9     | mock session/start/message/complete/feedback     |
+| `/backoffice`와 모든 child               | `PLANNED`             | P8.9-A | `/api/v1/backoffice/**` ADMIN GET                |
+
+`/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
 
 ---
 
@@ -115,6 +139,17 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 - 인증 shell별 전용 404
 
 Frontend의 TypeScript type과 runtime validation은 [`api.md`](api.md) 2장의 canonical enum 값을 이름과 의미까지 그대로 사용한다. 화면 전용 alias나 추가 상태를 만들지 않고 알 수 없는 값은 안전한 일반 상태와 갱신 안내로 처리한다. 특히 공고 업무·추출, 문서 parse·evidence 추출, 자기소개서, 조사 coverage, 모의 면접·feedback, Agent Run 상태 축을 서로 합치지 않는다.
+
+## 2.3 BackofficeLayout (`PLANNED` P8.9-A)
+
+대상: `/backoffice/**` ADMIN route.
+
+- AppLayout과 분리된 운영 navigation과 좁은 ADMIN identity banner를 사용한다.
+- Backend ADMIN 확인 전 화면·사용자 검색 query를 실행하지 않는다.
+- overview, 사용자, 사용량, AI 원가, Agent Run, 실패, 구성 메뉴만 제공한다.
+- 일반 사용자 AppLayout/navigation에는 Backoffice link를 넣지 않는다.
+- 사용자 검색·상세·drill-down 접근은 audit 대상임을 운영자에게 표시한다.
+- 원문·transcript·prompt/response·API key를 렌더링할 component를 만들지 않는다.
 
 ---
 
@@ -744,7 +779,7 @@ API:
 
 `WAITING_USER`는 `requiredUserAction` deep link를 표시하고 일반 retry를 비활성화한다. `FAILED|INTERRUPTED`는 `retryable=true`, active run은 `cancellable=true`일 때만 action을 제공한다. provider/model, prompt, hash, reuse detail은 표시하지 않고 `highestModelTierUsed`만 안전한 모델 등급으로 보여 준다.
 
-`actualCostUsd`는 provider 청구서 확정액이 아니라 접수 시 고정된 price catalog로 계산한 billable estimate임을 비용 영역에 표시한다.
+`actualCostUsd`는 provider 청구서 확정액이나 사용자 청구 금액이 아니라 접수 시 고정된 price catalog로 계산한 내부 Provider 원가 estimate임을 비용 영역에 표시한다.
 
 ---
 
@@ -779,7 +814,22 @@ API:
 
 일반 사용자 화면에는 provider/model 실명을 표시하지 않는다. `HIGH_QUALITY`는 자기소개서 생성·검증과 면접 답변 feedback에서만 선택할 수 있으며 설정 활성화·요청별 선택·예산 예약이 모두 필요하다는 안내를 제공한다. reset zone은 `Asia/Seoul`, 초기 user daily 1.00/system max 2.00 USD를 표시한다.
 
-## 13.3 `/settings/privacy`
+## 13.3 `/settings/usage` (`PLANNED` P8.7)
+
+- 기능별 사용량, 남은 횟수, unlimited, reset 시각, 현재 실행 가능 여부
+- 기간·feature filter와 usage history
+- 과금 가능 quantity/unit과 `현재 무료로 제공되며 청구되지 않음` 안내
+- 기능 한도 도달 시 reset과 가능한 다음 action
+- loading/empty/stale/reconciliation 지연 상태
+
+API:
+
+- `GET /settings/usage`
+- `GET /settings/usage/history`
+
+Provider key/model/price item/internal cost/margin과 다른 사용자 정보는 표시하지 않는다. Provider 비용 예산과 제품 기능 한도를 같은 progress bar나 금액으로 합치지 않는다.
+
+## 13.4 `/settings/privacy`
 
 - 업로드 문서 수와 저장량
 - 문서 관리 페이지 이동
@@ -796,6 +846,23 @@ API:
 
 - `GET /documents`
 - `DELETE /account`
+
+## 13.5 Backoffice pages (`PLANNED` P8.9-A)
+
+| Route                       | 주요 구성                                                                             | prerequisite API                |
+| --------------------------- | ------------------------------------------------------------------------------------- | ------------------------------- |
+| `/backoffice/overview`      | active user, feature usage, internal cost, run/failure, rejection, readiness, lag KPI | `GET /backoffice/overview`      |
+| `/backoffice/users`         | email/internal ID 검색, paged 최소 projection, 접근 audit 안내                        | `GET /backoffice/users`         |
+| `/backoffice/users/:userId` | 계정 최소 정보, usage/cost/run/failure tabs, 원문 비노출                              | user detail와 user usage        |
+| `/backoffice/usage`         | 기간·feature·workflow·outcome aggregate와 reconciliation 상태                         | `GET /backoffice/usage`         |
+| `/backoffice/ai-costs`      | capability·quality·outcome별 내부 원가와 상위 비용 사용자                             | `GET /backoffice/ai-costs`      |
+| `/backoffice/agent-runs`    | user/workflow/status/failure filter와 request/run drill-down                          | `GET /backoffice/agent-runs`    |
+| `/backoffice/failures`      | category/code/workflow 집계, request ID와 recovery 상태                               | `GET /backoffice/failures`      |
+| `/backoffice/configuration` | configuration/capability/vertical readiness, policy version, aggregation lag          | `GET /backoffice/configuration` |
+
+모든 표는 loading/empty/error/stale 상태, keyboard focus, screen reader label과 모바일 horizontal overflow 대안을 가진다. 이력서·자기소개서·면접 답변/transcript, prompt/response, API key를 표시하지 않는다. MRR, revenue, subscriber, payment, invoice와 refund KPI는 없다.
+
+P8.9-B mutation control은 이 화면에 포함하지 않는다. 별도 승인 전 override/cancel/retry/lock/kill switch button을 만들지 않는다.
 
 ---
 
@@ -853,7 +920,40 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 
 ---
 
-# 15. Route Guard
+# 15. 공통 AI 실패 UX (`PLANNED` P8.8)
+
+`features/ai-failures/`는 API의 `AiFailurePresentationDto`를 받아 동일 category에 동일 title/message/CTA를 제공한다.
+
+| category                     | 사용자 의미                  | 기본 suggested action               |
+| ---------------------------- | ---------------------------- | ----------------------------------- |
+| `INPUT_REQUIRED`             | 필수 입력 보완               | `EDIT_INPUT` 또는 `RESUME_RUN`      |
+| `INSUFFICIENT_SOURCE_DATA`   | 출처 부족의 제한된 성공/보완 | `OPEN_RESOURCE`                     |
+| `FEATURE_LIMIT_REACHED`      | 제품 기능 횟수 도달          | `OPEN_USAGE`                        |
+| `COST_BUDGET_REACHED`        | 내부 비용 보호로 실행 불가   | `OPEN_USAGE` 또는 `NONE`            |
+| `TEMPORARY_PROVIDER_FAILURE` | 일시 연결 문제               | retryable일 때만 `CREATE_NEW_RETRY` |
+| `CONNECTION_RECOVERING`      | SSE/transport 재연결 중      | `WAIT_AND_REFRESH`                  |
+| `OUTPUT_VALIDATION_FAILED`   | 안전한 결과 형식 확인 실패   | 정책에 따라 `CREATE_NEW_RETRY`      |
+| `CONTENT_SAFETY_BLOCKED`     | 안전 정책 차단               | `EDIT_INPUT` 또는 `NONE`            |
+| `CONFIGURATION_UNAVAILABLE`  | 운영 구성 미준비             | `CONTACT_SUPPORT`                   |
+| `RESOURCE_CONFLICT`          | 최신 상태와 충돌             | `OPEN_RESOURCE`                     |
+| `INTERNAL_FAILURE`           | 복구 불가능한 내부 오류      | `CONTACT_SUPPORT`                   |
+| `CANCELLED`                  | 사용자/시스템 취소           | `OPEN_RESOURCE` 또는 `NONE`         |
+
+기본 한국어 문구:
+
+- 기능 한도: `오늘 사용할 수 있는 {기능명} 횟수를 모두 사용했어요. {reset 안내}`
+- 비용 예산: `이 AI 작업을 시작할 수 있는 사용 한도를 확인해 주세요. 저장된 내용은 그대로 유지돼요.`
+- Provider 일시 장애: `AI 서비스 연결이 원활하지 않아요. 입력한 내용은 저장되어 있으며 잠시 후 다시 시도할 수 있어요.`
+- 결과 형식 실패: `AI 결과를 안전한 형식으로 확인하지 못했어요. 비용이 발생했을 수 있으며 다시 시도하면 새 사용량으로 기록될 수 있어요.`
+- 출처 부족: `확인할 수 있는 공개 자료가 충분하지 않아요. 찾은 범위 안에서 질문을 정리했으며 출처가 부족한 항목은 별도로 표시했어요.`
+- 연결 복구: `진행 상황을 다시 확인하고 있어요. 작업이 실패한 것은 아니며 마지막 상태는 그대로 유지돼요.`
+
+- Panel은 데이터 보존 여부, request ID, usage 발생 가능성을 함께 표시한다.
+- same request 복구와 새 usage를 만드는 retry를 같은 button label로 합치지 않는다.
+- SSE 단절만으로 실패 panel을 표시하지 않고 연결 복구 상태를 사용한다.
+- technical error name, Provider/model, 원문, raw response와 stacktrace를 표시하지 않는다.
+
+# 16. Route Guard
 
 - Public Only: `/signup`, `/login`
 - Auth Required: 그 외
@@ -866,7 +966,7 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 
 ---
 
-# 16. 409 충돌 UX
+# 17. 409 충돌 UX
 
 - version 충돌은 mutation 자동 재시도와 optimistic overwrite를 금지한다.
 - 최신 server snapshot과 사용자의 미저장 form/draft를 나란히 보여 주고 field별 재적용 또는 취소를 선택하게 한다.
@@ -875,7 +975,7 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 
 ---
 
-# 17. 핵심 E2E 시나리오
+# 18. 핵심 E2E 시나리오
 
 ## 시나리오 A
 
@@ -911,4 +1011,15 @@ logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-fligh
 → 피드백
 → 모의 면접 생성·진행
 → 종합 피드백 조회
+```
+
+## 시나리오 D (`PLANNED` P8.6~P8.9-A)
+
+```text
+사용자 AI 기능 실행
+→ /settings/usage 사용량·잔여량 확인
+→ 동일 request replay에서 추가 소비 없음 확인
+→ 기능 한도와 비용 예산의 서로 다른 실패 UX 확인
+→ ADMIN Backoffice에서 aggregate usage·내부 원가·failure·Agent Run 확인
+→ USER의 Backoffice 접근 거부와 access audit 확인
 ```

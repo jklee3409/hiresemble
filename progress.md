@@ -12,7 +12,24 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
-- P8.5 local 실제 provider 연결은 구현됐고 bounded live verification은 미실행이다. Dashboard 전용 집계와 P9 모의 면접은 아직 없다.
+- P8.5 local 실제 Provider 연결은 구현됐지만 실제 Chat·Embedding·Tavily 호출은 각 0회이며 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-01] Session Summary (P8.5 이후 운영 기반 및 P9 이전 구현 계획 재설계)
+
+- What was done:
+  - 최신 `main`과 P8.5 Provider adapter·profile·V13 usage/cost 구현을 저장소에서 재검증하고, P8.5-V부터 P10-C까지의 단계·활성 명세·운영 계약을 문서로 재설계했다.
+  - budget·quota·usage accounting·payment 경계를 분리하고 AC-14~AC-17, 공통 AI 실패 UX, ADMIN Backoffice와 미래 P9/P10 handoff를 추가했다.
+- Key decisions:
+  - 실제 결제·구독은 계속 제외하고, 제품 기능 한도와 Provider USD budget을 독립 적용하며 과금 가능 unit은 `feature_usage_events`의 immutable snapshot으로 저장하되 고객 청구액은 0으로 둔다.
+  - P8.9-A는 읽기 전용 운영 조회, P8.9-B는 감사 가능한 제한 mutation의 후속 단계로 분리하고 P9의 필수 선행은 P3·P8.5-V·P8.6·P8.7·P8.8·P8.9-A로 고정했다.
+- Issues encountered:
+  - OpenAI Chat·Embedding과 Tavily 실제 호출 기록은 모두 0회여서 P8.5를 완료 처리하지 않았다. `gh` CLI가 없어 원격 CI 상태는 확인하지 못했고 원격 `main` HEAD와 저장소의 로컬 검증 기록만 구분해 확인했다.
+- Validation:
+  - `git diff --check`, `docker compose config --quiet`, 변경 Markdown Prettier 검사, 상대 링크·progress 형식·절대 로컬 경로·비밀 패턴 검사를 통과했다.
+  - 문서 전용 작업이므로 Backend·Frontend 제품 테스트와 실제 Provider·P4~P8 E2E는 실행하지 않았으며 기존 67 suites/420 tests, 60 files/238 tests와 actual 결과는 기록값으로만 재검증했다.
+- Next steps:
+  - 사용자가 일반 `local` profile에서 P8.5-V capability smoke와 P4~P8 수직 흐름을 1회 검증하고, 병행 가능한 첫 코드 단계로 P8.6 제품 기능 한도·metering 기반을 구현한다.
 
 ## [2026-08-01] Session Summary (P8.5 외부 AI Provider 연결·로컬 활성화 gate)
 

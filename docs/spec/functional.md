@@ -1,9 +1,9 @@
 # 기능 명세서
 
-- 문서 버전: 1.1 (P0 승인 기준선)
-- 기준일: 2026-07-18
+- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
+- 기준일: 2026-08-01
 - 대상: 핵심 MVP
-- 사용자 역할: `USER`
+- 사용자 역할: 현재 `USER`; P8.9-A 목표 `USER`, `ADMIN` (`PLANNED`, 공개 ADMIN 가입 없음)
 - 공고 상태: `IN_PROGRESS`, `SUBMITTED`, `CLOSED`
 
 ---
@@ -41,6 +41,10 @@
 11. 공고의 지원 업무 상태와 URL 추출 상태, 문서의 parse 상태와 evidence 추출 상태는 서로 다른 축이다.
 12. 프로필 완료 여부는 Dashboard와 경고에만 사용하며 기능 전체의 접근 권한으로 사용하지 않는다.
 13. 사용자 소유 리소스와 과거 산출물은 출처·상태를 추적할 수 있어야 하며, 원천 삭제 뒤에는 원문 대신 `SOURCE_DELETED` marker만 제공한다.
+14. Provider USD 비용 예산과 사용자 제품 기능 한도는 별도 policy·ledger·오류를 사용한다.
+15. 사용자별 제품 사용량, 내부 Provider 원가와 과금 가능 usage unit을 집계하되 현재 고객 청구 금액은 0이다.
+16. AI 실패는 내부 technical code와 분리된 사용자 category·복구 CTA·데이터 보존 안내를 제공한다.
+17. ADMIN 운영 조회는 별도 Backoffice와 Backend 인가·접근 audit를 사용하며 사용자 원문을 기본 노출하지 않는다.
 
 ---
 
@@ -652,22 +656,83 @@ CLOSED → IN_PROGRESS 또는 SUBMITTED  // 마감 연장·오등록 시 사용�
 
 공개 품질 모드는 `ECONOMY|BALANCED|HIGH_QUALITY`다. `HIGH_QUALITY`는 사용자 설정 활성화, 요청별 명시 선택과 비용 예약 성공을 모두 요구하며 자기소개서 생성·자기소개서 검증·면접 답변 피드백에만 허용한다. 모의 면접 종합 feedback은 `BALANCED`로 고정한다. 공고 분석, 문서·공고 추출과 면접 준비는 `ECONOMY|BALANCED`만 허용한다.
 
+## SYS-004 제품 기능 한도 (`PLANNED` P8.6)
+
+- 사용자·feature key·`Asia/Seoul` 기간별 immutable policy와 기본 limit를 적용한다.
+- user assignment와 기간이 있는 feature별 override를 지원한다.
+- 요청 접수에서 unit을 원자 reserve하고 terminal 결과에 따라 commit/release한다.
+- 동일 Idempotency-Key 또는 `clientRequestId` replay는 중복 소비하지 않는다.
+- 자동 retry는 같은 unit이고 새 request ID의 사용자 retry는 새 unit이다.
+- 새 사용자 의도의 cache/reuse는 Provider 비용이 0이어도 제품 unit을 소비한다.
+- Provider 호출 전 실패·취소는 release, 호출 후 실패·취소와 partial success는 commit한다.
+- `FEATURE_USAGE_LIMIT_EXCEEDED`와 Provider 비용의 `RATE_OR_BUDGET_LIMIT_EXCEEDED`를 구분한다.
+
+Canonical feature key:
+
+```text
+DOCUMENT_EVIDENCE_EXTRACTION
+JOB_POSTING_EXTRACTION
+JOB_ANALYSIS
+COVER_LETTER_GENERATION
+COVER_LETTER_VERIFICATION
+INTERVIEW_PREPARATION
+INTERVIEW_ANSWER_FEEDBACK
+MOCK_INTERVIEW_SESSION_CREATE
+MOCK_INTERVIEW_TURN
+MOCK_INTERVIEW_SESSION_FEEDBACK
+```
+
+마지막 세 key는 P9가 구현한다.
+
+## SYS-005 사용자 사용량·내부 원가·과금 가능 usage (`PLANNED` P8.7)
+
+- Provider 내부 원가의 원천은 `ai_usage_records.cost_usd`다.
+- 제품·과금 가능 unit의 원천은 `feature_usage_events`다.
+- 과금 가능 snapshot은 feature, quantity, unit, immutable billing policy version과 `METERED_ZERO_RATE|NO_CHARGE`를 가진다.
+- 현재 paid plan은 없으며 사용자 실제 청구 금액은 항상 0이다.
+- 내부 Provider 원가를 고객 가격이나 청구 금액으로 표시하지 않는다.
+- 사용자는 기능별 사용량·남은 횟수·reset·unlimited·실행 가능 여부와 기간 내역을 확인한다.
+- ADMIN은 user/period/feature/workflow/outcome/capability/quality별 내부 원가와 usage를 조회·reconcile한다.
+
+## SYS-006 공통 AI 실패 UX (`PLANNED` P8.8)
+
+공개 failure category는 `INPUT_REQUIRED|INSUFFICIENT_SOURCE_DATA|FEATURE_LIMIT_REACHED|COST_BUDGET_REACHED|TEMPORARY_PROVIDER_FAILURE|CONNECTION_RECOVERING|OUTPUT_VALIDATION_FAILED|CONTENT_SAFETY_BLOCKED|CONFIGURATION_UNAVAILABLE|RESOURCE_CONFLICT|INTERNAL_FAILURE|CANCELLED`다.
+
+- 오류 projection은 title, message, suggested action, action route, retryable, data preserved, request ID, usage 발생 가능성을 제공한다.
+- SSE 단절은 `CONNECTION_RECOVERING`이며 run terminal failure가 아니다.
+- Provider/model/raw response/prompt/stacktrace/internal endpoint/secret을 노출하지 않는다.
+- 재시도 CTA는 같은 request replay와 새 사용량을 만드는 new retry를 구분한다.
+
+## SYS-007 ADMIN Backoffice (`PLANNED` P8.9-A)
+
+- 일반 signup은 항상 USER다. ADMIN 공개 가입·자기 승격은 없다.
+- 배포 통제 provisioning만 기존 사용자에게 ADMIN role을 부여하고 사유·actor·request ID를 audit한다.
+- `/api/v1/backoffice/**`는 Backend ADMIN 인가가 최종 권위다.
+- 읽기 전용 범위는 overview, 사용자 검색·상세, 기능 사용량, 내부 AI 원가, Agent Run, failure, Provider readiness, policy version과 access audit다.
+- 이력서·자기소개서·면접 답변/transcript, prompt/response와 API key는 노출하지 않는다.
+- limit override, run cancel/retry, account lock과 kill switch는 P8.9-B `PLANNED_LATER`다.
+- paid plan, 결제·구독·invoice·refund·tax는 제외한다.
+
 ---
 
 # 10. 핵심 인수 조건
 
-| ID    | 인수 조건                                                       |
-| ----- | --------------------------------------------------------------- |
-| AC-01 | 신규 사용자가 가입·로그인 후 자기 데이터만 조회한다.            |
-| AC-02 | 학력·자격증·어학·수상·경력을 각각 CRUD 할 수 있다.              |
-| AC-03 | PDF/DOCX/TXT를 업로드하고 파싱 상태와 추출 근거를 확인한다.     |
-| AC-04 | 공고 URL만으로 공고가 등록되며 추출 실패 시 직접 보완 가능하다. |
-| AC-05 | 공고를 `IN_PROGRESS`, `SUBMITTED`, `CLOSED`로 필터링한다.       |
-| AC-06 | 마감일이 지나면 Scheduler가 공고를 `CLOSED`로 변경한다.         |
-| AC-07 | 공고 분석이 사용자 근거와 매칭된 강점·부족점을 제공한다.        |
-| AC-08 | 문항별 자기소개서 초안을 생성하고 근거 검증 결과를 제공한다.    |
-| AC-09 | 사용자가 자기소개서를 수정하고 과거 버전을 조회·복원한다.       |
-| AC-10 | 회사·유사 직무 면접 정보에 출처가 표시된다.                     |
-| AC-11 | 예상 질문 답변을 저장하고 질문별 피드백을 받는다.               |
-| AC-12 | 대화형 모의 면접을 진행하고 세션 종합 피드백을 확인한다.        |
-| AC-13 | 장기 작업의 진행 상태와 실패 원인을 UI에서 확인한다.            |
+| ID    | 인수 조건                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------ |
+| AC-01 | 신규 사용자가 가입·로그인 후 자기 데이터만 조회한다.                                             |
+| AC-02 | 학력·자격증·어학·수상·경력을 각각 CRUD 할 수 있다.                                               |
+| AC-03 | PDF/DOCX/TXT를 업로드하고 파싱 상태와 추출 근거를 확인한다.                                      |
+| AC-04 | 공고 URL만으로 공고가 등록되며 추출 실패 시 직접 보완 가능하다.                                  |
+| AC-05 | 공고를 `IN_PROGRESS`, `SUBMITTED`, `CLOSED`로 필터링한다.                                        |
+| AC-06 | 마감일이 지나면 Scheduler가 공고를 `CLOSED`로 변경한다.                                          |
+| AC-07 | 공고 분석이 사용자 근거와 매칭된 강점·부족점을 제공한다.                                         |
+| AC-08 | 문항별 자기소개서 초안을 생성하고 근거 검증 결과를 제공한다.                                     |
+| AC-09 | 사용자가 자기소개서를 수정하고 과거 버전을 조회·복원한다.                                        |
+| AC-10 | 회사·유사 직무 면접 정보에 출처가 표시된다.                                                      |
+| AC-11 | 예상 질문 답변을 저장하고 질문별 피드백을 받는다.                                                |
+| AC-12 | 대화형 모의 면접을 진행하고 세션 종합 피드백을 확인한다.                                         |
+| AC-13 | 장기 작업의 진행 상태와 실패 원인을 UI에서 확인한다.                                             |
+| AC-14 | Provider 비용 예산과 독립된 제품 기능 한도가 사용자·기능·기간별로 원자 적용된다.                 |
+| AC-15 | 사용자별 기능 사용량·내부 AI 원가·과금 가능 unit을 기간별로 정확히 집계하고 reconcile할 수 있다. |
+| AC-16 | AI 기능 실패가 공통 사용자 category·복구 CTA·데이터 보존 안내로 표시된다.                        |
+| AC-17 | ADMIN만 Backoffice에서 사용자·사용량·AI 원가·실패·Agent Run을 안전하게 조회한다.                 |

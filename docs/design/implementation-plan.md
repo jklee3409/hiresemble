@@ -1,8 +1,8 @@
 # Hiresemble 구현 계획
 
-이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-13의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계를 유지한다.
+이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 고정하는 P9 선행 gate다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했지만 실제 호출 0회이므로 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
 ## 범위
 
@@ -27,10 +27,16 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] 공고 분석·RAG를 구현해 AC-07을 고정한다.
 - [x] 자기소개서 생성·검증·version·최종화를 구현해 AC-08~09를 고정한다.
 - [x] 면접 조사·출처·예상 질문·답변 피드백을 구현해 AC-10~11을 고정한다.
+- [x] P8.5 실제 Provider adapter와 local/offline/test 활성화 경계를 구현한다.
+- [ ] P8.5-V 사용자 local capability·P4~P8 수직 흐름을 실제 Provider로 검증한다.
+- [ ] P8.6 제품 기능 한도·metering으로 AC-14를 고정한다.
+- [ ] P8.7 사용자 사용량·내부 원가·과금 가능 unit 집계로 AC-15를 고정한다.
+- [ ] P8.8 공통 AI 실패 UX·복구로 AC-16을 고정한다.
+- [ ] P8.9-A ADMIN 읽기 전용 Backoffice로 AC-17을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
-- [ ] Dashboard·설정·Agent Run UX, 보안·복구·접근성과 전체 E2E로 AC-13 및 MVP 회귀를 완료한다.
+- [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0~~P8 완료. P8은 V12·Backend/API·검색 포함 고정 AI workflow·Frontend 세 route, 제한 보정 후 final-source P8/P7/P6 actual Chromium/DB assertion과 두 번째 single-agent read-only self-audit를 통과했다. P8.5 provider 연결 구현은 완료됐고 bounded live verification은 key/gate 부재 시 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P9~~P10은 미착수다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 기록된 P8.5 검증 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4이며 실제 외부 호출은 Chat 0, Embedding 0, Search 0이다.
 
 ## 1. 전체 선행 관계
 
@@ -48,9 +54,25 @@ P0 계약 기준선
                                     ▼
                               P8 면접 준비
                                     ▼
+                        P8.5 Provider 연결
+                                    ▼
+                    P8.5-V 사용자 local 실제 검증
+                                    ▼
+                     P8.6 제품 기능 한도·metering
+                                    ▼
+          P8.7 사용량·내부 원가·과금 가능 usage 집계
+                                    ▼
+                       P8.8 AI 실패 UX·복구
+                                    ▼
+                   P8.9-A 읽기 전용 Backoffice
+                                    ▼
                               P9 모의 면접
                                     ▼
-                         P10 통합·운영 hardening
+                    P10-A Dashboard·사용자 설정
+                                    ▼
+                    P10-B 운영 안정성·동시성
+                                    ▼
+                    P10-C 출시 준비·전체 회귀
 ```
 
 - P2와 P3은 P1 이후 파일 소유권이 겹치지 않으면 병렬화할 수 있다.
@@ -58,7 +80,10 @@ P0 계약 기준선
 - P6은 최신 공고 본문, profile과 승인 근거가 필요하다.
 - P7은 공고 분석과 version domain이 필요하다.
 - P8은 공고 분석과 자기소개서가 필요하다.
-- P9는 면접 질문·답변 context와 공통 AI executor가 필요하다.
+- P8.5-V는 P8.5를 재구현하지 않고 사용자가 일반 local에서 capability와 P4~P8 수직 흐름을 검증하는 gate다.
+- P8.6~P8.9-A는 비용 예산과 별개인 기능 한도, 사용량·원가 집계, 실패 복구, 운영 관찰 경계를 순서대로 고정한다.
+- P9는 P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A가 모두 필요하다.
+- P8.9-B 운영 mutation은 별도 후속이며 P9의 필수 선행이 아니다.
 - Frontend는 각 phase의 OpenAPI/DTO와 상태 계약이 backend에서 먼저 고정된 뒤 같은 수직 단계로 진행한다.
 
 ## 2. 전 단계 공통 완료 조건
@@ -70,11 +95,13 @@ P0 계약 기준선
 3. 모든 사용자 소유 조회·mutation·SSE·Object 접근에 owner scope가 있다.
 4. 외부 호출과 장시간 처리는 DB transaction 밖에 있다.
 5. migration은 빈 DB와 기존 DB upgrade에서 검증됐다.
-6. 실제 유료 AI·검색 API 없이 Fake/WireMock 검증이 통과했다.
+6. Fake/WireMock 검증이 통과하고 실제 Provider 검증이 필요한 phase는 별도 bounded UAT 결과를 기록했다.
 7. Backend 변경은 `.\gradlew.bat check`, Frontend 변경은 `corepack pnpm check`를 통과했다.
 8. 주요 사용자 흐름 단계는 Playwright 또는 그 단계의 계약 test로 검증됐다.
 9. 영향받은 `index.md`와 `progress.md`가 실제 상태를 반영한다.
 10. 미검증·실패·후속 작업이 숨겨지지 않았다.
+11. 미래 API·route·migration은 실제 구현 전까지 phase와 `PLANNED` 또는 `TENTATIVE` 상태가 표시됐다.
+12. 기능 한도, Provider 비용 예산, 과금 가능 usage, 실제 결제의 경계가 섞이지 않았다.
 
 ## 3. P0 — 계약 결정 기준선
 
@@ -521,124 +548,309 @@ P0 계약 기준선
 - 1차 single-agent read-only self-audit의 `FOLLOW_UP` output·foreign owner 404 finding을 한 번의 제한 보정으로 해소했고, 두 번째 감사는 새 finding 없이 `PASS`했다.
 - 두 번째 감사 전후 178개 변경 파일 fingerprint는 `6cc19fff43393713a8a1276297144f1bd916ca3bfe0155cc7140ef909d5eff08`로 동일했다.
 
-## 11.5. P8.5 — 외부 AI Provider 연결·로컬 개발 활성화 게이트
+## 12. P8.5 — 외부 AI Provider 연결·로컬 개발 활성화 게이트
 
-- 선행: P3~P8
-- 후속: P9
-- 현재 판정: local 연결·Fake/WireMock 격리 구현 완료, bounded live verification 결과에 따라 `DONE` 또는 `IMPLEMENTED_NOT_LIVE_VERIFIED`
+- 목적: P4~P8 고정 workflow가 실제 OpenAI Chat·Embedding과 Tavily를 호출할 adapter와 안전한 실행 profile을 제공한다.
+- 선행 조건: P3~P8.
+- 제외 범위: 실제 capability·수직 흐름 성공 판정, P9, 제품 기능 한도.
+- 현재 판정: `IMPLEMENTED_NOT_LIVE_VERIFIED`.
 
-### 11.5.1 실행 계약
+### 12.1 구현된 책임
 
-- `local`은 OpenAI Chat·Embedding과 Tavily Search adapter를 각 하나씩 생성하는 일반 개발 모드다. key·모델·가격 item·provider 정합성이 없으면 startup을 중단하고 disabled/Fake로 fallback하지 않는다.
-- AI 없이 Backend만 실행할 때는 `local-offline`을 명시하며 Chat·Embedding·Search를 모두 disabled로 둔다.
-- 일반 `test`, `ci`, `e2e`와 P4~P8 actual E2E는 Fake 또는 disabled gateway를 강제하고 실제 OpenAI·Tavily network를 금지한다.
-- owner-scoped `JdbcClient`/pgvector가 vector retrieval을 계속 소유하며 Spring AI VectorStore는 `none`이다.
+- Backend/AI responsibility: Chat·Embedding 요청별 model·timeout·output token/dimension, provider retry 0, strict schema, 최종 `StructuredOutputValidator`, system/untrusted data 분리를 유지한다.
+- DB responsibility: V13 immutable price catalog `2026073101`, 다중 usage, `provider_call_id`와 price item별 중복 방지를 유지한다.
+- API/Frontend responsibility: 새 공개 operation·route 없이 기존 P4~P8 workflow를 실제 gateway에 연결한다.
+- Security/Privacy: Tavily HTTPS·redirect 금지·2MB bounded stream, OpenAI response storage 비활성, 원문·prompt·response log 금지.
+- State lifecycle: local은 real/fail-closed, local-offline은 disabled, test/CI/E2E는 Fake 또는 disabled/network 0이다.
+- Idempotency/Concurrency: 기존 Agent Run claim과 provider call 중복 방지를 사용한다.
+- Failure semantics: 실제 Provider failure를 disabled adapter로 fallback하지 않고 incurred usage를 보존한다.
+- Migration responsibility: V13 완료, V1~V12 불변.
 
-### 11.5.2 Provider·비용 계약
+### 12.2 Test strategy·Actual E2E boundary·완료 조건
 
-- Chat은 요청별 model·timeout·max output과 Java record에서 생성한 strict JSON Schema를 사용하고 tool calling·streaming·response storage·provider retry를 끈다.
-- Embedding은 masked input의 batch/count/order, configured dimension과 finite vector를 검증하며 dimension 확인용 별도 호출을 하지 않는다.
-- Tavily는 HTTPS·redirect 금지, BASIC/ADVANCED 분리, `include_answer=false`, `include_raw_content=false`, 2MB bounded stream을 유지한다.
-- V13 immutable catalog `2026073101`과 run에 capture된 price version으로 Chat input/cached/output, Embedding input, Search BASIC/ADVANCED를 별도 usage row로 계산한다.
-- enabled local의 workflow 접수 예약은 기존 async run absolute cap USD 0.30 전액이며, 이보다 작은 estimate나 price version 불일치는 startup failure다.
+- local/local-offline Bean matrix와 key·provider·price fail-closed, request option, bounded response, reserve/top-up/settle을 Fake/WireMock/PostgreSQL로 검증했다.
+- 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, P8~P4 actual 1/1·1/1·2/2·5/5·4/4다.
+- 실제 외부 호출은 Chat 0, Embedding 0, Search 0이므로 `DONE`으로 올리지 않는다.
+- 다음 phase handoff는 P8.5-V이며 실제 key·prompt·response를 저장소에 남기지 않는다.
 
-### 11.5.3 검증·완료 조건
+## 13. P8.5-V — 사용자 local 실제 Provider 검증 gate
 
-- local/local-offline Bean matrix, key 누락·unknown/inconsistent provider fail-closed, Spring AI request option, Tavily bounded response, 다중 usage·migration을 Fake/WireMock/PostgreSQL로 검증한다.
-- Codex 전용 real-provider task는 일반 check/CI에서 제외하고 synthetic non-PII만 사용한다. 정상 상한은 Chat 1 + Embedding 1 + Search 1, 수정 후 절대 상한은 capability별 2·총 6이며 성공 capability는 재호출하지 않는다.
-- key 또는 명시적 gate가 없어 live task가 실행되지 않으면 `IMPLEMENTED_NOT_LIVE_VERIFIED`, 세 capability가 상한 안에서 통과하면 `DONE`이다.
-- P9 모의 면접 코드는 이 단계에서 시작하지 않는다.
+- 상태: `USER_LOCAL_VALIDATION_PENDING`.
+- 목적: 구현을 반복하지 않고 일반 local에서 capability 연결과 P4~P8 제품 수직 흐름을 사용자가 검증한다.
+- 선행 조건: P8.5와 사용자 소유 key·일반 local 환경.
+- 제외 범위: adapter 수정, Codex 반복 호출, 품질 tuning, P8.6 코드.
 
-## 12. P9 — 모의 면접
+### 13.1 책임·상태·보안
 
-- AC: AC-12
-- 선행: P8, P3
-- 주 담당: backend → ai_workflow → frontend
+- Backend responsibility: 기존 local fail-closed 설정과 request ID·Agent Run ID·usage 합계를 제공한다.
+- DB responsibility: 새 migration 없음. 실제 usage는 V13 ledger에 기록한다.
+- API responsibility: 새 operation 없음. 구현된 P4~P8 API만 사용한다.
+- Frontend/Page responsibility: 현재 실제 route에서 사용자 기능을 수행한다.
+- Security/Privacy: key, prompt, response, 문서·자소서·면접 답변 원문을 기록하지 않는다.
+- State lifecycle: `IMPLEMENTED_NOT_LIVE_VERIFIED → LOCAL_CAPABILITY_VERIFIED → LOCAL_VERTICAL_VERIFIED → DONE`.
+- Idempotency/Concurrency: capability별 1회 smoke, 성공 capability 재호출 금지.
+- Failure semantics: 연결 실패와 결과 품질 문제를 분리하고 safe error code만 기록한다.
+- Migration responsibility: 없음.
 
-### 12.1 Backend
+### 13.2 Test strategy·Actual E2E boundary·완료 조건
 
-- mock session 상태와 CAS/version
-- client request ID/idempotency
-- message sequence와 transaction 경계
-- synchronous turn executor boundary
-- complete command와 feedback run link
+- capability smoke: OpenAI Chat 1회, Embedding 1회, Tavily BASIC 1회.
+- actual boundary: 문서→embedding/근거, 공고→추출/분석, 자소서→생성/검증, 면접→검색/질문/답변 feedback.
+- 기록은 기능 성공, safe error code, request ID, Agent Run ID, usage/cost 합계만 허용한다.
+- capability만 성공하면 `LOCAL_CAPABILITY_VERIFIED`; P4~P8 전체가 성공해야 `DONE`이다.
+- 다음 phase handoff: P8.6은 병행 가능하지만 P9 선행 gate는 P8.5-V 완료 전 해제하지 않는다.
 
-### 12.2 AI workflow
+## 14. P8.6 — 제품 기능 한도·metering 기반
 
-- structured `TurnDecision`
-- 질문 선택, 답변 분석, follow-up/next
-- 질문 수·호출 수·비용·timeout 상한
-- immediate 또는 end-only feedback
-- session aggregate feedback
+- 상태: `PLANNED`.
+- AC: AC-14.
+- 목적: Provider USD budget과 독립된 사용자·기능·기간별 제품 사용 한도를 P4~P9 공통으로 원자 적용한다.
+- 선행 조건: P3, P8.5 구현. P9 key는 계약만 고정한다.
+- 제외 범위: 내부 원가 집계 UI, 실제 결제, Backoffice mutation, P9 기능 구현.
 
-### 12.3 Frontend
+### 14.1 Backend·DB·API·Frontend responsibility
 
-- `/interviews` 목록의 mock session 영역과 상태 filter
-- 생성 form과 READY 설정 확인
-- IN_PROGRESS 대화·전송 잠금·중복 복구
-- cancel/complete
-- COMPLETED + feedback pending
-- feedback summary와 재연습
+- Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
+- DB: tentative V14 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`.
+- API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
+- Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
+- Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
 
-### 12.4 검증
+### 14.2 Security·State lifecycle·Idempotency/Concurrency·Failure
 
-- READY/IN_PROGRESS/COMPLETED/CANCELLED 전이
-- 같은 client request 재전송 결과 재사용
-- 다중 tab 경쟁과 message sequence
-- timeout 뒤 중복 유료 호출 방지
-- 최대 질문 수와 user 종료
-- completed 뒤 async feedback 성공/실패
-- `/interviews`에서 question set과 mock session 상세 진입
+- Security/Privacy: owner scope, Provider/model/price/internal cost 비노출, override cross-user 격리.
+- State lifecycle: `RESERVED→COMMITTED|RELEASED|EXPIRED`; event append-only.
+- Idempotency/Concurrency: replay 중복 소비 금지, period lock/CAS로 oversubscription 차단, lock order는 feature period→AI budget ledger다.
+- Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
+- Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
+- Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
+- Migration responsibility: V14 `TENTATIVE`; V1~V13 수정 금지.
 
-### 12.5 완료 조건
+### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
-- AC-12와 E2E 시나리오 C 전체가 통과한다.
+- Repository: 동시 요청 limit, replay unique, KST 기간 경계, override 격리, expired reconciliation.
+- API: summary/history owner scope, unlimited/reset/canExecute, 두 429 code와 내부 정보 비노출.
+- Workflow: P4~P8 접수 command가 feature reserve와 budget reserve를 모두 통과해야 resource/run을 만든다.
+- Actual E2E: limit 직전 성공→도달 거절→reset/override 성공, replay 추가 소비 없음.
+- 완료 조건: AC-14와 P4~P8 enforcement가 통과한다.
+- 다음 phase handoff: P8.7은 feature event를 제품·과금 가능 usage source로 사용한다.
 
-## 13. P10 — Dashboard·설정·운영 hardening
+## 15. P8.7 — 사용자 사용량·내부 원가·과금 가능 usage 집계
 
-- AC: AC-13과 전체 MVP 회귀
-- 선행: P1~P9
-- 주 담당: 전 역할 순차, validator 최종
+- 상태: `PLANNED`.
+- AC: AC-15.
+- 목적: raw usage를 사용자·기간·기능·workflow·outcome별로 reconcile하고 미래 과금 단위를 0원 상태로 고정한다.
+- 선행 조건: P8.6 feature event와 기존 `ai_usage_records`.
+- 제외 범위: plan 판매, 실제 청구, PG, subscription, invoice/refund/tax, MRR.
 
-### 13.1 기능
+### 15.1 Backend·DB·API·Frontend responsibility
 
-- dashboard summary·quick action
-- account/AI/privacy settings
-- Agent Run list/detail/filter
-- 회원 탈퇴와 Object/domain 삭제 복구
-- 모든 loading/empty/error/disabled/success 상태
-- 접근성·반응형·keyboard
+- Backend: `billing` module이 immutable zero-rate policy, SQL read model과 reconciliation을 소유하며 payment 책임은 갖지 않는다.
+- DB: tentative V15 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
+- API: P8.6의 `/settings/usage` summary/history를 완성한다.
+- Frontend/Page: `/settings/usage`에서 사용량·남은 횟수·reset·기간 내역·현재 무료/청구 없음만 표시한다.
+- Source: 내부 원가=`ai_usage_records`, 제품·과금 가능 unit=`feature_usage_events`.
 
-### 13.2 운영·보안
+### 15.2 Security·State lifecycle·Idempotency/Concurrency·Failure
 
-- queue saturation와 backpressure
-- stale run reconciliation 운영 test
-- presigned URL TTL, session expiry, rate/budget
-- parser resource limit, SSRF, prompt injection
-- log/metric의 민감정보 검사
-- Object/DB 일관성 reconciliation
+- billing snapshot: policy version, quantity, unit, `METERED_ZERO_RATE|NO_CHARGE`; 고객 청구 금액은 0이며 내부 `cost_usd`를 복사하지 않는다.
+- Security/Privacy: 사용자 API에 내부 원가·model·margin·타 사용자 정보 비노출, 탈퇴 뒤 비식별 정책.
+- State lifecycle: raw append→SQL projection→watermark/reconciliation finding→append-only correction.
+- Idempotency/Concurrency: provider call/price item와 feature event unique를 유지하며 집계 재실행은 동일 결과다.
+- Failure semantics: aggregation lag는 stale로 표시하고 reconciliation 불일치를 숨기지 않는다.
+- Migration responsibility: V15 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
 
-### 13.3 검증
+### 15.3 Test strategy·Actual E2E boundary·완료 조건
 
-- Backend `.\gradlew.bat check`
-- Frontend `corepack pnpm check`
-- `docker compose config --quiet`
-- Playwright 시나리오 A~C와 두 사용자 404
-- OpenAPI↔frontend type↔page contract
-- 빈 DB migration과 기존 DB upgrade
-- 실제 유료 provider가 비활성인 local boot/CI
+- raw usage↔Agent Run cost↔feature event↔read model 합계, failed/retry/cache/reuse/0-cost/soft-delete/KST boundary/과거 policy 불변.
+- Actual E2E: 기능 실행→사용량/잔여 갱신→history→청구 없음과 내부 원가 비노출.
+- 완료 조건: AC-15 reconciliation과 usage page 접근성·반응형 통과.
+- 다음 phase handoff: P8.8은 usage 발생 가능성과 두 limit category를 표시한다.
 
-### 13.4 완료 조건
+## 16. P8.8 — AI 실패 UX·복구
 
-- AC-01~13 전체 matrix가 PASS다.
-- 실패 복구·재시도·SSE 단절·사용자 격리 negative E2E가 통과한다.
-- 미결정 공개 계약이나 추적되지 않은 생성물이 없다.
+- 상태: `PLANNED`.
+- AC: AC-16.
+- 목적: safe error를 B2C category, 복구 CTA, 데이터 보존, request ID와 usage 발생 가능성으로 통일한다.
+- 선행 조건: P8.6 기능 한도 오류, P8.7 usage 의미, 기존 Agent Run safe error.
+- 제외 범위: Provider raw 오류, support ticket, 자동 retry 확대, P9 UI.
 
-## 14. 목표 package와 directory 생성 순서
+### 16.1 Backend·DB·API·Frontend responsibility
+
+- Backend: stable safe code/상태→versioned public failure presentation mapping.
+- DB: 기존 safe code를 사용하며 migration 없음.
+- API: `AiFailurePresentationDto`를 Agent Run과 AI mutation 오류에 적용한다.
+- Frontend/Page: `features/ai-failures/`의 panel/actions를 문서·공고·자소서·면접·Agent Run에 연결한다.
+- `normalizeApiError(error).message` 직접 노출은 category presentation으로 이동한다.
+
+### 16.2 Security·State lifecycle·Idempotency/Concurrency·Failure
+
+- Security/Privacy: Provider/model/raw response/prompt/stacktrace/internal endpoint/secret 비노출.
+- State lifecycle: API/Agent Run failure와 transport `CONNECTION_RECOVERING`을 분리하고 SSE 단절만으로 terminal 실패를 만들지 않는다.
+- Idempotency/Concurrency: same request는 replay/복구, new retry만 새 logical request·usage를 만든다.
+- Failure semantics: 12 category, 9 suggested action, `retryable`, `dataPreserved`, `requestId`, `usageMayHaveOccurred`.
+- Migration responsibility: 없음.
+
+### 16.3 Test strategy·Actual E2E boundary·완료 조건
+
+- category 일관성, quota/budget 구분, retry CTA, draft/partial 보존, request ID, mobile/keyboard/screen reader, 내부 정보 비노출.
+- matrix: 문서, 공고, 자소서, 면접, Agent Run과 P9 mock fixture.
+- Actual E2E는 Fake/WireMock 장애만 사용하고 실제 Provider 장애를 유발하지 않는다.
+- 완료 조건: AC-16 matrix 통과.
+- 다음 phase handoff: P8.9-A는 category/request ID를 운영 dimension으로 사용한다.
+
+## 17. P8.9-A — ADMIN 읽기 전용 Backoffice
+
+- 상태: `PLANNED`.
+- AC: AC-17.
+- 목적: ADMIN이 사용자별 기능 사용량, 내부 원가, 실패, Agent Run, readiness와 policy version을 안전하게 조회한다.
+- 선행 조건: P8.6, P8.7, P8.8.
+- 제외 범위: override, run cancel/retry, account lock, kill switch, 결제 KPI, 사용자 원문.
+
+### 17.1 Backend·DB·API·Frontend responsibility
+
+- Backend: `backoffice` query module, ADMIN Security, provisioning command, access audit; domain query port/read model만 사용한다.
+- DB: tentative V16으로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
+- API: overview, users/detail/usage, ai-costs, agent-runs, failures, configuration GET을 `/api/v1/backoffice` 아래 `PLANNED`로 구현한다.
+- Frontend/Page: 별도 `BackofficeLayout`과 overview/users/usage/ai-costs/agent-runs/failures/configuration route. AppLayout에는 노출하지 않는다.
+
+### 17.2 Security·State lifecycle·Idempotency/Concurrency·Failure
+
+- Security/Privacy: Backend ADMIN 최종 권위, USER 거부, 검색·상세·drill-down audit, 원문/transcript/prompt/response/key 비노출.
+- 최소 노출: 업무상 필요한 email, internal user ID, aggregate usage/cost, request ID.
+- State lifecycle: provisioning/access audit append-only, readiness는 configuration/live 분리, aggregate watermark/lag 표시.
+- Idempotency/Concurrency: stable pagination/sort/snapshot; provisioning은 idempotency와 expected current role.
+- Failure semantics: audit 실패 시 민감 상세 조회 fail-closed, stale aggregate는 마지막 정상 시각 표시.
+- Migration responsibility: V16 `TENTATIVE`; P8.9-B 번호 예약 금지.
+
+### 17.3 Test strategy·Actual E2E boundary·완료 조건
+
+- USER 거부, ADMIN 조회, cross-user isolation, access audit, 원문 비노출, pagination/sort, lag/readiness.
+- Actual E2E는 provisioned test ADMIN fixture만 사용하고 실제 ADMIN 계정을 이번 문서 작업에서 만들지 않는다.
+- 완료 조건: AC-17 read-only matrix 통과.
+- 다음 phase handoff: P9는 mock usage/cost/failure/stuck state를 이 관찰 경계에 연결한다.
+
+## 18. P8.9-B — 제한된 운영 mutation
+
+- 상태: `PLANNED_LATER`; P9 필수 선행 아님.
+- 목적: 별도 승인 뒤 feature override, run cancel/retry, account lock/unlock, Provider kill switch를 제공한다.
+- 선행 조건: P8.9-A ADMIN 인가와 audit.
+- 제외 범위: 결제·구독과 bulk destructive mutation.
+- Backend/DB/API/Frontend responsibility: reason, expected version, idempotency, before/after, admin/request ID, 확인 UI와 audit를 함께 구현한다.
+- Security/Privacy: least privilege/RBAC 필요성을 재평가한다.
+- State lifecycle·Idempotency/Concurrency·Failure: optimistic version, partial success 금지, audit 실패 시 rollback.
+- Migration responsibility: 실제 착수 시 next available; 번호 선점 금지.
+- Test strategy·Actual E2E: action별 happy/denied/conflict/replay/audit/rollback.
+- 완료 조건·handoff: 별도 사용자 승인 없이는 착수하지 않는다.
+
+## 19. P9 — 모의 면접
+
+- 상태: `BLOCKED_BY_P8_5V_TO_P8_9A`.
+- AC: AC-12와 AC-14~17의 P9 적용.
+- 목적: 기존 모의 면접 계약을 구현하되 quota, Provider budget, usage/billing, failure UX, Backoffice 기반을 공통 사용한다.
+- 선행 조건: P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A.
+- 제외 범위: P8.9-B, 음성/영상, 결제.
+
+### 19.1 Backend·DB·API·Frontend responsibility
+
+- Backend: session 상태/CAS, `clientRequestId`, message sequence, bounded synchronous turn, complete와 async feedback run.
+- DB: P8.9-A 완료 시 next available migration(현재 예상 V17, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
+- API: 기존 명세의 mock endpoints를 구현하며 merge될 때만 implemented path/operation 수를 갱신한다.
+- Frontend/Page: `/mock-interviews/:sessionId`, 생성 form, READY/IN_PROGRESS/COMPLETED/CANCELLED, feedback 상태.
+- AI: turn당 Chat 1회, Provider retry 0, structured `TurnDecision`, async aggregate feedback.
+
+### 19.2 Quota·budget·usage·failure·Backoffice
+
+- 기능 key: `MOCK_INTERVIEW_SESSION_CREATE`, `MOCK_INTERVIEW_TURN`, `MOCK_INTERVIEW_SESSION_FEEDBACK`.
+- session 생성, turn, 질문 수 한도를 독립 적용한다.
+- 같은 `clientRequestId`와 terminal failure replay는 중복 unit·Provider 호출이 없다. 새 ID retry는 새 unit이다.
+- Provider budget은 turn USD cap, session sync cap, async feedback reserve를 기능 한도와 별도로 검사한다.
+- feature usage, Provider usage/internal cost, billable quantity, session aggregate와 failure/retry를 기록한다.
+- failure UX는 timeout, in-progress, replay, feature/budget limit, temporary Provider, safety, invalid output, session conflict를 구분한다.
+- Backoffice는 active/stuck session, turn count, internal cost, failure category, feedback state를 표시하고 transcript는 비노출한다.
+
+### 19.3 Security·State lifecycle·Idempotency/Concurrency·Failure
+
+- Security/Privacy: owner composite FK, 타 사용자 404, 답변/prompt log 금지, Backoffice transcript 비노출.
+- State lifecycle: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`; feedback 독립 상태.
+- Idempotency/Concurrency: session CAS, `(user,session,clientRequestId)` unique, message sequence, 다중 tab 경쟁 차단.
+- Failure semantics: timeout/invalid output의 원 terminal 응답을 replay하고 same ID로 재호출하지 않는다.
+- Migration responsibility: 현재 예상 V17은 tentative이며 시작 시 latest migration을 확인한다.
+
+### 19.4 Test strategy·Actual E2E boundary
+
+- 상태 전이, replay, 다중 tab, timeout 중복 호출 방지, 최대 질문 수, user 종료, async feedback 성공/실패.
+- quota vs budget, feature/provider/billing 합계, Backoffice 관찰, 실패 CTA를 포함한다.
+- Actual E2E는 사용자 검증된 local Provider에서 bounded turn/session을 별도 승인 범위로 수행하고 CI는 Fake/network 0을 유지한다.
+
+### 19.5 완료 조건과 다음 phase handoff
+
+- AC-12와 P9의 AC-14~17 적용, E2E 시나리오 C 전체가 통과한다.
+- P10-A는 P9와 P8.7 사용자 projection을 Dashboard/settings shell에 통합한다.
+
+## 20. P10-A — 사용자 Dashboard·설정
+
+- 상태: `PLANNED`.
+- 목적: server-owned Dashboard와 account/AI/usage/privacy 설정을 일관된 사용자 shell로 완성한다.
+- 선행 조건: P1~P9, 특히 P8.7 `/settings/usage`.
+- 제외 범위: 운영 concurrency, Backoffice mutation, 결제.
+- Backend responsibility: canonical `GET /dashboard`, account/AI/privacy projection과 기존 usage API.
+- DB responsibility: 기존 원천을 사용하고 필요성이 입증되지 않으면 migration 없음.
+- API responsibility: Dashboard·settings 구현 시에만 OpenAPI implemented baseline을 갱신한다.
+- Frontend/Page responsibility: `/settings/account|ai|usage|privacy`, loading/empty/error, quality와 usage 안내; 내부 원가 비노출.
+- Security/Privacy: 사용자 owner scope, 회원 탈퇴 purge, Provider/model/internal cost 비노출.
+- State lifecycle: 설정 version/CAS와 탈퇴 task 상태를 기존 계약대로 사용한다.
+- Idempotency/Concurrency: settings 409 비교·재적용, 탈퇴 중복 접수 금지.
+- Failure semantics: P8.8 panel과 usage CTA를 공통 사용한다.
+- Migration responsibility: 기본 없음; 시작 시 계약 재확인.
+- Test strategy: API projection, route guard, cache/draft purge, 접근성·반응형.
+- Actual E2E boundary: dashboard→각 settings→usage→탈퇴 negative/confirmation.
+- 완료 조건: 사용자 Dashboard/settings 계약과 관련 AC matrix 통과.
+- 다음 phase handoff: P10-B.
+
+## 21. P10-B — 운영 안정성·동시성
+
+- 상태: `PLANNED`.
+- 목적: 사용자·Provider별 동시성, queue/backpressure, graceful shutdown과 stale reconciliation을 실측 기반으로 고정한다.
+- 선행 조건: P9와 P10-A의 실제 traffic shape.
+- 제외 범위: 근거 없는 Kafka/Redis/microservice 도입.
+- Backend responsibility: 사용자별 AI 작업 수, capability/provider limiter, queue saturation, 새 claim 차단, shutdown/reconciliation, API/worker role 분리 검토.
+- DB responsibility: 기존 claim/lease/ledger 우선, 측정 근거가 있을 때만 next migration.
+- API responsibility: 사용자에게 안전한 429/503과 retry/CTA; 내부 운영 endpoint 비공개.
+- Frontend/Page responsibility: 대기·포화·복구 UI를 P8.8 category로 표시한다.
+- Security/Privacy: metric label에 user ID·원문·prompt 금지.
+- State lifecycle: new claim stop→active drain/interrupt→reconciliation.
+- Idempotency/Concurrency: replay를 새 작업으로 계산하지 않고 reserve/claim lock order 유지.
+- Failure semantics: circuit breaker는 failure rate/latency 근거 뒤에만 채택한다.
+- Migration responsibility: 기본 없음, 실측 승인 전 번호 선점 금지.
+- Test strategy: saturation, graceful shutdown, stale run, fairness, quota/budget race, metrics/alerts.
+- Actual E2E boundary: controlled local load이며 실제 Provider에 부하를 주지 않는다.
+- 완료 조건: 정의된 concurrency와 복구 SLO/alert 검증.
+- 다음 phase handoff: P10-C.
+
+## 22. P10-C — 출시 준비·전체 회귀
+
+- 상태: `PLANNED`.
+- 목적: AC-01~17, 사용자/ADMIN 격리, 실제 Provider UAT와 migration/rollback을 출시 gate로 검증한다.
+- 선행 조건: P10-A, P10-B, P9.
+- 제외 범위: 새 제품 기능과 paid plan.
+- Backend/DB/API responsibility: fresh/upgrade migration, backup/restore, OpenAPI parity, rollback runbook.
+- Frontend/Page responsibility: responsive/accessibility, route/API parity, 사용자/Backoffice navigation isolation.
+- Security/Privacy: user/ADMIN isolation, 개인정보·secret scan, withdrawal purge와 audit 보존.
+- State lifecycle: 모든 domain/Agent Run/quota/budget/billing/failure terminal matrix.
+- Idempotency/Concurrency: replay/race/oversubscription/claim recovery 전체 회귀.
+- Failure semantics: P8.8 category와 운영 runbook, rollback 후 안전 상태.
+- Migration responsibility: P10-C 자체 schema 없음이 기본이며 필요한 변경은 별도 phase로 되돌린다.
+- Test strategy: Backend/Frontend/Compose, AC matrix, P4~P9 actual, security/privacy, backup/restore.
+- Actual E2E boundary: `local` real Provider UAT, `local-offline` boot, test/CI/E2E network 0을 각각 검증한다.
+- 완료 조건: AC-01~17, fresh/upgrade, OpenAPI/frontend, 접근성, backup/restore, rollback PASS.
+- 다음 phase handoff: release 승인. 미검증 actual 또는 `OPEN_DECISION_BLOCKER`가 있으면 출시하지 않는다.
+
+## 23. 목표 package와 directory 생성 순서
 
 target 구조는 설계 경계이며 phase가 시작되기 전 빈 directory를 대량 생성하지 않는다.
 
-### 14.1 Backend
+### 23.1 Backend
 
 ```text
 com.hiresemble/
@@ -651,7 +863,10 @@ com.hiresemble/
 ├─ job/                       # P5~P6
 ├─ coverletter/               # P7
 ├─ research/                  # P8
-└─ interview/                 # P8~P9
+├─ interview/                 # P8~P9
+├─ usage/                     # P8.6 제품 기능 한도·metering
+├─ billing/                   # P8.7 과금 가능 usage policy·집계, 결제 제외
+└─ backoffice/                # P8.9 ADMIN 운영 query/action
 ```
 
 기능 package 내부:
@@ -687,7 +902,7 @@ feature/
 
 위 하위 package는 허용 책임의 분류 기준이다. 실제 책임과 파일이 있는 package만 생성하고 미래 phase나 빈 계층을 선행 생성하지 않는다. `common`과 `ai`는 기존 전문 경계를 유지하며, package-private 결합을 해소하려고 접근 제한자를 넓히지 않는다. P1~P4의 구조 세분화는 파일 경로와 `package`·`import`만 바꾸며 API·DB·workflow 동작을 유지한다.
 
-### 14.2 AI
+### 23.2 AI
 
 ```text
 ai/
@@ -705,24 +920,24 @@ ai/
 - domain query/command port는 해당 기능 module의 backend 소유다.
 - `ai/port`는 Chat/Embedding/Search 같은 provider 경계만 소유한다.
 
-### 14.3 Frontend
+### 23.3 Frontend
 
 ```text
 frontend/src/
 ├─ app/                       # P1
 ├─ router/                    # P1부터 route별 확장
-├─ layouts/                   # P1
+├─ layouts/                   # P1, P8.9 BackofficeLayout
 ├─ shared/                    # P1부터 실제 공용 사용처
 ├─ stores/                    # auth/ui/draft
-├─ pages/                     # phase별 route page
-└─ features/                  # phase별 feature
+├─ pages/                     # phase별 route page, P8.9 pages/backoffice
+└─ features/                  # phase별 feature, usage/ai-failures/backoffice
 ```
 
-page는 조합, feature는 상호작용, Vue Query는 서버 상태, Pinia는 최소 전역 상태만 맡는다.
+page는 조합, feature는 상호작용, Vue Query는 서버 상태, Pinia는 최소 전역 상태만 맡는다. Provider 원가 ledger는 기존 `agentrun`/`ai`, 제품 횟수는 `usage`, 과금 가능 unit은 `billing`, 운영 query는 `backoffice`에 두며 실제 결제 package는 만들지 않는다.
 
-## 15. 에이전트별 작업 분배와 파일 소유권
+## 24. 에이전트별 작업 분배와 파일 소유권
 
-### 15.1 역할
+### 24.1 역할
 
 | 역할         | 소유 책임                                                                                                                          | 수정 금지                                   |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -732,7 +947,7 @@ page는 조합, feature는 상호작용, Vue Query는 서버 상태, Pinia는 �
 | frontend     | `frontend/**`의 UI/API consumer/query/store/test                                                                                   | backend, migration, spec 임의 변경          |
 | validator    | 요구사항·diff·contract·test 읽기 검증                                                                                              | 모든 파일 수정                              |
 
-### 15.2 경로별 단일 소유자
+### 24.2 경로별 단일 소유자
 
 | 경로                                                                                        | 소유자       | 순서 규칙                                      |
 | ------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------- |
@@ -749,7 +964,7 @@ page는 조합, feature는 상호작용, Vue Query는 서버 상태, Pinia는 �
 | 모든 `index.md`·`progress.md`                                                               | root manager | 서브 에이전트는 handoff만 반환                 |
 | `docs/design/**`                                                                            | root manager | validator는 read-only                          |
 
-### 15.3 역할 간 handoff
+### 24.3 역할 간 handoff
 
 ```text
 root: 상태·DTO·DB 계약 승인
@@ -762,7 +977,7 @@ root: 상태·DTO·DB 계약 승인
 
 같은 Spring DTO·migration·workflow file을 backend와 AI가 동시에 수정하지 않는다.
 
-## 16. 검증 에이전트 체크리스트
+## 25. 검증 에이전트 체크리스트
 
 validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 
@@ -779,7 +994,7 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 - [ ] 실제 유료 provider 호출 없이 CI가 통과함
 - [ ] docs/index/progress가 실제 상태와 일치함
 
-## 17. 위험과 대응
+## 26. 위험과 대응
 
 | 위험                            | 조기 검증                                                 |
 | ------------------------------- | --------------------------------------------------------- |
@@ -803,5 +1018,5 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 - V1~V6는 적용 이력으로 보존했고 P6 schema는 V7 forward migration으로 추가했다. P7 이후 result schema도 기존 migration 수정 없이 새 migration으로만 추가한다.
 - P6 retrieval은 owner-scoped exact cosine과 direct evidence lexical fallback을 구현했다. ANN index 도입은 데이터 규모와 실행 계획을 측정한 뒤 결정한다.
 - `EvidenceReferenceQueryPort`는 P6 provenance 참조를 반영해 분석에서 사용한 direct evidence 삭제를 차단한다.
-- P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 AI/개인정보 설정과 전체 운영 hardening은 P10 범위로 남긴다.
+- P3는 AC-13의 Agent Run·AI runtime 공통 기반만 완료한다. Dashboard·공개 설정은 P10-A, 운영 hardening은 P10-B~C 범위로 남긴다.
 - P7 이후 도메인·API·UI를 phase 선행 관계보다 먼저 빈 package나 stub으로 만들지 않는다.

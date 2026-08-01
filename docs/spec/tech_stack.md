@@ -1,7 +1,7 @@
 # 기술 스택 명세서
 
-- 문서 버전: 1.1 (P0 승인 기준선)
-- 기준일: 2026-07-18
+- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
+- 기준일: 2026-08-01
 - 대상 범위: 핵심 MVP
 - 아키텍처 원칙: Spring Boot 모듈러 모놀리스 + Spring AI 기반 통제형 멀티 에이전트 워크플로
 - 공통 API Prefix: `/api/v1`
@@ -26,6 +26,9 @@
 8. **MVP는 단일 인스턴스 운영을 기준으로 하되, 다중 사용자 데이터 격리는 처음부터 적용한다.**
 9. **장기 실행의 상태 원천은 DB이고 SSE는 snapshot-first best-effort 전달 수단이다.**
 10. **chat·embedding·search 비용은 immutable 가격 version과 원자 reserve/settle로 통제한다.**
+11. **제품 기능 한도는 Provider USD budget과 독립된 policy·ledger로 적용한다.**
+12. **과금 가능 usage unit은 저장하되 현재 고객 청구 금액은 0이고 결제·구독은 만들지 않는다.**
+13. **ADMIN Backoffice는 별도 Backend 인가·layout·접근 audit를 사용한다.**
 
 ---
 
@@ -41,6 +44,8 @@
     ├─ Job Posting / Job Analysis
     ├─ Cover Letter
     ├─ Interview Preparation
+    ├─ Product Usage / Billing Accounting
+    ├─ Failure Presentation / Backoffice Query
     ├─ Workflow Orchestrator
     ├─ Model Router / Budget Guard
     └─ Research & URL Extraction Gateway
@@ -237,6 +242,9 @@ users/{userId}/documents/{documentId}/content
 - UUID만으로 리소스 접근 허용 금지
 - Object 다운로드 전 DB 소유권 검증
 - 에이전트 실행 SSE 연결도 소유권 검증
+- 현재 구현 role은 USER only다. P8.9-A는 `USER|ADMIN`으로 확장하되 일반 signup은 USER만 만든다.
+- `/api/v1/backoffice/**`는 Backend ADMIN 인가가 최종 권위이며 frontend route guard만 신뢰하지 않는다.
+- ADMIN provisioning과 사용자 검색·상세·원가/run drill-down 접근을 audit한다.
 
 ### 파일 보안
 
@@ -326,8 +334,26 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 - chat input/cached input/output, embedding input unit, BASIC/ADVANCED search request를 모두 usage와 예산에 포함한다. 무료/cache hit도 0 cost row를 남긴다.
 - resource/run/turn을 만들기 전 worst-case 비용을 ledger에 원자 reserve하고 접수 당시 price version으로 settle한다.
 - 실제액이 예약을 넘으면 top-up 성공 때만 다음 호출을 허용한다. terminal·`WAITING_USER`에는 미사용액을 release한다.
-- `actualCostUsd`는 provider invoice가 아니라 고정 catalog로 계산한 billable estimate다.
+- `actualCostUsd`는 provider invoice나 사용자 청구 금액이 아니라 고정 catalog로 계산한 내부 Provider 원가 estimate다.
 - 비용 부족은 resource/run 생성 전 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`이며 자동 재시도하지 않는다.
+
+### 9.2 제품 기능 한도·usage·billing accounting (`PLANNED` P8.6~P8.7)
+
+| 경계                 | 단위·책임                               | 저장 위치                                 |
+| -------------------- | --------------------------------------- | ----------------------------------------- |
+| Provider 비용 budget | USD 내부 원가 reserve/settle            | 기존 `ai_budget_*`, `ai_usage_records`    |
+| 제품 기능 한도       | feature별 사용자 횟수와 기간            | `usage` module과 `feature_usage_*`        |
+| 과금 가능 usage      | quantity/unit/zero-rate policy snapshot | `billing` policy + feature event snapshot |
+| 실제 결제·구독       | 고객 금액 청구                          | 이번 범위에 없음                          |
+
+- 기능 한도는 immutable version, `Asia/Seoul` 기간, default/override, reserve/commit/release를 사용한다.
+- 같은 idempotency/client request replay는 중복 unit을 소비하지 않는다.
+- 새 사용자 의도의 cache/reuse는 Provider 비용 0이어도 제품 policy대로 소비한다.
+- `FEATURE_USAGE_LIMIT_EXCEEDED`와 `RATE_OR_BUDGET_LIMIT_EXCEEDED`를 사용자 category와 CTA까지 분리한다.
+- `feature_usage_events`는 immutable billing policy, quantity, unit, `METERED_ZERO_RATE|NO_CHARGE`를 snapshot한다.
+- 사용자 청구 금액은 0이며 `ai_usage_records.cost_usd`를 고객 가격으로 사용하지 않는다.
+- 초기 aggregate는 PostgreSQL SQL read model이다. Redis/Kafka/aggregate table은 실측 근거 없이 추가하지 않는다.
+- Backend package는 `usage`, `billing`, `backoffice`로 나누고 Provider cost ledger는 기존 `agentrun`/`ai`에 유지한다.
 
 ---
 
@@ -400,6 +426,10 @@ API 요청
 - estimated cost
 - retry count
 - status / error code
+- feature key / feature usage outcome
+- failure category
+- aggregation watermark / lag
+- Backoffice access type와 request ID
 
 ### 로그 금지 항목
 
@@ -423,6 +453,8 @@ API 요청
 | Embedding    | Fake + PostgreSQL         | configured 1536↔typmod fail-fast, model/generation 혼합 금지, exact cosine fixture                     |
 | Frontend     | Vitest + Vue Test Utils   | form, enum, OUTDATED/coverage/feedback 상태, 409 비교, user cache/draft, SSE 복구                      |
 | E2E          | Playwright                | 가입→업로드→공고→자소서→면접, 두 사용자 404, logout/탈퇴 purge UI                                      |
+
+P8.6 이후 Repository 검증은 feature limit 동시 reserve/oversubscription, replay unique, budget과의 lock order, raw usage reconciliation을 포함한다. P8.8 Frontend 검증은 failure category/CTA/보존 안내와 접근성을, P8.9-A Security/E2E는 USER/ADMIN 격리와 Backoffice access audit·원문 비노출을 포함한다.
 
 LLM 품질 테스트는 고정 Fixture와 평가 기준을 사용한다. 일반 `local`은 OpenAI Chat·Embedding과 Tavily Search를 활성화하고 key·가격·model 계약 누락 시 fail-closed한다. 네트워크 없는 로컬 실행은 `local-offline`을 명시한다. `test`, `ci`, `e2e`와 P4~P8 actual은 실제 key가 환경에 있어도 `none`/Fake를 강제하며 timeout, 구조화 output 실패, 예산 부족과 prompt injection은 Fake/WireMock으로 재현한다.
 
@@ -491,7 +523,8 @@ FRONTEND_ORIGIN
 - 소셜 로그인
 - 음성 STT/TTS 면접
 - 영상 면접 분석
-- 관리자·결제·구독
+- P8.9-B 이전의 Backoffice 운영 mutation
+- 유료 plan 판매, 카드·PG, subscription renewal, invoice, refund, tax와 실제 고객 청구
 - 다국어 UI
 - 실시간 공동 편집
 - Python/LangGraph 서버

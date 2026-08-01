@@ -1,7 +1,7 @@
 # API 명세서
 
-- 문서 버전: 1.1 (P0 승인 기준선)
-- 기준일: 2026-07-18
+- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
+- 기준일: 2026-08-01
 - Base URL: `/api/v1`
 - 인증: Spring Session Cookie + CSRF
 - 시간: ISO-8601 UTC
@@ -9,6 +9,8 @@
 - 파일 업로드: `multipart/form-data`
 
 이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다.
+
+현재 implemented baseline은 63 paths/84 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 이번 재설계에서 새로 추가하는 미래 경계는 13장에 phase와 `PLANNED`를 명시한다. 문서 추가만으로 implemented 숫자를 변경하지 않는다.
 
 ## 1. 공통 HTTP 계약
 
@@ -67,7 +69,7 @@
 |  409 | `RESOURCE_VERSION_CONFLICT`, `RESOURCE_STATE_CONFLICT`, `DUPLICATE_RESOURCE`, `EMAIL_ALREADY_REGISTERED`, `DUPLICATE_JOB_URL`, `IDEMPOTENCY_REQUEST_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED`, `ACTIVE_COVER_LETTER_EXISTS`, `COVER_LETTER_NOT_FINALIZABLE`, `COVER_LETTER_ARCHIVED`, `EVIDENCE_SOURCE_DELETED`, `INSUFFICIENT_JOB_DATA`, `MOCK_TURN_IN_PROGRESS`, `AGENT_RUN_RETRY_ALREADY_CREATED` |
 |  413 | `PAYLOAD_TOO_LARGE`                                                                                                                                                                                                                                                                                                                                                                               |
 |  415 | `UNSUPPORTED_MEDIA_TYPE`                                                                                                                                                                                                                                                                                                                                                                          |
-|  429 | `RATE_OR_BUDGET_LIMIT_EXCEEDED`                                                                                                                                                                                                                                                                                                                                                                   |
+|  429 | `FEATURE_USAGE_LIMIT_EXCEEDED`, `RATE_OR_BUDGET_LIMIT_EXCEEDED`                                                                                                                                                                                                                                                                                                                                   |
 |  503 | `EXTERNAL_SERVICE_UNAVAILABLE`, `MOCK_TURN_TIMEOUT`, `MOCK_TURN_INVALID_OUTPUT`                                                                                                                                                                                                                                                                                                                   |
 |  500 | `INTERNAL_ERROR`                                                                                                                                                                                                                                                                                                                                                                                  |
 
@@ -96,7 +98,7 @@
 
 허용하지 않는 선택은 `400 QUALITY_MODE_NOT_SUPPORTED`다. provider/model 실명은 일반 API에 노출하지 않는다.
 
-모든 `actualCostUsd`는 provider invoice가 아니라 해당 요청 접수 시 고정한 immutable price catalog version으로 계산한 billable estimate다.
+모든 `actualCostUsd`는 provider invoice나 사용자 청구 금액이 아니라 요청 접수 시 고정한 immutable price catalog version으로 계산한 내부 Provider 원가 estimate다.
 
 ## 2. Canonical enum과 상태
 
@@ -148,6 +150,9 @@
 - `EducationStatus`: `ENROLLED|LEAVE_OF_ABSENCE|EXPECTED_GRADUATION|GRADUATED|WITHDRAWN`
 - `EducationLevel`: `OTHER|HIGH_SCHOOL|ASSOCIATE|BACHELOR|MASTER|DOCTORATE`
 - `AnswerCreatedBy`: `USER|AI`
+- `FeatureKey` (`PLANNED` P8.6): `DOCUMENT_EVIDENCE_EXTRACTION|JOB_POSTING_EXTRACTION|JOB_ANALYSIS|COVER_LETTER_GENERATION|COVER_LETTER_VERIFICATION|INTERVIEW_PREPARATION|INTERVIEW_ANSWER_FEEDBACK|MOCK_INTERVIEW_SESSION_CREATE|MOCK_INTERVIEW_TURN|MOCK_INTERVIEW_SESSION_FEEDBACK`
+- `AiFailureCategory` (`PLANNED` P8.8): `INPUT_REQUIRED|INSUFFICIENT_SOURCE_DATA|FEATURE_LIMIT_REACHED|COST_BUDGET_REACHED|TEMPORARY_PROVIDER_FAILURE|CONNECTION_RECOVERING|OUTPUT_VALIDATION_FAILED|CONTENT_SAFETY_BLOCKED|CONFIGURATION_UNAVAILABLE|RESOURCE_CONFLICT|INTERNAL_FAILURE|CANCELLED`
+- `AiSuggestedAction` (`PLANNED` P8.8): `EDIT_INPUT|OPEN_USAGE|RETRY_SAME_REQUEST|CREATE_NEW_RETRY|RESUME_RUN|OPEN_RESOURCE|CONTACT_SUPPORT|WAIT_AND_REFRESH|NONE`
 
 Client는 server 지정 source·role·tier·상태를 request body에 보내지 않는다.
 
@@ -157,25 +162,28 @@ Client는 server 지정 source·role·tier·상태를 request body에 보내지 
 
 ### 3.1 공통 element DTO
 
-| DTO                     | 완전한 field set                                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SafeErrorDto`          | `code:string 1..100`, `message:string 1..500`                                                                                                                                                                |
-| `ResourceRefDto`        | `resourceType:string 1..50`, `resourceId:UUID`, `displayLabel:string? <=200`                                                                                                                                 |
-| `JobRefDto`             | `id:UUID`, `companyName:string? <=200`, `positionName:string? <=300`, `title:string? <=300`                                                                                                                  |
-| `CoverLetterRefDto`     | `id:UUID`, `title:string 1..300`, `status:CoverLetterStatus`                                                                                                                                                 |
-| `QuestionSetRefDto`     | `id:UUID`, `title:string 1..300`                                                                                                                                                                             |
-| `AgentRunRefDto`        | `id:UUID`, `status:AgentRunStatus`, `currentStep:string? <=100`, `progressPercent:int 0..100`                                                                                                                |
-| `EvidenceRefDto`        | `id:UUID`, `title:string 1..250`, `evidenceCategory:string 1..80`, `verificationStatus:EvidenceVerificationStatus`, `sourceType:EvidenceSourceType`, `sourceDeleted:boolean`                                 |
-| `ResearchSourceRefDto`  | `id:UUID`, `topic:ResearchTopic`, `title:string? <=500`, `sourceUrl:string 1..2000`, `sourceType:ResearchSourceType`, `retrievedAt:Instant`                                                                  |
-| `RequirementItemDto`    | `category:FitCriterionCategory`, `text:string 1..2000`, `required:boolean`, `sourceLocation:string? <=500`                                                                                                   |
-| `ScoreCriterionDto`     | `category:FitCriterionCategory`, `criterion:string 1..2000`, `weight:decimal 0..100`, `matchLevel:MatchLevel`, `score:decimal 0..weight`, `evidenceRefs:EvidenceRefDto[0..20]`, `explanation:string 1..2000` |
-| `VerificationIssueDto`  | `code:VerificationIssueCode`, `severity:IssueSeverity`, `message:string 1..1000`, `relatedText:string? <=1000`, `evidenceRefs:EvidenceRefDto[0..20]`                                                         |
-| `VerifiedClaimDto`      | `claim:string 1..2000`, `supported:boolean`, `evidenceRefs:EvidenceRefDto[0..20]`                                                                                                                            |
-| `FeedbackScoreDto`      | `criterion:string 1..100`, `score:decimal 0..100`, `explanation:string? <=1000`                                                                                                                              |
-| `ImmediateFeedbackDto`  | `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `suggestedAnswer:string? <=5000`                                                                       |
-| `MockFeedbackItemDto`   | `category:MockFeedbackCategory`, `relatedMessageSequenceNo:long? >=1`, `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `recommendation:string? <=2000` |
-| `RequiredUserActionDto` | `type:RequiredUserActionType`, `resource:ResourceRefDto?`, `route:string? 1..500` same-origin allowlist, `message:string 1..500`                                                                             |
-| `PartialResultDto`      | `succeededScopeKeys:string[0..100]` 각 1..100, `failedScopeKeys:string[0..100]` 각 1..100, `resultRefs:ResourceRefDto[0..200]`                                                                               |
+| DTO                        | 완전한 field set                                                                                                                                                                                                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SafeErrorDto`             | `code:string 1..100`, `message:string 1..500`                                                                                                                                                                                                                                |
+| `AiFailurePresentationDto` | `failureCategory:AiFailureCategory`, `title:string 1..100`, `message:string 1..500`, `suggestedAction:AiSuggestedAction`, `actionRoute:string? 1..500` same-origin allowlist, `retryable:boolean`, `dataPreserved:boolean`, `requestId:UUID`, `usageMayHaveOccurred:boolean` |
+| `FeatureUsageItemDto`      | `featureKey:FeatureKey`, `usedQuantity:long >=0`, `reservedQuantity:long >=0`, `limitQuantity:long? >=0`, `remainingQuantity:long? >=0`, `unlimited:boolean`, `periodStartedAt:Instant`, `periodEndsAt:Instant?`, `resetAt:Instant?`, `canExecute:boolean`                   |
+| `BillableUsageDto`         | `featureKey:FeatureKey`, `quantity:decimal >=0`, `billingUnit:string 1..50`, `billingPolicyVersion:long`, `chargeMode`는 `METERED_ZERO_RATE` 또는 `NO_CHARGE`; 고객 금액 field 없음                                                                                          |
+| `ResourceRefDto`           | `resourceType:string 1..50`, `resourceId:UUID`, `displayLabel:string? <=200`                                                                                                                                                                                                 |
+| `JobRefDto`                | `id:UUID`, `companyName:string? <=200`, `positionName:string? <=300`, `title:string? <=300`                                                                                                                                                                                  |
+| `CoverLetterRefDto`        | `id:UUID`, `title:string 1..300`, `status:CoverLetterStatus`                                                                                                                                                                                                                 |
+| `QuestionSetRefDto`        | `id:UUID`, `title:string 1..300`                                                                                                                                                                                                                                             |
+| `AgentRunRefDto`           | `id:UUID`, `status:AgentRunStatus`, `currentStep:string? <=100`, `progressPercent:int 0..100`                                                                                                                                                                                |
+| `EvidenceRefDto`           | `id:UUID`, `title:string 1..250`, `evidenceCategory:string 1..80`, `verificationStatus:EvidenceVerificationStatus`, `sourceType:EvidenceSourceType`, `sourceDeleted:boolean`                                                                                                 |
+| `ResearchSourceRefDto`     | `id:UUID`, `topic:ResearchTopic`, `title:string? <=500`, `sourceUrl:string 1..2000`, `sourceType:ResearchSourceType`, `retrievedAt:Instant`                                                                                                                                  |
+| `RequirementItemDto`       | `category:FitCriterionCategory`, `text:string 1..2000`, `required:boolean`, `sourceLocation:string? <=500`                                                                                                                                                                   |
+| `ScoreCriterionDto`        | `category:FitCriterionCategory`, `criterion:string 1..2000`, `weight:decimal 0..100`, `matchLevel:MatchLevel`, `score:decimal 0..weight`, `evidenceRefs:EvidenceRefDto[0..20]`, `explanation:string 1..2000`                                                                 |
+| `VerificationIssueDto`     | `code:VerificationIssueCode`, `severity:IssueSeverity`, `message:string 1..1000`, `relatedText:string? <=1000`, `evidenceRefs:EvidenceRefDto[0..20]`                                                                                                                         |
+| `VerifiedClaimDto`         | `claim:string 1..2000`, `supported:boolean`, `evidenceRefs:EvidenceRefDto[0..20]`                                                                                                                                                                                            |
+| `FeedbackScoreDto`         | `criterion:string 1..100`, `score:decimal 0..100`, `explanation:string? <=1000`                                                                                                                                                                                              |
+| `ImmediateFeedbackDto`     | `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `suggestedAnswer:string? <=5000`                                                                                                                                       |
+| `MockFeedbackItemDto`      | `category:MockFeedbackCategory`, `relatedMessageSequenceNo:long? >=1`, `score:decimal? 0..100`, `strengths:string[0..10]` 각 1..500, `improvements:string[0..10]` 각 1..500, `recommendation:string? <=2000`                                                                 |
+| `RequiredUserActionDto`    | `type:RequiredUserActionType`, `resource:ResourceRefDto?`, `route:string? 1..500` same-origin allowlist, `message:string 1..500`                                                                                                                                             |
+| `PartialResultDto`         | `succeededScopeKeys:string[0..100]` 각 1..100, `failedScopeKeys:string[0..100]` 각 1..100, `resultRefs:ResourceRefDto[0..200]`                                                                                                                                               |
 
 TipTap 공개 schema:
 
@@ -429,3 +437,47 @@ commit마다 stateVersion을 증가시키고 event ID로 사용한다. heartbeat
 | `GET /settings/privacy` | 없음                                                                                                                                | 없음         | 200 `PrivacySettingsDto` | 401     |
 
 초기 운영값은 사용자 기본 일일 USD 1.00, 시스템 사용자별 최대 USD 2.00, 비동기 run 최대 USD 0.30, reset zone `Asia/Seoul`이다. 외부 provider 단가는 API에 공개하지 않는다.
+
+## 13. Planned future contracts
+
+다음 API는 현재 63 paths/84 operations에 포함되지 않는다. 각 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
+
+### 13.1 사용자 사용량 (`PLANNED` P8.6~P8.7)
+
+| Method·path                   | request·filter                                                        | 성공                                                                                         | 주요 오류 |
+| ----------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| `GET /settings/usage`         | 없음                                                                  | 200 `UsageSettingsDto{zone,asOf,items:FeatureUsageItemDto[],currentlyNoCharge:true}`         | 401       |
+| `GET /settings/usage/history` | `featureKey?`, `from?`, `to?`, page,size; sort `occurredAt,desc` only | 200 `PageResponse<FeatureUsageHistoryDto>`; feature, outcome, quantity, billable usage, 시각 | 400/401   |
+
+Provider/model/price item/internal cost/margin과 다른 사용자 식별자는 반환하지 않는다. `limitQuantity`와 `remainingQuantity`는 unlimited면 null이다. reset은 `Asia/Seoul` policy를 UTC instant로 투영한다.
+
+### 13.2 공통 AI 실패 (`PLANNED` P8.8)
+
+AI 기능의 `ErrorResponseDto`는 기존 field를 유지하고, 해당 오류가 AI failure presentation 대상이면 nullable `aiFailure:AiFailurePresentationDto?`를 추가한다. Agent Run detail의 safe error에도 같은 projection을 제공한다. `CONNECTION_RECOVERING`은 HTTP 오류가 아니라 frontend transport projection이다.
+
+- `FEATURE_USAGE_LIMIT_EXCEEDED`는 `FEATURE_LIMIT_REACHED`, `OPEN_USAGE`와 reset 안내다.
+- `RATE_OR_BUDGET_LIMIT_EXCEEDED`는 `COST_BUDGET_REACHED`이며 내부 USD를 노출하지 않는다.
+- 같은 request replay가 가능한 action과 새 usage를 만드는 retry action을 구분한다.
+- Provider 실명·model·raw response·prompt·stacktrace·secret은 projection에 없다.
+
+### 13.3 Backoffice (`PLANNED` P8.9-A)
+
+모든 경로는 `/api/v1` 아래이며 ADMIN only다. USER는 타 사용자 UUID를 포함해 조회할 수 없고 Backend 인가가 최종 권위다. 읽기 성공도 사용자 검색·상세·drill-down 종류에 따라 access audit를 남긴다.
+
+| Method·path                            | request·filter                                              | 성공                                                                                       | 주요 오류                        |
+| -------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------- |
+| `GET /backoffice/overview`             | `period`, `from?`, `to?`                                    | 200 active users, feature usage, internal cost, run/failure, rejection, readiness, lag KPI | 400/401/403                      |
+| `GET /backoffice/users`                | `query?` email/internal ID, page,size; sort `createdAt,desc | internalCostUsd,desc`                                                                      | 200 paged 최소 사용자 projection | 400/401/403 |
+| `GET /backoffice/users/{userId}`       | 없음                                                        | 200 user ID, 업무상 필요한 email, account/usage summary                                    | 401/403/404                      |
+| `GET /backoffice/users/{userId}/usage` | `period`, `featureKey?`, `from?`, `to?`, page,size          | 200 feature usage, remaining/override summary, internal cost와 billable unit               | 400/403/404                      |
+| `GET /backoffice/usage`                | period/feature/workflow/outcome filter                      | 200 aggregate usage read model                                                             | 400/401/403                      |
+| `GET /backoffice/ai-costs`             | period/capability/quality/outcome filter                    | 200 internal cost aggregate와 top cost user 최소 projection                                | 400/401/403                      |
+| `GET /backoffice/agent-runs`           | user/workflow/status/failureCategory/period, page,size      | 200 paged run operational projection                                                       | 400/401/403                      |
+| `GET /backoffice/failures`             | category/code/workflow/period, page,size                    | 200 failure aggregate와 request/run drill-down ref                                         | 400/401/403                      |
+| `GET /backoffice/configuration`        | 없음                                                        | 200 configuration readiness, live verification state, active policy versions, lag          | 401/403                          |
+
+이력서·자기소개서·면접 답변/transcript, prompt/response, API key, full provider payload는 어떤 Backoffice DTO에도 포함하지 않는다. Provider readiness는 configuration, capability live verification, vertical verification을 별도 field로 반환한다.
+
+### 13.4 Backoffice mutation (`PLANNED_LATER` P8.9-B)
+
+feature override, run cancel/retry, account lock/unlock과 Provider kill switch endpoint는 이 명세에서 확정하지 않는다. 별도 승인에서 reason, expected version, idempotency, before/after, admin/request ID, confirmation, audit와 rollback을 함께 계약한 뒤 추가한다.

@@ -1,7 +1,7 @@
 # DB 명세서
 
-- 문서 버전: 1.1 (P0 승인 기준선)
-- 기준일: 2026-07-18
+- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
+- 기준일: 2026-08-01
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
 - 시간: `timestamptz` UTC
@@ -28,52 +28,56 @@
 
 ## 2. Canonical CHECK 값과 상태 전이
 
-| 축                                         | CHECK 값                                                                                                                                                                                                |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users.status`                             | `ACTIVE`, `LOCKED`, `WITHDRAWN`                                                                                                                                                                         |
-| `job_postings.status`                      | `IN_PROGRESS`, `SUBMITTED`, `CLOSED`                                                                                                                                                                    |
-| `job_postings.extraction_status`           | `QUEUED`, `EXTRACTING`, `EXTRACTED`, `MANUAL_INPUT_PROVIDED`, `NEEDS_MANUAL_INPUT`, `FAILED`                                                                                                            |
-| `documents.parse_status`                   | `UPLOADED`, `PARSING`, `PARSED`, `NEEDS_MANUAL_TEXT`, `FAILED`                                                                                                                                          |
-| `documents.evidence_extraction_status`     | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
-| `profile_evidence.verification_status`     | `PENDING`, `VERIFIED`, `REJECTED`, `SOURCE_DELETED`                                                                                                                                                     |
-| `cover_letters.status`                     | `DRAFT`, `FINALIZED`, `ARCHIVED`                                                                                                                                                                        |
-| `cover_letter_answer_versions.source_type` | `AI_GENERATED`, `USER_EDITED`, `AI_REVISED`, `RESTORED`                                                                                                                                                 |
-| `interview_answer_versions.source_type`    | `USER_EDITED`                                                                                                                                                                                           |
-| `cover_letter_verifications.status`        | `PENDING`, `PASSED`, `WARNING`, `FAILED`                                                                                                                                                                |
-| `research_runs.status`                     | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                                 |
-| `research_runs.source_coverage`            | 실행 중 `NULL`, terminal `SUFFICIENT`, `LIMITED`, `NONE`                                                                                                                                                |
-| `mock_interview_sessions.status`           | `READY`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`                                                                                                                                                        |
-| `mock_interview_sessions.feedback_status`  | `NOT_REQUESTED`, `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                |
-| `agent_runs.status`                        | `QUEUED`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `INTERRUPTED`                                                                                                                  |
-| `agent_steps.status`                       | `PENDING`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `SKIPPED`, `REUSED`, `CANCELLED`, `INTERRUPTED`                                                                                            |
-| `research_runs.research_quality`           | `BASIC`, `ADVANCED`                                                                                                                                                                                     |
-| `interview_questions.question_type`        | `COVER_LETTER`, `RESUME`, `PORTFOLIO`, `TECHNICAL`, `PROJECT_DEEP_DIVE`, `BEHAVIORAL`, `COMPANY_MOTIVATION`, `FOLLOW_UP`                                                                                |
-| 공개 품질                                  | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
-| 내부 tier                                  | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
-| `agent_runs.workflow_type`                 | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
-| `documents.document_type`                  | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
-| `profile_evidence.source_type`             | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `DOCUMENT_CHUNK`, `MANUAL`                                                                                                           |
-| `job_postings.deadline_source`             | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
-| `job_postings.closed_reason`               | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
-| `job_postings.description_source`          | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
-| `job_analyses.eligibility`                 | `ELIGIBLE`, `CONDITIONAL`, `INELIGIBLE`, `UNKNOWN`                                                                                                                                                      |
-| `job_analysis_score_criteria.category`     | `REQUIRED_QUALIFICATION`, `CORE_RESPONSIBILITY_OR_SKILL`, `PREFERRED_QUALIFICATION`, `RELATED_EXPERIENCE_OR_DOMAIN`, `EDUCATION_CERTIFICATION_LANGUAGE`                                                 |
-| `job_analysis_score_criteria.match_level`  | `MATCHED`, `PARTIAL`, `MISSING`, `UNKNOWN`                                                                                                                                                              |
-| `research_topics.topic`                    | `COMPANY`, `INTERVIEW_PROCESS`, `ROLE_TECHNICAL`                                                                                                                                                        |
-| `research_sources.source_type`             | `OFFICIAL`, `TECH_BLOG`, `NEWS`, `INTERVIEW_REVIEW`, `COMMUNITY`, `OTHER`                                                                                                                               |
-| `mock_interview_sessions.interview_type`   | `TECHNICAL`, `BEHAVIORAL`, `TECHNICAL_AND_BEHAVIORAL`                                                                                                                                                   |
-| `mock_interview_sessions.difficulty`       | `EASY`, `NORMAL`, `HARD`                                                                                                                                                                                |
-| `mock_interview_sessions.feedback_timing`  | `AFTER_EACH`, `END_ONLY`                                                                                                                                                                                |
-| `mock_interview_messages.role`             | `USER`, `INTERVIEWER`                                                                                                                                                                                   |
-| `mock_interview_turns.status`              | `PENDING`, `COMPLETED`, `FAILED`                                                                                                                                                                        |
-| `idempotency_records.state`                | `IN_PROGRESS`, `COMPLETED`                                                                                                                                                                              |
-| `object_deletion_outbox.status`            | `PENDING`, `PROCESSING`, `SUCCEEDED`, `DEAD`                                                                                                                                                            |
-| `ai_budget_reservations.status`            | `RESERVED`, `SETTLED`, `RELEASED`, `EXPIRED`                                                                                                                                                            |
-| `ai_usage_records.usage_type`              | `CHAT`, `EMBEDDING`, `SEARCH`                                                                                                                                                                           |
-| `account_deletion_tasks.status`            | `QUEUED`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `DEAD`                                                                                                                                                  |
-| `educations.education_status`              | `ENROLLED`, `LEAVE_OF_ABSENCE`, `EXPECTED_GRADUATION`, `GRADUATED`, `WITHDRAWN`                                                                                                                         |
-| `educations.education_level`               | `OTHER`, `HIGH_SCHOOL`, `ASSOCIATE`, `BACHELOR`, `MASTER`, `DOCTORATE`                                                                                                                                  |
-| `cover_letter_answer_versions.created_by`  | `USER`, `AI`                                                                                                                                                                                            |
+| 축                                                   | CHECK 값                                                                                                                                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users.status`                                       | `ACTIVE`, `LOCKED`, `WITHDRAWN`                                                                                                                                                                         |
+| `job_postings.status`                                | `IN_PROGRESS`, `SUBMITTED`, `CLOSED`                                                                                                                                                                    |
+| `job_postings.extraction_status`                     | `QUEUED`, `EXTRACTING`, `EXTRACTED`, `MANUAL_INPUT_PROVIDED`, `NEEDS_MANUAL_INPUT`, `FAILED`                                                                                                            |
+| `documents.parse_status`                             | `UPLOADED`, `PARSING`, `PARSED`, `NEEDS_MANUAL_TEXT`, `FAILED`                                                                                                                                          |
+| `documents.evidence_extraction_status`               | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
+| `profile_evidence.verification_status`               | `PENDING`, `VERIFIED`, `REJECTED`, `SOURCE_DELETED`                                                                                                                                                     |
+| `cover_letters.status`                               | `DRAFT`, `FINALIZED`, `ARCHIVED`                                                                                                                                                                        |
+| `cover_letter_answer_versions.source_type`           | `AI_GENERATED`, `USER_EDITED`, `AI_REVISED`, `RESTORED`                                                                                                                                                 |
+| `interview_answer_versions.source_type`              | `USER_EDITED`                                                                                                                                                                                           |
+| `cover_letter_verifications.status`                  | `PENDING`, `PASSED`, `WARNING`, `FAILED`                                                                                                                                                                |
+| `research_runs.status`                               | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                                 |
+| `research_runs.source_coverage`                      | 실행 중 `NULL`, terminal `SUFFICIENT`, `LIMITED`, `NONE`                                                                                                                                                |
+| `mock_interview_sessions.status`                     | `READY`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`                                                                                                                                                        |
+| `mock_interview_sessions.feedback_status`            | `NOT_REQUESTED`, `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`                                                                                                                                |
+| `agent_runs.status`                                  | `QUEUED`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `INTERRUPTED`                                                                                                                  |
+| `agent_steps.status`                                 | `PENDING`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `SKIPPED`, `REUSED`, `CANCELLED`, `INTERRUPTED`                                                                                            |
+| `research_runs.research_quality`                     | `BASIC`, `ADVANCED`                                                                                                                                                                                     |
+| `interview_questions.question_type`                  | `COVER_LETTER`, `RESUME`, `PORTFOLIO`, `TECHNICAL`, `PROJECT_DEEP_DIVE`, `BEHAVIORAL`, `COMPANY_MOTIVATION`, `FOLLOW_UP`                                                                                |
+| 공개 품질                                            | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
+| 내부 tier                                            | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
+| `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
+| `documents.document_type`                            | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
+| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `DOCUMENT_CHUNK`, `MANUAL`                                                                                                           |
+| `job_postings.deadline_source`                       | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
+| `job_postings.closed_reason`                         | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
+| `job_postings.description_source`                    | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
+| `job_analyses.eligibility`                           | `ELIGIBLE`, `CONDITIONAL`, `INELIGIBLE`, `UNKNOWN`                                                                                                                                                      |
+| `job_analysis_score_criteria.category`               | `REQUIRED_QUALIFICATION`, `CORE_RESPONSIBILITY_OR_SKILL`, `PREFERRED_QUALIFICATION`, `RELATED_EXPERIENCE_OR_DOMAIN`, `EDUCATION_CERTIFICATION_LANGUAGE`                                                 |
+| `job_analysis_score_criteria.match_level`            | `MATCHED`, `PARTIAL`, `MISSING`, `UNKNOWN`                                                                                                                                                              |
+| `research_topics.topic`                              | `COMPANY`, `INTERVIEW_PROCESS`, `ROLE_TECHNICAL`                                                                                                                                                        |
+| `research_sources.source_type`                       | `OFFICIAL`, `TECH_BLOG`, `NEWS`, `INTERVIEW_REVIEW`, `COMMUNITY`, `OTHER`                                                                                                                               |
+| `mock_interview_sessions.interview_type`             | `TECHNICAL`, `BEHAVIORAL`, `TECHNICAL_AND_BEHAVIORAL`                                                                                                                                                   |
+| `mock_interview_sessions.difficulty`                 | `EASY`, `NORMAL`, `HARD`                                                                                                                                                                                |
+| `mock_interview_sessions.feedback_timing`            | `AFTER_EACH`, `END_ONLY`                                                                                                                                                                                |
+| `mock_interview_messages.role`                       | `USER`, `INTERVIEWER`                                                                                                                                                                                   |
+| `mock_interview_turns.status`                        | `PENDING`, `COMPLETED`, `FAILED`                                                                                                                                                                        |
+| `idempotency_records.state`                          | `IN_PROGRESS`, `COMPLETED`                                                                                                                                                                              |
+| `object_deletion_outbox.status`                      | `PENDING`, `PROCESSING`, `SUCCEEDED`, `DEAD`                                                                                                                                                            |
+| `ai_budget_reservations.status`                      | `RESERVED`, `SETTLED`, `RELEASED`, `EXPIRED`                                                                                                                                                            |
+| `ai_usage_records.usage_type`                        | `CHAT`, `EMBEDDING`, `SEARCH`                                                                                                                                                                           |
+| `feature_usage_reservations.status` (`PLANNED`)      | `RESERVED`, `COMMITTED`, `RELEASED`, `EXPIRED`                                                                                                                                                          |
+| `feature_usage_policy_items.period_type` (`PLANNED`) | `DAILY`, `WEEKLY`, `MONTHLY`, `LIFETIME`                                                                                                                                                                |
+| `feature_usage_events.outcome` (`PLANNED`)           | `SUCCEEDED`, `FAILED`, `CANCELLED`, `PARTIAL`, `REUSED`, `ADJUSTED`                                                                                                                                     |
+| `feature_usage_events.charge_mode` (`PLANNED`)       | `METERED_ZERO_RATE`, `NO_CHARGE`                                                                                                                                                                        |
+| `account_deletion_tasks.status`                      | `QUEUED`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `DEAD`                                                                                                                                                  |
+| `educations.education_status`                        | `ENROLLED`, `LEAVE_OF_ABSENCE`, `EXPECTED_GRADUATION`, `GRADUATED`, `WITHDRAWN`                                                                                                                         |
+| `educations.education_level`                         | `OTHER`, `HIGH_SCHOOL`, `ASSOCIATE`, `BACHELOR`, `MASTER`, `DOCTORATE`                                                                                                                                  |
+| `cover_letter_answer_versions.created_by`            | `USER`, `AI`                                                                                                                                                                                            |
 
 표의 scalar enum column은 명시적 `CHECK`를 갖는다. JSON 안의 `VerificationIssueCode`, `IssueSeverity`, `MockFeedbackCategory`는 versioned JSON schema와 domain validation으로 같은 값을 강제한다. `OutdatedReason`, `RequiredUserActionType`, `ProfileCompletionItem`은 저장 enum이 아닌 계산 projection이다.
 
@@ -95,17 +99,17 @@
 
 ### 3.1 `users`
 
-| 컬럼                               | 타입·제약                         | 설명                                                      |
-| ---------------------------------- | --------------------------------- | --------------------------------------------------------- |
-| `id`                               | uuid PK                           | 사용자                                                    |
-| `email`                            | varchar(320) NOT NULL             | 소문자 정규화; 물리 purge 전 존재하는 모든 row에서 unique |
-| `password_hash`                    | varchar(255) NOT NULL             | BCrypt                                                    |
-| `display_name`                     | varchar(100) NOT NULL             | 1..100                                                    |
-| `role`                             | varchar(30) NOT NULL CHECK `USER` | MVP 역할                                                  |
-| `status`                           | varchar(30) NOT NULL CHECK        | lifecycle                                                 |
-| `terms_agreed_at`, `ai_consent_at` | timestamptz NOT NULL              | 동의                                                      |
-| `last_login_at`, `withdrawn_at`    | timestamptz NULL                  | 이력                                                      |
-| `created_at`, `updated_at`         | timestamptz NOT NULL              | 시간                                                      |
+| 컬럼                               | 타입·제약                                                 | 설명                                                      |
+| ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| `id`                               | uuid PK                                                   | 사용자                                                    |
+| `email`                            | varchar(320) NOT NULL                                     | 소문자 정규화; 물리 purge 전 존재하는 모든 row에서 unique |
+| `password_hash`                    | varchar(255) NOT NULL                                     | BCrypt                                                    |
+| `display_name`                     | varchar(100) NOT NULL                                     | 1..100                                                    |
+| `role`                             | varchar(30) NOT NULL CHECK 현재 `USER`; P8.9-A 목표 `USER | ADMIN` (`PLANNED`)                                        | 일반 signup은 항상 USER, ADMIN은 통제 provisioning만 허용 |
+| `status`                           | varchar(30) NOT NULL CHECK                                | lifecycle                                                 |
+| `terms_agreed_at`, `ai_consent_at` | timestamptz NOT NULL                                      | 동의                                                      |
+| `last_login_at`, `withdrawn_at`    | timestamptz NULL                                          | 이력                                                      |
+| `created_at`, `updated_at`         | timestamptz NOT NULL                                      | 시간                                                      |
 
 탈퇴 final purge가 user row를 제거한 뒤 같은 정규화 email을 다시 사용할 수 있다.
 
@@ -350,6 +354,53 @@ chat input/cached input/output, embedding unit, BASIC/ADVANCED search를 가격 
 
 초기 상한은 user default daily 1.00, system daily max 2.00, async run max 0.30, mock turn 0.03, mock session sync total 0.30 USD다. 값은 code constant가 아니라 versioned policy다.
 
+### 10.3 제품 기능 한도·metering (`PLANNED` P8.6)
+
+Provider USD budget table을 제품 사용 횟수에 재사용하지 않는다.
+
+- `feature_usage_policy_versions`: immutable version, key, effective range, reset zone `Asia/Seoul`, created metadata.
+- `feature_usage_policy_items`: policy version, canonical feature key, limit quantity nullable, unlimited, period type, consumption policy; unique version/feature.
+- `user_feature_usage_assignments`: user별 active policy version과 effective range; 겹치는 active assignment 금지.
+- `user_feature_usage_overrides`: user, feature, limit/unlimited, effective range, reason, actor/audit ref, optimistic version.
+- `feature_usage_periods`: user, feature, policy/override snapshot, period start/end, committed/reserved quantity, version; unique user/feature/period.
+- `feature_usage_reservations`: user, feature, period, idempotency/client request hash, Agent Run/resource/turn ref, status, quantity, expires/timestamps; logical request unique.
+- `feature_usage_events`: append-only commit/release/adjustment event, reservation, user, feature, quantity, outcome, workflow/resource/run/client request ref, occurredAt.
+
+원자 불변식:
+
+- limited period의 `committed_quantity + reserved_quantity <= limit_quantity`.
+- reservation은 `RESERVED→COMMITTED|RELEASED|EXPIRED` 한 방향이다.
+- idempotency replay와 terminal replay는 같은 reservation/event를 사용한다.
+- Provider 호출 전 실패는 release, Provider 호출 후 실패·취소/partial success와 새 사용자 의도의 reuse는 commit한다.
+- 자동 retry는 같은 reservation, 새 client request ID retry는 새 reservation이다.
+- 탈퇴 purge는 owner 상세을 제거하고 승인된 비식별 aggregate만 남긴다.
+
+### 10.4 과금 가능 usage policy·집계 (`PLANNED` P8.7)
+
+별도 `billing_usage_events`는 만들지 않는다. `feature_usage_events`의 commit snapshot이 다음 field를 가진다.
+
+```text
+billing_policy_version
+billing_policy_item_id
+billable_quantity
+billing_unit
+charge_mode(METERED_ZERO_RATE|NO_CHARGE)
+```
+
+- `billing_policy_versions/items`는 immutable zero-rate mapping이다.
+- 고객 청구 금액, plan, subscription, payment, invoice, refund와 tax table은 없다.
+- 내부 원가 source는 `ai_usage_records`, 제품·과금 가능 unit source는 `feature_usage_events`다.
+- 초기 집계는 raw source에 index를 둔 SQL read model이다. aggregate table은 실제 대표 query p95/raw scan 임계 초과 증거 뒤 별도 migration으로만 추가한다.
+- reconciliation은 Agent Run actual cost↔usage, period committed↔feature event, billing snapshot↔policy item을 비교하고 원본을 덮어쓰지 않는 finding/correction을 남긴다.
+
+### 10.5 ADMIN·Backoffice audit (`PLANNED` P8.9-A)
+
+- 새 migration이 `users.role` CHECK를 `USER|ADMIN`으로 확장한다. 일반 signup과 application default는 USER다.
+- ADMIN provisioning은 공개 API가 아닌 배포 통제 command이며 user, before/after role, reason, actor correlation, request ID, timestamp를 append-only audit에 기록한다.
+- `backoffice_access_audits`: admin user ID, access type, target user ID nullable, request ID, filter hash/summary, result count, occurredAt. 검색 원문과 민감한 query value는 저장하지 않는다.
+- Backoffice read model은 기존 domain query port와 SQL projection을 사용하고 사용자 원문·prompt/response·key를 복제하지 않는다.
+- P8.9-B mutation audit schema는 별도 승인 전 만들지 않는다.
+
 ## 11. 회원 탈퇴 task와 보존
 
 `account_deletion_tasks`는 user FK가 없는 독립 table이다.
@@ -384,7 +435,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-기존 `V1__enable_extensions.sql`은 수정하지 않는다. 실제 버전과 SQL은 구현 단계에서 작성한다.
+현재 latest implemented migration은 V13이다. V1~V13은 수정하지 않는다. 아래 P8.6 이후 번호와 filename은 `TENTATIVE`이며 phase 시작 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -395,6 +446,12 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | jobs/analysis                | canonical active unique, 두 상태 축, history, rubric·provenance                  |
 | cover letter                 | active partial unique, soft question, immutable answer/content/link/verification |
 | research/interview           | combined research, source links, answer/feedback, mock turn/message/feedback     |
+| P8.6, tentative V14          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V15          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
+| P8.9-A, tentative V16        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V17                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

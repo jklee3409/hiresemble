@@ -2,7 +2,22 @@
 
 ## Overview
 
-외부 AI Provider의 로컬 활성화와 명시적 offline 전환 절차가 문서화되어 있다.
+외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
+
+## [2026-08-01] Session Summary (사용량·실패 복구·Backoffice 운영 계획)
+
+- What was done:
+  - 실제 Provider 검증 runbook을 capability smoke와 P4~P8 vertical flow로 분리하고, 사용량 집계·reconciliation·Backoffice 운영 계획을 추가했다.
+  - live 기록에 허용되는 request ID·Agent Run ID·합계와 금지되는 key·prompt·원문 경계를 명시했다.
+- Key decisions:
+  - 일반 `local`은 실제 Provider fail-closed, `local-offline`은 disabled, test·CI·E2E는 Fake 또는 disabled와 외부 network 0을 유지한다.
+  - 운영 조회는 P8.9-A read-only로 먼저 제공하고 mutation은 감사 가능한 P8.9-B로 미룬다.
+- Issues encountered:
+  - 현재 실제 Provider 호출이 Chat 0, Embedding 0, Tavily 0이라 P8.5-V는 사용자 검증 대기로 남겼다.
+- Validation:
+  - 운영 절차와 설계·명세의 상태, 공개 정보, privacy 경계를 대조하고 링크·Markdown 검사를 통과했다.
+- Next steps:
+  - 사용자가 key를 노출하지 않고 P8.5-V를 1회 수행해 capability와 기능 품질 결과를 분리 기록한다.
 
 ## [2026-07-31] Session Summary (P8.5 AI Provider 활성화 운영 절차)
 

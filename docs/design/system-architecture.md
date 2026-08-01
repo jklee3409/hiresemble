@@ -1,6 +1,6 @@
 # Hiresemble 전체 시스템 설계
 
-- 문서 상태: P0 승인 계약과 P1~P4 구현 구조를 연결한 설계 기준선
+- 문서 상태: P0–P8 구현, P8.5 live gate와 P8.6–P10 목표 운영 구조를 연결한 설계 기준선
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
 - 현재 구현 상태: P1 인증, P2 프로필, P3 Agent Run·AI runtime, P4 Document pipeline과 대응 frontend가 구현되어 있으며 P5 이후는 미구현
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
@@ -19,11 +19,11 @@
 
 ### 1.2 결정 상태
 
-| 구분      | 현재 상태                                        | 사용 원칙                                      |
-| --------- | ------------------------------------------------ | ---------------------------------------------- |
-| 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨 | 구현·테스트의 유일한 제품 계약으로 사용        |
-| 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨   | 역사와 선택 이유 확인에만 사용                 |
-| 구현 상태 | P1~P4 구현 완료, P5~P10 미착수                  | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
+| 구분      | 현재 상태                                         | 사용 원칙                                      |
+| --------- | ------------------------------------------------- | ---------------------------------------------- |
+| 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨  | 구현·테스트의 유일한 제품 계약으로 사용        |
+| 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨    | 역사와 선택 이유 확인에만 사용                 |
+| 구현 상태 | P0~P8 DONE, P8.5 구현·live 미검증, P8.6 이후 계획 | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
 
 ### 1.3 명시적 설계 가정
 
@@ -70,6 +70,9 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 - 텍스트 기반 모의 면접과 세션·메시지·종합 피드백
 - Agent Run 진행률, 단계, 비용, 실패, 취소, 재시도와 SSE UI
 - AI 품질·비용 및 개인정보 상태 설정
+- Provider 비용 예산과 독립된 제품 기능 한도, 사용자별 사용량과 과금 가능 0원 unit
+- 공통 AI 실패 category·복구 CTA·데이터 보존 안내
+- ADMIN 읽기 전용 Backoffice의 사용자별 aggregate usage·내부 원가·실패·Agent Run 조회와 접근 audit
 
 ### 3.2 제외
 
@@ -77,13 +80,14 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 - 소셜 로그인
 - 이미지 PDF OCR, HWP, PPTX 직접 파싱
 - 음성 STT/TTS와 영상 면접 분석
-- 관리자, 결제, 구독
+- Backoffice 운영 mutation(P8.9-B 이전)
+- 유료 plan 판매, 카드·PG, subscription renewal, invoice, refund, tax와 실제 고객 청구
 - 다국어 UI
 - 실시간 공동 편집
 - 별도 Python/LangGraph Agent 서버
 - Kafka·Redis 기반 분산 처리
 
-이 제외 항목을 위한 빈 package, UI, 확장 API를 MVP 선행 작업으로 만들지 않는다.
+ADMIN 읽기 전용 운영 기반은 포함하지만 결제·구독은 계속 제외한다. 제외 항목을 위한 빈 package, UI, 확장 API를 선행 생성하지 않는다.
 
 ## 4. 기술 스택과 아키텍처 원칙
 
@@ -123,7 +127,10 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
   ├─ Application: use case, transaction, ownership, state commands
   ├─ Domain: aggregate, invariant, transition
   ├─ Agent Run: durable state, dispatcher, recovery, SSE
-  ├─ AI orchestration: fixed workflow, context, router, budget, prompt
+  ├─ AI orchestration: fixed workflow, context, router, provider budget, prompt
+  ├─ Product usage: feature quota, metering, billable-zero-rate snapshot
+  ├─ Failure presentation: safe category, recovery action, preservation
+  ├─ Backoffice: ADMIN read model, readiness, access audit
   └─ Infrastructure adapters
        ├─ JPA/JdbcClient ───────────────> PostgreSQL + pgvector
        ├─ S3 client ────────────────────> MinIO/S3/R2
@@ -163,6 +170,9 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 | `research`    | 회사·면접 조사 실행과 출처                          | research 계열                    |
 | `interview`   | 질문 세트, 답변, 피드백, mock session               | interview 계열                   |
 | `agentrun`    | 실행·단계 상태, claim, 복구, 취소, SSE, 사용량 조회 | agent/AI 정책 계열               |
+| `usage`       | 제품 기능 한도, 기간·reservation·event              | feature usage 정책·ledger        |
+| `billing`     | 과금 가능 unit policy·집계, 결제 제외               | billing policy·read model        |
+| `backoffice`  | ADMIN 운영 query·접근 audit                         | 운영 audit와 read projection     |
 
 ### 6.2 AI workflow 모듈
 
@@ -245,10 +255,16 @@ ai workflow ── read/command ports ──────────────
 | AC-11 | 질문 답변·피드백    | interview answer versions/feedback                          | answer/feedback endpoints             | question set detail                |
 | AC-12 | 모의 면접           | mock sessions/messages/feedback                             | mock session endpoints                | mock interview page                |
 | AC-13 | 장기 작업 상태      | runs/steps/usage                                            | run list/detail/events/retry/cancel   | header drawer, run pages           |
+| AC-14 | 제품 기능 한도      | feature policy/period/reservation/event                     | `/settings/usage*`                    | `/settings/usage`                  |
+| AC-15 | 사용량·원가 집계    | AI usage + feature billing snapshot                         | usage history, Backoffice read model  | usage/Backoffice pages             |
+| AC-16 | AI 실패 UX          | 기존 safe code와 상태                                       | failure presentation projection       | 공통 failure panel/action          |
+| AC-17 | ADMIN Backoffice    | USER/ADMIN, access audit                                    | `/backoffice/**`                      | `/backoffice/**`                   |
 
 ### 8.1 보조 기능 연결
 
 - AI 설정: `user_ai_preferences`, `ai_model_policies`, usage → `/settings/ai` → `/settings/ai`
+- 제품 사용량: feature policy/event와 billing snapshot → `/settings/usage*` → `/settings/usage`
+- 운영 조회: aggregate usage/cost/failure/run/readiness와 access audit → `/backoffice/**` → 별도 BackofficeLayout
 - 개인정보 상태: user consent와 document aggregate → `/settings/privacy` → `/settings/privacy`
 - 계정 설정: `users`와 Session → `/account/*` → `/settings/account`
 - 자기소개서 목록·보관: `cover_letters.status` → `GET /cover-letters`, `POST /cover-letters/{id}/archive` → `/cover-letters`와 job Cover Letter tab
@@ -498,7 +514,39 @@ Context snapshot은 최소 다음 provenance를 가진다.
 - 동시 run은 versioned 일일 ledger와 reservation을 잠가 예상 비용을 원자 reserve하고 실제 usage를 settle한 뒤 미사용액을 release한다.
 - chat·embedding·search를 immutable price catalog version으로 계산하고 원자 reserve/settle/release에 모두 포함한다.
 
-### 13.5 Agent 목록과 workflow
+### 13.5 Provider budget·제품 quota·usage·결제 분리
+
+```text
+제품 command
+ ├─ usage: 기능 period에서 unit reserve
+ ├─ agentrun/ai: Provider USD budget reserve
+ └─ domain resource/Agent Run 접수
+
+Provider call
+ └─ ai_usage_records: 내부 원가 usage
+
+terminal 결과
+ ├─ usage reservation commit/release
+ ├─ budget actual settle/release
+ └─ feature_usage_event: billing policy/unit/charge mode snapshot
+```
+
+- Provider 비용 budget은 내부 원가 보호이고 제품 기능 quota는 사용자 제공 횟수다.
+- 같은 idempotency replay는 두 reservation 모두 재사용한다.
+- cache/reuse로 Provider 원가가 0이어도 새 사용자 의도면 제품 unit은 정책대로 소비한다.
+- 과금 가능 usage는 `METERED_ZERO_RATE|NO_CHARGE` snapshot이며 현재 고객 금액은 0이다.
+- 실제 payment/subscription/invoice ledger는 이 구조에 포함하지 않는다.
+- P8.6~P8.9의 상세 결정은 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)을 따른다.
+
+### 13.6 공통 실패 projection과 Backoffice
+
+- 내부 safe code/FailureKind는 versioned mapping을 거쳐 사용자 `failureCategory`, CTA, 보존 안내, request ID, usage 발생 가능성으로 투영한다.
+- SSE 단절은 `CONNECTION_RECOVERING` transport 상태이며 run failure가 아니다.
+- Backoffice는 ADMIN 전용 read model과 별도 layout을 사용하고 일반 navigation에 노출하지 않는다.
+- 사용자 검색·상세·원가·run drill-down 접근은 audit하며 원문·prompt/response·key는 제공하지 않는다.
+- Provider readiness는 configuration readiness, local capability verification, vertical verification을 분리한다.
+
+### 13.7 Agent 목록과 workflow
 
 명세에 있는 추출·분석·매칭·조사·writer·fact check·question·interviewer·feedback 역할은 활성 기술 명세의 8개 `WorkflowType`과 고정 step registry에 배치한다. Java class 이름은 공개 계약이 아니며 구현 단계의 내부 책임이다.
 
@@ -588,6 +636,9 @@ backend/src/main/java/com/hiresemble/
 ├─ research/
 ├─ interview/
 ├─ agentrun/
+├─ usage/
+├─ billing/
+├─ backoffice/
 └─ ai/
    ├─ orchestration/
    ├─ workflow/
@@ -656,25 +707,28 @@ frontend/src/
    ├─ cover-letters/
    ├─ interviews/
    ├─ agent-runs/
-   └─ settings/
+   ├─ settings/
+   ├─ usage/
+   ├─ ai-failures/
+   └─ backoffice/
 ```
 
-상세 파일 소유권과 생성 시점은 [구현 계획](implementation-plan.md)을 따른다.
+`BackofficeLayout.vue`와 `pages/backoffice/`는 P8.9-A에서만 만든다. Provider 원가 ledger는 기존 `agentrun`/`ai`, 제품 한도는 `usage`, 과금 가능 unit은 `billing`, 운영 query는 `backoffice`에 둔다. 상세 파일 소유권과 생성 시점은 [구현 계획](implementation-plan.md)을 따른다.
 
 ## 17. 테스트·검증 전략
 
-| 계층       | 핵심 검증                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| Domain     | 모든 상태 전이, owner, finalization, current version, scheduler race                     |
-| Repository | PostgreSQL FK/unique/check, tenant join, pgvector user/model/dimension, partial unique   |
-| Migration  | 빈 DB 적용과 기존 DB upgrade                                                             |
-| API        | Session/CSRF, 직접 성공 DTO, 공통 오류, 404 격리, 409/413/415/429/503                    |
-| File       | MIME 위장, macro, 손상·텍스트 부족 PDF/DOCX/TXT, storage 보상                            |
-| External   | LLM/Search/Object/URL 429·5xx·timeout·부족 결과를 Fake/WireMock으로 검증                 |
-| Workflow   | 단계 순서, tool allowlist, 재시도, 비용, 재시작, 취소, partial success, idempotent apply |
-| Security   | 두 사용자 fixture, SSRF, prompt injection 경계, 로그 원문 부재                           |
-| Frontend   | form, route guard, typed error, 상태 표시, editor version, cache/draft 격리, SSE 복구    |
-| E2E        | 명세 시나리오 A–C와 AC-01–AC-13, 실패 수동 보완, 다른 사용자 404                         |
+| 계층       | 핵심 검증                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------ |
+| Domain     | 모든 상태 전이, owner, finalization, current version, scheduler race                       |
+| Repository | PostgreSQL FK/unique/check, tenant join, pgvector, quota/budget race, usage reconciliation |
+| Migration  | 빈 DB 적용과 기존 DB upgrade, V1~V13 불변, 미래 migration tentative 검증                   |
+| API        | Session/CSRF, 직접 성공 DTO, USER/ADMIN 격리, 두 429 code, failure projection              |
+| File       | MIME 위장, macro, 손상·텍스트 부족 PDF/DOCX/TXT, storage 보상                              |
+| External   | LLM/Search/Object/URL 429·5xx·timeout·부족 결과를 Fake/WireMock으로 검증                   |
+| Workflow   | 단계 순서, tool allowlist, 재시도, 비용, 재시작, 취소, partial success, idempotent apply   |
+| Security   | 두 사용자 fixture, SSRF, prompt injection 경계, 로그 원문 부재                             |
+| Frontend   | form, route guard, failure CTA, usage/Backoffice, cache/draft 격리, SSE 복구               |
+| E2E        | 명세 시나리오 A–C와 AC-01–AC-17, USER/ADMIN 격리, local real/offline/network 0 경계        |
 
 CI 기본 검증은 실제 유료 AI·검색 API를 호출하지 않는다.
 
@@ -689,14 +743,23 @@ CI 기본 검증은 실제 유료 AI·검색 API를 호출하지 않는다.
 → 공고 등록·상태·분석
 → 자기소개서
 → 조사·예상 질문·답변 피드백
+→ 실제 Provider local 사용자 검증
+→ 제품 기능 한도·metering
+→ 사용자 사용량·내부 원가·과금 가능 usage 집계
+→ 공통 AI 실패 UX·복구
+→ ADMIN 읽기 전용 Backoffice
 → 모의 면접
-→ dashboard/settings/보안·복구·전체 E2E
+→ 사용자 dashboard/settings
+→ 운영 안정성·동시성
+→ 출시 준비·전체 E2E
 ```
 
 - 승인 근거가 공고 분석보다 먼저다.
 - 공고 분석이 자기소개서·면접 준비보다 먼저다.
 - 자기소개서 domain/version이 generation workflow보다 먼저다.
 - Agent Run·SSE 공통 기반은 최초 장기 작업인 문서 pipeline보다 먼저다.
+- P9는 P8.5-V와 P8.6~P8.9-A를 모두 선행한다.
+- 기능 한도는 Provider 비용 budget을 재사용하지 않고 과금 가능 usage는 실제 결제를 만들지 않는다.
 - API/DTO/DB 계약을 먼저 확정한 뒤 frontend와 AI consumer가 구현한다.
 
 단계별 완료 조건은 [구현 계획](implementation-plan.md)에 정의한다.
@@ -715,7 +778,7 @@ CI 기본 검증은 실제 유료 AI·검색 API를 호출하지 않는다.
 
 | 검증 항목          | 승인 결과                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------- |
-| 모든 MVP 기능 포함 | AC-01–AC-13을 기능 명세와 구현 단계에 연결                                              |
+| 모든 MVP 기능 포함 | AC-01–AC-17을 기능 명세와 구현 단계에 연결                                              |
 | 기능↔DB            | 상태·수명주기·owner 복합 FK·provenance·비동기 내구성 계약 동기화                        |
 | DB↔API             | canonical enum, DTO nullability·상한, version, idempotency, Agent Run projection 동기화 |
 | API↔페이지         | Dashboard, route·filter, mock 생성, feedback 상태, 409·SSE 복구 action 동기화           |

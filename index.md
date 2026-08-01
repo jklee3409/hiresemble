@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0 계약 기준선부터 P8 면접 조사·예상 질문·답변 피드백까지 완료됐고, P8.5가 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 명시적 offline/test 격리를 제공한다. P9 이후는 미착수다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0–P8은 완료됐고 P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했지만 실제 호출 검증 전이다. P8.5-V와 P8.6–P8.9-A가 P9 선행 계획이며 P9·P10은 미착수다.
 
 ## 주요 파일 및 하위 디렉터리
 

@@ -45,7 +45,25 @@ key 값·suffix, prompt/input/raw response, 사용자 문서·답변, embedding 
 
 PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를 평소처럼 실행한다. 문서 처리, 공고 추출·분석, 자기소개서 생성·검증, 면접 준비·답변 feedback은 기존 API/UI에서 실제 adapter로 연결된다. Provider 장애 시 자동 offline 전환은 없으며 운영자가 원인을 수정하거나 명시적으로 `local-offline`/provider `none`으로 재시작한다.
 
-## Codex bounded live 검증
+## P8.5-V 사용자 local 검증
+
+현재 기록된 실제 호출은 Chat 0, Embedding 0, Tavily 0이므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 사용자가 일반 `local` profile에서 다음 순서로 검증한다.
+
+1. capability smoke: Chat 1회, Embedding 1회, Tavily BASIC 1회.
+2. 문서 업로드→실제 embedding→근거 추출.
+3. 공고 등록→실제 공고 추출→공고 분석.
+4. 자기소개서 생성→검증.
+5. 면접 준비→Tavily 조사→질문 생성→답변 feedback.
+
+검증 기록에는 기능 성공 여부, safe error code, request ID, Agent Run ID, usage/cost 합계만 남긴다. key·prompt·response·문서/자소서/면접 답변 원문을 복사하지 않는다. 연결 성공과 결과 품질을 별도로 판정한다.
+
+- capability smoke 성공: `LOCAL_CAPABILITY_VERIFIED`
+- P4~P8 수직 흐름 성공: `LOCAL_VERTICAL_VERIFIED`
+- 두 범위와 민감정보 없는 기록 완료: P8.5 `DONE`
+
+이 문서 재설계 작업에서는 실제 Provider를 호출하지 않는다. P8.6 기능 한도가 구현된 뒤에는 실제 제품 UAT도 해당 feature usage event를 정상 생성하며, 같은 idempotency replay는 추가 소비하지 않아야 한다.
+
+## Codex bounded adapter smoke
 
 이 검증은 제품 사용량을 제한하지 않고 구현 검증 호출만 제한한다.
 
@@ -58,7 +76,7 @@ Set-Location backend
 
 synthetic non-PII만 전송하며 정상 실행은 Chat 1, Embedding 1, Search 1회다. adapter/framework/test retry는 0이고 성공 capability는 재실행하지 않는다. 구체적 결함을 수정한 뒤에만 capability별 한 번 더 허용하며 절대 상한은 capability별 2·총 6회다. persistent safe counter는 `backend/.codex-real-provider-call-summary.json`, 복사 report는 `backend/build/reports/codex-real-provider/call-summary.json`이다. 두 파일에는 count·estimated cost·완료 capability만 기록한다.
 
-gate 또는 key가 없으면 task는 호출 없이 skip하며 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+gate 또는 key가 없으면 task는 호출 없이 skip하며 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 이 adapter smoke만으로 P4~P8 수직 검증 완료를 주장하지 않는다.
 
 ## Key rotation과 rollback
 

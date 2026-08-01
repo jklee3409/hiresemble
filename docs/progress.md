@@ -2,7 +2,22 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 구현 완료·실호출 미검증이며 P9–P10은 미착수다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
+
+## [2026-08-01] Session Summary (P8.5 이후 문서 체계 재설계)
+
+- What was done:
+  - 설계·활성 명세·운영·루트 안내 문서를 P8.5 실제 상태와 P8.5-V–P10-C 단계 그래프에 맞춰 동기화했다.
+  - 운영 계약 결정 문서와 usage metering·Backoffice 계획 문서를 새로 연결했다.
+- Key decisions:
+  - Provider 비용 예산, 제품 기능 한도, 사용자 사용량·과금 가능 unit, 실제 결제·구독을 서로 다른 책임으로 유지한다.
+  - 미래 API·route·migration은 `PLANNED`로만 기록하고 현재 OpenAPI 63 paths/84 operations 기준선은 변경하지 않는다.
+- Issues encountered:
+  - 실제 Provider 호출 0회가 확인되어 P8.5는 완료가 아닌 실호출 미검증 상태로 유지했다.
+- Validation:
+  - 변경 Markdown 형식·상대 링크·추적 문서 형식·Compose·diff·경로·비밀 패턴 검사를 통과했다.
+- Next steps:
+  - 사용자가 P8.5-V를 수행하고, 첫 코드 구현은 P8.6에서 시작한다.
 
 ## [2026-08-01] Session Summary (P8.5 Provider 운영 문서)
 

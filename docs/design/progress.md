@@ -2,7 +2,22 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, `APPROVED_DECISION_RECORD`가 작성되어 있다. P0~~P8은 구현·final-source 검증과 single-agent read-only self-audit를 통과해 완료됐고 P9~~P10은 미착수다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5는 구현됐지만 실호출 미검증이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-08-01] Session Summary (P9 이전 운영 기반 설계 재구성)
+
+- What was done:
+  - 구현 계획과 시스템 아키텍처를 P8.5-V, P8.6, P8.7, P8.8, P8.9-A/B, P9, P10-A/B/C 단계로 재구성했다.
+  - budget·quota·usage·payment 분리, 실패 UX taxonomy, Backoffice 범위와 채택·기각 대안을 별도 결정 문서로 고정했다.
+- Key decisions:
+  - billing usage는 중복 ledger 대신 feature usage event에 immutable policy snapshot을 두고 SQL read model부터 시작한다.
+  - P8.9-A만 P9의 선행으로 두며 P8.9-B mutation은 별도 후속 단계다.
+- Issues encountered:
+  - P8.5 실제 capability와 P4~P8 vertical flow는 호출 기록이 0회라 검증 완료로 판정할 수 없었다.
+- Validation:
+  - phase별 책임·상태·migration tentative 표기와 문서 링크를 자체 검토하고 Markdown·diff 검사를 통과했다.
+- Next steps:
+  - P8.5-V 사용자 검증과 P8.6 구현을 각각 명시된 handoff에 따라 진행한다.
 
 ## [2026-08-01] Session Summary (P8.5 구현 계획 게이트)
 

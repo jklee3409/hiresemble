@@ -8,10 +8,10 @@
 
 | 경로                             | 역할                                                                                                             |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [`functional.md`](functional.md) | 회원·프로필·문서·공고·자기소개서·면접·Agent Run의 비즈니스 규칙, 사용자 여정과 AC-01–AC-13 인수 조건을 정의한다. |
-| [`api.md`](api.md)               | `/api/v1`, Session Cookie/CSRF, 요청·응답·상태 코드, 오류 형식, 멱등성과 도메인별 endpoint 계약을 정의한다.      |
+| [`functional.md`](functional.md) | 회원·프로필·문서·공고·자기소개서·면접·Agent Run·운영 기반의 비즈니스 규칙, 사용자 여정과 AC-01–AC-17을 정의한다. |
+| [`api.md`](api.md)               | `/api/v1`, 현재 63/84 baseline과 phase별 `PLANNED` usage·failure·Backoffice 계약을 구분한다.                     |
 | [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 논리 상태, 테이블·관계·제약, 트랜잭션과 데이터 보존 정책을 정의한다.                    |
-| [`page.md`](page.md)             | Vue SPA의 route, layout, 화면별 기능과 API 연결, 상태 관리, route guard와 핵심 E2E 시나리오를 정의한다.          |
+| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice route, layout, API 연결과 E2E를 정의한다.              |
 | [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스 아키텍처, 기술 선택, 보안, AI workflow, 비용 제어, 테스트·배포 원칙과 MVP 제외 범위를 정의한다.  |
 | [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                         |
 
@@ -47,7 +47,7 @@
 | D-14 | [`functional.md`](functional.md) JOB-001–005, [`api.md`](api.md) 7장, [`db.md`](db.md) 5장, [`page.md`](page.md) 7장                                          |
 | D-15 | [`functional.md`](functional.md) DOC-002–003·SYS-002, [`api.md`](api.md) 6장, [`db.md`](db.md) 4·9장, [`tech_stack.md`](tech_stack.md) 8·10장                 |
 | D-16 | [`functional.md`](functional.md) CL-003·INT-001–004, [`db.md`](db.md) 4.3·10장, [`tech_stack.md`](tech_stack.md) 4.4·6.2·8–9장                                |
-| D-17 | [`api.md`](api.md) 4–12장, [`page.md`](page.md) 1·4·7·10–11·15장                                                                                              |
+| D-17 | [`api.md`](api.md) 4–12장, [`page.md`](page.md) 1·4·7·10–11·16장                                                                                              |
 | D-18 | [`functional.md`](functional.md) CL-007, [`api.md`](api.md) 8장, [`db.md`](db.md) 6.1장, [`page.md`](page.md) 8·11장                                          |
 
 Gate 항목은 다음 활성 계약 위치에서 닫힌다. 표의 A-1–A-6, B-1–B-5, C-1–C-5는 결정 기록의 Gate A–C 행 순서를 보존한 추적 식별자다.
