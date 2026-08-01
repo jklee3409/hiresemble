@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-01] Session Summary (이미지형 공고 자동 추출 계약)
+
+- What was done:
+  - 기능·페이지·기술 명세에 charset, DOM 품질, 자동 image branch, 최종 manual fallback과 v2 step을 반영했다.
+- Key decisions:
+  - uploaded image PDF OCR 제외는 유지하고 공개 공고 페이지 내부 JPEG·PNG image text만 지원 범위로 구분한다.
+- Issues encountered:
+  - API/DB 공개 계약 변경이 없어 `api.md`, `db.md`와 migration은 수정하지 않았다.
+- Validation:
+  - 구현·테스트·명세 상호 검토와 Markdown diff check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (자료 검토·직접 대외활동 추가 계약)
 
 - What was done:

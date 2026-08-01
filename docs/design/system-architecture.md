@@ -327,11 +327,14 @@ evidenceExtractionStatus: NOT_STARTED
 2. canonical URL과 사용자 범위 중복을 검사한다.
 3. usable 수동 본문이 있으면 `status=IN_PROGRESS`, `extractionStatus=MANUAL_INPUT_PROVIDED`로 저장하고 Agent Run 없이 201을 반환한다.
 4. 수동 본문이 없으면 `status=IN_PROGRESS`, `extractionStatus=QUEUED`인 공고와 `JOB_POSTING_EXTRACTION` run을 같은 transaction에서 만들고 202를 반환한다.
-5. 비동기 분기에서 공고 전용 URL gateway가 HTTP(S) 단일 페이지를 가져오고 Jsoup 계열로 정제한다.
-6. 구조화 단계가 회사·직무·본문·마감일 후보를 만든다.
-7. 사용자 입력값을 자동 추출값보다 우선 병합하고 본문 hash와 추출 상태를 저장한다.
+5. 비동기 분기에서 공고 전용 URL gateway가 HTTP(S) 단일 페이지의 bounded raw bytes를 가져오고 header·BOM·meta 우선순위로 strict decode한다.
+6. DOM visible text·main 영역·link density·중복·placeholder·손상 문자와 일반 이미지 후보를 검사해 text 충분, 이미지 보강 필요, 자동 추출 부족으로 분류한다.
+7. 이미지 보강이 필요하면 같은 DNS pinning·redirect 경계와 후보 전체가 공유하는 absolute deadline을 재사용해 ranked JPEG·PNG를 bounded fetch하고, 별도 image gateway가 bytes에서 보이는 텍스트만 추출한다.
+8. DOM과 이미지 텍스트를 source tag로 분리·중복 제거한 뒤 구조화 단계가 회사·직무·본문·마감일 후보를 만든다.
+9. 사용자 입력값을 자동 추출값보다 우선 병합하고 semantic null·U+FFFD·본문 품질을 검증한 성공 결과만 저장한다. 자동 경로가 부족하면 업무 상태를 유지한 채 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
 
 사용자 URL fetch는 검색 provider와 분리한다. private/link-local/loopback, 자격증명 포함 URL, redirect 후 재검증 실패, 응답 크기·시간 초과를 차단한다.
+이미지 URL도 Provider에 직접 넘기지 않고 Backend가 검증·다운로드한다. raw HTML, image bytes, Provider raw response는 log와 reusable checkpoint에 보존하지 않는다. 성공한 image step은 URL·bytes 없이 bounded 추출 text와 hash·길이·MIME·count만 checkpoint해 동일 content hash 재시작의 중복 Provider 호출을 막으며, 전체 OCR text는 log에 남기지 않는다.
 
 ### 10.2 분석
 

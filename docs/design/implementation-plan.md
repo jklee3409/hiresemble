@@ -36,7 +36,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 68 suites/466 tests이며 Frontend 60 files/238 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이번 보정의 실제 Provider 호출은 0회다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 69 suites/479 tests이며 Frontend 61 files/243 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이미지형 공고 보정의 실제 Provider 호출은 0회다.
 
 ## 1. 전체 선행 관계
 
@@ -601,6 +601,15 @@ P0 계약 기준선
 - 기록은 기능 성공, safe error code, request ID, Agent Run ID, usage/cost 합계만 허용한다.
 - capability만 성공하면 `LOCAL_CAPABILITY_VERIFIED`; P4~P8 전체가 성공해야 `DONE`이다.
 - 다음 phase handoff: P8.6은 병행 가능하지만 P9 선행 gate는 P8.5-V 완료 전 해제하지 않는다.
+
+## 13.1-A 이미지형 채용 공고·문자셋 보정 (`DONE`)
+
+- `job-posting-extraction-v2`를 9단계 fixed workflow로 올리고 v1은 과거 run 격리용 non-canonical 정의로 유지한다.
+- header/BOM/meta/strict UTF-8/제한적 MS949 fallback과 EUC-KR·CP949 alias를 strict decoder로 고정한다.
+- DOM 품질과 generic image 후보를 자동 판정하고 JPEG·PNG 최대 6개, 각 5MiB, 전체 20MiB를 기존 SSRF 경계 안에서 fetch한다.
+- OpenAI image input은 별도 `ImageTextExtractionGateway`로 호출하며 provider retry 0, `store=false`, 기존 chat token price/usage를 재사용한다.
+- text-only는 image provider 0회, image-only·mixed는 DOM/OCR source label 병합, 자동 자료 부족은 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
+- schema와 공개 DTO 변경이 없어 migration을 추가하지 않았으며 latest V15와 P8.6 tentative V16 이후 번호를 유지한다.
 
 ## 14. P8.6 — 제품 기능 한도·metering 기반
 

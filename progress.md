@@ -15,6 +15,22 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (이미지형 채용 공고 자동 추출·문자셋 보정)
+
+- What was done:
+  - EUC-KR/CP949 meta-only HTML strict decode, DOM 품질·이미지 후보 자동 판정, SSRF-safe 이미지 fetch와 OpenAI image text gateway를 구현했다.
+  - `JOB_POSTING_EXTRACTION`을 v2 9단계로 올리고 semantic null/U+FFFD/본문 품질 검증, 자동 부족 시 manual fallback과 사용자 단계 문구를 연결했다.
+- Key decisions:
+  - OCR 선택 UI 없이 text-only는 image Provider 0회, image-only/mixed만 자동 image branch를 사용하고 v1 active run은 executable 없는 legacy 정의로 안전 격리한다.
+  - DB/API schema는 유지해 migration 없이 V15 최신과 P8.6 tentative V16을 유지한다.
+- Issues encountered:
+  - 첫 전체 check의 canonical-count 테스트 2건과 첫 P5 browser fixture의 새 품질 threshold 불일치를 계약/fixture 범위에서 보정했다.
+  - 최종 cache-free check에서 무관한 Interview timestamp 경계 테스트가 1회 간헐 실패했으나 단독 재현과 허용된 마지막 전체 재검증은 모두 통과했다.
+- Validation:
+  - Backend `gradlew check --rerun-tasks --no-daemon --console=plain --max-workers=1`: 69 suites/479 tests 통과. Frontend `corepack pnpm check`: 61 files/243 tests와 build 통과. P5 actual Chromium 5/5, `docker compose config --quiet`, `git diff --check` 통과. 실제 Provider 호출 0회.
+- Next steps:
+  - WebP는 현재 Java decoder allowlist 밖이며, 실제 외부 Provider/하나캐피탈 live 확인은 별도 승인된 local 검증에서 수행한다.
+
 ## [2026-08-01] Session Summary (이력서 소재 검토·사용자 대외활동 B2C UX 보정)
 
 - What was done:

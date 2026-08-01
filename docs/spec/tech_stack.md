@@ -140,10 +140,10 @@ Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGat
 | Apache Tika   | MIME 탐지 및 공통 텍스트 추출   |
 | Apache PDFBox | PDF 페이지별 텍스트 추출        |
 | Apache POI    | DOCX 텍스트 추출                |
-| Jsoup         | 채용 공고 URL HTML 추출 및 정제 |
+| Jsoup         | 채용 공고 URL HTML 검사·DOM 정제·이미지 후보 탐지 |
 | SHA-256       | 중복 파일 및 중복 공고 감지     |
 
-MVP 지원 파일은 `PDF`, `DOCX`, `TXT`이며, 이미지 기반 PDF OCR, HWP, PPTX는 제외한다. 텍스트 추출량이 기준 이하이면 `NEEDS_MANUAL_TEXT` 상태로 전환해 사용자가 텍스트를 직접 보완한다.
+MVP 지원 파일은 `PDF`, `DOCX`, `TXT`이며, 업로드한 이미지 기반 PDF OCR, HWP, PPTX는 제외한다. 이 제외 범위와 별개로 공개 채용 공고 HTML 안의 JPEG·PNG 이미지 텍스트는 안전하게 다운로드한 bytes를 OpenAI image input으로 전달해 자동 추출한다. 텍스트 추출량이 기준 이하이면 `NEEDS_MANUAL_TEXT` 상태로 전환해 사용자가 텍스트를 직접 보완한다.
 
 ### 4.4 외부 검색
 
@@ -289,7 +289,7 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 | WorkflowType                | 고정 step 순서                                                                                                                                                                                                                                                               |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DOCUMENT_INGESTION`        | `LOAD_DOCUMENT_SOURCE → EXTRACT_OR_ACCEPT_TEXT → MASK_TEXT → CHUNK_TEXT → EMBED_CHUNKS → EXTRACT_EVIDENCE_CANDIDATES → APPLY_EVIDENCE_CANDIDATES → FINALIZE_DOCUMENT`                                                                                                        |
-| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → SANITIZE_PAGE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → APPLY_JOB_EXTRACTION`                                                                                                                                                                     |
+| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                         |
 | `JOB_ANALYSIS`              | `BUILD_JOB_SNAPSHOT → EXTRACT_REQUIREMENTS → ASSESS_ELIGIBILITY → RETRIEVE_VERIFIED_EVIDENCE → MATCH_EVIDENCE → SCORE_FIT → VALIDATE_ANALYSIS → PERSIST_ANALYSIS`                                                                                                            |
 | `COVER_LETTER_GENERATION`   | `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*] → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → WRITE_ANSWER[*] → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`                                                                                           |
 | `COVER_LETTER_VERIFICATION` | `LOAD_ANSWER_VERSION → BUILD_PROVENANCE_CONTEXT → CHECK_FACTS → CHECK_REQUIREMENTS_AND_LENGTH → AGGREGATE_VERIFICATION → PERSIST_VERIFICATION`                                                                                                                               |
@@ -298,6 +298,8 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 | `MOCK_INTERVIEW_FEEDBACK`   | `LOAD_SESSION_SNAPSHOT → ANALYZE_TURNS → SYNTHESIZE_SESSION_FEEDBACK → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                 |
 
 공고 create에 usable 수동 본문이 있으면 `JOB_POSTING_EXTRACTION` run을 만들지 않고 `MANUAL_INPUT_PROVIDED`로 저장한다. 수동 본문이 없을 때만 위 extraction workflow를 enqueue한다.
+
+`job-posting-extraction-v2`는 raw bytes를 유지한 charset 우선순위(`HTTP header → BOM → meta → strict UTF-8 → 검증된 MS949 fallback`), DOM 품질 판정, 최대 6개/이미지당 5MiB/전체 20MiB의 JPEG·PNG fetch, 별도 `ImageTextExtractionGateway`, semantic null·U+FFFD·본문 품질 검증을 고정한다. text 충분 분기에서는 이미지 Provider를 호출하지 않는다. v1 정의는 과거 run 식별용 non-canonical 계약만 남기고 executable을 제공하지 않아 새 checkpoint 의미와 혼용하지 않는다.
 
 동기 mock start/message는 WorkflowType이나 Agent Run이 아니며 bounded turn executor와 `mock_interview_turns`를 사용한다. 회원 탈퇴도 Agent Run이 아니라 독립 deletion task다.
 
