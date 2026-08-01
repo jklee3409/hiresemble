@@ -13,7 +13,8 @@ public interface WebSearchGateway {
             String researchQuality,
             int maxResultsPerQuery,
             Duration timeout,
-            String purpose) {
+            String purpose,
+            Long priceVersion) {
         public SearchRequest {
             queries = queries == null ? List.of() : List.copyOf(queries);
             if (providerKey == null || providerKey.isBlank() || productKey == null || productKey.isBlank()
@@ -39,7 +40,27 @@ public interface WebSearchGateway {
                     researchQuality,
                     maxResultsPerQuery,
                     timeout,
-                    "GENERAL");
+                    "GENERAL",
+                    null);
+        }
+
+        public SearchRequest(
+                String providerKey,
+                String productKey,
+                List<String> queries,
+                String researchQuality,
+                int maxResultsPerQuery,
+                Duration timeout,
+                String purpose) {
+            this(
+                    providerKey,
+                    productKey,
+                    queries,
+                    researchQuality,
+                    maxResultsPerQuery,
+                    timeout,
+                    purpose,
+                    null);
         }
     }
 }

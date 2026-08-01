@@ -600,7 +600,7 @@ class CoverLetterVerificationWorkflowTest {
                 default -> throw new AssertionError(
                         "unexpected chat schema " + request.outputSchemaVersion());
             };
-            return new AiGatewayResponse(mapper.writeValueAsString(output), null);
+            return new AiGatewayResponse(mapper.writeValueAsString(output), java.util.List.of());
         }
     }
 

@@ -1,0 +1,13 @@
+spring:
+  ai:
+    model:
+      chat: none
+      embedding: none
+    vectorstore:
+      type: none
+
+hiresemble:
+  ai:
+    provider: none
+  search:
+    provider: none

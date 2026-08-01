@@ -525,13 +525,17 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             boolean activeStep = true;
             try {
                 AgentRunSnapshot beforeCall = current(run.userId(), run.id());
-                budgetGuard.ensureNextCallCovered(beforeCall, BigDecimal.ZERO, clock.instant());
+                BigDecimal remainingWorstCase = beforeCall.estimatedCostUsd()
+                        .subtract(beforeCall.actualCostUsd())
+                        .max(BigDecimal.ZERO);
+                budgetGuard.ensureNextCallCovered(
+                        beforeCall, remainingWorstCase, clock.instant());
                 AiGatewayResponse response = leaseHeartbeatPort.maintain(
                         run.userId(), run.id(), claimed.claimToken(),
                         () -> executor.invoke(new GatewayInvocation(
                                 input, route, prompt, chatGateway, embeddingGateway, webSearchGateway,
                                 executionContext)));
-                recordUsageIfPresent(run, claimed.claimToken(), step, route, response.usage());
+                recordUsages(run, claimed.claimToken(), step, route, response.usages());
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
@@ -595,6 +599,12 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                         null,
                         false);
             } catch (AiExecutionException exception) {
+                recordUsages(
+                        run,
+                        claimed.claimToken(),
+                        step,
+                        route,
+                        exception.incurredUsages());
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
@@ -689,21 +699,26 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         }
     }
 
-    private void recordUsageIfPresent(
+    private void recordUsages(
             AgentRunSnapshot run,
             UUID claimToken,
             AgentStepSnapshot step,
             ModelRoute route,
-            AiUsage usage) {
-        if (usage == null) return;
+            java.util.List<AiUsage> usages) {
+        if (usages == null || usages.isEmpty()) return;
+        BigDecimal totalCost = usages.stream()
+                .map(AiUsage::costUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         AgentRunSnapshot current = current(run.userId(), run.id());
-        budgetGuard.ensureNextCallCovered(current, usage.costUsd(), clock.instant());
-        usageRecorderPort.record(new UsageRecordCommand(
-                run.userId(), run.id(), step.id(), claimToken, run.workflowType().name(),
-                usage.usageType(), usage.providerKey(), usage.productKey(), route.tier(),
-                usage.inputUnits(), usage.cachedInputUnits(), usage.outputUnits(),
-                usage.embeddingUnits(), usage.searchUnits(), usage.priceVersion(), usage.priceItemId(),
-                usage.costUsd(), usage.durationMs(), clock.instant()));
+        budgetGuard.ensureNextCallCovered(current, totalCost, clock.instant());
+        for (AiUsage usage : usages) {
+            usageRecorderPort.record(new UsageRecordCommand(
+                    run.userId(), run.id(), step.id(), claimToken, run.workflowType().name(),
+                    usage.usageType(), usage.providerKey(), usage.productKey(), route.tier(),
+                    usage.inputUnits(), usage.cachedInputUnits(), usage.outputUnits(),
+                    usage.embeddingUnits(), usage.searchUnits(), usage.priceVersion(), usage.priceItemId(),
+                    usage.costUsd(), usage.durationMs(), usage.providerCallId(), clock.instant()));
+        }
     }
 
     private void checkpointFailure(

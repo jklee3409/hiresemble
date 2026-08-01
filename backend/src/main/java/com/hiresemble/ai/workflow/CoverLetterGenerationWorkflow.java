@@ -299,7 +299,7 @@ public final class CoverLetterGenerationWorkflow {
         }
 
         protected final AiGatewayResponse localResponse(Object output) {
-            return new AiGatewayResponse(write(output), null);
+            return new AiGatewayResponse(write(output), java.util.List.of());
         }
 
         @Override
@@ -524,7 +524,10 @@ public final class CoverLetterGenerationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -660,7 +663,10 @@ public final class CoverLetterGenerationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -779,7 +785,8 @@ public final class CoverLetterGenerationWorkflow {
                             invocation.modelRoute().productKey(),
                             List.of(input.queryText()),
                             state.embeddingPolicy().dimension(),
-                            EMBEDDING_TIMEOUT));
+                            EMBEDDING_TIMEOUT,
+                            invocation.executionContext().run().priceVersion()));
             List<Double> vector = parseSingleVector(
                     embedding.rawJson(), state.embeddingPolicy().dimension());
             List<CandidateChunk> chunks = queryPort.searchEvidenceCandidates(
@@ -921,7 +928,10 @@ public final class CoverLetterGenerationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -1074,7 +1084,10 @@ public final class CoverLetterGenerationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -1227,7 +1240,10 @@ public final class CoverLetterGenerationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override

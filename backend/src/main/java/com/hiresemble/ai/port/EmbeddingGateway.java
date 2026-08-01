@@ -11,7 +11,8 @@ public interface EmbeddingGateway {
             String productKey,
             List<String> maskedInputs,
             int dimension,
-            Duration timeout) {
+            Duration timeout,
+            Long priceVersion) {
         public EmbeddingRequest {
             maskedInputs = maskedInputs == null ? List.of() : List.copyOf(maskedInputs);
             if (providerKey == null || providerKey.isBlank() || productKey == null || productKey.isBlank()
@@ -19,6 +20,15 @@ public interface EmbeddingGateway {
                     || timeout.isNegative() || timeout.isZero()) {
                 throw new IllegalArgumentException("embedding request is invalid");
             }
+        }
+
+        public EmbeddingRequest(
+                String providerKey,
+                String productKey,
+                List<String> maskedInputs,
+                int dimension,
+                Duration timeout) {
+            this(providerKey, productKey, maskedInputs, dimension, timeout, null);
         }
     }
 }

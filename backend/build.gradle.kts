@@ -78,15 +78,51 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     systemProperty("user.timezone", "UTC")
+    systemProperty("hiresemble.ai.provider", "none")
+    systemProperty("hiresemble.search.provider", "none")
+    systemProperty("spring.ai.model.chat", "none")
+    systemProperty("spring.ai.model.embedding", "none")
+    systemProperty("spring.ai.vectorstore.type", "none")
+    systemProperty("hiresemble.ai.allow-test-provider", "true")
+    systemProperty("spring.datasource.hikari.maximum-pool-size", "3")
 }
 
 tasks.named<Test>("test") {
+    exclude("**/CodexRealProviderTest.class")
     exclude("**/P4BrowserE2eTest.class")
     exclude("**/P5BrowserE2eTest.class")
     exclude("**/P6BrowserE2eTest.class")
     exclude("**/P7BrowserE2eTest.class")
     exclude("**/P8BrowserE2eTest.class")
 }
+
+fun registerCodexRealProviderTask(taskName: String, capability: String) =
+    tasks.register<Test>(taskName) {
+        group = "verification"
+        description = "Runs the bounded, opt-in $capability real-provider verification."
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        include("**/CodexRealProviderTest.class")
+        systemProperty("spring.profiles.active", "local")
+        systemProperty("hiresemble.ai.provider", "openai")
+        systemProperty("hiresemble.search.provider", "tavily")
+        systemProperty("spring.ai.model.chat", "openai")
+        systemProperty("spring.ai.model.embedding", "openai")
+        systemProperty("spring.ai.vectorstore.type", "none")
+        systemProperty("codex.real-provider.capability", capability)
+        onlyIf {
+            System.getenv("CODEX_REAL_PROVIDER_TEST_ENABLED")
+                    ?.equals("true", ignoreCase = true) == true
+                    && !System.getenv("AI_PROVIDER_API_KEY").isNullOrBlank()
+                    && !System.getenv("TAVILY_API_KEY").isNullOrBlank()
+        }
+        shouldRunAfter(tasks.named("check"))
+    }
+
+registerCodexRealProviderTask("codexRealOpenAiChatTest", "CHAT")
+registerCodexRealProviderTask("codexRealOpenAiEmbeddingTest", "EMBEDDING")
+registerCodexRealProviderTask("codexRealTavilySearchTest", "SEARCH")
+registerCodexRealProviderTask("codexRealProviderTest", "ALL")
 
 tasks.register<Test>("p4BrowserE2eTest") {
     group = "verification"

@@ -775,6 +775,16 @@ class P8BrowserE2eTest extends PostgresIntegrationTest {
         FakeP8SearchGateway p8BrowserSearchGateway(ObjectMapper objectMapper) {
             return new FakeP8SearchGateway(objectMapper);
         }
+
+        @Bean
+        com.hiresemble.ai.port.EmbeddingGateway p8DisabledEmbeddingGateway() {
+            return request -> {
+                throw AiExecutionException.nonRetryable(
+                        FailureKind.CONFIGURATION,
+                        "AI_PROVIDER_DISABLED",
+                        "AI 실행 공급자가 활성화되지 않았습니다.");
+            };
+        }
     }
 
     static final class FakeP8ChatGateway implements ChatGateway {

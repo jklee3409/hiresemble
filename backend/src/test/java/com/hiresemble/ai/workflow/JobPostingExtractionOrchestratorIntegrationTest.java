@@ -364,6 +364,16 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         }
 
         @Bean
+        com.hiresemble.ai.port.EmbeddingGateway disabledJobEmbeddingGateway() {
+            return request -> {
+                throw AiExecutionException.nonRetryable(
+                        FailureKind.CONFIGURATION,
+                        "AI_PROVIDER_DISABLED",
+                        "AI 실행 공급자가 활성화되지 않았습니다.");
+            };
+        }
+
+        @Bean
         @Primary
         AgentRunDispatchPort noAutomaticDispatch() {
             return new AgentRunDispatchPort() {
@@ -431,13 +441,13 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             lastInput = request.input().toString();
             afterCall.run();
             return switch (mode) {
-                case SUCCESS -> new AiGatewayResponse(json(successOutput(), true), null);
+                case SUCCESS -> new AiGatewayResponse(json(successOutput(), true), java.util.List.of());
                 case INVALID_STRUCTURED -> new AiGatewayResponse(
                         """
                         {"companyName":"AI Company",
                          "unexpected":"RAW_PROVIDER_RESPONSE_MARKER"}
                         """,
-                        null);
+                        java.util.List.of());
                 case RETRYABLE_TIMEOUT -> throw AiExecutionException.retryable(
                         FailureKind.TIMEOUT,
                         "AI_PROVIDER_TIMEOUT",

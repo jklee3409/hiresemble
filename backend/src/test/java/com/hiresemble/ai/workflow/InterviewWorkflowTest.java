@@ -815,7 +815,7 @@ class InterviewWorkflowTest {
             return new AiGatewayResponse(
                     mapper.writeValueAsString(new SearchBatchOutput(
                             "web-search-results-v1", purpose, true, null, hits)),
-                    null);
+                    java.util.List.of());
         }
     }
 
@@ -902,7 +902,7 @@ class InterviewWorkflowTest {
                 throw new AssertionError(
                         "unexpected chat schema " + request.outputSchemaVersion());
             }
-            return new AiGatewayResponse(mapper.writeValueAsString(output), null);
+            return new AiGatewayResponse(mapper.writeValueAsString(output), java.util.List.of());
         }
     }
 }

@@ -37,12 +37,17 @@ spring:
       embedding: ${AI_EMBEDDING_MODEL_PROVIDER:none}
     openai:
       api-key: ${AI_PROVIDER_API_KEY:local-not-configured}
+      base-url: ${AI_PROVIDER_BASE_URL:https://api.openai.com}
       chat:
         options:
           model: ${AI_MODEL_BALANCED:gpt-5-mini}
+          max-retries: ${AI_PROVIDER_MAX_RETRIES:0}
+          store: ${AI_PROVIDER_STORE:false}
       embedding:
         options:
           model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+          dimensions: ${AI_EMBEDDING_DIMENSION:1536}
+          max-retries: ${AI_PROVIDER_MAX_RETRIES:0}
     vectorstore:
       type: ${AI_VECTOR_STORE_PROVIDER:none}
       pgvector:
@@ -128,6 +133,7 @@ hiresemble:
     batch-size: ${JOB_DEADLINE_SCHEDULER_BATCH_SIZE:100}
   ai:
     provider: ${AI_PROVIDER:none}
+    provider-timeout: ${AI_PROVIDER_TIMEOUT:60s}
     model-low-cost: ${AI_MODEL_LOW_COST:}
     model-balanced: ${AI_MODEL_BALANCED:gpt-5-mini}
     model-high-quality: ${AI_MODEL_HIGH_QUALITY:}
@@ -149,3 +155,9 @@ hiresemble:
     provider: ${WEB_SEARCH_PROVIDER:none}
     tavily-api-key: ${TAVILY_API_KEY:}
     tavily-endpoint: ${TAVILY_ENDPOINT:https://api.tavily.com/search}
+    allow-insecure-endpoint: ${ALLOW_INSECURE_PROVIDER_ENDPOINT:false}
+
+logging:
+  level:
+    org.springframework.ai.openai.OpenAiChatModel: ERROR
+    org.springframework.ai.openai.OpenAiEmbeddingModel: INFO

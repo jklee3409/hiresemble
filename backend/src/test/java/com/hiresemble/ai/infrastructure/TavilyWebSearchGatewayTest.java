@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.WebSearchGateway.SearchRequest;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchBatchOutput;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchPurpose;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
@@ -20,6 +21,8 @@ import java.net.http.HttpClient;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.math.BigDecimal;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,6 +161,50 @@ class TavilyWebSearchGatewayTest {
                 .hasMessageContaining("TAVILY_API_KEY");
     }
 
+    @Test
+    void oversizedStreamStopsSafelyAndFailedOutboundCallKeepsUsage() {
+        server.stubFor(post(urlEqualTo("/search"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("{\"results\":[],\"padding\":\""
+                                + "x".repeat(2_000_010)
+                                + "\"}")));
+
+        assertThatThrownBy(() ->
+                        gateway().search(request(1, Duration.ofSeconds(3))))
+                .isInstanceOf(AiExecutionException.class)
+                .satisfies(error -> {
+                    AiExecutionException failure = (AiExecutionException) error;
+                    assertThat(failure.safeCode()).isEqualTo("AI_SEARCH_RESPONSE_TOO_LARGE");
+                    assertThat(failure.incurredUsages()).singleElement()
+                            .satisfies(usage -> {
+                                assertThat(usage.searchUnits()).isEqualTo(1);
+                                assertThat(usage.providerCallId()).isNotNull();
+                            });
+                });
+    }
+
+    @Test
+    void productionPolicyRejectsHttpEndpoint() {
+        assertThatThrownBy(() -> new TavilyWebSearchGateway(
+                        HttpClient.newHttpClient(),
+                        objectMapper,
+                        URI.create(server.baseUrl() + "/search"),
+                        "fake-tavily-key",
+                        Clock.systemUTC(),
+                        (version, provider, product, unit) -> new AiPriceQuote(
+                                version,
+                                UUID.randomUUID(),
+                                provider,
+                                product,
+                                unit,
+                                1,
+                                BigDecimal.ZERO.setScale(6)),
+                        false))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("endpoint");
+    }
+
     private void assertFailure(String code, FailureKind kind) {
         assertThatThrownBy(() ->
                         gateway().search(request(5, Duration.ofSeconds(1))))
@@ -194,6 +241,7 @@ class TavilyWebSearchGatewayTest {
                 "BASIC",
                 maxResults,
                 timeout,
-                "OFFICIAL");
+                "OFFICIAL",
+                1L);
     }
 }

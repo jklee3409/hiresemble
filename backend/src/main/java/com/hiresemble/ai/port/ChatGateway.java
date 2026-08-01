@@ -16,15 +16,44 @@ public interface ChatGateway {
             String outputSchemaVersion,
             Set<String> allowedTools,
             int maxToolCalls,
-            Duration timeout) {
+            Duration timeout,
+            Long priceVersion,
+            int maxOutputTokens,
+            Class<?> outputType) {
         public ChatRequest {
             allowedTools = allowedTools == null ? Set.of() : Set.copyOf(allowedTools);
             if (providerKey == null || providerKey.isBlank() || productKey == null || productKey.isBlank()
                     || promptVersion == null || promptVersion.isBlank() || instructions == null
                     || input == null || outputSchemaVersion == null || outputSchemaVersion.isBlank()
-                    || maxToolCalls < 0 || timeout == null || timeout.isNegative() || timeout.isZero()) {
+                    || maxToolCalls < 0 || timeout == null || timeout.isNegative() || timeout.isZero()
+                    || maxOutputTokens < 1) {
                 throw new IllegalArgumentException("chat request is invalid");
             }
+        }
+
+        public ChatRequest(
+                String providerKey,
+                String productKey,
+                String promptVersion,
+                String instructions,
+                JsonNode input,
+                String outputSchemaVersion,
+                Set<String> allowedTools,
+                int maxToolCalls,
+                Duration timeout) {
+            this(
+                    providerKey,
+                    productKey,
+                    promptVersion,
+                    instructions,
+                    input,
+                    outputSchemaVersion,
+                    allowedTools,
+                    maxToolCalls,
+                    timeout,
+                    null,
+                    4096,
+                    null);
         }
     }
 }

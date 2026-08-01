@@ -25,4 +25,49 @@ public record UsageRecordCommand(
         UUID priceItemId,
         BigDecimal costUsd,
         long durationMs,
-        Instant occurredAt) {}
+        UUID providerCallId,
+        Instant occurredAt) {
+
+    public UsageRecordCommand(
+            UUID userId,
+            UUID agentRunId,
+            UUID agentStepId,
+            UUID claimToken,
+            String operationType,
+            UsageType usageType,
+            String providerKey,
+            String productKey,
+            ModelTier modelTier,
+            long inputUnits,
+            long cachedInputUnits,
+            long outputUnits,
+            long embeddingUnits,
+            long searchUnits,
+            Long priceVersion,
+            UUID priceItemId,
+            BigDecimal costUsd,
+            long durationMs,
+            Instant occurredAt) {
+        this(
+                userId,
+                agentRunId,
+                agentStepId,
+                claimToken,
+                operationType,
+                usageType,
+                providerKey,
+                productKey,
+                modelTier,
+                inputUnits,
+                cachedInputUnits,
+                outputUnits,
+                embeddingUnits,
+                searchUnits,
+                priceVersion,
+                priceItemId,
+                costUsd,
+                durationMs,
+                null,
+                occurredAt);
+    }
+}

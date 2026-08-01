@@ -2,3 +2,35 @@ hiresemble:
   idempotency:
     hmac-keys:
       1: hiresemble-local-only-idempotency-key-change-in-production
+  ai:
+    provider: ${AI_PROVIDER:openai}
+  search:
+    provider: ${WEB_SEARCH_PROVIDER:tavily}
+  document:
+    ai-cost:
+      estimated-cost-usd: ${DOCUMENT_AI_ESTIMATED_COST_USD:0.300000}
+      price-version: ${DOCUMENT_AI_PRICE_VERSION:2026073101}
+  job:
+    ai-cost:
+      estimated-cost-usd: ${JOB_AI_ESTIMATED_COST_USD:0.300000}
+      price-version: ${JOB_AI_PRICE_VERSION:2026073101}
+  cover-letter:
+    ai-cost:
+      generation-estimated-cost-usd: ${COVER_LETTER_GENERATION_ESTIMATED_COST_USD:0.300000}
+      generation-price-version: ${COVER_LETTER_GENERATION_PRICE_VERSION:2026073101}
+      verification-estimated-cost-usd: ${COVER_LETTER_VERIFICATION_ESTIMATED_COST_USD:0.300000}
+      verification-price-version: ${COVER_LETTER_VERIFICATION_PRICE_VERSION:2026073101}
+  interview:
+    ai-cost:
+      preparation-estimated-cost-usd: ${INTERVIEW_PREPARATION_ESTIMATED_COST_USD:0.300000}
+      preparation-price-version: ${INTERVIEW_PREPARATION_PRICE_VERSION:2026073101}
+      feedback-estimated-cost-usd: ${INTERVIEW_FEEDBACK_ESTIMATED_COST_USD:0.300000}
+      feedback-price-version: ${INTERVIEW_FEEDBACK_PRICE_VERSION:2026073101}
+
+spring:
+  ai:
+    model:
+      chat: ${AI_CHAT_MODEL_PROVIDER:openai}
+      embedding: ${AI_EMBEDDING_MODEL_PROVIDER:openai}
+    vectorstore:
+      type: none

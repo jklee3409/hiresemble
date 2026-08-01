@@ -302,7 +302,7 @@ public final class JobAnalysisWorkflow {
 
         protected final AiGatewayResponse localResponse(Object output) {
             try {
-                return new AiGatewayResponse(objectMapper.writeValueAsString(output), null);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
             } catch (Exception exception) {
                 throw configurationFailure();
             }
@@ -498,7 +498,10 @@ public final class JobAnalysisWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -623,7 +626,10 @@ public final class JobAnalysisWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -720,7 +726,8 @@ public final class JobAnalysisWorkflow {
                     invocation.modelRoute().productKey(),
                     List.of(maskAndLimit(input.queryText(), 2_000)),
                     state.embeddingPolicy().dimension(),
-                    EMBEDDING_TIMEOUT));
+                    EMBEDDING_TIMEOUT,
+                    invocation.executionContext().run().priceVersion()));
             List<Double> vector = parseSingleVector(
                     embedding.rawJson(), state.embeddingPolicy().dimension());
             List<RetrievedVerifiedEvidence> retrieved;
@@ -778,7 +785,7 @@ public final class JobAnalysisWorkflow {
                             null,
                             sha256(input.queryText()),
                             candidates)),
-                    embedding.usage());
+                    embedding.usages());
         }
 
         @Override
@@ -904,7 +911,10 @@ public final class JobAnalysisWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override

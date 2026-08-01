@@ -222,7 +222,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                         "Unexpected P6 chat schema: " + request.outputSchemaVersion());
             };
             try {
-                return new AiGatewayResponse(objectMapper.writeValueAsString(output), null);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException("Fake P6 output serialization failed", exception);
             }
@@ -332,7 +332,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                         objectMapper.writeValueAsString(new EmbeddingValuesOutput(
                                 List.of(Collections.nCopies(
                                         request.dimension(), 0.125d)))),
-                        null);
+                        java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException(
                         "Fake P6 embedding serialization failed", exception);

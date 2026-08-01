@@ -255,7 +255,7 @@ public final class CoverLetterVerificationWorkflow {
         }
 
         protected final AiGatewayResponse localResponse(Object value) {
-            return new AiGatewayResponse(write(value), null);
+            return new AiGatewayResponse(write(value), java.util.List.of());
         }
 
         @Override
@@ -547,7 +547,10 @@ public final class CoverLetterVerificationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
@@ -708,7 +711,10 @@ public final class CoverLetterVerificationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override

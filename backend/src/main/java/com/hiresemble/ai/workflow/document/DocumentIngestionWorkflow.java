@@ -163,7 +163,7 @@ public final class DocumentIngestionWorkflow {
 
         protected final AiGatewayResponse localResponse(Object output) {
             try {
-                return new AiGatewayResponse(objectMapper.writeValueAsString(output), null);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
             } catch (Exception exception) {
                 throw AiExecutionException.nonRetryable(
                         FailureKind.CONFIGURATION,
@@ -432,7 +432,7 @@ public final class DocumentIngestionWorkflow {
                     .forEach(value -> maskedInputs.add(value.asText()));
             AiGatewayResponse gateway = invocation.embeddingGateway().embed(new EmbeddingRequest(
                     policy.provider(), policy.model(), maskedInputs, policy.dimension(),
-                    EMBEDDING_TIMEOUT));
+                    EMBEDDING_TIMEOUT, invocation.executionContext().run().priceVersion()));
             try {
                 EmbeddingValuesOutput values = objectMapper.readValue(
                         gateway.rawJson(), EmbeddingValuesOutput.class);
@@ -451,7 +451,7 @@ public final class DocumentIngestionWorkflow {
                                 .path("documentId").asText()),
                         invocation.input().gatewayPayload().path("sourceRevision").asLong(),
                         policy.version(), policy.dimension(), policy.generation(), vectors);
-                return new AiGatewayResponse(objectMapper.writeValueAsString(batch), gateway.usage());
+                return new AiGatewayResponse(objectMapper.writeValueAsString(batch), gateway.usages());
             } catch (AiExecutionException exception) {
                 throw exception;
             } catch (Exception exception) {
@@ -591,7 +591,10 @@ public final class DocumentIngestionWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override

@@ -48,12 +48,12 @@ public class JdbcUsageRecorder implements UsageRecorderPort {
                             id, user_id, agent_run_id, agent_step_id, operation_type, usage_type,
                             provider_key, product_key, model_tier, input_units, cached_input_units,
                             output_units, embedding_units, search_units, price_version, price_item_id,
-                            cost_usd, duration_ms, created_at
+                            cost_usd, duration_ms, provider_call_id, created_at
                         ) VALUES (
                             :id, :userId, :runId, :stepId, :operationType, :usageType,
                             :providerKey, :productKey, :modelTier, :inputUnits, :cachedInputUnits,
                             :outputUnits, :embeddingUnits, :searchUnits, :priceVersion, :priceItemId,
-                            :cost, :durationMs, :createdAt
+                            :cost, :durationMs, :providerCallId, :createdAt
                         )
                         """)
                 .param("id", id).param("userId", command.userId())
@@ -66,6 +66,7 @@ public class JdbcUsageRecorder implements UsageRecorderPort {
                 .param("searchUnits", command.searchUnits()).param("priceVersion", command.priceVersion())
                 .param("priceItemId", command.priceItemId()).param("cost", command.costUsd())
                 .param("durationMs", command.durationMs())
+                .param("providerCallId", command.providerCallId())
                 .param("createdAt", OffsetDateTime.ofInstant(command.occurredAt(), ZoneOffset.UTC))
                 .update();
         if (inserted != 1) {

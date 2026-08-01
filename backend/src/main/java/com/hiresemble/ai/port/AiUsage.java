@@ -16,7 +16,8 @@ public record AiUsage(
         Long priceVersion,
         UUID priceItemId,
         BigDecimal costUsd,
-        long durationMs) {
+        long durationMs,
+        UUID providerCallId) {
 
     public AiUsage {
         if (usageType == null || providerKey == null || providerKey.isBlank()
@@ -27,5 +28,34 @@ public record AiUsage(
                 || (costUsd.signum() > 0 && (priceVersion == null || priceItemId == null))) {
             throw new IllegalArgumentException("AI usage is invalid");
         }
+    }
+
+    public AiUsage(
+            UsageType usageType,
+            String providerKey,
+            String productKey,
+            long inputUnits,
+            long cachedInputUnits,
+            long outputUnits,
+            long embeddingUnits,
+            long searchUnits,
+            Long priceVersion,
+            UUID priceItemId,
+            BigDecimal costUsd,
+            long durationMs) {
+        this(
+                usageType,
+                providerKey,
+                productKey,
+                inputUnits,
+                cachedInputUnits,
+                outputUnits,
+                embeddingUnits,
+                searchUnits,
+                priceVersion,
+                priceItemId,
+                costUsd,
+                durationMs,
+                null);
     }
 }

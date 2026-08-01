@@ -672,7 +672,7 @@ class CoverLetterGenerationWorkflowTest {
                 default -> throw new AssertionError(
                         "unexpected chat schema " + request.outputSchemaVersion());
             };
-            return new AiGatewayResponse(mapper.writeValueAsString(output), null);
+            return new AiGatewayResponse(mapper.writeValueAsString(output), java.util.List.of());
         }
     }
 
@@ -691,7 +691,7 @@ class CoverLetterGenerationWorkflowTest {
             for (int index = 0; index < request.dimension(); index++) {
                 vector.add(0.1D);
             }
-            return new AiGatewayResponse(output.toString(), null);
+            return new AiGatewayResponse(output.toString(), java.util.List.of());
         }
     }
 

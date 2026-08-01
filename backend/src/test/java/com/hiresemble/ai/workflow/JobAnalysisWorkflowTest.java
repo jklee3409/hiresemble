@@ -894,7 +894,7 @@ class JobAnalysisWorkflowTest {
             if (output == null) {
                 throw new AssertionError("unexpected chat call");
             }
-            return new AiGatewayResponse(output, null);
+            return new AiGatewayResponse(output, java.util.List.of());
         }
     }
 
@@ -919,7 +919,7 @@ class JobAnalysisWorkflowTest {
                         mapper.writeValueAsString(new EmbeddingValuesOutput(
                                 List.of(java.util.Collections.nCopies(
                                         dimension, 0.125d)))),
-                        null);
+                        java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException(exception);
             }

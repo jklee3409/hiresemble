@@ -168,7 +168,7 @@ public final class InterviewAnswerFeedbackWorkflow {
         }
 
         protected AiGatewayResponse local(Object value) {
-            return new AiGatewayResponse(write(value), null);
+            return new AiGatewayResponse(write(value), java.util.List.of());
         }
 
         protected JsonNode tree(Object value) {
@@ -340,7 +340,10 @@ public final class InterviewAnswerFeedbackWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override

@@ -406,10 +406,10 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         "Unexpected P7 chat schema: " + request.outputSchemaVersion());
             };
             if (output instanceof String rawJson) {
-                return new AiGatewayResponse(rawJson, null);
+                return new AiGatewayResponse(rawJson, java.util.List.of());
             }
             try {
-                return new AiGatewayResponse(objectMapper.writeValueAsString(output), null);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException("Fake P7 output serialization failed", exception);
             }
@@ -691,7 +691,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                 return new AiGatewayResponse(
                         objectMapper.writeValueAsString(
                                 new DocumentIngestionWorkflow.EmbeddingValuesOutput(vectors)),
-                        null);
+                        java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException(
                         "Fake P7 embedding serialization failed", exception);

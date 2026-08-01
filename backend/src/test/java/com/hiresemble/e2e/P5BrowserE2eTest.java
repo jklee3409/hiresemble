@@ -177,6 +177,16 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
         FakeJobChatGateway p5BrowserJobChatGateway(ObjectMapper objectMapper) {
             return new FakeJobChatGateway(objectMapper);
         }
+
+        @Bean
+        com.hiresemble.ai.port.EmbeddingGateway p5DisabledEmbeddingGateway() {
+            return request -> {
+                throw com.hiresemble.ai.execution.AiExecutionException.nonRetryable(
+                        com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind.CONFIGURATION,
+                        "AI_PROVIDER_DISABLED",
+                        "AI 실행 공급자가 활성화되지 않았습니다.");
+            };
+        }
     }
 
     static final class FakeJobPageFetchGateway implements JobPageFetchGateway {
@@ -247,7 +257,7 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
                     remoteFixture ? "FULL_TIME" : null,
                     remoteFixture ? "Seoul" : null);
             try {
-                return new AiGatewayResponse(objectMapper.writeValueAsString(output), null);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), java.util.List.of());
             } catch (Exception exception) {
                 throw new IllegalStateException("Fake Job Chat serialization failed", exception);
             }

@@ -3,6 +3,9 @@ package com.hiresemble.ai.infrastructure;
 import com.hiresemble.agentrun.domain.model.UsageType;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.WebSearchGateway;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchBatchOutput;
@@ -10,6 +13,8 @@ import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchHit;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchPurpose;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import java.math.BigDecimal;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,16 +24,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-/** Explicitly enabled Tavily adapter. The default application still uses network-disabled search. */
+/** Explicitly enabled Tavily adapter; local activates it and offline/test use disabled or Fake search. */
 @Component
-@Primary
 @ConditionalOnProperty(
         name = "hiresemble.search.provider",
         havingValue = "tavily")
@@ -42,13 +47,18 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
     private final URI endpoint;
     private final String apiKey;
     private final Clock clock;
+    private final AiPriceCatalogQueryPort priceCatalog;
 
+    @Autowired
     public TavilyWebSearchGateway(
             ObjectMapper objectMapper,
             Clock clock,
+            AiPriceCatalogQueryPort priceCatalog,
             @Value("${hiresemble.search.tavily-api-key:}") String apiKey,
             @Value("${hiresemble.search.tavily-endpoint:https://api.tavily.com/search}")
-                    URI endpoint) {
+                    URI endpoint,
+            @Value("${hiresemble.search.allow-insecure-endpoint:false}")
+                    boolean allowInsecureEndpoint) {
         this(
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(5))
@@ -57,7 +67,9 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
                 objectMapper,
                 endpoint,
                 apiKey,
-                clock);
+                clock,
+                priceCatalog,
+                allowInsecureEndpoint);
     }
 
     TavilyWebSearchGateway(
@@ -66,11 +78,37 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
             URI endpoint,
             String apiKey,
             Clock clock) {
+        this(
+                client,
+                objectMapper,
+                endpoint,
+                apiKey,
+                clock,
+                (version, provider, product, unit) -> new AiPriceQuote(
+                        Math.max(1, version),
+                        UUID.fromString("85000000-0000-4000-8000-000000000199"),
+                        provider,
+                        product,
+                        unit,
+                        1,
+                        BigDecimal.ZERO.setScale(6)),
+                true);
+    }
+
+    TavilyWebSearchGateway(
+            HttpClient client,
+            ObjectMapper objectMapper,
+            URI endpoint,
+            String apiKey,
+            Clock clock,
+            AiPriceCatalogQueryPort priceCatalog,
+            boolean allowInsecureEndpoint) {
         this.client = Objects.requireNonNull(client);
         this.objectMapper = Objects.requireNonNull(objectMapper);
-        this.endpoint = requireEndpoint(endpoint);
+        this.endpoint = requireEndpoint(endpoint, allowInsecureEndpoint);
         this.apiKey = requireApiKey(apiKey);
         this.clock = Objects.requireNonNull(clock);
+        this.priceCatalog = Objects.requireNonNull(priceCatalog);
     }
 
     @Override
@@ -86,9 +124,12 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
         }
         long started = clock.millis();
         List<SearchHit> results = new ArrayList<>();
+        List<AiUsage> usages = new ArrayList<>();
         int successfulCalls = 0;
         AiExecutionException lastFailure = null;
+        AiPriceQuote quote = requirePrice(request);
         for (String query : request.queries()) {
+            usages.add(searchUsage(request, quote, UUID.randomUUID(), 0));
             try {
                 results.addAll(searchOne(query, request));
                 successfulCalls++;
@@ -97,28 +138,29 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
             }
         }
         if (successfulCalls == 0) {
-            throw lastFailure == null
+            AiExecutionException failure = lastFailure == null
                     ? providerFailure()
                     : lastFailure;
+            throw failure.withIncurredUsages(usages);
         }
         var output = new SearchBatchOutput(
                 OUTPUT_SCHEMA, purpose, true, null, results);
-        var usage = new AiUsage(
-                UsageType.SEARCH,
-                "tavily",
-                request.researchQuality().toLowerCase(java.util.Locale.ROOT),
-                0,
-                0,
-                0,
-                0,
-                request.queries().size(),
-                null,
-                null,
-                BigDecimal.ZERO.setScale(6),
-                Math.max(0, clock.millis() - started));
+        long duration = Math.max(0, clock.millis() - started);
+        usages = usages.stream()
+                .map(usage -> new AiUsage(
+                        usage.usageType(),
+                        usage.providerKey(),
+                        usage.productKey(),
+                        0, 0, 0, 0, 1,
+                        usage.priceVersion(),
+                        usage.priceItemId(),
+                        usage.costUsd(),
+                        duration,
+                        usage.providerCallId()))
+                .toList();
         try {
             return new AiGatewayResponse(
-                    objectMapper.writeValueAsString(output), usage);
+                    objectMapper.writeValueAsString(output), usages);
         } catch (RuntimeException exception) {
             throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
@@ -145,8 +187,12 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();
         try {
-            HttpResponse<String> response =
-                    client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<InputStream> response =
+                    client.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+            byte[] body;
+            try (InputStream stream = response.body()) {
+                body = readBounded(stream);
+            }
             if (response.statusCode() == 429) {
                 throw AiExecutionException.retryable(
                         FailureKind.RATE_LIMIT,
@@ -162,13 +208,7 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
                         "AI_SEARCH_REQUEST_REJECTED",
                         "면접 조사 검색 요청 구성을 확인해 주세요.");
             }
-            if (response.body().length() > MAX_RESPONSE_BYTES) {
-                throw AiExecutionException.nonRetryable(
-                        FailureKind.SAFETY,
-                        "AI_SEARCH_RESPONSE_TOO_LARGE",
-                        "면접 조사 검색 결과가 허용 범위를 초과했습니다.");
-            }
-            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode root = objectMapper.readTree(body);
             JsonNode values = root.path("results");
             if (!values.isArray()) {
                 throw malformed();
@@ -230,10 +270,69 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
                 "면접 조사 검색 결과 형식이 올바르지 않습니다.");
     }
 
-    private static URI requireEndpoint(URI value) {
+    private AiPriceQuote requirePrice(SearchRequest request) {
+        if (request.priceVersion() == null) {
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.CONFIGURATION,
+                    "AI_SEARCH_CONFIGURATION_INVALID",
+                    "면접 조사 검색 가격 구성이 올바르지 않습니다.");
+        }
+        String product = product(request);
+        AiPriceUnit unit = "advanced".equals(product)
+                ? AiPriceUnit.SEARCH_ADVANCED_REQUEST
+                : AiPriceUnit.SEARCH_BASIC_REQUEST;
+        try {
+            return priceCatalog.requireQuote(
+                    request.priceVersion(), "tavily", product, unit);
+        } catch (RuntimeException exception) {
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.CONFIGURATION,
+                    "AI_SEARCH_CONFIGURATION_INVALID",
+                    "면접 조사 검색 가격 구성이 올바르지 않습니다.");
+        }
+    }
+
+    private AiUsage searchUsage(
+            SearchRequest request, AiPriceQuote quote, UUID callId, long durationMs) {
+        return new AiUsage(
+                UsageType.SEARCH,
+                "tavily",
+                product(request),
+                0, 0, 0, 0, 1,
+                quote.priceVersion(),
+                quote.priceItemId(),
+                quote.costFor(1),
+                durationMs,
+                callId);
+    }
+
+    private static String product(SearchRequest request) {
+        return "ADVANCED".equals(request.researchQuality()) ? "advanced" : "basic";
+    }
+
+    private byte[] readBounded(InputStream stream) throws java.io.IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int total = 0;
+        int read;
+        while ((read = stream.read(buffer)) != -1) {
+            total += read;
+            if (total > MAX_RESPONSE_BYTES) {
+                throw AiExecutionException.nonRetryable(
+                        FailureKind.SAFETY,
+                        "AI_SEARCH_RESPONSE_TOO_LARGE",
+                        "면접 조사 검색 결과가 허용 범위를 초과했습니다.");
+            }
+            output.write(buffer, 0, read);
+        }
+        return output.toByteArray();
+    }
+
+    private static URI requireEndpoint(URI value, boolean allowInsecureEndpoint) {
         if (value == null
                 || (!"https".equalsIgnoreCase(value.getScheme())
-                        && !"http".equalsIgnoreCase(value.getScheme()))
+                        && !(allowInsecureEndpoint
+                                && "http".equalsIgnoreCase(value.getScheme())))
                 || value.getHost() == null
                 || value.getUserInfo() != null
                 || value.getFragment() != null) {

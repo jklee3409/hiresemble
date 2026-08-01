@@ -55,3 +55,4 @@ Desktop.ini
 # Local infrastructure data (named Docker volumes are preferred)
 infra/data/
 docker-data/
+.codex-real-provider-call-summary.json

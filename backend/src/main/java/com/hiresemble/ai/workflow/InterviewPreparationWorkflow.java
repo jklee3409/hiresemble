@@ -237,7 +237,7 @@ public final class InterviewPreparationWorkflow {
         }
 
         protected AiGatewayResponse local(Object value) {
-            return new AiGatewayResponse(write(value), null);
+            return new AiGatewayResponse(write(value), java.util.List.of());
         }
 
         protected JsonNode tree(Object value) {
@@ -429,14 +429,17 @@ public final class InterviewPreparationWorkflow {
                         state(invocation.executionContext()).researchQuality().name(),
                         input.maxResultsPerQuery(),
                         SEARCH_TIMEOUT,
-                        purpose.name()));
+                        purpose.name(),
+                        invocation.executionContext().run().priceVersion()));
             } catch (AiExecutionException failure) {
-                return local(new SearchBatchOutput(
-                        SEARCH_SCHEMA,
-                        purpose,
-                        false,
-                        failure.safeCode(),
-                        List.of()));
+                return new AiGatewayResponse(
+                        write(new SearchBatchOutput(
+                                SEARCH_SCHEMA,
+                                purpose,
+                                false,
+                                failure.safeCode(),
+                                List.of())),
+                        failure.incurredUsages());
             }
         }
 
@@ -789,7 +792,10 @@ public final class InterviewPreparationWorkflow {
                     invocation.prompt().outputSchemaVersion(),
                     invocation.prompt().toolAllowlist(),
                     0,
-                    CHAT_TIMEOUT));
+                    CHAT_TIMEOUT,
+                    invocation.executionContext().run().priceVersion(),
+                    invocation.prompt().maxOutputTokens(),
+                    invocation.prompt().outputType()));
         }
 
         @Override
