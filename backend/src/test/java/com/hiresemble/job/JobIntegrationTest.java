@@ -293,6 +293,7 @@ class JobIntegrationTest extends PostgresIntegrationTest {
         UUID failedJob = UUID.fromString(failedAccepted.get("jobId").asText());
         UUID failedRun = UUID.fromString(failedAccepted.get("agentRunId").asText());
         var failedState = extraction.markFailed(owner.userId(), failedJob, failedRun, 0);
+        budgetReservations.releaseUnused(owner.userId(), failedRun, NOW);
         jdbcTemplate.update(
                 """
                 UPDATE agent_runs SET status='FAILED',completed_at=?,

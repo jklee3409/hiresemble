@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안 회귀 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (Terminal retry fixture budget 불변식 보정)
+
+- What was done:
+  - FAILED 상태를 직접 구성하는 retry fixture가 terminal 전 예약 비용을 release하도록 보정했다.
+- Key decisions:
+  - production DB의 non-active reserved cost CHECK를 test fixture도 준수한다.
+- Issues encountered:
+  - 전체 check 1차에서 fixture가 CHECK를 위반했다.
+- Validation:
+  - JobIntegrationTest와 Backend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (근거 검토 source 경계 회귀)
 
 - What was done:
