@@ -4,6 +4,33 @@
 
 P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
 
+## [2026-08-01] Session Summary (candidate rejection 성공 계약)
+
+- What was done:
+  - apply output v2에 candidate/applied/rejected와 stable reason count를 추가하고 가짜 `candidate-rejected-*` failed scope를 제거했다.
+- Key decisions:
+  - 일부·전체 rejection도 apply/finalize가 정상 완료되면 문서와 Run 성공이며 적용 evidence ID만 result reference다.
+- Issues encountered:
+  - 기존 live run의 정확한 rejection reason은 과거 checkpoint로 복구할 수 없다.
+- Validation:
+  - 6→4/2, 4→4/0, 3→0/3 시나리오와 Provider/structured/domain failure 회귀 통과.
+- Next steps:
+  - 실제 Provider 재호출 없이 offline 상태를 유지하고 bounded terminal 재검증을 handoff한다.
+
+## [2026-08-01] Session Summary (local ref trusted mapping과 metadata 제거)
+
+- What was done:
+  - Provider payload/output의 document ID·revision·실제 chunk UUID·metadata를 제거하고 `C1` ref를 same-revision trusted UUID로 복원했다.
+  - candidate `min(12, chunks×2)`, source ref 8, content 2,000자, warning 500자 정책을 prompt/record/workflow에서 공유했다.
+- Key decisions:
+  - 사용처 없는 Provider metadata는 제거하되 domain/public `Map<String,Object>`·JSONB는 빈 object와 warning projection으로 유지한다.
+- Issues encountered:
+  - 과거 live output의 정확한 invalid field는 확인할 수 없다.
+- Validation:
+  - manual JSON, unknown/duplicate/blank ref, cap/null/warning, UUID mapping과 persistence 회귀 통과.
+- Next steps:
+  - Chat capability 성공 뒤 실제 document ingestion 1회만 검증한다.
+
 ## [2026-08-01] Session Summary (evidence metadata Provider 계약 분리)
 
 - What was done:

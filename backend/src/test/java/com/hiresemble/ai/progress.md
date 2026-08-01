@@ -4,6 +4,32 @@
 
 P3 runtime과 P4 Document·P5 Job workflow 통합 검증 및 전체 Chat strict output 자동 검사가 구현됐다.
 
+## [2026-08-01] Session Summary (partial terminal·document filtering 회귀)
+
+- What was done:
+  - workflow policy completeness, Orchestrator terminal decision과 문서 일부·전체 candidate rejection 회귀를 추가했다.
+- Key decisions:
+  - 자기소개서 partial failure와 Provider/structured/domain 실패는 계속 전체 실패로 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 68 suites/466 tests, 실패·오류·skip 0, 외부 호출 0회.
+- Next steps:
+  - bounded live 검증과 offline 회귀 결과를 분리한다.
+
+## [2026-08-01] Session Summary (phase별 structured retry 회귀)
+
+- What was done:
+  - validation·gateway·orchestration·document contract의 deterministic/repairable 호출 수와 usage 회귀를 확장했다.
+- Key decisions:
+  - 실제 Provider 대신 Fake/수기 synthetic JSON만 사용한다.
+- Issues encountered:
+  - test-only price row가 migration 불변성을 오염시켜 기존 V13 item 참조로 보정했다.
+- Validation:
+  - 전체 68 suites/459 tests 통과, 외부 호출 0회.
+- Next steps:
+  - live gate는 운영 runbook에서 별도 수행한다.
+
 ## [2026-08-01] Session Summary (strict schema와 document regression)
 
 - What was done:

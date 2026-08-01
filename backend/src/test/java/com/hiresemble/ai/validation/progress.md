@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-01] Session Summary (parse부터 domain까지 phase 검증)
+
+- What was done:
+  - invalid JSON, shape, binding, record, workflow, domain phase와 generic fallback·safe 비노출을 각각 검증했다.
+- Key decisions:
+  - Jackson property description이 실제 strict schema에 반영되고 unsupported keyword를 만들지 않는지 함께 고정한다.
+- Issues encountered:
+  - Swagger description annotation은 converter에서 unsupported `default`를 만들 수 있어 사용하지 않았다.
+- Validation:
+  - validator/schema registry focused와 전체 check 통과.
+- Next steps:
+  - strict subset 변경은 공식 문서와 runtime generator 양쪽 근거로 갱신한다.
+
 ## [2026-08-01] Session Summary (strict schema 전수·completeness 회귀)
 
 - What was done:

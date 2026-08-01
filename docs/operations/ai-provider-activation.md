@@ -47,15 +47,18 @@ PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를
 
 ## P8.5-V 사용자 local 검증
 
-2026-08-01 초기 bounded smoke 결과는 Chat 2회 시도(첫 호출은 `/v1` 누락 404, 보정 후 `429 insufficient_quota`), Embedding 1회 시도(`429 insufficient_quota`), Tavily BASIC 1회 성공이었다. 이후 실제 문서 실행에서는 parse·mask·chunk·Embedding이 성공하고 Chat endpoint에 도달했지만 `EXTRACT_EVIDENCE_CANDIDATES` strict schema 요청이 거절됐다. 당시 raw Provider error code·param·request ID가 영구 보존되지 않아 직접 확정할 수는 없지만, 수정 전 runtime schema의 bare `metadata` object는 OpenAI strict subset 검사에서 재현 가능하게 실패했다. Provider output을 제한된 scalar entry 배열로 바꾸고 전체 schema·실제 SDK 요청 payload를 offline 검증했으며 수정 뒤 실제 Provider 호출은 0회다.
+2026-08-01 초기 strict schema 요청 거절은 strict-compatible schema 보정으로 해소됐다. 이후 실제 문서 run `26f9b3d0-3bf7-4587-b2f7-938e8d8e045d`에서는 parse·mask·chunk·Embedding이 성공했고 수정된 schema 요청과 Chat model execution이 3회 도달했지만, 응답이 Hiresemble structured semantic boundary에서 거절됐다. 총 내부 원가는 USD 0.029814(Embedding 0.000056, Chat 0.029758)였고 text·masked text·chunk·embedding은 보존됐으며 evidence는 0건이었다. 당시 모든 response validation 실패가 `AI_STRUCTURED_OUTPUT_INVALID`로 합쳐졌으므로 정확한 live invalid field와 output truncation 여부는 미확정이다.
 
-현재 판정은 Embedding 연결 증거만 있고 Chat capability와 문서 수직 흐름은 재검증되지 않은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 일반 `local` profile에서 다음 순서로 검증한다.
+offline 보정은 문서 Provider output에서 document ID·source revision·실제 chunk UUID·동적 metadata를 제거하고 `C1` local ref를 trusted same-revision chunk UUID로 복원한다. JSON parse/schema/binding과 deterministic contract 오류는 1회에서 종료하고, model-repairable record/workflow 오류만 값 없는 correction guidance로 1회 추가 시도한다. Spring AI finish reason은 이후 실행부터 truncation/safety/incomplete safe code로 구분한다. 이 보정 뒤 실제 Provider 호출은 0회다.
 
-1. capability smoke: Chat 1회, Embedding 1회, Tavily BASIC 1회.
-2. 문서 업로드→실제 embedding→근거 추출.
-3. 공고 등록→실제 공고 추출→공고 분석.
-4. 자기소개서 생성→검증.
-5. 면접 준비→Tavily 조사→질문 생성→답변 feedback.
+후속 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 OpenAI Chat, strict output, Java/workflow validation, trusted source-ref mapping, evidence persistence와 `FINALIZE_DOCUMENT`까지 성공했다. candidate 6건 중 4건은 저장되고 2건은 domain filtering으로 정상 제외됐으며 문서는 `PARSED`, evidence extraction은 `SUCCEEDED`였다. 다만 rejection count를 가짜 `failedScopeKeys`로 만든 workflow projection과 공용 Orchestrator의 자기소개서 전용 partial error 하드코딩 때문에 Run만 잘못 `FAILED`로 끝났다. 이 terminal classification은 offline 코드·회귀로 보정했으며 이번 보정의 실제 Provider 호출은 0회다.
+
+현재 판정은 Embedding과 Chat structured output부터 문서 finalize까지 `VERIFIED_BY_DOCUMENT_RUN`, terminal classification 보정은 `OFFLINE_VERIFIED_NOT_LIVE_REVERIFIED`, 전체 P8.5는 남은 제품 수직 흐름 때문에 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 `USER_LOCAL_VALIDATION_PENDING`이다. 이미 성공한 Chat·Embedding·Tavily capability를 반복하지 않고 다음 순서로 검증한다.
+
+1. 일반 UI에서 문서 업로드→근거 적용→문서 최종화를 1회 수행해 보정된 Run terminal 상태만 확인한다.
+2. 공고 등록→실제 공고 추출→공고 분석.
+3. 자기소개서 생성→검증.
+4. 면접 준비→Tavily 조사→질문 생성→답변 feedback.
 
 검증 기록에는 기능 성공 여부, safe error code, request ID, Agent Run ID, usage/cost 합계만 남긴다. key·prompt·response·문서/자소서/면접 답변 원문을 복사하지 않는다. 연결 성공과 결과 품질을 별도로 판정한다.
 
@@ -63,7 +66,7 @@ PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를
 - P4~P8 수직 흐름 성공: `LOCAL_VERTICAL_VERIFIED`
 - 두 범위와 민감정보 없는 기록 완료: P8.5 `DONE`
 
-strict schema 호환성 수정 작업에서는 실제 Provider를 호출하지 않았다. P8.6 기능 한도가 구현된 뒤에는 실제 제품 UAT도 해당 feature usage event를 정상 생성하며, 같은 idempotency replay는 추가 소비하지 않아야 한다.
+structured semantic·partial terminal 계약 보정 작업에서는 실제 Provider를 호출하지 않았다. P8.6 기능 한도가 구현된 뒤에는 실제 제품 UAT도 해당 feature usage event를 정상 생성하며, 같은 idempotency replay는 추가 소비하지 않아야 한다.
 
 ## Codex bounded adapter smoke
 
@@ -80,14 +83,16 @@ synthetic non-PII만 전송하며 정상 실행은 Chat 1, Embedding 1, Search 1
 
 gate 또는 key가 없으면 task는 호출 없이 skip하며 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 이 adapter smoke만으로 P4~P8 수직 검증 완료를 주장하지 않는다.
 
-strict Chat 보정만 재검증할 때는 전체 task 대신 기존 capability별 task를 딱 한 번 실행한다.
+strict Chat 보정만 재검증할 때는 전체 task 대신 기존 capability별 task를 딱 한 번 실행한다. 이 task의 synthetic structured result가 parse/schema/binding/record 검증을 통과해야 Chat capability 성공이다.
 
 ```powershell
 Set-Location backend
 .\gradlew.bat codexRealOpenAiChatTest --no-daemon --console=plain
 ```
 
-성공 뒤 같은 task를 반복하지 않고 일반 UI에서 문서 ingestion을 한 번 수행한다. 기록은 safe error code·request ID·Agent Run ID·usage/cost 합계로 제한하며, Chat capability 성공과 `EXTRACT_EVIDENCE_CANDIDATES`를 포함한 문서 vertical 성공을 별도로 판정한다.
+현재 persistent safe counter는 Chat 2, Embedding 1, Search 1, 총 4회이며 완료 capability는 Search다. 따라서 위 Chat task는 현재 capability별 절대 상한 2에 의해 Provider 호출 전에 fail-closed 된다. counter 파일을 삭제·수정하거나 우회하지 않는다. 새 semantic contract를 live 검증하려면 사용자가 별도 작업으로 versioned counter 정책과 Chat 1회 추가 allowance를 명시적으로 승인해야 한다.
+
+승인된 counter 정책 보정 뒤에만 위 task를 1회 실행한다. 성공 뒤 같은 task를 반복하지 않고 일반 UI에서 문서 ingestion을 한 번 수행한다. 실패하면 즉시 같은 요청을 반복하지 않고 새 safe phase/reason과 request/run ID를 확인한다. 기록은 safe error code·request ID·Agent Run ID·usage/cost 합계로 제한하며, Chat capability 성공과 `EXTRACT_EVIDENCE_CANDIDATES`를 포함한 문서 vertical 성공을 별도로 판정한다.
 
 ## Key rotation과 rollback
 

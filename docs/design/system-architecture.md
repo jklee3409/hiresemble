@@ -486,6 +486,8 @@ authenticated command
 → terminal run state
 ```
 
+terminal partial 판정은 공용 Orchestrator가 workflow type을 switch하지 않고 executable contribution의 명시적 policy를 사용한다. `failedScopeKeys`는 독립 처리 scope의 실제 실패만 뜻한다. 문서 candidate filtering은 candidate/applied/rejected 및 stable reason count로 step output에 집계하고 failed scope를 만들지 않으므로, 일부 또는 전체 candidate가 제외돼도 apply와 finalize가 성공하면 Run은 `SUCCEEDED`다. 자기소개서 일부 문항 실패는 기존처럼 workflow policy가 `COVER_LETTER_GENERATION_PARTIAL_FAILURE`와 retryability를 결정한다. Interview의 `LIMITED|NONE`은 출처 수준을 나타내는 정상 성공 결과이며 partial failure로 승격하지 않는다.
+
 ### 13.2 Context Builder
 
 Context snapshot은 최소 다음 provenance를 가진다.
@@ -504,7 +506,7 @@ Context snapshot은 최소 다음 provenance를 가진다.
 
 - 공개 품질 선택과 내부 model tier를 별도 type으로 취급한다.
 - task type, capability, 활성 policy와 비용을 기준으로 실제 provider/model을 선택한다.
-- LOW_COST structured output 실패 시 BALANCED 자동 승격은 최대 1회이며 전체 최대 3 attempt 중 하나를 소비한다.
+- LOW_COST structured output 중 correction guidance가 있는 record/workflow 의미 실패만 BALANCED로 최대 1회 승격한다. parse/schema/binding과 deterministic contract 실패는 승격·재호출하지 않는다.
 - HIGH_QUALITY는 사용자 설정 활성화, 요청별 명시 선택과 비용 예약 성공이 모두 있어야 하며 허용 workflow에만 적용한다.
 
 ### 13.4 Budget Guard
@@ -523,15 +525,18 @@ Canonical Prompt Definition
 → 중앙 OpenAI strict compatibility validation
 → 검증된 schema registry(name/version/hash/schema)
 → OpenAI Chat request
-→ Java record/workflow validation
-→ 명시적 domain mapping/domain validation
+→ raw JSON parse/schema shape/Java binding
+→ Java record/workflow context validation
+→ trusted context mapping/domain validation
 → persistence/public projection
 ```
 
-- Provider output은 JPA entity·공개 API DTO와 분리한다. 동적 metadata가 필요하면 임의 object 대신 제한된 scalar entry 배열을 사용하고 domain mapper에서 기존 `Map<String,Object>` 의미로 복원한다.
+- Provider output은 JPA entity·공개 API DTO와 분리한다. 문서 evidence output은 category/title/content/confidence/local source ref/warning만 소유하며 document ID·revision·실제 chunk UUID·owner·동적 metadata는 trusted server context에서 주입한다. 현재 제품 workflow가 Provider metadata key를 해석하지 않으므로 문서 Provider output에서는 metadata를 제거하고 공개/DB metadata object 계약은 유지한다.
+- 문서 chunk는 Provider에 `C1`, `C2` 같은 run-local reference로만 전달한다. mapper는 같은 document·source revision에서 조회한 ordered chunk 집합으로만 UUID를 복원하며 빈 값·중복·형식 오류·unknown ref를 domain apply 전에 거부한다.
 - 모든 object의 `properties`·전체 `required`·`additionalProperties:false`, nullable union, 지원 keyword와 nesting/property/enum 한도를 요청 전에 fail-closed로 검사한다.
-- schema 요청 거절은 `STRUCTURED_SCHEMA`, 모델 응답/파싱 검증 실패는 `STRUCTURED_OUTPUT`, domain 불변식 거절은 domain failure로 구분한다. strict 실패를 non-strict나 Fake adapter로 fallback하지 않는다.
+- schema 요청 거절은 `STRUCTURED_SCHEMA`, 응답은 `JSON_PARSE → SCHEMA_SHAPE → JAVA_BINDING → JAVA_RECORD → WORKFLOW_CONTEXT → DOMAIN_COMMAND`로 구분하고 domain 불변식 거절은 기존 domain failure로 유지한다. strict 실패를 non-strict나 Fake adapter로 fallback하지 않는다.
 - 진단에는 구조화된 Provider status/code/param/request ID와 schema name/version/hash만 허용하고 prompt·원문·raw response/error body·schema 원문은 저장하거나 기록하지 않는다.
+- Spring AI generation metadata에서 안전한 finish reason을 정규화해 `length`는 truncation, `content_filter`는 safety, 그 밖의 미완료 상태는 incomplete로 분리한다. 과거 응답에 finish reason 증거가 없으면 truncation을 추정하지 않는다.
 
 ### 13.5 Provider budget·제품 quota·usage·결제 분리
 
@@ -623,9 +628,9 @@ Agent Run은 DB의 claim token, 60초 lease, 15초 heartbeat, cancel request와 
 
 ### 15.3 재시도
 
-- 자동 재시도는 timeout, 429/5xx, 구조화 출력 재시도 가능 오류처럼 분류된 오류만 대상으로 한다.
+- 자동 재시도는 timeout, 429/5xx와 일시 network는 최대 3 attempt, 구조화 출력은 안전한 correction guidance가 있는 model-repairable 의미 오류만 최대 2 attempt를 대상으로 한다.
 - 비복구 validation·ownership·비용 오류는 자동 재시도하지 않는다.
-- 자동 재시도는 최초 실행을 포함해 최대 3 attempt이며 model 승격도 attempt를 소비한다.
+- `StepDefinition.maxModelCalls`는 한 persisted attempt 내부 호출 상한이고 automatic attempt는 별도 상한이다. 모든 Provider 호출과 model 승격은 attempt·usage를 소비한다.
 - `WAITING_USER`는 같은 run을 재개하고 terminal 사용자 retry는 lineage를 가진 새 run을 만든다.
 - 재시도 전에 기존 성공 step의 input hash를 다시 검증한다.
 

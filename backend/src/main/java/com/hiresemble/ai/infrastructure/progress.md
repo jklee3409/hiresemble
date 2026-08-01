@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-01] Session Summary (Chat finish reason과 usage 보존)
+
+- What was done:
+  - Spring AI generation finish reason을 length/content-filter/incomplete로 안전하게 분류하고 실패 usage를 유지했다.
+- Key decisions:
+  - raw response·전체 metadata는 저장하지 않고 truncation은 `AI_CHAT_OUTPUT_TRUNCATED`로 non-retryable 처리한다.
+- Issues encountered:
+  - 과거 live run에는 finish reason 증거가 없어 truncation을 확정하지 않는다.
+- Validation:
+  - mocked Spring AI response와 strict native request test, 전체 Backend check 통과.
+- Next steps:
+  - bounded live 결과에서는 safe code와 usage 합계만 기록한다.
+
 ## [2026-08-01] Session Summary (validated strict schema 전송과 safe 진단)
 
 - What was done:

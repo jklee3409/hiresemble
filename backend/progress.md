@@ -5,7 +5,33 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
 - V1~V13을 보존한 V14 migration이 활성 embedding 정책 provider key를 `openai`로 canonicalize한다.
-- Backend 전체 68 suites/452 tests와 이전 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 68 suites/466 tests와 이전 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (Document partial rejection terminal 정책 보정)
+
+- What was done:
+  - 문서 apply의 가짜 failed scope를 제거하고 stable rejection 집계, workflow별 terminal policy와 자기소개서 partial failure 회귀를 구현했다.
+- Key decisions:
+  - 일부·전체 candidate rejection은 문서 성공이며 공용 Orchestrator는 업무별 safe code를 소유하지 않는다.
+- Issues encountered:
+  - 기존 terminal Run row는 audit 보존을 위해 자동 수정하지 않는다.
+- Validation:
+  - `gradlew check --no-daemon --console=plain --max-workers=1`: 68 suites/466 tests, 0 failures/errors/skips. 실제 Provider 호출 0회.
+- Next steps:
+  - 사용자 local에서 새 문서 Run terminal `SUCCEEDED`를 bounded 1회 확인한다.
+
+## [2026-08-01] Session Summary (Structured output 의미 진단과 비용 재시도 보정)
+
+- What was done:
+  - 문서 Provider DTO v2·trusted mapper, phase별 safe code, repair-once guidance, finish reason과 usage 보존을 구현했다.
+- Key decisions:
+  - API/DB/migration은 유지하고 deterministic output failure는 1회, model-repairable semantic failure는 최대 2회로 제한한다.
+- Issues encountered:
+  - 전체 check 1차에서 통합 test fixture가 V13 catalog에 row를 추가해 migration test 1건을 오염시켰고, 기존 immutable item 참조로 수정했다.
+- Validation:
+  - 최종 `gradlew check --rerun-tasks`: 68 suites/459 tests, 0 failures/errors/skips. 외부 호출 0회.
+- Next steps:
+  - bounded live Chat·document 검증 전 상태를 성공으로 올리지 않는다.
 
 ## [2026-08-01] Session Summary (OpenAI strict Structured Output 호환성 보정)
 
@@ -20,7 +46,7 @@
 - Validation:
   - focused 회귀와 `gradlew check` 68 suites/452 tests가 통과했고 실제 OpenAI/Tavily 호출은 0회다.
 - Next steps:
-  - 사용자가 Chat capability 1회와 문서 ingestion 1회를 bounded 재검증하고 P8.5-V 상태를 판정한다.
+  - persistent Chat cap의 versioned 1회 allowance가 별도 승인된 뒤 Chat capability와 문서 ingestion을 bounded 재검증한다.
 
 ## [2026-08-01] Session Summary (OpenAI local 연결 오류와 embedding 정책 보정)
 

@@ -125,9 +125,13 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | PromptRegistry                     | 버전이 있는 프롬프트 관리                                  |
 | AiUsageRecorder                    | chat·embedding·search usage와 immutable 가격 version 기록  |
 
-Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. OpenAI adapter는 Spring AI 요청별 model·timeout·strict JSON Schema를 사용하고 provider retry·response storage·tool calling을 비활성화한다. Structured Output은 `Provider output record → Spring AI runtime schema 생성 → OpenAI strict subset 중앙 검증 → Java record → workflow validator → domain command validator`를 모두 통과한 결과만 반영한다.
+Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. OpenAI adapter는 Spring AI 요청별 model·timeout·strict JSON Schema를 사용하고 provider retry·response storage·tool calling을 비활성화한다. Structured Output은 `raw text JSON parse → schema/tree shape → Provider output record binding → Java record policy → workflow context → trusted mapper → domain command validator`를 모두 통과한 결과만 반영한다. 각 단계는 실제 값을 포함하지 않는 stable safe reason으로 구분한다.
 
 모든 현재 Chat output definition은 canonical prompt registry에서 자동 열거하고, 실제 Gateway가 보내는 것과 동일한 검증 완료 schema를 사용한다. strict object는 고정 `properties`, 전체 `required`, `additionalProperties:false`를 재귀 적용한다. Provider 경계에서 `Map`·bare `Object` 같은 임의 object를 사용하지 않으며 선택 의미는 property 생략이 아니라 필수 property의 명시적 `null` union으로 표현한다. schema 원문 대신 deterministic contract name·output version·SHA-256 fingerprint만 안전한 진단 metadata로 사용하고 기존 response/workflow/domain 검증을 대체하지 않는다.
+
+문서 근거 Provider output v2는 model-owned `evidenceCategory/title/content/confidence/sourceChunkRefs/validationWarning`만 포함한다. 입력 chunk는 `C1` 형식의 run-local reference로 제공하고 서버가 같은 document revision의 trusted chunk UUID로 복원한다. document ID·revision·owner·실제 chunk UUID·동적 metadata는 Provider가 출력하지 않으며 공개 `EvidenceDto.metadata`와 DB JSONB는 유지한 채 서버 mapper가 빈 object와 typed warning projection만 구성한다. candidate 상한은 `min(12, chunk count × 2)`, candidate당 source ref는 최대 8, content는 2,000자, Chat output은 8,192 token으로 제한한다.
+
+문서 evidence apply 결과는 Provider output DTO와 분리된 application model로 candidate/applied/rejected count, 적용 evidence ID, stable rejection reason count를 전달한다. candidate rejection은 정상 filtering이며 `PartialResult.failedScopeKeys`로 변환하지 않는다. 모든 executable workflow contribution은 실제 failed scope가 남았을 때의 terminal 성공·실패, safe error와 retry 결정을 명시하는 policy를 제공하며 공용 Orchestrator는 특정 workflow 오류 코드를 하드코딩하지 않는다.
 
 ### 4.3 문서 처리
 
@@ -301,8 +305,8 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 ### 8.1 실행·재사용 규칙
 
-- 자동 재시도 2회는 최초 포함 총 3 attempt다.
-- 429/5xx, 일시 network, 비동기 timeout, structured output validation 실패만 자동 재시도한다.
+- 429/5xx, 일시 network, 비동기 timeout은 최초 포함 총 3 attempt까지 자동 재시도한다.
+- structured output의 parse/schema/binding 및 deterministic contract 오류는 최초 1회에서 종료하고, correction guidance가 있는 record/workflow 의미 오류만 최대 2 attempt를 허용한다.
 - owner/input/domain validation, safety block, configuration, budget 오류는 자동 재시도하지 않는다.
 - LOW_COST→BALANCED 자동 승격은 최대 1회이며 attempt를 하나 소비한다. HIGH_QUALITY 자동 승격은 없다.
 - terminal user retry는 lineage를 가진 새 run, `WAITING_USER` manual resume은 같은 run이다.
@@ -322,7 +326,7 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 | 공개 모드      | 내부 정책                                                                    |
 | -------------- | ---------------------------------------------------------------------------- |
-| `ECONOMY`      | 생성·분석도 LOW_COST 우선, retryable structured failure 때 BALANCED 1회 가능 |
+| `ECONOMY`      | 생성·분석도 LOW_COST 우선, correction guidance가 있는 structured 의미 failure 때 BALANCED 1회 가능 |
 | `BALANCED`     | 추출·분류 LOW_COST, 분석·생성 BALANCED, HIGH_QUALITY 자동 승격 금지          |
 | `HIGH_QUALITY` | 전처리·검색·추출은 저비용, 허용 workflow의 최종 생성·검토만 HIGH_QUALITY     |
 

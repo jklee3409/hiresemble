@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (stable candidate rejection 집계)
+
+- What was done:
+  - provenance, confidence, category, education, content, metadata, ungrounded number, duplicate와 안전한 fallback reason을 count로 집계했다.
+- Key decisions:
+  - candidate 단위 정상 rejection만 집계하고 DB/transaction 실패는 그대로 workflow failure로 전파한다.
+- Issues encountered:
+  - 과거 rejection은 reason 없이 count만 저장돼 소급 분류하지 않는다.
+- Validation:
+  - synthetic non-PII 후보의 reason별 count와 evidence persistence 회귀 통과.
+- Next steps:
+  - raw candidate나 validation exception message를 로그·checkpoint에 추가하지 않는다.
+
 ## [2026-07-31] Session Summary (최종 학력 transaction 재계산)
 
 - What was done:

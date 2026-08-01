@@ -4,6 +4,32 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-01] Session Summary (문서 terminal 보정 bounded handoff)
+
+- What was done:
+  - 최신 live run의 Chat strict output·evidence 저장·finalize 성공과 terminal 오분류를 구분해 기록했다.
+- Key decisions:
+  - 성공한 Chat·Embedding·Tavily를 반복하지 않고 문서 terminal 결과만 1회 재검증한다.
+- Issues encountered:
+  - 이번 구현·검증에서는 실제 Provider를 호출하지 않았다.
+- Validation:
+  - runbook 명령과 persistent call counter 정책을 저장소 구현에 대조했다.
+- Next steps:
+  - safe run ID·상태·usage/cost만 기록하고 실패 시 같은 요청을 반복하지 않는다.
+
+## [2026-08-01] Session Summary (semantic 보정 bounded live handoff)
+
+- What was done:
+  - schema 수락 뒤 3회 semantic failure·비용·보존 상태와 새 phase/reason 확인 절차를 runbook에 기록했다.
+- Key decisions:
+  - 성공한 Embedding/Tavily는 반복하지 않고 synthetic Chat 1회 성공 시에만 문서 ingestion 1회를 수행한다.
+- Issues encountered:
+  - 과거 raw output·finish reason을 조회하지 않으므로 live 원인은 미확정이며 persistent Chat counter가 절대 상한 2에 도달했다.
+- Validation:
+  - `codexRealOpenAiChatTest` task 존재를 확인했고 이번 작업의 Provider 호출은 0회다.
+- Next steps:
+  - counter를 우회하지 않고 사용자가 versioned 1회 allowance를 별도 승인한 뒤 Chat→document 순서로 검증한다.
+
 ## [2026-08-01] Session Summary (strict Chat 보정 재검증 handoff)
 
 - What was done:

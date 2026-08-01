@@ -8,7 +8,7 @@ com.hiresemble.profile.application.port package는 application과 외부 구현 
 
 | 파일 | 역할 |
 | ---- | ---- |
-| [DocumentEvidenceCommandPort.java](DocumentEvidenceCommandPort.java) | Port 책임 구현 |
+| [DocumentEvidenceCommandPort.java](DocumentEvidenceCommandPort.java) | 문서 후보 적용과 안전한 rejection 집계를 반환하는 command 경계 |
 | [EvidenceReferenceQueryPort.java](EvidenceReferenceQueryPort.java) | Port 책임 구현 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 

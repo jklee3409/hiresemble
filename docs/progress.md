@@ -4,6 +4,32 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (문서 filtering·terminal partial 계약 동기화)
+
+- What was done:
+  - 기능·DB·기술·아키텍처·구현 계획·Provider runbook에 candidate rejection 성공 계약과 workflow-owned terminal policy를 반영했다.
+- Key decisions:
+  - 공개 API·DB와 migration은 유지하고 safe count는 기존 step output에만 기록한다.
+- Issues encountered:
+  - terminal 보정 뒤 실제 Provider 재호출은 수행하지 않았다.
+- Validation:
+  - Backend 68 suites/466 tests와 문서 상태를 대조했고 Provider 호출은 0회다.
+- Next steps:
+  - 문서 terminal classification을 live 1회 확인한 뒤 남은 P8.5-V 수직 흐름을 진행한다.
+
+## [2026-08-01] Session Summary (structured semantic 계약·live 상태 동기화)
+
+- What was done:
+  - 활성 명세·아키텍처·구현 계획·Provider runbook에 local ref, metadata 제거, phase/reason, retry/cost와 최신 live 실패를 반영했다.
+- Key decisions:
+  - API/DB 계약은 유지하고 P8.5/P8.5-V 상태를 올리지 않는다.
+- Issues encountered:
+  - 과거 live invalid field와 truncation은 `NOT_VERIFIED`다.
+- Validation:
+  - 코드의 68 suites/459 tests와 문서의 상태·명령을 대조했고 Provider 호출은 0회다.
+- Next steps:
+  - persistent Chat cap을 우회하지 않고 별도 승인 뒤 synthetic Chat 1회→document vertical 1회 순서로 수행한다.
+
 ## [2026-08-01] Session Summary (OpenAI strict schema 수정 문서 동기화)
 
 - What was done:

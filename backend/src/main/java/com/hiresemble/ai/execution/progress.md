@@ -4,6 +4,19 @@
 
 P3 retryable/non-retryable AI 오류 분류와 안전한 projection이 구현됐다.
 
+## [2026-08-01] Session Summary (failure별 automatic attempt 계약)
+
+- What was done:
+  - AI execution failure에 validation phase, 최대 automatic attempt와 value-free correction guidance를 추가했다.
+- Key decisions:
+  - transient는 3, deterministic structured는 1, repairable semantic은 2 attempt 상한이다.
+- Issues encountered:
+  - None.
+- Validation:
+  - validator·orchestrator 통합 회귀와 전체 459 tests 통과.
+- Next steps:
+  - 새 structured reason은 stable 100자 safe code 규칙을 유지한다.
+
 ## [2026-08-01] Session Summary (실패 Provider usage 전달)
 
 - What was done:

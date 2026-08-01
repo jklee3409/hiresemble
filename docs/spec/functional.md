@@ -232,6 +232,8 @@
 
 `confidence`는 AI가 문서에서 후보를 추출한 확신도 `0..1`이며 사실 여부나 사용자의 신뢰성을 보증하는 점수가 아니다. 직접 입력 근거에는 confidence를 산정하지 않는다.
 
+문서 근거 적용 단계의 candidate 단위 domain rejection은 정상적인 filtering이다. 일부 또는 전체 candidate가 교육 category, 근거 없는 수치, 중복 등으로 제외돼도 command와 문서 최종화가 완료되면 `parseStatus=PARSED`, `evidenceExtractionStatus=SUCCEEDED`, Agent Run `SUCCEEDED`로 끝난다. 저장할 evidence가 0건인 결과와 추출 시스템 실패를 구분한다. candidate/applied/rejected count와 값 없는 stable reason count만 안전한 step 통계로 남기며, 거절 candidate를 독립 실패 scope나 성공 evidence reference로 취급하지 않는다.
+
 ## DOC-004 파일 삭제
 
 - 문서 metadata를 즉시 soft delete하고 API와 download URL에서는 곧바로 404로 처리한다.
@@ -631,8 +633,8 @@ CLOSED → IN_PROGRESS 또는 SUBMITTED  // 마감 연장·오등록 시 사용�
 ## SYS-002 실패와 재시도
 
 - 동일 사용자·workflow·step·scope의 입력·context·policy hash가 같은 성공 단계만 재사용
-- 자동 재시도 2회는 최초 시도 포함 최대 3 attempt이며 모델 승격 호출도 attempt를 소비
-- 429/5xx·일시 network·비동기 timeout·structured output validation 실패만 자동 재시도
+- 429/5xx·일시 network·비동기 timeout은 최초 시도 포함 최대 3 attempt이며 모델 승격 호출도 attempt를 소비
+- structured output은 JSON parse·schema shape·Java binding·서버 contract/configuration 오류를 자동 재시도하지 않는다. 모델이 수정 가능한 Java record·workflow context 의미 오류만 값이 없는 correction guidance를 제공해 최대 1회 추가 호출한다.
 - 소유권·입력·domain validation, safety, 설정, 예산 오류는 자동 재시도하지 않음
 - 비복구 오류는 사용자 재시도 버튼 제공
 - resource별 retry와 범용 Agent Run retry는 같은 predecessor unique claim을 사용해 실패 attempt당 successor를 최대 하나만 만든다. 새 domain output이 필요한 workflow도 그 successor에 대응하는 resource set을 정확히 하나만 만든다.

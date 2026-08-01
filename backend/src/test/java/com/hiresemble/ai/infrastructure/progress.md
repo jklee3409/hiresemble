@@ -4,6 +4,19 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (finish reason·usage 회귀)
+
+- What was done:
+  - length finish reason의 safe truncation 분류와 incurred usage 보존을 검증했다.
+- Key decisions:
+  - raw partial response는 safe message에 포함하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Spring AI mock과 strict request tests 통과.
+- Next steps:
+  - 새 Spring AI version에서는 metadata API 호환성을 재확인한다.
+
 ## [2026-08-01] Session Summary (strict Chat request payload와 오류 분류 회귀)
 
 - What was done:

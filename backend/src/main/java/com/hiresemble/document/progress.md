@@ -4,6 +4,19 @@
 
 P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석과 P7 자기소개서용 active-generation 검색 adapter를 제공한다.
 
+## [2026-08-01] Session Summary (evidence apply 안전 통계 경계)
+
+- What was done:
+  - 문서 workflow command가 공용 apply result로 candidate/applied/rejected와 stable reason count를 전달하도록 연결했다.
+- Key decisions:
+  - 적용 0건과 문서 처리 실패를 구분하고 finalize 성공 상태를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 일부·전체 rejection 통합 회귀와 Backend 전체 check 통과.
+- Next steps:
+  - public Document API와 DB schema는 변경하지 않는다.
+
 ## [2026-07-30] Session Summary (P7 자기소개서 masked chunk 검색·삭제 provenance)
 
 - What was done:

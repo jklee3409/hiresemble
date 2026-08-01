@@ -12,8 +12,36 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
-- P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC과 실제 문서 Embedding 성공 증거는 있지만 Chat strict schema 보정 뒤 live 재검증과 문서 vertical 성공이 남아 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-01] Session Summary (문서 candidate rejection terminal 오분류 보정)
+
+- What was done:
+  - 문서 candidate filtering을 failed scope에서 분리하고 workflow별 terminal partial policy, stable rejection reason 집계와 일부·전체 rejection 회귀를 구현했다.
+  - 공용 Orchestrator의 자기소개서 전용 오류 하드코딩을 제거하고 활성 명세·설계·운영 상태를 최신 live 증거와 동기화했다.
+- Key decisions:
+  - candidate 0건 적용도 정상 command/finalize라면 문서와 Run 성공이며, `failedScopeKeys`는 실제 독립 scope 실패에만 사용한다.
+- Issues encountered:
+  - 기존 run에는 reason별 count가 없어 과거 두 rejection의 정확한 분류는 복구하지 않는다.
+- Validation:
+  - Backend 68 suites/466 tests와 `git diff --check`를 검증하며 실제 Provider 호출은 0회다.
+- Next steps:
+  - 이미 성공한 capability를 반복하지 않고 문서 Run terminal 상태를 bounded live 1회로 재검증한다.
+
+## [2026-08-01] Session Summary (문서 근거 의미 계약·재시도·진단 강화)
+
+- What was done:
+  - 문서 evidence Provider output을 semantic field와 `C1` local ref로 축소하고 trusted server mapper, typed validation phase/reason, finish reason 분류와 bounded repair retry를 구현했다.
+  - 공개 API·DB metadata 계약과 V1~V14 migration은 유지하고 활성 명세·설계·운영 handoff를 동기화했다.
+- Key decisions:
+  - 사용처 없는 Provider metadata와 server-owned identifier는 output에서 제거하며 parse/schema/binding은 1회, correction guidance가 있는 record/workflow 오류만 최대 2 attempt로 제한한다.
+- Issues encountered:
+  - 과거 run의 정확한 invalid field와 truncation은 기존 단일 safe code만으로 `NOT_VERIFIED`다. 전체 check 1차의 test-only catalog 오염 1건을 fixture에서 제거했다.
+- Validation:
+  - Backend `check --rerun-tasks` 68 suites/459 tests, failure/error/skip 0. 실제 Provider 호출 0회, OpenAPI·migration·Frontend 변경 0건.
+- Next steps:
+  - persistent Chat cap 2를 우회하지 않고 사용자가 versioned 1회 allowance를 별도 승인한 뒤 synthetic Chat→문서 ingestion을 각각 1회 수행한다.
 
 ## [2026-08-01] Session Summary (OpenAI strict Structured Output 호환성 수정)
 

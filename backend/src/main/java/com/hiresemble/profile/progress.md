@@ -4,6 +4,19 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-01] Session Summary (document candidate rejection 분류)
+
+- What was done:
+  - document evidence validator가 candidate별 안전한 rejection reason count를 반환하도록 구현했다.
+- Key decisions:
+  - 정상 rejection은 transaction failure가 아니며 유효 candidate 저장은 그대로 commit한다.
+- Issues encountered:
+  - 기존 데이터의 reason은 소급 생성하지 않는다.
+- Validation:
+  - `DocumentIntegrationTest`와 전체 check 통과.
+- Next steps:
+  - rejected candidate 값은 persistence·로그에 남기지 않는다.
+
 ## [2026-07-31] Session Summary (학력 단계 기반 최종 학력)
 
 - What was done:

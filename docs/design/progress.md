@@ -2,7 +2,33 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5는 구현됐지만 실호출 미검증이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-08-01] Session Summary (workflow-owned terminal partial 설계)
+
+- What was done:
+  - 공용 Orchestrator에서 workflow별 partial terminal 결정을 분리하고 문서 filtering과 자기소개서 scope failure의 상태 전이를 설계에 고정했다.
+- Key decisions:
+  - Interview `LIMITED|NONE`과 문서 rejection은 정상 성공 결과이며 실제 failed scope만 partial terminal policy의 대상이다.
+- Issues encountered:
+  - terminal 분류 수정 뒤 live run은 수행하지 않았다.
+- Validation:
+  - 68 suites/466 tests와 시스템 아키텍처·구현 계획을 대조했다.
+- Next steps:
+  - P8.5-V에서 문서 terminal만 bounded 재검증한다.
+
+## [2026-08-01] Session Summary (trusted output 경계와 최신 live 실패)
+
+- What was done:
+  - strict boundary를 parse→shape→binding→record→workflow→trusted mapper→domain으로 구체화하고 latest semantic failure 증거를 반영했다.
+- Key decisions:
+  - server-owned identifier·사용처 없는 Provider metadata를 제거하고 repair guidance가 있는 의미 오류만 2 attempt를 허용한다.
+- Issues encountered:
+  - run `26f9b3d0-3bf7-4587-b2f7-938e8d8e045d`의 exact invalid field와 finish reason은 미확정이다.
+- Validation:
+  - 설계와 68 suites/459 tests, API/migration 불변을 대조했다.
+- Next steps:
+  - P8.5-V bounded live gate를 유지한다.
 
 ## [2026-08-01] Session Summary (strict Provider output 경계와 live 상태 반영)
 

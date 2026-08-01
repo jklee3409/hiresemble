@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (문서 evidence apply 통계 전달)
+
+- What was done:
+  - profile command의 공용 apply result를 손실 없이 workflow에 전달하고 기존 finalize 상태 전이를 유지했다.
+- Key decisions:
+  - 적용 0건도 command 성공이면 evidence extraction `SUCCEEDED`다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 전체 rejection 문서 통합 회귀와 Backend check 통과.
+- Next steps:
+  - transaction 실패와 candidate filtering을 계속 분리한다.
+
 ## [2026-07-31] Session Summary (P8 owner-aware document resolver 회귀)
 
 - What was done:

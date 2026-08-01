@@ -4,6 +4,32 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-01] Session Summary (명시적 terminal partial policy)
+
+- What was done:
+  - 모든 executable contribution에 terminal partial policy를 필수화하고 Cover Letter 실패 code/retry 정책을 workflow로 이동했다.
+- Key decisions:
+  - Document rejection과 Interview LIMITED/NONE은 failed scope를 만들지 않는 정상 결과다.
+- Issues encountered:
+  - policy 누락이 공용 기본값으로 숨지 않도록 registry fail-fast 검증이 필요했다.
+- Validation:
+  - registry completeness와 Document·Cover Letter 계약 테스트, 전체 check 통과.
+- Next steps:
+  - 새 executable workflow도 명시적 policy를 제공한다.
+
+## [2026-08-01] Session Summary (call cap 의미와 evidence schema v2)
+
+- What was done:
+  - 문서 evidence step output schema v2를 canonical definition에 연결하고 `maxModelCalls`의 attempt 내부 의미를 명시했다.
+- Key decisions:
+  - workflow version·공개 step key는 유지하고 evidence step은 non-reusable contract version으로 구분한다.
+- Issues encountered:
+  - 기존 다른 workflow의 malformed JSON retry 기대를 새 deterministic 정책과 맞췄다.
+- Validation:
+  - canonical registry, Job·Document orchestration 회귀와 전체 check 통과.
+- Next steps:
+  - workflow별 model-repairable reason만 구체 typed policy로 확장한다.
+
 ## [2026-08-01] Session Summary (schema rejection failure kind 분리)
 
 - What was done:

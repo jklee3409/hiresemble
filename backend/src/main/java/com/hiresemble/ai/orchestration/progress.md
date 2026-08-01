@@ -4,6 +4,32 @@
 
 fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
 
+## [2026-08-01] Session Summary (공용 partial 오류 하드코딩 제거)
+
+- What was done:
+  - terminal failed scope 판정을 contribution policy에 위임하고 공용 `COVER_LETTER_GENERATION_PARTIAL_FAILURE` 하드코딩을 제거했다.
+- Key decisions:
+  - success policy는 budget settle 후 100% 성공, failure policy는 unused reservation release와 workflow safe error를 사용한다.
+- Issues encountered:
+  - candidate filtering 통계와 partial execution 결과가 같은 accumulator에 섞여 있었다.
+- Validation:
+  - 정책 성공·실패, Cover Letter partial과 usage/budget 통합 회귀 통과.
+- Next steps:
+  - partial 통계를 failed scope로 변환하지 않는 규칙을 유지한다.
+
+## [2026-08-01] Session Summary (bounded structured repair retry)
+
+- What was done:
+  - exception별 attempt cap을 적용하고 repairable structured retry에만 safe correction guidance를 추가했다.
+- Key decisions:
+  - `maxModelCalls`는 attempt 내부 상한이며 모든 retry Provider 호출은 새 attempt·usage로 기록한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - transient 3회, semantic 최대 2회, deterministic 1회와 tier 승격 회귀 통과.
+- Next steps:
+  - P8.8 UX 확장 전에도 raw invalid value는 checkpoint에 남기지 않는다.
+
 ## [2026-08-01] Session Summary (Provider multi-usage·failure accounting)
 
 - What was done:

@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 초기 bounded smoke에서 Tavily BASIC만 성공하고 OpenAI는 quota에 차단됐으며, 이후 실제 문서 실행에서 Embedding은 성공했지만 Chat strict schema 요청이 `EXTRACT_EVIDENCE_CANDIDATES`에서 거절됐다. strict-compatible output 계약과 중앙 검사를 offline 검증했지만 Chat·문서 수직 흐름은 재호출하지 않았으므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 strict schema·semantic 계약 보정 뒤 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 이를 가짜 failed scope로 만든 projection과 공용 자기소개서 partial error 하드코딩으로 Run terminal만 잘못 실패했다. terminal policy 보정은 offline 검증했고 이후 Provider를 재호출하지 않았으므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
 ## 범위
 
@@ -36,7 +36,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 2026-08-01 strict schema 보정 뒤 Backend 기준선은 68 suites/452 tests이며 Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4는 변경하지 않았다. 실제 문서 실행은 Embedding 성공 뒤 Chat strict schema 단계에서 실패했으며 수정 뒤 실제 Provider 재검증은 0회다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 68 suites/466 tests이며 Frontend 60 files/238 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이번 보정의 실제 Provider 호출은 0회다.
 
 ## 1. 전체 선행 관계
 
@@ -570,8 +570,9 @@ P0 계약 기준선
 
 - local/local-offline Bean matrix와 key·provider·price fail-closed, request option, bounded response, reserve/top-up/settle을 Fake/WireMock/PostgreSQL로 검증했다.
 - 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, P8~P4 actual 1/1·1/1·2/2·5/5·4/4다.
-- 초기 외부 smoke는 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이었다. 이후 실제 문서 실행에서 Embedding은 성공하고 Chat endpoint까지 도달했지만 기존 bare metadata object strict schema가 거절됐다.
-- metadata와 P7 TipTap Provider output을 domain/public DTO에서 분리하고 모든 등록 Chat output의 runtime schema 중앙 검사를 68 suites/452 tests에서 offline 검증했다. 수정 뒤 실제 Chat·문서 수직 재검증은 수행하지 않았으므로 `DONE`으로 올리지 않는다.
+- 초기 strict schema 거절은 strict-compatible schema 보정으로 해소됐다. 실제 문서 run `26f9b3d0-3bf7-4587-b2f7-938e8d8e045d`의 semantic 거절 뒤 output contract를 보정했고, 후속 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 document finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 rejection을 가짜 failed scope로 만든 projection과 공용 partial error 하드코딩으로 Run terminal만 잘못 실패했다.
+- 문서 Provider output v2는 server-owned identifier와 동적 metadata를 제거하고 `C1` local ref를 trusted chunk UUID로 복원한다. parse/schema/binding은 재호출하지 않고, model-repairable record/workflow 오류만 safe correction guidance로 1회 추가 시도한다. 정확한 과거 invalid field와 output truncation은 기존 safe data만으로 미확정이다.
+- candidate rejection과 독립 scope failure를 분리하고 workflow별 terminal partial policy를 offline 회귀로 검증했다. 이 terminal 보정 뒤 실제 Provider 재호출은 없으므로 전체 P8.5/P8.5-V를 `DONE`으로 올리지 않는다.
 - 다음 phase handoff는 P8.5-V이며 실제 key·prompt·response를 저장소에 남기지 않는다.
 
 ## 13. P8.5-V — 사용자 local 실제 Provider 검증 gate

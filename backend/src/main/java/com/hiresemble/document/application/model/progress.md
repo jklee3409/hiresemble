@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (evidence apply 결과와 rejection reason 모델)
+
+- What was done:
+  - 적용 evidence ID와 candidate/applied/rejected 및 stable reason count를 검증하는 공용 application result를 추가했다.
+- Key decisions:
+  - 실제 candidate 값 없이 enum reason과 양의 count만 전달한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - document/profile 단위·통합 테스트와 전체 check 통과.
+- Next steps:
+  - 새 rejection 분류는 안전한 stable enum으로만 확장한다.
+
 ## [2026-07-23] Session Summary (책임별 model package 분리)
 
 - What was done:

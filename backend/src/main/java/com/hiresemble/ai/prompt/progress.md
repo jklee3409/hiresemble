@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-01] Session Summary (문서 evidence prompt v2)
+
+- What was done:
+  - 문서 evidence prompt를 단일 output policy에서 생성하고 local ref·candidate/warning/null/dedupe 규칙을 명시했다.
+- Key decisions:
+  - output schema는 `document-evidence-provider-output-v2`, max output은 8,192 token이다.
+- Issues encountered:
+  - Spring AI schema description은 Jackson property description을 사용해야 strict subset의 unsupported `default`가 생기지 않았다.
+- Validation:
+  - prompt-policy equality, schema description과 registry completeness test 통과.
+- Next steps:
+  - live 성공 전 prompt 품질 상태를 verified로 올리지 않는다.
+
 ## [2026-08-01] Session Summary (canonical strict output definition 열거)
 
 - What was done:

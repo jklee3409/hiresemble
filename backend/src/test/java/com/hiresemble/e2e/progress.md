@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-01] Session Summary (P4/P7 local-ref fixture 회귀)
+
+- What was done:
+  - P4/P7 Fake Chat fixture를 문서 evidence output v2와 `chunkRef` 입력 계약으로 갱신했다.
+- Key decisions:
+  - 브라우저 시나리오와 공개 metadata 계약은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend full check에서 P4/P7 E2E test 통과.
+- Next steps:
+  - 실제 Provider UI 검증은 별도 1회 gate로 수행한다.
+
 ## [2026-08-01] Session Summary (evidence Provider fixture 계약 동기화)
 
 - What was done:

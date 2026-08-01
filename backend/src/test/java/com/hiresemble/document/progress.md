@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-01] Session Summary (candidate rejection reason 집계 회귀)
+
+- What was done:
+  - 교육 category와 근거 없는 수치 후보가 각 stable reason count로 집계되고 유효 evidence만 저장됨을 검증했다.
+- Key decisions:
+  - raw candidate 값은 assertion용 DB 진단에 저장하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `DocumentIntegrationTest`와 전체 check 통과.
+- Next steps:
+  - 새 rejection validator는 안전 reason test를 함께 추가한다.
+
 ## [2026-07-31] Session Summary (문서 교육 근거 후보 차단)
 
 - What was done:

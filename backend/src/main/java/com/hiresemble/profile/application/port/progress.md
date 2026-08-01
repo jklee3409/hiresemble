@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-01] Session Summary (candidate apply 진단 계약)
+
+- What was done:
+  - 문서 evidence command가 공용 apply result와 stable rejection 집계를 반환하도록 변경했다.
+- Key decisions:
+  - title/content/chunk ID 같은 rejected value는 경계 밖으로 전달하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document integration과 workflow orchestration 회귀 통과.
+- Next steps:
+  - 공개 DTO와 별도인 내부 command 계약을 유지한다.
+
 ## [2026-07-23] Session Summary (책임별 port package 분리)
 
 - What was done:

@@ -4,6 +4,32 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (terminal partial policy completeness 회귀)
+
+- What was done:
+  - contribution policy 누락 fail-fast와 Document 성공·Cover Letter 실패 정책을 검증했다.
+- Key decisions:
+  - 새 workflow가 공용 기본 partial code를 우연히 상속하지 못하게 한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - focused workflow tests와 전체 check 통과.
+- Next steps:
+  - executable contribution 추가 시 policy assertion을 유지한다.
+
+## [2026-08-01] Session Summary (다른 workflow structured 정책 회귀)
+
+- What was done:
+  - Job Analysis malformed JSON을 deterministic으로, Job extraction semantic-invalid output을 repair-once로 갱신했다.
+- Key decisions:
+  - 모든 structured failure를 일괄 non-retryable로 만들지 않고 phase/reason에 따라 분리한다.
+- Issues encountered:
+  - 기존 generic structured 3회 기대를 새 의미 계약과 구분해야 했다.
+- Validation:
+  - AI workflow 113-test focused run 보정 뒤 전체 check 통과.
+- Next steps:
+  - workflow별 typed repair reason을 필요한 범위에서만 추가한다.
+
 ## [2026-08-01] Session Summary (Cover Letter Provider TipTap 경계 회귀)
 
 - What was done:

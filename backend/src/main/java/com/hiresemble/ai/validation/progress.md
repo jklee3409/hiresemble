@@ -4,6 +4,19 @@
 
 P3 응답 5단계 validation 앞에 OpenAI strict request schema의 중앙 생성·호환성 검증 경계가 구현됐다.
 
+## [2026-08-01] Session Summary (Structured Output phase·reason 분리)
+
+- What was done:
+  - JSON_PARSE, SCHEMA_SHAPE, JAVA_BINDING, JAVA_RECORD, WORKFLOW_CONTEXT, DOMAIN_COMMAND 경계를 typed exception과 safe code로 분리했다.
+- Key decisions:
+  - parse/schema/binding은 deterministic, 명시된 record/workflow reason만 repair-once이며 domain은 기존 DOMAIN_VALIDATION을 유지한다.
+- Issues encountered:
+  - generic exception message·JSON path·실제 invalid value는 진단에 사용할 수 없다.
+- Validation:
+  - phase별 generic/typed failure, 비노출, retry disposition tests와 strict schema 전수 검증 통과.
+- Next steps:
+  - 과거 live invalid field는 미확정으로 유지하고 새 run에서 stable reason만 확인한다.
+
 ## [2026-08-01] Session Summary (OpenAI strict schema 중앙 검증)
 
 - What was done:

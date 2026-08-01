@@ -2,7 +2,33 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+
+## [2026-08-01] Session Summary (workflow terminal partial 정책 분리)
+
+- What was done:
+  - executable contribution별 terminal partial policy와 문서 candidate rejection 성공 projection을 연결했다.
+- Key decisions:
+  - 공용 Orchestrator는 cover letter safe code를 알지 않으며 failed scope 의미는 실제 독립 scope로 제한한다.
+- Issues encountered:
+  - 과거 잘못 종료된 terminal Run은 자동 보정하지 않는다.
+- Validation:
+  - Backend 68 suites/466 tests 통과, Provider 호출 0회.
+- Next steps:
+  - 문서 terminal 상태를 live 1회 재검증한다.
+
+## [2026-08-01] Session Summary (문서 Provider output 최소화와 phase별 retry)
+
+- What was done:
+  - server-owned identifier·metadata를 문서 Provider output에서 제거하고 local ref mapping, finish reason, typed validation/retry 경계를 연결했다.
+- Key decisions:
+  - strict mode와 public/domain 계약은 유지하고 safe correction이 있는 의미 오류만 한 번 고친다.
+- Issues encountered:
+  - 과거 live invalid field와 finish reason은 복구할 수 없다.
+- Validation:
+  - Backend 68 suites/459 tests 통과, Provider 호출 0회.
+- Next steps:
+  - persistent counter 정책의 별도 승인 뒤 P8.5-V Chat structured success와 document vertical을 각각 1회 검증한다.
 
 ## [2026-08-01] Session Summary (strict Provider output 경계 강화)
 

@@ -4,7 +4,33 @@
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 문서 버전 1.2로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 strict schema 수정은 offline 검증됐지만 Chat·문서 live 재검증이 남은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-01] Session Summary (candidate filtering과 failed scope 의미 분리)
+
+- What was done:
+  - 문서 candidate 일부·전체 rejection 성공 계약, safe reason count와 실제 independent scope 전용 `failedScopeKeys` 계약을 명세했다.
+- Key decisions:
+  - public Evidence DTO·JSONB와 기존 migration은 변경하지 않는다.
+- Issues encountered:
+  - 과거 rejection의 개별 reason은 저장되지 않아 미확정이다.
+- Validation:
+  - 구현·통합 테스트와 기능·DB·기술 명세를 대조했다.
+- Next steps:
+  - bounded live 문서 실행에서 terminal success를 확인한다.
+
+## [2026-08-01] Session Summary (output 소유권·phase retry 활성 계약)
+
+- What was done:
+  - 기능·기술·DB 명세에 문서 Provider output v2, trusted local ref mapper, phase safe code와 reason별 retry를 반영했다.
+- Key decisions:
+  - `EvidenceDto.metadata`, profile evidence JSONB와 migration은 변경하지 않는다.
+- Issues encountered:
+  - 과거 단일 safe code로 exact invalid field와 truncation은 확정할 수 없다.
+- Validation:
+  - runtime policy/schema/test와 명세를 대조하고 전체 Backend check를 통과했다.
+- Next steps:
+  - live 성공 뒤에만 capability/vertical 상태를 갱신한다.
 
 ## [2026-08-01] Session Summary (strict Structured Output 기술 계약)
 

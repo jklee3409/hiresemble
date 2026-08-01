@@ -7,6 +7,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 ## 주요 파일 및 하위 디렉터리
 
 - `WorkflowRegistry`: definition/contribution 검증
+- `TerminalPartialPolicy`: 실제 failed scope가 남은 terminal 결과의 workflow별 성공·실패·safe error·retry 정책
 - `CanonicalWorkflowDefinitions`: 8개 WorkflowType 고정 definition
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
 - `JobPostingExtractionWorkflow`: P5 URL fetch부터 사용자 override 병합·domain apply까지의 5단계 contribution
@@ -20,7 +21,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 
 ## 구성 요소 역할
 
-step 순서, schema, bounded fan-out, tool allowlist, call cap, retry class와 progress weight를 검증한다. Document, Job과 Cover Letter workflow는 각 application port를 통해 실제 aggregate에 연결한다.
+step 순서, schema, bounded fan-out, tool allowlist, attempt 내부 call cap, retry class와 progress weight를 검증한다. 모든 executable contribution은 terminal partial policy를 명시하고 공용 Orchestrator는 workflow 전용 오류를 알지 않는다. Document, Job과 Cover Letter workflow는 각 application port를 통해 실제 aggregate에 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 

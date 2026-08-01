@@ -15,7 +15,7 @@ com.hiresemble.document.application.service package는 use case, transaction 또
 | [DocumentMutationService.java](DocumentMutationService.java) | Service 책임 구현 |
 | [DocumentPrivacyMasker.java](DocumentPrivacyMasker.java) | Service 책임 구현 |
 | [DocumentTextNormalizer.java](DocumentTextNormalizer.java) | Service 책임 구현 |
-| [DocumentWorkflowService.java](DocumentWorkflowService.java) | Service 책임 구현 |
+| [DocumentWorkflowService.java](DocumentWorkflowService.java) | 문서 처리 command 조정과 evidence apply 통계 전달·최종화 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

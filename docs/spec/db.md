@@ -316,6 +316,10 @@ Unique `(user_id,http_method,route_scope,resource_scope_id,idempotency_key)`. Ro
 
 `id,user_id,workflow_type,status,current_step NULL`, `progress_percent integer CHECK 0..100`, `workflow_version,input_hash,budget_policy_version,requested_quality_mode NULL,highest_model_tier_used NULL`, `estimated_cost_usd/reserved_cost_usd/actual_cost_usd numeric(12,6) CHECK >=0`, `retry_of_run_id NULL,root_run_id,run_attempt_no`, `error_code varchar(100) NULL,error_message_safe varchar(500) NULL,partial_result_json NULL,claim_token NULL,claimed_by NULL,lease_expires_at NULL,heartbeat_at NULL,cancel_requested_at NULL,waiting_reason NULL,state_version,queued_at,started_at NULL,completed_at NULL,updated_at,deleted_at NULL`.
 
+Structured output 진단은 기존 run/step `error_code`에 값 없는 stable phase/reason code(`AI_SO_JSON_*`, `AI_SO_SCHEMA_*`, `AI_SO_JAVA_*`, `AI_SO_WORKFLOW_*`)로 저장한다. raw Provider response, 실제 invalid value, Jackson message, prompt와 문서 원문은 저장하지 않으며 이를 위한 새 column이나 migration을 추가하지 않는다.
+
+`partial_result_json.failedScopeKeys`는 자기소개서 문항처럼 독립적으로 완료되지 못한 실제 scope에만 사용한다. 문서 evidence candidate filtering은 이 배열에 기록하지 않으며 적용 evidence ID만 `resultRefs`로 보존할 수 있다. 문서 apply step의 기존 `output_json`에는 candidate/applied/rejected count와 stable rejection reason별 count만 저장하고 candidate 값·chunk UUID·문서 원문은 저장하지 않는다. 이 계약은 기존 column으로 충족하므로 별도 migration을 요구하지 않는다.
+
 - retry predecessor 복합 FK와 root lineage를 보존하고 `UNIQUE(user_id,retry_of_run_id) WHERE retry_of_run_id IS NOT NULL`로 모든 resource/generic retry 진입점이 predecessor당 successor를 하나만 만들게 한다. 호환되는 후속 retry는 같은 successor를 반환하고 option 충돌은 거부한다.
 - claim은 조건부 update 또는 `FOR UPDATE SKIP LOCKED`, heartbeat 15초, lease 60초, reconciliation 30초다.
 - lease가 만료된 RUNNING row는 immutable `INTERRUPTED`다.
