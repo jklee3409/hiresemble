@@ -149,13 +149,13 @@ describe('authentication route policy', () => {
     })
 
     await flushPromises()
-    expect(wrapper.get('h2').text()).toContain('user-1님의 지원 현황')
+    expect(wrapper.get('h1').text()).toContain('user-1, 지금 준비 중인 지원')
     expect(wrapper.text()).toContain('프로필 작성')
     expect(wrapper.text()).toContain('문서 업로드')
     expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
-    expect(wrapper.text()).toContain('나에게 맞게 시작해 볼까요?')
+    expect(wrapper.text()).toContain('지원 준비의 첫 기준을 만들어요')
 
     await router.push('/missing-page')
     await flushPromises()

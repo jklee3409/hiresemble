@@ -23,37 +23,37 @@ describe('AppLayout', () => {
     document.body.style.overflow = ''
   })
 
-  it('marks the current primary navigation item and exposes P8 without P9 menus', async () => {
+  it('marks the current journey in the top navigation without duplicating a sidebar profile', async () => {
     const { wrapper } = await mountLayout('/profile/basic')
 
-    const activeDesktopLink = wrapper.get('.sidebar-nav__link[aria-current="page"]')
-    expect(activeDesktopLink.text()).toBe('내 지원 정보')
-    expect(wrapper.get('.workspace-title h1').text()).toBe('내 지원 정보')
-    expect(wrapper.findAll('.sidebar-nav__link').map((link) => link.text())).toEqual([
-      '지원 홈',
-      '내 지원 정보',
+    const activeDesktopLink = wrapper.get('.desktop-navigation__link[aria-current="page"]')
+    expect(activeDesktopLink.text()).toBe('내 정보')
+    expect(wrapper.findAll('.desktop-navigation__link').map((link) => link.text())).toEqual([
+      '홈',
+      '내 정보',
       '이력서·자료',
       '관심 공고',
       '자기소개서',
       '면접 준비',
-      'AI 작업 내역',
     ])
+    expect(wrapper.find('.desktop-sidebar').exists()).toBe(false)
+    expect(wrapper.find('.user-avatar').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('모의 면접')
     expect(document.title).toBe('내 지원 정보 | Hiresemble')
     expect(document.activeElement).toBe(wrapper.get('#app-content').element)
     wrapper.unmount()
   })
 
-  it('opens and closes the mobile navigation with accessible state and focus return', async () => {
+  it('opens and closes the mobile more sheet with accessible state and focus return', async () => {
     const { wrapper } = await mountLayout('/dashboard')
-    const trigger = wrapper.get<HTMLButtonElement>('button[aria-label="주요 메뉴 열기"]')
+    const trigger = wrapper.get<HTMLButtonElement>('button[aria-controls="mobile-more-menu"]')
 
     trigger.element.focus()
     await trigger.trigger('click')
     await nextTick()
 
     expect(trigger.attributes('aria-expanded')).toBe('true')
-    const drawer = document.body.querySelector<HTMLElement>('#mobile-navigation')
+    const drawer = document.body.querySelector<HTMLElement>('#mobile-more-menu')
     expect(drawer).not.toBeNull()
     expect(drawer?.getAttribute('role')).toBe('dialog')
     expect(drawer?.getAttribute('aria-modal')).toBe('true')
@@ -62,7 +62,7 @@ describe('AppLayout', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
 
-    expect(document.body.querySelector('#mobile-navigation')).toBeNull()
+    expect(document.body.querySelector('#mobile-more-menu')).toBeNull()
     expect(trigger.attributes('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger.element)
     expect(document.body.style.overflow).toBe('')
@@ -73,14 +73,16 @@ describe('AppLayout', () => {
     const questionSetId = '00000000-0000-4000-8000-000000000099'
     const { wrapper } = await mountLayout(`/interview-question-sets/${questionSetId}`)
 
-    expect(wrapper.get('.sidebar-nav__link[aria-current="page"]').text()).toBe('면접 준비')
-    expect(wrapper.get('.workspace-title p').text()).toBe('면접 조사와 예상 질문')
+    expect(wrapper.get('.desktop-navigation__link[aria-current="page"]').text()).toBe('면접 준비')
+    expect(wrapper.get('.mobile-bottom-navigation__item[aria-current="page"]').text()).toBe(
+      '면접 준비',
+    )
     wrapper.unmount()
   })
 
   it('updates the nickname from the header modal and returns focus to the trigger', async () => {
     const { wrapper, authStore } = await mountLayout('/dashboard')
-    const trigger = wrapper.get<HTMLButtonElement>('.header-user')
+    const trigger = wrapper.get<HTMLButtonElement>('.account-trigger')
     const updateDisplayName = vi
       .spyOn(authStore, 'updateDisplayName')
       .mockImplementation(async (request) => {
@@ -92,6 +94,12 @@ describe('AppLayout', () => {
     trigger.element.focus()
     await trigger.trigger('click')
     await nextTick()
+    const nicknameCommand = document.body.querySelector<HTMLButtonElement>(
+      '.account-menu button[role="menuitem"]',
+    )
+    if (nicknameCommand === null) throw new Error('nickname command is missing')
+    nicknameCommand.click()
+    await flushPromises()
 
     const dialog = document.body.querySelector<HTMLElement>('.nickname-modal')
     const input = dialog?.querySelector<HTMLInputElement>('#nickname-modal-input')
@@ -151,6 +159,7 @@ async function mountLayout(path: string) {
           { path: 'interviews', component: DashboardPage },
           { path: 'interview-question-sets/:questionSetId', component: DashboardPage },
           { path: 'agent-runs', component: DashboardPage },
+          { path: 'guide', component: DashboardPage },
           { path: 'onboarding', component: ProfilePage },
         ],
       },

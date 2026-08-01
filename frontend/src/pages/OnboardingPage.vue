@@ -205,10 +205,17 @@ async function retryLoad(): Promise<void> {
   <section class="onboarding app-page" aria-labelledby="onboarding-heading">
     <PageHeader
       heading-id="onboarding-heading"
-      title="나에게 맞게 시작해 볼까요?"
-      description="지금 아는 만큼만 입력해도 괜찮아요. 나중에 언제든 이어서 채울 수 있어요."
-      eyebrow="첫 준비"
-    />
+      title="지원 준비의 첫 기준을 만들어요"
+      description="지금 아는 만큼만 입력해도 괜찮아요. 내 정보부터 공고 분석, 자기소개서와 면접 준비까지 차례로 이어집니다."
+      variant="editor"
+    >
+      <template #actions>
+        <RouterLink class="button button--secondary" to="/guide">
+          <AppIcon name="runs" />
+          전체 이용 순서 보기
+        </RouterLink>
+      </template>
+    </PageHeader>
 
     <ol class="onboarding-steps" aria-label="온보딩 진행 단계">
       <li
@@ -529,6 +536,7 @@ async function retryLoad(): Promise<void> {
         </span>
       </div>
       <div class="onboarding-actions onboarding-actions--final">
+        <RouterLink class="button button--ghost" to="/guide">이용 순서 먼저 보기</RouterLink>
         <button type="button" class="button button--secondary" @click="later">나중에 계속</button>
         <button type="button" class="button button--primary" @click="complete">
           <AppIcon name="upload" />

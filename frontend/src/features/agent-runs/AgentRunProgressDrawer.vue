@@ -148,7 +148,7 @@ function tone(status: AgentRunStatus) {
 
       <footer class="run-drawer__footer">
         <RouterLink class="text-link" to="/agent-runs" @click="closeDrawer(false)">
-          AI 작업 내역 전체 보기
+          AI 작업 전체 보기
           <AppIcon name="arrow-right" />
         </RouterLink>
       </footer>

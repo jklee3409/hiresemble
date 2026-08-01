@@ -9,7 +9,7 @@ test('protected app shell stays usable without horizontal overflow at required w
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/dashboard')
   await expect(
-    page.getByRole('heading', { name: '반응형 확인 사용자님의 지원 현황' }),
+    page.getByRole('heading', { name: '반응형 확인 사용자, 지금 준비 중인 지원' }),
   ).toBeVisible()
   await expect(page.getByRole('heading', { name: '지원 준비 현황' })).toBeVisible()
   if (process.env.UI_SCREENSHOTS === 'true') {
@@ -41,17 +41,18 @@ test('protected app shell stays usable without horizontal overflow at required w
       })
     }
 
-    if (width >= 1024) {
+    if (width >= 1120) {
       await expect(page.getByLabel('서비스 탐색')).toBeVisible()
-      await expect(page.getByRole('button', { name: '주요 메뉴 열기' })).toBeHidden()
+      await expect(page.getByLabel('모바일 주요 메뉴')).toBeHidden()
       continue
     }
 
     await expect(page.getByLabel('서비스 탐색')).toBeHidden()
-    const trigger = page.getByRole('button', { name: '주요 메뉴 열기' })
+    await expect(page.getByLabel('모바일 주요 메뉴')).toBeVisible()
+    const trigger = page.getByRole('button', { name: '더보기' })
     await expect(trigger).toBeVisible()
     await trigger.click()
-    const drawer = page.getByRole('dialog', { name: 'Hiresemble 메뉴' })
+    const drawer = page.getByRole('dialog', { name: '더보기' })
     await expect(drawer).toBeVisible()
     const bounds = await drawer.boundingBox()
     expect(bounds?.width).toBeLessThanOrEqual(width)
@@ -221,12 +222,12 @@ test('profile suggestions and document registration stay keyboard-ready and resp
       await expect(sectionSelector).toBeVisible()
       await sectionSelector.selectOption('/profile/education')
       await page.waitForURL(/\/profile\/education$/)
-      await expect(page.getByRole('heading', { name: '학력', level: 2 })).toBeVisible()
+      await expect(page.getByRole('heading', { name: '학력', level: 1 })).toBeVisible()
       await page.goto('/profile/basic')
     }
 
     await page.goto('/documents')
-    await expect(page.getByRole('heading', { name: '이력서·자료', level: 2 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '이력서·자료', level: 1 })).toBeVisible()
     await expect(page.getByLabel('자료 등록 순서')).toContainText('내용 분석')
     await page.locator('#document-file').setInputFiles({
       name: '지원용-이력서.txt',

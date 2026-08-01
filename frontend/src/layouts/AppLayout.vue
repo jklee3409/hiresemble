@@ -3,35 +3,68 @@ import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch }
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { validateDisplayNameForm } from '@/features/auth/formValidation'
+import { authErrorMessage, fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import BrandMark from '@/shared/ui/BrandMark.vue'
-import { authErrorMessage, fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
-const navItems = [
-  { to: '/dashboard', label: '지원 홈', icon: 'dashboard', match: '/dashboard' },
-  { to: '/profile/basic', label: '내 지원 정보', icon: 'profile', match: '/profile' },
-  { to: '/documents', label: '이력서·자료', icon: 'documents', match: '/documents' },
-  { to: '/jobs', label: '관심 공고', icon: 'jobs', match: '/jobs' },
+type NavigationItem = {
+  to: string
+  label: string
+  icon: 'dashboard' | 'profile' | 'documents' | 'jobs' | 'cover-letter' | 'interview' | 'runs'
+  matches: readonly string[]
+  exact?: boolean
+}
+
+const primaryNavigation: readonly NavigationItem[] = [
+  {
+    to: '/dashboard',
+    label: '홈',
+    icon: 'dashboard',
+    matches: ['/dashboard'],
+    exact: true,
+  },
+  {
+    to: '/profile/basic',
+    label: '내 정보',
+    icon: 'profile',
+    matches: ['/profile', '/onboarding'],
+  },
+  {
+    to: '/documents',
+    label: '이력서·자료',
+    icon: 'documents',
+    matches: ['/documents'],
+  },
+  { to: '/jobs', label: '관심 공고', icon: 'jobs', matches: ['/jobs'] },
   {
     to: '/cover-letters',
     label: '자기소개서',
     icon: 'cover-letter',
-    match: '/cover-letters',
+    matches: ['/cover-letters'],
   },
-  { to: '/interviews', label: '면접 준비', icon: 'interview', match: '/interview' },
-  { to: '/agent-runs', label: 'AI 작업 내역', icon: 'runs', match: '/agent-runs' },
+  {
+    to: '/interviews',
+    label: '면접 준비',
+    icon: 'interview',
+    matches: ['/interviews', '/interview-question-sets'],
+  },
 ] as const
+
+const mobileNavigation = primaryNavigation.filter((item) =>
+  ['/dashboard', '/jobs', '/cover-letters', '/interviews'].includes(item.to),
+)
 
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const isLoggingOut = ref(false)
-const logoutError = ref('')
-const mobileNavOpen = ref(false)
-const mobileNavTrigger = ref<HTMLButtonElement | null>(null)
-const mobileNavPanel = ref<HTMLElement | null>(null)
 const workspaceContent = ref<HTMLElement | null>(null)
+const accountMenuOpen = ref(false)
+const accountTrigger = ref<HTMLButtonElement | null>(null)
+const accountMenu = ref<HTMLElement | null>(null)
+const mobileMoreOpen = ref(false)
+const mobileMoreTrigger = ref<HTMLButtonElement | null>(null)
+const mobileMorePanel = ref<HTMLElement | null>(null)
 const nicknameModalOpen = ref(false)
 const nickname = ref('')
 const nicknameFieldError = ref('')
@@ -40,22 +73,16 @@ const nicknameSaving = ref(false)
 const nicknameTrigger = ref<HTMLElement | null>(null)
 const nicknameDialog = ref<HTMLElement | null>(null)
 const nicknameInput = ref<HTMLInputElement | null>(null)
+const isLoggingOut = ref(false)
+const logoutError = ref('')
 let bodyOverflowBeforeOverlay = ''
 
-const pageTitle = computed(() => route.meta.title ?? 'Hiresemble')
-const pageContext = computed(() => {
-  if (route.path.startsWith('/profile') || route.path === '/onboarding') return '나의 경험'
-  if (route.path.startsWith('/documents')) return '이력서와 자료'
-  if (route.path.startsWith('/jobs')) return '지원할 공고'
-  if (route.path.startsWith('/cover-letters')) return '지원 문서'
-  if (route.path.startsWith('/interviews') || route.path.startsWith('/interview-question-sets')) {
-    return '면접 조사와 예상 질문'
-  }
-  if (route.path.startsWith('/agent-runs')) return '준비 진행 상황'
-  return '지원 현황과 다음 할 일'
-})
-const userInitial = computed(() => authStore.currentUser?.displayName.trim().charAt(0) || 'H')
-const overlayOpen = computed(() => mobileNavOpen.value || nicknameModalOpen.value)
+const mobileMoreActive = computed(() =>
+  ['/profile', '/documents', '/agent-runs', '/guide', '/onboarding'].some((prefix) =>
+    route.path.startsWith(prefix),
+  ),
+)
+const blockingOverlayOpen = computed(() => mobileMoreOpen.value || nicknameModalOpen.value)
 const AgentRunProgressDrawer = defineAsyncComponent(
   () => import('@/features/agent-runs/AgentRunProgressDrawer.vue'),
 )
@@ -63,7 +90,8 @@ const AgentRunProgressDrawer = defineAsyncComponent(
 watch(
   () => route.fullPath,
   () => {
-    closeMobileNav(false)
+    closeAccountMenu(false)
+    closeMobileMore(false)
     closeNicknameModal(false)
     document.title = `${String(route.meta.title ?? 'Hiresemble')} | Hiresemble`
     void nextTick(() => workspaceContent.value?.focus({ preventScroll: true }))
@@ -71,11 +99,16 @@ watch(
   { immediate: true },
 )
 
-watch(mobileNavOpen, async (open) => {
-  if (open) {
-    await nextTick()
-    mobileNavPanel.value?.querySelector<HTMLElement>('[data-mobile-nav-first]')?.focus()
-  }
+watch(accountMenuOpen, async (open) => {
+  if (!open) return
+  await nextTick()
+  accountMenu.value?.querySelector<HTMLElement>('[data-account-first]')?.focus()
+})
+
+watch(mobileMoreOpen, async (open) => {
+  if (!open) return
+  await nextTick()
+  mobileMorePanel.value?.querySelector<HTMLElement>('[data-mobile-more-first]')?.focus()
 })
 
 watch(nicknameModalOpen, async (open) => {
@@ -85,7 +118,7 @@ watch(nicknameModalOpen, async (open) => {
   nicknameInput.value?.select()
 })
 
-watch(overlayOpen, (open) => {
+watch(blockingOverlayOpen, (open) => {
   if (open) {
     bodyOverflowBeforeOverlay = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -95,24 +128,46 @@ watch(overlayOpen, (open) => {
 })
 
 document.addEventListener('keydown', onDocumentKeydown)
+document.addEventListener('pointerdown', onDocumentPointerDown)
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown)
+  document.removeEventListener('pointerdown', onDocumentPointerDown)
   document.body.style.overflow = bodyOverflowBeforeOverlay
 })
 
-function isNavActive(match: string): boolean {
-  return match === '/dashboard' ? route.path === match : route.path.startsWith(match)
+function isNavActive(item: NavigationItem): boolean {
+  if (item.exact) return route.path === item.to
+  return item.matches.some((prefix) => route.path.startsWith(prefix))
 }
 
-function openMobileNav(): void {
-  mobileNavOpen.value = true
+function toggleAccountMenu(): void {
+  accountMenuOpen.value = !accountMenuOpen.value
 }
 
-function closeMobileNav(restoreFocus = true): void {
-  if (!mobileNavOpen.value) return
-  mobileNavOpen.value = false
-  if (restoreFocus) void nextTick(() => mobileNavTrigger.value?.focus())
+function closeAccountMenu(restoreFocus = true): void {
+  if (!accountMenuOpen.value) return
+  accountMenuOpen.value = false
+  if (restoreFocus) void nextTick(() => accountTrigger.value?.focus())
+}
+
+function openMobileMore(): void {
+  closeAccountMenu(false)
+  mobileMoreOpen.value = true
+}
+
+function closeMobileMore(restoreFocus = true): void {
+  if (!mobileMoreOpen.value) return
+  mobileMoreOpen.value = false
+  if (restoreFocus) void nextTick(() => mobileMoreTrigger.value?.focus())
+}
+
+function onDocumentPointerDown(event: PointerEvent): void {
+  if (!accountMenuOpen.value) return
+  const target = event.target
+  if (!(target instanceof Node)) return
+  if (accountMenu.value?.contains(target) || accountTrigger.value?.contains(target)) return
+  closeAccountMenu(false)
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
@@ -125,13 +180,19 @@ function onDocumentKeydown(event: KeyboardEvent): void {
     trapFocus(event, nicknameDialog.value)
     return
   }
-  if (!mobileNavOpen.value) return
-  if (event.key === 'Escape') {
-    event.preventDefault()
-    closeMobileNav()
+  if (mobileMoreOpen.value) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeMobileMore()
+      return
+    }
+    trapFocus(event, mobileMorePanel.value)
     return
   }
-  trapFocus(event, mobileNavPanel.value)
+  if (accountMenuOpen.value && event.key === 'Escape') {
+    event.preventDefault()
+    closeAccountMenu()
+  }
 }
 
 function trapFocus(event: KeyboardEvent, container: HTMLElement | null): void {
@@ -154,12 +215,17 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null): void {
 }
 
 function openNicknameModal(event?: Event): void {
-  const currentTarget = event?.currentTarget
+  const target = event?.currentTarget
   nicknameTrigger.value =
-    currentTarget instanceof HTMLElement && currentTarget.closest('.mobile-drawer') === null
-      ? currentTarget
-      : mobileNavTrigger.value
-  closeMobileNav(false)
+    target instanceof HTMLElement && target.closest('.account-menu') !== null
+      ? accountTrigger.value
+      : target instanceof HTMLElement && target.closest('.mobile-more') !== null
+        ? mobileMoreTrigger.value
+        : target instanceof HTMLElement
+          ? target
+          : accountTrigger.value
+  closeAccountMenu(false)
+  closeMobileMore(false)
   nickname.value = authStore.currentUser?.displayName ?? ''
   nicknameFieldError.value = ''
   nicknameGeneralError.value = ''
@@ -192,9 +258,7 @@ async function saveNickname(): Promise<void> {
   } catch (error) {
     const apiError = normalizeApiError(error)
     nicknameFieldError.value = fieldErrorsToRecord(apiError.fieldErrors).displayName ?? ''
-    if (nicknameFieldError.value === '') {
-      nicknameGeneralError.value = authErrorMessage(apiError)
-    }
+    if (nicknameFieldError.value === '') nicknameGeneralError.value = authErrorMessage(apiError)
   } finally {
     nicknameSaving.value = false
   }
@@ -203,7 +267,8 @@ async function saveNickname(): Promise<void> {
 async function logout(): Promise<void> {
   isLoggingOut.value = true
   logoutError.value = ''
-
+  closeAccountMenu(false)
+  closeMobileMore(false)
   try {
     await authStore.logout()
     await router.replace({ name: 'login' })
@@ -219,176 +284,176 @@ async function logout(): Promise<void> {
   <div class="app-shell">
     <a class="sr-only-focusable skip-link" href="#app-content">본문으로 건너뛰기</a>
 
-    <aside class="desktop-sidebar" aria-label="서비스 탐색">
-      <RouterLink class="sidebar-brand" to="/dashboard" aria-label="Hiresemble 지원 홈">
-        <BrandMark inverse />
-        <span>
-          <small>나의 지원 준비</small>
-        </span>
-      </RouterLink>
-
-      <nav class="sidebar-nav" aria-label="주요 메뉴">
-        <RouterLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="sidebar-nav__link"
-          :class="{ 'sidebar-nav__link--active': isNavActive(item.match) }"
-          :aria-current="isNavActive(item.match) ? 'page' : undefined"
-        >
-          <AppIcon :name="item.icon" />
-          <span>{{ item.label }}</span>
+    <header class="product-header">
+      <div class="product-header__inner">
+        <RouterLink class="product-brand" to="/dashboard" aria-label="Hiresemble 홈">
+          <BrandMark compact />
         </RouterLink>
-      </nav>
 
-      <div class="sidebar-footer">
-        <RouterLink
-          class="onboarding-link"
-          to="/onboarding"
-          :aria-current="route.path === '/onboarding' ? 'page' : undefined"
-        >
-          <span class="onboarding-link__label">프로필 설정 안내</span>
-          <span>온보딩 다시 보기</span>
-          <AppIcon name="arrow-right" />
-        </RouterLink>
-        <div class="sidebar-user">
-          <span class="user-avatar" aria-hidden="true">{{ userInitial }}</span>
-          <span class="sidebar-user__text">
-            <strong>{{ authStore.currentUser?.displayName }}</strong>
-            <small>{{ authStore.currentUser?.email }}</small>
-          </span>
-        </div>
-      </div>
-    </aside>
-
-    <div class="app-workspace">
-      <header class="workspace-header">
-        <div class="workspace-header__identity">
-          <button
-            ref="mobileNavTrigger"
-            type="button"
-            class="button button--secondary button--icon mobile-menu-button"
-            aria-label="주요 메뉴 열기"
-            aria-controls="mobile-navigation"
-            :aria-expanded="mobileNavOpen"
-            @click="openMobileNav"
+        <nav class="desktop-navigation" aria-label="서비스 탐색">
+          <RouterLink
+            v-for="item in primaryNavigation"
+            :key="item.to"
+            :to="item.to"
+            class="desktop-navigation__link"
+            :class="{ 'desktop-navigation__link--active': isNavActive(item) }"
+            :aria-current="isNavActive(item) ? 'page' : undefined"
           >
-            <AppIcon name="menu" />
-          </button>
-          <RouterLink class="mobile-brand" to="/dashboard" aria-label="Hiresemble 지원 홈">
-            <BrandMark compact :show-name="false" />
+            {{ item.label }}
           </RouterLink>
-          <div class="workspace-title">
-            <p>{{ pageContext }}</p>
-            <h1>{{ pageTitle }}</h1>
+        </nav>
+
+        <div class="product-header__actions">
+          <AgentRunProgressDrawer />
+          <div class="account-entry">
+            <button
+              ref="accountTrigger"
+              type="button"
+              class="account-trigger"
+              aria-haspopup="menu"
+              :aria-expanded="accountMenuOpen"
+              aria-controls="account-menu"
+              @click="toggleAccountMenu"
+            >
+              <AppIcon name="profile" />
+              <span>{{ authStore.currentUser?.displayName || '내 계정' }}</span>
+              <span class="account-trigger__chevron" aria-hidden="true">⌄</span>
+            </button>
+
+            <div
+              v-if="accountMenuOpen"
+              id="account-menu"
+              ref="accountMenu"
+              class="account-menu"
+              role="menu"
+              aria-label="내 계정"
+            >
+              <div class="account-menu__identity">
+                <AppIcon name="profile" />
+                <span>
+                  <strong>{{ authStore.currentUser?.displayName }}</strong>
+                  <small>{{ authStore.currentUser?.email }}</small>
+                </span>
+              </div>
+              <RouterLink data-account-first role="menuitem" to="/guide">이용 가이드</RouterLink>
+              <RouterLink role="menuitem" to="/agent-runs">AI 작업</RouterLink>
+              <button type="button" role="menuitem" @click="openNicknameModal">닉네임 변경</button>
+              <button type="button" role="menuitem" :disabled="isLoggingOut" @click="logout">
+                {{ isLoggingOut ? '로그아웃 중…' : '로그아웃' }}
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+      <p v-if="logoutError" class="product-header__error" role="alert">{{ logoutError }}</p>
+    </header>
 
-        <div class="workspace-header__actions">
-          <AgentRunProgressDrawer />
-          <button
-            type="button"
-            class="header-user"
-            :aria-label="`닉네임 수정: ${authStore.currentUser?.displayName ?? ''}`"
-            aria-haspopup="dialog"
-            @click="openNicknameModal"
-          >
-            <span class="user-avatar user-avatar--small" aria-hidden="true">{{ userInitial }}</span>
-            <span class="header-user__name">{{ authStore.currentUser?.displayName }}</span>
-            <span class="header-user__hint" aria-hidden="true">수정</span>
-          </button>
-          <button
-            type="button"
-            class="button button--ghost header-logout"
-            :disabled="isLoggingOut"
-            @click="logout"
-          >
-            <AppIcon name="logout" />
-            {{ isLoggingOut ? '로그아웃 중…' : '로그아웃' }}
-          </button>
-        </div>
+    <main id="app-content" ref="workspaceContent" class="workspace-content" tabindex="-1">
+      <RouterView />
+    </main>
 
-        <p v-if="logoutError" class="workspace-header__error" role="alert">
-          {{ logoutError }}
-        </p>
-      </header>
-
-      <main id="app-content" ref="workspaceContent" class="workspace-content" tabindex="-1">
-        <RouterView />
-      </main>
-    </div>
+    <nav class="mobile-bottom-navigation" aria-label="모바일 주요 메뉴">
+      <RouterLink
+        v-for="item in mobileNavigation"
+        :key="item.to"
+        :to="item.to"
+        class="mobile-bottom-navigation__item"
+        :class="{ 'mobile-bottom-navigation__item--active': isNavActive(item) }"
+        :aria-current="isNavActive(item) ? 'page' : undefined"
+      >
+        <AppIcon :name="item.icon" />
+        <span>{{ item.label === '관심 공고' ? '공고' : item.label }}</span>
+      </RouterLink>
+      <button
+        ref="mobileMoreTrigger"
+        type="button"
+        class="mobile-bottom-navigation__item"
+        :class="{ 'mobile-bottom-navigation__item--active': mobileMoreActive }"
+        aria-haspopup="dialog"
+        :aria-expanded="mobileMoreOpen"
+        aria-controls="mobile-more-menu"
+        @click="openMobileMore"
+      >
+        <AppIcon name="menu" />
+        <span>더보기</span>
+      </button>
+    </nav>
 
     <Teleport to="body">
-      <div v-if="mobileNavOpen" class="mobile-drawer-layer">
+      <div v-if="mobileMoreOpen" class="mobile-more-layer">
         <button
           type="button"
-          class="mobile-drawer-overlay"
-          aria-label="주요 메뉴 닫기"
-          @click="closeMobileNav()"
+          class="mobile-more-overlay"
+          aria-label="더보기 메뉴 닫기"
+          @click="closeMobileMore()"
         />
-        <aside
-          id="mobile-navigation"
-          ref="mobileNavPanel"
-          class="mobile-drawer"
+        <section
+          id="mobile-more-menu"
+          ref="mobileMorePanel"
+          class="mobile-more"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="mobile-navigation-title"
+          aria-labelledby="mobile-more-title"
         >
-          <div class="mobile-drawer__header">
+          <header class="mobile-more__header">
             <div>
-              <p class="page-eyebrow">나의 지원 준비</p>
-              <h2 id="mobile-navigation-title">Hiresemble 메뉴</h2>
+              <p>Hiresemble</p>
+              <h2 id="mobile-more-title">더보기</h2>
             </div>
             <button
               type="button"
               class="button button--ghost button--icon"
-              aria-label="주요 메뉴 닫기"
-              @click="closeMobileNav()"
+              aria-label="더보기 메뉴 닫기"
+              @click="closeMobileMore()"
             >
               <AppIcon name="close" />
             </button>
-          </div>
+          </header>
 
-          <nav class="mobile-drawer__nav" aria-label="모바일 주요 메뉴">
-            <RouterLink
-              v-for="(item, index) in navItems"
-              :key="item.to"
-              :data-mobile-nav-first="index === 0 ? '' : undefined"
-              :to="item.to"
-              class="mobile-nav-link"
-              :class="{ 'mobile-nav-link--active': isNavActive(item.match) }"
-              :aria-current="isNavActive(item.match) ? 'page' : undefined"
-              @click="closeMobileNav(false)"
-            >
-              <AppIcon :name="item.icon" />
-              <span>{{ item.label }}</span>
+          <nav class="mobile-more__links" aria-label="추가 메뉴">
+            <RouterLink data-mobile-more-first to="/profile/basic">
+              <AppIcon name="profile" />
+              <span><strong>내 정보</strong><small>프로필과 경험 관리</small></span>
+              <AppIcon name="arrow-right" />
+            </RouterLink>
+            <RouterLink to="/documents">
+              <AppIcon name="documents" />
+              <span><strong>이력서·자료</strong><small>등록한 자료와 확인한 경험</small></span>
+              <AppIcon name="arrow-right" />
+            </RouterLink>
+            <RouterLink to="/agent-runs">
+              <AppIcon name="runs" />
+              <span><strong>AI 작업</strong><small>진행 중이거나 끝난 작업</small></span>
+              <AppIcon name="arrow-right" />
+            </RouterLink>
+            <RouterLink to="/guide">
+              <AppIcon name="dashboard" />
+              <span><strong>이용 가이드</strong><small>Hiresemble 활용 순서</small></span>
+              <AppIcon name="arrow-right" />
             </RouterLink>
           </nav>
 
-          <div class="mobile-drawer__footer">
-            <RouterLink
-              class="mobile-nav-link mobile-nav-link--secondary"
-              to="/onboarding"
-              :aria-current="route.path === '/onboarding' ? 'page' : undefined"
-              @click="closeMobileNav(false)"
-            >
+          <div class="mobile-more__account">
+            <span class="mobile-more__account-name">
               <AppIcon name="profile" />
-              <span>온보딩 다시 보기</span>
-            </RouterLink>
+              <span
+                ><strong>{{ authStore.currentUser?.displayName }}</strong
+                ><small>내 계정</small></span
+              >
+            </span>
+            <button type="button" class="button button--secondary" @click="openNicknameModal">
+              닉네임 변경
+            </button>
             <button
               type="button"
-              class="mobile-drawer__user mobile-drawer__user--button"
-              aria-haspopup="dialog"
-              @click="openNicknameModal"
+              class="button button--ghost"
+              :disabled="isLoggingOut"
+              @click="logout"
             >
-              <span class="user-avatar" aria-hidden="true">{{ userInitial }}</span>
-              <span>
-                <strong>{{ authStore.currentUser?.displayName }}</strong>
-                <small>닉네임 수정</small>
-              </span>
+              로그아웃
             </button>
           </div>
-        </aside>
+        </section>
       </div>
     </Teleport>
 
@@ -397,7 +462,7 @@ async function logout(): Promise<void> {
         <button
           type="button"
           class="nickname-modal-overlay"
-          aria-label="닉네임 수정 닫기"
+          aria-label="닉네임 변경 닫기"
           :disabled="nicknameSaving"
           @click="closeNicknameModal()"
         />
@@ -411,13 +476,13 @@ async function logout(): Promise<void> {
         >
           <header class="nickname-modal__header">
             <div>
-              <p class="page-eyebrow">계정 표시 정보</p>
-              <h2 id="nickname-modal-title">닉네임 수정</h2>
+              <p class="page-eyebrow">내 계정</p>
+              <h2 id="nickname-modal-title">닉네임 변경</h2>
             </div>
             <button
               type="button"
               class="button button--ghost button--icon"
-              aria-label="닉네임 수정 닫기"
+              aria-label="닉네임 변경 닫기"
               :disabled="nicknameSaving"
               @click="closeNicknameModal()"
             >
@@ -426,7 +491,7 @@ async function logout(): Promise<void> {
           </header>
           <form class="nickname-modal__form" novalidate @submit.prevent="saveNickname">
             <p id="nickname-modal-description" class="nickname-modal__description">
-              변경한 닉네임은 헤더와 지원 홈에 바로 표시돼요.
+              저장하면 홈과 계정 메뉴에 바로 반영돼요.
             </p>
             <label class="field" for="nickname-modal-input">
               <span class="field__label">닉네임</span>
@@ -457,7 +522,7 @@ async function logout(): Promise<void> {
                 취소
               </button>
               <button type="submit" class="button button--primary" :disabled="nicknameSaving">
-                {{ nicknameSaving ? '저장 중…' : '저장' }}
+                {{ nicknameSaving ? '저장 중…' : '변경 사항 저장' }}
               </button>
             </footer>
           </form>
@@ -469,546 +534,495 @@ async function logout(): Promise<void> {
 
 <style scoped>
 .app-shell {
-  display: flex;
   min-height: 100dvh;
   background: var(--color-canvas);
 }
 
 .skip-link {
   position: fixed;
-  top: 0.75rem;
-  left: 0.75rem;
+  top: var(--space-3);
+  left: var(--space-3);
   z-index: 100;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--color-ink);
   color: white;
   padding: 0.625rem 0.875rem;
   font-weight: 700;
 }
 
-.desktop-sidebar {
+.product-header {
   position: sticky;
   top: 0;
-  display: none;
-  width: var(--sidebar-width);
-  height: 100dvh;
-  flex: 0 0 var(--sidebar-width);
-  flex-direction: column;
-  overflow-y: auto;
-  border-right: 1px solid #263254;
-  background: #11182d;
-  color: #edf1ff;
-  padding: 1.25rem 1rem;
+  z-index: 40;
+  border-bottom: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(16px);
 }
 
-.sidebar-brand {
-  display: flex;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 0.125rem;
-  border-radius: var(--radius-md);
-  padding: 0.375rem;
+.product-header__inner {
+  display: grid;
+  width: min(100% - 2rem, var(--content-width));
+  min-height: var(--global-header-height);
+  margin-inline: auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+
+.product-brand {
+  display: inline-flex;
+  border-radius: var(--radius-control);
   text-decoration: none;
 }
 
-.sidebar-brand small {
-  display: block;
-  margin-left: 3.2rem;
-  color: #9eabd1;
-  font-size: 0.6875rem;
-  letter-spacing: 0.02em;
+.desktop-navigation {
+  display: none;
+  min-width: 0;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
 }
 
-.sidebar-nav {
-  display: grid;
-  gap: 0.25rem;
-  margin-top: 2rem;
-}
-
-.sidebar-nav__link {
+.desktop-navigation__link {
   position: relative;
-  display: flex;
+  display: inline-flex;
   min-height: 2.75rem;
   align-items: center;
-  gap: 0.75rem;
-  border-radius: var(--radius-md);
-  color: #bac4e3;
-  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-control);
+  color: var(--color-muted-strong);
+  padding: 0.625rem clamp(0.55rem, 0.85vw, 0.875rem);
   font-size: 0.875rem;
-  font-weight: 620;
+  font-weight: 650;
   text-decoration: none;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
+  white-space: nowrap;
 }
 
-.sidebar-nav__link:hover {
-  background: #1c2745;
-  color: white;
+.desktop-navigation__link:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-ink);
 }
 
-.sidebar-nav__link--active {
-  background: #24335a;
-  color: white;
-  box-shadow: inset 3px 0 var(--hs-blue-400);
+.desktop-navigation__link--active {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
+  font-weight: 750;
 }
 
-.sidebar-footer {
-  display: grid;
-  gap: 1rem;
-  margin-top: auto;
-  padding-top: 2rem;
+.desktop-navigation__link--active::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: -0.95rem;
+  left: 0.75rem;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--color-brand);
+  content: '';
 }
 
-.onboarding-link {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.125rem 0.5rem;
+.product-header__actions {
+  display: flex;
   align-items: center;
-  border: 1px solid #354466;
-  border-radius: var(--radius-md);
-  color: #dbe2f8;
-  padding: 0.75rem;
-  font-size: 0.8125rem;
-  text-decoration: none;
+  gap: var(--space-2);
 }
 
-.onboarding-link:hover,
-.onboarding-link[aria-current='page'] {
-  border-color: #617ad0;
-  background: #1c2745;
+.account-entry {
+  position: relative;
 }
 
-.onboarding-link__label {
-  grid-column: 1 / -1;
-  color: #94a2ca;
-  font-size: 0.6875rem;
+.account-trigger {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink-soft);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
-.onboarding-link .icon {
-  grid-column: 2;
-  grid-row: 2;
+.account-trigger:hover,
+.account-trigger[aria-expanded='true'] {
+  background: var(--color-neutral-soft);
+  color: var(--color-ink);
 }
 
-.sidebar-user {
+.account-trigger__chevron {
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 0.625rem);
+  right: 0;
+  display: grid;
+  width: 15rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem;
+}
+
+.account-menu::before {
+  position: absolute;
+  top: -0.4rem;
+  right: 1.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  content: '';
+  transform: rotate(45deg);
+}
+
+.account-menu__identity {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 0.625rem;
-  border-top: 1px solid #34405f;
-  padding: 1rem 0.375rem 0;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.625rem 0.625rem 0.875rem;
 }
 
-.user-avatar {
-  display: inline-grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--color-brand-soft);
-  color: var(--color-brand-ink);
+.account-menu__identity span {
+  min-width: 0;
+}
+
+.account-menu__identity strong,
+.account-menu__identity small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__identity strong {
+  color: var(--color-ink);
   font-size: 0.875rem;
-  font-weight: 800;
 }
 
-.user-avatar--small {
-  width: 1.875rem;
-  height: 1.875rem;
+.account-menu__identity small {
+  margin-top: 0.1rem;
+  color: var(--color-muted);
   font-size: 0.75rem;
 }
 
-.sidebar-user .user-avatar {
-  background: #dce4ff;
-}
-
-.sidebar-user__text {
-  min-width: 0;
-}
-
-.sidebar-user__text strong,
-.sidebar-user__text small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sidebar-user__text strong {
-  color: #f3f5ff;
-  font-size: 0.8125rem;
-}
-
-.sidebar-user__text small {
-  margin-top: 0.125rem;
-  color: #9eabd1;
-  font-size: 0.6875rem;
-}
-
-.app-workspace {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.workspace-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  min-height: 4.5rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  padding: 0.75rem clamp(1rem, 2.5vw, 2rem);
-}
-
-.workspace-header__identity,
-.workspace-header__actions {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.workspace-title {
-  min-width: 0;
-}
-
-.workspace-title p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: none;
-}
-
-.workspace-title h1 {
-  margin: 0.1rem 0 0;
-  overflow: hidden;
-  color: var(--color-ink);
-  font-size: 1.125rem;
-  font-weight: 720;
-  letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-user {
-  display: none;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+.account-menu > a,
+.account-menu > button {
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--color-ink-soft);
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8125rem;
-  font-weight: 620;
-  cursor: pointer;
-  transition:
-    border-color 140ms ease,
-    background-color 140ms ease;
+  padding: 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
 }
 
-.header-user:hover,
-.header-user:focus-visible {
-  border-color: var(--color-border);
+.account-menu > :is(a, button):hover,
+.account-menu > :is(a, button):focus-visible {
   background: var(--color-neutral-soft);
+  color: var(--color-ink);
 }
 
-.header-user__name {
-  max-width: 10rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-user__hint {
-  color: var(--color-brand-ink);
-  font-size: 0.6875rem;
-}
-
-.workspace-header__error {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 1rem;
-  max-width: min(26rem, calc(100vw - 2rem));
-  border: 1px solid #efc0bb;
-  border-radius: var(--radius-md);
-  background: var(--color-danger-soft);
-  color: #8e1c14;
-  padding: 0.75rem 1rem;
+.product-header__error {
+  width: min(100% - 2rem, var(--content-width));
+  margin: -0.375rem auto 0.625rem;
+  color: var(--color-danger);
   font-size: 0.8125rem;
-  box-shadow: var(--shadow-md);
+  text-align: right;
 }
 
 .workspace-content {
-  width: 100%;
-  max-width: var(--content-width);
-  min-width: 0;
-  margin: 0 auto;
-  padding: clamp(1.25rem, 3vw, 2.25rem);
+  width: min(100% - clamp(2rem, 6vw, 4rem), var(--content-width));
+  min-height: calc(100dvh - var(--global-header-height));
+  margin-inline: auto;
+  padding-block: var(--page-block-start) calc(var(--page-block-end) + var(--mobile-nav-height));
+  outline: none;
 }
 
-.mobile-drawer-layer {
+.mobile-bottom-navigation {
   position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-}
-
-.mobile-drawer-overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  background: rgb(9 14 32 / 64%);
-  padding: 0;
-}
-
-.mobile-drawer {
-  position: relative;
-  display: flex;
-  width: min(20rem, calc(100vw - 2rem));
-  max-height: 100dvh;
-  flex-direction: column;
-  overflow-y: auto;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
-  animation: mobile-drawer-enter 240ms cubic-bezier(0.2, 0, 0, 1) both;
-}
-
-.mobile-drawer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  padding: 1rem;
-}
-
-.mobile-drawer__header h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 720;
-}
-
-.mobile-drawer__nav {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 35;
   display: grid;
-  gap: 0.25rem;
-  padding: 1rem;
+  min-height: var(--mobile-nav-height);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 -8px 24px rgb(22 26 43 / 7%);
+  padding: 0.375rem max(0.25rem, env(safe-area-inset-right))
+    max(0.375rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
+  backdrop-filter: blur(16px);
 }
 
-.mobile-nav-link {
-  display: flex;
-  min-height: 2.875rem;
-  align-items: center;
-  gap: 0.75rem;
-  border-radius: var(--radius-md);
-  color: var(--color-ink-soft);
-  padding: 0.625rem 0.75rem;
-  font-size: 0.9375rem;
+.mobile-bottom-navigation__item {
+  display: grid;
+  min-width: 0;
+  min-height: 3rem;
+  place-items: center;
+  gap: 0.125rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0.25rem 0.125rem;
+  font-size: 0.6875rem;
   font-weight: 650;
+  line-height: 1.2;
   text-decoration: none;
 }
 
-.mobile-nav-link:hover {
-  background: var(--color-neutral-soft);
+.mobile-bottom-navigation__item .icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-.mobile-nav-link--active {
+.mobile-bottom-navigation__item:hover,
+.mobile-bottom-navigation__item--active {
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
-  box-shadow: inset 3px 0 var(--color-brand);
 }
 
-.mobile-nav-link--secondary {
-  border: 1px solid var(--color-border);
+.mobile-bottom-navigation__item--active {
+  font-weight: 800;
 }
 
-.mobile-drawer__footer {
-  display: grid;
-  gap: 1rem;
-  margin-top: auto;
-  border-top: 1px solid var(--color-border);
-  padding: 1rem;
-}
-
-.mobile-drawer__user {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.mobile-drawer__user strong,
-.mobile-drawer__user small {
-  display: block;
-  overflow: hidden;
-  max-width: 13rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mobile-drawer__user strong {
-  color: var(--color-ink);
-  font-size: 0.875rem;
-}
-
-.mobile-drawer__user small {
-  color: var(--color-muted);
-  font-size: 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .header-user {
-    display: flex;
-  }
-}
-
-.mobile-drawer__user--button {
-  width: 100%;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: inherit;
-  padding: 0.5rem;
-  text-align: left;
-}
-
-.mobile-drawer__user--button:hover,
-.mobile-drawer__user--button:focus-visible {
-  background: var(--color-neutral-soft);
-}
-
+.mobile-more-layer,
 .nickname-modal-layer {
   position: fixed;
+  z-index: 80;
   inset: 0;
-  z-index: 90;
-  display: grid;
-  place-items: center;
-  padding: var(--space-4);
 }
 
+.mobile-more-overlay,
 .nickname-modal-overlay {
   position: absolute;
-  inset: 0;
-  width: 100%;
   border: 0;
-  border-radius: 0;
-  background: rgb(9 14 32 / 58%);
-  padding: 0;
+  background: rgb(16 24 40 / 48%);
+  inset: 0;
 }
 
-.nickname-modal {
-  position: relative;
-  width: min(28rem, 100%);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+.mobile-more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: min(42rem, calc(100dvh - 2rem));
+  overflow-y: auto;
+  border-radius: 1.25rem 1.25rem 0 0;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
+  padding: 1rem 1rem max(1.25rem, env(safe-area-inset-bottom));
 }
 
+.mobile-more__header,
 .nickname-modal__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-5);
+  gap: 1rem;
 }
 
+.mobile-more__header p {
+  margin: 0;
+  color: var(--color-brand);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.mobile-more__header h2,
 .nickname-modal__header h2 {
-  margin: var(--space-1) 0 0;
+  margin: 0.125rem 0 0;
   color: var(--color-ink);
   font-size: 1.25rem;
 }
 
+.mobile-more__links {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+.mobile-more__links > a {
+  display: grid;
+  min-height: 4rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-control);
+  color: var(--color-ink-soft);
+  padding: 0.625rem 0.75rem;
+  text-decoration: none;
+}
+
+.mobile-more__links > a:hover,
+.mobile-more__links > a[aria-current='page'] {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
+}
+
+.mobile-more__links strong,
+.mobile-more__links small {
+  display: block;
+}
+
+.mobile-more__links strong {
+  font-size: 0.9375rem;
+}
+
+.mobile-more__links small {
+  margin-top: 0.125rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.mobile-more__account {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+.mobile-more__account-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.mobile-more__account-name strong,
+.mobile-more__account-name small {
+  display: block;
+}
+
+.mobile-more__account-name small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.nickname-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(30rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border-radius: var(--radius-surface);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: 1.25rem;
+  transform: translate(-50%, -50%);
+}
+
 .nickname-modal__form {
   display: grid;
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .nickname-modal__description {
   margin: 0;
   color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  line-height: 1.65;
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
 .nickname-modal__actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
+  gap: 0.5rem;
 }
 
-@media (min-width: 1024px) {
-  .desktop-sidebar {
+@media (min-width: 70rem) {
+  .desktop-navigation {
     display: flex;
   }
 
-  .mobile-menu-button,
-  .mobile-brand {
+  .mobile-bottom-navigation {
     display: none;
-  }
-}
-
-@media (max-width: 767px) {
-  .workspace-header {
-    min-height: 4rem;
-    padding-inline: 0.75rem;
-  }
-
-  .workspace-header__actions {
-    gap: 0.25rem;
-  }
-
-  .header-logout {
-    width: 2.625rem;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .header-logout .icon {
-    width: 1.125rem;
-    height: 1.125rem;
-  }
-}
-
-@media (max-width: 479px) {
-  .workspace-title p {
-    display: none;
-  }
-
-  .workspace-title h1 {
-    max-width: 7.25rem;
-    font-size: 1rem;
   }
 
   .workspace-content {
-    padding-inline: 1rem;
+    padding-bottom: var(--page-block-end);
   }
 }
 
-@keyframes mobile-drawer-enter {
-  from {
-    opacity: 0;
-    transform: translateX(-1rem);
+@media (max-width: 69.99rem) {
+  .product-header__inner {
+    display: flex;
+    width: min(100% - 1.5rem, var(--content-width));
+    justify-content: space-between;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+
+  .product-header__actions :deep(.progress-drawer-trigger span:not(.status-badge)) {
+    display: none;
+  }
+
+  .account-trigger span:not(.account-trigger__chevron) {
+    display: none;
+  }
+
+  .workspace-content {
+    width: min(100% - 2rem, var(--content-width));
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mobile-drawer {
-    animation: none;
+@media (max-width: 35rem) {
+  .product-brand :deep(.brand-lockup__name) {
+    display: none;
+  }
+
+  .product-header__inner {
+    min-height: 3.75rem;
+  }
+
+  .workspace-content {
+    width: min(100% - 1.5rem, var(--content-width));
+    padding-top: var(--space-6);
+  }
+
+  .mobile-more__account {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mobile-more__account-name {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-more__account .button {
+    width: 100%;
+  }
+
+  .nickname-modal {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    transform: none;
+  }
+
+  .nickname-modal__actions > .button {
+    flex: 1 1 0;
   }
 }
 </style>

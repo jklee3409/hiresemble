@@ -228,7 +228,7 @@ function period(item: ActivityDto): string {
         heading-id="activities-heading"
         title="대외활동"
         description="동아리, 봉사, 공모전처럼 직접 참여한 경험을 기록하고 필요한 활동만 자소서·면접 소재 후보로 선택하세요."
-        eyebrow="내 지원 정보"
+        variant="compact"
       >
         <template #actions>
           <button

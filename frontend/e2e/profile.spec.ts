@@ -29,7 +29,7 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
 
   await expect(page.getByRole('heading', { name: '이력서 또는 포트폴리오' })).toBeVisible()
   await expect(page.getByText('필수 항목 완료', { exact: true })).toBeVisible()
-  await expect(page.getByText('100%')).toBeVisible()
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '100')
 
   const completedProfile = await getJson<{
     legalName: string
@@ -56,7 +56,10 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   await expect(page.locator('#profile-legalName')).toHaveValue('First Candidate')
   await page.reload()
   await expect(page.locator('#profile-legalName')).toHaveValue('First Candidate')
-  await expect(page.getByText('100% 완료')).toBeVisible()
+  await expect(page.getByLabel('프로필 완료율').getByRole('progressbar')).toHaveAttribute(
+    'value',
+    '100',
+  )
 
   await page.goto('/profile/education')
   await expect(page.getByRole('heading', { name: 'First University', exact: true })).toBeVisible()
@@ -86,14 +89,14 @@ test('P2 signup, profile persistence, owner isolation, CSRF, and cache cleanup',
   expect(foreignAccess.code).toBe('RESOURCE_NOT_FOUND')
   await secondContext.close()
 
-  await page.getByRole('button', { name: '로그아웃' }).click()
+  await logout(page, 'P2 First User')
   await expect(page).toHaveURL(/\/login(?:\?.*)?$/)
   await login(page, secondEmail, password)
   await page.goto('/profile/basic')
   await expect(page.locator('#profile-legalName')).toHaveValue('')
   await expect(page.locator('#profile-legalName')).not.toHaveValue('First Candidate')
 
-  await page.getByRole('button', { name: '로그아웃' }).click()
+  await logout(page, 'P2 Second User')
   await expect(page).toHaveURL(/\/login(?:\?.*)?$/)
   await login(page, firstEmail, password)
   await page.goto('/profile/basic')
@@ -160,6 +163,7 @@ async function mutateEducation(
           schoolName: 'Foreign Attempt',
           major: null,
           degree: null,
+          educationLevel: 'BACHELOR',
           educationStatus: 'ENROLLED',
           admissionDate: null,
           graduationDate: null,
@@ -175,4 +179,9 @@ async function mutateEducation(
     },
     { id: educationId, csrfToken: csrf },
   )
+}
+
+async function logout(page: Page, displayName: string): Promise<void> {
+  await page.getByRole('button', { name: displayName }).click()
+  await page.getByRole('menuitem', { name: '로그아웃' }).click()
 }

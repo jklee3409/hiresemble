@@ -293,7 +293,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       heading-id="documents-heading"
       title="이력서·자료"
       description="이력서와 포트폴리오를 등록하면 AI가 경험을 정리하고, 활용할 소재를 직접 선택할 수 있어요."
-      eyebrow="나의 자료"
+      variant="list"
     />
 
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">

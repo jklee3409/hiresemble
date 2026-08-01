@@ -91,7 +91,7 @@ async function cancel(): Promise<void> {
   <section class="agent-run-detail-page app-page">
     <RouterLink class="back-link" to="/agent-runs">
       <AppIcon name="arrow-left" />
-      AI 작업 내역
+      AI 작업
     </RouterLink>
     <StatePanel
       v-if="detail.isLoading.value"
@@ -109,7 +109,7 @@ async function cancel(): Promise<void> {
     >
       <template #actions>
         <RouterLink class="button button--secondary" to="/agent-runs">
-          AI 작업 내역으로 돌아가기
+          AI 작업으로 돌아가기
         </RouterLink>
       </template>
     </StatePanel>

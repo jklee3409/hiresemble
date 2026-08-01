@@ -56,7 +56,7 @@ describe('DashboardPage', () => {
 
     const wrapper = await mountDashboard('이종규')
 
-    expect(wrapper.get('h2').text()).toBe('이종규님의 지원 현황')
+    expect(wrapper.get('h1').text()).toBe('이종규, 지금 준비 중인 지원')
     expect(wrapper.text()).toContain('80%')
     expect(wrapper.text()).toContain('지원 중 공고')
     expect(wrapper.text()).toContain('서류 제출 공고')
@@ -74,11 +74,12 @@ describe('DashboardPage', () => {
 
     const wrapper = await mountDashboard('   ')
 
-    expect(wrapper.get('h2').text()).toBe('나의 지원 현황')
-    expect(wrapper.text()).toContain('지원 준비의 기준 정보를 먼저 모아 보세요.')
+    expect(wrapper.get('h1').text()).toBe('지금 준비 중인 지원')
+    expect(wrapper.text()).toContain('Hiresemble은 이렇게 활용할 수 있어요.')
     expect(wrapper.text()).toContain('프로필 작성')
     expect(wrapper.text()).toContain('문서 업로드')
     expect(wrapper.text()).toContain('공고 등록')
+    expect(wrapper.text()).toContain('이용 순서 보기')
     expect(wrapper.text()).not.toContain('지원 준비 현황')
   })
 
@@ -90,7 +91,7 @@ describe('DashboardPage', () => {
 
     const wrapper = await mountDashboard('테스터')
 
-    expect(wrapper.text()).toContain('일부 지원 현황을 불러오지 못했어요.')
+    expect(wrapper.text()).toContain('일부 지원 정보를 불러오지 못했어요.')
     expect(wrapper.get('button').text()).toContain('다시 불러오기')
     expect(wrapper.text()).toContain('프로필 작성')
   })
@@ -119,6 +120,7 @@ async function mountDashboard(displayName: string) {
       { path: '/jobs/:jobId/overview', component: { template: '<div />' } },
       { path: '/agent-runs', component: { template: '<div />' } },
       { path: '/agent-runs/:agentRunId', component: { template: '<div />' } },
+      { path: '/guide', component: { template: '<div />' } },
     ],
   })
   await router.push('/dashboard')

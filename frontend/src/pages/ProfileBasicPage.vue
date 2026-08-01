@@ -210,7 +210,7 @@ function emptyForm(): ProfileFormValues {
         heading-id="profile-basic-heading"
         title="프로필 기본 정보"
         description="지원서에 공통으로 사용할 정보와 희망 조건을 관리하세요."
-        eyebrow="내 지원 정보"
+        variant="compact"
       >
         <template #actions>
           <div v-if="profileQuery.data.value" class="completion-inline" aria-label="프로필 완료율">

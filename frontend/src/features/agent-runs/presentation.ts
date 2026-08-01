@@ -34,9 +34,9 @@ export const STATUS_LABELS: Record<AgentRunStatus, string> = {
 }
 
 export const QUALITY_LABELS: Record<AiQualityMode, string> = {
-  ECONOMY: '경제형',
-  BALANCED: '균형형',
-  HIGH_QUALITY: '고품질',
+  ECONOMY: '빠른 처리',
+  BALANCED: '균형 처리',
+  HIGH_QUALITY: '꼼꼼한 처리',
 }
 
 export const MODEL_TIER_LABELS: Record<ModelTier, string> = {

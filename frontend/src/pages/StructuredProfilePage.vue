@@ -676,7 +676,7 @@ const resourceLabels: Record<
         :heading-id="`${kind}-heading`"
         :title="title"
         :description="description"
-        eyebrow="내 지원 정보"
+        variant="compact"
       >
         <template #actions>
           <button type="button" class="button button--primary" @click="openCreate">

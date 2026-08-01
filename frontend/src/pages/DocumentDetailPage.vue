@@ -249,7 +249,7 @@ function fileTypeLabel(mimeType: string): string {
         heading-id="document-heading"
         :title="document.data.value.displayName"
         :description="`${DOCUMENT_TYPE_LABELS[document.data.value.documentType]} · ${formatFileSize(document.data.value.fileSizeBytes)}`"
-        eyebrow="자료 확인"
+        variant="detail"
       >
         <template #actions>
           <div class="document-detail__actions">

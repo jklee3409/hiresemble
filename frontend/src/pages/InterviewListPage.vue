@@ -104,7 +104,7 @@ function normalizedSearch(): string | undefined {
       heading-id="interview-list-heading"
       title="면접 준비"
       description="공고별 회사 조사와 예상 질문 세트를 한곳에서 확인하세요."
-      eyebrow="예상 질문 세트"
+      variant="list"
     />
 
     <form class="interview-list__filters filter-toolbar" @submit.prevent="applyFilters">

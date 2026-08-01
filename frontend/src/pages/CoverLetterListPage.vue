@@ -173,8 +173,8 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
     <PageHeader
       heading-id="cover-list-heading"
       title="자기소개서"
-      description="공고별 자기소개서의 작성·검증·보관 상태를 한곳에서 관리하세요."
-      eyebrow="지원 문서"
+      description="공고에 맞춰 작성 중인 답변과 확인이 끝난 자기소개서를 이어서 준비하세요."
+      variant="list"
     />
 
     <form class="cover-list__filters filter-toolbar" @submit.prevent="applyFilters">

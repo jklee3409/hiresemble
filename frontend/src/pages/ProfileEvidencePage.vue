@@ -290,7 +290,7 @@ function confidenceLabel(evidence: EvidenceDto): string {
         heading-id="evidence-heading"
         title="대외활동"
         description="내가 입력했거나 자료에서 찾은 대외활동을 확인하고 다듬어 보세요."
-        eyebrow="내 지원 정보"
+        variant="compact"
       />
       <aside class="evidence-page__guidance" aria-label="AI 추출 정보 승인과 거절 안내">
         <div class="evidence-guidance-item evidence-guidance-item--approve">

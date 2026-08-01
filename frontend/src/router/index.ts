@@ -74,6 +74,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '지원 홈' },
       },
       {
+        path: 'guide',
+        name: 'guide',
+        component: () => import('@/pages/GuidePage.vue'),
+        meta: { title: '이용 가이드' },
+      },
+      {
         path: 'profile',
         redirect: { name: 'profile-basic' },
       },
@@ -215,7 +221,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'agent-runs',
         name: 'agent-runs',
         component: () => import('@/pages/AgentRunListPage.vue'),
-        meta: { title: 'AI 작업 내역' },
+        meta: { title: 'AI 작업' },
       },
       {
         path: 'agent-runs/:agentRunId',

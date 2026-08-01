@@ -880,7 +880,7 @@ async function submitVerification(snapshot: VerificationSnapshot): Promise<void>
     clearConflictState()
   } catch (error) {
     await handleConflict('ANSWER', error, {
-      localSnapshot: `검증할 답변 ID: ${snapshot.versionId}\n품질 모드: ${snapshot.qualityMode}`,
+      localSnapshot: `검증할 답변 ID: ${snapshot.versionId}\n작성 방식: ${snapshot.qualityMode}`,
       serverSnapshot: (latest) =>
         formatAnswerSnapshot(findActiveQuestion(latest, snapshot.questionId)),
       retry: async () => submitVerification(snapshot),
@@ -1196,7 +1196,7 @@ function formatGenerationSnapshot(snapshot: GenerationSnapshot): string {
     '선택 문항 AI 초안 생성',
     `문항 IDs: ${snapshot.questionIds.join(', ')}`,
     `선호 근거 IDs: ${snapshot.preferredEvidenceIds.join(', ') || '없음'}`,
-    `품질 모드: ${snapshot.qualityMode}`,
+    `작성 방식: ${snapshot.qualityMode}`,
     `경험 중복 최소화: ${snapshot.avoidExperienceDuplication ? '예' : '아니요'}`,
     `기준 자기소개서 version: ${snapshot.baseCoverLetterVersion}`,
   ].join('\n')
@@ -1257,7 +1257,7 @@ function coverLetterActionMessage(error: ApiClientError): string {
     return '최신 답변과 검증 상태를 다시 확인해 주세요.'
   }
   if (error.code === 'QUALITY_MODE_NOT_SUPPORTED') {
-    return '현재 AI 설정에서 선택한 품질 모드를 사용할 수 없어요.'
+    return '현재 AI 설정에서 선택한 작성 방식을 사용할 수 없어요.'
   }
   return error.message
 }
@@ -1281,7 +1281,7 @@ function verificationTone(
           ? '보관된 자기소개서의 문항, 버전과 검증 기록을 읽기 전용으로 확인합니다.'
           : '문항별 답변을 명시적으로 저장하고 근거 검증과 버전 이력을 관리하세요.'
       "
-      eyebrow="자기소개서 작업실"
+      variant="editor"
     >
       <template #actions>
         <StatusBadge
@@ -1693,12 +1693,12 @@ function verificationTone(
           <section class="rail-section">
             <div class="cover-editor__section-heading">
               <div>
-                <p class="page-eyebrow">VERIFIED only</p>
+                <p class="section-kicker">확인한 경험만</p>
                 <h2>관련 경험 선택</h2>
               </div>
               <span>{{ selectedEvidenceIds.size }}개</span>
             </div>
-            <p v-if="evidence.isLoading.value">승인된 경험을 불러오는 중…</p>
+            <p v-if="evidence.isLoading.value">확인한 경험을 불러오는 중…</p>
             <p v-else-if="evidence.isError.value" class="rail-section__warning">
               경험 정보를 불러오지 못했어요.
             </p>
@@ -1721,13 +1721,13 @@ function verificationTone(
           </section>
 
           <section v-if="!readOnly" class="rail-section generation-command">
-            <p class="page-eyebrow">AI 생성·검증 설정</p>
+            <p class="section-kicker">초안 설정</p>
             <label class="field">
-              <span class="field__label">품질 모드</span>
+              <span class="field__label">작성 방식</span>
               <select v-model="qualityMode" class="control control--compact">
-                <option value="ECONOMY">경제형</option>
-                <option value="BALANCED">균형형</option>
-                <option value="HIGH_QUALITY">고품질</option>
+                <option value="ECONOMY">빠르게 초안 만들기</option>
+                <option value="BALANCED">균형 있게 작성</option>
+                <option value="HIGH_QUALITY">내용을 더 꼼꼼히 작성</option>
               </select>
             </label>
             <label class="check-field">

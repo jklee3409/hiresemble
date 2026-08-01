@@ -24,7 +24,7 @@ const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const displayName = computed(() => authStore.currentUser?.displayName.trim() || '')
 const dashboardTitle = computed(() =>
-  displayName.value === '' ? '나의 지원 현황' : `${displayName.value}님의 지원 현황`,
+  displayName.value === '' ? '지금 준비 중인 지원' : `${displayName.value}, 지금 준비 중인 지원`,
 )
 
 const profileQuery = useQuery({
@@ -146,7 +146,7 @@ const nextTasks = computed<NextTask[]>(() => {
       title: '확인이 필요한 자료',
       description:
         documentNeedsAction.value.length === 1
-          ? `${document.displayName}의 처리 상태를 확인해 주세요.`
+          ? `${document.displayName}에서 확인할 내용이 있어요.`
           : `최근 자료 중 ${documentNeedsAction.value.length}개에 확인이 필요해요.`,
       to: `/documents/${document.id}`,
       action: '자료 확인',
@@ -227,7 +227,7 @@ const recentActivity = computed<ActivityItem[]>(() => {
   const runs: ActivityItem[] = (recentRunsQuery.data.value?.items ?? []).map((run) => ({
     key: `run-${run.id}`,
     at: run.updatedAt,
-    eyebrow: 'AI 작업 내역',
+    eyebrow: 'AI 작업',
     title: WORKFLOW_LABELS[run.workflowType],
     description: STATUS_LABELS[run.status],
     to: `/agent-runs/${run.id}`,
@@ -273,8 +273,8 @@ function formatActivityDate(value: string): string {
     <PageHeader
       heading-id="dashboard-heading"
       :title="dashboardTitle"
-      description="등록한 정보와 진행 중인 지원을 한눈에 확인하세요."
-      eyebrow="지원 대시보드"
+      description="오늘 이어서 준비할 공고와 필요한 정보를 한눈에 확인하세요."
+      variant="list"
     >
       <template #actions>
         <RouterLink class="button button--secondary" to="/documents">
@@ -291,14 +291,14 @@ function formatActivityDate(value: string): string {
     <StatePanel
       v-if="isInitialLoading"
       kind="loading"
-      title="지원 현황을 불러오는 중…"
+      title="지원 준비를 불러오는 중…"
       description="프로필, 공고와 진행 중인 작업을 확인하고 있어요."
     />
 
     <template v-else>
       <aside v-if="hasQueryError" class="dashboard-error" role="alert">
         <div>
-          <strong>일부 지원 현황을 불러오지 못했어요.</strong>
+          <strong>일부 지원 정보를 불러오지 못했어요.</strong>
           <p>확인된 정보는 그대로 보여 드리고, 불러오지 못한 항목만 다시 요청할 수 있어요.</p>
         </div>
         <button type="button" class="button button--secondary" @click="refetchDashboard">
@@ -309,10 +309,9 @@ function formatActivityDate(value: string): string {
       <section v-if="isNewUser" class="dashboard-onboarding" aria-labelledby="start-heading">
         <div class="dashboard-onboarding__intro">
           <p class="section-kicker">처음 시작하기</p>
-          <h2 id="start-heading">지원 준비의 기준 정보를 먼저 모아 보세요.</h2>
+          <h2 id="start-heading">Hiresemble은 이렇게 활용할 수 있어요.</h2>
           <p>
-            프로필과 자료를 등록하면 이후 공고마다 같은 내용을 반복하지 않고 준비를 이어갈 수
-            있어요.
+            내 정보와 자료를 정리한 뒤 공고를 등록하면 자기소개서와 면접 준비까지 이어갈 수 있어요.
           </p>
         </div>
         <div class="dashboard-onboarding__actions">
@@ -336,7 +335,15 @@ function formatActivityDate(value: string): string {
             <AppIcon name="jobs" />
             <span>
               <strong>공고 등록</strong>
-              <small>관심 공고 링크 저장</small>
+              <small>공고 등록과 자동 분석</small>
+            </span>
+            <AppIcon name="arrow-right" />
+          </RouterLink>
+          <RouterLink class="start-action" to="/guide">
+            <AppIcon name="dashboard" />
+            <span>
+              <strong>이용 순서 보기</strong>
+              <small>전체 준비 흐름 한눈에 확인</small>
             </span>
             <AppIcon name="arrow-right" />
           </RouterLink>
@@ -423,7 +430,7 @@ function formatActivityDate(value: string): string {
                     : '자료와 공고를 정리하고 있는 작업이에요.'
                 }}
               </p>
-              <RouterLink to="/agent-runs">AI 작업 내역 보기</RouterLink>
+              <RouterLink to="/agent-runs">AI 작업 보기</RouterLink>
             </article>
 
             <article class="metric metric--documents">
@@ -437,7 +444,7 @@ function formatActivityDate(value: string): string {
                 {{
                   documentNeedsAction.length > 0
                     ? `최근 자료 중 ${documentNeedsAction.length}개에 확인이 필요해요.`
-                    : '등록한 자료와 처리 상태를 확인할 수 있어요.'
+                    : '등록한 자료와 내용을 읽은 결과를 확인할 수 있어요.'
                 }}
               </p>
               <RouterLink to="/documents">자료 관리</RouterLink>
@@ -511,7 +518,7 @@ function formatActivityDate(value: string): string {
               <h2 id="activity-heading">최근 활동</h2>
             </div>
             <RouterLink to="/agent-runs" class="text-link">
-              AI 작업 내역 보기
+              AI 작업 보기
               <AppIcon name="arrow-right" />
             </RouterLink>
           </div>
@@ -533,7 +540,7 @@ function formatActivityDate(value: string): string {
             <AppIcon name="inbox" />
             <div>
               <strong>아직 최근 활동이 없어요.</strong>
-              <p>자료나 공고를 등록하면 처리 상태와 최근 기록을 이곳에서 확인할 수 있어요.</p>
+              <p>자료나 공고를 등록하면 준비 과정과 최근 기록을 이곳에서 확인할 수 있어요.</p>
             </div>
           </div>
         </section>

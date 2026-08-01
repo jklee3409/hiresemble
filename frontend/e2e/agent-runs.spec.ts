@@ -106,16 +106,16 @@ test('snapshot → progress → disconnect → 1/2/5 reconnect → polling termi
   })
 
   await page.goto('/agent-runs')
-  await expect(
-    page.getByRole('heading', { name: 'AI 작업 내역', level: 2, exact: true }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'AI 작업', level: 1, exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '진행 중인 분석 7' })).toBeVisible()
   await page.getByRole('link', { name: '상세 보기' }).click()
 
-  await expect(page.getByText('2단계', { exact: true })).toBeVisible()
+  const timeline = page.locator('.run-timeline')
+  await timeline.getByText('분석 과정 자세히 보기', { exact: true }).click()
+  await expect(timeline.getByText('2번째 작업', { exact: true })).toBeVisible()
   await expect(page.getByText('TRANSFORM_FIXTURE', { exact: true })).toHaveCount(0)
-  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '45')
-  await expect(page.getByText('시도 1/3')).toBeVisible()
+  await expect(page.getByLabel('진행률').getByRole('progressbar')).toHaveAttribute('value', '45')
+  await expect(timeline.getByText('완료', { exact: true })).toBeVisible()
   await expect(page.getByText(/마지막으로 확인한 상태는 그대로 유지/)).toBeVisible()
   await expect(page.getByText(/분석이 실패한 것은 아니에요/)).toBeVisible({
     timeout: 12_000,
@@ -226,7 +226,8 @@ test('WAITING action, failed retry, active cancel, and logout close remain serve
   await page.getByRole('button', { name: '실행 취소' }).click()
   expect(cancelVersion).toBe(3)
 
-  await page.getByRole('button', { name: '로그아웃' }).click()
+  await page.getByRole('button', { name: '브라우저 Fixture' }).click()
+  await page.getByRole('menuitem', { name: '로그아웃' }).click()
   await expect(page).toHaveURL(/\/login/)
   const requestsAfterLogout = activeStreamRequests
   await page.waitForTimeout(1_500)

@@ -156,7 +156,7 @@ function toggleAllDeletable(event: Event): void {
 
 async function removeOne(runId: string): Promise<void> {
   const confirmed = await notifications.confirm({
-    title: 'AI 작업 내역을 목록에서 지울까요?',
+    title: '이 AI 작업을 목록에서 지울까요?',
     message: '목록에서는 보이지 않게 되지만 생성된 결과와 안전한 사용량 기록은 유지됩니다.',
     confirmLabel: '내역 삭제',
   })
@@ -166,8 +166,8 @@ async function removeOne(runId: string): Promise<void> {
   try {
     await deleteRun.mutateAsync(runId)
     selectedRunIds.value = selectedRunIds.value.filter((id) => id !== runId)
-    commandMessage.value = 'AI 작업 내역을 삭제했어요.'
-    notifications.toast('AI 작업 내역을 삭제했어요.', 'success')
+    commandMessage.value = 'AI 작업을 목록에서 지웠어요.'
+    notifications.toast('AI 작업을 목록에서 지웠어요.', 'success')
   } catch (error) {
     commandError.value = normalizeApiError(error).message
   }
@@ -177,7 +177,7 @@ async function removeSelected(): Promise<void> {
   const ids = [...selectedRunIds.value]
   if (ids.length === 0) return
   const confirmed = await notifications.confirm({
-    title: `AI 작업 내역 ${ids.length}개를 지울까요?`,
+    title: `AI 작업 ${ids.length}개를 목록에서 지울까요?`,
     message: '목록에서는 보이지 않게 되지만 생성된 결과와 안전한 사용량 기록은 유지됩니다.',
     confirmLabel: '선택 내역 삭제',
   })
@@ -187,8 +187,8 @@ async function removeSelected(): Promise<void> {
   try {
     await deleteSelectedRuns.mutateAsync(ids)
     selectedRunIds.value = []
-    commandMessage.value = `AI 작업 내역 ${ids.length}개를 삭제했어요.`
-    notifications.toast(`AI 작업 내역 ${ids.length}개를 삭제했어요.`, 'success')
+    commandMessage.value = `AI 작업 ${ids.length}개를 목록에서 지웠어요.`
+    notifications.toast(`AI 작업 ${ids.length}개를 목록에서 지웠어요.`, 'success')
   } catch (error) {
     commandError.value = normalizeApiError(error).message
   }
@@ -199,9 +199,9 @@ async function removeSelected(): Promise<void> {
   <section class="run-list-page app-page" aria-labelledby="run-list-heading">
     <PageHeader
       heading-id="run-list-heading"
-      title="AI 작업 내역"
-      description="이력서와 공고를 정리하는 작업의 진행 상황을 확인하세요."
-      eyebrow="준비 진행 상황"
+      title="AI 작업"
+      description="이력서와 공고를 읽고 정리하는 과정을 한곳에서 확인할 수 있어요."
+      variant="list"
     />
 
     <details class="filter-disclosure run-list-page__filters" open>

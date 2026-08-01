@@ -115,10 +115,11 @@ const connectionLabel = computed(
       v-else-if="detail.isError.value && normalizeApiError(detail.error.value).status === 404"
       class="interview-run__history-note"
     >
-      이 AI 작업 내역은 정리되었어요. 이미 생성된 면접 준비 결과와 답변 피드백은 그대로 유지됩니다.
+      이 AI 작업은 목록에서 정리되었어요. 이미 만든 면접 준비 결과와 답변 피드백은 그대로
+      유지됩니다.
     </p>
     <p v-else-if="detail.isError.value" class="interview-run__warning">
-      진행 연결이 잠시 끊겼어요. AI 작업 내역에서 다시 확인할 수 있어요.
+      진행 연결이 잠시 끊겼어요. AI 작업에서 다시 확인할 수 있어요.
     </p>
     <template v-else-if="detail.data.value">
       <div class="interview-run__summary">

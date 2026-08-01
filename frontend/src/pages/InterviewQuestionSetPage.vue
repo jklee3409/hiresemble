@@ -137,7 +137,7 @@ async function refreshDetail(): Promise<void> {
         heading-id="question-set-heading"
         :title="detail.data.value.title"
         :description="`${questionSetJobLabel(detail.data.value.job)} · ${detail.data.value.coverLetter.title}`"
-        eyebrow="예상 질문 세트"
+        variant="detail"
       />
 
       <section class="research-summary section-surface" aria-labelledby="research-summary-heading">
