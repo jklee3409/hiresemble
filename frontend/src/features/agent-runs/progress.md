@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
+P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
+
+## [2026-08-02] Session Summary (AI 작업 사용자 문구 정리)
+
+- What was done:
+  - drawer·목록·상세의 `AI 작업 내역`과 품질 enum 중심 표현을 `AI 작업`, 빠른 처리·균형 처리·꼼꼼한 처리로 정리했다.
+- Key decisions:
+  - API enum·Run 상태는 바꾸지 않고 presentation label만 변경한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run presentation tests와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (Job extraction v2 사용자 단계명)
 

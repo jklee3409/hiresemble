@@ -7,6 +7,7 @@ P5 Job의 업무·추출 상태·URL 정책과 P6 Job Analysis enum·stable hash
 ## 주요 파일 및 하위 디렉터리
 
 - `JobStatus`, `JobExtractionStatus`: 분리된 상태 축
+- `JobAutoAnalysisStatus`: durable 자동 분석 의도의 claim·terminal 상태
 - `JobPolicy`: 허용 상태 전이와 timestamp 규칙
 - `JobCommands`, `JobRecords`: typed domain 입력·projection
 - `JobUrlCanonicalizer`: HTTP(S) canonical URL과 tracking query 제거

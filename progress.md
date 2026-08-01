@@ -15,6 +15,25 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (전반 UI/UX 재설계·공고 자동 분석 전환)
+
+- What was done:
+  - 실제 Jumpit·자소설 공개 화면과 현재 28장 기준선을 조사하고, Hiresemble blue를 유지한 상단 journey navigation·mobile bottom navigation·계정 메뉴·page variant·공통 token으로 전반 화면을 재설계했다.
+  - 공고 plain text document view, 등록→추출→BALANCED 분석 journey, 결과 중심 분석 화면과 실제 component preview 기반 `/guide`를 구현했다.
+  - V16 durable intent·unique revision·lease reconciliation·deterministic Agent Run ID로 브라우저와 독립된 자동 분석을 연결하고 기능·API·DB·페이지·architecture 계약을 동기화했다.
+- Key decisions:
+  - 기존 extraction/analysis workflow·Agent Run·`AiQualityMode`·재분석 API는 유지하고 최초 제품 정책만 BALANCED로 고정한다.
+  - 원문은 `v-html` 없이 deterministic heading·paragraph·list·link node로 표시하고 편집 모드는 별도로 유지한다.
+- Issues encountered:
+  - 첫 Backend 전체 check의 OpenAPI allowlist 누락은 수정 후 단독 suite가 통과했다. 두 번째 전체 check는 기존 Interview fixture의 transaction timestamp 경계로 493건 중 1건 간헐 실패했고 해당 테스트 단독 재실행은 통과했다.
+  - 모바일 공고 tab의 4px overflow와 새 heading/navigation 계층에 맞지 않던 E2E locator를 수정했다.
+- Validation:
+  - Frontend `corepack pnpm check`: 64 files/249 tests, lint·format·typecheck·build 통과. 실행 가능한 Chromium 9/9와 변경 후 30장 visual capture 통과.
+  - Backend 자동 분석 2건·Job 7건·분석 4건과 OpenAPI suite 통과. 전체 `check` 최종 green은 위 Interview fixture 1건 때문에 미확인이다. 실제 Provider 호출 0회.
+- Next steps:
+  - Interview fixture의 terminal timestamp를 statement clock과 `created_at` 기준으로 별도 안정화한 뒤 Backend 전체 `check`를 재실행한다.
+  - 전용 격리 Backend/DB 환경 flag가 필요한 P4~P8 `*.actual.spec.ts` 13건은 skip되어 후속 검증으로 남긴다.
+
 ## [2026-08-01] Session Summary (이미지형 채용 공고 추출 후속 계약 v3)
 
 - What was done:

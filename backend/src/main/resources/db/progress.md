@@ -3,7 +3,20 @@
 ## Overview
 
 - Flyway 기본 경로인 `migration` 하위 디렉터리만 존재한다.
-- V1 extension부터 P5 Company·Job·history V6까지 있으며 별도 운영 seed·fixture 리소스는 없다.
+- V1 extension부터 공고 자동 분석 intent V16까지 있으며 별도 운영 seed·fixture 리소스는 없다.
+
+## [2026-08-02] Session Summary (V16 자동 분석 DB 리소스 연결)
+
+- What was done:
+  - Flyway 기본 경로에 공고 자동 분석 요청 migration을 추가했다.
+- Key decisions:
+  - 별도 seed나 임의 SQL 경로 없이 versioned migration만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PostgreSQL Testcontainers에서 V1~V16 적용 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-27] Session Summary (P5 V6 DB 리소스 추가)
 

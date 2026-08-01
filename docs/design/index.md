@@ -12,6 +12,7 @@
 | [`implementation-plan.md`](implementation-plan.md)                                       | 단계별 선행 의존성, 완료 조건, 계층·책임별 package 생성 시점, 테스트 gate와 개발 에이전트 파일 소유권을 정의한다.                  |
 | [`p0-contract-decision-proposal.md`](p0-contract-decision-proposal.md)                   | D-01–D-18과 8개 제품 정책의 제안·대안·승인 근거를 보존하는 `APPROVED_DECISION_RECORD`다. 활성 계약은 `docs/spec/**`다.             |
 | [`post-p8-5-operations-contract-decision.md`](post-p8-5-operations-contract-decision.md) | budget/quota/usage/billing 분리, 실패 UX, Backoffice, P9 전 단계와 거절 대안을 보존한다.                                           |
+| [`ui-ux-auto-job-analysis-redesign.md`](ui-ux-auto-job-analysis-redesign.md)             | 2026-08-02 UI 감사, B2C 정보 구조·토큰, 공고 document view와 revision별 내구성 있는 자동 분석 구현 설계를 고정한다.               |
 | [`progress.md`](progress.md)                                                             | 설계 문서의 작성·검증 상태, P0 승인과 이후 구현 단계 상태를 추적한다.                                                              |
 
 현재 관리 대상 하위 디렉터리는 없다.
@@ -22,6 +23,7 @@
 - 구현 계획은 설계의 결정 게이트를 검증 가능한 수직 단계, 책임별 package와 역할별 파일 소유권으로 변환한다.
 - P0 계약 결정 기록은 승인 전 충돌·권장안·대안과 최종 승인 근거를 보존하되 현재 구현 계약으로 사용하지 않는다.
 - P8.5 이후 운영 결정 기록은 실제 호출 0인 구현 판정과 P8.5-V~P10-C 선행 관계를 보존하되 공개 목표는 활성 명세로 연결한다.
+- UI/UX·자동 분석 재설계 메모는 구현 전 감사와 선택 근거를 보존하며, 실제 공개 상태·idempotency 계약은 활성 명세와 코드를 따른다.
 - 진행 문서는 설계가 실제 구현 완료를 의미하지 않음을 유지하고 문서 검증·후속 결정만 기록한다.
 
 ## 다른 디렉터리와의 의존 관계

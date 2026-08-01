@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job 상태·URL 정책과 P6 analysis enum·hash·결정론적 scoring 정책이 구현됐다.
+P5 Job 상태·URL 정책과 P6 analysis enum·hash·결정론적 scoring, 자동 분석 request 상태 정책이 구현됐다.
+
+## [2026-08-02] Session Summary (자동 분석 상태 모델)
+
+- What was done:
+  - PENDING·CLAIMED·LAUNCHED·BLOCKED·SUPERSEDED durable 상태 enum을 추가했다.
+- Key decisions:
+  - 기존 extraction·analysis·Agent Run 상태 enum은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 persistence state transition 통합 테스트 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 결정론적 점수·snapshot hash)
 

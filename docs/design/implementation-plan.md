@@ -360,6 +360,7 @@ P0 계약 기준선
 - [x] 업무 상태 command와 history transaction
 - [x] batch 마감 Scheduler와 concurrency
 - [x] content hash와 분석 stale 입력 기반
+- [x] V16 공고 revision별 자동 분석 후속 의도·lease reconciliation·결정적 Agent Run ID
 
 ### 8.2 AI workflow
 
@@ -374,6 +375,8 @@ P0 계약 기준선
 - [x] manual body/deadline 보완
 - [x] detail overview, retry, edit, delete
 - [x] 제출 이력 보조 badge
+- [x] 공통 resource header·sticky detail tab·plain text document view와 편집 모드 분리
+- [x] 등록→추출→자동 분석을 하나의 사용자 진행 여정으로 표시
 
 ### 8.4 검증
 
@@ -383,6 +386,7 @@ P0 계약 기준선
 - [x] 모든 허용/금지 상태 전이
 - [x] Scheduler와 user command race
 - [x] submitted timestamp 보존
+- [x] 수동 본문·URL 추출·본문 보완 자동 `BALANCED` 접수, replay/retry/restart 중복 방지와 budget 차단 보존
 
 ### 8.5 완료 조건
 
@@ -405,6 +409,7 @@ P0 계약 기준선
 - 분석 접수·목록·최신 API와 OUTDATED projection
 - eligibility·deterministic score·matched evidence domain validation
 - 동일 snapshot reuse와 explicit force reanalysis
+- usable 공고 revision의 durable 자동 `BALANCED` 접수, 제한 retry와 안전한 `BLOCKED|SUPERSEDED` projection
 
 ### 9.2 AI workflow
 
@@ -417,12 +422,13 @@ P0 계약 기준선
 
 ### 9.3 Frontend
 
-- `/jobs/:jobId/analysis` run/re-run·진행·실패·성공 상태
+- `/jobs/:jobId/analysis` 자동 진행·실패·성공과 보조 재분석 상태
 - eligibility, fit score 안내, responsibilities/requirements
 - strength, gap, matched evidence와 criterion breakdown
 - analysis history와 OUTDATED UI
 - 변경·삭제된 historical evidence의 기존 결과 유지와 현재 상태 안내
-- `/agent-runs` 사용자 명칭 `AI 작업 내역`과 Job Analysis resource link
+- `/agent-runs` 사용자 명칭 `AI 작업`과 Job Analysis resource link
+- 최초 분석 품질 selector 제거, 결과 요약·다음 행동과 접힌 재분석 옵션
 
 ### 9.4 검증
 
@@ -609,7 +615,7 @@ P0 계약 기준선
 - DOM 품질과 generic image 후보를 자동 판정하고 JPEG·PNG 최대 6개, 각 5MiB, 전체 20MiB를 기존 SSRF 경계 안에서 fetch한다.
 - OpenAI image input은 별도 `ImageTextExtractionGateway`로 호출하며 provider retry 0, `store=false`, 기존 chat token price/usage를 재사용한다.
 - text-only는 image provider 0회, image-only·mixed는 DOM/OCR source label 병합, 자동 자료 부족은 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
-- schema와 공개 DTO 변경이 없어 migration을 추가하지 않았으며 latest V15와 P8.6 tentative V16 이후 번호를 유지한다.
+- 당시 schema와 공개 DTO 변경이 없어 migration을 추가하지 않았다. 이후 공고 자동 분석 의도가 V16을 사용했으므로 P8.6 tentative 번호는 V17 이후로 이동한다.
 
 ## 13.1-B 이미지 공고 후속 계약 보정 (`DONE`)
 
@@ -633,7 +639,7 @@ P0 계약 기준선
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: tentative V16 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`. V15는 별도 추가 UI/UX 보정의 사용자 직접 대외활동에 사용됐다.
+- DB: tentative V17 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`. V15는 사용자 직접 대외활동, V16은 공고 자동 분석 후속 의도에 사용됐다.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -646,7 +652,7 @@ P0 계약 기준선
 - Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
 - Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
 - Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
-- Migration responsibility: V16 `TENTATIVE`; 구현 완료된 V1~V15 수정 금지.
+- Migration responsibility: V17 `TENTATIVE`; 구현 완료된 V1~V16 수정 금지.
 
 ### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -668,7 +674,7 @@ P0 계약 기준선
 ### 15.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `billing` module이 immutable zero-rate policy, SQL read model과 reconciliation을 소유하며 payment 책임은 갖지 않는다.
-- DB: tentative V17 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
+- DB: tentative V18 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
 - API: P8.6의 `/settings/usage` summary/history를 완성한다.
 - Frontend/Page: `/settings/usage`에서 사용량·남은 횟수·reset·기간 내역·현재 무료/청구 없음만 표시한다.
 - Source: 내부 원가=`ai_usage_records`, 제품·과금 가능 unit=`feature_usage_events`.
@@ -732,7 +738,7 @@ P0 계약 기준선
 ### 17.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `backoffice` query module, ADMIN Security, provisioning command, access audit; domain query port/read model만 사용한다.
-- DB: tentative V18로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
+- DB: tentative V19로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
 - API: overview, users/detail/usage, ai-costs, agent-runs, failures, configuration GET을 `/api/v1/backoffice` 아래 `PLANNED`로 구현한다.
 - Frontend/Page: 별도 `BackofficeLayout`과 overview/users/usage/ai-costs/agent-runs/failures/configuration route. AppLayout에는 노출하지 않는다.
 
@@ -776,7 +782,7 @@ P0 계약 기준선
 ### 19.1 Backend·DB·API·Frontend responsibility
 
 - Backend: session 상태/CAS, `clientRequestId`, message sequence, bounded synchronous turn, complete와 async feedback run.
-- DB: P8.9-A 완료 시 next available migration(현재 예상 V19, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
+- DB: P8.9-A 완료 시 next available migration(현재 예상 V20, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
 - API: 기존 명세의 mock endpoints를 구현하며 merge될 때만 implemented path/operation 수를 갱신한다.
 - Frontend/Page: `/mock-interviews/:sessionId`, 생성 form, READY/IN_PROGRESS/COMPLETED/CANCELLED, feedback 상태.
 - AI: turn당 Chat 1회, Provider retry 0, structured `TurnDecision`, async aggregate feedback.
@@ -797,7 +803,7 @@ P0 계약 기준선
 - State lifecycle: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`; feedback 독립 상태.
 - Idempotency/Concurrency: session CAS, `(user,session,clientRequestId)` unique, message sequence, 다중 tab 경쟁 차단.
 - Failure semantics: timeout/invalid output의 원 terminal 응답을 replay하고 same ID로 재호출하지 않는다.
-- Migration responsibility: 현재 예상 V19는 tentative이며 시작 시 latest migration을 확인한다.
+- Migration responsibility: 현재 예상 V20은 tentative이며 시작 시 latest migration을 확인한다.
 
 ### 19.4 Test strategy·Actual E2E boundary
 

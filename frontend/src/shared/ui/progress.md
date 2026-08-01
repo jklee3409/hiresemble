@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-02] Session Summary (PageHeader 책임별 variant)
+
+- What was done:
+  - list·detail·editor·compact variant와 h1/h2 level 선택을 지원하도록 PageHeader를 확장했다.
+- Key decisions:
+  - 모든 페이지에 eyebrow·설명을 강제하지 않고 호출 화면이 필요한 계층만 전달한다.
+- Issues encountered:
+  - 기존 E2E heading level 기대를 새 semantic hierarchy에 맞췄다.
+- Validation:
+  - 관련 component·Browser heading assertions와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (전역 toast·접근 가능한 확인 모달)
 
 - What was done:

@@ -4,8 +4,22 @@
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
-- `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 61 files/243 tests와 P2~P8 actual E2E가 있으며 P5 Chromium 5/5와 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
+- `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 64 files/249 tests와 P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (전반 B2C UI·공고 자동 분석 UX)
+
+- What was done:
+  - 상단 journey navigation·계정 메뉴·mobile bottom navigation, page variant와 token을 도입하고 dashboard부터 profile·documents·jobs·cover letters·interviews·AI 작업·onboarding까지 문구와 계층을 통일했다.
+  - 공고 document view·자동 분석 journey·결과 요약·보조 재분석 옵션과 실제 component 기반 `/guide`를 구현했다.
+- Key decisions:
+  - 최초 분석은 서버 BALANCED projection을 읽으며 브라우저가 분석 command를 연쇄 호출하지 않는다. 원문은 `v-html` 없이 deterministic node로 렌더링한다.
+- Issues encountered:
+  - mobile 공고 탭의 4px bleed를 35rem gutter token에 맞춰 제거하고 기존 E2E heading 기대값을 새 semantic hierarchy와 동기화했다.
+- Validation:
+  - `corepack pnpm check`: 64 files/249 tests, lint·format·typecheck·build 통과. 실행 가능한 Chromium 9/9와 변경 후 화면 캡처 30장 통과.
+- Next steps:
+  - 전용 환경 flag가 필요한 P4~P8 `*.actual.spec.ts` 13건은 skip됐다.
 
 ## [2026-08-01] Session Summary (Job extraction v3 UI 회귀)
 

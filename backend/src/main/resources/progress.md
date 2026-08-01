@@ -4,9 +4,22 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V15 migration이 P1~~P8과 추가 사용자 대외활동 schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V16 migration이 P1~~P8, 사용자 대외활동과 공고 자동 분석 intent schema를 관리한다.
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-08-02] Session Summary (공고 자동 분석 재조정 설정)
+
+- What was done:
+  - 자동 분석 reconciliation 주기·lease·batch·retry와 고정 BALANCED 분석 비용의 안전한 기본값 및 환경 변수 예시를 추가했다.
+- Key decisions:
+  - test profile에서는 scheduler를 비활성화하고 통합 테스트가 coordinator를 명시적으로 구동한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - configuration binding, V16 Testcontainers 적용과 자동 분석 통합 테스트 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (Job image item threshold 설정)
 

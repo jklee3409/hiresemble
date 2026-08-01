@@ -4,8 +4,22 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
-- V1~V15 migration이 적용됐고 V14는 embedding provider key canonicalization, V15는 사용자 직접 대외활동을 소유한다.
+- V1~V16 migration이 적용됐고 V16은 공고 revision별 자동 분석 의도·claim·재조정 상태를 소유한다.
 - Backend 전체 70 suites/491 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (공고 자동 분석 durable orchestration)
+
+- What was done:
+  - 수동 본문 또는 URL 추출 완료 뒤 같은 공고 revision에 BALANCED 분석을 한 번만 접수하는 V16 요청 table, after-commit coordinator와 scheduled reconciliation을 구현했다.
+  - Job detail에 additive 자동 분석 projection을 연결하고 OpenAPI exact schema 계약을 갱신했다.
+- Key decisions:
+  - 브라우저 연쇄 호출 대신 `(user_id, job_id, job_version)` unique intent와 결정적 Agent Run ID를 사용하며 Provider 호출은 기존 worker transaction 밖에서 수행한다.
+- Issues encountered:
+  - 첫 전체 check의 OpenAPI 필드 allowlist 누락은 보정했다. 두 번째 전체 check는 기존 Interview fixture의 PostgreSQL transaction timestamp 경계로 1건 간헐 실패했고 같은 테스트 단독 재실행은 통과했다.
+- Validation:
+  - `JobAutoAnalysisIntegrationTest` 2건, `JobIntegrationTest` 7건, `JobAnalysisIntegrationTest` 4건과 `OpenApiContractTest` 통과. 전체 `check`는 493건 중 무관한 Interview fixture 1건 때문에 최종 green이 아니다.
+- Next steps:
+  - Interview fixture가 `created_at`도 포함한 statement clock을 사용하도록 별도 안정화한 뒤 Backend 전체 `check`를 다시 실행한다.
 
 ## [2026-08-01] Session Summary (Job image extraction v3 후속 보정)
 

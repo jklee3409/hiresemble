@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증부터 P8 면접 준비 접수·질문 세트·조사 출처·답변 version·피드백 흐름과 현재 API 기반 지원 대시보드가 구현되어 있다.
+이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 P1 인증부터 P8 면접 준비 흐름, 상단·mobile bottom 사용자 여정 navigation, 공고 등록→자동 분석 UX와 재방문 가능한 이용 가이드가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -26,7 +26,7 @@
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
 - `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증·계정 닉네임 상태와 typed profile·Agent Run·Document·Job·Job Analysis·Cover Letter·Interview transport를 관리한다.
 - `src/styles`와 `src/shared/ui`가 Hiresemble Blue 기반 제품 design token, BrandMark, 공통 form/action/status/state·motion pattern을 제공한다.
-- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace, AI 작업 drawer, Document 검토, Job 분석, 자기소개서 편집·검증·version, 면접 조사·질문·답변 피드백 흐름을 제공한다.
+- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace, AI 작업 drawer, 공고 document view·자동 분석 journey, 자기소개서 편집·검증·version, 면접 준비와 이용 가이드를 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 

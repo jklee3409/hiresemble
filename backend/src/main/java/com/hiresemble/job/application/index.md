@@ -14,6 +14,8 @@ P5 Job 생성·조회·수정·상태·추출 적용·Scheduler와 P6 분석 접
 - `JobStatusService`: 사용자 상태 전이와 history transaction
 - `JobExtractionMutationService`: workflow snapshot·성공/실패/수동 resume 적용
 - `JobAnalysisApplicationService`: 분석 접수·reuse·owner-scoped snapshot/retrieval·immutable apply·OUTDATED projection
+- `JobAutoAnalysisRequestService`: usable 공고 revision의 고정 `BALANCED` 후속 의도와 공개 projection
+- `JobAutoAnalysisCoordinator`: AFTER_COMMIT launch와 lease 만료 reconciliation·결정적 Run 복구
 - `JobDeadlineScheduler`: batch 자동 마감
 - [`model/`](model/index.md): application 결과 record
 - [`port/`](port/index.md): fetch와 workflow query/mutation 경계

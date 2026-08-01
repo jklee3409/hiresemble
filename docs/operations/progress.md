@@ -4,6 +4,19 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-02] Session Summary (V16 자동 분석 반영 운영 번호 정렬)
+
+- What was done:
+  - 실제 V16 공고 자동 분석 intent 반영에 따라 P8.6 이후 운영 migration 범위를 V17~V20으로 이동했다.
+- Key decisions:
+  - 이미 적용된 V1~V16은 수정하지 않고 미래 운영 schema만 tentative로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - DB 명세·implementation plan·운영 phase 번호 대조 완료.
+- Next steps:
+  - P8.6 시작 시 V17 availability를 다시 확인한다.
+
 ## [2026-08-01] Session Summary (AI 사용량 사용자 표현 경계)
 
 - What was done:

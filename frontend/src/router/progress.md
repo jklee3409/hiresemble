@@ -3,9 +3,22 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- `/`, 인증, onboarding, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
+- `/`, 인증, onboarding, `/guide`, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
+
+## [2026-08-02] Session Summary (다시 볼 수 있는 이용 가이드 route)
+
+- What was done:
+  - 인증 보호 lazy `/guide` route, title과 route test를 추가했다.
+- Key decisions:
+  - onboarding 완료 여부나 dismiss 상태를 localStorage에 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router unit tests와 desktop/mobile guide navigation 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (대외활동 canonical route)
 

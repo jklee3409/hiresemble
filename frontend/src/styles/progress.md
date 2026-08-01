@@ -6,6 +6,19 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-02] Session Summary (B2C design token·수직 리듬 정비)
+
+- What was done:
+  - 기존 blue hue를 유지하며 brand·neutral·semantic color, typography, spacing, radius, elevation, focus, control height와 page/tab/section gap token을 정리했다.
+- Key decisions:
+  - primary는 CTA·active·link에 제한하고 문서형 정보는 divider·spacing으로 계층을 만든다.
+- Issues encountered:
+  - reduced-motion과 390px overflow를 함께 회귀 검증했다.
+- Validation:
+  - lint·Prettier·production build, desktop/mobile Chromium visual·overflow 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-28] Session Summary (Dashboard·Profile Content 폭 체계 보정)
 
 - What was done:

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job filter·mutation·stream·version conflict와 P6 analysis query·presentation·terminal invalidation이 구현됐다.
+P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
+
+## [2026-08-02] Session Summary (공고 문서 view·자동 분석 journey)
+
+- What was done:
+  - plain text를 heading·문단·목록·URL node로만 바꾸는 deterministic parser, 읽기 전용 document component와 사용자 중심 4단계 journey를 추가했다.
+- Key decisions:
+  - 원문을 변경하거나 `v-html`로 주입하지 않고 확신이 낮으면 일반 문단으로 fallback한다.
+- Issues encountered:
+  - 긴 본문 collapse fixture 길이를 실제 threshold보다 충분히 크게 조정했다.
+- Validation:
+  - parser·document component unit tests와 모바일 장문 Browser 캡처 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (v3 retry·상태 presentation 회귀)
 

@@ -44,7 +44,8 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 → 비동기 파싱·마스킹·청킹·근거 후보 추출
 → 사용자의 근거 승인·수정·거절
 → 공고 URL 등록·본문 추출 또는 수동 보완
-→ 공고 분석·지원 자격·강점·부족점·적합도 확인
+→ 서버가 `BALANCED` 공고 분석을 자동 접수
+→ 지원 자격·강점·부족점·적합도와 다음 행동 확인
 → 자기소개서 문항 등록
 → 문항별 AI 초안·근거 검증
 → 사용자 편집·버전 저장·복원·최종화
@@ -165,7 +166,7 @@ ADMIN 읽기 전용 운영 기반은 포함하지만 결제·구독은 계속 �
 | `auth`        | 사용자, 비밀번호, Session, 계정 수명주기            | `users`, Spring Session          |
 | `profile`     | 기본 프로필, 구조화 이력, 근거 상태·동기화          | profile 계열, `profile_evidence` |
 | `document`    | 업로드, metadata, parser, text, chunk, storage 보상 | document 계열                    |
-| `job`         | 공고, 추출 상태, 업무 상태·이력, 분석 version       | job 계열, `companies`            |
+| `job`         | 공고, 추출·업무 상태, 자동 분석 의도·분석 version   | job 계열, `companies`            |
 | `coverletter` | 지원서, 문항, 답변 version, 검증·최종화             | cover letter 계열                |
 | `research`    | 회사·면접 조사 실행과 출처                          | research 계열                    |
 | `interview`   | 질문 세트, 답변, 피드백, mock session               | interview 계열                   |
@@ -332,6 +333,7 @@ evidenceExtractionStatus: NOT_STARTED
 7. 이미지 보강이 필요하면 같은 DNS pinning·redirect 경계와 후보 전체가 공유하는 absolute deadline을 재사용해 ranked JPEG·PNG·정적 WebP를 bounded fetch하고, 별도 image gateway가 bytes에서 보이는 텍스트만 추출한다.
 8. image gateway v3 output의 local `imageRef`를 input allowlist·중복·개수에 대해 검증하고 원래 입력 순서로 재정렬한다. 누락 reference는 유지한 채 DOM과 이미지 텍스트를 source tag로 분리하고 반복 line을 제거한다. item 20자와 aggregate 120자 기준을 분리해 통과한 source만 구조화 단계가 회사·직무·본문·마감일 후보로 만든다.
 9. 사용자 입력값을 자동 추출값보다 우선 병합하고 semantic null·U+FFFD·본문 품질을 검증한 성공 결과만 저장한다. 자동 경로가 부족하면 업무 상태를 유지한 채 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
+10. usable 본문을 저장하는 같은 transaction에서 `(user, job, revision)` unique 자동 분석 의도를 만든다. AFTER_COMMIT 처리와 scheduler reconciliation은 의도 ID를 `JOB_ANALYSIS` run ID로 재사용해 `BALANCED` 분석을 최대 한 번 접수한다.
 
 사용자 URL fetch는 검색 provider와 분리한다. private/link-local/loopback, 자격증명 포함 URL, redirect 후 재검증 실패, 응답 크기·시간 초과를 차단한다.
 이미지 URL도 Provider에 직접 넘기지 않고 Backend가 검증·다운로드한다. raw HTML, image bytes, Provider raw response는 log와 reusable checkpoint에 보존하지 않는다. 성공한 image step은 URL·bytes 없이 bounded 추출 text·trusted reference와 hash·길이·MIME·count만 checkpoint해 동일 content hash 재시작의 중복 Provider 호출을 막으며, 전체 OCR text는 log에 남기지 않는다. text/image OpenAI adapter는 공통 safe failure 경계와 incurred usage 의미를 공유한다.
@@ -351,7 +353,8 @@ latest job snapshot
 - 적합도는 합격 확률이 아니라 공고 요구와 등록 정보의 일치도다.
 - 분석 입력에는 공고 content hash와 profile/evidence snapshot hash를 포함한다.
 - 최신 hash와 분석 hash가 다르면 기존 결과를 보존한 채 `analysisOutdated=true`와 `outdatedReasons`를 계산한다. `OUTDATED`는 저장 상태 enum이 아니다.
-- 등록 후 URL 추출과 분석은 별도 endpoint·run이며 자동 연쇄 실행으로 가정하지 않는다.
+- URL 추출과 분석은 별도 workflow type·Agent Run·상태를 유지하되, usable 본문 domain apply 뒤 서버의 durable 후속 의도가 분석 접수를 자동으로 연결한다. 브라우저 연쇄 호출에 의존하지 않는다.
+- 분석 run 생성은 공고 transaction과 Provider 호출 밖에서 수행한다. crash·restart는 lease reconciliation으로 복구하고, 예산·prerequisite 실패는 공고·추출 결과를 보존한 `BLOCKED`, 더 최신 revision은 `SUPERSEDED`로 표시한다.
 
 ### 10.3 업무 상태
 

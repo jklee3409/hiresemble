@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P7 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 table cleanup을 제공한다.
+P1~P8 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 V16까지의 table cleanup을 제공한다.
+
+## [2026-08-02] Session Summary (V16 자동 분석 test 격리)
+
+- What was done:
+  - 자동 분석 scheduler를 test profile에서 끄고 `job_auto_analysis_requests`를 FK 역순 cleanup에 포함했다.
+- Key decisions:
+  - 각 통합 테스트가 coordinator를 명시적으로 실행해 race 없는 반복 가능성을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 자동 분석 통합 suites 반복 실행 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-30] Session Summary (P7 Cover Letter table 격리 지원)
 

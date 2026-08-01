@@ -1,7 +1,7 @@
 # 기능 명세서
 
 - 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-01
+- 기준일: 2026-08-02
 - 대상: 핵심 MVP
 - 사용자 역할: 현재 `USER`; P8.9-A 목표 `USER`, `ADMIN` (`PLANNED`, 공개 ADMIN 가입 없음)
 - 공고 상태: `IN_PROGRESS`, `SUBMITTED`, `CLOSED`
@@ -15,8 +15,8 @@
 → 기본 프로필 입력
 → 이력서·포트폴리오 업로드
 → 추출된 근거 검토
-→ 공고 URL 등록
-→ 공고 분석 및 적합도 확인
+→ 공고 URL 등록·본문 확인·자동 분석
+→ 적합도와 다음 준비 확인
 → 자기소개서 문항 등록
 → AI 초안 생성·검증
 → 사용자 직접 수정·버전 저장
@@ -279,6 +279,7 @@
 8. DOM·이미지 텍스트를 출처별로 병합한 뒤 회사명·직무명·본문·마감일 후보 추출
 9. 회사명·직무명·마감일 사용자 입력값이 있으면 자동 추출값보다 우선
 10. semantic null·손상 문자·본문 품질 검증을 통과한 결과만 저장 및 사용자 확인
+11. usable 본문이 확보된 공고 revision은 durable 후속 의도를 저장하고 기본 `BALANCED` `JOB_ANALYSIS` run을 최대 한 번 자동 접수
 
 이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 서버는 요청 allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item을 거부하고 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
 
@@ -304,6 +305,8 @@ JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를
 - 업무 상태는 유지하고 추출 상태를 `NEEDS_MANUAL_INPUT`으로 표시
 - 사용자가 공고 본문과 마감일을 직접 수정 가능
 - URL 등록 화면에는 OCR 여부나 이미지 공고 여부를 선택하는 control을 두지 않으며 수동 입력은 모든 자동 경로 뒤의 최종 fallback이다.
+- `NEEDS_MANUAL_INPUT`에서는 분석을 접수하지 않는다. 사용자가 usable 본문을 보완해 extraction run이 재개·완료되면 같은 공고의 새 revision에 대한 자동 분석을 이어간다.
+- 추출 성공과 자동 분석 접수는 서로 다른 상태·Agent Run이다. 분석 접수의 예산·일시 오류가 공고 등록이나 추출 결과를 rollback하지 않는다.
 
 terminal `FAILED|INTERRUPTED` 공고 추출 retry는 predecessor의 workflow version과 무관하게 최신 canonical `job-posting-extraction-v3` successor를 만들고 현재 Job version·canonical URL·사용자 override로 input snapshot/hash를 다시 만든다. v1·v2 checkpoint는 v3 input으로 재사용하지 않는다. 공고 전용 retry와 범용 Agent Run retry는 predecessor unique를 공유해 compatible 요청에는 같은 successor를 반환한다. `WAITING_USER`에서 사용자가 본문을 입력하는 흐름은 기존 run을 그대로 재개한다.
 
@@ -348,6 +351,8 @@ CLOSED → IN_PROGRESS 또는 SUBMITTED  // 마감 연장·오등록 시 사용�
 
 ## JOB-004 공고 분석
 
+usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 접수한다. 브라우저가 등록 응답 뒤 분석 endpoint를 연쇄 호출하지 않으며, 공고 transaction에 저장된 후속 의도를 lease 기반 reconciliation이 복구한다. 후속 의도 ID를 `JOB_ANALYSIS` Agent Run ID로 재사용하고 `(user, job, revision)` unique claim으로 replay·retry·재시작 중복을 막는다. 수동 `POST /jobs/{id}/analysis`와 `ECONOMY` 지원은 명시적 재분석과 API 호환성을 위해 유지한다.
+
 분석 항목:
 
 - 회사·직무
@@ -378,9 +383,11 @@ CLOSED → IN_PROGRESS 또는 SUBMITTED  // 마감 연장·오등록 시 사용�
 
 > 적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.
 
+분석 접수 전 예산 한도·본문 부족·상태 충돌은 공고와 추출 결과를 보존하고 안전한 복구 상태로 표시한다. 일시 오류는 제한된 횟수만 재조정하며, revision이 바뀐 후속 의도는 `SUPERSEDED`로 종료한다. 사용자가 명시적으로 재분석하면 기본 선택은 `BALANCED`이고 현재 결과와 분석 이력은 보존한다.
+
 ## JOB-005 공고 정보 수정
 
-사용자가 회사, 직무, 본문, 마감일을 수정할 수 있다. 수정 후 분석이 오래된 경우 `OUTDATED` 배지를 표시하고 재분석을 제안한다.
+사용자가 회사, 직무, 본문, 마감일을 수정할 수 있다. usable 본문을 저장한 새 revision에는 자동 분석 후속 의도를 한 번 생성한다. 수정 후 기존 분석이 오래된 경우 `OUTDATED` 배지를 표시하고 기존 결과를 보존한 채 최신 분석 진행 또는 명시적 재분석을 제안한다.
 
 ---
 

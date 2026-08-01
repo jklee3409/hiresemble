@@ -15,6 +15,7 @@
 ├─ /signup
 ├─ /login
 ├─ /onboarding
+├─ /guide
 ├─ /dashboard
 ├─ /profile
 │  ├─ /profile/basic
@@ -78,7 +79,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 | Route group                              | Implementation status | Phase  | prerequisite API                                 |
 | ---------------------------------------- | --------------------- | ------ | ------------------------------------------------ |
-| 현재 `/signup`~`/agent-runs/:agentRunId` | `IMPLEMENTED`         | P1~P8  | 현재 OpenAPI 63 paths/84 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8  | 현재 OpenAPI 63 paths/84 operations              |
 | `/settings/usage`                        | `PLANNED`             | P8.7   | `GET /settings/usage`, `/settings/usage/history` |
 | account, AI, privacy 설정 세 route       | `PLANNED`             | P10-A  | account, settings AI/privacy API                 |
 | `/jobs/:jobId/interview/mock/new`        | `PLANNED`             | P9     | mock session create                              |
@@ -109,23 +110,13 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 대상: 로그인 보호 페이지.
 
-### 좌측 Navigation
+### Navigation과 상단 Header
 
-- 대시보드
-- 내 프로필
-- 문서·근거
-- 채용 공고
-- 자기소개서
-- 면접 준비
-- AI 작업 내역
-- 설정
-
-### 상단 Header
-
-- 현재 페이지 제목
-- 진행 중 Agent Run 알림
-- 클릭 시 닉네임 수정 Modal을 여는 사용자 닉네임
-- 로그아웃
+- Desktop은 상단에 `홈`, `내 정보`, `이력서·자료`, `관심 공고`, `자기소개서`, `면접 준비`의 사용자 여정 중심 navigation을 둔다.
+- 모바일은 `홈`, `공고`, `자기소개서`, `면접 준비`, `더보기` bottom navigation을 사용한다. 더보기 dialog에서 내 정보, 자료, AI 작업과 가이드에 접근한다.
+- 상단 우측에는 진행 중 Agent Run 알림과 사람 아이콘+닉네임 account menu를 둔다. 사진 기능이 없으므로 이름 첫 글자 avatar와 별도 sidebar profile card를 사용하지 않는다.
+- account menu는 이용 가이드, AI 작업, 닉네임 변경, 로그아웃을 제공하고 header와 navigation에 사용자 정보를 중복 표시하지 않는다.
+- 목록·상세·편집·분석·설정 성격에 맞는 PageHeader variant를 사용하며 모든 화면에 eyebrow와 대형 제목을 반복하지 않는다.
 
 ### 공통 상태 UI
 
@@ -206,6 +197,15 @@ API:
 문서 분석은 완료를 기다리지 않고 대시보드로 이동 가능.
 
 가입 직후만 `/onboarding`으로 이동한다. 이후에는 프로필 완료 여부로 route를 강제 redirect하지 않는다. `legalName`, 희망 직무·산업·지역 각 1개, 서버가 계산한 최종 학력 1개 중 부족 항목과 충족 항목당 20%인 완료율을 경고·프로필 이동 링크와 함께 표시하되 공고·분석·자기소개서·면접 진입을 일괄 차단하지 않는다.
+
+온보딩과 대시보드는 언제든 다시 볼 수 있는 `/guide` 진입점을 제공한다. 가이드는 내 정보→자료→공고 자동 분석→자기소개서→면접의 5단계를 실제 공통 UI component와 안전한 demo data로 만든 mini preview, 텍스트 설명과 route CTA로 보여 준다. 강제 tour나 영구 localStorage dismiss 상태는 사용하지 않는다.
+
+## 3.4 `/guide`
+
+- 5단계 전체 이용 순서와 단계별 실제 route CTA
+- 공통 `AppIcon`, `StatusBadge`, design token을 사용하는 제품 UI mini preview
+- screenshot만으로 의미를 전달하지 않고 각 preview에 accessible label과 본문 설명 제공
+- 서버 완료 상태 없이 재방문 가능
 
 ---
 
@@ -422,9 +422,10 @@ OCR 사용 여부, 이미지 공고 여부 또는 텍스트 추출 방식을 고
 ### 등록 결과
 
 - 즉시 공고 상세로 이동
-- 직접 입력 본문이 없으면 `QUEUED` URL 분석 Progress 표시
-- 직접 입력 본문이 있으면 `MANUAL_INPUT_PROVIDED`로 표시하고 URL 분석 Progress를 만들지 않음
-- 분석 실패 시 본문 직접 입력 Prompt
+- 직접 입력 본문이 없으면 `QUEUED` URL 추출 Progress를 표시하고 usable 본문이 준비되면 `BALANCED` 공고 분석을 자동으로 이어감
+- 직접 입력 본문이 있으면 `MANUAL_INPUT_PROVIDED`로 표시하고 URL 추출 Progress 없이 `BALANCED` 분석을 자동 접수
+- 추출과 분석을 `공고 내용을 읽고 있어요 → 주요 업무와 지원 조건을 정리하고 있어요 → 내 경험과 비교하고 있어요 → 분석이 끝났어요`의 한 여정으로 표시
+- 추출 실패 시 본문 직접 입력 Prompt를 제공하고 보완 완료 뒤 자동 분석을 이어감
 
 API:
 
@@ -438,8 +439,11 @@ API:
 
 ### Overview Tab
 
-- 회사·직무·URL
-- 공고 본문
+- 공통 resource header의 회사·직무·상태·마감·원본 URL
+- 회사·직무·근무 형태·위치·마감·본문 출처·최신 분석 상태 요약
+- plain text 원문을 heading, 문단, 순서·비순서 목록, 안전한 link node로만 변환하는 읽기 전용 document view
+- 긴 본문은 페이지 흐름에서 읽고 `전체 보기/접기`를 제공하며 작은 내부 scroll box나 `v-html`을 사용하지 않음
+- 본문 수정 action에서만 textarea editor로 전환하고 저장·취소·version conflict를 유지
 - 마감일과 출처
 - 상태 변경
 - 편집
@@ -456,9 +460,11 @@ API:
 
 ### Analysis Tab
 
-- 분석 실행·재실행
+- 최초 자동 분석 진행 단계와 안전한 실패·본문 보완 CTA
+- 최초 화면에서는 품질 dropdown과 큰 수동 실행 card를 노출하지 않음
+- 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하고 기본은 `BALANCED`; `ECONOMY`는 접힌 재분석 옵션에 유지
 - 지원 가능 여부
-- 적합도 점수 안내
+- 적합도·강점 수·보완점 수 요약과 점수 tooltip 안내
 - 주요 업무
 - 필수·우대
 - 강점
@@ -467,6 +473,8 @@ API:
 - 분석 버전
 
 `analysisOutdated=true`이면 기존 분석을 유지하고 노란 `OUTDATED` badge, reason과 재분석 CTA를 표시한다. downstream 기능을 일괄 차단하지 않는다. `Eligibility`와 `fitScore`는 서로 다른 영역으로 표시하고 `INELIGIBLE` 점수도 그대로 표시한다.
+
+resource header 아래 상세 tab은 상단 header를 피한 sticky navigation layer로 표시하고 tab과 본문 사이에 공통 `layout-tabs-body-gap`을 둔다. active tab은 굵기·brand soft background·하단 indicator를 함께 사용하며 hover/focus에서도 유지한다. 모바일은 tab을 가로 scroll한다.
 
 다음 문구를 점수 가까이에 항상 표시한다.
 

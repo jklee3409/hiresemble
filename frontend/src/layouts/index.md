@@ -2,13 +2,13 @@
 
 ## 디렉터리 목적
 
-익명 인증 화면과 responsive 보호 화면의 공통 shell을 분리하고 지원 홈·내 지원 정보·이력서·자료·관심 공고·자기소개서·면접 준비·AI 작업 내역 navigation과 lazy Progress Drawer를 제공한다.
+익명 인증 화면과 responsive 보호 화면의 공통 shell을 분리하고 desktop 상단 사용자 여정 navigation, mobile bottom navigation, account menu와 lazy Progress Drawer를 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`PublicLayout.vue`](PublicLayout.vue): 비대칭 brand canvas와 form 우선 mobile signup/login shell
-- [`AppLayout.vue`](AppLayout.vue): BrandMark를 공유하는 desktop sidebar, mobile focus-trapped drawer, header 닉네임 수정 Modal·logout action
-- [`JobDetailLayout.vue`](JobDetailLayout.vue): route 기반 `공고 정보`·`공고 분석`·`자기소개서`·`면접 준비` tab과 Job detail outlet
+- [`AppLayout.vue`](AppLayout.vue): desktop 상단 navigation, mobile bottom navigation·focus-trapped 더보기, 단일 account menu와 닉네임 Modal
+- [`JobDetailLayout.vue`](JobDetailLayout.vue): 공통 공고 resource header, header offset sticky tab, 명확한 body gap과 Job detail outlet
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

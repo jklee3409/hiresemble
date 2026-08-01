@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조회·상태·추출·분석·Scheduler 도메인과 영속성·안전한 HTML/공고 이미지 URL fetch 경계를 소유한다. HTML은 bounded raw bytes에서 header·BOM·meta 문자셋을 strict decode하고, 이미지는 동일 SSRF·DNS pinning·redirect·deadline 경계에서 JPEG·PNG·정적 WebP를 검증한다. terminal 공고 추출 retry는 현재 Job snapshot으로 canonical v3 successor를 만든다.
+P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조회·상태·추출·분석·Scheduler 도메인, revision별 자동 분석 후속 의도와 영속성·안전한 HTML/공고 이미지 URL fetch 경계를 소유한다. HTML은 bounded raw bytes에서 header·BOM·meta 문자셋을 strict decode하고, 이미지는 동일 SSRF·DNS pinning·redirect·deadline 경계에서 JPEG·PNG·정적 WebP를 검증한다. terminal 공고 추출 retry는 현재 Job snapshot으로 canonical v3 successor를 만든다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -14,7 +14,7 @@ P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조�
 
 ## 구성 요소 역할
 
-업무 상태와 추출 상태를 분리하고 사용자 소유권·낙관적 잠금·soft delete를 Job use case에 적용한다. 분석은 현재 snapshot과 별개의 immutable version으로 보존하며 OUTDATED는 hash 비교 projection으로 계산한다.
+업무 상태와 추출 상태를 분리하고 사용자 소유권·낙관적 잠금·soft delete를 Job use case에 적용한다. usable 본문 revision은 V16 후속 의도를 원자적으로 남기고 lease reconciliation이 별도 `BALANCED` 분석 Run을 최대 한 번 생성한다. 분석은 현재 snapshot과 별개의 immutable version으로 보존하며 OUTDATED는 hash 비교 projection으로 계산한다.
 
 ## 다른 디렉터리와의 의존 관계
 

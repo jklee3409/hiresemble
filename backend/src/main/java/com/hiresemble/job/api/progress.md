@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약과 P7/P8 child resource projection이 구현됐다.
+P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약, 자동 분석 projection과 P7/P8 child resource projection이 구현됐다.
+
+## [2026-08-02] Session Summary (Job detail 자동 분석 projection)
+
+- What was done:
+  - `JobDetailDto`에 state·BALANCED quality·run ID·safe error의 `automaticAnalysis`를 additive하게 매핑했다.
+- Key decisions:
+  - endpoint와 request는 유지하고 내부 claim·attempt·provider 정보는 공개하지 않는다.
+- Issues encountered:
+  - OpenAPI exact field test를 새 projection과 동기화했다.
+- Validation:
+  - Job API 통합, owner 404와 OpenAPI contract 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 면접 준비 projection)
 

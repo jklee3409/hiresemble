@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (자동 분석·제품 UI 계약 동기화)
+
+- What was done:
+  - functional·page·api·db·tech stack에 등록→추출→BALANCED 분석, projection 상태·실패·재조정, document view, 상단/mobile navigation과 `/guide`를 반영했다.
+- Key decisions:
+  - 분석 endpoint와 `AiQualityMode` enum은 유지하고 최초 제품 정책만 BALANCED로 고정한다.
+- Issues encountered:
+  - 기존의 “자동 연쇄하지 않는다” 계약을 durable backend orchestration 계약으로 교체했다.
+- Validation:
+  - V16 schema, Spring OpenAPI 63 paths/84 operations와 Frontend type·route 대조 완료.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (이미지형 공고 v3 후속 계약)
 
 - What was done:

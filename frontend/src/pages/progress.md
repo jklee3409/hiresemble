@@ -2,7 +2,21 @@
 
 ## Overview
 
-P1 인증부터 P8 Interview preparation·question set·answer feedback, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-08-02] Session Summary (핵심 페이지 정보 구조·가이드)
+
+- What was done:
+  - 목록·상세·편집 page header variant와 자연스러운 한국어 문구를 적용하고 공고 등록·overview·analysis 화면을 자동 분석 흐름으로 재구성했다.
+  - 가입 직후 흐름과 다시 볼 수 있는 5단계 `/guide`를 실제 제품 component preview로 구현했다.
+- Key decisions:
+  - guide dismiss 영속 상태를 새로 만들지 않고 언제든 진입 가능한 도움말 route로 제공한다.
+- Issues encountered:
+  - 분석 화면의 nav와 child CTA 중복 locator는 landmark scope로 구분했다.
+- Validation:
+  - Dashboard·JobAnalysis·Guide component tests, 전체 Frontend check와 30장 visual capture 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (공고 자동 판독·수동 fallback 안내)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결이 구현됐다.
+P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결, revision별 durable 자동 분석 orchestration이 구현됐다.
+
+## [2026-08-02] Session Summary (공고 등록·추출 후 자동 분석 연결)
+
+- What was done:
+  - manual 본문 생성, URL 추출 성공과 본문 보완 뒤 같은 revision의 BALANCED 분석 intent를 만들고 Job detail projection으로 상태를 제공한다.
+- Key decisions:
+  - extraction과 analysis workflow type·Agent Run 의미는 분리하고 자동 분석 실패가 공고·추출 결과를 되돌리지 않게 했다.
+- Issues encountered:
+  - 기존 공개 DTO는 축소하지 않고 additive projection으로 확장했다.
+- Validation:
+  - manual·URL·resume·replay·restart·quota·owner 격리 회귀 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (Job v3 retry·WebP 경계)
 

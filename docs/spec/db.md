@@ -1,14 +1,14 @@
 # DB 명세서
 
 - 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-01
+- 기준일: 2026-08-02
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
 - 시간: `timestamptz` UTC
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 사용자 직접 대외활동을 추가한 V15이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 공고 자동 분석 후속 의도를 추가한 V16이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
 
 ## 1. 공통 무결성·소유권
 
@@ -195,11 +195,21 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 - `submitted_at`은 최초 SUBMITTED에서 설정하고 영구 보존한다. reopen은 현재 `closed_at/closed_reason`만 null로 만들며 history는 보존한다.
 - status 변경과 history는 한 transaction, Scheduler도 업무 status만 변경한다.
 
-### 5.3 `job_status_history`
+### 5.3 `job_auto_analysis_requests`
+
+`id,user_id,job_posting_id,job_version,job_content_hash char(64),quality_mode=BALANCED,status(PENDING|CLAIMED|LAUNCHED|BLOCKED|SUPERSEDED),attempt_count,claim_token/lease_expires_at NULL,next_attempt_at,agent_run_id NULL,error_code/error_message_safe NULL,created_at,updated_at,completed_at NULL`.
+
+- unique `(user_id,job_posting_id,job_version)`으로 같은 공고 revision의 자동 접수를 최대 한 번만 claim한다. `id`는 launch할 `JOB_ANALYSIS` Agent Run ID로 재사용해 process crash 뒤에도 같은 run을 조회·재연결한다.
+- `PENDING→CLAIMED→LAUNCHED|BLOCKED|SUPERSEDED`만 허용하며 만료된 `CLAIMED` lease는 reconciliation이 다시 claim한다. 일시 오류는 최대 3회와 고정 지연으로 `PENDING`에 되돌리고 이후 안전한 `BLOCKED`로 종료한다.
+- usable 수동 본문 생성, URL extraction domain apply, 사용자 본문 보완·수정 transaction이 후속 의도를 함께 삽입한다. `NEEDS_MANUAL_INPUT`처럼 usable 본문이 없으면 row를 만들지 않는다.
+- Agent Run 생성과 Provider 호출은 공고 transaction 밖에서 수행한다. 예산·본문 prerequisite·일시 오류는 공고 및 extraction 결과를 보존한다.
+- owner/job 복합 FK와 nullable owner/run 복합 FK를 사용하며 raw provider 오류·prompt·본문을 저장하지 않는다.
+
+### 5.4 `job_status_history`
 
 `id,user_id,job_posting_id`, `from_status varchar(30) NULL`, `to_status,reason varchar(100),changed_by(USER|SCHEDULER|SYSTEM),changed_at`; 복합 parent FK.
 
-### 5.4 `job_analyses`와 rubric
+### 5.5 `job_analyses`와 rubric
 
 `job_analyses`: `id,user_id,job_posting_id,analysis_version`, 내부 job/profile/evidence hash, `eligibility`, `fit_score numeric(5,2) NULL CHECK 0..100`, `analysis_summary varchar(10000) NULL`, `rubric_version`, `agent_run_id`, `created_at`; unique `(user_id,job_posting_id,analysis_version)`.
 
@@ -441,7 +451,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-현재 latest implemented migration은 사용자 직접 대외활동을 추가한 V15다. V1~V15는 수정하지 않는다. 이번 추가 UI/UX·데이터 보정은 기존 phase에 편입하지 않으며 아래 P8.6 이후 번호와 filename은 V16부터 `TENTATIVE`다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 공고 자동 분석 후속 의도를 추가한 V16이다. V1~V16은 수정하지 않는다. 아래 미래 번호와 filename은 V17부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -453,12 +463,13 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | cover letter                 | active partial unique, soft question, immutable answer/content/link/verification |
 | research/interview           | combined research, source links, answer/feedback, mock turn/message/feedback     |
 | additional implemented V15   | 사용자 직접 대외활동, ACTIVITY source와 direct evidence 불변식                   |
-| P8.6, tentative V16          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V17          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| additional implemented V16   | 공고 revision별 자동 분석 의도, lease reconciliation, Agent Run 연결             |
+| P8.6, tentative V17          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V18          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V18        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-A, tentative V19        | USER/ADMIN role 확장, provisioning/access audit                                  |
 | P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V19                                     |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V20                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

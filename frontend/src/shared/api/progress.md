@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8 OpenAPI와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-08-02] Session Summary (공고 자동 분석 typed projection)
+
+- What was done:
+  - `automaticAnalysis` state·BALANCED quality·run ID·safe error를 Job detail Zod·TypeScript 계약과 fixtures에 추가했다.
+- Key decisions:
+  - 기존 `AiQualityMode`와 분석 request는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job contract/API tests와 Frontend typecheck 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (대외활동·소재 batch·파일명 typed 계약)
 

@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 P8 면접 API 11개를 포함해 총 84 operations/63 paths다. Frontend에는 기존 업무 route와 `/interviews`, 공고 면접 tab, 질문 set 상세·답변 version·feedback UI가 있으며 `/dashboard`는 별도 집계 endpoint 없이 현재 구현된 owner-scoped API의 `totalElements`와 최근 항목을 조합해 지원 현황을 제공한다.
+공개 HTTP 범위는 P8 면접 API 11개를 포함해 총 84 operations/63 paths다. 공고 생성 응답은 호환성을 유지하고 `GET /jobs/{id}`가 자동 `BALANCED` 분석 후속 상태를 additive projection으로 제공한다. Frontend는 상단·mobile bottom navigation, `/guide`, 공고 document view와 등록→추출→자동 분석 journey를 제공하며 `/dashboard`는 현재 owner-scoped API의 `totalElements`와 최근 항목을 조합한다.
 
 ## 변경 시 주의사항
 

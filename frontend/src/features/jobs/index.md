@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P5 Job URL filter·mutation과 P6 Analysis query·presentation·terminal invalidation, Agent Run monitor와 409 version conflict 재적용을 소유한다.
+P5 Job URL filter·mutation과 P6 자동 Analysis projection·query·presentation·terminal invalidation, Agent Run monitor, 안전한 본문 document parser와 409 version conflict 재적용을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,6 +11,8 @@ P5 Job URL filter·mutation과 P6 Analysis query·presentation·terminal invalid
 - `validation.ts`: 생성·편집 form Zod validation
 - `conflict.ts`, `JobVersionConflictPanel.vue`: 409 비교·재적용
 - `JobRunMonitor.vue`: 기존 Agent Run stream 재사용
+- `JobPreparationJourney.vue`: 추출과 자동 분석을 합친 사용자 진행 단계
+- `descriptionParser.ts`, `JobDescriptionDocument.vue`: HTML을 신뢰하지 않는 heading·문단·목록·link 표시와 긴 본문 펼치기
 - `presentation.ts`: 업무·추출 상태 label
 
 이미지형 공고 처리는 URL 등록 뒤 자동으로 분기하며 OCR 선택 control을 제공하지 않는다. 자동 판독 부족은 `NEEDS_MANUAL_INPUT`의 직접 입력 CTA로, 일시 기술 실패는 `FAILED`의 재시도와 직접 입력 CTA로 구분한다.
@@ -23,7 +25,7 @@ Backend의 extraction v3·WebP·legacy retry 승격은 공개 상태와 step key
 
 ## 구성 요소 역할
 
-URL query를 목록 filter의 원천으로 사용하고 terminal·WAITING_USER Run event에서 Job, latest analysis·history와 Agent Run query를 invalidate한다.
+URL query를 목록 filter의 원천으로 사용하고 extraction과 analysis Run을 workflow type별로 조회한다. terminal·WAITING_USER event에서 Job, latest analysis·history와 Agent Run query를 invalidate하며 최초 분석은 Backend의 `automaticAnalysis` projection을 표시하고 브라우저가 자동 접수를 생성하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

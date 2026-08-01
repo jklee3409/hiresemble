@@ -240,12 +240,12 @@ P8.9-B는 P8.9-A 뒤 별도 승인하는 후속이며 P9의 필수 선행은 아
 
 | Phase  | tentative 책임                                                                                                 |
 | ------ | -------------------------------------------------------------------------------------------------------------- |
-| P8.6   | V16 feature policy·assignment/override·period·reservation·event (`TENTATIVE`; V15는 별도 대외활동 보정에 사용) |
-| P8.7   | V17 immutable billing policy/snapshot 제약과 집계용 index                                                      |
+| P8.6   | V17 feature policy·assignment/override·period·reservation·event (`TENTATIVE`; V15는 대외활동, V16은 공고 자동 분석 의도에 사용) |
+| P8.7   | V18 immutable billing policy/snapshot 제약과 집계용 index                                                      |
 | P8.8   | migration 없음                                                                                                 |
-| P8.9-A | V18 USER/ADMIN role 확장, provisioning/access audit                                                            |
+| P8.9-A | V19 USER/ADMIN role 확장, provisioning/access audit                                                            |
 | P8.9-B | 예약하지 않음; 실제 착수 시 next available                                                                     |
-| P9     | P8.9-A 완료 시점의 next available, 현재 예상 V19                                                               |
+| P9     | P8.9-A 완료 시점의 next available, 현재 예상 V20                                                               |
 
 Backend 목표 책임:
 

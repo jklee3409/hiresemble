@@ -9,6 +9,7 @@ P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedba
 - [`SignupPage.vue`](SignupPage.vue): 가입 Form과 onboarding 이동
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·학력 단계와 서버 계산 최종 학력·희망 조건·문서 이동/추후 입력 P2 흐름
+- [`GuidePage.vue`](GuidePage.vue): 실제 공통 UI mini preview로 내 정보→자료→자동 공고 분석→자기소개서→면접 순서를 안내하는 재방문 가능 가이드
 - [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 상태 기반 다음 할 일과 신규 사용자 시작 화면
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 편집 영역, Form 하단 저장 상태·409 재적용
 - [`DashboardPage.test.ts`](DashboardPage.test.ts): 신규·기존 사용자, 사용자 이름 fallback과 부분 조회 오류 대시보드 회귀
@@ -20,8 +21,8 @@ P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedba
 - [`DocumentDetailPage.vue`](DocumentDetailPage.vue): 전문 자료 정보·preview·manual resume·다시 분석·원본 확인·delete와 batch evidence 검토
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·마감일과 201/202 생성
-- [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict
-- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): 분석 실행·Run 진행·Eligibility/fit score·criterion/evidence·OUTDATED·이력
+- [`JobOverviewPage.vue`](JobOverviewPage.vue): 자동 준비 journey, 읽기 전용 document view와 분리된 편집·추출·retry·delete·version conflict
+- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): 최초 자동 분석 진행, 결과 summary·다음 행동, 보조 재분석·Eligibility/fit score·criterion/evidence·OUTDATED·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
 - [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 문항·TipTap·evidence·AI·version·verification·finalize canonical editor

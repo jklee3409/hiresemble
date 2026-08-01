@@ -1,8 +1,8 @@
-# P1~V15 Migration 테스트 안내
+# P1~V16 Migration 테스트 안내
 
 ## 디렉터리 목적
 
-Flyway 단계별 보존과 최신 V15 schema·사용자 직접 대외활동·ACTIVITY evidence 불변식을 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V16 schema·사용자 직접 대외활동·ACTIVITY evidence·공고 자동 분석 intent 불변식을 실제 PostgreSQL에서 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 

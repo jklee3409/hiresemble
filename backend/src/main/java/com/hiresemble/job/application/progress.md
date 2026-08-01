@@ -2,7 +2,21 @@
 
 ## Overview
 
-P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계와 P8 preparation projection port가 구현됐다.
+P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
+
+## [2026-08-02] Session Summary (자동 분석 intent·coordinator)
+
+- What was done:
+  - job transaction 안에서 intent를 enqueue하고 commit 뒤 claim하며 scheduler가 미완료 요청을 재조정하는 bounded coordinator를 추가했다.
+  - 기존 분석 service에 BALANCED·requested run ID를 받는 `REQUIRES_NEW` 자동 실행 경계를 추가했다.
+- Key decisions:
+  - 공고 revision마다 하나의 intent와 결정적 run ID를 재사용하고 최대 시도·lease 만료 뒤에만 재claim한다.
+- Issues encountered:
+  - budget 실패는 BLOCKED safe error로 보존하고 공고 생성 transaction과 분리했다.
+- Validation:
+  - duplicate replay, crash/restart reuse와 quota 보존 통합 테스트 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (Job extraction canonical retry contributor)
 

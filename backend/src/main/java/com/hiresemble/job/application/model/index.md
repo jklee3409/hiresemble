@@ -8,6 +8,7 @@ Job use case가 API와 workflow에 반환하는 immutable 결과 record를 소�
 
 - `JobApplicationResults`: 생성 accepted, page/detail, mutation과 workflow snapshot 결과
 - `JobAnalysisModels`: 최소 profile/evidence snapshot, retrieval candidate, immutable summary/detail과 persist command
+- `JobAutoAnalysisModels`: revision별 durable 후속 의도, 안전한 공개 상태와 event record
 - [`progress.md`](progress.md): 결과 계약 상태
 
 ## 구성 요소 역할

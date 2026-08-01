@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-08-02] Session Summary (자동 분석 OpenAPI projection)
+
+- What was done:
+  - `JobDetailDto.automaticAnalysis`와 state·qualityMode·agentRunId·safe error schema를 exact allowlist에 추가했다.
+- Key decisions:
+  - 공개 path·operation 수는 63/84로 유지하고 응답 DTO만 additive하게 확장한다.
+- Issues encountered:
+  - 첫 전체 check에서 allowlist 누락을 발견해 생성 OpenAPI와 동기화했다.
+- Validation:
+  - `OpenApiContractTest` 단독 suite 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 11-operation OpenAPI)
 

@@ -1,7 +1,7 @@
 # 기술 스택 명세서
 
 - 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-01
+- 기준일: 2026-08-02
 - 대상 범위: 핵심 MVP
 - 아키텍처 원칙: Spring Boot 모듈러 모놀리스 + Spring AI 기반 통제형 멀티 에이전트 워크플로
 - 공통 API Prefix: `/api/v1`
@@ -105,7 +105,7 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | JdbcClient             | pgvector 및 복잡 쿼리                        |
 | Bean Validation        | 입력 검증                                    |
 | Flyway                 | DB 마이그레이션                              |
-| Spring Scheduling      | 공고 마감 자동 처리                          |
+| Spring Scheduling      | 공고 마감과 자동 분석 후속 의도 reconciliation |
 | Spring TaskExecutor    | DB claim으로 얻은 문서 분석·AI 워크플로 실행 |
 | Spring Actuator        | Health / Metrics                             |
 | Micrometer Observation | 지연시간·모델 사용량 관찰                    |

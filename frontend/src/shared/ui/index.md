@@ -8,7 +8,7 @@
 
 - [`BrandMark.vue`](BrandMark.vue): H·node·orbit를 결합한 재사용 가능한 inline SVG 브랜드 mark
 - [`AppIcon.vue`](AppIcon.vue): currentColor 기반 장식·기능 SVG icon
-- [`PageHeader.vue`](PageHeader.vue): route page의 eyebrow·제목·설명·action 영역
+- [`PageHeader.vue`](PageHeader.vue): list·detail·editor·compact variant와 선택적 heading level을 지원하는 route page 제목·설명·action 영역
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
 - [`PaginationNav.vue`](PaginationNav.vue): 이전·현재·다음 공용 pagination

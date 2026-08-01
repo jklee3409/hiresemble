@@ -14,7 +14,7 @@ P5~P6 Job·Job Analysis HTTP 요청·응답·OpenAPI metadata와 application 결
 
 ## 구성 요소 역할
 
-Controller는 인증 사용자와 HTTP parameter를 application service로 전달하고 Entity·내부 hash·provider 정보를 노출하지 않는다.
+Controller는 인증 사용자와 HTTP parameter를 application service로 전달하고 Entity·내부 hash·provider 정보를 노출하지 않는다. `JobDetailDto.automaticAnalysis`는 고정 품질, 안전한 상태·Run ID·오류만 additive projection으로 반환한다.
 
 ## 다른 디렉터리와의 의존 관계
 

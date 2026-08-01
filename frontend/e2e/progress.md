@@ -14,6 +14,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-02] Session Summary (자동 분석 journey·전후 화면 캡처)
+
+- What was done:
+  - 공고 등록→상세→자동 BALANCED 분석→결과→자기소개서 탭의 browser-only command 0회 흐름과 desktop/mobile keyboard·overflow 회귀를 추가했다.
+  - 안전한 동일 fixture로 14개 기존 화면의 전후 28장과 `/guide`를 포함한 변경 후 30장을 캡처한다.
+- Key decisions:
+  - 제품 asset은 실제 shared component preview로 만들고 Playwright output은 비교 증거로만 관리한다.
+- Issues encountered:
+  - 390px 탭 bleed, 중복 navigation link, 새 account menu·heading·progress semantics locator를 실제 접근성 scope 기준으로 보정하고 P2 owner 격리 요청에 유효한 `educationLevel`을 명시했다.
+- Validation:
+  - Agent Run·자동 분석·분석 결과·P2 actual profile·UI shell·visual Chromium 9/9 통과. P4~P8 actual 13건은 전용 환경 flag 부재로 skip.
+- Next steps:
+  - dedicated backend 환경이 필요한 actual suites는 별도 실행한다.
+
 ## [2026-08-01] Session Summary (P5 workflow v2 actual 회귀)
 
 - What was done:

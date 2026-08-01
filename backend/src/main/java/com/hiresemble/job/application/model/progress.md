@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job과 P6 Job Analysis application 결과·snapshot·command record가 구현됐다.
+P5 Job과 P6 Job Analysis application 결과·snapshot·command record, 자동 분석 request·projection model이 구현됐다.
+
+## [2026-08-02] Session Summary (자동 분석 application model)
+
+- What was done:
+  - durable 요청 snapshot, 사용자 projection과 after-commit event record를 추가했다.
+- Key decisions:
+  - 공개 state는 내부 CLAIMED 상태를 숨기고 사용자 행동과 복구 가능성만 표현한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 Job API projection tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-29] Session Summary (P6 분석 immutable model)
 

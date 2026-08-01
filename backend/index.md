@@ -17,7 +17,7 @@
 ## 구성 요소 역할
 
 - [`src/main/java/`](src/main/java/)는 실행 진입점과 `common`·`auth`·`profile`·`agentrun`·`ai`·`document`·`job`·`coverletter`·`research`·`interview` 운영 코드를 소유한다.
-- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V13 Flyway migration을 소유한다.
+- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V16 Flyway migration을 소유한다. V16은 공고 revision별 자동 분석 의도와 재조정 상태를 영속화한다.
 - [`src/test/`](src/test/)는 PostgreSQL·MinIO Testcontainers 기반 인증·프로필·Agent Run·AI runtime·Document·Job·Cover Letter·Interview·migration·E2E 검증을 소유한다.
 - `build/`와 `.gradle/`은 재생성 가능한 빌드·캐시 영역이므로 소스나 추적 문서를 두지 않는다.
 

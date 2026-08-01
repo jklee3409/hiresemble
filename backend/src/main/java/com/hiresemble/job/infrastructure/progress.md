@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job JDBC·Scheduler/fetch와 P6 immutable Analysis JDBC·비용 설정이 구현됐다.
+P5 Job JDBC·Scheduler/fetch, P6 immutable Analysis JDBC·비용 설정과 자동 분석 claim store·reconciliation 설정이 구현됐다.
+
+## [2026-08-02] Session Summary (자동 분석 claim store·설정)
+
+- What was done:
+  - owner/job/version unique insert, `SKIP LOCKED` lease claim, launched·blocked·retry projection query와 typed properties를 추가했다.
+- Key decisions:
+  - SQL은 사용자 원문·prompt·provider 응답을 저장하지 않고 safe error만 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - concurrent replay, restart reconciliation과 quota 실패 DB assertion 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (정적 WebP 안전 fetch)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V14 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V16 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-02] Session Summary (V16 공고 자동 분석 migration 검증)
+
+- What was done:
+  - 기존 migration suite와 Job 자동 분석 PostgreSQL 통합 테스트가 빈 DB에 V16을 적용하고 owner·revision unique·상태 제약을 사용하는지 확인했다.
+- Key decisions:
+  - V1~V15 파일은 수정하지 않고 V16 적용 결과만 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `JobAutoAnalysisIntegrationTest`와 관련 Job suites에서 V16 Flyway 적용 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (V15 대외활동 migration 검증)
 

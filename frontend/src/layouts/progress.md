@@ -2,7 +2,21 @@
 
 ## Overview
 
-form 우선 익명 인증 shell과 desktop sidebar·mobile drawer 보호 shell을 분리하고 `자기소개서`·`면접 준비`·`AI 작업 내역` navigation, Job Analysis/Cover Letter/Interview tab과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-08-02] Session Summary (제품 navigation·공고 상세 shell 재설계)
+
+- What was done:
+  - sidebar·initial avatar·하단 profile card를 제거하고 desktop journey navigation, header account menu와 accessible mobile more sheet를 구현했다.
+  - Job resource header와 sticky horizontal tab을 독립 layer로 만들고 body spacing token을 적용했다.
+- Key decisions:
+  - desktop 70rem 미만은 bottom navigation을 사용하고 route·닉네임·로그아웃·AI 작업 접근성은 유지한다.
+- Issues encountered:
+  - 390px gutter보다 큰 negative tab margin이 만든 4px overflow를 breakpoint별 bleed로 수정했다.
+- Validation:
+  - AppLayout·JobDetailLayout tests와 desktop/mobile Chromium navigation·focus·overflow 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 navigation·Job tab)
 

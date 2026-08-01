@@ -2,7 +2,20 @@
 
 ## Overview
 
-P5 Job API·application·Scheduler·URL 보안 회귀 테스트가 구현됐다.
+P5 Job API·application·Scheduler·URL 보안과 P6 자동 분석 orchestration 회귀 테스트가 구현됐다.
+
+## [2026-08-02] Session Summary (공고 자동 분석 내구성 회귀)
+
+- What was done:
+  - manual·URL·본문 보완 뒤 BALANCED 1회 접수, replay·restart deterministic reuse, quota 보존과 owner 격리를 검증했다.
+- Key decisions:
+  - Fake workflow와 PostgreSQL Testcontainers만 사용하고 외부 Provider network를 호출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `JobAutoAnalysisIntegrationTest` 2건, `JobIntegrationTest` 7건, `JobAnalysisIntegrationTest` 4건 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (legacy Job retry upgrade 회귀)
 
