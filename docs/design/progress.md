@@ -4,6 +4,19 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5는 구현됐지만 실호출 미검증이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-01] Session Summary (V14와 Provider smoke 상태 반영)
+
+- What was done:
+  - 구현 계획·아키텍처·결정 기록에 V14와 Chat/Embedding quota 실패, Tavily 성공을 반영했다.
+- Key decisions:
+  - P8.6 이후 tentative migration을 V15부터로 이동했다.
+- Issues encountered:
+  - OpenAI capability 성공 전이므로 P8.5 상태는 유지한다.
+- Validation:
+  - phase dependency와 V14~V18 번호 참조를 대조했다.
+- Next steps:
+  - quota 복구 후 capability와 vertical 검증 상태를 갱신한다.
+
 ## [2026-08-01] Session Summary (P9 이전 운영 기반 설계 재구성)
 
 - What was done:

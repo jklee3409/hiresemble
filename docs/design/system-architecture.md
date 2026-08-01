@@ -721,7 +721,7 @@ frontend/src/
 | ---------- | ------------------------------------------------------------------------------------------ |
 | Domain     | 모든 상태 전이, owner, finalization, current version, scheduler race                       |
 | Repository | PostgreSQL FK/unique/check, tenant join, pgvector, quota/budget race, usage reconciliation |
-| Migration  | 빈 DB 적용과 기존 DB upgrade, V1~V13 불변, 미래 migration tentative 검증                   |
+| Migration  | 빈 DB 적용과 기존 DB upgrade, V1~V14 불변, 미래 migration tentative 검증                   |
 | API        | Session/CSRF, 직접 성공 DTO, USER/ADMIN 격리, 두 429 code, failure projection              |
 | File       | MIME 위장, macro, 손상·텍스트 부족 PDF/DOCX/TXT, storage 보상                              |
 | External   | LLM/Search/Object/URL 429·5xx·timeout·부족 결과를 Fake/WireMock으로 검증                   |

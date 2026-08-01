@@ -12,8 +12,28 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
-- P8.5 local 실제 Provider 연결은 구현됐지만 실제 Chat·Embedding·Tavily 호출은 각 0회이며 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- P8.5 local 실제 Provider 연결은 구현됐고 Tavily BASIC smoke는 성공했지만 Chat·Embedding은 OpenAI quota blocker가 남아 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-01] Session Summary (로컬 OpenAI 연결 오류 보정과 bounded smoke)
+
+- What was done:
+  - OpenAI SDK base URL을 `/v1`로 보정하고 embedding 정책 provider key를 V14로 `openai`에 canonicalize했으며 Chat/Embedding safe rejection 진단을 추가했다.
+  - 기존 local Backend를 재시작해 V14 적용과 health `UP`을 확인했다.
+
+- Key decisions:
+  - 과거 embedding 정책 version 1은 immutable history로 보존하고 version 2만 활성화한다.
+  - 빈 tool allowlist에서는 `tool_choice`와 `parallel_tool_calls`를 전송하지 않는다.
+
+- Issues encountered:
+  - 실제 Chat·Embedding은 OpenAI `429 insufficient_quota`로 차단됐고 Tavily BASIC만 성공했다.
+
+- Validation:
+  - Backend `check` 67 suites/427 tests, failure/error/skip 0; Compose config와 local health가 통과했다.
+  - bounded smoke 누적은 Chat 2회 실패, Embedding 1회 실패, Tavily 1회 성공이며 추정 상한 합계는 USD 0.008201이다.
+
+- Next steps:
+  - OpenAI 프로젝트 크레딧/월 한도를 복구한 뒤 Chat·Embedding capability smoke를 사용자가 재실행한다.
 
 ## [2026-08-01] Session Summary (P8.5 이후 운영 기반 및 P9 이전 구현 계획 재설계)
 

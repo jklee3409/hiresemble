@@ -16,7 +16,7 @@ AI_PROVIDER=openai
 AI_CHAT_MODEL_PROVIDER=openai
 AI_EMBEDDING_MODEL_PROVIDER=openai
 AI_PROVIDER_API_KEY=<secret>
-AI_PROVIDER_BASE_URL=https://api.openai.com
+AI_PROVIDER_BASE_URL=https://api.openai.com/v1
 AI_PROVIDER_TIMEOUT=60s
 AI_PROVIDER_MAX_RETRIES=0
 AI_PROVIDER_STORE=false
@@ -47,7 +47,7 @@ PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를
 
 ## P8.5-V 사용자 local 검증
 
-현재 기록된 실제 호출은 Chat 0, Embedding 0, Tavily 0이므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 사용자가 일반 `local` profile에서 다음 순서로 검증한다.
+2026-08-01 bounded smoke 결과는 Chat 2회 시도(첫 호출은 `/v1` 누락 404, 보정 후 `429 insufficient_quota`), Embedding 1회 시도(`429 insufficient_quota`), Tavily BASIC 1회 성공이다. OpenAI capability가 성공하지 않았으므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`이며, OpenAI 프로젝트의 사용 가능 크레딧/월 한도를 복구한 뒤 일반 `local` profile에서 다음 순서로 검증한다.
 
 1. capability smoke: Chat 1회, Embedding 1회, Tavily BASIC 1회.
 2. 문서 업로드→실제 embedding→근거 추출.

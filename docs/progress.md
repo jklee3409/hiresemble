@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (Provider 연결 보정 문서 동기화)
+
+- What was done:
+  - V14 embedding 정책, OpenAI `/v1` base URL과 bounded smoke 결과를 설계·DB·운영 문서에 반영했다.
+- Key decisions:
+  - Tavily 성공만으로 P8.5를 완료하지 않고 OpenAI capability는 quota 복구 후 재검증한다.
+- Issues encountered:
+  - Chat·Embedding은 `insufficient_quota`로 성공하지 못했다.
+- Validation:
+  - 문서의 live call 수와 미래 migration 번호를 V14 기준으로 대조했다.
+- Next steps:
+  - OpenAI quota 복구 뒤 P8.5-V 결과를 다시 갱신한다.
+
 ## [2026-08-01] Session Summary (P8.5 이후 문서 체계 재설계)
 
 - What was done:

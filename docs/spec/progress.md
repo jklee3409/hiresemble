@@ -4,7 +4,20 @@
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 문서 버전 1.2로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5는 실제 호출 0회인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5는 OpenAI quota blocker가 남은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-01] Session Summary (V14 embedding 정책 명세 반영)
+
+- What was done:
+  - DB latest를 V14로 갱신하고 embedding provider key canonicalization과 이후 tentative migration 번호를 반영했다.
+- Key decisions:
+  - version 1은 history로 보존하고 version 2 `openai`를 활성 정책으로 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - V1–V14 불변 경계와 P8.6–P9 migration 표를 대조했다.
+- Next steps:
+  - P8.6 시작 시 latest migration을 다시 확인한다.
 
 ## [2026-08-01] Session Summary (운영 기반 활성 명세 1.2 동기화)
 

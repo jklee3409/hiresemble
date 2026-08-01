@@ -4,6 +4,19 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-01] Session Summary (OpenAI `/v1`와 bounded smoke 결과)
+
+- What was done:
+  - activation runbook의 OpenAI base URL과 실제 capability 시도 결과를 갱신했다.
+- Key decisions:
+  - OpenAI quota 복구 전에는 capability verified로 판정하지 않는다.
+- Issues encountered:
+  - Chat·Embedding `insufficient_quota`; Tavily BASIC 성공.
+- Validation:
+  - secret·prompt·response 없이 call count와 safe Provider code만 기록했다.
+- Next steps:
+  - quota 복구 후 Chat·Embedding만 제한 재검증한다.
+
 ## [2026-08-01] Session Summary (사용량·실패 복구·Backoffice 운영 계획)
 
 - What was done:

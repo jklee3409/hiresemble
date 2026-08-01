@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했지만 실제 호출 0회이므로 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 Tavily BASIC smoke는 성공했지만 OpenAI Chat·Embedding은 `insufficient_quota`로 성공하지 못해 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
 ## 범위
 
@@ -36,7 +36,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 기록된 P8.5 검증 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4이며 실제 외부 호출은 Chat 0, Embedding 0, Search 0이다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 기록된 P8.5 검증 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4이다. 2026-08-01 bounded smoke 누적은 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이며 OpenAI 실패 원인은 `insufficient_quota`다.
 
 ## 1. 전체 선행 관계
 
@@ -570,7 +570,7 @@ P0 계약 기준선
 
 - local/local-offline Bean matrix와 key·provider·price fail-closed, request option, bounded response, reserve/top-up/settle을 Fake/WireMock/PostgreSQL로 검증했다.
 - 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, P8~P4 actual 1/1·1/1·2/2·5/5·4/4다.
-- 실제 외부 호출은 Chat 0, Embedding 0, Search 0이므로 `DONE`으로 올리지 않는다.
+- 실제 외부 smoke는 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이며 OpenAI capability 성공 전이므로 `DONE`으로 올리지 않는다.
 - 다음 phase handoff는 P8.5-V이며 실제 key·prompt·response를 저장소에 남기지 않는다.
 
 ## 13. P8.5-V — 사용자 local 실제 Provider 검증 gate
@@ -611,7 +611,7 @@ P0 계약 기준선
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: tentative V14 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`.
+- DB: tentative V15 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -624,7 +624,7 @@ P0 계약 기준선
 - Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
 - Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
 - Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
-- Migration responsibility: V14 `TENTATIVE`; V1~V13 수정 금지.
+- Migration responsibility: V15 `TENTATIVE`; V1~V14 수정 금지.
 
 ### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -646,7 +646,7 @@ P0 계약 기준선
 ### 15.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `billing` module이 immutable zero-rate policy, SQL read model과 reconciliation을 소유하며 payment 책임은 갖지 않는다.
-- DB: tentative V15 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
+- DB: tentative V16 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
 - API: P8.6의 `/settings/usage` summary/history를 완성한다.
 - Frontend/Page: `/settings/usage`에서 사용량·남은 횟수·reset·기간 내역·현재 무료/청구 없음만 표시한다.
 - Source: 내부 원가=`ai_usage_records`, 제품·과금 가능 unit=`feature_usage_events`.
@@ -658,7 +658,7 @@ P0 계약 기준선
 - State lifecycle: raw append→SQL projection→watermark/reconciliation finding→append-only correction.
 - Idempotency/Concurrency: provider call/price item와 feature event unique를 유지하며 집계 재실행은 동일 결과다.
 - Failure semantics: aggregation lag는 stale로 표시하고 reconciliation 불일치를 숨기지 않는다.
-- Migration responsibility: V15 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
+- Migration responsibility: V16 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
 
 ### 15.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -710,7 +710,7 @@ P0 계약 기준선
 ### 17.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `backoffice` query module, ADMIN Security, provisioning command, access audit; domain query port/read model만 사용한다.
-- DB: tentative V16으로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
+- DB: tentative V17으로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
 - API: overview, users/detail/usage, ai-costs, agent-runs, failures, configuration GET을 `/api/v1/backoffice` 아래 `PLANNED`로 구현한다.
 - Frontend/Page: 별도 `BackofficeLayout`과 overview/users/usage/ai-costs/agent-runs/failures/configuration route. AppLayout에는 노출하지 않는다.
 
@@ -721,7 +721,7 @@ P0 계약 기준선
 - State lifecycle: provisioning/access audit append-only, readiness는 configuration/live 분리, aggregate watermark/lag 표시.
 - Idempotency/Concurrency: stable pagination/sort/snapshot; provisioning은 idempotency와 expected current role.
 - Failure semantics: audit 실패 시 민감 상세 조회 fail-closed, stale aggregate는 마지막 정상 시각 표시.
-- Migration responsibility: V16 `TENTATIVE`; P8.9-B 번호 예약 금지.
+- Migration responsibility: V17 `TENTATIVE`; P8.9-B 번호 예약 금지.
 
 ### 17.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -754,7 +754,7 @@ P0 계약 기준선
 ### 19.1 Backend·DB·API·Frontend responsibility
 
 - Backend: session 상태/CAS, `clientRequestId`, message sequence, bounded synchronous turn, complete와 async feedback run.
-- DB: P8.9-A 완료 시 next available migration(현재 예상 V17, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
+- DB: P8.9-A 완료 시 next available migration(현재 예상 V18, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
 - API: 기존 명세의 mock endpoints를 구현하며 merge될 때만 implemented path/operation 수를 갱신한다.
 - Frontend/Page: `/mock-interviews/:sessionId`, 생성 form, READY/IN_PROGRESS/COMPLETED/CANCELLED, feedback 상태.
 - AI: turn당 Chat 1회, Provider retry 0, structured `TurnDecision`, async aggregate feedback.
@@ -775,7 +775,7 @@ P0 계약 기준선
 - State lifecycle: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`; feedback 독립 상태.
 - Idempotency/Concurrency: session CAS, `(user,session,clientRequestId)` unique, message sequence, 다중 tab 경쟁 차단.
 - Failure semantics: timeout/invalid output의 원 terminal 응답을 replay하고 same ID로 재호출하지 않는다.
-- Migration responsibility: 현재 예상 V17은 tentative이며 시작 시 latest migration을 확인한다.
+- Migration responsibility: 현재 예상 V18은 tentative이며 시작 시 latest migration을 확인한다.
 
 ### 19.4 Test strategy·Actual E2E boundary
 

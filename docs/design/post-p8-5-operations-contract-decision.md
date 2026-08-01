@@ -19,7 +19,7 @@
 | Tavily Search adapter           | `IMPLEMENTED`                   | HTTPS, redirect `NEVER`, 2MB bounded stream, BASIC/ADVANCED, raw content·answer 비활성    |
 | local/local-offline Bean wiring | `VERIFIED`                      | capability별 단일 real 또는 disabled Bean integration test                                |
 | Mock/WireMock integration       | `VERIFIED`                      | Fake gateway와 WireMock의 option·failure·bounded response·usage·migration test            |
-| 실제 capability smoke           | `NOT_VERIFIED`                  | Chat 0, Embedding 0, Tavily 0                                                             |
+| 실제 capability smoke           | `PARTIALLY_VERIFIED`            | Chat 2회·Embedding 1회는 `insufficient_quota`, Tavily BASIC 1회 성공                      |
 | 실제 P4~P8 수직 흐름            | `NOT_VERIFIED`                  | 기록된 actual은 Fake/disabled이며 외부 network 호출 0                                     |
 | P8.5 전체                       | `IMPLEMENTED_NOT_LIVE_VERIFIED` | 구현과 configuration readiness는 완료됐으나 사용자 local 실제 검증 전                     |
 
@@ -240,12 +240,12 @@ P8.9-B는 P8.9-A 뒤 별도 승인하는 후속이며 P9의 필수 선행은 아
 
 | Phase  | tentative 책임                                                  |
 | ------ | --------------------------------------------------------------- |
-| P8.6   | V14 feature policy·assignment/override·period·reservation·event |
-| P8.7   | V15 immutable billing policy/snapshot 제약과 집계용 index       |
+| P8.6   | V15 feature policy·assignment/override·period·reservation·event |
+| P8.7   | V16 immutable billing policy/snapshot 제약과 집계용 index       |
 | P8.8   | migration 없음                                                  |
-| P8.9-A | V16 USER/ADMIN role 확장, provisioning/access audit             |
+| P8.9-A | V17 USER/ADMIN role 확장, provisioning/access audit             |
 | P8.9-B | 예약하지 않음; 실제 착수 시 next available                      |
-| P9     | P8.9-A 완료 시점의 next available, 현재 예상 V17                |
+| P9     | P8.9-A 완료 시점의 next available, 현재 예상 V18                |
 
 Backend 목표 책임:
 

@@ -435,7 +435,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-현재 latest implemented migration은 V13이다. V1~V13은 수정하지 않는다. 아래 P8.6 이후 번호와 filename은 `TENTATIVE`이며 phase 시작 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 V14다. V1~V14는 수정하지 않는다. V14는 기존 embedding 정책 version 1의 `OpenAI` 값을 보존한 채 비활성화하고 canonical provider key `openai`를 사용하는 version 2를 활성화한다. 아래 P8.6 이후 번호와 filename은 `TENTATIVE`이며 phase 시작 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -446,12 +446,12 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | jobs/analysis                | canonical active unique, 두 상태 축, history, rubric·provenance                  |
 | cover letter                 | active partial unique, soft question, immutable answer/content/link/verification |
 | research/interview           | combined research, source links, answer/feedback, mock turn/message/feedback     |
-| P8.6, tentative V14          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V15          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| P8.6, tentative V15          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V16          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V16        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-A, tentative V17        | USER/ADMIN role 확장, provisioning/access audit                                  |
 | P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V17                                     |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V18                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

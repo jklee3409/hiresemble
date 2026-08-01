@@ -4,8 +4,21 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
-- V1~~V11을 보존한 V12 migration이 조사·질문·답변·피드백 schema와 P8 typed Agent Run link를 추가한다.
-- Backend 전체 67 suites/420 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- V1~V13을 보존한 V14 migration이 활성 embedding 정책 provider key를 `openai`로 canonicalize한다.
+- Backend 전체 67 suites/427 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (OpenAI local 연결 오류와 embedding 정책 보정)
+
+- What was done:
+  - OpenAI base URL `/v1`, 빈 tool option 비전송, status/code/param/request ID safe logging과 V14 embedding 정책 전환을 구현했다.
+- Key decisions:
+  - Provider key는 lowercase canonical 값을 사용하고 과거 정책은 update하지 않고 비활성 history로 보존한다.
+- Issues encountered:
+  - live Chat·Embedding은 OpenAI `insufficient_quota`로 실패했고 Tavily BASIC은 성공했다.
+- Validation:
+  - `gradlew check`: 67 suites/427 tests, failure/error/skip 0. local DB V14와 Backend health `UP`을 확인했다.
+- Next steps:
+  - OpenAI quota 복구 후 P8.5-V Chat·Embedding을 재검증한다.
 
 ## [2026-08-01] Session Summary (P8.5 Backend Provider runtime·V13)
 
