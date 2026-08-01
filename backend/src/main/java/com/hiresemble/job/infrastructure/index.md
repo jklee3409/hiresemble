@@ -2,20 +2,21 @@
 
 ## 디렉터리 목적
 
-P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store·비용 설정, SSRF-safe HTTP(S) page fetch adapter를 소유한다.
+P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store·비용 설정, SSRF-safe HTTP(S) page/image fetch adapter를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - `JobStore`: owner-scoped CRUD·목록 count·history·conditional close SQL
 - `JobAnalysisStore`: owner-scoped immutable analysis·criteria·provenance·secondary Run link SQL
-- `SecureJobPageFetchAdapter`: DNS 검증 주소 고정, redirect 재검사와 bounded HTML fetch
+- `SecureJobPageFetchAdapter`: DNS 검증 주소 고정, redirect 재검사, bounded HTML/JPEG/PNG fetch
+- `HtmlCharsetDecoder`: header→BOM→meta→strict UTF-8→제한적 MS949 fallback과 Korean alias 정규화
 - `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAiCostProperties`, `JobAnalysisAiCostProperties`: 검증된 설정
 - `JobInfrastructureConfiguration`: Clock과 Job infrastructure bean 조립
 - [`progress.md`](progress.md): infrastructure 구현 상태
 
 ## 구성 요소 역할
 
-검증된 `InetAddress`로 실제 socket을 연결하고 HTTPS 원 hostname의 SNI·인증서 검증을 유지한다. 헤더·body·압축 해제 전체에 절대 deadline과 post-decompression byte 제한을 적용한다.
+검증된 `InetAddress`로 실제 socket을 연결하고 HTTPS 원 hostname의 SNI·인증서 검증을 유지한다. 헤더·body·압축 해제 전체에 절대 deadline과 post-decompression byte 제한을 적용하며, 공고 이미지 후보들은 step 전체의 단일 deadline remaining budget을 공유한다.
 
 ## 다른 디렉터리와의 의존 관계
 

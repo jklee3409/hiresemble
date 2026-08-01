@@ -1,7 +1,11 @@
 package com.hiresemble.job.infrastructure;
 
 import com.hiresemble.job.application.port.JobPageFetchException;
+import com.hiresemble.job.application.port.JobImageFetchGateway;
+import com.hiresemble.job.application.port.JobImageFetchGateway.ImageAsset;
+import com.hiresemble.job.application.port.JobImageFetchGateway.ImageCandidate;
 import com.hiresemble.job.application.port.JobPageFetchGateway;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -14,8 +18,8 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,16 +33,18 @@ import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.imageio.ImageIO;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
+public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, JobImageFetchGateway {
 
     private static final List<String> HTML_TYPES =
             List.of("text/html", "application/xhtml+xml");
     private final JobPageFetchProperties properties;
     private final DnsResolver dnsResolver;
     private final HttpTransport transport;
+    private final HtmlCharsetDecoder charsetDecoder = new HtmlCharsetDecoder();
 
     SecureJobPageFetchAdapter(JobPageFetchProperties properties) {
         this(
@@ -95,7 +101,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
             }
             if (status == 403) {
                 close(response.body());
-                return new FetchResult(current, PageClassification.BOT_BLOCKED, null, status);
+                return new FetchResult(current, PageClassification.BOT_BLOCKED, null, status, null);
             }
             if (status == 429 || status >= 500) {
                 close(response.body());
@@ -122,15 +128,112 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
                     decodedBody(response),
                     properties.getMaxResponseBytes(),
                     deadline);
-            String html = new String(content, charset(contentType));
+            HtmlCharsetDecoder.DecodedHtml decoded = charsetDecoder.decode(content, contentType);
+            String html = decoded.html();
             PageClassification classification = classify(html, current);
             return new FetchResult(
                     current,
                     classification,
                     classification == PageClassification.FETCHED ? html : null,
-                    status);
+                    status,
+                    decoded.metadata());
         }
         throw failure("JOB_PAGE_REDIRECT_LIMIT", false, null);
+    }
+
+    @Override
+    public ImageAsset fetch(ImageCandidate candidate, Duration remainingDeadline) {
+        if (candidate == null || candidate.imageRef() == null || candidate.uri() == null) {
+            throw failure("JOB_IMAGE_REQUEST_INVALID", false, null);
+        }
+        if (remainingDeadline == null || remainingDeadline.isZero() || remainingDeadline.isNegative()) {
+            throw failure("JOB_IMAGE_TIMEOUT", true, null);
+        }
+        URI current = candidate.uri();
+        Duration fetchBudget = remainingDeadline.compareTo(properties.getImageResponseTimeout()) < 0
+                ? remainingDeadline
+                : properties.getImageResponseTimeout();
+        ResponseDeadline deadline = ResponseDeadline.start(fetchBudget);
+        for (int redirect = 0; redirect <= properties.getMaxRedirects(); redirect++) {
+            List<InetAddress> validatedAddresses = validateUriAndDns(current);
+            TransportResponse response;
+            try {
+                response = transport.get(current, validatedAddresses, deadline);
+            } catch (HttpTimeoutException | SocketTimeoutException exception) {
+                throw failure("JOB_IMAGE_TIMEOUT", true, exception);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw failure("JOB_IMAGE_FETCH_INTERRUPTED", true, exception);
+            } catch (IOException exception) {
+                throw failure("JOB_IMAGE_NETWORK_ERROR", true, exception);
+            }
+            int status = response.status();
+            if (isRedirect(status)) {
+                close(response.body());
+                if (redirect == properties.getMaxRedirects()) {
+                    throw failure("JOB_IMAGE_REDIRECT_LIMIT", false, null);
+                }
+                String location = header(response.headers(), "location")
+                        .orElseThrow(() -> failure("JOB_IMAGE_REDIRECT_INVALID", false, null));
+                try {
+                    current = current.resolve(location);
+                } catch (IllegalArgumentException exception) {
+                    throw failure("JOB_IMAGE_REDIRECT_INVALID", false, exception);
+                }
+                continue;
+            }
+            if (status == 429 || status >= 500) {
+                close(response.body());
+                throw failure("JOB_IMAGE_REMOTE_TEMPORARY_FAILURE", true, null);
+            }
+            if (status < 200 || status >= 300) {
+                close(response.body());
+                throw failure("JOB_IMAGE_REMOTE_REJECTED", false, null);
+            }
+            String contentType = header(response.headers(), "content-type")
+                    .orElse("")
+                    .split(";", 2)[0]
+                    .strip()
+                    .toLowerCase(Locale.ROOT);
+            if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+                close(response.body());
+                throw failure("JOB_IMAGE_CONTENT_TYPE_INVALID", false, null);
+            }
+            long declaredLength = header(response.headers(), "content-length")
+                    .flatMap(this::longValue)
+                    .orElse(-1L);
+            if (declaredLength > properties.getMaxImageBytes()) {
+                close(response.body());
+                throw failure("JOB_IMAGE_TOO_LARGE", false, null);
+            }
+            byte[] bytes;
+            try {
+                bytes = readLimited(decodedBody(response), properties.getMaxImageBytes(), deadline);
+            } catch (JobPageFetchException failure) {
+                throw remapImageFailure(failure);
+            }
+            if (!magicMatches(contentType, bytes)) {
+                throw failure("JOB_IMAGE_MAGIC_MISMATCH", false, null);
+            }
+            BufferedImage image;
+            try {
+                image = ImageIO.read(new ByteArrayInputStream(bytes));
+            } catch (IOException exception) {
+                throw failure("JOB_IMAGE_DECODE_INVALID", false, exception);
+            }
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0
+                    || (long) image.getWidth() * image.getHeight() > properties.getMaxImagePixels()) {
+                throw failure("JOB_IMAGE_DIMENSIONS_INVALID", false, null);
+            }
+            return new ImageAsset(
+                    candidate.imageRef(),
+                    contentType,
+                    bytes,
+                    image.getWidth(),
+                    image.getHeight(),
+                    sha256(bytes));
+        }
+        throw failure("JOB_IMAGE_REDIRECT_LIMIT", false, null);
     }
 
     private List<InetAddress> validateUriAndDns(URI uri) {
@@ -211,14 +314,18 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
             return PageClassification.BOT_BLOCKED;
         }
         String lowerHtml = html.toLowerCase(Locale.ROOT);
+        boolean imageCandidates = !document.select(
+                        "img[src],img[srcset],img[data-src],img[data-original],picture source[srcset],[style*=background-image]")
+                .isEmpty();
         if (lower.contains("enable javascript")
                 || lower.contains("javascript is required")
                 || (text.length() < 80
                         && lowerHtml.contains("<script")
-                        && document.select("script").size() >= 2)) {
+                        && document.select("script").size() >= 2
+                        && !imageCandidates)) {
             return PageClassification.JAVASCRIPT_REQUIRED;
         }
-        if (text.length() < 40) {
+        if (text.length() < 40 && !imageCandidates) {
             return PageClassification.EMPTY;
         }
         return PageClassification.FETCHED;
@@ -273,18 +380,36 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
         }
     }
 
-    private Charset charset(String contentType) {
-        for (String part : contentType.split(";")) {
-            String trimmed = part.trim();
-            if (trimmed.toLowerCase(Locale.ROOT).startsWith("charset=")) {
-                try {
-                    return Charset.forName(trimmed.substring("charset=".length()).trim());
-                } catch (RuntimeException ignored) {
-                    return StandardCharsets.UTF_8;
-                }
-            }
+    private boolean magicMatches(String contentType, byte[] bytes) {
+        if (contentType.equals("image/png")) {
+            return bytes.length >= 8
+                    && (bytes[0] & 0xff) == 0x89 && bytes[1] == 'P' && bytes[2] == 'N'
+                    && bytes[3] == 'G' && bytes[4] == 0x0d && bytes[5] == 0x0a
+                    && bytes[6] == 0x1a && bytes[7] == 0x0a;
         }
-        return StandardCharsets.UTF_8;
+        return bytes.length >= 4
+                && (bytes[0] & 0xff) == 0xff && (bytes[1] & 0xff) == 0xd8
+                && (bytes[bytes.length - 2] & 0xff) == 0xff
+                && (bytes[bytes.length - 1] & 0xff) == 0xd9;
+    }
+
+    private JobPageFetchException remapImageFailure(JobPageFetchException failure) {
+        String code = switch (failure.safeErrorCode()) {
+            case "JOB_PAGE_TIMEOUT" -> "JOB_IMAGE_TIMEOUT";
+            case "JOB_PAGE_RESPONSE_TOO_LARGE" -> "JOB_IMAGE_TOO_LARGE";
+            case "JOB_PAGE_CONTENT_ENCODING_INVALID" -> "JOB_IMAGE_CONTENT_ENCODING_INVALID";
+            default -> "JOB_IMAGE_NETWORK_ERROR";
+        };
+        return new JobPageFetchException(code, failure.retryable(), failure);
+    }
+
+    private String sha256(byte[] value) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(value));
+        } catch (Exception exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 
     private Optional<String> header(Map<String, List<String>> headers, String name) {
@@ -566,7 +691,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway {
             }
             String request = "GET " + target + " HTTP/1.1\r\n"
                     + "Host: " + hostValue + "\r\n"
-                    + "Accept: text/html,application/xhtml+xml\r\n"
+                    + "Accept: text/html,application/xhtml+xml,image/jpeg,image/png\r\n"
                     + "Accept-Encoding: gzip, deflate\r\n"
                     + "User-Agent: HiresembleJobFetcher/1.0\r\n"
                     + "Connection: close\r\n\r\n";

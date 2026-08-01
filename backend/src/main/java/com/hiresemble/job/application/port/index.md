@@ -6,7 +6,8 @@ Job application과 외부 URL fetch·AI workflow 사이의 최소 typed 경계�
 
 ## 주요 파일 및 하위 디렉터리
 
-- `JobPageFetchGateway`: HTML 계열 페이지 fetch와 안전한 분류 결과
+- `JobPageFetchGateway`: HTML 계열 페이지 fetch, 문자셋 safe metadata와 안전한 분류 결과
+- `JobImageFetchGateway`: 후보 전체 absolute deadline의 remaining budget을 공유하는 ranked 이미지 bounded bytes·MIME·dimensions·hash 결과
 - `JobPageFetchException`: safe code와 retryable 분류
 - `JobWorkflowQueryPort`: owner·version·override snapshot 조회
 - `JobWorkflowCommandPort`: 추출 성공·사용자 입력 필요·기술 실패 apply

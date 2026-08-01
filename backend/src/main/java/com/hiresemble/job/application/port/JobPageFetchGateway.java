@@ -10,7 +10,13 @@ public interface JobPageFetchGateway {
             URI finalUri,
             PageClassification classification,
             String html,
-            int httpStatus) {
+            int httpStatus,
+            CharsetMetadata charsetMetadata) {
+        public FetchResult(
+                URI finalUri, PageClassification classification, String html, int httpStatus) {
+            this(finalUri, classification, html, httpStatus, null);
+        }
+
         public FetchResult {
             if (finalUri == null || classification == null || httpStatus < 100 || httpStatus > 599) {
                 throw new IllegalArgumentException("job page fetch result is invalid");
@@ -23,6 +29,24 @@ public interface JobPageFetchGateway {
                 html = null;
             }
         }
+    }
+
+    record CharsetMetadata(
+            String declaredCharset,
+            String resolvedCharset,
+            CharsetDetectionSource detectionSource,
+            int rawByteLength,
+            int decodedCharacterLength,
+            int replacementCharacterCount,
+            double replacementCharacterRatio,
+            String contentHash) {}
+
+    enum CharsetDetectionSource {
+        HEADER,
+        BOM,
+        META,
+        DEFAULT,
+        FALLBACK
     }
 
     enum PageClassification {

@@ -1,6 +1,5 @@
 package com.hiresemble.job.infrastructure;
 
-import com.hiresemble.job.application.port.JobPageFetchGateway;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class JobInfrastructureConfiguration {
 
     @Bean
-    JobPageFetchGateway jobPageFetchGateway(JobPageFetchProperties properties) {
+    SecureJobPageFetchAdapter jobPageFetchGateway(JobPageFetchProperties properties) {
         properties.validate();
         return new SecureJobPageFetchAdapter(properties);
     }

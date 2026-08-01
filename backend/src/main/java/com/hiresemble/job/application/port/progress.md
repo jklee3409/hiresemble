@@ -4,6 +4,19 @@
 
 P5 Job fetch/extraction과 P6 analysis query/command/embedding port가 구현됐다.
 
+## [2026-08-01] Session Summary (공고 page/image fetch typed port)
+
+- What was done:
+  - `FetchResult` safe charset metadata와 `JobImageFetchGateway` bounded media 계약을 추가했다.
+- Key decisions:
+  - 외부 URL이나 Provider 타입은 AI/domain DTO에 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend compile/전체 check와 adapter focused test 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-29] Session Summary (P6 분석 port 정의)
 
 - What was done:

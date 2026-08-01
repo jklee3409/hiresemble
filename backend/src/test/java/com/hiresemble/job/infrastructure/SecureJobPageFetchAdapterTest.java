@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hiresemble.job.application.port.JobPageFetchException;
 import com.hiresemble.job.application.port.JobPageFetchGateway.PageClassification;
+import com.hiresemble.job.application.port.JobImageFetchGateway.ImageCandidate;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,6 +18,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -54,6 +58,116 @@ class SecureJobPageFetchAdapterTest {
         assertThat(fetched.classification()).isEqualTo(PageClassification.FETCHED);
         assertThat(fetched.html()).contains("Backend Platform Engineer");
         assertThat(dnsChecks).hasValue(2);
+    }
+
+    @Test
+    void charsetUsesHeaderThenBomThenMetaAndSupportsKoreanAliasesWithoutReplacement() {
+        byte[] eucKr = """
+                <html><head><meta charset="euc-kr"><title>채용 공고</title></head>
+                <body><main>백엔드 개발자를 채용합니다. 자바 스프링 서비스 운영 경험이 필요합니다.</main></body></html>
+                """.getBytes(Charset.forName("MS949"));
+        var meta = fixed(response(
+                        200,
+                        Map.of("Content-Type", List.of("text/html")),
+                        new ByteArrayInputStream(eucKr)))
+                .fetch(URI.create("https://example.test/euc-kr"));
+        assertThat(meta.html()).contains("백엔드 개발자");
+        assertThat(meta.charsetMetadata().detectionSource().name()).isEqualTo("META");
+        assertThat(meta.charsetMetadata().resolvedCharset()).isEqualTo("x-windows-949");
+        assertThat(meta.charsetMetadata().replacementCharacterCount()).isZero();
+
+        byte[] legacy = """
+                <html><head><meta http-equiv="Content-Type" content="text/html; charset=ks_c_5601-1987"></head>
+                <body><main>데이터 플랫폼 엔지니어를 채용하며 안정적인 서비스 운영 경험을 확인합니다.</main></body></html>
+                """.getBytes(Charset.forName("MS949"));
+        var httpEquiv = fixed(response(200, Map.of("Content-Type", List.of("text/html")),
+                        new ByteArrayInputStream(legacy)))
+                .fetch(URI.create("https://example.test/http-equiv"));
+        assertThat(httpEquiv.html()).contains("데이터 플랫폼 엔지니어");
+        assertThat(httpEquiv.charsetMetadata().detectionSource().name()).isEqualTo("META");
+
+        byte[] bomBody = "<html><body><main>UTF BOM has enough meaningful job posting text for classification.</main></body></html>"
+                .getBytes(StandardCharsets.UTF_8);
+        byte[] withBom = new byte[bomBody.length + 3];
+        withBom[0] = (byte) 0xef;
+        withBom[1] = (byte) 0xbb;
+        withBom[2] = (byte) 0xbf;
+        System.arraycopy(bomBody, 0, withBom, 3, bomBody.length);
+        var bom = fixed(response(200, Map.of("Content-Type", List.of("text/html")),
+                        new ByteArrayInputStream(withBom)))
+                .fetch(URI.create("https://example.test/bom"));
+        assertThat(bom.charsetMetadata().detectionSource().name()).isEqualTo("BOM");
+
+        byte[] conflicting = "<html><head><meta charset=euc-kr></head><body><main>Header charset takes priority and this text is long enough.</main></body></html>"
+                .getBytes(StandardCharsets.UTF_8);
+        var header = fixed(response(200,
+                        Map.of("Content-Type", List.of("text/html; charset=UTF-8")),
+                        new ByteArrayInputStream(conflicting)))
+                .fetch(URI.create("https://example.test/header"));
+        assertThat(header.charsetMetadata().detectionSource().name()).isEqualTo("HEADER");
+
+        byte[] fallbackKorean = "<html><body><main>문자셋 선언이 없는 국내 채용 공고의 제한적 호환 경로를 확인합니다. 백엔드 개발과 데이터 플랫폼 운영 경험, 자동화 테스트 역량을 함께 확인합니다.</main></body></html>"
+                .getBytes(Charset.forName("MS949"));
+        var fallback = fixed(response(200, Map.of("Content-Type", List.of("text/html")),
+                        new ByteArrayInputStream(fallbackKorean)))
+                .fetch(URI.create("https://example.test/fallback"));
+        assertThat(fallback.html()).contains("국내 채용 공고");
+        assertThat(fallback.charsetMetadata().detectionSource().name()).isEqualTo("FALLBACK");
+    }
+
+    @Test
+    void unsupportedOrMalformedDeclaredCharsetIsRejectedInsteadOfReplacementDecode() {
+        assertFetchFailure(
+                fixed(response(200,
+                        Map.of("Content-Type", List.of("text/html; charset=x-hiresemble-unknown")),
+                        jobHtml())),
+                "https://example.test/unsupported",
+                "JOB_PAGE_CHARSET_UNSUPPORTED",
+                false);
+        byte[] malformed = "<html><head><meta charset=UTF-8></head><body>".getBytes(StandardCharsets.UTF_8);
+        byte[] invalid = java.util.Arrays.copyOf(malformed, malformed.length + 2);
+        invalid[invalid.length - 2] = (byte) 0xc3;
+        invalid[invalid.length - 1] = 0x28;
+        assertFetchFailure(
+                fixed(response(200, Map.of("Content-Type", List.of("text/html")),
+                        new ByteArrayInputStream(invalid))),
+                "https://example.test/malformed",
+                "JOB_PAGE_CHARSET_DECODE_FAILED",
+                false);
+    }
+
+    @Test
+    void validatedPngImageIsFetchedAndMagicOrMimeMismatchIsRejected() {
+        byte[] png = png(1200, 800);
+        var fetched = fixed(response(200,
+                        Map.of("Content-Type", List.of("image/png"),
+                                "Content-Length", List.of(Integer.toString(png.length))),
+                        new ByteArrayInputStream(png)))
+                .fetch(new ImageCandidate("I1", URI.create("https://example.test/posting.png"), 90),
+                        Duration.ofSeconds(5));
+        assertThat(fetched.imageRef()).isEqualTo("I1");
+        assertThat(fetched.mimeType()).isEqualTo("image/png");
+        assertThat(fetched.width()).isEqualTo(1200);
+        assertThat(fetched.height()).isEqualTo(800);
+        assertThat(fetched.contentHash()).hasSize(64);
+
+        assertThatThrownBy(() -> fixed(response(200, Map.of(), new ByteArrayInputStream(png)))
+                        .fetch(new ImageCandidate(
+                                "I1", URI.create("https://example.test/posting.png"), 90),
+                                Duration.ZERO))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_TIMEOUT"));
+
+        SecureJobPageFetchAdapter mismatch = fixed(response(200,
+                Map.of("Content-Type", List.of("image/png")),
+                new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xd9})));
+        assertThatThrownBy(() -> mismatch.fetch(new ImageCandidate(
+                        "I1", URI.create("https://example.test/fake.png"), 90),
+                        Duration.ofSeconds(5)))
+                .isInstanceOfSatisfying(JobPageFetchException.class,
+                        failure -> assertThat(failure.safeErrorCode())
+                                .isEqualTo("JOB_IMAGE_MAGIC_MISMATCH"));
     }
 
     @Test
@@ -175,6 +289,16 @@ class SecureJobPageFetchAdapterTest {
                         .fetch(URI.create("https://example.test/js"))
                         .classification())
                 .isEqualTo(PageClassification.JAVASCRIPT_REQUIRED);
+    }
+
+    @Test
+    void imageOnlyHtmlRemainsFetchedForWorkflowInspection() {
+        var fetched = fixed(html(200,
+                        "<html><body><main><img data-src='/posting.png' width='1200' height='1800'></main></body></html>"))
+                .fetch(URI.create("https://example.test/image-only"));
+
+        assertThat(fetched.classification()).isEqualTo(PageClassification.FETCHED);
+        assertThat(fetched.html()).contains("posting.png");
     }
 
     @Test
@@ -362,6 +486,16 @@ class SecureJobPageFetchAdapterTest {
             }
             return output.toByteArray();
         } catch (java.io.IOException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    private static byte[] png(int width, int height) {
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), "png", output);
+            return output.toByteArray();
+        } catch (IOException exception) {
             throw new IllegalStateException(exception);
         }
     }

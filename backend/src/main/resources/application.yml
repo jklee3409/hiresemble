@@ -112,6 +112,14 @@ hiresemble:
     response-timeout: ${JOB_PAGE_RESPONSE_TIMEOUT:10s}
     max-redirects: ${JOB_PAGE_MAX_REDIRECTS:5}
     max-response-bytes: ${JOB_PAGE_MAX_RESPONSE_BYTES:2097152}
+    image-response-timeout: ${JOB_IMAGE_RESPONSE_TIMEOUT:15s}
+    max-image-candidates: ${JOB_IMAGE_MAX_CANDIDATES:6}
+    max-image-bytes: ${JOB_IMAGE_MAX_BYTES:5242880}
+    max-total-image-bytes: ${JOB_IMAGE_MAX_TOTAL_BYTES:20971520}
+    max-image-pixels: ${JOB_IMAGE_MAX_PIXELS:40000000}
+    min-dom-meaningful-characters: ${JOB_PAGE_MIN_DOM_CHARACTERS:600}
+    min-description-meaningful-characters: ${JOB_MIN_DESCRIPTION_CHARACTERS:120}
+    max-replacement-character-ratio: ${JOB_MAX_REPLACEMENT_RATIO:0.001}
   job:
     ai-cost:
       estimated-cost-usd: ${JOB_AI_ESTIMATED_COST_USD:0.000000}

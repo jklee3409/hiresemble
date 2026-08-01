@@ -4,6 +4,19 @@
 
 P5 Job JDBC·Scheduler/fetch와 P6 immutable Analysis JDBC·비용 설정이 구현됐다.
 
+## [2026-08-01] Session Summary (HTML strict charset·이미지 fetch)
+
+- What was done:
+  - header/BOM/meta/default/fallback charset decoder와 Korean alias 정규화, JPEG/PNG magic·dimension·size 검증을 구현했다.
+- Key decisions:
+  - `euc-kr` 계열은 현실의 CP949 확장 호환을 위해 MS949 decoder로 정규화하고 malformed/unmappable은 REPORT로 거부한다.
+- Issues encountered:
+  - Jsoup는 decoded DOM inspection에만 사용하고 raw byte charset 우선순위는 명시적 decoder로 고정했다.
+- Validation:
+  - charset 12경계와 SSRF/redirect/decompression/image MIME focused test 및 Backend 전체 check 통과.
+- Next steps:
+  - WebP는 Java 표준 ImageIO 지원이 없어 현재 allowlist에서 제외한다.
+
 ## [2026-07-29] Session Summary (P6 분석 persistence)
 
 - What was done:
