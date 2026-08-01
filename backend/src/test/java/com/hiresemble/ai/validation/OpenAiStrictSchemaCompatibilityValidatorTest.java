@@ -8,6 +8,7 @@ import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.OpenAiStrictSchemaCompatibilityValidator.StrictSchemaCompatibilityException;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
+import com.hiresemble.ai.workflow.document.DocumentEvidenceOutputPolicy;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +66,7 @@ class OpenAiStrictSchemaCompatibilityValidatorTest {
     }
 
     @Test
-    void evidenceWarningIsRequiredAndNullableInTheGeneratedSchema() throws Exception {
+    void evidenceSchemaContainsOnlyModelOwnedFieldsAndCarriesPolicyDescriptions() throws Exception {
         String schema = new StrictStructuredOutputSchemaGenerator(OBJECT_MAPPER)
                 .generate(DocumentIngestionWorkflow.EvidenceCandidateBatch.class);
         var root = OBJECT_MAPPER.readTree(schema);
@@ -74,6 +75,17 @@ class OpenAiStrictSchemaCompatibilityValidatorTest {
 
         assertThat(candidate.path("required").toString()).contains("validationWarning");
         assertThat(warning.path("type").toString()).contains("string", "null");
+        assertThat(root.path("properties").has("documentId")).isFalse();
+        assertThat(root.path("properties").has("sourceRevision")).isFalse();
+        assertThat(candidate.path("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "evidenceCategory", "title", "content", "confidence",
+                        "sourceChunkRefs", "validationWarning");
+        assertThat(candidate.path("properties").has("metadata")).isFalse();
+        assertThat(candidate.path("properties").path("sourceChunkRefs").path("description").asText())
+                .isEqualTo(DocumentEvidenceOutputPolicy.SOURCE_REFS_DESCRIPTION);
+        assertThat(warning.path("description").asText())
+                .isEqualTo(DocumentEvidenceOutputPolicy.WARNING_DESCRIPTION);
     }
 
     @Test

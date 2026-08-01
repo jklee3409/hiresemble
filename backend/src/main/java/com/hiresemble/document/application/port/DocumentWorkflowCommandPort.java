@@ -1,6 +1,7 @@
 package com.hiresemble.document.application.port;
 
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
+import com.hiresemble.document.application.model.DocumentEvidenceApplyResult;
 import com.hiresemble.document.domain.model.DocumentRecords.ChunkDraft;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentChunkRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
@@ -35,7 +36,7 @@ public interface DocumentWorkflowCommandPort {
 
     void beginEvidenceExtraction(UUID userId, UUID documentId, UUID agentRunId);
 
-    EvidenceApplyResult applyEvidenceCandidates(
+    DocumentEvidenceApplyResult applyEvidenceCandidates(
             UUID userId,
             UUID documentId,
             UUID agentRunId,
@@ -48,9 +49,4 @@ public interface DocumentWorkflowCommandPort {
 
     void compensateToStableState(UUID userId, UUID documentId, UUID agentRunId);
 
-    record EvidenceApplyResult(List<UUID> appliedEvidenceIds, int rejectedCount) {
-        public EvidenceApplyResult {
-            appliedEvidenceIds = List.copyOf(appliedEvidenceIds);
-        }
-    }
 }

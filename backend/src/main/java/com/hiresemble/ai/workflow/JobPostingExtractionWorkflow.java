@@ -7,6 +7,7 @@ import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
@@ -86,6 +87,7 @@ public final class JobPostingExtractionWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.JOB_POSTING_EXTRACTION,
                 CanonicalWorkflowDefinitions.JOB_POSTING_EXTRACTION_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(FETCH_JOB_PAGE, new FetchJobPageExecutor()),
                         step(SANITIZE_PAGE_TEXT, new SanitizePageTextExecutor()),
@@ -1095,10 +1097,10 @@ public final class JobPostingExtractionWorkflow {
     }
 
     private AiExecutionException structuredFailure(String code) {
-        return AiExecutionException.retryable(
-                FailureKind.STRUCTURED_OUTPUT,
+        return AiExecutionException.deterministicStructuredOutput(
                 code,
-                "채용 공고 추출 결과 형식을 확인하지 못했습니다.");
+                "채용 공고 추출 결과 형식을 확인하지 못했습니다.",
+                ValidationPhase.JAVA_RECORD);
     }
 
     private record JobState(WorkflowSnapshot job, UUID agentRunId) {}

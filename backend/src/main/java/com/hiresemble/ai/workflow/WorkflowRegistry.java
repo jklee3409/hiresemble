@@ -130,6 +130,10 @@ public final class WorkflowRegistry {
         }
     }
 
+    /**
+     * {@code maxModelCalls} caps provider calls inside one persisted step attempt. Automatic
+     * retry attempts are a separate orchestrator policy and count every provider invocation.
+     */
     public record StepDefinition(
             String stepKey,
             String agentName,
@@ -180,10 +184,14 @@ public final class WorkflowRegistry {
     public record ExecutableWorkflowContribution(
             WorkflowType type,
             String version,
+            TerminalPartialPolicy terminalPartialPolicy,
             List<ExecutableWorkflowStep> steps) {
         public ExecutableWorkflowContribution {
             Objects.requireNonNull(type, "type");
             requireText(version, 50, "version");
+            if (terminalPartialPolicy == null) {
+                throw new WorkflowConfigurationException("AI_WORKFLOW_PARTIAL_POLICY_MISSING");
+            }
             steps = steps == null ? List.of() : List.copyOf(steps);
             if (steps.isEmpty()) {
                 throw new WorkflowConfigurationException("AI_WORKFLOW_EXECUTABLE_EMPTY");

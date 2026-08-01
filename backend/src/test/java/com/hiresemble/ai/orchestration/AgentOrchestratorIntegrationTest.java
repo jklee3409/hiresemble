@@ -56,6 +56,7 @@ import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.WorkflowRegistry.StepDefinition;
 import com.hiresemble.ai.workflow.WorkflowRegistry.WorkflowDefinition;
+import com.hiresemble.ai.workflow.TerminalPartialPolicy;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainApplyPlan;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.GatewayInvocation;
@@ -242,6 +243,39 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void terminalPartialPolicyCanCompleteFailedScopesAsSuccessfulPartialResult() {
+        UUID succeededQuestionId = UUID.randomUUID();
+        UUID failedQuestionId = UUID.randomUUID();
+        UUID answerVersionId = UUID.randomUUID();
+        WorkflowLaunchResult launch = workflowLauncher.launch(
+                new WorkflowLaunchCommand(
+                        userId,
+                        WorkflowType.COVER_LETTER_GENERATION,
+                        FAN_OUT_WORKFLOW_VERSION,
+                        "8".repeat(64),
+                        objectMapper.createObjectNode().put("fixtureRef", "partial-success"),
+                        AiQualityMode.BALANCED,
+                        BigDecimal.ZERO.setScale(6),
+                        null,
+                        null));
+
+        execute(
+                launch.agentRunId(),
+                fanOutOrchestrator(
+                        succeededQuestionId,
+                        failedQuestionId,
+                        answerVersionId,
+                        TerminalPartialPolicy.succeed()));
+
+        AgentRunSnapshot completed = run(launch.agentRunId());
+        assertThat(completed.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(completed.safeError()).isNull();
+        assertThat(completed.retryable()).isFalse();
+        assertThat(completed.partialResult().failedScopeKeys())
+                .containsExactly(failedQuestionId.toString());
+    }
+
+    @Test
     void transientFailureRetriesWithinThreeAttemptsAndExhaustionFailsSafely() {
         chatGateway.failuresBeforeSuccess.set(1);
         UUID successfulRun = launch(AiQualityMode.ECONOMY, INPUT_HASH).agentRunId();
@@ -277,6 +311,9 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(run(runId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
         assertThat(chatGateway.products).containsExactly("low", "balanced");
+        assertThat(chatGateway.instructions.get(1))
+                .contains("outside the supplied context")
+                .doesNotContain("fixture-secret");
         assertThat(run(runId).steps().stream()
                 .filter(step -> step.stepKey().equals("TRANSFORM_FIXTURE"))
                 .map(step -> step.attempt() + ":" + step.status()))
@@ -292,9 +329,9 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
         AgentRunSnapshot predecessor = run(predecessorId);
         assertThat(predecessor.status()).isEqualTo(AgentRunStatus.FAILED);
-        assertThat(predecessor.safeError().code()).isEqualTo("AI_STRUCTURED_OUTPUT_INVALID");
+        assertThat(predecessor.safeError().code()).isEqualTo("AI_SO_WORKFLOW_CONTEXT_INVALID");
         assertThat(predecessor.steps().stream()
-                .filter(step -> step.stepKey().equals("TRANSFORM_FIXTURE"))).hasSize(3);
+                .filter(step -> step.stepKey().equals("TRANSFORM_FIXTURE"))).hasSize(2);
 
         chatGateway.invalidResponsesBeforeSuccess.set(0);
         UUID successorId = retryPort.retry(userId, predecessorId, "fixture-retry-0001").agentRunId();
@@ -625,6 +662,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 new FixtureStepExecutor("APPLY_FIXTURE", false, false, beforeApplyProjection));
         ExecutableWorkflowContribution contribution = new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_GENERATION, WORKFLOW_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         new ExecutableWorkflowStep("LOAD_FIXTURE", executors.get(0)),
                         new ExecutableWorkflowStep("TRANSFORM_FIXTURE", executors.get(1)),
@@ -662,6 +700,21 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
             UUID succeededQuestionId,
             UUID failedQuestionId,
             UUID answerVersionId) {
+        return fanOutOrchestrator(
+                succeededQuestionId,
+                failedQuestionId,
+                answerVersionId,
+                TerminalPartialPolicy.fail(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다.",
+                        TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES));
+    }
+
+    private AgentOrchestrator fanOutOrchestrator(
+            UUID succeededQuestionId,
+            UUID failedQuestionId,
+            UUID answerVersionId,
+            TerminalPartialPolicy partialPolicy) {
         WorkflowDefinition fanOut = new WorkflowDefinition(
                 WorkflowType.COVER_LETTER_GENERATION,
                 FAN_OUT_WORKFLOW_VERSION,
@@ -687,6 +740,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 new ExecutableWorkflowContribution(
                         WorkflowType.COVER_LETTER_GENERATION,
                         FAN_OUT_WORKFLOW_VERSION,
+                        partialPolicy,
                         List.of(new ExecutableWorkflowStep(
                                 "WRITE_ANSWER", executor)));
         List<WorkflowDefinition> definitions =
@@ -1068,6 +1122,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         private final AtomicInteger failuresBeforeSuccess = new AtomicInteger();
         private final AtomicInteger invalidResponsesBeforeSuccess = new AtomicInteger();
         private final List<String> products = new java.util.concurrent.CopyOnWriteArrayList<>();
+        private final List<String> instructions = new java.util.concurrent.CopyOnWriteArrayList<>();
         private final CountDownLatch entered = new CountDownLatch(1);
         private final CountDownLatch release = new CountDownLatch(1);
         private volatile boolean block;
@@ -1076,6 +1131,7 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             products.add(request.productKey());
+            instructions.add(request.instructions());
             entered.countDown();
             if (block) {
                 try {
@@ -1096,7 +1152,10 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                         "AI 공급자 연결이 일시적으로 불안정합니다.");
             }
             if (invalidResponsesBeforeSuccess.getAndUpdate(value -> value > 0 ? value - 1 : value) > 0) {
-                return new AiGatewayResponse("{\"unexpected\":true}", zeroUsage(request));
+                return new AiGatewayResponse(
+                        "{\"resultRef\":\"safe-ref\",\"resultHash\":\""
+                                + OUTPUT_HASH + "\",\"valid\":false}",
+                        zeroUsage(request));
             }
             return successResponse(zeroUsage(request));
         }

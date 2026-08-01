@@ -84,6 +84,17 @@ class CoverLetterGenerationWorkflowTest {
             new PromptRegistry(CoverLetterGenerationPromptDefinitions.all());
 
     @Test
+    void contributionKeepsCoverLetterSpecificTerminalPartialFailurePolicy() {
+        var policy = fixture().workflow.contribution().terminalPartialPolicy();
+
+        assertThat(policy.outcome()).isEqualTo(TerminalPartialPolicy.Outcome.FAILED);
+        assertThat(policy.safeErrorCode())
+                .isEqualTo("COVER_LETTER_GENERATION_PARTIAL_FAILURE");
+        assertThat(policy.retryPolicy())
+                .isEqualTo(TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES);
+    }
+
+    @Test
     void twoQuestionApplyUsesFrozenBaseCasAndRunScopedMaterial() {
         Fixture fixture = fixture();
         Execution execution = executeUntilApply(fixture);

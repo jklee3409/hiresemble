@@ -296,17 +296,10 @@ class P4BrowserE2eTest extends PostgresIntegrationTest {
                     "PROJECT",
                     "검토 대기 근거",
                     grounded,
-                    List.of(new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            "source",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING,
-                            "p4-browser-fake")),
                     new BigDecimal("0.900"),
-                    List.of(UUID.fromString(first.path("chunkId").asText())),
-                    request.input().path("sourceRevision").asLong(),
+                    List.of(first.path("chunkRef").asText()),
                     null);
             var batch = new DocumentIngestionWorkflow.EvidenceCandidateBatch(
-                    UUID.fromString(request.input().path("documentId").asText()),
-                    request.input().path("sourceRevision").asLong(),
                     List.of(candidate));
             try {
                 return new AiGatewayResponse(

@@ -1,13 +1,14 @@
 package com.hiresemble.profile.application.port;
 
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
+import com.hiresemble.document.application.model.DocumentEvidenceApplyResult;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 public interface DocumentEvidenceCommandPort {
 
-    ApplyResult applyCandidates(
+    DocumentEvidenceApplyResult applyCandidates(
             UUID userId,
             UUID documentId,
             long sourceRevision,
@@ -16,9 +17,4 @@ public interface DocumentEvidenceCommandPort {
 
     void handleDocumentDeletion(UUID userId, UUID documentId, Instant deletedAt);
 
-    record ApplyResult(List<UUID> appliedEvidenceIds, int rejectedCount) {
-        public ApplyResult {
-            appliedEvidenceIds = List.copyOf(appliedEvidenceIds);
-        }
-    }
 }

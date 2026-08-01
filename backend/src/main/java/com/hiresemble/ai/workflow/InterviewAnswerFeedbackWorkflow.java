@@ -62,6 +62,7 @@ public final class InterviewAnswerFeedbackWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.INTERVIEW_ANSWER_FEEDBACK,
                 CanonicalWorkflowDefinitions.INTERVIEW_ANSWER_FEEDBACK_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(LOAD_ANSWER_VERSION, new LoadAnswerExecutor()),
                         step(BUILD_FEEDBACK_CONTEXT, new BuildContextExecutor()),

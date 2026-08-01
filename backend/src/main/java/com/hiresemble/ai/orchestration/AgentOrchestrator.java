@@ -46,6 +46,7 @@ import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.WorkflowRegistry.StepDefinition;
 import com.hiresemble.ai.workflow.WorkflowRegistry.WorkflowDefinition;
 import com.hiresemble.ai.workflow.WorkflowRegistry.WorkflowConfigurationException;
+import com.hiresemble.ai.workflow.TerminalPartialPolicy;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainApplyPlan;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainStepCompletion;
@@ -329,7 +330,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
 
         AgentRunSnapshot completed = current(claimed.run().userId(), claimed.run().id());
         if (partial.hasFailures()) {
-            completePartialFailure(completed, claimed.claimToken(), partial);
+            completePartialResult(
+                    completed,
+                    claimed.claimToken(),
+                    partial,
+                    contribution.terminalPartialPolicy());
             return;
         }
         budgetGuard.settleSuccess(completed, clock.instant());
@@ -507,6 +512,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         int firstAttempt = nextAttempt(run, stepDefinition.stepKey(), input.scopeKey());
         ModelTier previousTier = null;
         FailureKind previousFailure = null;
+        String correctionGuidance = null;
 
         for (int attempt = firstAttempt; attempt <= MAX_ATTEMPTS; attempt++) {
             run = current(run.userId(), run.id());
@@ -523,6 +529,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     run, claimed.claimToken(), stepDefinition, prompt, input, inputHash,
                     executionContext.contextSnapshot().modelPolicyVersion(), attempt);
             boolean activeStep = true;
+            String currentCorrectionGuidance = correctionGuidance;
             try {
                 AgentRunSnapshot beforeCall = current(run.userId(), run.id());
                 BigDecimal remainingWorstCase = beforeCall.estimatedCostUsd()
@@ -533,7 +540,12 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 AiGatewayResponse response = leaseHeartbeatPort.maintain(
                         run.userId(), run.id(), claimed.claimToken(),
                         () -> executor.invoke(new GatewayInvocation(
-                                input, route, prompt, chatGateway, embeddingGateway, webSearchGateway,
+                                input,
+                                route,
+                                withCorrectionGuidance(prompt, currentCorrectionGuidance),
+                                chatGateway,
+                                embeddingGateway,
+                                webSearchGateway,
                                 executionContext)));
                 recordUsages(run, claimed.claimToken(), step, route, response.usages());
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
@@ -613,8 +625,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 previousFailure = exception.failureKind();
                 boolean canRetry = exception.retryable()
                         && stepDefinition.retryableFailures().contains(exception.failureKind())
-                        && attempt < MAX_ATTEMPTS;
+                        && attempt < Math.min(MAX_ATTEMPTS, exception.maxAutomaticAttempts());
                 if (!canRetry) throw exception;
+                correctionGuidance = exception.correctionGuidance();
             }
         }
         throw AiExecutionException.nonRetryable(
@@ -815,10 +828,34 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         return failed;
     }
 
-    private void completePartialFailure(
+    private void completePartialResult(
             AgentRunSnapshot run,
             UUID claimToken,
-            PartialAccumulator partial) {
+            PartialAccumulator partial,
+            TerminalPartialPolicy policy) {
+        PartialResult partialResult = partial.valueOrNull();
+        TerminalPartialPolicy.Decision decision =
+                policy.decide(partialResult, partial.retryable());
+        if (decision.outcome() == TerminalPartialPolicy.Outcome.SUCCEEDED) {
+            budgetGuard.settleSuccess(run, clock.instant());
+            AgentRunSnapshot settled = current(run.userId(), run.id());
+            runStatePort.transition(new AgentRunTransitionCommand(
+                    settled.userId(),
+                    settled.id(),
+                    claimToken,
+                    settled.stateVersion(),
+                    AgentRunStatus.SUCCEEDED,
+                    settled.currentStep(),
+                    100,
+                    settled.highestModelTierUsed(),
+                    settled.actualCostUsd(),
+                    false,
+                    null,
+                    null,
+                    partialResult,
+                    clock.instant()));
+            return;
+        }
         budgetGuard.releaseUnused(run, clock.instant());
         AgentRunSnapshot released = current(run.userId(), run.id());
         runStatePort.transition(new AgentRunTransitionCommand(
@@ -831,12 +868,12 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 100,
                 released.highestModelTierUsed(),
                 released.actualCostUsd(),
-                partial.retryable(),
+                decision.retryable(),
                 null,
                 new SafeError(
-                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
-                        "일부 자기소개서 문항을 생성하지 못했습니다."),
-                partial.valueOrNull(),
+                        decision.safeErrorCode(),
+                        decision.safeMessage()),
+                partialResult,
                 clock.instant()));
     }
 
@@ -930,6 +967,24 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 || prompt.maxModelCalls() != step.maxModelCalls()) {
             throw new WorkflowConfigurationException("AI_PROMPT_STEP_CONTRACT_MISMATCH");
         }
+    }
+
+    private PromptDefinition withCorrectionGuidance(
+            PromptDefinition prompt, String correctionGuidance) {
+        if (correctionGuidance == null) return prompt;
+        return new PromptDefinition(
+                prompt.key(),
+                prompt.promptVersion(),
+                prompt.inputType(),
+                prompt.outputType(),
+                prompt.outputSchemaVersion(),
+                prompt.toolAllowlist(),
+                prompt.maxInputTokens(),
+                prompt.maxOutputTokens(),
+                prompt.maxModelCalls(),
+                prompt.instructions()
+                        + "\nCorrection for this bounded retry:\n"
+                        + correctionGuidance);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

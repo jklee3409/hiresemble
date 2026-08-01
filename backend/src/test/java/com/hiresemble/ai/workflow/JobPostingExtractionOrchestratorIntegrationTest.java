@@ -195,7 +195,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
-    void invalidStructuredOutputFailsRetryablyAndTerminalRetryReusesSanitizedStep() {
+    void repairableSemanticOutputFailsAfterOneGuidedRetryAndTerminalRetryReusesSanitizedStep() {
         chatGateway.mode = ChatMode.INVALID_STRUCTURED;
         JobCreationAccepted accepted = create(null, null, null);
 
@@ -205,10 +205,10 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         JobRecord failedJob = jobService.detail(userId, accepted.jobId());
         assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
         assertThat(failed.retryable()).isTrue();
-        assertThat(failed.safeError().code()).isEqualTo("AI_STRUCTURED_OUTPUT_INVALID");
+        assertThat(failed.safeError().code()).isEqualTo("AI_SO_JAVA_RECORD_INVALID");
         assertThat(failedJob.extractionStatus()).isEqualTo(JobExtractionStatus.FAILED);
         assertThat(failedJob.status()).isEqualTo(JobStatus.IN_PROGRESS);
-        assertThat(chatGateway.calls.get()).isEqualTo(3);
+        assertThat(chatGateway.calls.get()).isEqualTo(2);
         assertThat(checkpoints(failed.id())).doesNotContain("RAW_PROVIDER_RESPONSE_MARKER");
 
         chatGateway.mode = ChatMode.SUCCESS;
@@ -443,10 +443,16 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             return switch (mode) {
                 case SUCCESS -> new AiGatewayResponse(json(successOutput(), true), java.util.List.of());
                 case INVALID_STRUCTURED -> new AiGatewayResponse(
-                        """
-                        {"companyName":"AI Company",
-                         "unexpected":"RAW_PROVIDER_RESPONSE_MARKER"}
-                        """,
+                        json(new ExtractedJobFields(
+                                "RAW_PROVIDER_RESPONSE_MARKER",
+                                "AI Posting Title",
+                                "AI Position",
+                                "",
+                                null,
+                                null,
+                                "SOFTWARE_ENGINEERING",
+                                "FULL_TIME",
+                                "Seoul"), true),
                         java.util.List.of());
                 case RETRYABLE_TIMEOUT -> throw AiExecutionException.retryable(
                         FailureKind.TIMEOUT,

@@ -1,6 +1,7 @@
 package com.hiresemble.document.application.service;
 
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
+import com.hiresemble.document.application.model.DocumentEvidenceApplyResult;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.document.application.port.ObjectStoragePort;
@@ -249,7 +250,7 @@ public class DocumentWorkflowService
 
     @Override
     @Transactional
-    public EvidenceApplyResult applyEvidenceCandidates(
+    public DocumentEvidenceApplyResult applyEvidenceCandidates(
             UUID userId,
             UUID documentId,
             UUID agentRunId,
@@ -259,7 +260,7 @@ public class DocumentWorkflowService
         var applied = evidencePort.applyCandidates(
                 userId, documentId, document.sourceRevision(), candidates, clock.instant());
         store.markEvidenceSucceeded(userId, documentId, agentRunId, clock.instant());
-        return new EvidenceApplyResult(applied.appliedEvidenceIds(), applied.rejectedCount());
+        return applied;
     }
 
     @Override

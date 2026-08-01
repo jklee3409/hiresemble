@@ -15,6 +15,7 @@ import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
 import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
+import com.hiresemble.document.application.model.DocumentEvidenceRejectionReason;
 import com.hiresemble.document.application.service.DocumentWorkflowService;
 import com.hiresemble.document.infrastructure.worker.ObjectDeletionOutboxService;
 import com.hiresemble.document.application.port.ObjectStorageException;
@@ -304,6 +305,9 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                         List.of(chunks.getFirst().id()), 1, null)));
         assertThat(result.appliedEvidenceIds()).hasSize(1);
         assertThat(result.rejectedCount()).isEqualTo(2);
+        assertThat(result.rejectionReasonCounts()).containsOnly(
+                Map.entry(DocumentEvidenceRejectionReason.UNGROUNDED_NUMBER, 1),
+                Map.entry(DocumentEvidenceRejectionReason.EDUCATION_CATEGORY, 1));
         assertThat(workflow.finalizeDocument(owner.userId(), documentId, runId).evidenceExtractionStatus())
                 .isEqualTo(EvidenceExtractionStatus.SUCCEEDED);
         assertThat(jdbcTemplate.queryForObject(

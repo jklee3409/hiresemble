@@ -6,10 +6,16 @@ import static org.mockito.Mockito.mock;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
+import com.hiresemble.ai.validation.StructuredOutputValidationException;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry;
+import com.hiresemble.ai.workflow.TerminalPartialPolicy;
+import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
+import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -43,6 +49,20 @@ class DocumentIngestionWorkflowContractTest {
     }
 
     @Test
+    void documentContributionRejectsUnexpectedFailedScopes() {
+        var contribution = new DocumentIngestionWorkflow(
+                        mock(DocumentWorkflowQueryPort.class),
+                        mock(DocumentWorkflowCommandPort.class),
+                        new ObjectMapper())
+                .contribution();
+
+        assertThat(contribution.terminalPartialPolicy().outcome())
+                .isEqualTo(TerminalPartialPolicy.Outcome.FAILED);
+        assertThat(contribution.terminalPartialPolicy().safeErrorCode())
+                .isEqualTo("AI_UNEXPECTED_PARTIAL_RESULT");
+    }
+
+    @Test
     void promptAndStructuredSchemaMetadataMatchEveryCanonicalStep() {
         var definition = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value -> value.type() == WorkflowType.DOCUMENT_INGESTION)
@@ -63,7 +83,7 @@ class DocumentIngestionWorkflowContractTest {
     }
 
     @Test
-    void evidencePromptTreatsMaskedChunksAsUntrustedAndForbidsInventedFacts() {
+    void evidencePromptAndPolicyShareTheCompleteSemanticContract() {
         PromptRegistry prompts = new PromptRegistry(DocumentIngestionPromptDefinitions.all());
         String instructions = prompts.require(
                         WorkflowType.DOCUMENT_INGESTION,
@@ -72,56 +92,124 @@ class DocumentIngestionWorkflowContractTest {
                 .instructions();
 
         assertThat(instructions)
-                .contains("masked chunk", "untrusted", "Do not invent")
-                .doesNotContain("API key", "storage key");
+                .isEqualTo(DocumentEvidenceOutputPolicy.instructions())
+                .contains(
+                        "exactly one object with a candidates array",
+                        "maxCandidates",
+                        "unique references",
+                        "validationWarning must be null",
+                        "Do not invent",
+                        "Do not extract education",
+                        "Do not output document IDs",
+                        "metadata")
+                .doesNotContain("sourceChunkIds", "sourceRevision");
+        var prompt = prompts.require(
+                WorkflowType.DOCUMENT_INGESTION,
+                CanonicalWorkflowDefinitions.VERSION,
+                DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES);
+        assertThat(prompt.maxOutputTokens())
+                .isEqualTo(DocumentEvidenceOutputPolicy.MAX_OUTPUT_TOKENS);
     }
 
     @Test
-    void providerMetadataEntriesPreserveTheExistingScalarMapContract() {
-        DocumentIngestionWorkflow workflow = workflow();
-
-        Map<String, Object> metadata = workflow.mapEvidenceMetadata(List.of(
-                entry("label", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "project"),
-                entry("score", DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER, "1.25"),
-                entry("active", DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN, "true"),
-                entry("unknown", DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL, "")));
-
-        assertThat(metadata).containsEntry("label", "project")
-                .containsEntry("score", new java.math.BigDecimal("1.25"))
-                .containsEntry("active", true)
-                .containsEntry("unknown", null);
+    void candidateCapScalesWithChunkCountAndStopsAtTheAbsoluteLimit() {
+        assertThat(DocumentEvidenceOutputPolicy.maxCandidates(1)).isEqualTo(2);
+        assertThat(DocumentEvidenceOutputPolicy.maxCandidates(4)).isEqualTo(8);
+        assertThat(DocumentEvidenceOutputPolicy.maxCandidates(20)).isEqualTo(12);
     }
 
     @Test
-    void providerMetadataRejectsDuplicateKeysAndInvalidTaggedValues() {
-        DocumentIngestionWorkflow workflow = workflow();
+    void localRefsResolveOnlyThroughTheTrustedSameRevisionMap() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
 
-        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
-                        entry("source", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "document"),
-                        entry("source", DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER, "1"))))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
-                        entry("active", DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN, "yes"))))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
-                        entry("unknown", DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL, "not-empty"))))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
-                        entry("apiKey", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "redacted"))))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(DocumentEvidenceOutputPolicy.resolveSourceChunkRefs(
+                        List.of("C2", "C1"), Map.of("C1", first, "C2", second)))
+                .containsExactly(second, first);
+
+        assertThatThrownBy(() -> DocumentEvidenceOutputPolicy.resolveSourceChunkRefs(
+                        List.of("C3"), Map.of("C1", first, "C2", second)))
+                .isInstanceOfSatisfying(
+                        StructuredOutputValidationException.class,
+                        error -> assertThat(error.safeReason())
+                                .isEqualTo("AI_SO_WORKFLOW_DOCUMENT_SOURCE_REF_UNKNOWN"));
     }
 
-    private DocumentIngestionWorkflow workflow() {
-        return new DocumentIngestionWorkflow(
-                mock(com.hiresemble.document.application.port.DocumentWorkflowQueryPort.class),
-                mock(com.hiresemble.document.application.port.DocumentWorkflowCommandPort.class),
-                new ObjectMapper());
+    @Test
+    void semanticPolicyRejectsDuplicateBlankUnknownAndOutOfRangeFieldsWithoutValues() {
+        var valid = candidate(List.of("C1"), null);
+        DocumentEvidenceOutputPolicy.validateBatch(
+                new DocumentIngestionWorkflow.EvidenceCandidateBatch(List.of(valid)), 2);
+
+        assertReason(candidate(List.of("C1", "C1"), null),
+                "AI_SO_RECORD_DOCUMENT_SOURCE_REF_INVALID");
+        assertReason(candidate(List.of(""), null),
+                "AI_SO_RECORD_DOCUMENT_SOURCE_REF_INVALID");
+        assertReason(candidate(List.of("C1"), " "),
+                "AI_SO_RECORD_DOCUMENT_WARNING_INVALID");
+        assertThatThrownBy(() -> DocumentEvidenceOutputPolicy.validateBatch(
+                        new DocumentIngestionWorkflow.EvidenceCandidateBatch(List.of(valid, valid, valid)),
+                        2))
+                .isInstanceOfSatisfying(
+                        StructuredOutputValidationException.class,
+                        error -> assertThat(error.safeReason())
+                                .isEqualTo("AI_SO_RECORD_DOCUMENT_CANDIDATE_LIMIT_EXCEEDED"));
     }
 
-    private DocumentIngestionWorkflow.EvidenceMetadataEntryOutput entry(
-            String key,
-            DocumentIngestionWorkflow.EvidenceMetadataValueType type,
-            String value) {
-        return new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(key, type, value);
+    @Test
+    void handWrittenJsonCoversEmptyBatchMultipleRefsNullableWarningAndSemanticFailure()
+            throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        var empty = mapper.readValue(
+                "{\"candidates\":[]}",
+                DocumentIngestionWorkflow.EvidenceCandidateBatch.class);
+        DocumentEvidenceOutputPolicy.validateBatch(empty, 2);
+
+        var valid = mapper.readValue("""
+                {"candidates":[{
+                  "evidenceCategory":"PROJECT",
+                  "title":"Synthetic title",
+                  "content":"Synthetic grounded evidence.",
+                  "confidence":0.95,
+                  "sourceChunkRefs":["C1","C2"],
+                  "validationWarning":null
+                }]}
+                """, DocumentIngestionWorkflow.EvidenceCandidateBatch.class);
+        DocumentEvidenceOutputPolicy.validateBatch(valid, 2);
+
+        var invalid = mapper.readValue("""
+                {"candidates":[{
+                  "evidenceCategory":"PROJECT",
+                  "title":"Synthetic title",
+                  "content":"Synthetic grounded evidence.",
+                  "confidence":1.01,
+                  "sourceChunkRefs":["C1"],
+                  "validationWarning":null
+                }]}
+                """, DocumentIngestionWorkflow.EvidenceCandidateBatch.class);
+        assertThatThrownBy(() -> DocumentEvidenceOutputPolicy.validateBatch(invalid, 2))
+                .isInstanceOfSatisfying(
+                        StructuredOutputValidationException.class,
+                        error -> assertThat(error.safeReason())
+                                .isEqualTo("AI_SO_RECORD_DOCUMENT_CONFIDENCE_INVALID"));
+    }
+
+    private void assertReason(
+            DocumentIngestionWorkflow.EvidenceCandidatePayload candidate, String reason) {
+        assertThatThrownBy(() -> DocumentEvidenceOutputPolicy.validateBatch(
+                        new DocumentIngestionWorkflow.EvidenceCandidateBatch(List.of(candidate)), 2))
+                .isInstanceOfSatisfying(
+                        StructuredOutputValidationException.class,
+                        error -> {
+                            assertThat(error.safeReason()).isEqualTo(reason);
+                            assertThat(error.getMessage()).doesNotContain("C1");
+                        });
+    }
+
+    private DocumentIngestionWorkflow.EvidenceCandidatePayload candidate(
+            List<String> refs, String warning) {
+        return new DocumentIngestionWorkflow.EvidenceCandidatePayload(
+                "PROJECT", "Synthetic title", "Synthetic grounded evidence.",
+                new BigDecimal("0.9"), refs, warning);
     }
 }

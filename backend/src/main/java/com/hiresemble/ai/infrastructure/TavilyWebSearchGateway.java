@@ -8,13 +8,14 @@ import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
 import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.WebSearchGateway;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchBatchOutput;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchHit;
 import com.hiresemble.ai.workflow.InterviewPreparationWorkflow.SearchPurpose;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
-import java.math.BigDecimal;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -264,10 +265,10 @@ public final class TavilyWebSearchGateway implements WebSearchGateway {
     }
 
     private AiExecutionException malformed() {
-        return AiExecutionException.retryable(
-                FailureKind.STRUCTURED_OUTPUT,
+        return AiExecutionException.deterministicStructuredOutput(
                 "AI_SEARCH_RESPONSE_INVALID",
-                "면접 조사 검색 결과 형식이 올바르지 않습니다.");
+                "면접 조사 검색 결과 형식이 올바르지 않습니다.",
+                ValidationPhase.JAVA_BINDING);
     }
 
     private AiPriceQuote requirePrice(SearchRequest request) {

@@ -92,6 +92,7 @@ public final class CoverLetterVerificationWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_VERIFICATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(LOAD_ANSWER_VERSION, new LoadAnswerExecutor()),
                         step(

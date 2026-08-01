@@ -6,6 +6,7 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
@@ -122,6 +123,7 @@ public final class JobAnalysisWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.JOB_ANALYSIS,
                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(BUILD_JOB_SNAPSHOT, new BuildSnapshotExecutor()),
                         step(EXTRACT_REQUIREMENTS, new ExtractRequirementsExecutor()),
@@ -1672,15 +1674,15 @@ public final class JobAnalysisWorkflow {
             }
             return List.copyOf(vector);
         } catch (RuntimeException exception) {
-            throw AiExecutionException.retryable(
-                    FailureKind.STRUCTURED_OUTPUT,
+            throw AiExecutionException.deterministicStructuredOutput(
                     "JOB_ANALYSIS_EMBEDDING_OUTPUT_INVALID",
-                    "경험 정보 검색 결과를 확인하지 못했습니다.");
+                    "경험 정보 검색 결과를 확인하지 못했습니다.",
+                    ValidationPhase.JAVA_BINDING);
         } catch (Exception exception) {
-            throw AiExecutionException.retryable(
-                    FailureKind.STRUCTURED_OUTPUT,
+            throw AiExecutionException.deterministicStructuredOutput(
                     "JOB_ANALYSIS_EMBEDDING_OUTPUT_INVALID",
-                    "경험 정보 검색 결과를 확인하지 못했습니다.");
+                    "경험 정보 검색 결과를 확인하지 못했습니다.",
+                    ValidationPhase.JAVA_BINDING);
         }
     }
 

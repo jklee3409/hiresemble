@@ -8,6 +8,7 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
 import com.hiresemble.ai.validation.ProviderNullable;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
@@ -124,6 +125,10 @@ public final class CoverLetterGenerationWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_GENERATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                TerminalPartialPolicy.fail(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다.",
+                        TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES),
                 List.of(
                         step(BUILD_GENERATION_CONTEXT, new BuildContextExecutor()),
                         step(PLAN_QUESTIONS, new PlanQuestionsExecutor()),
@@ -1706,10 +1711,10 @@ public final class CoverLetterGenerationWorkflow {
             }
             return output.vectors().getFirst();
         } catch (RuntimeException exception) {
-            throw AiExecutionException.retryable(
-                    FailureKind.STRUCTURED_OUTPUT,
+            throw AiExecutionException.deterministicStructuredOutput(
                     "AI_STRUCTURED_OUTPUT_INVALID",
-                    "AI 결과 형식을 확인하지 못했습니다.");
+                    "AI 결과 형식을 확인하지 못했습니다.",
+                    ValidationPhase.JAVA_BINDING);
         }
     }
 

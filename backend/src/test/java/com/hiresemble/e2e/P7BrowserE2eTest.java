@@ -437,17 +437,10 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     "PROJECT",
                     "P7 approved project evidence",
                     grounded,
-                    List.of(new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            "source",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING,
-                            "p7-browser-fake")),
                     new BigDecimal("0.900"),
-                    List.of(UUID.fromString(first.path("chunkId").asText())),
-                    input.path("sourceRevision").asLong(),
+                    List.of(first.path("chunkRef").asText()),
                     null);
             return new DocumentIngestionWorkflow.EvidenceCandidateBatch(
-                    UUID.fromString(input.path("documentId").asText()),
-                    input.path("sourceRevision").asLong(),
                     List.of(candidate));
         }
 

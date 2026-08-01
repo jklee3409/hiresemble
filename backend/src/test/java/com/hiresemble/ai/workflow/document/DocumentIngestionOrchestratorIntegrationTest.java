@@ -43,11 +43,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Import(DocumentIngestionOrchestratorIntegrationTest.FakePorts.class)
-@TestPropertySource(properties = "hiresemble.ai.runtime.enabled=true")
+@TestPropertySource(properties = {
+        "hiresemble.ai.runtime.enabled=true",
+        "hiresemble.document.ai-cost.estimated-cost-usd=0.300000",
+        "hiresemble.document.ai-cost.price-version=2026073101"
+})
 class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired private DocumentApplicationService documentService;
@@ -118,18 +121,18 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         String metadata = jdbcTemplate.queryForObject(
                 "SELECT metadata::text FROM profile_evidence WHERE document_id=?",
                 String.class, document.id());
-        assertThat(metadata)
-                .contains("\"source\": \"document\"", "\"score\": 1.25", "\"active\": true")
-                .contains("\"empty\": null")
-                .doesNotContain("validationWarning");
+        assertThat(metadata).isEqualTo("{}").doesNotContain("validationWarning");
         assertThat(run.partialResult()).isNotNull();
         assertThat(run.partialResult().resultRefs()).hasSize(1);
 
         assertThat(embeddingGateway.capturedMaskedInputs).isNotEmpty()
                 .allSatisfy(value -> assertThat(value)
                         .doesNotContain("owner@example.com", "super-secret-value"));
-        assertThat(chatGateway.lastInput).doesNotContain(
-                "owner@example.com", "super-secret-value", "api_key=");
+        assertThat(chatGateway.lastInput)
+                .doesNotContain(
+                        "owner@example.com", "super-secret-value", "api_key=",
+                        "documentId", "sourceRevision", "chunkId")
+                .contains("chunkRef", "C1", "maxCandidates");
         String checkpoints = jdbcTemplate.queryForObject(
                 """
                 SELECT coalesce(string_agg(input_refs::text || coalesce(output_json::text,''), ' '),'')
@@ -139,6 +142,88 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
                 run.id());
         assertThat(checkpoints).doesNotContain(
                 "owner@example.com", "super-secret-value", raw);
+    }
+
+    @Test
+    void partialCandidateRejectionIsSafeFilteringAndRunStillSucceeds() {
+        chatGateway.mode = ChatMode.PARTIAL_REJECTION;
+        var accepted = upload(largeDocumentForCandidates(), "document-partial-filter-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        var document = documentService.detail(userId, accepted.documentId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(run.progressPercent()).isEqualTo(100);
+        assertThat(run.safeError()).isNull();
+        assertThat(run.steps()).allSatisfy(step ->
+                assertThat(step.status().name()).isEqualTo("SUCCEEDED"));
+        assertThat(document.parseStatus()).isEqualTo(DocumentParseStatus.PARSED);
+        assertThat(document.evidenceExtractionStatus())
+                .isEqualTo(EvidenceExtractionStatus.SUCCEEDED);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isEqualTo(4L);
+        assertApplySummary(accepted.agentRunId(), 6, 4, 2);
+        assertThat(run.partialResult()).isNotNull();
+        assertThat(run.partialResult().succeededScopeKeys()).isEmpty();
+        assertThat(run.partialResult().failedScopeKeys()).isEmpty();
+        assertThat(run.partialResult().resultRefs()).hasSize(4);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT output_json->'rejectionReasonCounts'->>'EDUCATION_CATEGORY' FROM agent_steps WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'",
+                String.class, accepted.agentRunId())).isEqualTo("1");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT output_json->'rejectionReasonCounts'->>'DUPLICATE' FROM agent_steps WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'",
+                String.class, accepted.agentRunId())).isEqualTo("1");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM agent_runs WHERE id=? AND error_code='COVER_LETTER_GENERATION_PARTIAL_FAILURE'",
+                Long.class, accepted.agentRunId())).isZero();
+    }
+
+    @Test
+    void allCandidatesAppliedProducesSuccessWithoutRejectionReasons() {
+        chatGateway.mode = ChatMode.ALL_APPLIED;
+        var accepted = upload(largeDocumentForCandidates(), "document-all-applied-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isEqualTo(4L);
+        assertApplySummary(accepted.agentRunId(), 4, 4, 0);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT output_json->'rejectionReasonCounts' = '{}'::jsonb FROM agent_steps WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'",
+                Boolean.class, accepted.agentRunId())).isTrue();
+    }
+
+    @Test
+    void allCandidatesRejectedStillCompletesDocumentWithNoEvidence() {
+        chatGateway.mode = ChatMode.ALL_REJECTED;
+        var accepted = upload(largeDocumentForCandidates(), "document-all-rejected-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        var document = documentService.detail(userId, accepted.documentId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(run.progressPercent()).isEqualTo(100);
+        assertThat(run.safeError()).isNull();
+        assertThat(document.parseStatus()).isEqualTo(DocumentParseStatus.PARSED);
+        assertThat(document.evidenceExtractionStatus())
+                .isEqualTo(EvidenceExtractionStatus.SUCCEEDED);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isZero();
+        assertApplySummary(accepted.agentRunId(), 3, 0, 3);
+        assertThat(run.partialResult()).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT output_json->'rejectionReasonCounts'->>'EDUCATION_CATEGORY' FROM agent_steps WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'",
+                String.class, accepted.agentRunId())).isEqualTo("2");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT output_json->'rejectionReasonCounts'->>'UNGROUNDED_NUMBER' FROM agent_steps WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'",
+                String.class, accepted.agentRunId())).isEqualTo("1");
     }
 
     @Test
@@ -192,7 +277,7 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         AgentRunSnapshot run = run(accepted.agentRunId());
         var document = documentService.detail(userId, accepted.documentId());
         assertThat(run.status()).isEqualTo(AgentRunStatus.FAILED);
-        assertThat(run.retryable()).isTrue();
+        assertThat(run.retryable()).isFalse();
         assertThat(run.safeError().message()).doesNotContain(
                 "failure@example.com", "failure-secret-value");
         assertThat(document.parseStatus()).isEqualTo(DocumentParseStatus.PARSED);
@@ -203,20 +288,93 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
                 "SELECT count(*) FROM document_chunks WHERE document_id=?",
                 Long.class, document.id())).isPositive();
         assertThat(chatGateway.calls.get()).isZero();
-        assertThat(embeddingGateway.calls.get()).isEqualTo(3);
+        assertThat(embeddingGateway.calls.get()).isEqualTo(1);
     }
 
     @Test
-    void invalidProviderMetadataIsRejectedBeforeDomainApply() {
-        chatGateway.invalidMetadata.set(true);
+    void unparseableOutputStopsAfterOnePaidAttemptAndPreservesDeterministicArtifacts() {
+        chatGateway.mode = ChatMode.MALFORMED_JSON;
         var accepted = upload(longDocument("masked@example.com", "secret=masked"),
-                "document-invalid-metadata-key");
+                "document-invalid-json-key");
 
         execute(accepted.agentRunId());
 
         AgentRunSnapshot run = run(accepted.agentRunId());
         assertThat(run.status()).isEqualTo(AgentRunStatus.FAILED);
-        assertThat(run.safeError().code()).isEqualTo("AI_STRUCTURED_OUTPUT_INVALID");
+        assertThat(run.retryable()).isFalse();
+        assertThat(run.safeError().code()).isEqualTo("AI_SO_JSON_NOT_PARSEABLE");
+        assertThat(chatGateway.calls.get()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM ai_usage_records
+                WHERE agent_run_id=? AND usage_type='CHAT'
+                """, Long.class, accepted.agentRunId())).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT actual_cost_usd FROM agent_runs WHERE id=?",
+                BigDecimal.class, accepted.agentRunId())).isEqualByComparingTo("0.001000");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM ai_budget_reservations WHERE agent_run_id=?",
+                String.class, accepted.agentRunId())).isEqualTo("RELEASED");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM document_chunks WHERE document_id=? AND embedding IS NOT NULL",
+                Long.class, accepted.documentId())).isPositive();
+        assertThat(documentService.text(userId, accepted.documentId()).maskedText()).isNotBlank();
+    }
+
+    @Test
+    void unknownLocalRefGetsOneGuidedRepairAttemptThenSucceedsWithBothUsages() {
+        chatGateway.mode = ChatMode.UNKNOWN_REF_ONCE;
+        var accepted = upload(longDocument("repair@example.com", "secret=repair"),
+                "document-source-ref-repair-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.calls.get()).isEqualTo(2);
+        assertThat(chatGateway.lastInstructions)
+                .contains("outside the supplied maskedChunks allowlist")
+                .doesNotContain("C999");
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM ai_usage_records
+                WHERE agent_run_id=? AND usage_type='CHAT'
+                """, Long.class, accepted.agentRunId())).isEqualTo(2L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT actual_cost_usd FROM agent_runs WHERE id=?",
+                BigDecimal.class, accepted.agentRunId())).isEqualByComparingTo("0.002000");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isEqualTo(1L);
+    }
+
+    @Test
+    void repeatedUnknownLocalRefStopsAfterTheSingleRepairAttemptAndKeepsLastReason() {
+        chatGateway.mode = ChatMode.UNKNOWN_REF_ALWAYS;
+        var accepted = upload(longDocument("bounded@example.com", "secret=bounded"),
+                "document-source-ref-bounded-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(run.safeError().code())
+                .isEqualTo("AI_SO_WORKFLOW_DOCUMENT_SOURCE_REF_UNKNOWN");
+        assertThat(run.steps().stream()
+                .filter(step -> step.stepKey().equals(
+                        DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES)))
+                .hasSize(2)
+                .allSatisfy(step -> assertThat(step.safeError().code())
+                        .isEqualTo("AI_SO_WORKFLOW_DOCUMENT_SOURCE_REF_UNKNOWN"));
+        assertThat(chatGateway.calls.get()).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM ai_usage_records
+                WHERE agent_run_id=? AND usage_type='CHAT'
+                """, Long.class, accepted.agentRunId())).isEqualTo(2L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT actual_cost_usd FROM agent_runs WHERE id=?",
+                BigDecimal.class, accepted.agentRunId())).isEqualByComparingTo("0.002000");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM profile_evidence WHERE document_id=?",
                 Long.class, accepted.documentId())).isZero();
@@ -259,6 +417,22 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         return runQuery.findByOwner(userId, runId).orElseThrow();
     }
 
+    private void assertApplySummary(
+            UUID runId, int candidateCount, int appliedCount, int rejectedCount) {
+        Map<String, Object> summary = jdbcTemplate.queryForMap("""
+                SELECT
+                    (output_json->>'candidateCount')::integer AS candidate_count,
+                    (output_json->>'appliedCount')::integer AS applied_count,
+                    (output_json->>'rejectedCount')::integer AS rejected_count
+                FROM agent_steps
+                WHERE agent_run_id=? AND step_key='APPLY_EVIDENCE_CANDIDATES'
+                """, runId);
+        assertThat(summary)
+                .containsEntry("candidate_count", candidateCount)
+                .containsEntry("applied_count", appliedCount)
+                .containsEntry("rejected_count", rejectedCount);
+    }
+
     private UUID seedUser() {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update("""
@@ -286,6 +460,10 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         return ("프로젝트에서 백엔드 기능을 설계하고 테스트 자동화를 개선했습니다. "
                 + "협업 과정에서 문제를 분석하고 안정적인 결과를 만들었습니다. "
                 + email + " " + credential + " ").repeat(4);
+    }
+
+    private String largeDocumentForCandidates() {
+        return longDocument("candidate@example.test", "safe synthetic material").repeat(12);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -371,9 +549,10 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
     static final class FakeChatGateway implements ChatGateway {
         private final ObjectMapper objectMapper;
         final AtomicInteger calls = new AtomicInteger();
-        final AtomicBoolean invalidMetadata = new AtomicBoolean();
         volatile String lastInput = "";
+        volatile String lastInstructions = "";
         volatile String warning;
+        volatile ChatMode mode = ChatMode.VALID;
 
         FakeChatGateway(ObjectMapper objectMapper) {
             this.objectMapper = objectMapper;
@@ -381,54 +560,98 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
 
         @Override
         public AiGatewayResponse chat(ChatRequest request) {
-            calls.incrementAndGet();
+            int call = calls.incrementAndGet();
             lastInput = request.input().toString();
-            JsonNode first = request.input().path("maskedChunks").get(0);
-            List<DocumentIngestionWorkflow.EvidenceMetadataEntryOutput> metadata = List.of(
-                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            "source",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING,
-                            "document"),
-                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            invalidMetadata.get() ? "source" : "score",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER,
-                            "1.25"),
-                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            "active",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN,
-                            "true"),
-                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
-                            "empty",
-                            DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL,
-                            ""));
+            lastInstructions = request.instructions();
+            if (mode == ChatMode.MALFORMED_JSON) {
+                return new AiGatewayResponse("{not-json", paidChatUsage());
+            }
+            String sourceRef = request.input().path("maskedChunks").get(0)
+                    .path("chunkRef").asText();
+            if (mode == ChatMode.UNKNOWN_REF_ALWAYS
+                    || (mode == ChatMode.UNKNOWN_REF_ONCE && call == 1)) {
+                sourceRef = "C999";
+            }
             var candidate = new DocumentIngestionWorkflow.EvidenceCandidatePayload(
                     "PROJECT",
                     "백엔드 프로젝트 수행",
                     "백엔드 기능을 설계하고 테스트 자동화를 개선했습니다.",
-                    metadata,
                     new BigDecimal("0.900"),
-                    List.of(UUID.fromString(first.path("chunkId").asText())),
-                    request.input().path("sourceRevision").asLong(),
+                    List.of(sourceRef),
                     warning);
-            var output = new DocumentIngestionWorkflow.EvidenceCandidateBatch(
-                    UUID.fromString(request.input().path("documentId").asText()),
-                    request.input().path("sourceRevision").asLong(),
-                    List.of(candidate));
+            List<DocumentIngestionWorkflow.EvidenceCandidatePayload> candidates = switch (mode) {
+                case ALL_APPLIED -> validCandidates(sourceRef, 4);
+                case PARTIAL_REJECTION -> {
+                    List<DocumentIngestionWorkflow.EvidenceCandidatePayload> values =
+                            new ArrayList<>(validCandidates(sourceRef, 4));
+                    values.add(candidate(
+                            sourceRef, "EDUCATION_HISTORY", "학력 근거", "교육 이력"));
+                    values.add(values.getFirst());
+                    yield List.copyOf(values);
+                }
+                case ALL_REJECTED -> List.of(
+                        candidate(sourceRef, "EDUCATION", "학력 근거 1", "교육 이력"),
+                        candidate(sourceRef, "EDUCATION_HISTORY", "학력 근거 2", "학교 이력"),
+                        candidate(sourceRef, "PROJECT", "근거 없는 수치", "성과 999"));
+                default -> List.of(candidate);
+            };
+            var output = new DocumentIngestionWorkflow.EvidenceCandidateBatch(candidates);
             try {
                 return new AiGatewayResponse(
                         objectMapper.writeValueAsString(output),
-                        usage(UsageType.CHAT, "fake-chat"));
+                        paidChatUsage());
             } catch (Exception exception) {
                 throw new IllegalStateException(exception);
             }
         }
 
+        private List<DocumentIngestionWorkflow.EvidenceCandidatePayload> validCandidates(
+                String sourceRef, int count) {
+            return java.util.stream.IntStream.range(0, count)
+                    .mapToObj(index -> candidate(
+                            sourceRef,
+                            "PROJECT",
+                            "프로젝트 근거 " + (char) ('A' + index),
+                            "검증 가능한 프로젝트 수행 내용 " + (char) ('A' + index)))
+                    .toList();
+        }
+
+        private DocumentIngestionWorkflow.EvidenceCandidatePayload candidate(
+                String sourceRef, String category, String title, String content) {
+            return new DocumentIngestionWorkflow.EvidenceCandidatePayload(
+                    category,
+                    title,
+                    content,
+                    new BigDecimal("0.900"),
+                    List.of(sourceRef),
+                    null);
+        }
+
         void reset() {
             calls.set(0);
-            invalidMetadata.set(false);
             lastInput = "";
+            lastInstructions = "";
             warning = null;
+            mode = ChatMode.VALID;
         }
+
+        private List<AiUsage> paidChatUsage() {
+            return List.of(new AiUsage(
+                    UsageType.CHAT, "fake", "fake-chat", 0, 0, 500, 0, 0,
+                    2026073101L,
+                    UUID.fromString("85000000-0000-4000-8000-000000000103"),
+                    new BigDecimal("0.001000"), 1, UUID.randomUUID()));
+        }
+    }
+
+    enum ChatMode {
+        VALID,
+        MALFORMED_JSON,
+        UNKNOWN_REF_ONCE,
+        UNKNOWN_REF_ALWAYS,
+        ALL_APPLIED,
+        PARTIAL_REJECTION,
+        ALL_REJECTED
     }
 
     static AiUsage usage(UsageType type, String product) {

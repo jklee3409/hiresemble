@@ -39,6 +39,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -111,6 +112,28 @@ class SpringAiOpenAiGatewayTest {
                         new BigDecimal("0.000020"),
                         new BigDecimal("0.000001"),
                         new BigDecimal("0.000020"));
+    }
+
+    @Test
+    void chatMapsLengthFinishReasonToSafeNonRetryableTruncationAndKeepsUsage() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        Usage nativeUsage = mock(Usage.class);
+        when(nativeUsage.getCompletionTokens()).thenReturn(32);
+        when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(
+                        new AssistantMessage("{\"status\":\"partial"),
+                        ChatGenerationMetadata.builder().finishReason("length").build())),
+                ChatResponseMetadata.builder().usage(nativeUsage).build()));
+        var gateway = new SpringAiOpenAiChatGateway(
+                model, new ObjectMapper(), prices(), schemas());
+
+        assertThatThrownBy(() -> gateway.chat(request()))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception -> {
+                    assertThat(exception.safeCode()).isEqualTo("AI_CHAT_OUTPUT_TRUNCATED");
+                    assertThat(exception.retryable()).isFalse();
+                    assertThat(exception.incurredUsages()).hasSize(3);
+                    assertThat(exception.safeMessage()).doesNotContain("partial", "length");
+                });
     }
 
     @Test

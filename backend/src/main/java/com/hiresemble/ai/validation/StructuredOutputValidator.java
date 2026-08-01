@@ -2,6 +2,8 @@ package com.hiresemble.ai.validation;
 
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.RetryDisposition;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import java.util.Objects;
 import java.util.function.Consumer;
 import tools.jackson.databind.JsonNode;
@@ -21,42 +23,93 @@ public final class StructuredOutputValidator {
         try {
             tree = objectMapper.readTree(rawJson);
         } catch (Exception ignored) {
-            throw structuredFailure();
+            throw deterministicFailure(
+                    ValidationPhase.JSON_PARSE, "AI_SO_JSON_NOT_PARSEABLE");
         }
-        invoke(() -> contract.schemaValidator().validate(tree), false);
+        invoke(
+                () -> contract.schemaValidator().validate(tree),
+                ValidationPhase.SCHEMA_SHAPE,
+                "AI_SO_SCHEMA_SHAPE_INVALID");
         T value;
         try {
             value = objectMapper.treeToValue(tree, contract.javaType());
         } catch (Exception ignored) {
-            throw structuredFailure();
+            throw deterministicFailure(
+                    ValidationPhase.JAVA_BINDING, "AI_SO_JAVA_BINDING_FAILED");
         }
-        invoke(() -> contract.javaRecordValidator().accept(value), false);
-        invoke(() -> contract.workflowValidator().accept(value), false);
-        invoke(() -> contract.domainCommandValidator().accept(value), true);
+        invoke(
+                () -> contract.javaRecordValidator().accept(value),
+                ValidationPhase.JAVA_RECORD,
+                "AI_SO_JAVA_RECORD_INVALID");
+        invoke(
+                () -> contract.workflowValidator().accept(value),
+                ValidationPhase.WORKFLOW_CONTEXT,
+                "AI_SO_WORKFLOW_CONTEXT_INVALID");
+        invokeDomain(() -> contract.domainCommandValidator().accept(value));
         return value;
     }
 
-    private void invoke(Runnable validation, boolean domain) {
+    private void invoke(
+            Runnable validation, ValidationPhase phase, String genericSafeReason) {
         try {
             validation.run();
         } catch (AiExecutionException exception) {
             throw exception;
-        } catch (RuntimeException ignored) {
-            if (domain) {
-                throw AiExecutionException.nonRetryable(
-                        FailureKind.DOMAIN_VALIDATION,
-                        "AI_DOMAIN_COMMAND_INVALID",
-                        "AI 결과를 현재 리소스에 적용할 수 없습니다.");
+        } catch (StructuredOutputValidationException exception) {
+            if (exception.retryDisposition() == RetryDisposition.REPAIR_ONCE) {
+                throw AiExecutionException.repairableStructuredOutput(
+                        exception.safeReason(),
+                        "AI 결과의 의미 제약을 확인하지 못했습니다.",
+                        exception.phase(),
+                        exception.correctionGuidance());
             }
-            throw structuredFailure();
+            throw deterministicFailure(exception.phase(), exception.safeReason());
+        } catch (RuntimeException ignored) {
+            if (phase != ValidationPhase.JAVA_RECORD
+                    && phase != ValidationPhase.WORKFLOW_CONTEXT) {
+                throw deterministicFailure(phase, genericSafeReason);
+            }
+            throw AiExecutionException.repairableStructuredOutput(
+                    genericSafeReason,
+                    "AI 결과의 의미 제약을 확인하지 못했습니다.",
+                    phase,
+                    genericCorrectionGuidance(phase));
         }
     }
 
-    private AiExecutionException structuredFailure() {
-        return AiExecutionException.retryable(
-                FailureKind.STRUCTURED_OUTPUT,
-                "AI_STRUCTURED_OUTPUT_INVALID",
-                "AI 결과 형식을 확인하지 못했습니다.");
+    private void invokeDomain(Runnable validation) {
+        try {
+            validation.run();
+        } catch (AiExecutionException exception) {
+            throw exception;
+        } catch (StructuredOutputValidationException ignored) {
+            throw domainFailure();
+        } catch (RuntimeException ignored) {
+            throw domainFailure();
+        }
+    }
+
+    private AiExecutionException deterministicFailure(
+            ValidationPhase phase, String safeReason) {
+        return AiExecutionException.deterministicStructuredOutput(
+                safeReason, "AI 결과 형식을 확인하지 못했습니다.", phase);
+    }
+
+    private AiExecutionException domainFailure() {
+        return AiExecutionException.nonRetryable(
+                FailureKind.DOMAIN_VALIDATION,
+                "AI_DOMAIN_COMMAND_INVALID",
+                "AI 결과를 현재 리소스에 적용할 수 없습니다.");
+    }
+
+    private String genericCorrectionGuidance(ValidationPhase phase) {
+        return switch (phase) {
+            case JAVA_RECORD ->
+                    "Previous output violated a field constraint. Return a new object that follows every stated field limit and null rule.";
+            case WORKFLOW_CONTEXT ->
+                    "Previous output referenced data outside the supplied context. Return a new object using only the supplied references.";
+            default -> throw new IllegalArgumentException("phase is not repairable");
+        };
     }
 
     @FunctionalInterface

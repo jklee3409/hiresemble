@@ -96,6 +96,7 @@ public final class InterviewPreparationWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.INTERVIEW_PREPARATION,
                 CanonicalWorkflowDefinitions.INTERVIEW_PREPARATION_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(VALIDATE_PREREQUISITES, new ValidateExecutor()),
                         step(BUILD_PUBLIC_SEARCH_PLAN, new SearchPlanExecutor()),

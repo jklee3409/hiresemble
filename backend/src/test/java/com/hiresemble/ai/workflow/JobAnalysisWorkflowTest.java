@@ -234,7 +234,7 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
-    void malformedStructuredOutputIsRetryableAndNextValidOutputCanProceed() {
+    void malformedStructuredOutputIsDeterministicAndASeparateValidOutputCanProceed() {
         Fixture fixture = fixture(false, false);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         StepExecutionContext context = initialContext(fixture);
@@ -255,7 +255,8 @@ class JobAnalysisWorkflowTest {
                 .isInstanceOfSatisfying(
                         AiExecutionException.class,
                         failure -> {
-                            assertThat(failure.retryable()).isTrue();
+                            assertThat(failure.retryable()).isFalse();
+                            assertThat(failure.safeCode()).isEqualTo("AI_SO_JSON_NOT_PARSEABLE");
                             assertThat(failure.failureKind())
                                     .isEqualTo(WorkflowRegistry.FailureKind.STRUCTURED_OUTPUT);
                         });

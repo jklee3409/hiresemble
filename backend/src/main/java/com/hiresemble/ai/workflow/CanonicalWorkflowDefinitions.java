@@ -161,7 +161,13 @@ public final class CanonicalWorkflowDefinitions {
                     key,
                     agentName(key),
                     "input-v1",
-                    "output-v1",
+                    type == WorkflowType.DOCUMENT_INGESTION
+                                    && "EXTRACT_EVIDENCE_CANDIDATES".equals(key)
+                            ? "document-evidence-provider-output-v2"
+                            : type == WorkflowType.DOCUMENT_INGESTION
+                                            && "APPLY_EVIDENCE_CANDIDATES".equals(key)
+                                    ? "document-evidence-apply-output-v2"
+                            : "output-v1",
                     tools,
                     modelCalls,
                     fanOut ? 20 : 1,

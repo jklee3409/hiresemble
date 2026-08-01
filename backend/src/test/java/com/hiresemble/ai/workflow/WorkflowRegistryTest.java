@@ -53,6 +53,7 @@ class WorkflowRegistryTest {
         WorkflowStepExecutor<FixtureOutput> executor = FixtureExecutors.noop();
         ExecutableWorkflowContribution wrong = new ExecutableWorkflowContribution(
                 WorkflowType.JOB_ANALYSIS, "fixture-v1",
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(new ExecutableWorkflowStep("TWO", executor),
                         new ExecutableWorkflowStep("ONE", executor)));
 
@@ -87,6 +88,19 @@ class WorkflowRegistryTest {
                 ModelTier.LOW_COST, Set.of(), new BigDecimal("100")))
                 .isInstanceOf(WorkflowConfigurationException.class)
                 .hasMessage("AI_WORKFLOW_TOOL_ALLOWLIST_INVALID");
+    }
+
+    @Test
+    void executableContributionRequiresAnExplicitTerminalPartialPolicy() {
+        WorkflowStepExecutor<FixtureOutput> executor = FixtureExecutors.noop();
+
+        assertThatThrownBy(() -> new ExecutableWorkflowContribution(
+                        WorkflowType.JOB_ANALYSIS,
+                        "fixture-v1",
+                        null,
+                        List.of(new ExecutableWorkflowStep("ONE", executor))))
+                .isInstanceOf(WorkflowConfigurationException.class)
+                .hasMessage("AI_WORKFLOW_PARTIAL_POLICY_MISSING");
     }
 
     private StepDefinition step(String key, BigDecimal weight) {

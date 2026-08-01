@@ -10,17 +10,21 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
 import com.hiresemble.ai.validation.ProviderNullable;
+import com.hiresemble.ai.validation.StructuredOutputValidationException;
+import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
+import com.hiresemble.ai.workflow.TerminalPartialPolicy;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainApplyPlan;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.GatewayInvocation;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepExecutionContext;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepInput;
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
+import com.hiresemble.document.application.model.DocumentEvidenceRejectionReason;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
 import com.hiresemble.document.application.port.DocumentWorkflowQueryPort;
 import com.hiresemble.document.domain.model.DocumentParseStatus;
@@ -29,6 +33,7 @@ import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentTextRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
 import com.hiresemble.document.domain.model.EvidenceExtractionStatus;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -42,7 +47,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -56,17 +60,14 @@ public final class DocumentIngestionWorkflow {
     public static final String CHUNK_TEXT = "CHUNK_TEXT";
     public static final String EMBED_CHUNKS = "EMBED_CHUNKS";
     public static final String EXTRACT_EVIDENCE_CANDIDATES = "EXTRACT_EVIDENCE_CANDIDATES";
+    public static final String EVIDENCE_OUTPUT_SCHEMA_VERSION =
+            "document-evidence-provider-output-v2";
     public static final String APPLY_EVIDENCE_CANDIDATES = "APPLY_EVIDENCE_CANDIDATES";
+    public static final String EVIDENCE_APPLY_OUTPUT_SCHEMA_VERSION =
+            "document-evidence-apply-output-v2";
     public static final String FINALIZE_DOCUMENT = "FINALIZE_DOCUMENT";
 
     private static final int EMBEDDING_DIMENSION = 1536;
-    private static final int MAX_CANDIDATES = 50;
-    private static final int MAX_METADATA_ENTRIES = 20;
-    private static final int MAX_METADATA_STRING_LENGTH = 2_000;
-    private static final Pattern METADATA_KEY = Pattern.compile("[a-z][A-Za-z0-9]{0,63}");
-    private static final Set<String> RESERVED_METADATA_KEYS = Set.of(
-            "validationwarning", "prompt", "response", "provider", "model",
-            "apikey", "secret", "credential", "token", "internal", "constructor", "prototype");
     private static final Duration EMBEDDING_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
 
@@ -87,6 +88,7 @@ public final class DocumentIngestionWorkflow {
         return new ExecutableWorkflowContribution(
                 WorkflowType.DOCUMENT_INGESTION,
                 CanonicalWorkflowDefinitions.VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(LOAD_DOCUMENT_SOURCE, new LoadSourceExecutor()),
                         step(EXTRACT_OR_ACCEPT_TEXT, new ExtractTextExecutor()),
@@ -125,12 +127,8 @@ public final class DocumentIngestionWorkflow {
         private Contract<T> contract(StepExecutionContext context) {
             return new Contract<>(
                     outputType,
-                    "output-v1",
-                    value -> {
-                        if (value == null || !value.isObject()) {
-                            throw new IllegalArgumentException("structured output must be an object");
-                        }
-                    },
+                    outputSchemaVersion(),
+                    this::validateSchemaTree,
                     value -> validateJavaRecord(value, context),
                     value -> validateWorkflowOutput(value, context),
                     value -> validateDomainOutput(value, context));
@@ -138,9 +136,26 @@ public final class DocumentIngestionWorkflow {
 
         protected void validateJavaRecord(T output, StepExecutionContext context) {}
 
+        protected void validateSchemaTree(JsonNode value) {
+            if (value == null || !value.isObject()) {
+                throw StructuredOutputValidationException.deterministic(
+                        ValidationPhase.SCHEMA_SHAPE, "AI_SO_SCHEMA_ROOT_INVALID");
+            }
+        }
+
         protected void validateWorkflowOutput(T output, StepExecutionContext context) {}
 
         protected void validateDomainOutput(T output, StepExecutionContext context) {}
+
+        private String outputSchemaVersion() {
+            if (EXTRACT_EVIDENCE_CANDIDATES.equals(stepKey)) {
+                return EVIDENCE_OUTPUT_SCHEMA_VERSION;
+            }
+            if (APPLY_EVIDENCE_CANDIDATES.equals(stepKey)) {
+                return EVIDENCE_APPLY_OUTPUT_SCHEMA_VERSION;
+            }
+            return "output-v1";
+        }
 
         protected final DocumentState state(StepExecutionContext context) {
             if (context.run().workflowType() != WorkflowType.DOCUMENT_INGESTION
@@ -508,7 +523,8 @@ public final class DocumentIngestionWorkflow {
                     || output.policyVersion() < 1 || output.dimension() != EMBEDDING_DIMENSION
                     || output.generation() < 1
                     || output.vectors() == null || output.vectors().isEmpty()) {
-                throw new IllegalArgumentException("embedding output is invalid");
+                throw embeddingContractFailure(
+                        ValidationPhase.JAVA_RECORD, "AI_SO_RECORD_EMBEDDING_BATCH_INVALID");
             }
         }
 
@@ -523,7 +539,9 @@ public final class DocumentIngestionWorkflow {
                     || output.policyVersion() != policy.version()
                     || output.dimension() != policy.dimension()
                     || output.generation() != policy.generation()) {
-                throw new IllegalArgumentException("embedding policy projection is invalid");
+                throw embeddingContractFailure(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "AI_SO_WORKFLOW_EMBEDDING_POLICY_MISMATCH");
             }
             Set<UUID> expected = requiredChunks(state.document()).stream()
                     .map(DocumentChunkRecord::id).collect(Collectors.toSet());
@@ -533,11 +551,15 @@ public final class DocumentIngestionWorkflow {
                         || vector.values() == null || vector.values().size() != policy.dimension()
                         || vector.values().stream().anyMatch(
                                 value -> value == null || !Double.isFinite(value))) {
-                    throw new IllegalArgumentException("embedding vector is invalid");
+                    throw embeddingContractFailure(
+                            ValidationPhase.WORKFLOW_CONTEXT,
+                            "AI_SO_WORKFLOW_EMBEDDING_VECTOR_INVALID");
                 }
             }
             if (!expected.equals(actual)) {
-                throw new IllegalArgumentException("embedding chunk set is invalid");
+                throw embeddingContractFailure(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "AI_SO_WORKFLOW_EMBEDDING_CHUNK_SET_INVALID");
             }
         }
     }
@@ -557,23 +579,25 @@ public final class DocumentIngestionWorkflow {
                     .put("sourceRevision", state.document().sourceRevision());
             var refArray = refs.putArray("chunks");
             var maskedChunks = objectMapper.createArrayNode();
-            for (DocumentChunkRecord chunk : chunks) {
+            for (int index = 0; index < chunks.size(); index++) {
+                DocumentChunkRecord chunk = chunks.get(index);
+                String chunkRef = localChunkRef(index);
                 refArray.addObject()
+                        .put("chunkRef", chunkRef)
                         .put("chunkId", chunk.id().toString())
                         .put("chunkIndex", chunk.chunkIndex())
                         .put("pageFrom", chunk.pageFrom())
                         .put("pageTo", chunk.pageTo())
                         .put("maskedContentHash", sha256(chunk.maskedContent()));
                 maskedChunks.addObject()
-                        .put("chunkId", chunk.id().toString())
+                        .put("chunkRef", chunkRef)
                         .put("chunkIndex", chunk.chunkIndex())
                         .put("pageFrom", chunk.pageFrom())
                         .put("pageTo", chunk.pageTo())
                         .put("maskedContent", chunk.maskedContent());
             }
             var payload = objectMapper.createObjectNode()
-                    .put("documentId", state.document().id().toString())
-                    .put("sourceRevision", state.document().sourceRevision());
+                    .put("maxCandidates", DocumentEvidenceOutputPolicy.maxCandidates(chunks.size()));
             payload.set("maskedChunks", maskedChunks);
             return new StepInput(
                     revisionScope(state.document().sourceRevision()),
@@ -608,8 +632,6 @@ public final class DocumentIngestionWorkflow {
         @Override
         public JsonNode minimalOutput(EvidenceCandidateBatch output, ObjectMapper ignored) {
             var result = objectMapper.createObjectNode()
-                    .put("documentId", output.documentId().toString())
-                    .put("sourceRevision", output.sourceRevision())
                     .put("candidateCount", output.candidates().size());
             var hashes = result.putArray("candidateHashes");
             output.candidates().forEach(candidate -> hashes.add(candidateHash(candidate)));
@@ -624,28 +646,28 @@ public final class DocumentIngestionWorkflow {
         @Override
         protected void validateJavaRecord(
                 EvidenceCandidateBatch output, StepExecutionContext context) {
-            if (output.documentId() == null || output.sourceRevision() < 0
-                    || output.candidates() == null || output.candidates().size() > MAX_CANDIDATES) {
-                throw new IllegalArgumentException("candidate batch is invalid");
-            }
-            for (EvidenceCandidatePayload candidate : output.candidates()) {
-                validateCandidateShape(candidate);
-            }
+            int maxCandidates = DocumentEvidenceOutputPolicy.maxCandidates(
+                    requiredChunks(state(context).document()).size());
+            DocumentEvidenceOutputPolicy.validateBatch(output, maxCandidates);
         }
 
         @Override
         protected void validateWorkflowOutput(
                 EvidenceCandidateBatch output, StepExecutionContext context) {
             DocumentState state = state(context);
-            if (output.sourceRevision() != state.document().sourceRevision()) {
-                throw new IllegalArgumentException("candidate revision is stale");
-            }
-            Set<UUID> chunks = requiredChunks(state.document()).stream()
-                    .map(DocumentChunkRecord::id).collect(Collectors.toSet());
+            Map<String, UUID> chunks = trustedChunkRefs(state.document());
             for (EvidenceCandidatePayload candidate : output.candidates()) {
-                if (!chunks.containsAll(candidate.sourceChunkIds())) {
-                    throw new IllegalArgumentException("candidate source is invalid");
-                }
+                DocumentEvidenceOutputPolicy.resolveSourceChunkRefs(
+                        candidate.sourceChunkRefs(), chunks);
+            }
+        }
+
+        @Override
+        protected void validateSchemaTree(JsonNode value) {
+            super.validateSchemaTree(value);
+            if (value.size() != 1 || !value.has("candidates") || !value.path("candidates").isArray()) {
+                throw StructuredOutputValidationException.deterministic(
+                        ValidationPhase.SCHEMA_SHAPE, "AI_SO_SCHEMA_DOCUMENT_BATCH_INVALID");
             }
         }
     }
@@ -660,17 +682,15 @@ public final class DocumentIngestionWorkflow {
         public StepInput prepare(StepExecutionContext context) {
             DocumentState state = state(context);
             Object ephemeral = context.ephemeralOutputs().get(EXTRACT_EVIDENCE_CANDIDATES);
-            if (!(ephemeral instanceof EvidenceCandidateBatch batch)
-                    || !batch.documentId().equals(state.document().id())
-                    || batch.sourceRevision() != state.document().sourceRevision()) {
+            if (!(ephemeral instanceof EvidenceCandidateBatch batch)) {
                 throw AiExecutionException.nonRetryable(
                         FailureKind.CONFIGURATION,
                         "DOCUMENT_EVIDENCE_HANDOFF_MISSING",
                         "문서 근거 후보를 안전하게 이어서 처리하지 못했습니다.");
             }
             JsonNode safeRefs = objectMapper.createObjectNode()
-                    .put("documentId", batch.documentId().toString())
-                    .put("sourceRevision", batch.sourceRevision())
+                    .put("documentId", state.document().id().toString())
+                    .put("sourceRevision", state.document().sourceRevision())
                     .put("candidateCount", batch.candidates().size())
                     .put("candidateBatchHash", candidateBatchHash(batch));
             return new StepInput(
@@ -692,20 +712,24 @@ public final class DocumentIngestionWorkflow {
                 throw domainFailure("DOCUMENT_EVIDENCE_HANDOFF_INVALID");
             }
             DocumentState state = state(invocation.executionContext());
+            Map<String, UUID> trustedChunks = trustedChunkRefs(state.document());
             List<DocumentEvidenceCandidate> candidates = batch.candidates().stream()
                     .map(value -> new DocumentEvidenceCandidate(
                             value.evidenceCategory(), value.title(), value.content(),
-                            mapEvidenceMetadata(value.metadata()),
-                            value.confidence(), value.sourceChunkIds(), value.sourceRevision(),
+                            Map.of(), value.confidence(),
+                            DocumentEvidenceOutputPolicy.resolveSourceChunkRefs(
+                                    value.sourceChunkRefs(), trustedChunks),
+                            state.document().sourceRevision(),
                             value.validationWarning()))
                     .toList();
-            DocumentWorkflowCommandPort.EvidenceApplyResult applied =
+            var applied =
                     commandPort.applyEvidenceCandidates(
                             state.document().userId(), state.document().id(), state.agentRunId(),
                             candidates);
             return localResponse(new EvidenceApplyOutput(
                     state.document().id(), state.document().sourceRevision(),
-                    applied.appliedEvidenceIds(), applied.rejectedCount(), candidates.size()));
+                    applied.candidateCount(), applied.appliedCount(), applied.rejectedCount(),
+                    applied.appliedEvidenceIds(), applied.rejectionReasonCounts()));
         }
 
         @Override
@@ -716,24 +740,26 @@ public final class DocumentIngestionWorkflow {
         @Override
         public Optional<PartialResult> partialResult(
                 EvidenceApplyOutput output, JsonNode minimalOutput, StepExecutionContext context) {
-            List<String> succeeded = output.appliedEvidenceIds().stream()
-                    .map(UUID::toString).toList();
-            List<String> failed = java.util.stream.IntStream.range(0, output.rejectedCount())
-                    .mapToObj(index -> "candidate-rejected-" + (index + 1)).toList();
             List<ResourceReference> refs = output.appliedEvidenceIds().stream()
                     .map(id -> new ResourceReference("EVIDENCE", id, null)).toList();
-            return Optional.of(new PartialResult(succeeded, failed, refs));
+            return Optional.of(new PartialResult(List.of(), List.of(), refs));
         }
 
         @Override
         protected void validateJavaRecord(
                 EvidenceApplyOutput output, StepExecutionContext context) {
             if (output.documentId() == null || output.sourceRevision() < 0
-                    || output.appliedEvidenceIds() == null || output.rejectedCount() < 0
+                    || output.appliedEvidenceIds() == null
                     || output.candidateCount() < 0
-                    || output.appliedEvidenceIds().size() + output.rejectedCount()
-                            != output.candidateCount()
-                    || output.appliedEvidenceIds().size() > MAX_CANDIDATES
+                    || output.appliedCount() < 0
+                    || output.rejectedCount() < 0
+                    || output.appliedCount() + output.rejectedCount() != output.candidateCount()
+                    || output.appliedEvidenceIds().size() != output.appliedCount()
+                    || output.rejectionReasonCounts() == null
+                    || output.rejectionReasonCounts().values().stream()
+                            .mapToInt(Integer::intValue).sum() != output.rejectedCount()
+                    || output.appliedCount()
+                            > DocumentEvidenceOutputPolicy.ABSOLUTE_MAX_CANDIDATES
                     || new HashSet<>(output.appliedEvidenceIds()).size()
                             != output.appliedEvidenceIds().size()) {
                 throw new IllegalArgumentException("evidence apply output is invalid");
@@ -818,98 +844,6 @@ public final class DocumentIngestionWorkflow {
         }
     }
 
-    private void validateCandidateShape(EvidenceCandidatePayload candidate) {
-        if (candidate == null
-                || !hasLength(candidate.evidenceCategory(), 1, 80)
-                || !hasLength(candidate.title(), 1, 250)
-                || !hasLength(candidate.content(), 1, 20_000)
-                || candidate.content().indexOf('\0') >= 0
-                || candidate.confidence() == null || candidate.confidence().signum() < 0
-                || candidate.confidence().compareTo(BigDecimal.ONE) > 0
-                || candidate.sourceChunkIds() == null || candidate.sourceChunkIds().isEmpty()
-                || candidate.sourceChunkIds().size() > 20
-                || new HashSet<>(candidate.sourceChunkIds()).size()
-                        != candidate.sourceChunkIds().size()
-                || candidate.sourceRevision() < 0
-                || (candidate.validationWarning() != null
-                        && (candidate.validationWarning().length() > 500
-                                || containsSensitiveDiagnosticText(candidate.validationWarning())))) {
-            throw new IllegalArgumentException("candidate shape is invalid");
-        }
-        mapEvidenceMetadata(candidate.metadata());
-    }
-
-    Map<String, Object> mapEvidenceMetadata(List<EvidenceMetadataEntryOutput> entries) {
-        if (entries == null || entries.size() > MAX_METADATA_ENTRIES) {
-            throw new IllegalArgumentException("candidate metadata is invalid");
-        }
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        for (EvidenceMetadataEntryOutput entry : entries) {
-            if (entry == null || entry.key() == null || !METADATA_KEY.matcher(entry.key()).matches()
-                    || RESERVED_METADATA_KEYS.contains(entry.key().toLowerCase(java.util.Locale.ROOT))
-                    || entry.valueType() == null
-                    || entry.value() == null || entry.value().length() > MAX_METADATA_STRING_LENGTH
-                    || metadata.containsKey(entry.key())) {
-                throw new IllegalArgumentException("candidate metadata is invalid");
-            }
-            Object value = switch (entry.valueType()) {
-                case STRING -> validMetadataString(entry.value());
-                case NUMBER -> validMetadataNumber(entry.value());
-                case BOOLEAN -> validMetadataBoolean(entry.value());
-                case NULL -> {
-                    if (!entry.value().isEmpty()) {
-                        throw new IllegalArgumentException("candidate metadata is invalid");
-                    }
-                    yield null;
-                }
-            };
-            metadata.put(entry.key(), value);
-        }
-        try {
-            if (objectMapper.writeValueAsBytes(metadata).length > 16_384) {
-                throw new IllegalArgumentException("candidate metadata is too large");
-            }
-        } catch (IllegalArgumentException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            throw new IllegalArgumentException("candidate metadata is invalid", exception);
-        }
-        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
-    }
-
-    private BigDecimal validMetadataNumber(String value) {
-        if (value.length() > 100) {
-            throw new IllegalArgumentException("candidate metadata is invalid");
-        }
-        try {
-            return new BigDecimal(value);
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("candidate metadata is invalid", exception);
-        }
-    }
-
-    private String validMetadataString(String value) {
-        if (value.indexOf('\0') >= 0 || containsSensitiveDiagnosticText(value)) {
-            throw new IllegalArgumentException("candidate metadata is invalid");
-        }
-        return value;
-    }
-
-    private boolean containsSensitiveDiagnosticText(String value) {
-        String normalized = value.toLowerCase(java.util.Locale.ROOT);
-        return normalized.contains("<untrusted_external_data>")
-                || normalized.contains("api_key")
-                || normalized.contains("password=")
-                || normalized.contains("secret=")
-                || normalized.contains("credential=");
-    }
-
-    private Boolean validMetadataBoolean(String value) {
-        if ("true".equals(value)) return true;
-        if ("false".equals(value)) return false;
-        throw new IllegalArgumentException("candidate metadata is invalid");
-    }
-
     private String hashChunkRefs(List<DocumentChunkRecord> chunks) {
         return sha256(chunks.stream()
                 .map(chunk -> chunk.id() + ":" + chunk.chunkIndex() + ":"
@@ -919,14 +853,25 @@ public final class DocumentIngestionWorkflow {
 
     private String candidateHash(EvidenceCandidatePayload candidate) {
         return sha256(candidate.evidenceCategory() + "|" + candidate.title() + "|"
-                + candidate.content() + "|" + candidate.sourceChunkIds() + "|"
-                + candidate.sourceRevision());
+                + candidate.content() + "|" + candidate.sourceChunkRefs());
     }
 
     private String candidateBatchHash(EvidenceCandidateBatch batch) {
-        return sha256(batch.documentId() + "|" + batch.sourceRevision() + "|"
-                + batch.candidates().stream().map(this::candidateHash)
+        return sha256(batch.candidates().stream().map(this::candidateHash)
                         .collect(Collectors.joining("|")));
+    }
+
+    private String localChunkRef(int index) {
+        return "C" + (index + 1);
+    }
+
+    private Map<String, UUID> trustedChunkRefs(DocumentRecord document) {
+        List<DocumentChunkRecord> chunks = requiredChunks(document);
+        Map<String, UUID> refs = new LinkedHashMap<>();
+        for (int index = 0; index < chunks.size(); index++) {
+            refs.put(localChunkRef(index), chunks.get(index).id());
+        }
+        return java.util.Collections.unmodifiableMap(refs);
     }
 
     private UUID parseDocumentId(JsonNode input) {
@@ -939,10 +884,6 @@ public final class DocumentIngestionWorkflow {
 
     private String revisionScope(long sourceRevision) {
         return "document-revision-" + sourceRevision;
-    }
-
-    private boolean hasLength(String value, int min, int max) {
-        return value != null && !value.isBlank() && value.length() >= min && value.length() <= max;
     }
 
     private boolean isHash(String value) {
@@ -977,10 +918,15 @@ public final class DocumentIngestionWorkflow {
     }
 
     private AiExecutionException structuredFailure(String code) {
-        return AiExecutionException.retryable(
-                FailureKind.STRUCTURED_OUTPUT,
+        return AiExecutionException.deterministicStructuredOutput(
                 code,
-                "문서 AI 결과 형식을 확인하지 못했습니다.");
+                "문서 AI 결과 형식을 확인하지 못했습니다.",
+                ValidationPhase.JAVA_RECORD);
+    }
+
+    private StructuredOutputValidationException embeddingContractFailure(
+            ValidationPhase phase, String code) {
+        return StructuredOutputValidationException.deterministic(phase, code);
     }
 
     private record DocumentState(DocumentRecord document, UUID agentRunId) {}
@@ -1043,50 +989,35 @@ public final class DocumentIngestionWorkflow {
     }
 
     public record EvidenceCandidatePayload(
-            String evidenceCategory,
-            String title,
-            String content,
-            List<EvidenceMetadataEntryOutput> metadata,
-            BigDecimal confidence,
-            List<UUID> sourceChunkIds,
-            long sourceRevision,
-            @ProviderNullable String validationWarning) {
-        public EvidenceCandidatePayload {
-            metadata = metadata == null
-                    ? List.of()
-                    : List.copyOf(metadata);
-            sourceChunkIds = sourceChunkIds == null ? List.of() : List.copyOf(sourceChunkIds);
-            validationWarning = validationWarning == null || validationWarning.isBlank()
-                    ? null : validationWarning;
-        }
-    }
-
-    public record EvidenceMetadataEntryOutput(
-            String key, EvidenceMetadataValueType valueType, String value) {}
-
-    public enum EvidenceMetadataValueType {
-        STRING,
-        NUMBER,
-        BOOLEAN,
-        NULL
-    }
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.CATEGORY_DESCRIPTION)
+                    String evidenceCategory,
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.TITLE_DESCRIPTION) String title,
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.CONTENT_DESCRIPTION) String content,
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.CONFIDENCE_DESCRIPTION)
+                    BigDecimal confidence,
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.SOURCE_REFS_DESCRIPTION)
+                    List<String> sourceChunkRefs,
+            @ProviderNullable
+                    @JsonPropertyDescription(DocumentEvidenceOutputPolicy.WARNING_DESCRIPTION)
+                    String validationWarning) {}
 
     public record EvidenceCandidateBatch(
-            UUID documentId, long sourceRevision, List<EvidenceCandidatePayload> candidates) {
-        public EvidenceCandidateBatch {
-            candidates = candidates == null ? List.of() : List.copyOf(candidates);
-        }
-    }
+            @JsonPropertyDescription(DocumentEvidenceOutputPolicy.BATCH_DESCRIPTION)
+                    List<EvidenceCandidatePayload> candidates) {}
 
     public record EvidenceApplyOutput(
             UUID documentId,
             long sourceRevision,
-            List<UUID> appliedEvidenceIds,
+            int candidateCount,
+            int appliedCount,
             int rejectedCount,
-            int candidateCount) {
+            List<UUID> appliedEvidenceIds,
+            Map<DocumentEvidenceRejectionReason, Integer> rejectionReasonCounts) {
         public EvidenceApplyOutput {
             appliedEvidenceIds = appliedEvidenceIds == null
                     ? List.of() : List.copyOf(appliedEvidenceIds);
+            rejectionReasonCounts = rejectionReasonCounts == null
+                    ? Map.of() : Map.copyOf(rejectionReasonCounts);
         }
     }
 
