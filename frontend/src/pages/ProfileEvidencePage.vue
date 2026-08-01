@@ -245,6 +245,7 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
       LANGUAGE_SCORE: '어학',
       AWARD: '수상',
       CAREER: '경력',
+      ACTIVITY: '대외활동',
       DOCUMENT_CHUNK: '문서',
       MANUAL: '수동',
     } as const

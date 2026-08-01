@@ -169,6 +169,7 @@ function document() {
   return {
     id: '00000000-0000-4000-8000-000000000010',
     documentType: 'RESUME' as const,
+    originalFilename: 'resume.pdf',
     displayName: '이종규 이력서.pdf',
     mimeType: 'application/pdf',
     fileSizeBytes: 1024,

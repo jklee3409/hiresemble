@@ -4,6 +4,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { agentRunSummary } from '@/features/agent-runs/testFixtures'
+import { useNotifications } from '@/shared/ui/notifications'
 
 import AgentRunListPage from './AgentRunListPage.vue'
 
@@ -89,24 +90,27 @@ describe('AgentRunListPage URL state', () => {
     expect(
       wrapper.get('a[href="/cover-letters/60000000-0000-4000-8000-000000000001/edit"]').text(),
     ).toBe('자기소개서')
-    expect(wrapper.text()).toContain('USD 0.010000')
+    expect(wrapper.text()).toContain('작업 한도의 33%')
     const rowCheckboxes = wrapper.findAll('.run-row__selection input')
     expect(rowCheckboxes[0]?.attributes('disabled')).toBeDefined()
     expect(rowCheckboxes[1]?.attributes('disabled')).toBeUndefined()
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     await rowCheckboxes[1]?.setValue(true)
-    await wrapper
+    const bulkDeletion = wrapper
       .findAll('button')
       .find((button) => button.text() === '삭제(1)')
       ?.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await bulkDeletion
     await flushPromises()
     expect(deleteSelectedRuns).toHaveBeenCalledWith(['10000000-0000-4000-8000-000000000002'])
 
     const individualDelete = wrapper
       .findAll('.run-row__actions button')
       .find((button) => button.text() === '삭제' && button.attributes('disabled') === undefined)
-    await individualDelete?.trigger('click')
+    const individualDeletion = individualDelete?.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await individualDeletion
     await flushPromises()
     expect(deleteRun).toHaveBeenCalledWith('10000000-0000-4000-8000-000000000002')
 

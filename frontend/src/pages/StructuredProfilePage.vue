@@ -24,6 +24,7 @@ import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
+import { useNotifications } from '@/shared/ui/notifications'
 import type {
   AwardCreateRequest,
   AwardDto,
@@ -80,6 +81,7 @@ interface FormModel
 
 const props = defineProps<{ kind: ResourceKind }>()
 const authStore = useAuthStore()
+const notifications = useNotifications()
 const queryClient = useQueryClient()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const page = ref(0)
@@ -179,6 +181,7 @@ async function save(): Promise<void> {
     isFormOpen.value = false
     editingId.value = null
     message.value = `${resourceTitle(props.kind, saved)}을(를) 저장했어요.`
+    notifications.toast(message.value, 'success')
   } catch (error) {
     const apiError = normalizeApiError(error)
     fieldErrors.value = fieldErrorsToRecord(apiError.fieldErrors)
@@ -200,13 +203,19 @@ async function save(): Promise<void> {
 }
 
 async function remove(item: StructuredProfileDto): Promise<void> {
-  if (!window.confirm(`${resourceTitle(props.kind, item)}을(를) 삭제할까요?`)) return
+  const confirmed = await notifications.confirm({
+    title: `${resourceTitle(props.kind, item)}을(를) 삭제할까요?`,
+    message: '내 지원 정보와 이후 AI 소재 후보에서 함께 제외됩니다.',
+    confirmLabel: '정보 삭제',
+  })
+  if (!confirmed) return
   message.value = ''
   generalError.value = ''
   try {
     await deleteMutation.mutateAsync(item)
     await refreshAfterMutation()
     message.value = '삭제했어요.'
+    notifications.toast(message.value, 'success')
   } catch (error) {
     const apiError = normalizeApiError(error)
     if (isVersionConflict(apiError)) {

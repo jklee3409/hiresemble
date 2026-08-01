@@ -49,6 +49,7 @@ describe('P4 document contracts', () => {
     const detail = documentDetailSchema.parse({
       id: uuid(1),
       documentType: 'RESUME',
+      originalFilename: 'resume.txt',
       displayName: 'resume.txt',
       mimeType: 'text/plain',
       fileSizeBytes: 120,

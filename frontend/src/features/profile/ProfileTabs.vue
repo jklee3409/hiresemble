@@ -31,7 +31,7 @@ const sections = [
     label: '수상',
   },
   {
-    to: '/profile/evidence',
+    to: '/profile/activities',
     label: '대외활동',
   },
 ] as const

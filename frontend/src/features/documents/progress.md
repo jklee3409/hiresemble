@@ -4,6 +4,19 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-08-01] Session Summary (문서 소재 검토 작업대)
+
+- What was done:
+  - 검토 전·활용 승인·활용 제외·재검토 상태, 개별/선택/전체 동작과 원본 비삭제 안내를 단일 검토 패널에 구현했다.
+- Key decisions:
+  - 중복 결과 섹션 대신 카드 안 접힌 보조 정보로 원본·AI 정리를 비교한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - document page/component/API tests와 실제 TXT 업로드·실패 상태를 검증했다.
+- Next steps:
+  - 성공 분석 복수 소재는 실제 Provider 환경에서 추가 검증한다.
+
 ## [2026-07-28] Session Summary (자료 등록 단계형 UX와 용어 개선)
 
 - What was done:

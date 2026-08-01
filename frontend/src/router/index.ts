@@ -15,7 +15,7 @@ import LoginPage from '@/pages/LoginPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import OnboardingPage from '@/pages/OnboardingPage.vue'
 import ProfileBasicPage from '@/pages/ProfileBasicPage.vue'
-import ProfileEvidencePage from '@/pages/ProfileEvidencePage.vue'
+import ProfileActivitiesPage from '@/pages/ProfileActivitiesPage.vue'
 import RootRedirectPage from '@/pages/RootRedirectPage.vue'
 import SignupPage from '@/pages/SignupPage.vue'
 import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
@@ -119,10 +119,14 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '경력', profileRecommended: true },
       },
       {
-        path: 'profile/evidence',
-        name: 'profile-evidence',
-        component: ProfileEvidencePage,
+        path: 'profile/activities',
+        name: 'profile-activities',
+        component: ProfileActivitiesPage,
         meta: { title: '대외활동', profileRecommended: true },
+      },
+      {
+        path: 'profile/evidence',
+        redirect: { name: 'profile-activities' },
       },
       {
         path: 'documents',

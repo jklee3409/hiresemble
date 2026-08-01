@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
 
+## [2026-08-01] Session Summary (접힌 사용자용 AI 과정·사용량)
+
+- What was done:
+  - 기술 단계명을 사용자 단계명으로 변환하고 상세를 기본 접힘으로 변경했으며 USD 대신 작업 한도 비율을 표시했다.
+  - 단계 및 run 전체 오류 원문을 렌더링하지 않고 안전한 복구 안내만 표시했다.
+- Key decisions:
+  - 현재 값은 결제액·월간 한도가 아님을 명시하고 집계가 없으면 값을 만들지 않는다.
+- Issues encountered:
+  - 브라우저에서 local-offline provider 비활성 문구 노출을 발견해 회귀 테스트와 함께 차단했다.
+- Validation:
+  - AgentRunDetailPanel tests, Frontend 전체 check, 실제 failed run accordion 확인 통과.
+- Next steps:
+  - P8.7 월간 집계 API가 생기면 별도 사용량 카드로 확장한다.
+
 ## [2026-07-31] Session Summary (AI 작업 내역 삭제 mutation)
 
 - What was done:

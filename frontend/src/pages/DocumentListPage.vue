@@ -40,12 +40,14 @@ import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const cache = useQueryClient()
 const authStore = useAuthStore()
+const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const filters = computed(() => parseDocumentFilters(route.query))
 const documents = useDocumentListQuery(userId, filters)
@@ -64,9 +66,9 @@ const message = ref('')
 let uploadIdempotencyKey = ''
 const reparseKeys = new Map<string, string>()
 const DOCUMENT_TYPE_HINTS: Record<DocumentType, string> = {
-  RESUME: '학력·경력·기술 등 지원의 기본이 되는 정보를 정리해요.',
+  RESUME: '학력, 경력, 프로젝트처럼 지원 준비에 필요한 경험을 정리해요.',
   PORTFOLIO: '프로젝트와 결과물에서 역할과 성과를 찾아 정리해요.',
-  CAREER_DESCRIPTION: '회사별 담당 업무와 성과를 경력 정보로 정리해요.',
+  CAREER_DESCRIPTION: '회사별 담당 업무와 성과를 자소서 소재 후보로 정리해요.',
   CERTIFICATE: '자격 취득 내용을 프로필에 연결할 때 활용해요.',
   TRANSCRIPT: '학업 이력과 성적 정보를 확인할 때 활용해요.',
   OTHER: '지원 준비에 참고할 수 있는 기타 자료로 등록해요.',
@@ -153,6 +155,7 @@ async function upload(): Promise<void> {
       idempotencyKey:
         uploadIdempotencyKey || (uploadIdempotencyKey = createDocumentIdempotencyKey('upload')),
     })
+    notifications.toast('자료를 등록하고 분석을 시작했어요.', 'success')
     await router.push({
       name: 'document-detail',
       params: { documentId: accepted.documentId },
@@ -189,6 +192,13 @@ function updateSort(event: Event): void {
 }
 
 async function reparse(id: string, version: number): Promise<void> {
+  const confirmed = await notifications.confirm({
+    title: '자료를 다시 분석할까요?',
+    message:
+      'AI 사용량이 새로 집계될 수 있어요. 기존 원본과 검토 결과는 새 분석이 끝날 때까지 유지됩니다.',
+    confirmLabel: '다시 분석',
+  })
+  if (!confirmed) return
   actionError.value = ''
   try {
     const accepted = await reparseMutation.mutateAsync({
@@ -202,6 +212,7 @@ async function reparse(id: string, version: number): Promise<void> {
           return key
         })(),
     })
+    notifications.toast('자료를 다시 분석하기 시작했어요.', 'success')
     await router.push({
       name: 'document-detail',
       params: { documentId: id },
@@ -228,7 +239,12 @@ async function download(id: string): Promise<void> {
 }
 
 async function remove(id: string, version: number, name: string): Promise<void> {
-  if (!window.confirm(`${name} 문서를 삭제할까요?`)) return
+  const confirmed = await notifications.confirm({
+    title: '등록 자료를 삭제할까요?',
+    message: `${name} 원본과 아직 참조되지 않은 분석 소재가 삭제됩니다. 다른 기능에서 이미 사용한 기록은 안전한 이력으로 남아요.`,
+    confirmLabel: '자료 삭제',
+  })
+  if (!confirmed) return
   actionError.value = ''
   try {
     await deleteMutation.mutateAsync({ id, version })
@@ -238,6 +254,7 @@ async function remove(id: string, version: number, name: string): Promise<void> 
     cache.removeQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
     await cache.invalidateQueries({ queryKey: documentQueryKeys.root(userId.value) })
     message.value = '자료를 삭제했어요.'
+    notifications.toast('자료를 삭제했어요.', 'success')
   } catch (error) {
     actionError.value = normalizeApiError(error).message
   }
@@ -275,7 +292,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     <PageHeader
       heading-id="documents-heading"
       title="이력서·자료"
-      description="이력서와 포트폴리오를 등록하면 필요한 경력 정보를 정리해 드려요."
+      description="이력서와 포트폴리오를 등록하면 AI가 경험을 정리하고, 활용할 소재를 직접 선택할 수 있어요."
       eyebrow="나의 자료"
     />
 
@@ -387,7 +404,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         <div class="upload-panel__action">
           <p>
             <AppIcon name="runs" />
-            등록하면 문서 읽기와 경력 정보 정리를 시작해요.
+            등록하면 자료를 읽고 자소서에 활용할 경험 후보를 정리해요.
           </p>
           <button
             id="document-upload-submit"
@@ -415,7 +432,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
           </select>
         </label>
         <label class="field">
-          <span class="field__label">문서 읽기</span>
+          <span class="field__label">자료 확인</span>
           <select v-model="filterParseStatus" class="control control--compact">
             <option value="">전체</option>
             <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
@@ -424,7 +441,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
           </select>
         </label>
         <label class="field">
-          <span class="field__label">경력 정보 정리</span>
+          <span class="field__label">경험·소재 정리</span>
           <select v-model="filterEvidenceStatus" class="control control--compact">
             <option value="">전체</option>
             <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
@@ -489,7 +506,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
             >{{ document.displayName }}</RouterLink
           >
           <p class="document-row__file">
-            {{ DOCUMENT_TYPE_LABELS[document.documentType] }} ·
+            {{ document.originalFilename }} · {{ DOCUMENT_TYPE_LABELS[document.documentType] }} ·
             {{ formatFileSize(document.fileSizeBytes) }}
           </p>
           <p class="document-row__time">
@@ -498,12 +515,12 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         </div>
         <div class="document-row__statuses" aria-label="자료 상태">
           <StatusBadge
-            prefix="문서"
+            prefix="자료"
             :label="DOCUMENT_PARSE_STATUS_LABELS[document.parseStatus]"
             :tone="parseTone(document.parseStatus)"
           />
           <StatusBadge
-            prefix="경력 정보"
+            prefix="소재 정리"
             :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.evidenceExtractionStatus]"
             :tone="evidenceTone(document.evidenceExtractionStatus)"
           />
@@ -514,14 +531,14 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
             class="button button--secondary button--compact"
             @click="reparse(document.id, document.version)"
           >
-            재처리
+            다시 분석
           </button>
           <button
             type="button"
             class="button button--ghost button--compact"
             @click="download(document.id)"
           >
-            다운로드
+            원본 열기
           </button>
           <button
             type="button"

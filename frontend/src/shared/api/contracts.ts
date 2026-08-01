@@ -60,6 +60,7 @@ export type EvidenceSourceType =
   | 'LANGUAGE_SCORE'
   | 'AWARD'
   | 'CAREER'
+  | 'ACTIVITY'
   | 'DOCUMENT_CHUNK'
   | 'MANUAL'
 
@@ -227,6 +228,52 @@ export interface CareerUpdateRequest extends CareerCreateRequest {
   version: number
 }
 
+export const ACTIVITY_TYPES = [
+  'CLUB',
+  'VOLUNTEERING',
+  'CONTEST',
+  'SUPPORTERS',
+  'PRESS_CORPS',
+  'STUDENT_COUNCIL',
+  'EDUCATION_PROGRAM',
+  'INTERNATIONAL',
+  'OTHER',
+] as const
+
+export type ActivityType = (typeof ACTIVITY_TYPES)[number]
+
+export interface ActivityDto extends VersionedProfileResource {
+  title: string
+  activityType: ActivityType
+  organizer: string
+  startedAt: string | null
+  endedAt: string | null
+  ongoing: boolean
+  role: string | null
+  description: string
+  achievements: string | null
+  relatedUrl: string | null
+  useAsMaterial: boolean
+}
+
+export interface ActivityCreateRequest {
+  title: string
+  activityType: ActivityType
+  organizer: string
+  startedAt: string | null
+  endedAt: string | null
+  ongoing: boolean
+  role: string | null
+  description: string
+  achievements: string | null
+  relatedUrl: string | null
+  useAsMaterial: boolean
+}
+
+export interface ActivityUpdateRequest extends ActivityCreateRequest {
+  version: number
+}
+
 export interface EvidenceDto extends VersionedProfileResource {
   sourceType: EvidenceSourceType
   sourceEntityId: string | null
@@ -249,8 +296,13 @@ export interface EvidenceUpdateRequest {
 }
 
 export interface EvidenceVerificationRequest {
-  status: Extract<EvidenceVerificationStatus, 'VERIFIED' | 'REJECTED'>
+  status: Extract<EvidenceVerificationStatus, 'PENDING' | 'VERIFIED' | 'REJECTED'>
   version: number
+}
+
+export interface EvidenceVerificationBatchRequest {
+  items: Array<{ id: string; version: number }>
+  status: Extract<EvidenceVerificationStatus, 'PENDING' | 'VERIFIED' | 'REJECTED'>
 }
 
 export type StructuredProfileDto =

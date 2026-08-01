@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  ActivityCreateRequest,
   AwardCreateRequest,
   CareerCreateRequest,
   CertificationCreateRequest,
@@ -83,6 +84,15 @@ describe('P2 profile API contract', () => {
       update: () => profileApi.updateCareer('resource-id', { ...career(), version: 4 }),
       remove: () => profileApi.deleteCareer('resource-id', 4),
     },
+    {
+      name: 'activity',
+      base: '/profile/activities',
+      list: profileApi.listActivities,
+      request: activity(),
+      create: () => profileApi.createActivity(activity()),
+      update: () => profileApi.updateActivity('resource-id', { ...activity(), version: 4 }),
+      remove: () => profileApi.deleteActivity('resource-id', 4),
+    },
   ])('maps $name list/create/update/delete exactly', async (entry) => {
     const params = { page: 1, size: 20, sort: 'createdAt,desc' }
     await entry.list(params)
@@ -117,6 +127,10 @@ describe('P2 profile API contract', () => {
       version: 1,
     })
     await profileApi.verifyEvidence('evidence-id', { status: 'REJECTED', version: 2 })
+    await profileApi.verifyEvidenceBatch({
+      items: [{ id: 'evidence-id', version: 2 }],
+      status: 'VERIFIED',
+    })
 
     expect(apiClient.get).toHaveBeenCalledWith('/profile/evidence', {
       params: {
@@ -137,6 +151,10 @@ describe('P2 profile API contract', () => {
     expect(apiClient.patch).toHaveBeenCalledWith('/profile/evidence/evidence-id/verification', {
       status: 'REJECTED',
       version: 2,
+    })
+    expect(apiClient.patch).toHaveBeenCalledWith('/profile/evidence/verification', {
+      items: [{ id: 'evidence-id', version: 2 }],
+      status: 'VERIFIED',
     })
   })
 })
@@ -199,5 +217,21 @@ function career(): CareerCreateRequest {
     isCurrent: true,
     responsibilities: null,
     achievements: null,
+  }
+}
+
+function activity(): ActivityCreateRequest {
+  return {
+    title: 'IT 동아리 운영진',
+    activityType: 'CLUB',
+    organizer: 'OO대학교',
+    startedAt: '2025-03-01',
+    endedAt: null,
+    ongoing: true,
+    role: '운영진',
+    description: '정기 세미나를 기획하고 운영했습니다.',
+    achievements: '참여율을 높였습니다.',
+    relatedUrl: null,
+    useAsMaterial: true,
   }
 }

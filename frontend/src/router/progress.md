@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-01] Session Summary (대외활동 canonical route)
+
+- What was done:
+  - `/profile/activities` lazy route와 title/allowlist/returnTo를 추가하고 `/profile/evidence`를 redirect했다.
+- Key decisions:
+  - 북마크 호환성을 유지하되 직접 활동 화면을 canonical URL로 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Router tests와 실제 route 진입·모바일 navigation 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 route·title·active state)
 
 - What was done:

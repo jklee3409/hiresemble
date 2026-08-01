@@ -19,7 +19,7 @@ import {
 import {
   STATUS_LABELS,
   WORKFLOW_LABELS,
-  formatCost,
+  formatUsage,
   formatInstant,
   formatRunProgressLabel,
 } from '@/features/agent-runs/presentation'
@@ -32,10 +32,12 @@ import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { useNotifications } from '@/shared/ui/notifications'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const filters = computed(() => parseAgentRunFilters(route.query))
 const runs = useAgentRunListQuery(userId, filters)
@@ -153,15 +155,19 @@ function toggleAllDeletable(event: Event): void {
 }
 
 async function removeOne(runId: string): Promise<void> {
-  if (!window.confirm('이 AI 작업 내역을 삭제할까요? 실행 결과와 비용 감사 기록은 보존돼요.')) {
-    return
-  }
+  const confirmed = await notifications.confirm({
+    title: 'AI 작업 내역을 목록에서 지울까요?',
+    message: '목록에서는 보이지 않게 되지만 생성된 결과와 안전한 사용량 기록은 유지됩니다.',
+    confirmLabel: '내역 삭제',
+  })
+  if (!confirmed) return
   commandMessage.value = ''
   commandError.value = ''
   try {
     await deleteRun.mutateAsync(runId)
     selectedRunIds.value = selectedRunIds.value.filter((id) => id !== runId)
     commandMessage.value = 'AI 작업 내역을 삭제했어요.'
+    notifications.toast('AI 작업 내역을 삭제했어요.', 'success')
   } catch (error) {
     commandError.value = normalizeApiError(error).message
   }
@@ -169,20 +175,20 @@ async function removeOne(runId: string): Promise<void> {
 
 async function removeSelected(): Promise<void> {
   const ids = [...selectedRunIds.value]
-  if (
-    ids.length === 0 ||
-    !window.confirm(
-      `선택한 AI 작업 내역 ${ids.length}개를 삭제할까요? 실행 결과와 비용 감사 기록은 보존돼요.`,
-    )
-  ) {
-    return
-  }
+  if (ids.length === 0) return
+  const confirmed = await notifications.confirm({
+    title: `AI 작업 내역 ${ids.length}개를 지울까요?`,
+    message: '목록에서는 보이지 않게 되지만 생성된 결과와 안전한 사용량 기록은 유지됩니다.',
+    confirmLabel: '선택 내역 삭제',
+  })
+  if (!confirmed) return
   commandMessage.value = ''
   commandError.value = ''
   try {
     await deleteSelectedRuns.mutateAsync(ids)
     selectedRunIds.value = []
     commandMessage.value = `AI 작업 내역 ${ids.length}개를 삭제했어요.`
+    notifications.toast(`AI 작업 내역 ${ids.length}개를 삭제했어요.`, 'success')
   } catch (error) {
     commandError.value = normalizeApiError(error).message
   }
@@ -377,8 +383,8 @@ async function removeSelected(): Promise<void> {
             <dd>{{ formatInstant(run.updatedAt) }}</dd>
           </div>
           <div>
-            <dt>예상 사용 비용</dt>
-            <dd>{{ formatCost(run.actualCostUsd) }}</dd>
+            <dt>이번 작업 사용량</dt>
+            <dd>{{ formatUsage(run.actualCostUsd, run.reservedCostUsd) }}</dd>
           </div>
           <div>
             <dt>재시도</dt>

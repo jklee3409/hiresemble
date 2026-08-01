@@ -4,6 +4,19 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-08-01] Session Summary (직접 대외활동 navigation·행동)
+
+- What was done:
+  - 프로필 탭과 이전/다음 행동을 직접 대외활동 route로 연결하고 문서 추출 근거 화면과 분리했다.
+- Key decisions:
+  - 빈 상태에서 AI 추출 경험을 대신 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Profile navigation/page tests와 실제 모바일 항목 선택 UI를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (학력 단계 validation)
 
 - What was done:

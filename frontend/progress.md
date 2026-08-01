@@ -7,6 +7,21 @@
 - `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 60 files/238 tests와 P2~P8 actual E2E가 있으며 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
 
+## [2026-08-01] Session Summary (자료 검토·대외활동·알림 UX 보정)
+
+- What was done:
+  - 자료 목록·상세·미리보기와 소재 검토를 행동 순서 중심으로 재설계하고 개별/선택/전체 승인·제외·재검토를 추가했다.
+  - 직접 등록 대외활동 CRUD 화면과 전역 토스트·접근 가능한 확인 모달을 구현하고 브라우저 기본 alert/confirm/prompt를 제거했다.
+  - AI 상세를 기본 접힘과 사용자 단계명으로 바꾸고 USD 및 기술 오류를 숨겼으며 중복 결과 영역을 통합했다.
+- Key decisions:
+  - 성공은 toast, 필드 문제는 inline, 삭제·재분석·승인 취소는 alertdialog로 역할을 분리했다.
+- Issues encountered:
+  - 실제 실패 run에서 run-level safe message도 기술적으로 보일 수 있어 원문을 직접 렌더링하지 않도록 추가 보정했다.
+- Validation:
+  - `corepack pnpm check`: ESLint, Prettier, vue-tsc, 61 files/243 tests, production build 통과. Playwright desktop/mobile 실제 흐름과 focus/ESC/overflow를 확인했다.
+- Next steps:
+  - 실제 성공 분석의 복수 소재 브라우저 검증은 외부 Provider 사용 승인을 받은 환경에서 수행한다.
+
 ## [2026-07-31] Session Summary (P8 면접 준비·질문·답변 피드백 UI)
 
 - What was done:

@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-01] Session Summary (전역 toast·접근 가능한 확인 모달)
+
+- What was done:
+  - singleton notification service와 AppNotifications host를 추가해 성공/error toast와 alertdialog를 제공했다.
+- Key decisions:
+  - 모달은 취소 초기 focus, Tab trap, ESC/배경 취소, trigger focus 복귀를 보장한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AppNotifications component tests와 실제 삭제 모달 keyboard 흐름 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (면접 준비 navigation icon)
 
 - What was done:

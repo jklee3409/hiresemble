@@ -8,6 +8,7 @@ const AUTH_REQUIRED_PATHS = new Set([
   '/profile/languages',
   '/profile/awards',
   '/profile/careers',
+  '/profile/activities',
   '/profile/evidence',
   '/documents',
   '/jobs',

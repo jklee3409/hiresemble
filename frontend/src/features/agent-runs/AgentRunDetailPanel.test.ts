@@ -27,14 +27,13 @@ describe('AgentRunDetailPanel', () => {
     })
 
     expect(wrapper.text()).toContain('공고 분석')
-    expect(wrapper.text()).toContain('예상 사용 비용')
+    expect(wrapper.text()).toContain('이번 작업 사용량')
     expect(wrapper.text()).not.toContain('요청 품질')
     expect(wrapper.text()).not.toContain('처리 방식')
     expect(wrapper.text()).not.toContain('예약')
-    expect(wrapper.text()).toContain('실제 결제 금액과 다를 수 있어요')
+    expect(wrapper.text()).toContain('결제 금액이나 월간 전체 한도를 뜻하지 않아요')
     expect(wrapper.text()).not.toContain('billable estimate')
-    expect(wrapper.text()).toContain('완료된 항목 1개')
-    expect(wrapper.text()).toContain('완료하지 못한 항목 1개')
+    expect(wrapper.text()).toContain('완료 1개 · 확인 필요 1개')
     expect(wrapper.text()).not.toContain('scope-a')
     expect(wrapper.text()).not.toContain('scope-b')
     expect(wrapper.text()).not.toContain('LOAD_FIXTURE')
@@ -42,6 +41,28 @@ describe('AgentRunDetailPanel', () => {
     expect(wrapper.text()).not.toContain('prompt')
     expect(wrapper.text()).not.toContain('claimToken')
     expect(wrapper.text()).not.toContain('inputHash')
+  })
+
+  it('does not expose the persisted technical error message', () => {
+    const wrapper = mount(AgentRunDetailPanel, {
+      props: {
+        run: agentRunDetail({
+          status: 'FAILED',
+          retryable: true,
+          safeError: {
+            code: 'AI_PROVIDER_DISABLED',
+            message: 'AI 실행 공급자가 활성화되지 않았습니다.',
+          },
+        }),
+        connectionState: 'closed',
+      },
+      global,
+    })
+
+    expect(wrapper.text()).toContain('잠시 후 다시 시도해 주세요')
+    expect(wrapper.text()).toContain('등록한 원본과 기존 결과는 그대로 유지됩니다')
+    expect(wrapper.text()).not.toContain('공급자')
+    expect(wrapper.text()).not.toContain('AI_PROVIDER_DISABLED')
   })
 
   it('links a Job analysis run back to the owning Job analysis page without copying results', () => {

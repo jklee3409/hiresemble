@@ -45,6 +45,7 @@ export const documentUploadAcceptedSchema = z.object({
 const documentSummaryFields = {
   id: uuidSchema,
   documentType: z.enum(DOCUMENT_TYPES),
+  originalFilename: z.string().min(1).max(255),
   displayName: z.string().min(1).max(255),
   mimeType: z.string().min(1).max(100),
   fileSizeBytes: z

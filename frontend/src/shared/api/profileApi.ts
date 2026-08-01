@@ -1,4 +1,7 @@
 import type {
+  ActivityCreateRequest,
+  ActivityDto,
+  ActivityUpdateRequest,
   AwardCreateRequest,
   AwardDto,
   AwardUpdateRequest,
@@ -14,6 +17,7 @@ import type {
   EvidenceDto,
   EvidenceUpdateRequest,
   EvidenceVerificationRequest,
+  EvidenceVerificationBatchRequest,
   EvidenceVerificationStatus,
   LanguageScoreCreateRequest,
   LanguageScoreDto,
@@ -145,6 +149,26 @@ export function deleteCareer(id: string, version: number): Promise<void> {
   return apiClient.delete(`/profile/careers/${id}`, query({ version }))
 }
 
+export function listActivities(params: PageParams = {}): Promise<PageResponse<ActivityDto>> {
+  return apiClient.get('/profile/activities', query(params))
+}
+
+export function getActivity(id: string): Promise<ActivityDto> {
+  return apiClient.get(`/profile/activities/${id}`)
+}
+
+export function createActivity(request: ActivityCreateRequest): Promise<ActivityDto> {
+  return apiClient.post('/profile/activities', request)
+}
+
+export function updateActivity(id: string, request: ActivityUpdateRequest): Promise<ActivityDto> {
+  return apiClient.put(`/profile/activities/${id}`, request)
+}
+
+export function deleteActivity(id: string, version: number): Promise<void> {
+  return apiClient.delete(`/profile/activities/${id}`, query({ version }))
+}
+
 export function listEvidence(params: EvidenceListParams = {}): Promise<PageResponse<EvidenceDto>> {
   return apiClient.get('/profile/evidence', query(params))
 }
@@ -158,4 +182,10 @@ export function verifyEvidence(
   request: EvidenceVerificationRequest,
 ): Promise<EvidenceDto> {
   return apiClient.patch(`/profile/evidence/${id}/verification`, request)
+}
+
+export function verifyEvidenceBatch(
+  request: EvidenceVerificationBatchRequest,
+): Promise<EvidenceDto[]> {
+  return apiClient.patch('/profile/evidence/verification', request)
 }

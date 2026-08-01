@@ -57,8 +57,22 @@ export function formatRunProgressLabel(status: AgentRunStatus): string {
   }[status]
 }
 
-export function formatStepName(stepOrder: number): string {
-  return `${stepOrder}단계`
+const STEP_LABELS: Record<string, string> = {
+  LOAD_DOCUMENT_SOURCE: '업로드 자료 확인',
+  EXTRACT_OR_ACCEPT_TEXT: '문서 내용 확인',
+  MASK_TEXT: '개인정보 보호 처리',
+  CHUNK_TEXT: '내용 단위 정리',
+  EMBED_CHUNKS: '관련 경험을 찾기 위한 준비',
+  EXTRACT_EVIDENCE_CANDIDATES: '주요 경험과 소재 정리',
+  APPLY_EVIDENCE_CANDIDATES: '검토할 소재 구성',
+  FINALIZE_DOCUMENT: '분석 결과 저장',
+  EXTRACT_JOB_FIELDS: '채용 공고 내용 확인',
+  APPLY_JOB_EXTRACTION: '공고 정보 정리',
+  EXTRACT_REQUIREMENTS: '지원 요건 정리',
+}
+
+export function formatStepName(stepKey: string, stepOrder: number): string {
+  return STEP_LABELS[stepKey] ?? `${stepOrder}번째 작업`
 }
 
 export function formatInstant(value: string | null): string {
@@ -67,8 +81,14 @@ export function formatInstant(value: string | null): string {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ko-KR')
 }
 
-export function formatCost(value: number): string {
-  return `USD ${value.toFixed(6)}`
+export function usagePercent(used: number, limit: number): number | null {
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return null
+  return Math.min(100, Math.max(0, Math.round((used / limit) * 100)))
+}
+
+export function formatUsage(used: number, limit: number): string {
+  const percent = usagePercent(used, limit)
+  return percent === null ? '집계 정보 없음' : `작업 한도의 ${percent}%`
 }
 
 export function formatDuration(value: number | null): string {
@@ -99,9 +119,13 @@ export function safeRequiredActionRoute(value: string | null): string | null {
     const target = new URL(value, origin)
     if (target.origin !== origin) return null
     const allowed =
-      ['/onboarding', '/profile/basic', '/profile/evidence', '/agent-runs'].includes(
-        target.pathname,
-      ) ||
+      [
+        '/onboarding',
+        '/profile/basic',
+        '/profile/activities',
+        '/profile/evidence',
+        '/agent-runs',
+      ].includes(target.pathname) ||
       AGENT_RUN_DETAIL_PATH.test(target.pathname) ||
       DOCUMENT_DETAIL_PATH.test(target.pathname) ||
       JOB_DETAIL_PATH.test(target.pathname)

@@ -9,7 +9,7 @@
 - `filters.ts`: repeatable URL query parse·canonicalization
 - `queries.ts`: user-scoped list/detail/retry/cancel/history delete mutation query
 - `stream.ts`: snapshot-first SSE와 reconnect·polling
-- `AgentRunDetailPanel.vue`: 공개 detail projection
+- `AgentRunDetailPanel.vue`: 기본 접힌 사용자용 단계명, 안전 오류와 작업 한도 대비 사용량 projection
 - `AgentRunProgressDrawer.vue`: 최근 조회된 active Run
 - `*.test.ts`, `testFixtures.ts`: contract·UI·stream 검증
 - [`progress.md`](progress.md): P3 구현 상태
@@ -26,7 +26,7 @@ Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run busin
 
 ## 변경 시 주의사항
 
-provider/model·quality tier·비용 예약값, prompt, hash, raw JSON, claim·lease와 분석·자기소개서 결과 전체를 표시하지 않는다. SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
+provider/model·USD 금액·prompt, hash, raw JSON, claim·lease와 분석·자기소개서 결과 전체를 표시하지 않는다. 내부 원가와 reservation은 결제액처럼 노출하지 않고 작업별 비율만 표시하며 SSE 단절만으로 Run을 FAILED로 바꾸지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -8,6 +8,7 @@ import DocumentDetailPage from '@/pages/DocumentDetailPage.vue'
 import DocumentListPage from '@/pages/DocumentListPage.vue'
 import * as documentApi from '@/shared/api/documentApi'
 import * as profileApi from '@/shared/api/profileApi'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/shared/api/documentApi', () => ({
@@ -27,6 +28,7 @@ vi.mock('@/shared/api/profileApi', () => ({
   listEvidence: vi.fn(),
   updateEvidence: vi.fn(),
   verifyEvidence: vi.fn(),
+  verifyEvidenceBatch: vi.fn(),
 }))
 
 describe('P4 document pages', () => {
@@ -103,14 +105,15 @@ describe('P4 document pages', () => {
       updatedAt: now,
     })
     vi.mocked(documentApi.deleteDocument).mockResolvedValue()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const { wrapper, router, cache } = await mountDetail()
     cache.setQueryData(['user', 'user-1', 'documentText', documentId], { text: 'sensitive' })
     cache.setQueryData(['user', 'user-1', 'evidence', { documentId, page: 0, size: 100 }], {
       items: [{ content: 'sensitive evidence' }],
     })
     const deleteButton = wrapper.findAll('button').find((button) => button.text() === '삭제')
-    await deleteButton?.trigger('click')
+    const deletion = deleteButton?.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await deletion
     await flushPromises()
 
     expect(documentApi.deleteDocument).toHaveBeenCalledWith(documentId, 2)
@@ -130,6 +133,53 @@ describe('P4 document pages', () => {
     expect(wrapper.text()).toContain('읽는 중')
     expect(wrapper.text()).toContain('기다리는 중')
     expect(wrapper.findAll('select')).toHaveLength(5)
+  })
+
+  it('shows review status and batch-approves selected document materials', async () => {
+    vi.mocked(documentApi.getDocument).mockResolvedValue(detail())
+    vi.mocked(documentApi.getDocumentText).mockResolvedValue({
+      documentId,
+      text: '프로젝트 경험',
+      characterCount: 7,
+      manualTextProvided: false,
+      version: 2,
+      updatedAt: now,
+    })
+    const pendingEvidence = {
+      id: '00000000-0000-4000-8000-000000000201',
+      sourceType: 'DOCUMENT_CHUNK' as const,
+      sourceEntityId: '00000000-0000-4000-8000-000000000202',
+      documentId,
+      sourceDeletedAt: null,
+      evidenceCategory: 'PROJECT',
+      title: '협업 프로젝트',
+      content: '팀과 함께 서비스를 개선했습니다.',
+      metadata: { role: '기획' },
+      confidence: 0.9,
+      verificationStatus: 'PENDING' as const,
+      verifiedAt: null,
+      version: 0,
+      createdAt: now,
+      updatedAt: now,
+    }
+    vi.mocked(profileApi.listEvidence).mockResolvedValue(page([pendingEvidence]))
+    vi.mocked(profileApi.verifyEvidenceBatch).mockResolvedValue([
+      { ...pendingEvidence, verificationStatus: 'VERIFIED', version: 1 },
+    ])
+    const { wrapper } = await mountDetail()
+
+    expect(wrapper.text()).toContain('1개 확인 필요')
+    expect(wrapper.text()).toContain('제외해도 업로드한 원본과 분석 기록은 삭제되지 않으며')
+    await wrapper.get('.evidence-card input[type="checkbox"]').setValue(true)
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '선택 승인')
+      ?.trigger('click')
+    await flushPromises()
+    expect(profileApi.verifyEvidenceBatch).toHaveBeenCalledWith({
+      items: [{ id: pendingEvidence.id, version: 0 }],
+      status: 'VERIFIED',
+    })
   })
 })
 
@@ -193,6 +243,7 @@ function summary() {
   return {
     id: documentId,
     documentType: 'RESUME' as const,
+    originalFilename: 'resume-source.txt',
     displayName: '이력서.txt',
     mimeType: 'text/plain',
     fileSizeBytes: 120,

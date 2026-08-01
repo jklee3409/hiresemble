@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import ProfileBasicPage from '@/pages/ProfileBasicPage.vue'
+import ProfileActivitiesPage from '@/pages/ProfileActivitiesPage.vue'
 import ProfileEvidencePage from '@/pages/ProfileEvidencePage.vue'
 import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
 import type { EducationDto, EvidenceDto, PageResponse, ProfileDto } from '@/shared/api/contracts'
 import { ApiClientError } from '@/shared/api/errors'
 import * as documentApi from '@/shared/api/documentApi'
 import * as profileApi from '@/shared/api/profileApi'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/shared/api/profileApi', () => ({
@@ -36,9 +38,15 @@ vi.mock('@/shared/api/profileApi', () => ({
   createCareer: vi.fn(),
   updateCareer: vi.fn(),
   deleteCareer: vi.fn(),
+  listActivities: vi.fn(),
+  getActivity: vi.fn(),
+  createActivity: vi.fn(),
+  updateActivity: vi.fn(),
+  deleteActivity: vi.fn(),
   listEvidence: vi.fn(),
   updateEvidence: vi.fn(),
   verifyEvidence: vi.fn(),
+  verifyEvidenceBatch: vi.fn(),
 }))
 
 vi.mock('@/shared/api/documentApi', () => ({
@@ -99,6 +107,55 @@ describe('P2 profile pages', () => {
 
     expect(wrapper.find('#profile-displayName').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('헤더와 지원 홈에 표시되는 이름')
+  })
+
+  it('registers user-entered activities separately and makes material use explicit', async () => {
+    vi.mocked(profileApi.listActivities).mockResolvedValue(pageOf([]))
+    vi.mocked(profileApi.createActivity).mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000801',
+      title: '교내 IT 동아리 운영진',
+      activityType: 'CLUB',
+      organizer: 'OO대학교',
+      startedAt: '2025-03-01',
+      endedAt: null,
+      ongoing: true,
+      role: null,
+      description: '정기 세미나를 기획하고 운영했습니다.',
+      achievements: null,
+      relatedUrl: null,
+      useAsMaterial: true,
+      version: 0,
+      createdAt: '2026-08-01T00:00:00Z',
+      updatedAt: '2026-08-01T00:00:00Z',
+    })
+    const wrapper = await mountPage(ProfileActivitiesPage)
+
+    expect(wrapper.text()).toContain('문서 분석 결과와 별도로 관리해요.')
+    expect(wrapper.text()).toContain('아직 등록한 대외활동이 없어요.')
+    await wrapper.get('button').trigger('click')
+    const controls = wrapper.findAll('input, textarea')
+    await controls
+      .find((control) => control.attributes('placeholder')?.includes('IT 동아리'))
+      ?.setValue('교내 IT 동아리 운영진')
+    await wrapper.get('form select').setValue('CLUB')
+    await controls
+      .find((control) => control.attributes('placeholder')?.includes('총학생회'))
+      ?.setValue('OO대학교')
+    await controls
+      .find((control) => control.attributes('placeholder')?.includes('무엇을 목표'))
+      ?.setValue('정기 세미나를 기획하고 운영했습니다.')
+    const materialToggle = wrapper.findAll('input[type="checkbox"]').at(-1)
+    await materialToggle?.setValue(true)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(profileApi.createActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '교내 IT 동아리 운영진',
+        organizer: 'OO대학교',
+        useAsMaterial: true,
+      }),
+    )
   })
 
   it('moves to education only after the basic profile save succeeds', async () => {
@@ -177,7 +234,6 @@ describe('P2 profile pages', () => {
       version: 2,
     })
     vi.mocked(profileApi.deleteEducation).mockResolvedValue()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const wrapper = await mountPage(StructuredProfilePage, { kind: 'education' })
 
     expect(wrapper.text()).toContain('School')
@@ -203,7 +259,9 @@ describe('P2 profile pages', () => {
     )
 
     const deleteButton = wrapper.findAll('button').find((button) => button.text() === '삭제')
-    await deleteButton?.trigger('click')
+    const deletion = deleteButton?.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await deletion
     await flushPromises()
     expect(profileApi.deleteEducation).toHaveBeenCalledWith(item.id, item.version)
   })
@@ -215,6 +273,7 @@ describe('P2 profile pages', () => {
         {
           id: documentId,
           documentType: 'CERTIFICATE',
+          originalFilename: 'certificate.pdf',
           displayName: '자격 증빙.pdf',
           mimeType: 'application/pdf',
           fileSizeBytes: 100,
@@ -303,6 +362,7 @@ describe('P2 profile pages', () => {
         {
           id: '00000000-0000-4000-8000-000000000101',
           documentType: 'RESUME',
+          originalFilename: 'resume.txt',
           displayName: '이력서.txt',
           mimeType: 'text/plain',
           fileSizeBytes: 100,

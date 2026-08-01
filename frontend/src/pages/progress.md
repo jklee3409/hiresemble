@@ -4,6 +4,20 @@
 
 P1 인증부터 P8 Interview preparation·question set·answer feedback, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-01] Session Summary (자료·대외활동 화면 B2C 흐름)
+
+- What was done:
+  - 문서 목록/상세 정보 구조와 사용자 문구를 개선하고 직접 대외활동 등록·수정·삭제 화면을 추가했다.
+  - 자료·공고·프로필·AI 내역 위험 작업을 공통 확인 모달로 옮기고 성공 toast를 연결했다.
+- Key decisions:
+  - `/profile/activities`를 canonical route로 두고 과거 evidence route는 redirect한다.
+- Issues encountered:
+  - 실제 브라우저 실패 화면에서 소재 요약이 `정리 중`으로 남아 상태 label을 직접 표시하도록 보정했다.
+- Validation:
+  - Frontend 전체 check와 Playwright desktop/mobile 흐름 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 세 화면·답변 409 UX)
 
 - What was done:

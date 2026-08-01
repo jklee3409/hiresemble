@@ -10,6 +10,7 @@ import JobOverviewPage from '@/pages/JobOverviewPage.vue'
 import * as agentRunApi from '@/shared/api/agentRunApi'
 import { ApiClientError } from '@/shared/api/errors'
 import * as jobApi from '@/shared/api/jobApi'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 import {
   JOB_ID,
@@ -257,12 +258,13 @@ describe('P5 Job pages', () => {
     vi.mocked(jobApi.deleteJob).mockRejectedValue(
       new ApiClientError({ status: 404, code: 'RESOURCE_NOT_FOUND', message: 'not found' }),
     )
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const { wrapper, router, cache } = await mountOverview()
     cache.setQueryData(['user', 'user-1', 'job', JOB_ID], jobDetailFixture())
 
     const deleteButton = wrapper.findAll('button').find((button) => button.text() === '삭제')
-    await deleteButton?.trigger('click')
+    const deletion = deleteButton?.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await deletion
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('jobs')

@@ -19,7 +19,7 @@
 
 ## 구성 요소 역할
 
-- `index.ts`는 `/`, 인증, onboarding, dashboard, deep-link 가능한 7개 `/profile` section, lazy 업무 route와 Job analysis/cover-letter/interview child, 질문 set 목록·상세 route를 등록한다.
+- `index.ts`는 `/`, 인증, onboarding, dashboard, `/profile/activities`를 포함한 7개 profile section, lazy 업무 route와 Job analysis/cover-letter/interview child, 질문 set 목록·상세 route를 등록한다.
 - public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
 - 새 route 진입은 문서 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 - `returnTo`는 dashboard·onboarding·등록된 profile·Agent Run·Document·Job·Cover Letter의 same-origin path만 허용한다.
@@ -38,6 +38,7 @@
 - P9 mock interview route를 선행 등록하지 않는다.
 - guard에서 도메인 데이터 조회나 서버 권한 판단을 중복 구현하지 않는다.
 - 사용자가 북마크하거나 외부에서 접근할 수 있는 path 변경은 호환성과 redirect 필요성을 검토한다.
+- 과거 `/profile/evidence` deep link는 직접 대외활동 canonical route로 redirect한다.
 - route component가 늘어나면 초기 bundle 영향을 고려해 lazy import를 사용한다.
 
 ## 관련 규칙 및 문서

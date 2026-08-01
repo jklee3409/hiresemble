@@ -4,6 +4,19 @@
 
 Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-01] Session Summary (대외활동·소재 batch·파일명 typed 계약)
+
+- What was done:
+  - Activity DTO/API, ACTIVITY evidence, PENDING/batch review와 document originalFilename 계약을 Zod·typed client에 추가했다.
+- Key decisions:
+  - Frontend가 AI 추출 경험을 활동으로 필터링해 재해석하지 않고 전용 API만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - shared API tests와 Frontend 전체 typecheck 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 typed API·Zod 계약)
 
 - What was done:

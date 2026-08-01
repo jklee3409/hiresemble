@@ -13,6 +13,7 @@
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
 - [`PaginationNav.vue`](PaginationNav.vue): 이전·현재·다음 공용 pagination
 - [`formFocus.ts`](formFocus.ts): 검증 실패 뒤 첫 invalid control로 focus를 옮기는 공용 helper
+- [`AppNotifications.vue`](AppNotifications.vue), [`notifications.ts`](notifications.ts): 전역 Toast와 focus trap·ESC·focus return을 지원하는 확인 Dialog
 - [`uiComponents.test.ts`](uiComponents.test.ts): text status와 loading·empty·error 접근성 검증
 - [`progress.md`](progress.md): 공용 UI 구현·검증 이력
 
@@ -23,6 +24,7 @@
 - `AppIcon`은 emoji나 외부 icon dependency 없이 현재 제품에서 실제 사용하는 최소 SVG path만 제공한다.
 - `BrandMark`는 full·compact·inverse variant를 제공하고 실제 link의 accessible name은 사용하는 layout이 소유한다.
 - button·input·select·checkbox·radio·switch·date·file의 시각 상태는 공용 style token을 사용하고 native semantics와 label 연결은 각 component·page가 유지한다.
+- 성공은 Toast, 중요 mutation은 Confirm Dialog, 입력 오류는 Inline Validation으로 역할을 분리하고 브라우저 기본 alert·confirm·prompt를 사용하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

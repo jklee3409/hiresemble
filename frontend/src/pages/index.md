@@ -13,11 +13,11 @@ P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedba
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 편집 영역, Form 하단 저장 상태·409 재적용
 - [`DashboardPage.test.ts`](DashboardPage.test.ts): 신규·기존 사용자, 사용자 이름 fallback과 부분 조회 오류 대시보드 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력 단계·서버 계산 최종 학력, 경력·자격증·어학·수상 목록·form·삭제·409 재적용과 학력 상태 한국어 표시
-- [`ProfileEvidencePage.vue`](ProfileEvidencePage.vue): Workspace 안의 비학력 대외활동 filter·편집, 승인·거절 전용 안내와 문서 AI 근거 검토·read-only 상태
+- [`ProfileActivitiesPage.vue`](ProfileActivitiesPage.vue): 문서 AI 추출 경험과 분리된 사용자 직접 대외활동 CRUD·소재 후보 사용 선택
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort와 terminal 작업 개별·현재 페이지 선택 삭제
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록
-- [`DocumentDetailPage.vue`](DocumentDetailPage.vue): text·manual resume·reparse·download·delete·evidence 검토
+- [`DocumentDetailPage.vue`](DocumentDetailPage.vue): 전문 자료 정보·preview·manual resume·다시 분석·원본 확인·delete와 batch evidence 검토
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·마감일과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 공고 본문·상태·추출·편집·retry·delete·version conflict

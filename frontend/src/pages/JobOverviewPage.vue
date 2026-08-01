@@ -52,6 +52,7 @@ import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -60,6 +61,7 @@ const route = useRoute()
 const router = useRouter()
 const cache = useQueryClient()
 const authStore = useAuthStore()
+const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
 const job = useJobDetailQuery(userId, jobId)
@@ -216,7 +218,14 @@ async function retryExtraction(): Promise<void> {
 
 async function remove(): Promise<void> {
   const current = job.data.value
-  if (current === undefined || !window.confirm('이 채용 공고를 삭제할까요?')) return
+  if (current === undefined) return
+  const confirmed = await notifications.confirm({
+    title: '관심 공고를 삭제할까요?',
+    message:
+      '공고와 연결된 분석·자기소개서 흐름에 영향을 줄 수 있어요. 삭제 후에는 목록에서 복구할 수 없습니다.',
+    confirmLabel: '공고 삭제',
+  })
+  if (!confirmed) return
   message.value = ''
   actionError.value = ''
   try {

@@ -15,7 +15,7 @@ describe('Career Profile Workspace navigation', () => {
         '/profile/certifications',
         '/profile/languages',
         '/profile/awards',
-        '/profile/evidence',
+        '/profile/activities',
       ].map((path) => ({ path, component: { template: '<div />' } })),
     })
     await router.push('/profile/careers')

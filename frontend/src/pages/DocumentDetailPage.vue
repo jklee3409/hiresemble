@@ -33,12 +33,14 @@ import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const cache = useQueryClient()
 const authStore = useAuthStore()
+const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const documentId = computed(() => String(route.params.documentId ?? ''))
 const document = useDocumentDetailQuery(userId, documentId)
@@ -101,6 +103,7 @@ async function submitManualText(): Promise<void> {
       accepted.status === 'WAITING_USER'
         ? '입력한 내용을 저장했어요.'
         : '같은 작업을 다시 시작했어요.'
+    notifications.toast(message.value, 'success')
     await refreshDocument()
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -109,6 +112,13 @@ async function submitManualText(): Promise<void> {
 
 async function reparse(): Promise<void> {
   if (document.data.value === undefined) return
+  const confirmed = await notifications.confirm({
+    title: '자료를 다시 분석할까요?',
+    message:
+      'AI 사용량이 새로 집계될 수 있어요. 기존 원본과 검토 결과는 새 분석이 끝날 때까지 유지됩니다.',
+    confirmLabel: '다시 분석',
+  })
+  if (!confirmed) return
   actionError.value = ''
   try {
     const accepted = await reparseMutation.mutateAsync({
@@ -119,6 +129,7 @@ async function reparse(): Promise<void> {
     activeRunId.value = accepted.agentRunId
     reparseIdempotencyKey = ''
     message.value = '새로 읽는 작업을 접수했어요.'
+    notifications.toast('자료를 다시 분석하기 시작했어요.', 'success')
     await refreshDocument()
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -140,7 +151,14 @@ async function download(): Promise<void> {
 }
 
 async function remove(): Promise<void> {
-  if (document.data.value === undefined || !window.confirm('이 문서를 삭제할까요?')) return
+  if (document.data.value === undefined) return
+  const confirmed = await notifications.confirm({
+    title: '등록 자료를 삭제할까요?',
+    message:
+      '원본과 아직 참조되지 않은 분석 소재가 삭제됩니다. 직접 등록한 대외활동은 삭제되지 않아요.',
+    confirmLabel: '자료 삭제',
+  })
+  if (!confirmed) return
   actionError.value = ''
   try {
     await deleteMutation.mutateAsync(document.data.value.version)
@@ -149,6 +167,7 @@ async function remove(): Promise<void> {
     cache.removeQueries({ queryKey: documentQueryKeys.text(userId.value, documentId.value) })
     cache.removeQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
     await cache.invalidateQueries({ queryKey: documentQueryKeys.root(userId.value) })
+    notifications.toast('자료를 삭제했어요.', 'success')
     await router.replace({ name: 'documents', query: { deleted: 'true' } })
   } catch (error) {
     actionError.value = normalizeApiError(error).message
@@ -190,6 +209,13 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     } as const
   )[value]
 }
+
+function fileTypeLabel(mimeType: string): string {
+  if (mimeType === 'application/pdf') return 'PDF 문서'
+  if (mimeType.includes('wordprocessingml')) return 'Word 문서'
+  if (mimeType === 'text/plain') return '텍스트 문서'
+  return mimeType
+}
 </script>
 
 <template>
@@ -228,10 +254,10 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         <template #actions>
           <div class="document-detail__actions">
             <button class="button button--secondary button--compact" type="button" @click="reparse">
-              재처리
+              다시 분석
             </button>
             <button class="button button--ghost button--compact" type="button" @click="download">
-              다운로드
+              원본 열기
             </button>
             <button class="button button--danger button--compact" type="button" @click="remove">
               삭제
@@ -240,22 +266,54 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         </template>
       </PageHeader>
 
+      <section class="document-overview section-surface" aria-label="업로드 자료 정보">
+        <div class="document-overview__icon" aria-hidden="true"><AppIcon name="documents" /></div>
+        <dl class="document-overview__details">
+          <div>
+            <dt>업로드한 파일</dt>
+            <dd>{{ document.data.value.originalFilename }}</dd>
+          </div>
+          <div>
+            <dt>파일 형식</dt>
+            <dd>{{ fileTypeLabel(document.data.value.mimeType) }}</dd>
+          </div>
+          <div>
+            <dt>파일 크기</dt>
+            <dd>{{ formatFileSize(document.data.value.fileSizeBytes) }}</dd>
+          </div>
+          <div>
+            <dt>등록 시점</dt>
+            <dd>{{ new Date(document.data.value.uploadedAt).toLocaleString('ko-KR') }}</dd>
+          </div>
+          <div>
+            <dt>최근 분석</dt>
+            <dd>
+              {{
+                document.data.value.parsedAt
+                  ? new Date(document.data.value.parsedAt).toLocaleString('ko-KR')
+                  : '아직 분석 전'
+              }}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
       <div class="document-status-grid">
         <section class="document-status">
-          <span class="document-status__label">문서 읽기</span>
+          <span class="document-status__label">자료 확인</span>
           <StatusBadge
             :label="DOCUMENT_PARSE_STATUS_LABELS[document.data.value.parseStatus]"
             :tone="parseTone(document.data.value.parseStatus)"
           />
-          <p>등록한 자료의 내용을 읽는 과정이에요.</p>
+          <p>업로드한 파일에서 내용을 안전하게 확인하고 있어요.</p>
         </section>
         <section class="document-status">
-          <span class="document-status__label">경력 정보 정리</span>
+          <span class="document-status__label">경험·소재 정리</span>
           <StatusBadge
             :label="EVIDENCE_EXTRACTION_STATUS_LABELS[document.data.value.evidenceExtractionStatus]"
             :tone="evidenceTone(document.data.value.evidenceExtractionStatus)"
           />
-          <p>읽은 내용에서 확인할 경력 정보를 정리하는 과정이에요.</p>
+          <p>자소서와 면접에 참고할 경험 후보를 찾아 정리해요.</p>
         </section>
       </div>
       <p class="alert alert--info document-detail__message">
@@ -280,7 +338,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         {{ actionError }}
       </p>
 
-      <dl class="metadata-grid section-surface document-metadata">
+      <dl class="metadata-grid section-surface document-metadata" aria-label="분석 결과 요약">
         <div>
           <dt>페이지</dt>
           <dd>{{ document.data.value.pageCount ?? '확인 전' }}</dd>
@@ -290,11 +348,13 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
           <dd>{{ document.data.value.characterCount ?? '확인 전' }}</dd>
         </div>
         <div>
-          <dt>업로드</dt>
-          <dd>{{ new Date(document.data.value.uploadedAt).toLocaleString('ko-KR') }}</dd>
+          <dt>추출한 소재</dt>
+          <dd>
+            {{ EVIDENCE_EXTRACTION_STATUS_LABELS[document.data.value.evidenceExtractionStatus] }}
+          </dd>
         </div>
         <div>
-          <dt>최근 수정</dt>
+          <dt>마지막 상태 변경</dt>
           <dd>{{ new Date(document.data.value.updatedAt).toLocaleString('ko-KR') }}</dd>
         </div>
       </dl>
@@ -305,7 +365,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       >
         <div class="document-section__heading">
           <div>
-            <p class="section-kicker">진행 상황</p>
+            <p class="section-kicker">2. AI 분석</p>
             <h3 class="section-title">자료 분석 진행 상황</h3>
           </div>
           <RouterLink
@@ -314,7 +374,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
               name: 'agent-run-detail',
               params: { agentRunId: activeRunId || document.data.value.latestAgentRunId },
             }"
-            >AI 작업 내역 자세히 보기</RouterLink
+            >분석 과정 자세히 보기</RouterLink
           >
         </div>
         <DocumentRunMonitor
@@ -355,8 +415,15 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       </section>
 
       <section class="document-section section-surface">
-        <p class="section-kicker">읽은 내용</p>
-        <h3 class="section-title">자료 미리보기</h3>
+        <div class="document-section__heading">
+          <div>
+            <p class="section-kicker">1. 원본 내용 확인</p>
+            <h3 class="section-title">자료 미리보기</h3>
+          </div>
+          <button class="button button--ghost button--compact" type="button" @click="download">
+            원본 파일 열기
+          </button>
+        </div>
         <p v-if="documentText.isPending.value" class="document-text__status" role="status">
           자료 내용을 불러오는 중…
         </p>
@@ -373,7 +440,11 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         <p v-else class="document-text__status">문서를 다 읽으면 내용 미리보기가 표시돼요.</p>
       </section>
 
-      <DocumentEvidencePanel :user-id="userId" :document-id="documentId" />
+      <DocumentEvidencePanel
+        :user-id="userId"
+        :document-id="documentId"
+        :document-name="document.data.value.displayName"
+      />
     </template>
   </section>
 </template>
@@ -381,10 +452,46 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 <style scoped>
 .document-detail__state,
 .document-status-grid,
+.document-overview,
 .document-detail__message,
 .document-metadata,
 .document-section {
   margin-top: var(--space-5);
+}
+
+.document-overview {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.document-overview__icon {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+  font-size: 1.75rem;
+}
+
+.document-overview__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-5);
+}
+
+.document-overview__details dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.document-overview__details dd {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
 }
 
 .document-detail__actions,
@@ -480,6 +587,13 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   .document-section__heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .document-overview {
+    grid-template-columns: 1fr;
+  }
+  .document-overview__details {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

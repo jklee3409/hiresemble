@@ -12,12 +12,13 @@ import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import {
   STATUS_LABELS,
   WORKFLOW_LABELS,
-  formatCost,
   formatDuration,
   formatInstant,
   formatRunProgressLabel,
   formatStepName,
+  formatUsage,
   safeRequiredActionRoute,
+  usagePercent,
 } from './presentation'
 import type { AgentRunConnectionState } from './stream'
 
@@ -70,6 +71,17 @@ const connectionMessage = computed(() => {
   if (props.connectionState === 'connecting') return '진행 상황을 연결하는 중이에요.'
   return ''
 })
+const taskUsagePercent = computed(() =>
+  usagePercent(props.run.actualCostUsd, props.run.reservedCostUsd),
+)
+const taskRemainingPercent = computed(() =>
+  taskUsagePercent.value === null ? null : Math.max(0, 100 - taskUsagePercent.value),
+)
+const safeRunErrorMessage = computed(() =>
+  props.run.retryable
+    ? '작업을 마치지 못했어요. 잠시 후 다시 시도해 주세요. 등록한 원본과 기존 결과는 그대로 유지됩니다.'
+    : '지금은 이 작업을 진행할 수 없어요. 등록한 원본과 기존 결과는 그대로 유지됩니다.',
+)
 
 function runTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
   return (
@@ -204,58 +216,71 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
       </div>
 
       <div class="run-info-section section-surface">
-        <p class="section-kicker">비용 안내</p>
-        <h3 class="section-title">예상 사용 비용</h3>
+        <p class="section-kicker">AI 사용량</p>
+        <h3 class="section-title">이번 작업 사용량</h3>
         <dl class="run-definition-list">
-          <dt>시작 시 예상</dt>
-          <dd>{{ formatCost(run.estimatedCostUsd) }}</dd>
-          <dt>현재까지 예상</dt>
-          <dd>{{ formatCost(run.actualCostUsd) }}</dd>
+          <dt>작업 한도 대비</dt>
+          <dd>{{ formatUsage(run.actualCostUsd, run.reservedCostUsd) }}</dd>
+          <dt>남은 작업 한도</dt>
+          <dd>
+            {{ taskRemainingPercent === null ? '집계 정보 없음' : `${taskRemainingPercent}%` }}
+          </dd>
         </dl>
+        <progress
+          v-if="taskUsagePercent !== null"
+          class="progress-track run-usage-progress"
+          :value="taskUsagePercent"
+          max="100"
+        >
+          {{ taskUsagePercent }}%
+        </progress>
         <p class="run-cost-note">
-          표시된 금액은 작업을 시작할 때의 기준으로 계산한 예상치예요. 실제 결제 금액과 다를 수
-          있어요.
+          제공사가 집계한 사용량을 이 작업에 미리 확보한 한도와 비교한 값이에요. 결제 금액이나 월간
+          전체 한도를 뜻하지 않아요.
         </p>
       </div>
     </section>
 
     <section v-if="run.safeError" class="alert alert--danger run-safe-error" role="alert">
       <h3>문제가 생겼어요</h3>
-      <p>{{ run.safeError.message }}</p>
+      <p>{{ safeRunErrorMessage }}</p>
     </section>
 
-    <section v-if="run.partialResult" class="run-partial section-surface">
-      <p class="section-kicker">정리된 결과</p>
-      <h3 class="section-title">일부 작업 결과</h3>
-      <p>완료된 항목 {{ run.partialResult.succeededScopeKeys.length }}개</p>
-      <p>완료하지 못한 항목 {{ run.partialResult.failedScopeKeys.length }}개</p>
-      <ul v-if="run.partialResult.resultRefs.length">
-        <li v-for="reference in run.partialResult.resultRefs" :key="reference.resourceId">
-          {{ reference.displayLabel ?? '정리된 결과' }}
-        </li>
-      </ul>
-    </section>
+    <p
+      v-if="run.partialResult?.failedScopeKeys.length"
+      class="alert alert--warning run-safe-error"
+      role="status"
+    >
+      일부 항목은 완료하지 못했어요. 완료 {{ run.partialResult.succeededScopeKeys.length }}개 · 확인
+      필요 {{ run.partialResult.failedScopeKeys.length }}개
+    </p>
 
-    <section class="run-timeline section-surface">
-      <p class="section-kicker">작업 흐름</p>
-      <h3 class="section-title">진행 단계</h3>
-      <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 단계가 없어요.</p>
+    <details class="run-timeline section-surface">
+      <summary>
+        <span
+          ><span class="section-kicker">선택 정보</span
+          ><strong class="section-title">분석 과정 자세히 보기</strong></span
+        >
+        <span>{{ run.steps.length }}개 과정</span>
+      </summary>
+      <p class="run-timeline__guide">실제로 진행한 작업을 이해하기 쉬운 이름으로 보여드려요.</p>
+      <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 과정이 없어요.</p>
       <ol v-else class="run-timeline__list">
         <li v-for="step in run.steps" :key="step.id" class="run-step">
           <span class="run-step__marker" aria-hidden="true" />
           <div class="run-step__body">
             <div class="run-step__header">
-              <strong>{{ formatStepName(step.stepOrder) }}</strong>
+              <strong>{{ formatStepName(step.stepKey, step.stepOrder) }}</strong>
               <StatusBadge :label="stepLabel(step.status)" :tone="stepTone(step.status)" />
             </div>
-            <p>시도 {{ step.attempt }}/{{ step.maxAttempts }}</p>
+            <p v-if="step.attempt > 1">{{ step.attempt }}번째 시도 중</p>
             <p v-if="step.safeError" class="run-step__error">
-              {{ step.safeError.message }}
+              이 과정을 완료하지 못했어요. 다시 시도할 수 있는지 확인해 주세요.
             </p>
           </div>
         </li>
       </ol>
-    </section>
+    </details>
   </article>
 </template>
 
@@ -370,6 +395,10 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
   line-height: 1.65;
 }
 
+.run-usage-progress {
+  margin-top: var(--space-4);
+}
+
 .run-safe-error {
   display: grid;
   gap: var(--space-1);
@@ -396,6 +425,32 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
 
 .run-timeline__empty {
   margin-top: var(--space-4);
+}
+
+.run-timeline > summary {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.run-timeline > summary::-webkit-details-marker {
+  display: none;
+}
+.run-timeline > summary > span:first-child {
+  display: grid;
+  gap: var(--space-1);
+}
+.run-timeline > summary > span:last-child {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.run-timeline__guide {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .run-timeline__list {
