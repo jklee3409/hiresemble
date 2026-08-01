@@ -514,6 +514,25 @@ Context snapshot은 최소 다음 provenance를 가진다.
 - 동시 run은 versioned 일일 ledger와 reservation을 잠가 예상 비용을 원자 reserve하고 실제 usage를 settle한 뒤 미사용액을 release한다.
 - chat·embedding·search를 immutable price catalog version으로 계산하고 원자 reserve/settle/release에 모두 포함한다.
 
+### 13.4-A Strict Structured Output 경계
+
+```text
+Canonical Prompt Definition
+→ Provider output record
+→ Spring AI runtime JSON Schema
+→ 중앙 OpenAI strict compatibility validation
+→ 검증된 schema registry(name/version/hash/schema)
+→ OpenAI Chat request
+→ Java record/workflow validation
+→ 명시적 domain mapping/domain validation
+→ persistence/public projection
+```
+
+- Provider output은 JPA entity·공개 API DTO와 분리한다. 동적 metadata가 필요하면 임의 object 대신 제한된 scalar entry 배열을 사용하고 domain mapper에서 기존 `Map<String,Object>` 의미로 복원한다.
+- 모든 object의 `properties`·전체 `required`·`additionalProperties:false`, nullable union, 지원 keyword와 nesting/property/enum 한도를 요청 전에 fail-closed로 검사한다.
+- schema 요청 거절은 `STRUCTURED_SCHEMA`, 모델 응답/파싱 검증 실패는 `STRUCTURED_OUTPUT`, domain 불변식 거절은 domain failure로 구분한다. strict 실패를 non-strict나 Fake adapter로 fallback하지 않는다.
+- 진단에는 구조화된 Provider status/code/param/request ID와 schema name/version/hash만 허용하고 prompt·원문·raw response/error body·schema 원문은 저장하거나 기록하지 않는다.
+
 ### 13.5 Provider budget·제품 quota·usage·결제 분리
 
 ```text

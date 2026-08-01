@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-01] Session Summary (OpenAI strict schema 수정 문서 동기화)
+
+- What was done:
+  - 기술 명세·아키텍처·구현 계획·Provider runbook을 중앙 strict schema 검증, Provider 전용 metadata/TipTap 경계와 실제 문서 실패 증거에 맞췄다.
+- Key decisions:
+  - 공개 API/DB 계약은 유지하고 offline 구현 완료와 live Chat/vertical 성공을 분리한다.
+- Issues encountered:
+  - 당시 raw Provider 오류 metadata가 없어 원인은 `HIGH_CONFIDENCE`로 기록했다.
+- Validation:
+  - Backend 68 suites/452 tests 통과와 수정 뒤 실제 Provider 호출 0회를 반영했다.
+- Next steps:
+  - 사용자 bounded Chat 1회와 문서 vertical 1회 뒤 P8.5-V 상태를 갱신한다.
+
 ## [2026-08-01] Session Summary (Provider 연결 보정 문서 동기화)
 
 - What was done:

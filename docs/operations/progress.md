@@ -4,6 +4,19 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-01] Session Summary (strict Chat 보정 재검증 handoff)
+
+- What was done:
+  - 실제 문서 실행의 Embedding 성공·Chat strict 실패와 offline 보정 결과를 runbook에 기록하고 capability별 Chat task를 명시했다.
+- Key decisions:
+  - 수정 뒤 Chat task 1회, 성공 시 문서 vertical 1회만 수행한다.
+- Issues encountered:
+  - 당시 Provider raw code·param/request ID는 복구 불가하다.
+- Validation:
+  - 명령이 실제 Gradle task로 등록됐음을 확인했고 이번 작업의 Provider 호출은 0회다.
+- Next steps:
+  - 사용자만 key를 주입해 safe ID·usage 합계만 기록한다.
+
 ## [2026-08-01] Session Summary (OpenAI `/v1`와 bounded smoke 결과)
 
 - What was done:

@@ -12,8 +12,24 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
-- P8.5 local 실제 Provider 연결은 구현됐고 Tavily BASIC smoke는 성공했지만 Chat·Embedding은 OpenAI quota blocker가 남아 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC과 실제 문서 Embedding 성공 증거는 있지만 Chat strict schema 보정 뒤 live 재검증과 문서 vertical 성공이 남아 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-01] Session Summary (OpenAI strict Structured Output 호환성 수정)
+
+- What was done:
+  - 수정 전 evidence `metadata` bare object와 warning nullability 불일치를 재현하고 Provider entry output·중앙 schema registry/validator·오류 분류·safe fingerprint 진단을 구현했다.
+  - 전수 keyword 감사에서 P7 공개 TipTap DTO의 `default` 유입을 추가 발견해 Provider 전용 recursive output과 bounded domain mapper로 제한 보정했다.
+  - 관련 코드·테스트·기술/설계/운영 문서와 계층별 추적 문서를 동기화했다.
+- Key decisions:
+  - 동적 scalar metadata 의미, 기존 JSONB·공개 API·Frontend 계약과 migration은 보존한다.
+  - schema 요청 거절은 non-retryable `STRUCTURED_SCHEMA`, 응답 검증 실패는 기존 `STRUCTURED_OUTPUT`으로 분리한다.
+- Issues encountered:
+  - 당시 OpenAI raw error code·param/request ID가 영구 보존되지 않아 장애 원인은 `HIGH_CONFIDENCE`이고 live 직접 확정은 아니다.
+- Validation:
+  - focused schema/Gateway/document/P7 generation 회귀와 Backend `check` 68 suites/452 tests, `git diff --check`가 통과했으며 실제 Provider 호출은 0회다.
+- Next steps:
+  - 사용자가 `codexRealOpenAiChatTest` 1회 성공 뒤 일반 local 문서 ingestion 1회를 수행하고 capability와 vertical을 별도 판정한다.
 
 ## [2026-08-01] Session Summary (로컬 OpenAI 연결 오류 보정과 bounded smoke)
 

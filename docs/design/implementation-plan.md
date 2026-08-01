@@ -2,7 +2,7 @@
 
 이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다.
 
-P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 Tavily BASIC smoke는 성공했지만 OpenAI Chat·Embedding은 `insufficient_quota`로 성공하지 못해 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
+P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 초기 bounded smoke에서 Tavily BASIC만 성공하고 OpenAI는 quota에 차단됐으며, 이후 실제 문서 실행에서 Embedding은 성공했지만 Chat strict schema 요청이 `EXTRACT_EVIDENCE_CANDIDATES`에서 거절됐다. strict-compatible output 계약과 중앙 검사를 offline 검증했지만 Chat·문서 수직 흐름은 재호출하지 않았으므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
 ## 범위
 
@@ -36,7 +36,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 기록된 P8.5 검증 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4이다. 2026-08-01 bounded smoke 누적은 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이며 OpenAI 실패 원인은 `insufficient_quota`다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 2026-08-01 strict schema 보정 뒤 Backend 기준선은 68 suites/452 tests이며 Frontend 60 files/238 tests, OpenAPI 63 paths/84 operations, P8–P4 actual 1/1·1/1·2/2·5/5·4/4는 변경하지 않았다. 실제 문서 실행은 Embedding 성공 뒤 Chat strict schema 단계에서 실패했으며 수정 뒤 실제 Provider 재검증은 0회다.
 
 ## 1. 전체 선행 관계
 
@@ -557,7 +557,7 @@ P0 계약 기준선
 
 ### 12.1 구현된 책임
 
-- Backend/AI responsibility: Chat·Embedding 요청별 model·timeout·output token/dimension, provider retry 0, strict schema, 최종 `StructuredOutputValidator`, system/untrusted data 분리를 유지한다.
+- Backend/AI responsibility: Chat·Embedding 요청별 model·timeout·output token/dimension, provider retry 0, 중앙 strict schema registry, 최종 `StructuredOutputValidator`, system/untrusted data 분리를 유지한다.
 - DB responsibility: V13 immutable price catalog `2026073101`, 다중 usage, `provider_call_id`와 price item별 중복 방지를 유지한다.
 - API/Frontend responsibility: 새 공개 operation·route 없이 기존 P4~P8 workflow를 실제 gateway에 연결한다.
 - Security/Privacy: Tavily HTTPS·redirect 금지·2MB bounded stream, OpenAI response storage 비활성, 원문·prompt·response log 금지.
@@ -570,7 +570,8 @@ P0 계약 기준선
 
 - local/local-offline Bean matrix와 key·provider·price fail-closed, request option, bounded response, reserve/top-up/settle을 Fake/WireMock/PostgreSQL로 검증했다.
 - 기준선은 Backend 67 suites/420 tests, Frontend 60 files/238 tests, P8~P4 actual 1/1·1/1·2/2·5/5·4/4다.
-- 실제 외부 smoke는 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이며 OpenAI capability 성공 전이므로 `DONE`으로 올리지 않는다.
+- 초기 외부 smoke는 Chat 2회 실패, Embedding 1회 실패, Search 1회 성공이었다. 이후 실제 문서 실행에서 Embedding은 성공하고 Chat endpoint까지 도달했지만 기존 bare metadata object strict schema가 거절됐다.
+- metadata와 P7 TipTap Provider output을 domain/public DTO에서 분리하고 모든 등록 Chat output의 runtime schema 중앙 검사를 68 suites/452 tests에서 offline 검증했다. 수정 뒤 실제 Chat·문서 수직 재검증은 수행하지 않았으므로 `DONE`으로 올리지 않는다.
 - 다음 phase handoff는 P8.5-V이며 실제 key·prompt·response를 저장소에 남기지 않는다.
 
 ## 13. P8.5-V — 사용자 local 실제 Provider 검증 gate

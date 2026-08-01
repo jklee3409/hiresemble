@@ -125,7 +125,9 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | PromptRegistry                     | 버전이 있는 프롬프트 관리                                  |
 | AiUsageRecorder                    | chat·embedding·search usage와 immutable 가격 version 기록  |
 
-Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. OpenAI adapter는 Spring AI 요청별 model·timeout·strict JSON Schema를 사용하고 provider retry·response storage·tool calling을 비활성화한다. Structured Output은 `JSON Schema → Java record → workflow validator → domain command validator`를 모두 통과한 결과만 반영한다.
+Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGateway`, `EmbeddingGateway`, `WebSearchGateway` port를 AI provider adapter가 구현한다. OpenAI adapter는 Spring AI 요청별 model·timeout·strict JSON Schema를 사용하고 provider retry·response storage·tool calling을 비활성화한다. Structured Output은 `Provider output record → Spring AI runtime schema 생성 → OpenAI strict subset 중앙 검증 → Java record → workflow validator → domain command validator`를 모두 통과한 결과만 반영한다.
+
+모든 현재 Chat output definition은 canonical prompt registry에서 자동 열거하고, 실제 Gateway가 보내는 것과 동일한 검증 완료 schema를 사용한다. strict object는 고정 `properties`, 전체 `required`, `additionalProperties:false`를 재귀 적용한다. Provider 경계에서 `Map`·bare `Object` 같은 임의 object를 사용하지 않으며 선택 의미는 property 생략이 아니라 필수 property의 명시적 `null` union으로 표현한다. schema 원문 대신 deterministic contract name·output version·SHA-256 fingerprint만 안전한 진단 metadata로 사용하고 기존 response/workflow/domain 검증을 대체하지 않는다.
 
 ### 4.3 문서 처리
 

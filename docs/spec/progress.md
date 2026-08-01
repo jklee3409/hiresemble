@@ -4,7 +4,20 @@
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 문서 버전 1.2로 동기화되어 있다.
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
-- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5는 OpenAI quota blocker가 남은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+- 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 strict schema 수정은 offline 검증됐지만 Chat·문서 live 재검증이 남은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-01] Session Summary (strict Structured Output 기술 계약)
+
+- What was done:
+  - Provider output record, runtime schema 중앙 검증, nullable union, schema fingerprint와 domain/public 분리 원칙을 기술 명세에 반영했다.
+- Key decisions:
+  - 공개 API·DB·Frontend 계약과 migration은 변경하지 않는다.
+- Issues encountered:
+  - 당시 raw Provider 오류가 없어 live 원인 직접 확정은 불가능하다.
+- Validation:
+  - 코드·schema 전수 test와 기술 명세를 대조했다.
+- Next steps:
+  - live Chat/문서 검증 뒤 상태만 갱신한다.
 
 ## [2026-08-01] Session Summary (V14 embedding 정책 명세 반영)
 

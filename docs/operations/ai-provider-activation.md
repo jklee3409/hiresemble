@@ -47,7 +47,9 @@ PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를
 
 ## P8.5-V 사용자 local 검증
 
-2026-08-01 bounded smoke 결과는 Chat 2회 시도(첫 호출은 `/v1` 누락 404, 보정 후 `429 insufficient_quota`), Embedding 1회 시도(`429 insufficient_quota`), Tavily BASIC 1회 성공이다. OpenAI capability가 성공하지 않았으므로 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`이며, OpenAI 프로젝트의 사용 가능 크레딧/월 한도를 복구한 뒤 일반 `local` profile에서 다음 순서로 검증한다.
+2026-08-01 초기 bounded smoke 결과는 Chat 2회 시도(첫 호출은 `/v1` 누락 404, 보정 후 `429 insufficient_quota`), Embedding 1회 시도(`429 insufficient_quota`), Tavily BASIC 1회 성공이었다. 이후 실제 문서 실행에서는 parse·mask·chunk·Embedding이 성공하고 Chat endpoint에 도달했지만 `EXTRACT_EVIDENCE_CANDIDATES` strict schema 요청이 거절됐다. 당시 raw Provider error code·param·request ID가 영구 보존되지 않아 직접 확정할 수는 없지만, 수정 전 runtime schema의 bare `metadata` object는 OpenAI strict subset 검사에서 재현 가능하게 실패했다. Provider output을 제한된 scalar entry 배열로 바꾸고 전체 schema·실제 SDK 요청 payload를 offline 검증했으며 수정 뒤 실제 Provider 호출은 0회다.
+
+현재 판정은 Embedding 연결 증거만 있고 Chat capability와 문서 수직 흐름은 재검증되지 않은 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 일반 `local` profile에서 다음 순서로 검증한다.
 
 1. capability smoke: Chat 1회, Embedding 1회, Tavily BASIC 1회.
 2. 문서 업로드→실제 embedding→근거 추출.
@@ -61,7 +63,7 @@ PostgreSQL/MinIO를 시작하고 두 key를 주입한 뒤 Backend와 Frontend를
 - P4~P8 수직 흐름 성공: `LOCAL_VERTICAL_VERIFIED`
 - 두 범위와 민감정보 없는 기록 완료: P8.5 `DONE`
 
-이 문서 재설계 작업에서는 실제 Provider를 호출하지 않는다. P8.6 기능 한도가 구현된 뒤에는 실제 제품 UAT도 해당 feature usage event를 정상 생성하며, 같은 idempotency replay는 추가 소비하지 않아야 한다.
+strict schema 호환성 수정 작업에서는 실제 Provider를 호출하지 않았다. P8.6 기능 한도가 구현된 뒤에는 실제 제품 UAT도 해당 feature usage event를 정상 생성하며, 같은 idempotency replay는 추가 소비하지 않아야 한다.
 
 ## Codex bounded adapter smoke
 
@@ -77,6 +79,15 @@ Set-Location backend
 synthetic non-PII만 전송하며 정상 실행은 Chat 1, Embedding 1, Search 1회다. adapter/framework/test retry는 0이고 성공 capability는 재실행하지 않는다. 구체적 결함을 수정한 뒤에만 capability별 한 번 더 허용하며 절대 상한은 capability별 2·총 6회다. persistent safe counter는 `backend/.codex-real-provider-call-summary.json`, 복사 report는 `backend/build/reports/codex-real-provider/call-summary.json`이다. 두 파일에는 count·estimated cost·완료 capability만 기록한다.
 
 gate 또는 key가 없으면 task는 호출 없이 skip하며 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. 이 adapter smoke만으로 P4~P8 수직 검증 완료를 주장하지 않는다.
+
+strict Chat 보정만 재검증할 때는 전체 task 대신 기존 capability별 task를 딱 한 번 실행한다.
+
+```powershell
+Set-Location backend
+.\gradlew.bat codexRealOpenAiChatTest --no-daemon --console=plain
+```
+
+성공 뒤 같은 task를 반복하지 않고 일반 UI에서 문서 ingestion을 한 번 수행한다. 기록은 safe error code·request ID·Agent Run ID·usage/cost 합계로 제한하며, Chat capability 성공과 `EXTRACT_EVIDENCE_CANDIDATES`를 포함한 문서 vertical 성공을 별도로 판정한다.
 
 ## Key rotation과 rollback
 
