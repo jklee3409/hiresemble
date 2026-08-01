@@ -12,8 +12,23 @@ import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.prompt.PromptRegistry;
+import com.hiresemble.ai.prompt.PromptRegistry.PromptDefinition;
+import com.hiresemble.ai.prompt.PromptRegistry.PromptKey;
+import com.hiresemble.ai.validation.OpenAiStrictSchemaCompatibilityValidator;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaGenerator;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.openai.core.http.Headers;
+import com.openai.core.JsonValue;
+import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import com.openai.errors.OpenAIServiceException;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.services.blocking.ChatService;
+import com.openai.services.blocking.chat.ChatCompletionService;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
@@ -53,7 +68,7 @@ class SpringAiOpenAiGatewayTest {
                 List.of(new Generation(new AssistantMessage("{\"status\":\"ok\"}"))),
                 ChatResponseMetadata.builder().usage(nativeUsage).build()));
         var gateway = new SpringAiOpenAiChatGateway(
-                model, new ObjectMapper(), prices());
+                model, new ObjectMapper(), prices(), schemas());
 
         var response = gateway.chat(new ChatRequest(
                 "openai",
@@ -96,6 +111,66 @@ class SpringAiOpenAiGatewayTest {
                         new BigDecimal("0.000020"),
                         new BigDecimal("0.000001"),
                         new BigDecimal("0.000020"));
+    }
+
+    @Test
+    void springAiSendsTheValidatedSchemaAsStrictNativeResponseFormat() {
+        OpenAIClient client = mock(OpenAIClient.class);
+        OpenAIClientAsync asyncClient = mock(OpenAIClientAsync.class);
+        ChatService chatService = mock(ChatService.class);
+        ChatCompletionService completionService = mock(ChatCompletionService.class);
+        when(client.chat()).thenReturn(chatService);
+        when(chatService.completions()).thenReturn(completionService);
+        var message = ChatCompletionMessage.builder()
+                .content("{\"status\":\"ok\"}")
+                .refusal(Optional.empty())
+                .role(JsonValue.from("assistant"))
+                .annotations(List.of())
+                .toolCalls(List.of())
+                .build();
+        var choice = ChatCompletion.Choice.builder()
+                .index(0)
+                .finishReason(ChatCompletion.Choice.FinishReason.STOP)
+                .logprobs(Optional.empty())
+                .message(message)
+                .build();
+        var completion = ChatCompletion.builder()
+                .id("chatcmpl_test")
+                .choices(List.of(choice))
+                .created(1)
+                .model("gpt-5-mini")
+                .object_(JsonValue.from("chat.completion"))
+                .build();
+        when(completionService.create(any(ChatCompletionCreateParams.class)))
+                .thenReturn(completion);
+        OpenAiChatModel model = OpenAiChatModel.builder()
+                .openAiClient(client)
+                .openAiClientAsync(asyncClient)
+                .options(OpenAiChatOptions.builder()
+                        .model("gpt-5-mini")
+                        .maxRetries(0)
+                        .build())
+                .build();
+        var registry = schemas();
+        var gateway = new SpringAiOpenAiChatGateway(
+                model, new ObjectMapper(), prices(), registry);
+
+        gateway.chat(request());
+
+        ArgumentCaptor<ChatCompletionCreateParams> request =
+                ArgumentCaptor.forClass(ChatCompletionCreateParams.class);
+        verify(completionService).create(request.capture());
+        var jsonSchema = request.getValue().responseFormat().orElseThrow()
+                .asJsonSchema().jsonSchema();
+        assertThat(jsonSchema.name()).isEqualTo(
+                StrictStructuredOutputSchemaRegistry.PROVIDER_SCHEMA_NAME);
+        assertThat(jsonSchema.strict()).contains(true);
+        assertThat(jsonSchema.schema()).isPresent();
+        assertThat(jsonSchema.schema().orElseThrow().toString())
+                .contains("additionalProperties", "properties", "status");
+        assertThat(request.getValue().store()).contains(false);
+        assertThat(request.getValue().tools()).isEmpty();
+        assertThat(request.getValue().toolChoice()).isEmpty();
     }
 
     @Test
@@ -149,7 +224,7 @@ class SpringAiOpenAiGatewayTest {
                 Headers.builder().put("x-request-id", "req_test").build());
         when(model.call(any(Prompt.class))).thenThrow(failure);
         var gateway = new SpringAiOpenAiChatGateway(
-                model, new ObjectMapper(), prices());
+                model, new ObjectMapper(), prices(), schemas());
 
         assertThatThrownBy(() -> gateway.chat(new ChatRequest(
                         "openai",
@@ -171,6 +246,42 @@ class SpringAiOpenAiGatewayTest {
     }
 
     @Test
+    void chatDistinguishesStructuredSchemaRejectionFromResponseValidation() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        OpenAIServiceException failure = mock(OpenAIServiceException.class);
+        when(failure.statusCode()).thenReturn(400);
+        when(failure.code()).thenReturn(Optional.of("invalid_json_schema"));
+        when(failure.param()).thenReturn(Optional.of("response_format.json_schema.schema"));
+        when(failure.headers()).thenReturn(
+                Headers.builder().put("x-request-id", "req_schema_test").build());
+        when(model.call(any(Prompt.class))).thenThrow(failure);
+        var gateway = new SpringAiOpenAiChatGateway(
+                model, new ObjectMapper(), prices(), schemas());
+
+        assertThatThrownBy(() -> gateway.chat(new ChatRequest(
+                        "openai",
+                        "gpt-5-mini",
+                        "test-v1",
+                        "Return the required object.",
+                        new ObjectMapper().createObjectNode().put("value", "untrusted"),
+                        "test-output-v1",
+                        Set.of(),
+                        0,
+                        Duration.ofSeconds(3),
+                        PRICE_VERSION,
+                        32,
+                        TestOutput.class)))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception -> {
+                    assertThat(exception.safeCode())
+                            .isEqualTo("AI_CHAT_STRUCTURED_SCHEMA_REJECTED");
+                    assertThat(exception.failureKind())
+                            .isEqualTo(com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind.STRUCTURED_SCHEMA);
+                    assertThat(exception.retryable()).isFalse();
+                    assertThat(exception.getCause()).isNull();
+                });
+    }
+
+    @Test
     void chatTreatsInsufficientProviderQuotaAsNonRetryableConfiguration() {
         OpenAiChatModel model = mock(OpenAiChatModel.class);
         OpenAIServiceException failure = mock(OpenAIServiceException.class);
@@ -180,7 +291,7 @@ class SpringAiOpenAiGatewayTest {
         when(failure.headers()).thenReturn(Headers.builder().build());
         when(model.call(any(Prompt.class))).thenThrow(failure);
         var gateway = new SpringAiOpenAiChatGateway(
-                model, new ObjectMapper(), prices());
+                model, new ObjectMapper(), prices(), schemas());
 
         assertThatThrownBy(() -> gateway.chat(new ChatRequest(
                         "openai",
@@ -218,6 +329,41 @@ class SpringAiOpenAiGatewayTest {
                     case SEARCH_BASIC_REQUEST -> new BigDecimal("0.008000");
                     case SEARCH_ADVANCED_REQUEST -> new BigDecimal("0.016000");
                 });
+    }
+
+    private StrictStructuredOutputSchemaRegistry schemas() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        PromptDefinition definition = new PromptDefinition(
+                new PromptKey(WorkflowType.DOCUMENT_INGESTION, "test-workflow-v1", "TEST_CHAT"),
+                "test-v1",
+                tools.jackson.databind.JsonNode.class,
+                TestOutput.class,
+                "test-output-v1",
+                Set.of(),
+                100,
+                32,
+                1,
+                "Return the required object.");
+        return new StrictStructuredOutputSchemaRegistry(
+                new PromptRegistry(List.of(definition)),
+                new StrictStructuredOutputSchemaGenerator(objectMapper),
+                new OpenAiStrictSchemaCompatibilityValidator(objectMapper));
+    }
+
+    private ChatRequest request() {
+        return new ChatRequest(
+                "openai",
+                "gpt-5-mini",
+                "test-v1",
+                "Return the required object.",
+                new ObjectMapper().createObjectNode().put("value", "untrusted"),
+                "test-output-v1",
+                Set.of(),
+                0,
+                Duration.ofSeconds(3),
+                PRICE_VERSION,
+                32,
+                TestOutput.class);
     }
 
     private record TestOutput(String status) {}

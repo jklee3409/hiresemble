@@ -4,6 +4,19 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (strict Chat request payload와 오류 분류 회귀)
+
+- What was done:
+  - 실제 Spring OpenAI SDK 요청 객체를 capture해 strict/schema/store/tool 설정을 확인하고 schema rejection과 generic 400을 분리 검증했다.
+- Key decisions:
+  - WireMock용 별도 schema가 아니라 runtime registry의 exact schema를 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - focused gateway/schema test와 전체 check 통과, 실제 network 0회.
+- Next steps:
+  - 사용자가 기존 `codexRealOpenAiChatTest`를 한 번 실행한다.
+
 ## [2026-08-01] Session Summary (OpenAI 연결 회귀와 bounded smoke)
 
 - What was done:

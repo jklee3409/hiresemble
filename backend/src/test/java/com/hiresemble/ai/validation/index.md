@@ -7,11 +7,12 @@ structured output 검증 순서와 retry 분류를 검증한다.
 ## 주요 파일 및 하위 디렉터리
 
 - `StructuredOutputValidatorTest`
+- `OpenAiStrictSchemaCompatibilityValidatorTest`: 기존 bare object 회귀, 전체 등록 output 자동 열거, registry completeness, nullable·fingerprint 안정성
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할
 
-schema부터 domain command까지 정확한 호출 순서를 고정한다.
+schema부터 domain command까지 정확한 호출 순서를 고정하고 새 Chat output definition이 중앙 registry/호환성 검사에서 누락되면 실패시킨다.
 
 ## 다른 디렉터리와의 의존 관계
 

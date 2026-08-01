@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-01] Session Summary (Cover Letter Provider TipTap 경계 회귀)
+
+- What was done:
+  - `WRITE_ANSWER`의 Provider 전용 recursive TipTap output이 기존 domain/application DTO와 동일한 의미로 mapping되는 generation 회귀를 갱신했다.
+- Key decisions:
+  - 공개 TipTap DTO annotation이 Provider schema에 직접 유입되지 않게 한다.
+- Issues encountered:
+  - 전수 keyword 검사에서 공개 DTO의 `default` keyword가 추가 strict finding으로 검출됐다.
+- Validation:
+  - strict schema와 Cover Letter generation focused test 통과.
+- Next steps:
+  - 전체 Backend check로 P7 후속 단계와 저장 회귀를 확인한다.
+
 ## [2026-08-01] Session Summary (다중 usage workflow 회귀)
 
 - What was done:

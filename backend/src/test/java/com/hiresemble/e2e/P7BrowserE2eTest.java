@@ -11,6 +11,8 @@ import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAlloca
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapDocumentOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapNodeOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlan;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
@@ -435,7 +437,10 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     "PROJECT",
                     "P7 approved project evidence",
                     grounded,
-                    Map.of("source", "p7-browser-fake"),
+                    List.of(new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
+                            "source",
+                            DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING,
+                            "p7-browser-fake")),
                     new BigDecimal("0.900"),
                     List.of(UUID.fromString(first.path("chunkId").asText())),
                     input.path("sourceRevision").asLong(),
@@ -566,7 +571,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             return new WrittenAnswerOutput(
                     "cover-generation-answer-output-v1",
                     questionId,
-                    tipTap(
+                    providerTipTap(
                             "I used the approved project evidence to analyze the role and design a stable API."),
                     claims);
         }
@@ -665,6 +670,17 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                             null,
                             List.of(),
                             List.of(new TipTapNodeDto(
+                                "text", text, List.of(), List.of())))));
+        }
+
+        private ProviderTipTapDocumentOutput providerTipTap(String text) {
+            return new ProviderTipTapDocumentOutput(
+                    "doc",
+                    List.of(new ProviderTipTapNodeOutput(
+                            "paragraph",
+                            null,
+                            List.of(),
+                            List.of(new ProviderTipTapNodeOutput(
                                     "text", text, List.of(), List.of())))));
         }
     }

@@ -4,6 +4,19 @@
 
 P4 Document ingestion 고정 workflow의 contract와 PostgreSQL integration 시나리오를 검증한다.
 
+## [2026-08-01] Session Summary (strict evidence metadata 회귀)
+
+- What was done:
+  - scalar metadata 보존, null/string warning, 중복·잘못된 type·예약 key 거절과 domain apply 전 실패를 검증했다.
+- Key decisions:
+  - invalid Chat output에서도 앞선 chunk·embedding 보존 계약을 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - workflow contract와 PostgreSQL orchestrator integration focused test 통과.
+- Next steps:
+  - bounded live document ingestion 결과를 별도 기록한다.
+
 ## [2026-07-19] Session Summary (Document ingestion workflow 검증)
 
 - What was done:

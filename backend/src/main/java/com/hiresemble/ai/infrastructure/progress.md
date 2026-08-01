@@ -4,6 +4,20 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-01] Session Summary (validated strict schema 전송과 safe 진단)
+
+- What was done:
+  - Chat Gateway가 중앙 registry의 exact schema를 전송하고 schema 거절을 일반 400·응답 validation과 분리했다.
+  - status·구조화 code/param/request ID와 schema name/version/hash만 safe warning에 남겼다.
+- Key decisions:
+  - raw error body·exception message·prompt·schema 원문은 기록하지 않고 구조화 값이 없으면 `NOT_AVAILABLE`로 둔다.
+- Issues encountered:
+  - 과거 run은 새 진단 metadata가 없어 당시 raw Provider 원인을 복구할 수 없다.
+- Validation:
+  - 실제 Spring OpenAI SDK request capture와 400 분류 회귀, Backend check가 통과했다.
+- Next steps:
+  - bounded live Chat 1회에서 safe code와 상관관계 ID만 확인한다.
+
 ## [2026-08-01] Session Summary (OpenAI endpoint·요청 옵션·safe rejection 보정)
 
 - What was done:

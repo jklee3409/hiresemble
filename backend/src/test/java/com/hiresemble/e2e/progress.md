@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-01] Session Summary (evidence Provider fixture 계약 동기화)
+
+- What was done:
+  - P4/P7 browser fixture의 evidence metadata와 P7 answer TipTap을 strict-compatible Provider output으로 맞췄다.
+- Key decisions:
+  - 실제 공개 metadata object와 사용자 시나리오는 변경하지 않는다.
+- Issues encountered:
+  - 브라우저 actual wrapper는 이번 offline 수정에서 재실행하지 않았다.
+- Validation:
+  - Backend check에서 fixture compile 완료; actual E2E `NOT_RUN`.
+- Next steps:
+  - 다음 final-source actual 회귀에서 기존 P4/P7 wrapper를 실행한다.
+
 ## [2026-08-01] Session Summary (P8.5 전체 actual 회귀)
 
 - What was done:

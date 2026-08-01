@@ -12,7 +12,7 @@ P4 `DOCUMENT_INGESTION`의 고정 8단계 실행과 실패 시 Document 안정 �
 
 ## 구성 요소 역할
 
-Backend Document query/command port만 사용하고 masked chunk만 Embedding·Chat gateway로 전달한다.
+Backend Document query/command port만 사용하고 masked chunk만 Embedding·Chat gateway로 전달한다. Provider의 동적 metadata는 strict-compatible scalar entry 배열로 받고 검증·명시적 mapping 뒤 기존 domain `Map<String,Object>`와 JSONB/public object 계약을 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -1,13 +1,17 @@
 package com.hiresemble.ai.workflow.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 class DocumentIngestionWorkflowContractTest {
 
@@ -70,5 +74,54 @@ class DocumentIngestionWorkflowContractTest {
         assertThat(instructions)
                 .contains("masked chunk", "untrusted", "Do not invent")
                 .doesNotContain("API key", "storage key");
+    }
+
+    @Test
+    void providerMetadataEntriesPreserveTheExistingScalarMapContract() {
+        DocumentIngestionWorkflow workflow = workflow();
+
+        Map<String, Object> metadata = workflow.mapEvidenceMetadata(List.of(
+                entry("label", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "project"),
+                entry("score", DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER, "1.25"),
+                entry("active", DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN, "true"),
+                entry("unknown", DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL, "")));
+
+        assertThat(metadata).containsEntry("label", "project")
+                .containsEntry("score", new java.math.BigDecimal("1.25"))
+                .containsEntry("active", true)
+                .containsEntry("unknown", null);
+    }
+
+    @Test
+    void providerMetadataRejectsDuplicateKeysAndInvalidTaggedValues() {
+        DocumentIngestionWorkflow workflow = workflow();
+
+        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
+                        entry("source", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "document"),
+                        entry("source", DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER, "1"))))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
+                        entry("active", DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN, "yes"))))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
+                        entry("unknown", DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL, "not-empty"))))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> workflow.mapEvidenceMetadata(List.of(
+                        entry("apiKey", DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING, "redacted"))))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private DocumentIngestionWorkflow workflow() {
+        return new DocumentIngestionWorkflow(
+                mock(com.hiresemble.document.application.port.DocumentWorkflowQueryPort.class),
+                mock(com.hiresemble.document.application.port.DocumentWorkflowCommandPort.class),
+                new ObjectMapper());
+    }
+
+    private DocumentIngestionWorkflow.EvidenceMetadataEntryOutput entry(
+            String key,
+            DocumentIngestionWorkflow.EvidenceMetadataValueType type,
+            String value) {
+        return new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(key, type, value);
     }
 }

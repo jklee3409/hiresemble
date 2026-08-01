@@ -7,11 +7,15 @@ AI structured output의 parsing부터 domain command까지 검증 순서를 강�
 ## 주요 파일 및 하위 디렉터리
 
 - `StructuredOutputValidator`: JSON→schema→record→workflow→domain validation
+- `StrictStructuredOutputSchemaGenerator`: Spring AI runtime schema를 생성하고 Java nullable 계약을 명시적 `null` union으로 반영
+- `OpenAiStrictSchemaCompatibilityValidator`: 모든 중첩 object·required·`additionalProperties`와 OpenAI strict subset 한도를 요청 전에 재귀 검증
+- `StrictStructuredOutputSchemaRegistry`: 검증된 schema 원문과 deterministic contract name·version·SHA-256 fingerprint를 runtime에 고정
+- `ProviderNullable`: Provider output record의 필수 nullable property 표시
 - [`progress.md`](progress.md): 검증 상태
 
 ## 구성 요소 역할
 
-형식 오류는 제한된 자동 retry로, domain command 오류는 비재시도로 분류한다.
+Provider에 보내기 전 schema 호환성, 응답 JSON/record, workflow 불변식, domain command 순서로 검증한다. schema 요청 거절, 모델 structured output 오류, domain 거절은 서로 다른 실패 의미를 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 

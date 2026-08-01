@@ -12,7 +12,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `JobPostingExtractionWorkflow`: P5 URL fetch부터 사용자 override 병합·domain apply까지의 5단계 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - `JobAnalysisWorkflow`: P6 owner-scoped snapshot·verified RAG·결정론적 score·command-only persist 8단계 contribution
-- `CoverLetterGenerationWorkflow`: P7 generation 8단계 bounded fan-out·partial apply contribution
+- `CoverLetterGenerationWorkflow`: P7 generation 8단계 bounded fan-out·partial apply contribution과 Provider 전용 TipTap output→domain DTO mapping
 - `CoverLetterVerificationWorkflow`: P7 immutable answer verification 6단계 contribution
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상
 - [`document/`](document/index.md): P4 `DOCUMENT_INGESTION` 8단계 contribution과 실패 보상

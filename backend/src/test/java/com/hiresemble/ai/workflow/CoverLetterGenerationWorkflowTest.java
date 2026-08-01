@@ -28,6 +28,8 @@ import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerI
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsInput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapDocumentOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapNodeOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlan;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
@@ -566,6 +568,17 @@ class CoverLetterGenerationWorkflowTest {
                                 "text", text, List.of(), List.of())))));
     }
 
+    private ProviderTipTapDocumentOutput providerDocument(String text) {
+        return new ProviderTipTapDocumentOutput(
+                "doc",
+                List.of(new ProviderTipTapNodeOutput(
+                        "paragraph",
+                        null,
+                        List.of(),
+                        List.of(new ProviderTipTapNodeOutput(
+                                "text", text, List.of(), List.of())))));
+    }
+
     private record Fixture(
             GenerationSnapshot snapshot,
             FakeQuery query,
@@ -648,7 +661,7 @@ class CoverLetterGenerationWorkflowTest {
                     yield new WrittenAnswerOutput(
                             "cover-generation-answer-output-v1",
                             input.questionId(),
-                            document("Spring 서비스 성과를 만들었습니다."),
+                            providerDocument("Spring 서비스 성과를 만들었습니다."),
                             List.of(new EvidenceClaimDraft(
                                     evidenceId,
                                     "Spring 서비스 성과를 만들었습니다.")));

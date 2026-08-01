@@ -5,7 +5,22 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
 - V1~V13을 보존한 V14 migration이 활성 embedding 정책 provider key를 `openai`로 canonicalize한다.
-- Backend 전체 67 suites/427 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 68 suites/452 tests와 이전 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-01] Session Summary (OpenAI strict Structured Output 호환성 보정)
+
+- What was done:
+  - 문서 근거 후보의 임의 `metadata` object를 Provider 전용 scalar entry output과 명시적 domain mapper로 분리하고 nullable warning 계약을 일치시켰다.
+  - 전수 keyword 감사에서 발견한 P7 공개 TipTap DTO의 `default` schema 유입을 Provider 전용 recursive output과 bounded mapper로 분리했다.
+  - 모든 등록 Chat output의 runtime schema를 중앙 생성·검증·fingerprint하고 Gateway가 그 schema를 그대로 보내도록 변경했다.
+- Key decisions:
+  - DB JSONB·공개 API metadata object·기존 저장 데이터는 변경하지 않고 schema 거절과 응답 검증 실패를 구분한다.
+- Issues encountered:
+  - 장애 당시 raw Provider code·param·request ID가 남지 않아 원인은 `HIGH_CONFIDENCE`이며 live 재검증 전 직접 확정하지 않는다.
+- Validation:
+  - focused 회귀와 `gradlew check` 68 suites/452 tests가 통과했고 실제 OpenAI/Tavily 호출은 0회다.
+- Next steps:
+  - 사용자가 Chat capability 1회와 문서 ingestion 1회를 bounded 재검증하고 P8.5-V 상태를 판정한다.
 
 ## [2026-08-01] Session Summary (OpenAI local 연결 오류와 embedding 정책 보정)
 

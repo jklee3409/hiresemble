@@ -10,7 +10,7 @@ canonical registry coverage와 Document·Job·Cover Letter metadata·contributio
 - [`document/`](document/index.md): P4 ingestion 성공·resume·partial failure 검증
 - `JobPostingExtractionWorkflowContractTest`: P5 고정 순서·prompt/schema·privacy 계약
 - `JobPostingExtractionOrchestratorIntegrationTest`: P5 성공·waiting·retry·cancel·reuse 통합 계약
-- `CoverLetterGenerationWorkflowTest`: P7 8단계·partial success/retry·restart
+- `CoverLetterGenerationWorkflowTest`: P7 8단계·Provider TipTap mapping·partial success/retry·restart
 - `CoverLetterVerificationWorkflowTest`: P7 6단계·issue·compensation
 - `CoverLetterWorkflowContractTest`: 공개 step·structured output·privacy 계약
 - [`progress.md`](progress.md)

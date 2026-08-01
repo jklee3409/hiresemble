@@ -210,6 +210,7 @@ public final class WorkflowRegistry {
         NETWORK(true),
         TIMEOUT(true),
         STRUCTURED_OUTPUT(true),
+        STRUCTURED_SCHEMA(false),
         OWNER(false),
         REQUEST_VALIDATION(false),
         DOMAIN_VALIDATION(false),

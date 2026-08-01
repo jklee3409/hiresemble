@@ -7,6 +7,7 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 ## 주요 파일 및 하위 디렉터리
 
 - `PromptRegistry`: immutable prompt definition lookup
+- `CanonicalPromptDefinitions`: 구현된 workflow prompt definition을 한 곳에서 열거해 runtime과 schema completeness 검사가 같은 목록을 사용하도록 한다.
 - `DocumentIngestionPromptDefinitions`: P4 문서 근거 추출 schema·cap과 학력 추출 금지 instruction
 - `JobPostingExtractionPromptDefinitions`: P5 추출 prompt version·output schema·call/token cap
 - `JobAnalysisPromptDefinitions`: P6 requirement·eligibility·matching structured schema와 외부 공고 instruction 격리
@@ -16,7 +17,7 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 
 ## 구성 요소 역할
 
-workflow type+version+step key로 정확한 prompt contract를 찾는다.
+workflow type+version+step key로 정확한 prompt contract를 찾는다. Chat structured output definition은 중앙 strict schema registry가 자동 열거한다.
 
 ## 다른 디렉터리와의 의존 관계
 

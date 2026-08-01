@@ -8,26 +8,27 @@ import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceQuote;
 import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.ChatGateway;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry.ValidatedSchema;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.openai.errors.OpenAIIoException;
 import com.openai.errors.OpenAIServiceException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -42,6 +43,7 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
     private final OpenAiChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final AiPriceCatalogQueryPort priceCatalog;
+    private final StrictStructuredOutputSchemaRegistry schemaRegistry;
     private final Duration providerTimeout;
 
     @Autowired
@@ -49,25 +51,29 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
             OpenAiChatModel chatModel,
             ObjectMapper objectMapper,
             AiPriceCatalogQueryPort priceCatalog,
+            StrictStructuredOutputSchemaRegistry schemaRegistry,
             @Value("${hiresemble.ai.provider-timeout:60s}") Duration providerTimeout) {
         this.chatModel = chatModel;
         this.objectMapper = objectMapper;
         this.priceCatalog = priceCatalog;
+        this.schemaRegistry = schemaRegistry;
         this.providerTimeout = requireTimeout(providerTimeout);
     }
 
     SpringAiOpenAiChatGateway(
             OpenAiChatModel chatModel,
             ObjectMapper objectMapper,
-            AiPriceCatalogQueryPort priceCatalog) {
-        this(chatModel, objectMapper, priceCatalog, Duration.ofSeconds(60));
+            AiPriceCatalogQueryPort priceCatalog,
+            StrictStructuredOutputSchemaRegistry schemaRegistry) {
+        this(chatModel, objectMapper, priceCatalog, schemaRegistry, Duration.ofSeconds(60));
     }
 
     @Override
     public AiGatewayResponse chat(ChatRequest request) {
         validate(request);
         PriceSet prices = prices(request);
-        String schema = new BeanOutputConverter<>(request.outputType()).getJsonSchema();
+        ValidatedSchema schema = schemaRegistry.require(
+                request.outputType(), request.outputSchemaVersion());
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(request.productKey())
                 .timeout(boundedTimeout(request.timeout()))
@@ -75,7 +81,7 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 .maxCompletionTokens(request.maxOutputTokens())
                 .n(1)
                 .store(false)
-                .outputSchema(schema)
+                .outputSchema(schema.schema())
                 .build();
         Prompt prompt = new Prompt(
                 List.of(
@@ -117,7 +123,7 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         } catch (AiExecutionException exception) {
             throw exception;
         } catch (OpenAIServiceException exception) {
-            logProviderFailure(exception);
+            logProviderFailure(exception, schema);
             throw mapStatus(exception);
         } catch (OpenAIIoException exception) {
             if (isTimeout(exception)) {
@@ -212,6 +218,12 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
     private AiExecutionException mapStatus(OpenAIServiceException exception) {
         int status = exception.statusCode();
         if (status == 400) {
+            if (isStructuredSchemaRejection(exception)) {
+                return AiExecutionException.nonRetryable(
+                        FailureKind.STRUCTURED_SCHEMA,
+                        "AI_CHAT_STRUCTURED_SCHEMA_REJECTED",
+                        "AI 응답 형식 구성이 올바르지 않습니다.");
+            }
             return configuration("AI_CHAT_REQUEST_REJECTED");
         }
         if (status == 401 || status == 403) {
@@ -238,16 +250,20 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         return configuration();
     }
 
-    private void logProviderFailure(OpenAIServiceException exception) {
-        String requestId = exception.headers().values("x-request-id").stream()
-                .findFirst()
-                .orElse("-");
+    private void logProviderFailure(
+            OpenAIServiceException exception, ValidatedSchema schema) {
+        String requestId = safeDiagnostic(exception.headers().values("x-request-id").stream()
+                .findFirst().orElse(null));
         log.warn(
-                "OpenAI chat request rejected: status={}, code={}, param={}, requestId={}",
+                "OpenAI chat request rejected: status={}, code={}, param={}, requestId={}, schemaName={}, schemaVersion={}, schemaHash={}, contractName={}",
                 exception.statusCode(),
-                exception.code().orElse("-"),
-                exception.param().orElse("-"),
-                requestId);
+                safeDiagnostic(exception.code().orElse(null)),
+                safeDiagnostic(exception.param().orElse(null)),
+                requestId,
+                StrictStructuredOutputSchemaRegistry.PROVIDER_SCHEMA_NAME,
+                schema.version(),
+                schema.hash(),
+                schema.contractName());
     }
 
     private AiExecutionException configuration() {
@@ -296,6 +312,23 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
             }
         }
         return false;
+    }
+
+    private static String safeDiagnostic(String value) {
+        if (value == null || value.isBlank() || value.length() > 100
+                || !value.matches("[A-Za-z0-9_.\\-\\[\\]]+")) {
+            return "NOT_AVAILABLE";
+        }
+        return value;
+    }
+
+    private static boolean isStructuredSchemaRejection(OpenAIServiceException exception) {
+        String code = exception.code().orElse("");
+        String param = exception.param().orElse("");
+        return "invalid_json_schema".equals(code)
+                || code.contains("structured_schema")
+                || param.equals("response_format")
+                || param.startsWith("response_format.json_schema");
     }
 
     private Duration boundedTimeout(Duration requested) {

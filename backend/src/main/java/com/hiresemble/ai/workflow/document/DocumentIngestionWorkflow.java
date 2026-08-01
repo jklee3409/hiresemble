@@ -9,6 +9,7 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.validation.ProviderNullable;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -59,6 +61,12 @@ public final class DocumentIngestionWorkflow {
 
     private static final int EMBEDDING_DIMENSION = 1536;
     private static final int MAX_CANDIDATES = 50;
+    private static final int MAX_METADATA_ENTRIES = 20;
+    private static final int MAX_METADATA_STRING_LENGTH = 2_000;
+    private static final Pattern METADATA_KEY = Pattern.compile("[a-z][A-Za-z0-9]{0,63}");
+    private static final Set<String> RESERVED_METADATA_KEYS = Set.of(
+            "validationwarning", "prompt", "response", "provider", "model",
+            "apikey", "secret", "credential", "token", "internal", "constructor", "prototype");
     private static final Duration EMBEDDING_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
 
@@ -686,7 +694,8 @@ public final class DocumentIngestionWorkflow {
             DocumentState state = state(invocation.executionContext());
             List<DocumentEvidenceCandidate> candidates = batch.candidates().stream()
                     .map(value -> new DocumentEvidenceCandidate(
-                            value.evidenceCategory(), value.title(), value.content(), value.metadata(),
+                            value.evidenceCategory(), value.title(), value.content(),
+                            mapEvidenceMetadata(value.metadata()),
                             value.confidence(), value.sourceChunkIds(), value.sourceRevision(),
                             value.validationWarning()))
                     .toList();
@@ -823,23 +832,82 @@ public final class DocumentIngestionWorkflow {
                         != candidate.sourceChunkIds().size()
                 || candidate.sourceRevision() < 0
                 || (candidate.validationWarning() != null
-                        && candidate.validationWarning().length() > 500)) {
+                        && (candidate.validationWarning().length() > 500
+                                || containsSensitiveDiagnosticText(candidate.validationWarning())))) {
             throw new IllegalArgumentException("candidate shape is invalid");
         }
-        Map<String, Object> metadata = candidate.metadata() == null ? Map.of() : candidate.metadata();
-        if (metadata.values().stream().anyMatch(value -> value != null
-                && !(value instanceof String)
-                && !(value instanceof Number)
-                && !(value instanceof Boolean))) {
+        mapEvidenceMetadata(candidate.metadata());
+    }
+
+    Map<String, Object> mapEvidenceMetadata(List<EvidenceMetadataEntryOutput> entries) {
+        if (entries == null || entries.size() > MAX_METADATA_ENTRIES) {
             throw new IllegalArgumentException("candidate metadata is invalid");
+        }
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        for (EvidenceMetadataEntryOutput entry : entries) {
+            if (entry == null || entry.key() == null || !METADATA_KEY.matcher(entry.key()).matches()
+                    || RESERVED_METADATA_KEYS.contains(entry.key().toLowerCase(java.util.Locale.ROOT))
+                    || entry.valueType() == null
+                    || entry.value() == null || entry.value().length() > MAX_METADATA_STRING_LENGTH
+                    || metadata.containsKey(entry.key())) {
+                throw new IllegalArgumentException("candidate metadata is invalid");
+            }
+            Object value = switch (entry.valueType()) {
+                case STRING -> validMetadataString(entry.value());
+                case NUMBER -> validMetadataNumber(entry.value());
+                case BOOLEAN -> validMetadataBoolean(entry.value());
+                case NULL -> {
+                    if (!entry.value().isEmpty()) {
+                        throw new IllegalArgumentException("candidate metadata is invalid");
+                    }
+                    yield null;
+                }
+            };
+            metadata.put(entry.key(), value);
         }
         try {
             if (objectMapper.writeValueAsBytes(metadata).length > 16_384) {
                 throw new IllegalArgumentException("candidate metadata is too large");
             }
+        } catch (IllegalArgumentException exception) {
+            throw exception;
         } catch (Exception exception) {
             throw new IllegalArgumentException("candidate metadata is invalid", exception);
         }
+        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+    }
+
+    private BigDecimal validMetadataNumber(String value) {
+        if (value.length() > 100) {
+            throw new IllegalArgumentException("candidate metadata is invalid");
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("candidate metadata is invalid", exception);
+        }
+    }
+
+    private String validMetadataString(String value) {
+        if (value.indexOf('\0') >= 0 || containsSensitiveDiagnosticText(value)) {
+            throw new IllegalArgumentException("candidate metadata is invalid");
+        }
+        return value;
+    }
+
+    private boolean containsSensitiveDiagnosticText(String value) {
+        String normalized = value.toLowerCase(java.util.Locale.ROOT);
+        return normalized.contains("<untrusted_external_data>")
+                || normalized.contains("api_key")
+                || normalized.contains("password=")
+                || normalized.contains("secret=")
+                || normalized.contains("credential=");
+    }
+
+    private Boolean validMetadataBoolean(String value) {
+        if ("true".equals(value)) return true;
+        if ("false".equals(value)) return false;
+        throw new IllegalArgumentException("candidate metadata is invalid");
     }
 
     private String hashChunkRefs(List<DocumentChunkRecord> chunks) {
@@ -978,17 +1046,29 @@ public final class DocumentIngestionWorkflow {
             String evidenceCategory,
             String title,
             String content,
-            Map<String, Object> metadata,
+            List<EvidenceMetadataEntryOutput> metadata,
             BigDecimal confidence,
             List<UUID> sourceChunkIds,
             long sourceRevision,
-            String validationWarning) {
+            @ProviderNullable String validationWarning) {
         public EvidenceCandidatePayload {
             metadata = metadata == null
-                    ? Map.of()
-                    : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+                    ? List.of()
+                    : List.copyOf(metadata);
             sourceChunkIds = sourceChunkIds == null ? List.of() : List.copyOf(sourceChunkIds);
+            validationWarning = validationWarning == null || validationWarning.isBlank()
+                    ? null : validationWarning;
         }
+    }
+
+    public record EvidenceMetadataEntryOutput(
+            String key, EvidenceMetadataValueType valueType, String value) {}
+
+    public enum EvidenceMetadataValueType {
+        STRING,
+        NUMBER,
+        BOOLEAN,
+        NULL
     }
 
     public record EvidenceCandidateBatch(

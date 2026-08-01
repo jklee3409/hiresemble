@@ -30,14 +30,11 @@ import com.hiresemble.ai.orchestration.WorkflowFailureHandler;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
-import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
-import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
-import com.hiresemble.ai.prompt.DocumentIngestionPromptDefinitions;
-import com.hiresemble.ai.prompt.InterviewAnswerFeedbackPromptDefinitions;
-import com.hiresemble.ai.prompt.InterviewPreparationPromptDefinitions;
-import com.hiresemble.ai.prompt.JobAnalysisPromptDefinitions;
-import com.hiresemble.ai.prompt.JobPostingExtractionPromptDefinitions;
+import com.hiresemble.ai.prompt.CanonicalPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
+import com.hiresemble.ai.validation.OpenAiStrictSchemaCompatibilityValidator;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaGenerator;
+import com.hiresemble.ai.validation.StrictStructuredOutputSchemaRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow;
@@ -66,7 +63,6 @@ import com.hiresemble.job.application.port.JobWorkflowQueryPort;
 import com.hiresemble.interview.application.port.InterviewWorkflowCommandPort;
 import com.hiresemble.interview.application.port.InterviewWorkflowQueryPort;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
@@ -171,15 +167,27 @@ public class AiRuntimeConfiguration {
 
     @Bean
     PromptRegistry promptRegistry() {
-        var prompts = new ArrayList<PromptRegistry.PromptDefinition>();
-        prompts.addAll(DocumentIngestionPromptDefinitions.all());
-        prompts.addAll(JobPostingExtractionPromptDefinitions.all());
-        prompts.addAll(JobAnalysisPromptDefinitions.all());
-        prompts.addAll(CoverLetterGenerationPromptDefinitions.all());
-        prompts.addAll(CoverLetterVerificationPromptDefinitions.all());
-        prompts.addAll(InterviewPreparationPromptDefinitions.all());
-        prompts.addAll(InterviewAnswerFeedbackPromptDefinitions.all());
-        return new PromptRegistry(prompts);
+        return new PromptRegistry(CanonicalPromptDefinitions.all());
+    }
+
+    @Bean
+    OpenAiStrictSchemaCompatibilityValidator openAiStrictSchemaCompatibilityValidator(
+            ObjectMapper objectMapper) {
+        return new OpenAiStrictSchemaCompatibilityValidator(objectMapper);
+    }
+
+    @Bean
+    StrictStructuredOutputSchemaGenerator strictStructuredOutputSchemaGenerator(
+            ObjectMapper objectMapper) {
+        return new StrictStructuredOutputSchemaGenerator(objectMapper);
+    }
+
+    @Bean
+    StrictStructuredOutputSchemaRegistry strictStructuredOutputSchemaRegistry(
+            PromptRegistry promptRegistry,
+            StrictStructuredOutputSchemaGenerator generator,
+            OpenAiStrictSchemaCompatibilityValidator validator) {
+        return new StrictStructuredOutputSchemaRegistry(promptRegistry, generator, validator);
     }
 
     @Bean

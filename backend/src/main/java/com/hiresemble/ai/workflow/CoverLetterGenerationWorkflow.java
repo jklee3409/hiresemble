@@ -7,6 +7,7 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.validation.ProviderNullable;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
@@ -32,6 +33,7 @@ import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.coverletter.domain.CoverLetterEvidenceUsageType;
 import com.hiresemble.coverletter.domain.IssueSeverity;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
+import com.hiresemble.coverletter.domain.TipTapContent.TipTapMarkDto;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapNodeDto;
 import com.hiresemble.coverletter.domain.VerificationIssueCode;
 import com.hiresemble.coverletter.domain.VerificationStatus;
@@ -1093,11 +1095,12 @@ public final class CoverLetterGenerationWorkflow {
         @Override
         public JsonNode minimalOutput(
                 WrittenAnswerOutput output, ObjectMapper ignored) {
-            String plainText = plainText(output.content());
+            TipTapDocumentDto content = mapTipTap(output.content());
+            String plainText = plainText(content);
             var result = objectMapper.createObjectNode()
                     .put("schemaVersion", ANSWER_SCHEMA)
                     .put("questionId", output.questionId().toString())
-                    .put("answerHash", sha256(write(output.content())))
+                    .put("answerHash", sha256(write(content)))
                     .put("characterCount", plainText.codePointCount(0, plainText.length()));
             var evidenceIds = result.putArray("evidenceIds");
             output.claims().stream()
@@ -1123,7 +1126,7 @@ public final class CoverLetterGenerationWorkflow {
                     || output.claims().size() > 50) {
                 throw new IllegalArgumentException("written answer is invalid");
             }
-            validateTipTap(output.content());
+            validateTipTap(mapTipTap(output.content()));
             output.claims().forEach(value -> {
                 if (value.evidenceId() == null) {
                     throw new IllegalArgumentException("answer evidence claim is invalid");
@@ -1154,7 +1157,7 @@ public final class CoverLetterGenerationWorkflow {
                         "COVER_GENERATION_ANSWER_EVIDENCE_INVALID",
                         "자기소개서 답변의 승인 근거를 확인하지 못했습니다.");
             }
-            String text = plainText(output.content());
+            String text = plainText(mapTipTap(output.content()));
             int count = text.codePointCount(0, text.length());
             if (count > MAX_TEXT
                     || (question.maxLength() != null
@@ -1200,10 +1203,11 @@ public final class CoverLetterGenerationWorkflow {
             List<ApprovedEvidenceInput> evidence = retrieval.evidenceIds().stream()
                     .map(id -> approvedEvidence(state, id))
                     .toList();
-            String answerText = plainText(answer.content());
+            TipTapDocumentDto answerContent = mapTipTap(answer.content());
+            String answerText = plainText(answerContent);
             var refs = baseRefs(state);
             refs.put("questionId", question.questionId().toString());
-            refs.put("answerHash", sha256(write(answer.content())));
+            refs.put("answerHash", sha256(write(answerContent)));
             refs.put("retrievalHash", stableHash(retrieval));
             return localInput(
                     state,
@@ -1215,7 +1219,7 @@ public final class CoverLetterGenerationWorkflow {
                             question.questionId(),
                             bounded(question.questionText(), 2_000),
                             question.maxLength(),
-                            answer.content(),
+                            answerContent,
                             answerText,
                             answer.claims(),
                             evidence,
@@ -1303,7 +1307,7 @@ public final class CoverLetterGenerationWorkflow {
                     WRITE_ANSWER,
                     output.questionId(),
                     WrittenAnswerOutput.class);
-            String answerText = plainText(answer.content());
+            String answerText = plainText(mapTipTap(answer.content()));
             List<String> unsupportedNumbers =
                     unsupportedNumbers(answerText, state.snapshot().verifiedEvidence());
             if (!unsupportedNumbers.isEmpty()
@@ -1392,7 +1396,7 @@ public final class CoverLetterGenerationWorkflow {
             var refs = baseRefs(state);
             refs.put("questionId", question.questionId().toString());
             refs.put("agentRunId", state.agentRunId().toString());
-            refs.put("answerHash", sha256(write(answer.content())));
+            refs.put("answerHash", sha256(write(mapTipTap(answer.content()))));
             refs.put("factCheckHash", stableHash(factCheck));
             return localInput(
                     state,
@@ -1400,7 +1404,7 @@ public final class CoverLetterGenerationWorkflow {
                     refs,
                     state.agentRunId()
                             + "|"
-                            + sha256(write(answer.content()))
+                            + sha256(write(mapTipTap(answer.content())))
                             + "|"
                             + stableHash(factCheck),
                     tree(new ApplyAnswerRequestInput(
@@ -1411,7 +1415,7 @@ public final class CoverLetterGenerationWorkflow {
                             state.snapshot().coverLetterVersion(),
                             question.currentAnswerVersionId(),
                             state.snapshot().snapshotHash(),
-                            sha256(write(answer.content())),
+                            sha256(write(mapTipTap(answer.content()))),
                             stableHash(factCheck))));
         }
 
@@ -1459,7 +1463,7 @@ public final class CoverLetterGenerationWorkflow {
                                 output.expectedCoverLetterVersion(),
                                 output.expectedCurrentVersionId(),
                                 output.snapshotHash(),
-                                answer.content(),
+                                mapTipTap(answer.content()),
                                 evidenceUses,
                                 result));
             } catch (BusinessException exception) {
@@ -1548,7 +1552,7 @@ public final class CoverLetterGenerationWorkflow {
             if (!output.agentRunId().equals(context.run().id())
                     || !output.coverLetterId().equals(context.run().resourceId())
                     || !output.questionId().toString().equals(context.scopeKey())
-                    || !output.answerHash().equals(sha256(write(answer.content())))
+                    || !output.answerHash().equals(sha256(write(mapTipTap(answer.content()))))
                     || !output.factCheckHash().equals(stableHash(factCheck))) {
                 throw domainFailure(
                         "COVER_GENERATION_APPLY_HASH_INVALID",
@@ -1707,6 +1711,33 @@ public final class CoverLetterGenerationWorkflow {
                     "AI_STRUCTURED_OUTPUT_INVALID",
                     "AI 결과 형식을 확인하지 못했습니다.");
         }
+    }
+
+    private TipTapDocumentDto mapTipTap(ProviderTipTapDocumentOutput document) {
+        if (document == null || document.content() == null || document.content().size() > 1_000) {
+            throw new IllegalArgumentException("Provider TipTap document is invalid");
+        }
+        int[] nodes = {0};
+        List<TipTapNodeDto> content = document.content().stream()
+                .map(node -> mapTipTapNode(node, 1, nodes))
+                .toList();
+        return new TipTapDocumentDto(document.type(), content);
+    }
+
+    private TipTapNodeDto mapTipTapNode(
+            ProviderTipTapNodeOutput node, int depth, int[] nodes) {
+        if (node == null || depth > 20 || ++nodes[0] > 5_000
+                || node.marks() == null || node.marks().size() > 2
+                || node.content() == null || node.content().size() > 1_000) {
+            throw new IllegalArgumentException("Provider TipTap node is invalid");
+        }
+        List<TipTapMarkDto> marks = node.marks().stream()
+                .map(mark -> mark == null ? null : new TipTapMarkDto(mark.type()))
+                .toList();
+        List<TipTapNodeDto> content = node.content().stream()
+                .map(child -> mapTipTapNode(child, depth + 1, nodes))
+                .toList();
+        return new TipTapNodeDto(node.type(), node.text(), marks, content);
     }
 
     private void validateTipTap(TipTapDocumentDto document) {
@@ -2125,10 +2156,30 @@ public final class CoverLetterGenerationWorkflow {
     public record EvidenceClaimDraft(
             UUID evidenceId, String claimText) {}
 
+    public record ProviderTipTapMarkOutput(String type) {}
+
+    public record ProviderTipTapNodeOutput(
+            String type,
+            @ProviderNullable String text,
+            List<ProviderTipTapMarkOutput> marks,
+            List<ProviderTipTapNodeOutput> content) {
+        public ProviderTipTapNodeOutput {
+            marks = copy(marks);
+            content = copy(content);
+        }
+    }
+
+    public record ProviderTipTapDocumentOutput(
+            String type, List<ProviderTipTapNodeOutput> content) {
+        public ProviderTipTapDocumentOutput {
+            content = copy(content);
+        }
+    }
+
     public record WrittenAnswerOutput(
             String schemaVersion,
             UUID questionId,
-            TipTapDocumentDto content,
+            ProviderTipTapDocumentOutput content,
             List<EvidenceClaimDraft> claims) {
         public WrittenAnswerOutput {
             claims = copy(claims);

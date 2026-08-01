@@ -115,6 +115,13 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM profile_evidence WHERE document_id=? AND verification_status='PENDING' AND verified_at IS NULL",
                 Long.class, document.id())).isEqualTo(1L);
+        String metadata = jdbcTemplate.queryForObject(
+                "SELECT metadata::text FROM profile_evidence WHERE document_id=?",
+                String.class, document.id());
+        assertThat(metadata)
+                .contains("\"source\": \"document\"", "\"score\": 1.25", "\"active\": true")
+                .contains("\"empty\": null")
+                .doesNotContain("validationWarning");
         assertThat(run.partialResult()).isNotNull();
         assertThat(run.partialResult().resultRefs()).hasSize(1);
 
@@ -197,6 +204,38 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
                 Long.class, document.id())).isPositive();
         assertThat(chatGateway.calls.get()).isZero();
         assertThat(embeddingGateway.calls.get()).isEqualTo(3);
+    }
+
+    @Test
+    void invalidProviderMetadataIsRejectedBeforeDomainApply() {
+        chatGateway.invalidMetadata.set(true);
+        var accepted = upload(longDocument("masked@example.com", "secret=masked"),
+                "document-invalid-metadata-key");
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot run = run(accepted.agentRunId());
+        assertThat(run.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(run.safeError().code()).isEqualTo("AI_STRUCTURED_OUTPUT_INVALID");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE document_id=?",
+                Long.class, accepted.documentId())).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM document_chunks WHERE document_id=? AND embedding IS NOT NULL",
+                Long.class, accepted.documentId())).isPositive();
+    }
+
+    @Test
+    void providerWarningIsMappedIntoTheExistingMetadataObject() {
+        chatGateway.warning = "근거 확인 필요";
+        var accepted = upload(longDocument("masked@example.com", "secret=masked"),
+                "document-warning-metadata-key");
+
+        execute(accepted.agentRunId());
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT metadata->>'validationWarning' FROM profile_evidence WHERE document_id=?",
+                String.class, accepted.documentId())).isEqualTo("근거 확인 필요");
     }
 
     private com.hiresemble.document.application.model.DocumentApplicationResults.UploadAccepted upload(
@@ -332,7 +371,9 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
     static final class FakeChatGateway implements ChatGateway {
         private final ObjectMapper objectMapper;
         final AtomicInteger calls = new AtomicInteger();
+        final AtomicBoolean invalidMetadata = new AtomicBoolean();
         volatile String lastInput = "";
+        volatile String warning;
 
         FakeChatGateway(ObjectMapper objectMapper) {
             this.objectMapper = objectMapper;
@@ -343,15 +384,32 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
             calls.incrementAndGet();
             lastInput = request.input().toString();
             JsonNode first = request.input().path("maskedChunks").get(0);
+            List<DocumentIngestionWorkflow.EvidenceMetadataEntryOutput> metadata = List.of(
+                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
+                            "source",
+                            DocumentIngestionWorkflow.EvidenceMetadataValueType.STRING,
+                            "document"),
+                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
+                            invalidMetadata.get() ? "source" : "score",
+                            DocumentIngestionWorkflow.EvidenceMetadataValueType.NUMBER,
+                            "1.25"),
+                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
+                            "active",
+                            DocumentIngestionWorkflow.EvidenceMetadataValueType.BOOLEAN,
+                            "true"),
+                    new DocumentIngestionWorkflow.EvidenceMetadataEntryOutput(
+                            "empty",
+                            DocumentIngestionWorkflow.EvidenceMetadataValueType.NULL,
+                            ""));
             var candidate = new DocumentIngestionWorkflow.EvidenceCandidatePayload(
                     "PROJECT",
                     "백엔드 프로젝트 수행",
                     "백엔드 기능을 설계하고 테스트 자동화를 개선했습니다.",
-                    Map.of("source", "document"),
+                    metadata,
                     new BigDecimal("0.900"),
                     List.of(UUID.fromString(first.path("chunkId").asText())),
                     request.input().path("sourceRevision").asLong(),
-                    null);
+                    warning);
             var output = new DocumentIngestionWorkflow.EvidenceCandidateBatch(
                     UUID.fromString(request.input().path("documentId").asText()),
                     request.input().path("sourceRevision").asLong(),
@@ -367,7 +425,9 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
 
         void reset() {
             calls.set(0);
+            invalidMetadata.set(false);
             lastInput = "";
+            warning = null;
         }
     }
 

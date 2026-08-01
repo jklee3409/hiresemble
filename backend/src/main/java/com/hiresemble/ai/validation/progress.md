@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 5단계 structured output validation이 구현됐다.
+P3 응답 5단계 validation 앞에 OpenAI strict request schema의 중앙 생성·호환성 검증 경계가 구현됐다.
+
+## [2026-08-01] Session Summary (OpenAI strict schema 중앙 검증)
+
+- What was done:
+  - 중첩 object/required/additionalProperties, nullable union, keyword·깊이·property·enum 한도를 재귀 검사하고 validated schema registry를 추가했다.
+- Key decisions:
+  - 실제 runtime generator를 test와 공유하며 schema 문자열 치환이나 non-strict fallback을 사용하지 않는다.
+- Issues encountered:
+  - Spring AI 기본 converter는 `Map<String,Object>`를 bare object로, 선택 warning을 non-null string으로, 공개 TipTap DTO annotation을 확인되지 않은 `default` keyword로 생성했다.
+- Validation:
+  - 기존 schema 실패 재현, 수정 schema 14개, completeness와 deterministic hash 검사가 통과했다.
+- Next steps:
+  - OpenAI subset 변경 시 공식 계약을 근거로 validator와 회귀 fixture를 함께 갱신한다.
 
 ## [2026-07-19] Session Summary (Structured Output 검증 chain 구현)
 

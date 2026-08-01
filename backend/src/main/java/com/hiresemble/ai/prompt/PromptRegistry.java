@@ -35,6 +35,18 @@ public final class PromptRegistry {
         return definition;
     }
 
+    public List<PromptDefinition> definitions() {
+        return List.copyOf(definitions.values());
+    }
+
+    /** Definitions that are sent to ChatGateway as native strict structured output. */
+    public List<PromptDefinition> strictStructuredOutputDefinitions() {
+        return definitions.values().stream()
+                .filter(definition -> definition.maxModelCalls() > 0)
+                .filter(definition -> definition.toolAllowlist().isEmpty())
+                .toList();
+    }
+
     public record PromptKey(WorkflowType workflowType, String workflowVersion, String stepKey) {
         public PromptKey {
             Objects.requireNonNull(workflowType, "workflowType");

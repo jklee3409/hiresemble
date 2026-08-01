@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 runtime과 P4 Document·P5 Job workflow 통합 검증이 구현됐다.
+P3 runtime과 P4 Document·P5 Job workflow 통합 검증 및 전체 Chat strict output 자동 검사가 구현됐다.
+
+## [2026-08-01] Session Summary (strict schema와 document regression)
+
+- What was done:
+  - runtime schema 전체 열거, Gateway payload, document metadata mapping·저장 회귀를 Fake/SDK capture로 추가했다.
+- Key decisions:
+  - test와 runtime은 같은 schema generator/registry를 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - focused test와 Backend 68 suites/452 tests 통과, 외부 호출 0회.
+- Next steps:
+  - live 결과는 test 결과와 별도로 P8.5-V에 기록한다.
 
 ## [2026-07-27] Session Summary (P5 Job workflow 테스트 추가)
 

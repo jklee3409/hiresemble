@@ -4,6 +4,20 @@
 
 P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
 
+## [2026-08-01] Session Summary (evidence metadata Provider 계약 분리)
+
+- What was done:
+  - Provider output metadata를 key/type/value scalar entry 배열로 바꾸고 중복·예약 key·type·크기·민감 문자열을 domain apply 전에 검증했다.
+  - 명시적 mapper로 기존 scalar map과 nullable validation warning 의미를 보존했다.
+- Key decisions:
+  - metadata key가 실제로 동적이므로 고정 record 대신 제한 entry를 선택하고 JSONB/public API는 그대로 유지한다.
+- Issues encountered:
+  - 수정 전 `Map<String,Object>`가 strict-incompatible bare object schema를 생성했다.
+- Validation:
+  - 저장 의미·invalid metadata·warning·embedding 보존 integration 회귀가 통과했다.
+- Next steps:
+  - 실제 문서 vertical 1회로 Chat 단계와 최종 PENDING evidence를 확인한다.
+
 ## [2026-08-01] Session Summary (Embedding provider canonical key 적용)
 
 - What was done:

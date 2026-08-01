@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 structured output validation 순서·분류 테스트가 구현됐다.
+P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
+
+## [2026-08-01] Session Summary (strict schema 전수·completeness 회귀)
+
+- What was done:
+  - bare arbitrary object 실패 fixture, 등록 output 자동 parameterized 검사, workflow/prompt completeness, nullable warning과 deterministic fingerprint를 검증했다.
+- Key decisions:
+  - 수기 output 목록 대신 canonical registry에서 자동 열거한다.
+- Issues encountered:
+  - 수정 전 evidence metadata와 warning schema가 회귀 test에서 재현 가능하게 실패했다.
+- Validation:
+  - 현재 14개 Chat output schema가 중앙 validator를 통과했다.
+- Next steps:
+  - 새 output type이 추가되면 동일 test가 자동 포함한다.
 
 ## [2026-07-19] Session Summary (Structured Output 검증 테스트)
 

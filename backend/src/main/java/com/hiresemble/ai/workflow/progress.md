@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-01] Session Summary (schema rejection failure kind 분리)
+
+- What was done:
+  - Provider 요청 schema 거절을 모델 응답 structured validation과 구분하는 `STRUCTURED_SCHEMA` failure kind를 추가했다.
+  - `WRITE_ANSWER`의 recursive TipTap을 공개 DTO에서 Provider 전용 record와 bounded mapper로 분리했다.
+- Key decisions:
+  - schema 거절은 동일 요청 자동 retry 불가이며 기존 public HTTP·TipTap 계약은 변경하지 않는다.
+- Issues encountered:
+  - 강화한 keyword 감사가 공개 DTO annotation에서 생성된 `default`를 추가 발견했다.
+- Validation:
+  - Gateway·workflow focused 회귀와 전체 Backend check 통과.
+- Next steps:
+  - P8.8 구현 전까지 기존 Agent Run safe error projection을 유지한다.
+
 ## [2026-08-01] Session Summary (price-versioned Provider 요청 연결)
 
 - What was done:

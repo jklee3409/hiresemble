@@ -2,7 +2,21 @@
 
 ## Overview
 
-P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐다.
+P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
+
+## [2026-08-01] Session Summary (canonical strict output definition 열거)
+
+- What was done:
+  - 구현된 prompt provider를 canonical 목록으로 모으고 Chat strict output definition 자동 열거를 추가했다.
+  - 문서 metadata entry와 필수 nullable warning prompt 의미를 Java schema와 맞췄다.
+- Key decisions:
+  - 새 Chat step은 canonical workflow와 prompt registry 양쪽 completeness 검사에서 누락될 수 없다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 전체 14개 strict output parameterized schema 검사가 통과했다.
+- Next steps:
+  - 새 output 추가 시 version과 nullable 의미를 함께 등록한다.
 
 ## [2026-07-31] Session Summary (P8 versioned prompt)
 

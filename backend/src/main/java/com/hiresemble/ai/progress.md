@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. Tavily adapter는 명시적 opt-in에서만 활성화된다.
+P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+
+## [2026-08-01] Session Summary (strict Provider output 경계 강화)
+
+- What was done:
+  - canonical prompt 열거, strict schema 생성·호환성 검증·registry, schema rejection 분류, 문서 metadata와 P7 TipTap Provider mapping을 연결했다.
+- Key decisions:
+  - Provider DTO와 domain/public 계약을 분리하고 strict 실패를 non-strict/Fake로 fallback하지 않는다.
+- Issues encountered:
+  - 당시 Provider raw error가 없어 장애 원인은 offline 재현 근거의 `HIGH_CONFIDENCE`로 유지한다.
+- Validation:
+  - Backend 68 suites/452 tests 통과, 외부 Provider 호출 0회.
+- Next steps:
+  - P8.5-V에서 Chat과 문서 vertical을 각 1회 재검증한다.
 
 ## [2026-07-31] Session Summary (P8 조사·질문·답변 피드백 workflow)
 
