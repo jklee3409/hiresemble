@@ -12,6 +12,8 @@ import {
   type JobVersionConflict,
 } from '@/features/jobs/conflict'
 import JobRunMonitor from '@/features/jobs/JobRunMonitor.vue'
+import JobDescriptionDocument from '@/features/jobs/JobDescriptionDocument.vue'
+import JobPreparationJourney from '@/features/jobs/JobPreparationJourney.vue'
 import JobVersionConflictPanel from '@/features/jobs/JobVersionConflictPanel.vue'
 import {
   CLOSED_REASON_LABELS,
@@ -20,8 +22,6 @@ import {
   JOB_EXTRACTION_STATUS_LABELS,
   JOB_STATUS_LABELS,
   formatJobInstant,
-  jobCompanyLabel,
-  jobDisplayTitle,
   jobExtractionGuidance,
 } from '@/features/jobs/presentation'
 import {
@@ -29,7 +29,7 @@ import {
   jobQueryKeys,
   useDeleteJobMutation,
   useJobDetailQuery,
-  useLatestJobRunQuery,
+  useLatestJobExtractionRunQuery,
   useRetryJobExtractionMutation,
   useUpdateJobMutation,
   useUpdateJobStatusMutation,
@@ -48,7 +48,6 @@ import {
   type JobStatus,
   type UpdateJobRequest,
 } from '@/shared/api/jobContracts'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -65,7 +64,7 @@ const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
 const job = useJobDetailQuery(userId, jobId)
-const latestRun = useLatestJobRunQuery(userId, jobId)
+const latestRun = useLatestJobExtractionRunQuery(userId, jobId)
 const updateMutation = useUpdateJobMutation(userId)
 const statusMutation = useUpdateJobStatusMutation(userId)
 const retryMutation = useRetryJobExtractionMutation(userId)
@@ -94,10 +93,10 @@ const loadError = computed(() => {
 })
 const createdMessage = computed(() => {
   if (route.query.created === 'manual') {
-    return '직접 입력한 본문으로 공고를 등록했어요.'
+    return '공고를 등록했어요. 입력한 내용을 바탕으로 분석도 자동으로 시작했어요.'
   }
   if (route.query.created === 'async') {
-    return '공고를 등록하고 내용을 불러오기 시작했어요.'
+    return '공고를 등록했어요. 내용을 읽은 뒤 분석까지 이어서 준비할게요.'
   }
   return ''
 })
@@ -339,16 +338,6 @@ function emptyUpdateForm(): JobUpdateForm {
   }
 }
 
-function businessTone(value: JobStatus): 'brand' | 'info' | 'neutral' {
-  return (
-    {
-      IN_PROGRESS: 'brand',
-      SUBMITTED: 'info',
-      CLOSED: 'neutral',
-    } as const
-  )[value]
-}
-
 function extractionTone(
   value: JobExtractionStatus,
 ): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
@@ -393,66 +382,56 @@ function extractionTone(
       <p v-if="createdMessage" class="alert alert--success job-overview__created" role="status">
         {{ createdMessage }}
       </p>
-      <PageHeader
-        :title="jobDisplayTitle(job.data.value)"
-        :description="
-          job.data.value.title && job.data.value.positionName
-            ? `${jobCompanyLabel(job.data.value.companyName)} · 직무 ${job.data.value.positionName}`
-            : jobCompanyLabel(job.data.value.companyName)
-        "
-        eyebrow="공고 정보"
-      >
-        <template #actions>
-          <div class="job-overview__actions">
-            <button
-              type="button"
-              class="button button--secondary button--compact"
-              @click="beginEdit(false)"
-            >
-              편집
-            </button>
-            <button
-              v-if="['NEEDS_MANUAL_INPUT', 'FAILED'].includes(job.data.value.extractionStatus)"
-              id="job-manual-input"
-              type="button"
-              class="button button--warning button--compact"
-              @click="beginEdit(true)"
-            >
-              본문 직접 입력
-            </button>
-            <button
-              v-if="job.data.value.extractionStatus === 'FAILED'"
-              id="job-retry-extraction"
-              type="button"
-              class="button button--secondary button--compact"
-              :disabled="retryMutation.isPending.value"
-              @click="retryExtraction"
-            >
-              {{ retryMutation.isPending.value ? '다시 불러오는 중…' : '공고 다시 불러오기' }}
-            </button>
-            <button
-              id="job-delete"
-              type="button"
-              class="button button--danger button--compact"
-              :disabled="deleteMutation.isPending.value"
-              @click="remove"
-            >
-              {{ deleteMutation.isPending.value ? '삭제 중…' : '삭제' }}
-            </button>
-          </div>
-        </template>
-      </PageHeader>
+      <JobPreparationJourney :job="job.data.value" />
+
+      <section class="job-overview__toolbar" aria-labelledby="job-overview-toolbar-heading">
+        <div>
+          <h2 id="job-overview-toolbar-heading">공고 정보</h2>
+          <p>읽기 편한 본문과 지원 상태를 한곳에서 확인하세요.</p>
+        </div>
+        <div class="job-overview__actions">
+          <button
+            type="button"
+            class="button button--secondary button--compact"
+            @click="beginEdit(false)"
+          >
+            편집
+          </button>
+          <button
+            v-if="['NEEDS_MANUAL_INPUT', 'FAILED'].includes(job.data.value.extractionStatus)"
+            id="job-manual-input"
+            type="button"
+            class="button button--warning button--compact"
+            @click="beginEdit(true)"
+          >
+            본문 직접 입력
+          </button>
+          <button
+            v-if="job.data.value.extractionStatus === 'FAILED'"
+            id="job-retry-extraction"
+            type="button"
+            class="button button--secondary button--compact"
+            :disabled="retryMutation.isPending.value"
+            @click="retryExtraction"
+          >
+            {{ retryMutation.isPending.value ? '다시 불러오는 중…' : '공고 다시 불러오기' }}
+          </button>
+          <button
+            id="job-delete"
+            type="button"
+            class="button button--danger button--compact"
+            :disabled="deleteMutation.isPending.value"
+            @click="remove"
+          >
+            {{ deleteMutation.isPending.value ? '삭제 중…' : '삭제' }}
+          </button>
+        </div>
+      </section>
 
       <div class="job-overview__statuses" aria-label="공고 상태">
         <StatusBadge
-          data-testid="job-business-status"
-          prefix="업무"
-          :label="JOB_STATUS_LABELS[job.data.value.status]"
-          :tone="businessTone(job.data.value.status)"
-        />
-        <StatusBadge
           data-testid="job-extraction-status"
-          prefix="추출"
+          prefix="공고 본문"
           :label="JOB_EXTRACTION_STATUS_LABELS[job.data.value.extractionStatus]"
           :tone="extractionTone(job.data.value.extractionStatus)"
         />
@@ -584,8 +563,19 @@ function extractionTone(
 
       <div class="job-overview__grid">
         <section class="job-description section-surface" aria-labelledby="job-description-heading">
-          <p class="section-kicker">공고 내용</p>
-          <h3 id="job-description-heading" class="section-title">공고 본문</h3>
+          <div class="job-description__header">
+            <div>
+              <p class="section-kicker">공고 내용</p>
+              <h2 id="job-description-heading" class="section-title">공고 본문</h2>
+            </div>
+            <button
+              type="button"
+              class="button button--ghost button--compact"
+              @click="beginEdit(true)"
+            >
+              본문 수정
+            </button>
+          </div>
           <p class="job-description__source">
             출처:
             {{
@@ -594,9 +584,10 @@ function extractionTone(
                 : '미확인'
             }}
           </p>
-          <pre v-if="job.data.value.descriptionText" class="job-description__body">{{
-            job.data.value.descriptionText
-          }}</pre>
+          <JobDescriptionDocument
+            v-if="job.data.value.descriptionText"
+            :source="job.data.value.descriptionText"
+          />
           <p v-else class="job-description__empty">
             저장된 공고 내용이 없어요. 편집에서 직접 입력해 주세요.
           </p>
@@ -700,6 +691,27 @@ function extractionTone(
   margin-bottom: var(--space-4);
 }
 
+.job-overview__toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: var(--layout-section-gap);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.job-overview__toolbar h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 780;
+}
+
+.job-overview__toolbar p {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
 .job-overview__actions,
 .job-overview__statuses {
   display: flex;
@@ -758,20 +770,11 @@ function extractionTone(
   font-size: var(--font-size-xs);
 }
 
-.job-description__body {
-  max-height: 44rem;
-  margin-top: var(--space-4);
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-subtle);
-  color: var(--color-text-secondary);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-  padding: var(--space-5);
-  white-space: pre-wrap;
+.job-description__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
 }
 
 .job-overview__side {
@@ -835,6 +838,11 @@ function extractionTone(
 }
 
 @media (max-width: 40rem) {
+  .job-overview__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .job-editor__grid {
     grid-template-columns: 1fr;
   }

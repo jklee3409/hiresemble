@@ -89,9 +89,9 @@ function emptyForm(): JobCreateForm {
     </RouterLink>
     <PageHeader
       heading-id="job-new-heading"
-      title="공고 등록"
-      description="공고 링크를 붙여 넣어 보세요. 내용을 불러오지 못하면 직접 입력할 수 있어요."
-      eyebrow="새 관심 공고"
+      title="관심 공고 추가"
+      description="공고 링크를 넣으면 본문을 읽고, 내 경험과 비교하는 분석까지 자동으로 이어져요."
+      variant="editor"
     />
 
     <form id="job-create-form" class="job-create-form" novalidate @submit.prevent="submit">
@@ -102,8 +102,8 @@ function emptyForm(): JobCreateForm {
         <div class="job-create-section__heading">
           <span class="job-create-section__index" aria-hidden="true">1</span>
           <div>
-            <h3 id="job-url-title" class="section-title">공고 링크</h3>
-            <p>지원하려는 공고의 링크를 먼저 입력해 주세요.</p>
+            <h2 id="job-url-title" class="section-title">공고 링크</h2>
+            <p>채용 사이트의 공고 주소를 그대로 붙여 넣어 주세요.</p>
           </div>
         </div>
         <label class="field">
@@ -119,7 +119,7 @@ function emptyForm(): JobCreateForm {
             aria-describedby="job-source-url-help job-source-url-error"
           />
           <span id="job-source-url-help" class="field__help"
-            >브라우저 주소창에서 공고 링크를 복사해 붙여 넣어 주세요.</span
+            >등록 후 공고 내용을 자동으로 읽고 기본 분석을 시작해요.</span
           >
           <span
             v-if="fieldErrors.sourceUrl"
@@ -136,8 +136,8 @@ function emptyForm(): JobCreateForm {
         <div class="job-create-section__heading">
           <span class="job-create-section__index" aria-hidden="true">2</span>
           <div>
-            <h3 id="job-detail-title" class="section-title">기본 정보</h3>
-            <p>지금 알고 있는 정보만 입력해도 괜찮아요.</p>
+            <h2 id="job-detail-title" class="section-title">알고 있는 정보</h2>
+            <p>회사명이나 직무를 알고 있다면 함께 적어 주세요. 비워 두어도 괜찮아요.</p>
           </div>
         </div>
         <div class="job-create-grid">
@@ -187,8 +187,8 @@ function emptyForm(): JobCreateForm {
         <summary class="job-create-section__heading">
           <span class="job-create-section__index" aria-hidden="true">또는</span>
           <div>
-            <h3 class="section-title">직접 입력해서 등록</h3>
-            <p>공고 본문을 이미 가지고 있거나 링크에서 내용을 불러오기 어려울 때 사용하세요.</p>
+            <h2 class="section-title">공고 본문 직접 입력</h2>
+            <p>링크에서 내용을 읽기 어렵거나 본문을 이미 가지고 있을 때 펼쳐 주세요.</p>
           </div>
         </summary>
         <label class="field job-create-section__optional-body">
@@ -216,7 +216,11 @@ function emptyForm(): JobCreateForm {
           class="button button--primary"
           :disabled="createMutation.isPending.value || submitting"
         >
-          {{ createMutation.isPending.value || submitting ? '등록하는 중…' : '공고 등록하기' }}
+          {{
+            createMutation.isPending.value || submitting
+              ? '공고를 등록하는 중…'
+              : '등록하고 분석 시작'
+          }}
         </button>
         <button
           type="button"
@@ -224,7 +228,7 @@ function emptyForm(): JobCreateForm {
           :disabled="createMutation.isPending.value || submitting"
           @click="reset"
         >
-          입력 초기화
+          모두 지우기
         </button>
       </div>
     </form>

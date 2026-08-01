@@ -20,7 +20,7 @@ import {
   formatFitScore,
   isCurrentlyVerifiedEvidence,
 } from '@/features/jobs/analysisPresentation'
-import { jobDisplayTitle } from '@/features/jobs/presentation'
+import JobPreparationJourney from '@/features/jobs/JobPreparationJourney.vue'
 import {
   useAnalyzeJobMutation,
   useJobAnalysisHistoryQuery,
@@ -34,7 +34,6 @@ import type { Eligibility, JobAnalysisQualityMode, MatchLevel } from '@/shared/a
 import type { JobAnalysisListParams } from '@/shared/api/jobApi'
 import { getProfile } from '@/shared/api/profileApi'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -96,7 +95,10 @@ const latestAnalysisRun = useLatestJobAnalysisRunQuery(userId, jobId)
 const analyzeMutation = useAnalyzeJobMutation(userId)
 const retryMutation = useRetryAgentRunMutation(userId)
 const recoveredRunId = computed(() => latestAnalysisRun.data.value?.items[0]?.id ?? '')
-const currentRunId = computed(() => acceptedRunId.value || recoveredRunId.value)
+const automaticRunId = computed(() => job.data.value?.automaticAnalysis.agentRunId ?? '')
+const currentRunId = computed(
+  () => acceptedRunId.value || automaticRunId.value || recoveredRunId.value,
+)
 const currentRun = useAgentRunDetailQuery(userId, currentRunId)
 
 let stream: AgentRunStreamController | null = null
@@ -228,6 +230,19 @@ const connectionLabel = computed(() => {
 const actionRoute = computed(() =>
   safeRequiredActionRoute(currentRun.data.value?.requiredUserAction?.route ?? null),
 )
+const progressMessage = computed(() => {
+  const progress = currentRun.data.value?.progressPercent ?? 0
+  if (progress < 25) return '공고 내용을 읽고 있어요.'
+  if (progress < 60) return '주요 업무와 지원 조건을 정리하고 있어요.'
+  if (progress < 90) return '내 경험과 비교하고 있어요.'
+  return '분석 결과를 마무리하고 있어요.'
+})
+const showAnalysisCommand = computed(() => {
+  if (latestAnalysis.data.value) return true
+  return ['NOT_REQUESTED', 'BLOCKED', 'SUPERSEDED'].includes(
+    job.data.value?.automaticAnalysis.state ?? '',
+  )
+})
 
 async function requestAnalysis(forceReanalyze: boolean): Promise<void> {
   if (job.data.value === undefined || !hasUsableDescription.value || submissionPending.value) {
@@ -282,18 +297,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 </script>
 
 <template>
-  <section class="job-analysis app-page" aria-labelledby="job-analysis-heading">
-    <PageHeader
-      heading-id="job-analysis-heading"
-      title="공고 분석"
-      :description="
-        job.data.value
-          ? `${jobDisplayTitle(job.data.value)}의 요구사항과 승인된 경험 정보를 함께 확인해요.`
-          : '공고 요구사항과 승인된 경험 정보의 일치도를 확인해요.'
-      "
-      eyebrow="공고별 결과"
-    />
-
+  <section class="job-analysis app-page" aria-label="공고 분석">
     <StatePanel
       v-if="job.isLoading.value"
       class="job-analysis__state"
@@ -318,6 +322,24 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
     </StatePanel>
 
     <template v-else-if="job.data.value">
+      <header class="analysis-context-header">
+        <div>
+          <h2>공고 분석</h2>
+          <p>공고에서 찾은 조건을 내가 확인한 경험과 비교했어요.</p>
+        </div>
+        <RouterLink
+          class="button button--secondary"
+          :to="{ name: 'job-overview', params: { jobId } }"
+        >
+          공고 본문 보기
+        </RouterLink>
+      </header>
+
+      <JobPreparationJourney
+        v-if="!latestAnalysis.data.value"
+        class="job-analysis__journey"
+        :job="job.data.value"
+      />
       <section
         v-if="!hasUsableDescription"
         class="analysis-prerequisite alert alert--warning"
@@ -387,8 +409,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         class="alert alert--warning job-analysis__message"
         role="status"
       >
-        진행 중인 AI 작업이 있는지 확인하지 못했어요. 중복 요청을 막기 위해 AI 작업 내역을 확인한 뒤
-        다시 시도해 주세요.
+        진행 중인 AI 작업이 있는지 확인하지 못했어요. 중복 요청을 막기 위해 AI 작업을 확인한 뒤 다시
+        시도해 주세요.
       </p>
 
       <section
@@ -403,7 +425,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           <div>
             <p class="section-kicker">진행 상태</p>
             <h3 id="analysis-run-heading" class="section-title">
-              {{ runIsActive ? '공고를 분석하고 있어요.' : '최근 분석 작업' }}
+              {{ runIsActive ? progressMessage : '최근 분석 작업' }}
             </h3>
           </div>
           <StatusBadge
@@ -483,29 +505,26 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               params: { agentRunId: currentRun.data.value.id },
             }"
           >
-            AI 작업 내역에서 상세 보기
+            작업 자세히 보기
           </RouterLink>
         </template>
       </section>
 
-      <section class="analysis-command section-surface" aria-labelledby="analysis-command-heading">
+      <section
+        v-if="showAnalysisCommand"
+        class="analysis-command section-surface"
+        aria-labelledby="analysis-command-heading"
+      >
         <div>
-          <p class="section-kicker">분석 실행</p>
+          <p class="section-kicker">필요할 때만</p>
           <h3 id="analysis-command-heading" class="section-title">
-            {{ latestAnalysis.data.value ? '현재 정보로 다시 분석' : '새 공고 분석 시작' }}
+            {{ latestAnalysis.data.value ? '최신 정보로 다시 분석' : '분석 다시 시도' }}
           </h3>
           <p class="analysis-command__description">
-            공고 요구사항과 구조화 프로필, 승인된 경험 정보만 비교해요.
+            현재 공고 내용과 내가 확인한 경험을 기준으로 새 결과를 만들어요.
           </p>
         </div>
         <div class="analysis-command__controls">
-          <label class="field analysis-command__quality">
-            <span class="field__label">품질 모드</span>
-            <select v-model="qualityMode" class="control" :disabled="commandUnavailable">
-              <option value="ECONOMY">{{ JOB_ANALYSIS_QUALITY_LABELS.ECONOMY }}</option>
-              <option value="BALANCED">{{ JOB_ANALYSIS_QUALITY_LABELS.BALANCED }}</option>
-            </select>
-          </label>
           <button
             type="button"
             class="button button--primary"
@@ -524,12 +543,22 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                       : latestAnalysis.isLoading.value
                         ? '결과 확인 중…'
                         : latestAnalysis.data.value
-                          ? '재분석하기'
-                          : '분석 시작'
+                          ? '최신 정보로 다시 분석'
+                          : '분석 다시 시도'
             }}
           </button>
+          <details class="analysis-command__options">
+            <summary>재분석 옵션</summary>
+            <label class="field analysis-command__quality">
+              <span class="field__label">분석 방식</span>
+              <select v-model="qualityMode" class="control" :disabled="commandUnavailable">
+                <option value="BALANCED">{{ JOB_ANALYSIS_QUALITY_LABELS.BALANCED }}</option>
+                <option value="ECONOMY">{{ JOB_ANALYSIS_QUALITY_LABELS.ECONOMY }}</option>
+              </select>
+              <span class="field__help">기본값은 내용과 비용을 고르게 고려해요.</span>
+            </label>
+          </details>
         </div>
-        <p class="analysis-command__disclaimer">{{ SCORE_DISCLAIMER }}</p>
       </section>
 
       <StatePanel
@@ -555,9 +584,18 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
       <StatePanel
         v-else-if="noAnalysis"
         class="job-analysis__state"
-        kind="empty"
-        title="아직 저장된 공고 분석이 없어요."
-        description="품질 모드를 선택하고 분석을 시작하면 결과가 이 공고에 저장돼요."
+        :kind="job.data.value.automaticAnalysis.state === 'BLOCKED' ? 'error' : 'loading'"
+        :title="
+          job.data.value.automaticAnalysis.state === 'BLOCKED'
+            ? '자동 분석을 시작하지 못했어요.'
+            : job.data.value.automaticAnalysis.state === 'WAITING_FOR_CONTENT'
+              ? '공고 본문을 확인하고 있어요.'
+              : '분석 결과를 준비하고 있어요.'
+        "
+        :description="
+          job.data.value.automaticAnalysis.error?.message ??
+          '공고 등록 뒤 분석이 자동으로 이어져요. 이 페이지를 닫아도 작업은 계속됩니다.'
+        "
       />
 
       <article
@@ -620,14 +658,46 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               />
             </div>
             <div class="analysis-metric analysis-metric--score">
-              <span>적합도 점수</span>
+              <span>적합도 <abbr :title="SCORE_DISCLAIMER">안내</abbr></span>
               <strong>{{ formatFitScore(latestAnalysis.data.value.fitScore) }}</strong>
-              <p>{{ SCORE_DISCLAIMER }}</p>
+              <p>공고 조건과 내 정보의 일치도예요.</p>
+            </div>
+            <div class="analysis-metric">
+              <span>잘 맞는 경험</span>
+              <strong>{{ latestAnalysis.data.value.strengths.length }}개</strong>
+            </div>
+            <div class="analysis-metric">
+              <span>보완하면 좋은 점</span>
+              <strong>{{ latestAnalysis.data.value.gaps.length }}개</strong>
             </div>
           </div>
           <p v-if="latestAnalysis.data.value.analysisSummary" class="analysis-result__summary">
             {{ latestAnalysis.data.value.analysisSummary }}
           </p>
+          <div class="analysis-result__next" aria-label="분석 다음 단계">
+            <RouterLink
+              class="button button--primary"
+              :to="{ name: 'job-cover-letter', params: { jobId } }"
+            >
+              자기소개서 준비하기
+            </RouterLink>
+            <RouterLink class="button button--secondary" :to="{ name: 'profile-basic' }">
+              내 정보 보완하기
+            </RouterLink>
+            <RouterLink
+              class="button button--ghost"
+              :to="{ name: 'job-overview', params: { jobId } }"
+            >
+              공고 내용 수정
+            </RouterLink>
+            <RouterLink
+              v-if="job.data.value.latestQuestionSetId"
+              class="button button--ghost"
+              :to="{ name: 'job-interview', params: { jobId } }"
+            >
+              면접 준비 보기
+            </RouterLink>
+          </div>
         </section>
 
         <div class="analysis-result__requirements">
@@ -684,7 +754,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 {{ strength }}
               </li>
             </ul>
-            <p v-else class="analysis-empty-copy">승인된 정보에서 확인된 강점이 없어요.</p>
+            <p v-else class="analysis-empty-copy">확인한 경험에서 찾은 강점이 아직 없어요.</p>
           </section>
           <section class="analysis-list-section section-surface">
             <p class="section-kicker">보완</p>
@@ -698,14 +768,14 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
         <section class="analysis-evidence section-surface">
           <p class="section-kicker">분석 당시 근거</p>
-          <h3 class="section-title">매칭된 사용자 근거</h3>
+          <h3 class="section-title">분석에 참고한 경험</h3>
           <p
             v-if="hasEvidenceWithChangedState"
             class="analysis-evidence__notice alert alert--warning"
             role="status"
           >
             일부 분석 당시 근거의 현재 승인 상태가 변경됐어요. 아래 표시는 현재 상태 안내이며,
-            저장된 과거 분석과 당시 점수는 변경하지 않아요. 재분석할 때는 현재 승인된 경험 정보만
+            저장된 과거 분석과 당시 점수는 변경하지 않아요. 재분석할 때는 현재 확인한 경험만
             사용해요.
           </p>
           <div
@@ -731,7 +801,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               </small>
             </article>
           </div>
-          <p v-else class="analysis-empty-copy">점수에 연결된 승인 경험 정보가 없어요.</p>
+          <p v-else class="analysis-empty-copy">점수에 연결된 확인한 경험이 없어요.</p>
         </section>
 
         <section class="analysis-breakdown section-surface">
@@ -868,6 +938,29 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   min-width: 0;
 }
 
+.analysis-context-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis-context-header h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 780;
+}
+
+.analysis-context-header p {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.job-analysis__journey {
+  margin-top: var(--space-6);
+}
+
 .job-analysis__state,
 .job-analysis__message,
 .analysis-prerequisite,
@@ -975,8 +1068,29 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-command__controls {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
+  flex-direction: column;
   gap: var(--space-3);
+}
+
+.analysis-command__options {
+  min-width: 15rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: right;
+}
+
+.analysis-command__options summary {
+  cursor: pointer;
+  font-weight: 680;
+}
+
+.analysis-command__options .field {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  text-align: left;
 }
 
 .analysis-command__quality {
@@ -1020,7 +1134,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-result__metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-6);
 }
@@ -1048,6 +1162,19 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   font-variant-numeric: tabular-nums;
 }
 
+.analysis-metric:not(.analysis-metric--score) strong {
+  font-size: 1.25rem;
+  font-weight: 780;
+}
+
+.analysis-metric abbr {
+  margin-left: var(--space-1);
+  color: var(--color-brand-strong);
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
 .analysis-metric--score p,
 .analysis-result__summary,
 .analysis-empty-copy,
@@ -1062,6 +1189,13 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   margin-top: var(--space-5);
   padding-top: var(--space-5);
   border-top: 1px solid var(--color-border);
+}
+
+.analysis-result__next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
 }
 
 .analysis-result__requirements {
@@ -1304,7 +1438,11 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   }
 
   .analysis-command__controls {
-    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .analysis-result__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1326,6 +1464,11 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   .analysis-history__layout,
   .analysis-history__selection dl {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-context-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .analysis-command__quality {

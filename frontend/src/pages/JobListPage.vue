@@ -171,7 +171,7 @@ function extractionTone(
       heading-id="jobs-heading"
       title="관심 공고"
       description="관심 있는 공고를 모아 두고 지원 상태를 이어서 확인하세요."
-      eyebrow="지원할 공고"
+      variant="list"
     >
       <template #actions>
         <RouterLink class="button button--primary" :to="{ name: 'job-new' }">

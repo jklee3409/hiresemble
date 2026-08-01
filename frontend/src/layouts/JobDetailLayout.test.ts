@@ -1,8 +1,16 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { jobDetailFixture } from '@/features/jobs/testFixtures'
+import * as jobApi from '@/shared/api/jobApi'
+import { useAuthStore } from '@/stores/auth'
+
 import JobDetailLayout from './JobDetailLayout.vue'
+
+vi.mock('@/shared/api/jobApi', () => ({ getJob: vi.fn() }))
 
 const TestApp = { template: '<RouterView />' }
 const Child = { template: '<section>child</section>' }
@@ -10,6 +18,17 @@ const JOB_ID = '50000000-0000-4000-8000-000000000001'
 
 describe('JobDetailLayout', () => {
   it('shows the P8 tabs with route-derived aria-current without exposing P9', async () => {
+    vi.mocked(jobApi.getJob).mockResolvedValue(
+      jobDetailFixture({ companyName: '모아테크', title: '백엔드 엔지니어' }),
+    )
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const auth = useAuthStore(pinia)
+    auth.status = 'authenticated'
+    auth.currentUser = { id: 'user-1', email: 'user@example.com', displayName: '테스터' }
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -28,7 +47,12 @@ describe('JobDetailLayout', () => {
     })
     await router.push(`/jobs/${JOB_ID}/overview`)
     await router.isReady()
-    const wrapper = mount(TestApp, { global: { plugins: [router] } })
+    const wrapper = mount(TestApp, {
+      global: { plugins: [pinia, router, [VueQueryPlugin, { queryClient }]] },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('h1').text()).toBe('백엔드 엔지니어')
 
     const tabs = wrapper.get('nav[aria-label="공고 상세 탭"]')
     expect(tabs.findAll('a').map((link) => link.text())).toEqual([
@@ -38,6 +62,7 @@ describe('JobDetailLayout', () => {
       '면접 준비',
     ])
     expect(tabs.get('a[aria-current="page"]').text()).toBe('공고 정보')
+    expect(wrapper.get('.job-detail-body').classes()).toContain('job-detail-body')
     expect(wrapper.text()).not.toContain('모의 면접')
 
     await router.push(`/jobs/${JOB_ID}/analysis`)

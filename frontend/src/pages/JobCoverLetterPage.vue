@@ -97,7 +97,8 @@ async function createCoverLetter(reapply = false): Promise<void> {
           ? `${jobDisplayTitle(job.data.value)}의 자기소개서 진행 상황을 확인하세요.`
           : '공고별 자기소개서 진행 상황을 확인하세요.'
       "
-      eyebrow="공고별 작성"
+      :level="2"
+      variant="compact"
     />
 
     <StatePanel

@@ -166,9 +166,10 @@ async function refreshPage(): Promise<void> {
       :description="
         job.data.value
           ? `${jobDisplayTitle(job.data.value)}의 공개 정보를 조사하고 예상 질문을 준비하세요.`
-          : '공고와 자기소개서, 승인된 근거를 바탕으로 예상 질문을 준비하세요.'
+          : '공고와 자기소개서, 확인한 경험을 바탕으로 예상 질문을 준비하세요.'
       "
-      eyebrow="공고별 면접 준비"
+      :level="2"
+      variant="compact"
     />
 
     <StatePanel

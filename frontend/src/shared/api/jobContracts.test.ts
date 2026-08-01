@@ -210,6 +210,12 @@ function detail() {
     descriptionText: '공고 본문',
     descriptionSource: 'AUTO_EXTRACTED',
     extractionError: null,
+    automaticAnalysis: {
+      state: 'LAUNCHED',
+      qualityMode: 'BALANCED',
+      agentRunId: '00000000-0000-4000-8000-000000000009',
+      error: null,
+    },
     closedAt: null,
     closedReason: null,
     latestAnalysis: null,

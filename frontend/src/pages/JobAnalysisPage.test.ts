@@ -92,14 +92,13 @@ describe('P6 Job analysis page', () => {
     })
   })
 
-  it('shows the no-analysis flow, profile warning, exact score notice and allowlisted quality modes', async () => {
+  it('shows the automatic BALANCED journey without an initial quality selector', async () => {
     vi.mocked(profileApi.getProfile).mockResolvedValue(profileFixture({ profileCompleted: false }))
     const { wrapper } = await mountPage()
 
-    expect(wrapper.text()).toContain('아직 저장된 공고 분석이 없어요')
-    expect(wrapper.text()).toContain(
-      '적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.',
-    )
+    expect(wrapper.text()).toContain('공고 분석 진행 상황')
+    expect(wrapper.text()).toContain('기본 분석 · 균형 모드')
+    expect(wrapper.text()).toContain('공고 등록 뒤 분석이 자동으로 이어져요.')
     expect(wrapper.text()).toContain('프로필을 더 채우면 비교 근거가 풍부해져요')
     expect(agentRunApi.listAgentRuns).toHaveBeenCalledWith({
       workflowType: ['JOB_ANALYSIS'],
@@ -109,28 +108,10 @@ describe('P6 Job analysis page', () => {
       size: 1,
       sort: 'queuedAt,desc',
     })
-    const quality = wrapper.get('select')
-    expect(quality.findAll('option').map((option) => option.attributes('value'))).toEqual([
-      'ECONOMY',
-      'BALANCED',
-    ])
+    expect(wrapper.find('select').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('HIGH_QUALITY')
-
-    await quality.setValue('ECONOMY')
-    await wrapper.get('button.button--primary').trigger('click')
-    await flushPromises()
-
-    expect(jobApi.analyzeJob).toHaveBeenCalledWith(
-      JOB_ID,
-      {
-        qualityMode: 'ECONOMY',
-        forceReanalyze: false,
-        jobVersion: 2,
-      },
-      'job-analysis:key-1234',
-    )
+    expect(jobApi.analyzeJob).not.toHaveBeenCalled()
     expect(wrapper.get('progress').attributes('aria-label')).toBe('공고 분석 진행률 0%')
-    expect(wrapper.get('button.button--primary').attributes('disabled')).toBeDefined()
   })
 
   it('recovers a running JOB_ANALYSIS run and keeps WAITING_USER distinct from SSE state', async () => {
@@ -160,7 +141,7 @@ describe('P6 Job analysis page', () => {
 
     expect(wrapper.text()).toContain('정보 입력 필요')
     expect(wrapper.text()).toContain('공고 본문을 보완해 주세요.')
-    expect(wrapper.get(`a[href="/jobs/${JOB_ID}/overview"]`).text()).toContain('필요한 정보 입력')
+    expect(wrapper.get('.analysis-run__waiting a').text()).toContain('필요한 정보 입력')
     expect(wrapper.text()).toContain('실시간 진행 상황 연결됨')
     expect(wrapper.text()).toContain('연결이 잠시 끊겨도 분석 실패로 처리하지 않아요')
     expect(wrapper.get('progress').attributes('aria-label')).toBe('공고 분석 진행률 55%')
@@ -227,10 +208,14 @@ describe('P6 Job analysis page', () => {
     })
     vi.mocked(jobApi.getLatestJobAnalysis).mockResolvedValue(latest)
     vi.mocked(jobApi.listJobAnalyses).mockResolvedValue(page([latest, older]))
+    vi.mocked(agentRunApi.getAgentRun).mockResolvedValue(
+      analysisRun('SUCCEEDED', { progressPercent: 100 }),
+    )
     const { wrapper } = await mountPage()
 
     expect(wrapper.text()).toContain('필수 조건 미충족')
     expect(wrapper.text()).toContain('82.50점')
+    expect(wrapper.get('abbr').attributes('title')).toContain('합격 가능성')
     expect(wrapper.text()).toContain('Java 개발 경력 3년 이상')
     expect(wrapper.text()).toContain('대규모 트래픽 경험')
     expect(wrapper.text()).toContain('Spring API 개발 경험이 요구사항과 일치해요')
@@ -240,7 +225,7 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.get('.status-badge--warning').text()).toBe('OUTDATED')
     expect(wrapper.text()).toContain('공고 내용이 변경됨')
     expect(wrapper.text()).toContain('프로필 정보가 변경됨')
-    expect(wrapper.text()).toContain('승인된 경험 정보가 변경됨')
+    expect(wrapper.text()).toContain('확인한 경험이 변경됨')
     expect(wrapper.text()).toContain('아래 기존 결과는 그대로 유지돼요')
     expect(wrapper.text()).toContain('과거 분석 이력')
 
@@ -295,7 +280,7 @@ describe('P6 Job analysis page', () => {
 
     expect(wrapper.text()).toContain('82.50점')
     expect(wrapper.text()).toContain('분석 버전 2')
-    expect(wrapper.text()).toContain('승인된 경험 정보가 변경됨')
+    expect(wrapper.text()).toContain('확인한 경험이 변경됨')
     expect(wrapper.text()).toContain('저장된 과거 분석과 당시 점수는 변경하지 않아요')
     expect(wrapper.text()).toContain('현재는 승인 거절된 과거 근거')
     expect(wrapper.text()).toContain('현재 상태: 승인 거절됨 · 재분석 근거에서 제외')
@@ -310,16 +295,18 @@ describe('P6 Job analysis page', () => {
       jobDetailFixture({
         descriptionText: null,
         extractionStatus: 'NEEDS_MANUAL_INPUT',
+        automaticAnalysis: {
+          state: 'WAITING_FOR_CONTENT',
+          qualityMode: 'BALANCED',
+          agentRunId: null,
+          error: null,
+        },
       }),
     )
     const first = await mountPage()
     expect(first.wrapper.text()).toContain('분석할 공고 본문이 필요해요')
-    expect(
-      first.wrapper
-        .findAll('button')
-        .find((button) => button.text() === '분석 시작')
-        ?.attributes('disabled'),
-    ).toBeDefined()
+    expect(first.wrapper.text()).toContain('공고 본문을 확인하고 있어요.')
+    expect(first.wrapper.find('select').exists()).toBe(false)
     first.wrapper.unmount()
 
     vi.mocked(jobApi.getJob).mockRejectedValueOnce(
@@ -335,6 +322,16 @@ describe('P6 Job analysis page', () => {
   })
 
   it('does not auto-retry a stale version and refreshes the Job before allowing another request', async () => {
+    vi.mocked(jobApi.getJob).mockResolvedValue(
+      jobDetailFixture({
+        automaticAnalysis: {
+          state: 'NOT_REQUESTED',
+          qualityMode: 'BALANCED',
+          agentRunId: null,
+          error: null,
+        },
+      }),
+    )
     vi.mocked(jobApi.analyzeJob).mockRejectedValue(
       new ApiClientError({
         status: 409,
@@ -366,6 +363,16 @@ async function mountPage() {
     routes: [
       { path: '/jobs/:jobId/analysis', name: 'job-analysis', component: JobAnalysisPage },
       { path: '/jobs/:jobId/overview', name: 'job-overview', component: { template: '<div />' } },
+      {
+        path: '/jobs/:jobId/cover-letter',
+        name: 'job-cover-letter',
+        component: { template: '<div />' },
+      },
+      {
+        path: '/jobs/:jobId/interview',
+        name: 'job-interview',
+        component: { template: '<div />' },
+      },
       { path: '/jobs', name: 'jobs', component: { template: '<div />' } },
       { path: '/profile/basic', name: 'profile-basic', component: { template: '<div />' } },
       {

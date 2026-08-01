@@ -83,6 +83,21 @@ export function useLatestJobRunQuery(
   return useAgentRunListQuery(userId, filters)
 }
 
+export function useLatestJobExtractionRunQuery(
+  userId: MaybeRefOrGetter<string>,
+  jobId: MaybeRefOrGetter<string>,
+) {
+  const filters = computed<AgentRunListParams>(() => ({
+    workflowType: ['JOB_POSTING_EXTRACTION'],
+    resourceType: 'JOB',
+    resourceId: toValue(jobId),
+    page: 0,
+    size: 1,
+    sort: 'queuedAt,desc' as const,
+  }))
+  return useAgentRunListQuery(userId, filters)
+}
+
 export function useLatestJobAnalysisRunQuery(
   userId: MaybeRefOrGetter<string>,
   jobId: MaybeRefOrGetter<string>,

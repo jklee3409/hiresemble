@@ -21,19 +21,16 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   )
   await expect(page.getByText('필수 조건 미충족', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('82.50점', { exact: true }).first()).toBeVisible()
-  await expect(
-    page.getByText(
-      '적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.',
-      { exact: true },
-    ),
-  ).toHaveCount(3)
+  await expect(page.locator('abbr[title*="합격 가능성"]')).toBeVisible()
   await expect(page.getByText('공고 내용이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toBeVisible()
-  await expect(page.getByText('승인된 경험 정보가 변경됨', { exact: true })).toBeVisible()
+  await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('결제 API 개선 프로젝트', { exact: true }).first()).toBeVisible()
   await expect(page.getByRole('heading', { name: '과거 분석 이력' })).toBeVisible()
-  await expect(page.getByText('자기소개서', { exact: true })).toHaveCount(0)
-  await expect(page.getByText('면접 준비', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: '자기소개서 준비하기', exact: true })).toBeVisible()
+  await expect(
+    page.locator('.analysis-result__next').getByRole('link', { name: '면접 준비하기' }),
+  ).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
   const analysisTab = page.getByRole('link', { name: '공고 분석', exact: true })
@@ -99,6 +96,38 @@ async function installFixtureRoutes(page: Page): Promise<void> {
       await json(route, pageResponse([]))
       return
     }
+    if (url.pathname === `/api/v1/agent-runs/${RUN_ID}`) {
+      await json(route, {
+        id: RUN_ID,
+        workflowType: 'JOB_ANALYSIS',
+        resourceType: 'JOB',
+        resourceId: JOB_ID,
+        status: 'SUCCEEDED',
+        currentStep: null,
+        progressPercent: 100,
+        requestedQualityMode: 'BALANCED',
+        highestModelTierUsed: 'BALANCED',
+        estimatedCostUsd: 0.08,
+        reservedCostUsd: 0,
+        actualCostUsd: 0.04,
+        retryable: false,
+        cancellable: false,
+        requiredUserAction: null,
+        stateVersion: 4,
+        queuedAt: NOW,
+        updatedAt: NOW,
+        retryOfRunId: null,
+        rootRunId: RUN_ID,
+        runAttemptNo: 1,
+        durationMs: 1_000,
+        startedAt: NOW,
+        completedAt: NOW,
+        safeError: null,
+        partialResult: null,
+        steps: [],
+      })
+      return
+    }
     await json(route, { message: `Unhandled fixture route: ${url.pathname}` }, 500)
   })
 }
@@ -145,6 +174,12 @@ function jobDetail() {
     descriptionText: 'Spring 기반 백엔드 API를 개발합니다.',
     descriptionSource: 'AUTO_EXTRACTED',
     extractionError: null,
+    automaticAnalysis: {
+      state: 'LAUNCHED',
+      qualityMode: 'BALANCED',
+      agentRunId: RUN_ID,
+      error: null,
+    },
     closedAt: null,
     closedReason: null,
     latestAnalysis: analysisSummary(),

@@ -2,14 +2,40 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
+import {
+  JOB_STATUS_LABELS,
+  formatJobInstant,
+  jobCompanyLabel,
+  jobDisplayTitle,
+} from '@/features/jobs/presentation'
+import { useJobDetailQuery } from '@/features/jobs/queries'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
+const userId = computed(() => authStore.currentUser?.id ?? '')
+const jobId = computed(() => String(route.params.jobId ?? ''))
+const job = useJobDetailQuery(userId, jobId)
 const activeTab = computed(() => {
   if (route.name === 'job-analysis') return 'analysis'
   if (route.name === 'job-cover-letter') return 'cover-letter'
   if (route.name === 'job-interview') return 'interview'
   return 'overview'
+})
+const analysisLabel = computed(() => {
+  const value = job.data.value
+  if (!value) return ''
+  if (value.latestAnalysis) return value.analysisOutdated ? '분석 업데이트 필요' : '분석 완료'
+  return {
+    WAITING_FOR_CONTENT: '본문 확인 필요',
+    NOT_REQUESTED: '분석 준비',
+    PENDING: '자동 분석 준비 중',
+    LAUNCHED: '자동 분석 중',
+    BLOCKED: '분석 확인 필요',
+    SUPERSEDED: '최신 내용 확인 중',
+  }[value.automaticAnalysis.state]
 })
 </script>
 
@@ -19,6 +45,38 @@ const activeTab = computed(() => {
       <AppIcon name="arrow-left" />
       공고 목록
     </RouterLink>
+    <header v-if="job.data.value" class="job-resource-header">
+      <div class="job-resource-header__main">
+        <p>{{ jobCompanyLabel(job.data.value.companyName) }}</p>
+        <h1>{{ jobDisplayTitle(job.data.value) }}</h1>
+        <div class="job-resource-header__meta">
+          <span v-if="job.data.value.positionName">{{ job.data.value.positionName }}</span>
+          <span v-if="job.data.value.location">{{ job.data.value.location }}</span>
+          <span v-if="job.data.value.employmentType">{{ job.data.value.employmentType }}</span>
+          <span v-if="job.data.value.deadlineAt"
+            >마감 {{ formatJobInstant(job.data.value.deadlineAt) }}</span
+          >
+        </div>
+      </div>
+      <div class="job-resource-header__aside">
+        <div class="job-resource-header__badges">
+          <StatusBadge :label="JOB_STATUS_LABELS[job.data.value.status]" tone="brand" />
+          <StatusBadge
+            :label="analysisLabel"
+            :tone="job.data.value.latestAnalysis ? 'success' : 'info'"
+          />
+        </div>
+        <a
+          :href="job.data.value.sourceUrl"
+          class="job-resource-header__source"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          원본 공고 보기
+          <AppIcon name="arrow-right" />
+        </a>
+      </div>
+    </header>
     <nav class="job-detail-tabs" aria-label="공고 상세 탭">
       <RouterLink
         class="job-detail-tab"
@@ -53,7 +111,7 @@ const activeTab = computed(() => {
         면접 준비
       </RouterLink>
     </nav>
-    <RouterView />
+    <div class="job-detail-body"><RouterView /></div>
   </section>
 </template>
 
@@ -73,35 +131,155 @@ const activeTab = computed(() => {
   text-decoration: none;
 }
 
+.job-resource-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-7);
+  padding: var(--space-5) 0 var(--space-6);
+}
+
+.job-resource-header__main {
+  min-width: 0;
+}
+
+.job-resource-header__main > p {
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+.job-resource-header h1 {
+  max-width: 48rem;
+  margin-top: var(--space-2);
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-weight: 790;
+  letter-spacing: -0.035em;
+  line-height: 1.17;
+  overflow-wrap: anywhere;
+}
+
+.job-resource-header__meta,
+.job-resource-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.job-resource-header__meta {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.job-resource-header__meta span + span::before {
+  margin-right: var(--space-2);
+  color: var(--color-border-strong);
+  content: '·';
+}
+
+.job-resource-header__aside {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: var(--space-3);
+}
+
+.job-resource-header__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 680;
+  text-decoration: none;
+}
+
+.job-resource-header__source:hover {
+  color: var(--color-brand-strong);
+}
+
 .job-detail-back:hover {
   color: var(--color-brand);
 }
 
 .job-detail-tabs {
+  position: sticky;
+  z-index: 20;
+  top: var(--global-header-height);
   display: flex;
   gap: 0.25rem;
-  margin-top: 1rem;
+  margin-inline: calc(var(--space-2) * -1);
   overflow-x: auto;
   border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-canvas) 94%, transparent);
+  padding-inline: var(--space-2);
+  scrollbar-width: none;
+  backdrop-filter: blur(14px);
 }
 
 .job-detail-tab {
-  min-height: 2.75rem;
+  min-height: 3.25rem;
   flex: 0 0 auto;
   border-bottom: 2px solid transparent;
   color: var(--color-text-secondary);
-  padding: 0.625rem 0.875rem;
+  padding: 0.875rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
 }
 
 .job-detail-tab:hover {
-  color: var(--color-brand);
+  background: var(--color-surface-subtle);
+  color: var(--color-brand-strong);
 }
 
 .job-detail-tab--active {
   border-bottom-color: var(--color-brand);
-  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-weight: 780;
+}
+
+.job-detail-tab--active:hover,
+.job-detail-tab--active:focus-visible {
+  border-bottom-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+}
+
+.job-detail-body {
+  min-width: 0;
+  padding-top: var(--layout-tabs-body-gap);
+}
+
+@media (max-width: 48rem) {
+  .job-resource-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .job-resource-header__aside {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .job-detail-tabs {
+    top: var(--global-header-height);
+    margin-inline: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  .job-detail-tab {
+    padding-inline: var(--space-3);
+  }
+}
+
+@media (max-width: 35rem) {
+  .job-detail-tabs {
+    margin-inline: calc(var(--space-3) * -1);
+    padding-inline: var(--space-3);
+  }
 }
 </style>

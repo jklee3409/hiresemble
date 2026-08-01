@@ -60,7 +60,7 @@ test.describe('P6 actual Backend Job analysis lifecycle', () => {
     await updateCareer(page, seeded.career)
     await page.reload()
     await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toBeVisible()
-    await expect(page.getByText('승인된 경험 정보가 변경됨', { exact: true })).toBeVisible()
+    await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
     await expect(page.locator('#analysis-result-heading')).toHaveText('분석 버전 1')
 
     const secondRunId = await startAnalysis(page, '재분석하기')
@@ -70,7 +70,7 @@ test.describe('P6 actual Backend Job analysis lifecycle', () => {
     await expect(page.getByText('2개 버전')).toBeVisible()
     await expect(page.getByText('현재 최신', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toHaveCount(0)
-    await expect(page.getByText('승인된 경험 정보가 변경됨', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toHaveCount(0)
 
     const ownerEvidence = await getJson<EvidencePage>(
       page,

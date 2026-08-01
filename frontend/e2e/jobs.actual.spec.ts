@@ -15,6 +15,12 @@ test.describe('P5 actual Backend Job lifecycle', () => {
     expect(created.status).toBe(201)
     await expect(page.getByTestId('job-extraction-status')).toContainText('직접 입력 완료')
     await expect(page.getByRole('status')).toContainText('직접 입력한 본문으로 공고를 등록했어요.')
+    await expect
+      .poll(
+        async () =>
+          (await getJson<JobDetail>(page, `/api/v1/jobs/${created.jobId}`)).automaticAnalysis,
+      )
+      .toMatchObject({ state: 'LAUNCHED', qualityMode: 'BALANCED' })
 
     await changeStatus(page, 'SUBMITTED', '서류 제출')
     const submitted = await getJson<JobDetail>(page, `/api/v1/jobs/${created.jobId}`)
@@ -47,9 +53,28 @@ test.describe('P5 actual Backend Job lifecycle', () => {
     expect(detail.extractionStatus).toBe('EXTRACTED')
     expect(detail.descriptionSource).toBe('AUTO_EXTRACTED')
     expect(detail.descriptionText?.trim().length).toBeGreaterThan(0)
+    await expect(page.locator('.job-document__content')).not.toBeEmpty()
+
+    await expect
+      .poll(
+        async () =>
+          (await getJson<JobDetail>(page, `/api/v1/jobs/${created.jobId}`)).automaticAnalysis,
+        { timeout: 120_000 },
+      )
+      .toMatchObject({ state: 'LAUNCHED', qualityMode: 'BALANCED' })
+
+    await page.getByRole('link', { name: '공고 분석', exact: true }).click()
+    await expect(page.getByRole('link', { name: '공고 분석', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
     await expect(
-      page.locator('section[aria-labelledby="job-description-heading"] pre'),
-    ).not.toBeEmpty()
+      page
+        .getByRole('heading', { name: '공고 분석 진행 상황' })
+        .or(page.getByText('최신 분석', { exact: true })),
+    ).toBeVisible({ timeout: 120_000 })
+    await page.getByRole('link', { name: '자기소개서', exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/jobs/${created.jobId}/cover-letter$`))
   })
 
   test('login/empty HTML waits for user and manual input resumes the same Agent Run', async ({
@@ -83,7 +108,8 @@ test.describe('P5 actual Backend Job lifecycle', () => {
     const detail = await getJson<JobDetail>(page, `/api/v1/jobs/${created.jobId}`)
     expect(detail.descriptionSource).toBe('USER_ENTERED')
     expect(detail.descriptionText).toContain('사용자 승인 근거')
-    expect(await latestJobRunId(page, created.jobId)).toBe(created.runId)
+    expect(detail.automaticAnalysis).toMatchObject({ state: 'LAUNCHED', qualityMode: 'BALANCED' })
+    expect(await latestJobExtractionRunId(page, created.jobId)).toBe(created.runId)
   })
 
   test('another user receives 404 for the Job and its Agent Run', async ({ browser, page }) => {
@@ -189,6 +215,13 @@ interface JobDetail {
   submittedAt: string | null
   descriptionText: string | null
   descriptionSource: 'AUTO_EXTRACTED' | 'USER_ENTERED' | null
+  automaticAnalysis: {
+    state:
+      'WAITING_FOR_CONTENT' | 'NOT_REQUESTED' | 'PENDING' | 'LAUNCHED' | 'BLOCKED' | 'SUPERSEDED'
+    qualityMode: 'BALANCED'
+    agentRunId: string | null
+    error: { code: string; message: string } | null
+  }
   closedAt: string | null
   closedReason: 'DEADLINE_PASSED' | 'USER_CLOSED' | 'URL_INACTIVE' | null
 }
@@ -254,10 +287,10 @@ async function changeStatus(page: Page, status: JobDetail['status'], label: stri
   await expect(submit).toHaveText('상태 변경')
 }
 
-async function latestJobRunId(page: Page, jobId: string): Promise<string | null> {
+async function latestJobExtractionRunId(page: Page, jobId: string): Promise<string | null> {
   const response = await getJson<{ items: Array<{ id: string }> }>(
     page,
-    `/api/v1/agent-runs?resourceType=JOB&resourceId=${jobId}&page=0&size=1&sort=queuedAt,desc`,
+    `/api/v1/agent-runs?workflowType=JOB_POSTING_EXTRACTION&resourceType=JOB&resourceId=${jobId}&page=0&size=1&sort=queuedAt,desc`,
   )
   return response.items[0]?.id ?? null
 }

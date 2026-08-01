@@ -17,7 +17,7 @@ export const ELIGIBILITY_LABELS: Record<Eligibility, string> = {
 export const OUTDATED_REASON_LABELS: Record<OutdatedReason, string> = {
   JOB_CONTENT_CHANGED: '공고 내용이 변경됨',
   PROFILE_CHANGED: '프로필 정보가 변경됨',
-  EVIDENCE_CHANGED: '승인된 경험 정보가 변경됨',
+  EVIDENCE_CHANGED: '확인한 경험이 변경됨',
 }
 
 export const FIT_CRITERION_CATEGORY_LABELS: Record<FitCriterionCategory, string> = {
@@ -63,5 +63,5 @@ export function evidenceCurrentStateLabel(evidence: EvidenceRefDto): string {
   if (evidence.verificationStatus === 'PENDING') {
     return '현재 상태: 검토 대기 · 재분석 근거에서 제외'
   }
-  return '승인된 경험 정보'
+  return '확인한 경험'
 }

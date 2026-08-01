@@ -29,6 +29,14 @@ export const FIT_CRITERION_CATEGORIES = [
 ] as const
 export const MATCH_LEVELS = ['MATCHED', 'PARTIAL', 'MISSING', 'UNKNOWN'] as const
 export const JOB_ANALYSIS_QUALITY_MODES = ['ECONOMY', 'BALANCED'] as const
+export const AUTOMATIC_ANALYSIS_STATES = [
+  'WAITING_FOR_CONTENT',
+  'NOT_REQUESTED',
+  'PENDING',
+  'LAUNCHED',
+  'BLOCKED',
+  'SUPERSEDED',
+] as const
 export const COVER_LETTER_STATUSES = ['DRAFT', 'FINALIZED', 'ARCHIVED'] as const
 export const EVIDENCE_SOURCE_TYPES = [
   'EDUCATION',
@@ -56,6 +64,7 @@ export type OutdatedReason = (typeof OUTDATED_REASONS)[number]
 export type FitCriterionCategory = (typeof FIT_CRITERION_CATEGORIES)[number]
 export type MatchLevel = (typeof MATCH_LEVELS)[number]
 export type JobAnalysisQualityMode = (typeof JOB_ANALYSIS_QUALITY_MODES)[number]
+export type AutomaticAnalysisState = (typeof AUTOMATIC_ANALYSIS_STATES)[number]
 
 const uuidSchema = z.uuid()
 const instantSchema = z.iso.datetime({ offset: true })
@@ -197,6 +206,12 @@ export const jobDetailSchema = z.object({
   descriptionText: z.string().max(200_000).nullable(),
   descriptionSource: z.enum(JOB_DESCRIPTION_SOURCES).nullable(),
   extractionError: safeErrorSchema.nullable(),
+  automaticAnalysis: z.object({
+    state: z.enum(AUTOMATIC_ANALYSIS_STATES),
+    qualityMode: z.literal('BALANCED'),
+    agentRunId: uuidSchema.nullable(),
+    error: safeErrorSchema.nullable(),
+  }),
   closedAt: nullableInstantSchema,
   closedReason: z.enum(CLOSED_REASONS).nullable(),
   latestAnalysis: jobAnalysisSummarySchema.nullable(),
