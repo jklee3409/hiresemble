@@ -55,7 +55,7 @@ export function formatJobInstant(value: string | null): string {
 
 export function jobExtractionGuidance(status: JobExtractionStatus): string {
   if (status === 'NEEDS_MANUAL_INPUT') {
-    return '공고 내용을 불러오지 못했어요. 본문과 마감일을 직접 입력해 주세요.'
+    return '공고 내용을 자동으로 충분히 읽지 못했어요. 공고 본문을 직접 입력하면 분석을 계속할 수 있어요.'
   }
   if (status === 'FAILED') {
     return '공고를 불러오는 중 문제가 생겼어요. 다시 불러오거나 본문을 직접 입력할 수 있어요.'
@@ -64,7 +64,7 @@ export function jobExtractionGuidance(status: JobExtractionStatus): string {
     return '직접 입력한 공고 본문을 사용하고 있어요.'
   }
   if (status === 'QUEUED' || status === 'EXTRACTING') {
-    return '공고 링크에서 본문과 기본 정보를 불러오고 있어요.'
+    return '공고 내용을 확인하고 있어요. 이미지로 된 공고도 필요한 경우 자동으로 읽어볼게요.'
   }
   return '공고 링크에서 불러온 내용을 확인할 수 있어요.'
 }

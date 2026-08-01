@@ -66,8 +66,15 @@ const STEP_LABELS: Record<string, string> = {
   EXTRACT_EVIDENCE_CANDIDATES: '주요 경험과 소재 정리',
   APPLY_EVIDENCE_CANDIDATES: '검토할 소재 구성',
   FINALIZE_DOCUMENT: '분석 결과 저장',
+  FETCH_JOB_PAGE: '공고 페이지 불러오기',
+  INSPECT_JOB_PAGE: '공고 내용 확인',
+  FETCH_JOB_IMAGES: '공고 이미지 준비',
+  EXTRACT_JOB_IMAGE_TEXT: '공고 이미지 읽기',
+  COMPOSE_JOB_SOURCE_TEXT: '읽은 내용 정리',
   EXTRACT_JOB_FIELDS: '채용 공고 내용 확인',
-  APPLY_JOB_EXTRACTION: '공고 정보 정리',
+  MERGE_USER_OVERRIDES: '입력 내용 반영',
+  VALIDATE_JOB_EXTRACTION: '채용 정보 확인',
+  APPLY_JOB_EXTRACTION: '결과 저장',
   EXTRACT_REQUIREMENTS: '지원 요건 정리',
 }
 

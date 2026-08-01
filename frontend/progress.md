@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 60 files/238 tests와 P2~P8 actual E2E가 있으며 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
+- Vitest 61 files/243 tests와 P2~P8 actual E2E가 있으며 P5 Chromium 5/5와 final-source P8/P7/P6 Chromium 1/1·1/1·2/2가 통과했다.
+
+## [2026-08-01] Session Summary (이미지형 공고 자동 처리 UX)
+
+- What was done:
+  - v2 Job workflow step을 사용자용 `공고 페이지 불러오기/내용 확인/이미지 읽기/채용 정보 확인/결과 저장` 문구로 매핑했다.
+  - 진행·자동 판독 부족 문구를 보정하고 기존 manual input/retry CTA와 SSE 복구 의미를 유지했다.
+- Key decisions:
+  - 공고 등록 폼에 OCR·이미지 공고 선택 control을 추가하지 않는다.
+- Issues encountered:
+  - 기존 문구 assertion 2건을 새 fallback 메시지로 동기화했다.
+- Validation:
+  - `corepack pnpm check`: 61 files/243 tests, lint·format·typecheck·build 통과. P5 actual Chromium 5/5.
+- Next steps:
+  - None.
 
 ## [2026-08-01] Session Summary (자료 검토·대외활동·알림 UX 보정)
 

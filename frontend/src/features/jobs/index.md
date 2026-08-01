@@ -12,6 +12,9 @@ P5 Job URL filter·mutation과 P6 Analysis query·presentation·terminal invalid
 - `conflict.ts`, `JobVersionConflictPanel.vue`: 409 비교·재적용
 - `JobRunMonitor.vue`: 기존 Agent Run stream 재사용
 - `presentation.ts`: 업무·추출 상태 label
+
+이미지형 공고 처리는 URL 등록 뒤 자동으로 분기하며 OCR 선택 control을 제공하지 않는다. 자동 판독 부족은 `NEEDS_MANUAL_INPUT`의 직접 입력 CTA로, 일시 기술 실패는 `FAILED`의 재시도와 직접 입력 CTA로 구분한다.
+
 - `analysisPresentation.ts`: Eligibility·criterion·match·OUTDATED·analysis quality label
 - `*.test.ts`, `testFixtures.ts`: feature 계약 검증
 - [`progress.md`](progress.md): P5 feature 상태

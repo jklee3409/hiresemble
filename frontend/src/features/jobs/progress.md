@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict와 P6 analysis query·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-01] Session Summary (이미지형 공고 자동 처리 presentation)
+
+- What was done:
+  - 자동 처리·manual fallback 문구와 Job extraction 상태 presentation을 보정했다.
+- Key decisions:
+  - OCR 선택 UI 없이 NEEDS_MANUAL_INPUT은 직접 입력, FAILED는 재시도와 직접 입력을 구분한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 61 files/243 tests와 build 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-29] Session Summary (P6 Job Analysis query·presentation)
 
 - What was done:

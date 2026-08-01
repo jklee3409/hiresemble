@@ -162,7 +162,8 @@ describe('P5 Job pages', () => {
     const { wrapper } = await mountOverview()
 
     expect(wrapper.text()).toContain('서류 제출 이력 있음')
-    expect(wrapper.text()).toContain('본문과 마감일을 직접 입력해 주세요')
+    expect(wrapper.text()).toContain('공고 내용을 자동으로 충분히 읽지 못했어요')
+    expect(wrapper.text()).not.toContain('OCR 사용')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     const manualButton = wrapper
       .findAll('button')
@@ -202,6 +203,7 @@ describe('P5 Job pages', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('본문 추출에 실패했습니다')
     expect(wrapper.get('[role="alert"]').text()).not.toContain('JOB_EXTRACTION_FAILED')
     expect(wrapper.text()).toContain('본문 직접 입력')
+    expect(wrapper.text()).not.toContain('OCR 사용')
     const retryButton = wrapper
       .findAll('button')
       .find((button) => button.text() === '공고 다시 불러오기')

@@ -4,6 +4,19 @@
 
 P1 인증부터 P8 Interview preparation·question set·answer feedback, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-01] Session Summary (공고 자동 판독·수동 fallback 안내)
+
+- What was done:
+  - Job overview의 자동 처리 중·자동 부족 안내와 CTA 회귀를 보정했다.
+- Key decisions:
+  - URL/사용자 입력 필드를 보존하고 깨진 자동 text를 표시하지 않는다.
+- Issues encountered:
+  - 기존 문구 assertion 2건을 새 사용자 메시지로 갱신했다.
+- Validation:
+  - job page component test와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (자료·대외활동 화면 B2C 흐름)
 
 - What was done:

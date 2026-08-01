@@ -14,6 +14,19 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-01] Session Summary (P5 workflow v2 actual 회귀)
+
+- What was done:
+  - P5 Fake Chat input을 v2 `sourceText`로 갱신하고 품질 fixture를 명시했다.
+- Key decisions:
+  - 실제 Provider/network 없이 기존 등록·추출·manual resume·owner·Scheduler 브라우저 흐름을 유지한다.
+- Issues encountered:
+  - 1차 URL-only fixture가 운영 품질 임계값에 걸려 test profile threshold를 fixture 길이에 맞게 고정했다.
+- Validation:
+  - `p5BrowserE2eTest`: Chromium 5/5 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (P5 actual 현재 UI 계약 동기화)
 
 - What was done:

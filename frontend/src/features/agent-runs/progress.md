@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 `AI 작업 내역` 용어로 구현됐다.
 
+## [2026-08-01] Session Summary (Job extraction v2 사용자 단계명)
+
+- What was done:
+  - page fetch·inspection·image read·validation·apply 내부 step key를 자연스러운 사용자 문구로 매핑했다.
+- Key decisions:
+  - Provider/OCR engine 이름과 내부 key는 노출하지 않고 SSE reconnect 의미는 run 실패와 분리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend check와 P5 Chromium 5/5 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (접힌 사용자용 AI 과정·사용량)
 
 - What was done:
