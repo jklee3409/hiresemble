@@ -55,6 +55,8 @@ describe('PublicLayout', () => {
     expect(wrapper.text()).toContain('프로필부터 이력서, 관심 공고까지')
     expect(wrapper.text()).toContain('개인정보와 AI 처리 동의를 직접 확인할 수 있어요.')
     expect(wrapper.findAll('[data-testid="brand-mark"]')).toHaveLength(2)
+    expect(wrapper.findAll('a[href="/"]')).toHaveLength(2)
+    expect(wrapper.text()).toContain('한곳에서 이어가는 지원 준비')
     expect(wrapper.text()).not.toContain('비동기')
     expect(wrapper.text()).not.toContain('Career workspace')
     expect(wrapper.text()).not.toContain('이용자 수')

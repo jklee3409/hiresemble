@@ -39,7 +39,6 @@ describe('AppLayout', () => {
     expect(wrapper.find('.desktop-sidebar').exists()).toBe(false)
     expect(wrapper.find('.user-avatar').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('모의 면접')
-    expect(document.title).toBe('내 지원 정보 | Hiresemble')
     expect(document.activeElement).toBe(wrapper.get('#app-content').element)
     wrapper.unmount()
   })

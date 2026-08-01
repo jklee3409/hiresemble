@@ -54,7 +54,7 @@ describe('authentication route policy', () => {
     vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(emptyPage())
   })
 
-  it('redirects the root according to the bootstrapped auth state', async () => {
+  it('keeps anonymous users on the landing and redirects authenticated users before rendering it', async () => {
     vi.mocked(authApi.getCurrentUser).mockRejectedValueOnce(authenticationRequired())
     const anonymousPinia = createPinia()
     const anonymousRouter = createAppRouter({
@@ -63,7 +63,12 @@ describe('authentication route policy', () => {
     })
     await anonymousRouter.push('/')
     await anonymousRouter.isReady()
-    expect(anonymousRouter.currentRoute.value.name).toBe('login')
+    expect(anonymousRouter.currentRoute.value.name).toBe('home')
+    expect(document.title).toBe('내 경험을, 다음 기회로 | Hiresemble')
+    await anonymousRouter.push('/login')
+    expect(document.title).toBe('로그인 | Hiresemble')
+    await anonymousRouter.push('/signup')
+    expect(document.title).toBe('회원가입 | Hiresemble')
 
     vi.mocked(authApi.getCurrentUser).mockResolvedValueOnce(session('user-1').user)
     const authenticatedPinia = createPinia()
@@ -74,6 +79,7 @@ describe('authentication route policy', () => {
     await authenticatedRouter.push('/')
     await authenticatedRouter.isReady()
     expect(authenticatedRouter.currentRoute.value.name).toBe('dashboard')
+    expect(document.title).toBe('지원 홈 | Hiresemble')
   })
 
   it('protects dashboard and honors only safe public-only returnTo values', async () => {
@@ -108,6 +114,9 @@ describe('authentication route policy', () => {
       path: '/login',
       query: { returnTo: 'https://evil.example/dashboard' },
     })
+    expect(authenticatedRouter.currentRoute.value.name).toBe('dashboard')
+
+    await authenticatedRouter.push('/signup')
     expect(authenticatedRouter.currentRoute.value.name).toBe('dashboard')
   })
 
@@ -150,8 +159,9 @@ describe('authentication route policy', () => {
 
     await flushPromises()
     expect(wrapper.get('h1').text()).toContain('user-1, 지금 준비 중인 지원')
-    expect(wrapper.text()).toContain('프로필 작성')
-    expect(wrapper.text()).toContain('문서 업로드')
+    expect(wrapper.text()).toContain('기본 정보 준비')
+    expect(wrapper.text()).toContain('이력서 또는 포트폴리오 등록')
+    expect(wrapper.text()).toContain('지원 준비 현황')
     expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
@@ -160,6 +170,7 @@ describe('authentication route policy', () => {
     await router.push('/missing-page')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('not-found')
+    expect(document.title).toBe('페이지를 찾을 수 없어요 | Hiresemble')
     expect(wrapper.text()).toContain('페이지를 찾을 수 없어요')
     expect(wrapper.get('a.button[href="/dashboard"]').text()).toContain('지원 홈으로 돌아가기')
   })
@@ -219,6 +230,7 @@ describe('authentication route policy', () => {
     const coverLetterEditRoute = children.find((route) => route.name === 'cover-letter-edit')
     const interviewsRoute = children.find((route) => route.name === 'interviews')
     const questionSetRoute = children.find((route) => route.name === 'interview-question-set')
+    const homeRoute = routes.find((route) => route.name === 'home')
 
     expect(typeof documentsRoute?.component).toBe('function')
     expect(profileActivitiesRoute?.meta?.title).toBe('대외활동')
@@ -232,6 +244,7 @@ describe('authentication route policy', () => {
     expect(typeof coverLetterEditRoute?.component).toBe('function')
     expect(typeof interviewsRoute?.component).toBe('function')
     expect(typeof questionSetRoute?.component).toBe('function')
+    expect(homeRoute?.meta?.title).toBe('내 경험을, 다음 기회로')
     expect(jobDetailLayout?.children?.map((route) => route.name)).toEqual([
       'job-detail',
       'job-overview',

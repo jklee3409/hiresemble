@@ -36,7 +36,7 @@ import BrandMark from '@/shared/ui/BrandMark.vue'
       </div>
 
       <div class="auth-context">
-        <p class="auth-context__eyebrow">내 경력을, 다음 기회로</p>
+        <p class="auth-context__eyebrow">한곳에서 이어가는 지원 준비</p>
         <h2 class="auth-context__title">
           흩어진 경험을 모아
           <span>나답게 지원해요.</span>

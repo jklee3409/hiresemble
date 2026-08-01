@@ -1,0 +1,259 @@
+import { mkdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+import { expect, test, type Page, type Route } from '@playwright/test'
+
+const userId = '00000000-0000-4000-8000-000000000001'
+
+test('anonymous users understand the service before choosing login or signup', async ({
+  page,
+}, testInfo) => {
+  await installAnonymousSession(page)
+  const captureDirectory = resolve(process.cwd(), '..', 'output', 'playwright', 'landing')
+  if (process.env.UI_SCREENSHOTS === 'true') mkdirSync(captureDirectory, { recursive: true })
+
+  for (const viewport of [
+    { width: 1440, height: 1000, suffix: '1440' },
+    { width: 390, height: 844, suffix: '390' },
+    { width: 320, height: 760, suffix: '320' },
+  ] as const) {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('heading', { name: /흩어진 취업 준비를/ })).toBeVisible()
+    await expect(page.locator('h1')).toHaveCount(1)
+    await expect(page).toHaveTitle('내 경험을, 다음 기회로 | Hiresemble')
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+      `${viewport.width}px landing에서 가로 overflow가 없어야 합니다.`,
+    ).toBe(false)
+
+    if (viewport.width === 1440) {
+      await page.locator('.landing-navigation a[href="#journey"]').click()
+      await expect(page).toHaveURL(/#journey$/)
+      await expect(page.locator('#journey')).toBeInViewport()
+    }
+
+    if (process.env.UI_SCREENSHOTS === 'true' && viewport.width !== 320) {
+      await page.screenshot({
+        path: resolve(captureDirectory, `landing-${viewport.suffix}.png`),
+        fullPage: true,
+        animations: 'disabled',
+      })
+    }
+  }
+
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: '본문으로 건너뛰기' })).toBeFocused()
+  await page.locator('.landing-header a[href="/login"]').click()
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('heading', { name: '로그인', level: 1 })).toBeVisible()
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.screenshot({
+      path: resolve(captureDirectory, 'public-login-1440.png'),
+      fullPage: true,
+      animations: 'disabled',
+    })
+  }
+  await page.locator('.brand-canvas > .auth-brand').click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.locator('.landing-header a[href="/signup"]').click()
+  await expect(page).toHaveURL(/\/signup$/)
+  await expect(page.getByRole('heading', { name: '회원가입', level: 1 })).toBeVisible()
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  expect(
+    await page
+      .locator('.landing-hero')
+      .evaluate((element) => getComputedStyle(element).animationDuration),
+  ).toMatch(/^(?:1e-05|0\.00001)s$/)
+
+  await testInfo.attach('public-route-policy', {
+    body: Buffer.from('anonymous / -> landing -> login -> landing -> signup'),
+    contentType: 'text/plain',
+  })
+})
+
+test('root navigation waits for authentication and preserves protected returnTo', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const state = window as typeof window & { __landingObserved?: boolean }
+    state.__landingObserved = false
+    new MutationObserver(() => {
+      if (document.querySelector('#landing-heading') !== null) state.__landingObserved = true
+    }).observe(document, { childList: true, subtree: true })
+  })
+  await installDashboardFixture(page, { profile: false, documents: 0, jobs: 0 })
+
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { name: /지금 준비 중인 지원/ })).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => (window as typeof window & { __landingObserved?: boolean }).__landingObserved,
+    ),
+  ).toBe(false)
+
+  await page.unrouteAll({ behavior: 'wait' })
+  await installAnonymousSession(page)
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/\/login\?returnTo=/)
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe('/dashboard')
+})
+
+for (const scenario of [
+  { label: '0-of-3', profile: false, documents: 0, jobs: 0, count: '0 / 3' },
+  { label: '1-of-3', profile: true, documents: 0, jobs: 0, count: '1 / 3' },
+  { label: '2-of-3', profile: true, documents: 1, jobs: 0, count: '2 / 3' },
+  { label: '3-of-3', profile: true, documents: 1, jobs: 1, count: null },
+] as const) {
+  test(`dashboard checklist renders ${scenario.label} without hiding product status`, async ({
+    page,
+  }) => {
+    await installDashboardFixture(page, scenario)
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page.goto('/dashboard')
+    await expect(page.getByRole('heading', { name: '지원 준비 현황' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '최근 활동' })).toBeVisible()
+
+    if (scenario.count === null) {
+      await expect(page.locator('.start-checklist')).toHaveCount(0)
+    } else {
+      await expect(page.locator('.start-checklist__progress')).toContainText(scenario.count)
+      await expect(page.getByRole('link', { name: /전체 이용 순서 보기/ })).toBeVisible()
+    }
+
+    if (scenario.count === '2 / 3' && process.env.UI_SCREENSHOTS === 'true') {
+      const output = resolve(process.cwd(), '..', 'output', 'playwright', 'landing')
+      mkdirSync(output, { recursive: true })
+      await page.screenshot({
+        path: resolve(output, 'dashboard-checklist-2-of-3.png'),
+        fullPage: true,
+        animations: 'disabled',
+      })
+    }
+  })
+}
+
+async function installAnonymousSession(page: Page): Promise<void> {
+  await page.route('**/api/v1/auth/me', async (route) => {
+    await json(
+      route,
+      {
+        status: 401,
+        code: 'AUTHENTICATION_REQUIRED',
+        message: '로그인이 필요합니다.',
+        fieldErrors: [],
+        requestId: '00000000-0000-4000-8000-000000000099',
+      },
+      401,
+    )
+  })
+}
+
+async function installDashboardFixture(
+  page: Page,
+  state: { profile: boolean; documents: number; jobs: number },
+): Promise<void> {
+  await page.route('**/api/v1/**', async (route) => {
+    const url = new URL(route.request().url())
+    const path = url.pathname.replace(/^\/api\/v1/, '')
+
+    if (path === '/auth/me') {
+      return json(route, {
+        id: userId,
+        email: 'landing-check@example.com',
+        displayName: '랜딩 확인 사용자',
+      })
+    }
+    if (path === '/profile') {
+      return json(route, {
+        legalName: state.profile ? '랜딩 확인 사용자' : null,
+        introduction: null,
+        desiredRoles: state.profile ? ['백엔드 개발자'] : [],
+        desiredIndustries: state.profile ? ['IT'] : [],
+        desiredLocations: state.profile ? ['서울'] : [],
+        expectedGraduationDate: null,
+        profileCompleted: state.profile,
+        missingCompletionItems: state.profile ? [] : ['LEGAL_NAME'],
+        version: 1,
+        createdAt: '2026-08-02T00:00:00Z',
+        updatedAt: '2026-08-02T00:00:00Z',
+      })
+    }
+    if (path === '/documents') {
+      return json(route, pageOf(state.documents > 0 ? [documentSummary()] : [], state.documents))
+    }
+    if (path === '/jobs') {
+      const isRecent =
+        url.searchParams.get('status') === null &&
+        url.searchParams.get('deadlineWithinDays') === null
+      return json(
+        route,
+        pageOf(isRecent && state.jobs > 0 ? [jobSummary()] : [], isRecent ? state.jobs : 0),
+      )
+    }
+    if (path === '/agent-runs') return json(route, pageOf([], 0))
+
+    return json(route, { items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 })
+  })
+}
+
+function pageOf(items: unknown[], totalElements: number) {
+  return { items, page: 0, size: 5, totalElements, totalPages: totalElements > 0 ? 1 : 0 }
+}
+
+function documentSummary() {
+  return {
+    id: '00000000-0000-4000-8000-000000000010',
+    documentType: 'RESUME',
+    originalFilename: 'resume.pdf',
+    displayName: '지원용 이력서.pdf',
+    mimeType: 'application/pdf',
+    fileSizeBytes: 1024,
+    parseStatus: 'PARSED',
+    evidenceExtractionStatus: 'SUCCEEDED',
+    manualTextProvided: false,
+    safeError: null,
+    latestAgentRunId: null,
+    version: 1,
+    uploadedAt: '2026-08-02T00:00:00Z',
+    updatedAt: '2026-08-02T00:00:00Z',
+  }
+}
+
+function jobSummary() {
+  return {
+    id: '00000000-0000-4000-8000-000000000020',
+    companyName: 'Hiresemble',
+    title: '백엔드 개발자',
+    positionName: '백엔드 개발자',
+    status: 'IN_PROGRESS',
+    extractionStatus: 'EXTRACTED',
+    submittedAt: null,
+    deadlineAt: null,
+    deadlineSource: 'USER_ENTERED',
+    latestFitScore: null,
+    analysisOutdated: false,
+    outdatedReasons: [],
+    coverLetterStatus: null,
+    interviewPreparationCount: 0,
+    version: 1,
+    createdAt: '2026-08-02T00:00:00Z',
+    updatedAt: '2026-08-02T00:00:00Z',
+  }
+}
+
+function json(route: Route, body: unknown, status = 200) {
+  return route.fulfill({
+    status,
+    contentType: 'application/json; charset=utf-8',
+    body: JSON.stringify(body),
+  })
+}

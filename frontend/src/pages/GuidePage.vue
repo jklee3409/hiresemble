@@ -1,50 +1,36 @@
 <script setup lang="ts">
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
+import { PRODUCT_JOURNEY_STEPS } from '@/shared/ui/productJourney'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
-const steps = [
+const guideActions = [
   {
-    number: 1,
-    icon: 'profile' as const,
-    title: '내 정보와 경험 정리',
-    description: '기본 정보와 경력·활동을 적고, 분석에 사용할 경험을 직접 확인해요.',
     route: { name: 'profile-basic' },
     action: '내 정보 채우기',
   },
   {
-    number: 2,
-    icon: 'documents' as const,
-    title: '이력서와 포트폴리오 등록',
-    description: '파일을 올리면 내용을 읽고, 이후 지원 준비에 참고할 경험을 정리해요.',
     route: { name: 'documents' },
     action: '자료 등록하기',
   },
   {
-    number: 3,
-    icon: 'jobs' as const,
-    title: '관심 공고 자동 분석',
-    description: '공고 링크만 등록해도 본문 확인부터 내 경험과의 비교까지 자동으로 이어져요.',
     route: { name: 'job-new' },
     action: '공고 추가하기',
   },
   {
-    number: 4,
-    icon: 'cover-letter' as const,
-    title: '자기소개서 준비',
-    description: '공고 분석과 확인한 경험을 바탕으로 질문별 초안을 만들고 직접 다듬어요.',
     route: { name: 'cover-letters' },
     action: '자기소개서 보기',
   },
   {
-    number: 5,
-    icon: 'interview' as const,
-    title: '면접 질문과 피드백',
-    description: '공고와 자기소개서가 준비되면 예상 질문을 확인하고 답변을 연습해요.',
     route: { name: 'interviews' },
     action: '면접 준비 보기',
   },
-]
+] as const
+
+const steps = PRODUCT_JOURNEY_STEPS.map((step, index) => ({
+  ...step,
+  ...guideActions[index],
+}))
 </script>
 
 <template>

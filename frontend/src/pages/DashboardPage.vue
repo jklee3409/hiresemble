@@ -86,19 +86,77 @@ const dashboardQueries = [
 const isInitialLoading = computed(() => dashboardQueries.some((query) => query.isPending.value))
 const hasQueryError = computed(() => dashboardQueries.some((query) => query.isError.value))
 const completionPercent = computed(() => {
-  const missing = profileQuery.data.value?.missingCompletionItems.length ?? 5
+  if (profileQuery.isError.value || profileQuery.data.value === undefined) return null
+  const missing = profileQuery.data.value.missingCompletionItems.length
   return (5 - missing) * 20
 })
-const totalDocuments = computed(() => recentDocumentsQuery.data.value?.totalElements ?? 0)
-const totalJobs = computed(() => recentJobsQuery.data.value?.totalElements ?? 0)
-const activeRunCount = computed(() => activeRunsQuery.data.value?.totalElements ?? 0)
-const isNewUser = computed(
-  () =>
-    !isInitialLoading.value &&
-    completionPercent.value < 100 &&
-    totalDocuments.value === 0 &&
-    totalJobs.value === 0 &&
-    (recentRunsQuery.data.value?.totalElements ?? 0) === 0,
+const totalDocuments = computed(() =>
+  recentDocumentsQuery.isError.value
+    ? null
+    : (recentDocumentsQuery.data.value?.totalElements ?? null),
+)
+const activeRunCount = computed(() =>
+  activeRunsQuery.isError.value ? null : (activeRunsQuery.data.value?.totalElements ?? null),
+)
+
+type StartItemState = 'completed' | 'pending' | 'unknown'
+
+type StartItem = {
+  key: 'profile' | 'documents' | 'jobs'
+  icon: 'profile' | 'documents' | 'jobs'
+  title: string
+  description: string
+  to: string
+  action: string
+  state: StartItemState
+}
+
+const startItems = computed<StartItem[]>(() => [
+  {
+    key: 'profile',
+    icon: 'profile',
+    title: '기본 정보 준비',
+    description: '희망 직무와 기본 정보를 정리해 다음 준비의 기준을 만들어요.',
+    to: '/profile/basic',
+    action: '기본 정보 채우기',
+    state: profileQuery.isError.value
+      ? 'unknown'
+      : profileQuery.data.value?.profileCompleted === true
+        ? 'completed'
+        : 'pending',
+  },
+  {
+    key: 'documents',
+    icon: 'documents',
+    title: '이력서 또는 포트폴리오 등록',
+    description: '자료를 등록하면 내용을 읽고 활용할 경험을 정리할 수 있어요.',
+    to: '/documents',
+    action: '자료 등록하기',
+    state: recentDocumentsQuery.isError.value
+      ? 'unknown'
+      : (recentDocumentsQuery.data.value?.totalElements ?? 0) > 0
+        ? 'completed'
+        : 'pending',
+  },
+  {
+    key: 'jobs',
+    icon: 'jobs',
+    title: '첫 관심 공고 등록',
+    description: '관심 공고를 등록하면 본문 확인 뒤 분석이 자동으로 이어져요.',
+    to: '/jobs/new',
+    action: '공고 등록하기',
+    state: recentJobsQuery.isError.value
+      ? 'unknown'
+      : (recentJobsQuery.data.value?.totalElements ?? 0) > 0
+        ? 'completed'
+        : 'pending',
+  },
+])
+const completedStartCount = computed(
+  () => startItems.value.filter((item) => item.state === 'completed').length,
+)
+const showStartChecklist = computed(
+  () => !startItems.value.every((item) => item.state === 'completed'),
 )
 
 const documentNeedsAction = computed(() =>
@@ -181,7 +239,7 @@ const nextTasks = computed<NextTask[]>(() => {
     })
   }
 
-  if (tasks.length === 0 && !isNewUser.value) {
+  if (tasks.length === 0 && !hasQueryError.value) {
     tasks.push({
       key: 'complete',
       icon: 'check',
@@ -240,6 +298,12 @@ const recentActivity = computed<ActivityItem[]>(() => {
 
 function refetchDashboard(): void {
   for (const query of dashboardQueries) void query.refetch()
+}
+
+function refetchStartItem(key: StartItem['key']): void {
+  if (key === 'profile') void profileQuery.refetch()
+  if (key === 'documents') void recentDocumentsQuery.refetch()
+  if (key === 'jobs') void recentJobsQuery.refetch()
 }
 
 function documentStatus(document: DocumentSummaryDto): string {
@@ -306,245 +370,290 @@ function formatActivityDate(value: string): string {
         </button>
       </aside>
 
-      <section v-if="isNewUser" class="dashboard-onboarding" aria-labelledby="start-heading">
-        <div class="dashboard-onboarding__intro">
-          <p class="section-kicker">처음 시작하기</p>
-          <h2 id="start-heading">Hiresemble은 이렇게 활용할 수 있어요.</h2>
-          <p>
-            내 정보와 자료를 정리한 뒤 공고를 등록하면 자기소개서와 면접 준비까지 이어갈 수 있어요.
-          </p>
+      <section v-if="showStartChecklist" class="start-checklist" aria-labelledby="start-heading">
+        <header class="start-checklist__header">
+          <div>
+            <p class="section-kicker">첫 사용 준비</p>
+            <h2 id="start-heading">시작에 필요한 항목을 확인해 보세요.</h2>
+            <p>한 항목을 끝내도 남은 준비는 계속 확인할 수 있어요.</p>
+          </div>
+          <div class="start-checklist__progress" aria-label="첫 사용 준비 완료율">
+            <strong>{{ completedStartCount }} / 3</strong>
+            <span>완료</span>
+          </div>
+        </header>
+        <ul class="start-checklist__items">
+          <li
+            v-for="item in startItems"
+            :key="item.key"
+            :class="`start-checklist__item--${item.state}`"
+          >
+            <span class="start-checklist__icon">
+              <AppIcon :name="item.state === 'completed' ? 'check' : item.icon" />
+            </span>
+            <span class="start-checklist__body">
+              <strong>{{ item.title }}</strong>
+              <small v-if="item.state === 'completed'">준비를 마쳤어요.</small>
+              <small v-else-if="item.state === 'unknown'">
+                현재 상태를 확인하지 못했어요. 다시 확인해 주세요.
+              </small>
+              <small v-else>{{ item.description }}</small>
+            </span>
+            <span v-if="item.state === 'completed'" class="start-checklist__status">
+              <AppIcon name="check" />
+              완료
+            </span>
+            <button
+              v-else-if="item.state === 'unknown'"
+              type="button"
+              class="button button--secondary button--compact"
+              @click="refetchStartItem(item.key)"
+            >
+              다시 확인
+            </button>
+            <RouterLink v-else class="button button--secondary button--compact" :to="item.to">
+              {{ item.action }}
+            </RouterLink>
+          </li>
+        </ul>
+        <footer class="start-checklist__footer">
+          <RouterLink to="/guide" class="text-link">
+            전체 이용 순서 보기
+            <AppIcon name="arrow-right" />
+          </RouterLink>
+        </footer>
+      </section>
+
+      <section class="dashboard-metrics" aria-labelledby="status-heading">
+        <div class="dashboard-section-heading">
+          <div>
+            <p class="section-kicker">현재 상태</p>
+            <h2 id="status-heading">지원 준비 현황</h2>
+          </div>
+          <RouterLink to="/jobs" class="text-link">
+            전체 공고 보기
+            <AppIcon name="arrow-right" />
+          </RouterLink>
         </div>
-        <div class="dashboard-onboarding__actions">
-          <RouterLink class="start-action start-action--primary" to="/profile/basic">
-            <AppIcon name="profile" />
-            <span>
-              <strong>프로필 작성</strong>
-              <small>희망 직무와 기본 정보 정리</small>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink class="start-action" to="/documents">
-            <AppIcon name="documents" />
-            <span>
-              <strong>문서 업로드</strong>
-              <small>이력서와 포트폴리오 등록</small>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink class="start-action" to="/jobs/new">
-            <AppIcon name="jobs" />
-            <span>
-              <strong>공고 등록</strong>
-              <small>공고 등록과 자동 분석</small>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink class="start-action" to="/guide">
-            <AppIcon name="dashboard" />
-            <span>
-              <strong>이용 순서 보기</strong>
-              <small>전체 준비 흐름 한눈에 확인</small>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
+
+        <div class="metric-grid">
+          <article class="metric metric--profile">
+            <div class="metric__top">
+              <span class="metric__icon"><AppIcon name="profile" /></span>
+              <span>{{
+                profileQuery.isError.value
+                  ? '확인하지 못했어요'
+                  : profileQuery.data.value?.profileCompleted
+                    ? '필수 항목 완료'
+                    : '보완 권장'
+              }}</span>
+            </div>
+            <div class="profile-progress">
+              <strong>{{ completionPercent === null ? '—' : `${completionPercent}%` }}</strong>
+              <div>
+                <h3>프로필 완성도</h3>
+                <progress
+                  v-if="completionPercent !== null"
+                  class="progress-track"
+                  :value="completionPercent"
+                  max="100"
+                >
+                  {{ completionPercent }}%
+                </progress>
+                <span v-else class="metric__unknown">상태를 다시 확인해 주세요.</span>
+              </div>
+            </div>
+            <p>
+              {{
+                profileQuery.isError.value
+                  ? '프로필 상태를 불러오지 못했어요.'
+                  : profileQuery.data.value?.profileCompleted
+                    ? '지원에 필요한 기본 정보를 채웠어요.'
+                    : `필수 항목 ${profileQuery.data.value?.missingCompletionItems.length ?? 5}개가 남아 있어요.`
+              }}
+            </p>
+            <RouterLink to="/profile/basic">프로필 확인</RouterLink>
+          </article>
+
+          <article class="metric">
+            <div class="metric__top">
+              <span class="metric__icon"><AppIcon name="jobs" /></span>
+              <span>지원 파이프라인</span>
+            </div>
+            <strong class="metric__value">{{
+              inProgressJobsQuery.isError.value
+                ? '—'
+                : (inProgressJobsQuery.data.value?.totalElements ?? 0)
+            }}</strong>
+            <h3>지원 중 공고</h3>
+            <p>내용을 검토하거나 지원서를 준비하고 있는 공고예요.</p>
+            <RouterLink to="/jobs?status=IN_PROGRESS">지원 중 공고 보기</RouterLink>
+          </article>
+
+          <article class="metric">
+            <div class="metric__top">
+              <span class="metric__icon metric__icon--success"><AppIcon name="check" /></span>
+              <span>제출 기록</span>
+            </div>
+            <strong class="metric__value">{{
+              submittedJobsQuery.isError.value
+                ? '—'
+                : (submittedJobsQuery.data.value?.totalElements ?? 0)
+            }}</strong>
+            <h3>서류 제출 공고</h3>
+            <p>제출을 마치고 결과를 기다리는 공고예요.</p>
+            <RouterLink to="/jobs?status=SUBMITTED">제출 공고 보기</RouterLink>
+          </article>
+
+          <article class="metric">
+            <div class="metric__top">
+              <span class="metric__icon"><AppIcon name="runs" /></span>
+              <span>자동 처리</span>
+            </div>
+            <strong class="metric__value">{{ activeRunCount ?? '—' }}</strong>
+            <h3>진행 중 분석</h3>
+            <p>
+              {{
+                waitingRuns.length > 0
+                  ? `${waitingRuns.length}개 작업이 추가 입력을 기다리고 있어요.`
+                  : '자료와 공고를 정리하고 있는 작업이에요.'
+              }}
+            </p>
+            <RouterLink to="/agent-runs">AI 작업 보기</RouterLink>
+          </article>
+
+          <article class="metric metric--documents">
+            <div class="metric__top">
+              <span class="metric__icon"><AppIcon name="documents" /></span>
+              <span>등록 자료</span>
+            </div>
+            <strong class="metric__value">{{ totalDocuments ?? '—' }}</strong>
+            <h3>이력서·문서</h3>
+            <p>
+              {{
+                documentNeedsAction.length > 0
+                  ? `최근 자료 중 ${documentNeedsAction.length}개에 확인이 필요해요.`
+                  : '등록한 자료와 내용을 읽은 결과를 확인할 수 있어요.'
+              }}
+            </p>
+            <RouterLink to="/documents">자료 관리</RouterLink>
+          </article>
         </div>
       </section>
 
-      <template v-else>
-        <section class="dashboard-metrics" aria-labelledby="status-heading">
+      <div class="dashboard-columns">
+        <section class="dashboard-section" aria-labelledby="next-task-heading">
           <div class="dashboard-section-heading">
             <div>
-              <p class="section-kicker">현재 상태</p>
-              <h2 id="status-heading">지원 준비 현황</h2>
+              <p class="section-kicker">우선 확인</p>
+              <h2 id="next-task-heading">다음 할 일</h2>
             </div>
-            <RouterLink to="/jobs" class="text-link">
-              전체 공고 보기
-              <AppIcon name="arrow-right" />
-            </RouterLink>
           </div>
-
-          <div class="metric-grid">
-            <article class="metric metric--profile">
-              <div class="metric__top">
-                <span class="metric__icon"><AppIcon name="profile" /></span>
-                <span>{{
-                  profileQuery.data.value?.profileCompleted ? '필수 항목 완료' : '보완 권장'
-                }}</span>
-              </div>
-              <div class="profile-progress">
-                <strong>{{ completionPercent }}%</strong>
-                <div>
-                  <h3>프로필 완성도</h3>
-                  <progress class="progress-track" :value="completionPercent" max="100">
-                    {{ completionPercent }}%
-                  </progress>
-                </div>
-              </div>
-              <p>
-                {{
-                  profileQuery.data.value?.profileCompleted
-                    ? '지원에 필요한 기본 정보를 채웠어요.'
-                    : `필수 항목 ${profileQuery.data.value?.missingCompletionItems.length ?? 5}개가 남아 있어요.`
-                }}
-              </p>
-              <RouterLink to="/profile/basic">프로필 확인</RouterLink>
-            </article>
-
-            <article class="metric">
-              <div class="metric__top">
-                <span class="metric__icon"><AppIcon name="jobs" /></span>
-                <span>지원 파이프라인</span>
-              </div>
-              <strong class="metric__value">{{
-                inProgressJobsQuery.data.value?.totalElements ?? 0
-              }}</strong>
-              <h3>지원 중 공고</h3>
-              <p>내용을 검토하거나 지원서를 준비하고 있는 공고예요.</p>
-              <RouterLink to="/jobs?status=IN_PROGRESS">지원 중 공고 보기</RouterLink>
-            </article>
-
-            <article class="metric">
-              <div class="metric__top">
-                <span class="metric__icon metric__icon--success"><AppIcon name="check" /></span>
-                <span>제출 기록</span>
-              </div>
-              <strong class="metric__value">{{
-                submittedJobsQuery.data.value?.totalElements ?? 0
-              }}</strong>
-              <h3>서류 제출 공고</h3>
-              <p>제출을 마치고 결과를 기다리는 공고예요.</p>
-              <RouterLink to="/jobs?status=SUBMITTED">제출 공고 보기</RouterLink>
-            </article>
-
-            <article class="metric">
-              <div class="metric__top">
-                <span class="metric__icon"><AppIcon name="runs" /></span>
-                <span>자동 처리</span>
-              </div>
-              <strong class="metric__value">{{ activeRunCount }}</strong>
-              <h3>진행 중 분석</h3>
-              <p>
-                {{
-                  waitingRuns.length > 0
-                    ? `${waitingRuns.length}개 작업이 추가 입력을 기다리고 있어요.`
-                    : '자료와 공고를 정리하고 있는 작업이에요.'
-                }}
-              </p>
-              <RouterLink to="/agent-runs">AI 작업 보기</RouterLink>
-            </article>
-
-            <article class="metric metric--documents">
-              <div class="metric__top">
-                <span class="metric__icon"><AppIcon name="documents" /></span>
-                <span>등록 자료</span>
-              </div>
-              <strong class="metric__value">{{ totalDocuments }}</strong>
-              <h3>이력서·문서</h3>
-              <p>
-                {{
-                  documentNeedsAction.length > 0
-                    ? `최근 자료 중 ${documentNeedsAction.length}개에 확인이 필요해요.`
-                    : '등록한 자료와 내용을 읽은 결과를 확인할 수 있어요.'
-                }}
-              </p>
-              <RouterLink to="/documents">자료 관리</RouterLink>
-            </article>
-          </div>
-        </section>
-
-        <div class="dashboard-columns">
-          <section class="dashboard-section" aria-labelledby="next-task-heading">
-            <div class="dashboard-section-heading">
-              <div>
-                <p class="section-kicker">우선 확인</p>
-                <h2 id="next-task-heading">다음 할 일</h2>
-              </div>
-            </div>
-            <ul class="task-list">
-              <li v-for="task in nextTasks" :key="task.key">
-                <RouterLink
-                  :to="task.to"
-                  class="task-item"
-                  :class="`task-item--${task.tone ?? 'default'}`"
-                >
-                  <span class="task-item__icon"><AppIcon :name="task.icon" /></span>
-                  <span class="task-item__body">
-                    <strong>{{ task.title }}</strong>
-                    <small>{{ task.description }}</small>
-                    <span class="task-item__action">
-                      {{ task.action }}
-                      <AppIcon name="arrow-right" />
-                    </span>
+          <ul v-if="nextTasks.length" class="task-list">
+            <li v-for="task in nextTasks" :key="task.key">
+              <RouterLink
+                :to="task.to"
+                class="task-item"
+                :class="`task-item--${task.tone ?? 'default'}`"
+              >
+                <span class="task-item__icon"><AppIcon :name="task.icon" /></span>
+                <span class="task-item__body">
+                  <strong>{{ task.title }}</strong>
+                  <small>{{ task.description }}</small>
+                  <span class="task-item__action">
+                    {{ task.action }}
+                    <AppIcon name="arrow-right" />
                   </span>
-                </RouterLink>
-              </li>
-            </ul>
-          </section>
-
-          <section class="dashboard-section" aria-labelledby="deadline-heading">
-            <div class="dashboard-section-heading">
-              <div>
-                <p class="section-kicker">14일 이내</p>
-                <h2 id="deadline-heading">마감 임박 공고</h2>
-              </div>
-            </div>
-            <ul v-if="closingSoonJobsQuery.data.value?.items.length" class="deadline-list">
-              <li v-for="job in closingSoonJobsQuery.data.value.items" :key="job.id">
-                <RouterLink :to="`/jobs/${job.id}/overview`">
-                  <span>
-                    <strong>{{ jobDisplayTitle(job) }}</strong>
-                    <small>{{ jobCompanyLabel(job.companyName) }}</small>
-                  </span>
-                  <time :datetime="job.deadlineAt ?? undefined">{{
-                    formatDeadline(job.deadlineAt)
-                  }}</time>
-                </RouterLink>
-              </li>
-            </ul>
-            <div v-else class="compact-empty">
-              <AppIcon name="clock" />
-              <div>
-                <strong>마감이 임박한 공고가 없어요.</strong>
-                <p>공고에 마감일을 입력하면 여기에서 먼저 알려 드려요.</p>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <section class="dashboard-section dashboard-activity" aria-labelledby="activity-heading">
-          <div class="dashboard-section-heading">
-            <div>
-              <p class="section-kicker">최근 업데이트</p>
-              <h2 id="activity-heading">최근 활동</h2>
-            </div>
-            <RouterLink to="/agent-runs" class="text-link">
-              AI 작업 보기
-              <AppIcon name="arrow-right" />
-            </RouterLink>
-          </div>
-          <ul v-if="recentActivity.length" class="activity-list">
-            <li v-for="activity in recentActivity" :key="activity.key">
-              <RouterLink :to="activity.to">
-                <span class="activity-list__body">
-                  <small>{{ activity.eyebrow }}</small>
-                  <strong>{{ activity.title }}</strong>
-                </span>
-                <span class="activity-list__meta">
-                  <span>{{ activity.description }}</span>
-                  <time :datetime="activity.at">{{ formatActivityDate(activity.at) }}</time>
                 </span>
               </RouterLink>
             </li>
           </ul>
           <div v-else class="compact-empty">
-            <AppIcon name="inbox" />
+            <AppIcon :name="hasQueryError ? 'alert' : 'check'" />
             <div>
-              <strong>아직 최근 활동이 없어요.</strong>
-              <p>자료나 공고를 등록하면 준비 과정과 최근 기록을 이곳에서 확인할 수 있어요.</p>
+              <strong>{{
+                hasQueryError
+                  ? '일부 상태를 확인한 뒤 다음 할 일을 안내할게요.'
+                  : '지금 확인할 긴급 항목이 없어요.'
+              }}</strong>
+              <p>새 공고를 등록하거나 최근 기록을 이어서 준비할 수 있어요.</p>
             </div>
           </div>
         </section>
-      </template>
+
+        <section class="dashboard-section" aria-labelledby="deadline-heading">
+          <div class="dashboard-section-heading">
+            <div>
+              <p class="section-kicker">14일 이내</p>
+              <h2 id="deadline-heading">마감 임박 공고</h2>
+            </div>
+          </div>
+          <ul v-if="closingSoonJobsQuery.data.value?.items.length" class="deadline-list">
+            <li v-for="job in closingSoonJobsQuery.data.value.items" :key="job.id">
+              <RouterLink :to="`/jobs/${job.id}/overview`">
+                <span>
+                  <strong>{{ jobDisplayTitle(job) }}</strong>
+                  <small>{{ jobCompanyLabel(job.companyName) }}</small>
+                </span>
+                <time :datetime="job.deadlineAt ?? undefined">{{
+                  formatDeadline(job.deadlineAt)
+                }}</time>
+              </RouterLink>
+            </li>
+          </ul>
+          <div v-else class="compact-empty">
+            <AppIcon name="clock" />
+            <div>
+              <strong>{{
+                closingSoonJobsQuery.isError.value
+                  ? '마감 임박 공고를 확인하지 못했어요.'
+                  : '마감이 임박한 공고가 없어요.'
+              }}</strong>
+              <p>
+                {{
+                  closingSoonJobsQuery.isError.value
+                    ? '위의 다시 불러오기를 눌러 상태를 확인해 주세요.'
+                    : '공고에 마감일을 입력하면 여기에서 먼저 알려 드려요.'
+                }}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="dashboard-section dashboard-activity" aria-labelledby="activity-heading">
+        <div class="dashboard-section-heading">
+          <div>
+            <p class="section-kicker">최근 업데이트</p>
+            <h2 id="activity-heading">최근 활동</h2>
+          </div>
+          <RouterLink to="/agent-runs" class="text-link">
+            AI 작업 보기
+            <AppIcon name="arrow-right" />
+          </RouterLink>
+        </div>
+        <ul v-if="recentActivity.length" class="activity-list">
+          <li v-for="activity in recentActivity" :key="activity.key">
+            <RouterLink :to="activity.to">
+              <span class="activity-list__body">
+                <small>{{ activity.eyebrow }}</small>
+                <strong>{{ activity.title }}</strong>
+              </span>
+              <span class="activity-list__meta">
+                <span>{{ activity.description }}</span>
+                <time :datetime="activity.at">{{ formatActivityDate(activity.at) }}</time>
+              </span>
+            </RouterLink>
+          </li>
+        </ul>
+        <div v-else class="compact-empty">
+          <AppIcon name="inbox" />
+          <div>
+            <strong>아직 최근 활동이 없어요.</strong>
+            <p>자료나 공고를 등록하면 준비 과정과 최근 기록을 이곳에서 확인할 수 있어요.</p>
+          </div>
+        </div>
+      </section>
     </template>
   </section>
 </template>
@@ -580,17 +689,22 @@ function formatActivityDate(value: string): string {
   font-size: var(--font-size-sm);
 }
 
-.dashboard-onboarding {
-  display: grid;
-  grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr);
-  gap: clamp(2rem, 5vw, 5rem);
-  align-items: center;
-  border-top: 1px solid var(--color-border-strong);
-  border-bottom: 1px solid var(--color-border-strong);
-  padding-block: clamp(2rem, 5vw, 4rem);
+.start-checklist {
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
 
-.dashboard-onboarding__intro h2,
+.start-checklist__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+}
+
+.start-checklist__header h2,
 .dashboard-section-heading h2 {
   margin: 0;
   color: var(--color-ink);
@@ -598,74 +712,108 @@ function formatActivityDate(value: string): string {
   letter-spacing: -0.025em;
 }
 
-.dashboard-onboarding__intro h2 {
-  max-width: 28rem;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.35;
-}
-
-.dashboard-onboarding__intro > p:last-child {
-  max-width: 32rem;
-  margin: var(--space-3) 0 0;
+.start-checklist__header p:last-child {
+  margin: var(--space-2) 0 0;
   color: var(--color-muted);
+  font-size: var(--font-size-sm);
 }
 
-.dashboard-onboarding__actions {
+.start-checklist__progress {
   display: grid;
-  gap: var(--space-2);
+  flex: 0 0 auto;
+  justify-items: end;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
 }
 
-.start-action {
+.start-checklist__progress strong {
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.start-checklist__items {
+  margin: 0;
+  padding: 0 var(--space-6);
+  list-style: none;
+}
+
+.start-checklist__items li {
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
-  gap: var(--space-3);
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
   align-items: center;
-  border-radius: var(--radius-md);
-  color: var(--color-ink-soft);
-  padding: var(--space-4);
-  text-decoration: none;
-  transition:
-    background-color var(--motion-fast),
-    color var(--motion-fast),
-    transform var(--motion-fast);
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-block: var(--space-4);
 }
 
-.start-action:hover {
-  background: var(--color-neutral-soft);
-  color: var(--color-ink);
-  transform: translateX(0.2rem);
+.start-checklist__icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
 }
 
-.start-action--primary {
-  background: var(--color-brand);
-  color: white;
+.start-checklist__item--completed .start-checklist__icon {
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
-.start-action--primary:hover {
-  background: var(--color-brand-hover);
-  color: white;
+.start-checklist__item--unknown .start-checklist__icon {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
-.start-action > .icon:first-child {
-  width: 1.25rem;
-  height: 1.25rem;
-  justify-self: center;
-}
-
-.start-action > .icon:last-child {
+.start-checklist__icon .icon {
   width: 1rem;
 }
 
-.start-action strong,
-.start-action small {
+.start-checklist__body strong,
+.start-checklist__body small {
   display: block;
 }
 
-.start-action small {
-  margin-top: 0.1rem;
-  color: inherit;
+.start-checklist__body strong {
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-sm);
+}
+
+.start-checklist__body small {
+  margin-top: var(--space-1);
+  color: var(--color-muted);
   font-size: var(--font-size-xs);
-  opacity: 0.76;
+}
+
+.start-checklist__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-success-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+}
+
+.start-checklist__status .icon {
+  width: 0.875rem;
+}
+
+.start-checklist__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3) var(--space-6);
+}
+
+.start-checklist__footer .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
 }
 
 .dashboard-metrics,
@@ -795,6 +943,11 @@ function formatActivityDate(value: string): string {
 
 .profile-progress h3 {
   margin: 0 0 var(--space-2);
+}
+
+.metric__unknown {
+  color: var(--color-warning-strong);
+  font-size: var(--font-size-xs);
 }
 
 .dashboard-columns {
@@ -1051,13 +1204,8 @@ function formatActivityDate(value: string): string {
 }
 
 @media (max-width: 56rem) {
-  .dashboard-onboarding,
   .dashboard-columns {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .dashboard-onboarding {
-    gap: var(--space-7);
   }
 }
 
@@ -1069,6 +1217,19 @@ function formatActivityDate(value: string): string {
   .dashboard-error {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .start-checklist__header {
+    align-items: flex-start;
+  }
+
+  .start-checklist__items li {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+  }
+
+  .start-checklist__items li > :last-child {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .metric-grid,

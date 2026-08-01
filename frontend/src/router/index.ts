@@ -11,12 +11,12 @@ import { appPinia } from '@/app/pinia'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
+import LandingPage from '@/pages/LandingPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import OnboardingPage from '@/pages/OnboardingPage.vue'
 import ProfileBasicPage from '@/pages/ProfileBasicPage.vue'
 import ProfileActivitiesPage from '@/pages/ProfileActivitiesPage.vue'
-import RootRedirectPage from '@/pages/RootRedirectPage.vue'
 import SignupPage from '@/pages/SignupPage.vue'
 import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -36,7 +36,8 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
-    component: RootRedirectPage,
+    component: LandingPage,
+    meta: { title: '내 경험을, 다음 기회로' },
   },
   {
     path: '/',
@@ -265,7 +266,7 @@ export function createAppRouter(options?: { history?: RouterHistory; pinia?: Pin
     await authStore.bootstrap()
 
     if (to.name === 'home') {
-      return { name: authStore.isAuthenticated ? 'dashboard' : 'login', replace: true }
+      return authStore.isAuthenticated ? { name: 'dashboard', replace: true } : true
     }
 
     if (to.meta.requiresAuth === true && !authStore.isAuthenticated) {
@@ -283,6 +284,11 @@ export function createAppRouter(options?: { history?: RouterHistory; pinia?: Pin
     }
 
     return true
+  })
+
+  router.afterEach((to) => {
+    document.title =
+      typeof to.meta.title === 'string' ? `${to.meta.title} | Hiresemble` : 'Hiresemble'
   })
 
   return router
