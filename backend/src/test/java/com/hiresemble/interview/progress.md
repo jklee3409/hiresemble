@@ -4,6 +4,19 @@
 
 P8 migration·API·DB 불변식 통합 검증이 구현되어 있다.
 
+## [2026-08-01] Session Summary (terminal timestamp fixture 안정화)
+
+- What was done:
+  - DB와 애플리케이션 clock 경계에서도 terminal research fixture가 check constraint를 만족하도록 완료 시각을 시작 시각 이상으로 고정했다.
+- Key decisions:
+  - 제품 동작은 바꾸지 않고 테스트 fixture의 시간 불변식만 명시한다.
+- Issues encountered:
+  - 전체 check 첫 실행에서 약 93ms 시계 차로 기존 fixture가 간헐 실패했다.
+- Validation:
+  - Backend 전체 69 suites/469 tests 재실행 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 migration·API 통합 테스트)
 
 - What was done:

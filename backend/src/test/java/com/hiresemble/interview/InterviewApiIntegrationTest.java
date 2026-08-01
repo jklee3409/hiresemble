@@ -339,7 +339,8 @@ class InterviewApiIntegrationTest extends PostgresIntegrationTest {
                 UPDATE research_runs
                 SET status='SUCCEEDED',source_coverage='NONE',
                     summary='No usable public sources.',retryable=false,
-                    completed_at=now(),updated_at=now()
+                    completed_at=GREATEST(now(),started_at),
+                    updated_at=GREATEST(now(),started_at)
                 WHERE user_id=? AND id=?
                 """,
                 owner.userId(),
