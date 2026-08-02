@@ -19,6 +19,7 @@
 | [`coverletter/`](coverletter/index.md)                     | 자기소개서·문항·답변 version·검증·최종화·보관 수명주기            |
 | [`research/`](research/index.md)                           | 면접 공개 조사 run·topic·source·coverage·retry 수명주기           |
 | [`interview/`](interview/index.md)                         | 면접 질문 set·질문·답변 version·feedback 수명주기                 |
+| [`dashboard/`](dashboard/index.md)                         | owner 지원 요약·서울 월별 마감과 전역 게시 가이드 read projection |
 
 ## 구성 요소 역할
 
@@ -30,6 +31,7 @@
 - `document`는 최초의 Agent Run typed aggregate와 Object Storage·parser·근거 pipeline을 소유한다.
 - `job`은 공고와 immutable 분석을, `coverletter`는 그 분석·현재 VERIFIED 근거를 소비하는 답변·검증 수명주기를 소유한다.
 - `research`와 `interview`는 공개 조사 provenance와 예상 질문·답변 version·feedback을 분리하되 하나의 preparation lineage로 연결한다.
+- `dashboard`는 기존 aggregate를 변경하지 않는 JDBC read projection과 게시 가이드 read 경계를 소유한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V16 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V17 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-02] Session Summary (V17 Career Guide migration 검증)
+
+- What was done:
+  - fresh V17과 populated V16→V17에서 기존 데이터 보존, seed 5개·정렬·version·게시 제약을 확인했다.
+- Key decisions:
+  - 적용 이력이 있는 V1~V16 hash와 파일은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `DashboardMigrationTest`와 Backend 전체 `check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (V16 공고 자동 분석 migration 검증)
 

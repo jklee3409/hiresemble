@@ -14,11 +14,25 @@
 - `V10__exclude_document_education_evidence.sql`은 문서 교육 category 근거를 정리하고 새 active row를 차단한다.
 - `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
 - `V12__create_interview_research_questions_and_feedback.sql`은 P8 조사·질문·immutable 답변·피드백과 typed Agent Run link를 생성한다.
+- `V17__create_career_guide_posts.sql`은 게시 상태·노출 순서·version을 가진 전역 가이드와 초기 콘텐츠 5개를 생성한다.
 - `V13__add_external_ai_provider_price_catalog.sql`은 실제 OpenAI·Tavily immutable 가격 항목과 provider call usage identity를 추가한다.
 - `V14__canonicalize_openai_embedding_policy.sql`은 legacy 정책을 보존하고 canonical `openai` version 2를 활성화한다.
 - `V15__create_activities_and_extend_profile_evidence.sql`은 사용자 직접 대외활동과 ACTIVITY evidence 불변식을 추가한다.
 - `V16__create_job_auto_analysis_requests.sql`은 공고 revision별 자동 분석 intent·lease claim·retry·terminal 상태를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-02] Session Summary (V17 Career Guide 게시 스키마)
+
+- What was done:
+  - `career_guide_posts`와 게시·문자열·version 제약, published 정렬 index, 초기 콘텐츠 5개를 추가했다.
+- Key decisions:
+  - 사용자 작성물이 아닌 전역 B2C 읽기 콘텐츠로 두고 기존 V1~V16은 수정하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 빈 DB와 populated V16→V17 upgrade를 포함한 Backend 전체 498 tests 통과.
+- Next steps:
+  - 관리자 mutation schema 확장은 실제 Backoffice 승인 시 검토한다.
 
 ## [2026-08-02] Session Summary (V16 공고 자동 분석 intent 스키마)
 

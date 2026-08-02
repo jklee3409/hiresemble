@@ -33,6 +33,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private static final String ME_PATH = "/paths/~1api~1v1~1auth~1me/get";
     private static final String DISPLAY_NAME_PATH =
             "/paths/~1api~1v1~1account~1display-name/patch";
+    private static final String DASHBOARD_PATH = "/paths/~1api~1v1~1dashboard/get";
+    private static final String CAREER_GUIDES_PATH = "/paths/~1api~1v1~1career-guides/get";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -41,7 +43,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyNinetyOperationsAndSixtySixPaths() {
+    void liveSpringMappingsHaveExactlyNinetyTwoOperationsAndSixtyEightPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -57,12 +59,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(66);
-        assertThat(operations[0]).isEqualTo(90);
+        assertThat(paths).hasSize(68);
+        assertThat(operations[0]).isEqualTo(92);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyNinetyOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyNinetyTwoOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -75,6 +77,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "Agent Runs",
                         "Documents",
                         "Jobs",
+                        "Dashboard",
                         "Cover Letters",
                         "Interview preparation",
                         "Interview research");
@@ -93,6 +96,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/auth/logout",
                         "/api/v1/auth/me",
                         "/api/v1/account/display-name",
+                        "/api/v1/dashboard",
+                        "/api/v1/career-guides",
                         "/api/v1/profile",
                         "/api/v1/profile/educations",
                         "/api/v1/profile/educations/{educationId}",
@@ -153,13 +158,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(90);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(92);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
         assertOperation(document.at(LOGOUT_PATH), "logout");
         assertOperation(document.at(ME_PATH), "getCurrentUser");
         assertOperation(document.at(DISPLAY_NAME_PATH), "updateDisplayName");
+        assertOperation(document.at(DASHBOARD_PATH), "getDashboard", "Dashboard");
+        assertOperation(document.at(CAREER_GUIDES_PATH), "listCareerGuides", "Dashboard");
 
         assertResponseCodes(document.at(CSRF_PATH), "200", "500");
         assertResponseCodes(document.at(SIGNUP_PATH), "201", "400", "403", "409");
@@ -167,6 +174,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseCodes(document.at(LOGOUT_PATH), "204", "401", "403");
         assertResponseCodes(document.at(ME_PATH), "200", "401");
         assertResponseCodes(document.at(DISPLAY_NAME_PATH), "200", "400", "401", "403");
+        assertResponseCodes(document.at(DASHBOARD_PATH), "200", "400", "401");
+        assertResponseCodes(document.at(CAREER_GUIDES_PATH), "200", "401");
 
         assertProfileOperation(document, "/api/v1/profile", "get", "getProfile");
         assertProfileOperation(document, "/api/v1/profile", "put", "updateProfile");
@@ -492,6 +501,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
         assertSingleSecurityRequirement(
                 document.at("/paths/~1api~1v1~1jobs/get"), "sessionCookie");
+        assertSingleSecurityRequirement(document.at(DASHBOARD_PATH), "sessionCookie");
+        assertSingleSecurityRequirement(document.at(CAREER_GUIDES_PATH), "sessionCookie");
         JsonNode jobMutationSecurity =
                 document.at("/paths/~1api~1v1~1jobs~1{jobId}~1status/patch/security");
         assertThat(jobMutationSecurity).hasSize(1);
@@ -529,7 +540,21 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "timestamp", "status", "code", "message", "fieldErrors", "requestId");
         assertThat(fieldNames(schemas.at("/FieldErrorDto/properties")))
                 .containsExactlyInAnyOrder("field", "reason");
-        assertThat(fieldNames(schemas)).doesNotContain("BaseResponseDto", "DashboardDto");
+        assertThat(fieldNames(schemas)).doesNotContain("BaseResponseDto");
+        assertThat(fieldNames(schemas.at("/DashboardDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "generatedAt", "month", "profile", "documents", "jobs", "agentRuns",
+                        "deadlineDays");
+        assertThat(fieldNames(schemas.at("/DashboardProfileDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "displayName", "legalName", "desiredRoles", "desiredLocations",
+                        "completed", "completionPercent", "missingItems", "primaryEducation");
+        assertThat(fieldNames(schemas.at("/DashboardDeadlineDayDto/properties")))
+                .containsExactlyInAnyOrder("date", "count", "items");
+        assertThat(fieldNames(schemas.at("/CareerGuidePostDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "status", "displayOrder", "category", "title", "summary", "body",
+                        "publishedAt", "version");
         assertThat(fieldNames(schemas.at("/AgentRunDetailDto/properties")))
                 .containsExactlyInAnyOrder(
                         "id", "workflowType", "resourceType", "resourceId", "status",
@@ -625,7 +650,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "WAITING_FOR_CONTENT", "NOT_REQUESTED", "PENDING", "LAUNCHED",
                         "BLOCKED", "SUPERSEDED");
         assertThat(document.toString())
-                .doesNotContain("/api/v1/dashboard")
+                .contains("/api/v1/dashboard", "/api/v1/career-guides")
                 .doesNotContain("/api/v1/settings/ai")
                 .doesNotContain("createProfileEvidence")
                 .doesNotContain("deleteProfileEvidence")
@@ -649,6 +674,9 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseSchema(document, DISPLAY_NAME_PATH, "400", "ErrorResponseDto");
         assertResponseSchema(document, DISPLAY_NAME_PATH, "401", "ErrorResponseDto");
         assertResponseSchema(document, DISPLAY_NAME_PATH, "403", "ErrorResponseDto");
+        assertResponseSchema(document, DASHBOARD_PATH, "200", "DashboardDto");
+        assertResponseSchema(document, DASHBOARD_PATH, "400", "ErrorResponseDto");
+        assertResponseSchema(document, DASHBOARD_PATH, "401", "ErrorResponseDto");
 
         assertThat(document.at(SIGNUP_PATH + "/requestBody/content/application~1json/schema/$ref")
                         .asText())
@@ -716,11 +744,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     }
 
     private void assertOperation(JsonNode operation, String operationId) {
+        assertOperation(operation, operationId, "Authentication");
+    }
+
+    private void assertOperation(JsonNode operation, String operationId, String tag) {
         assertThat(operation.isMissingNode()).isFalse();
         assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.get("description").asText()).isNotBlank();
-        assertThat(operation.at("/tags/0").asText()).isEqualTo("Authentication");
+        assertThat(operation.at("/tags/0").asText()).isEqualTo(tag);
     }
 
     private void assertProfileOperation(

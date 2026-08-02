@@ -16,6 +16,7 @@ P1 인증·공통 기반부터 P8 면접 준비와 실제 cross-stack E2E까지 
 - [`job/`](job/index.md): 공고 등록·분석·provenance 테스트
 - [`coverletter/`](coverletter/index.md): 자기소개서 domain·API·workflow 테스트
 - [`interview/`](interview/index.md): P8 migration·API·retry·답변·feedback 테스트
+- [`dashboard/`](dashboard/index.md): Dashboard owner 집계·서울 월 경계·가이드 게시 조회 테스트
 - [`e2e/`](e2e/index.md): PostgreSQL·MinIO·Spring·Vue·Chromium 실제 pipeline
 - [`support/`](support/index.md): 공유 PostgreSQL 통합 test 기반
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력

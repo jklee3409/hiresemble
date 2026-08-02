@@ -2,9 +2,22 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document`, P5~P6 `job`, P7 `coverletter`, P8 `research`·`interview` package가 구현되어 있다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document`, P5~P6 `job`, P7 `coverletter`, P8 `research`·`interview`, Dashboard read package가 구현되어 있다.
 - 공통 오류·인증·프로필, durable Run·Step, fixed workflow·network-disabled gateway와 P8까지의 수직 pipeline을 제공한다.
 - 성공 응답용 공통 envelope와 P9 mock interview domain은 존재하지 않는다.
+
+## [2026-08-02] Session Summary (Dashboard Java read 경계 추가)
+
+- What was done:
+  - `dashboard`의 API·application·infrastructure 계층과 typed model을 추가했다.
+- Key decisions:
+  - 화면 집계는 기존 domain service에 분산하지 않고 read-only package에 격리했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 73 suites/498 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 Research·Interview Java 영역 추가)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-08-02] Session Summary (Dashboard·Career Guide OpenAPI 계약)
+
+- What was done:
+  - 68 paths/92 operations와 Dashboard·Career Guide tag/path/security/schema exact allowlist를 반영했다.
+- Key decisions:
+  - 두 endpoint는 인증된 직접 DTO 응답이며 Dashboard month는 필수 query다.
+- Issues encountered:
+  - 초기 helper의 고정 tag 가정을 endpoint별 tag parameter로 일반화했다.
+- Validation:
+  - `OpenApiContractTest`와 Backend 전체 `check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (자동 분석 OpenAPI projection)
 

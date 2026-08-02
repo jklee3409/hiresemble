@@ -8,13 +8,13 @@
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 공고 자동 분석 후속 의도를 추가한 V16이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 대시보드 취업 준비 가이드 게시물을 추가한 V17이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
 
 ## 1. 공통 무결성·소유권
 
 - table은 snake_case 복수형, PK는 `id uuid`다.
 - 축약 schema에서 `NULL`로 표시한 column만 nullable이고 나머지 나열된 domain column은 `NOT NULL`이다. `timestamps`는 `created_at,updated_at timestamptz NOT NULL`, 별도 `created_at`도 NOT NULL을 뜻한다. lifecycle timestamp와 terminal output은 각 table에 nullability를 명시한다.
-- `companies`, immutable AI policy/price catalog, Spring Session framework table과 독립 `account_deletion_tasks`만 전역·framework 예외다.
+- `companies`, `career_guide_posts`, immutable AI policy/price catalog, Spring Session framework table과 독립 `account_deletion_tasks`만 전역·framework 예외다.
 - 그 밖의 모든 사용자 콘텐츠 row는 `user_id uuid NOT NULL`과 `UNIQUE(user_id,id)`를 가진다.
 - aggregate child도 user ID를 중복 저장하며 FK는 `(user_id,parent_id) → parent(user_id,id)`다.
 - 중요한 교차 참조(profile↔document, cover↔job, answer↔evidence, research↔job/cover, question set↔job/cover/research, mock↔job/cover/question set, usage↔run/step/turn)도 복합 FK로 owner 일치를 강제한다.
@@ -79,6 +79,7 @@
 | `educations.education_status`                        | `ENROLLED`, `LEAVE_OF_ABSENCE`, `EXPECTED_GRADUATION`, `GRADUATED`, `WITHDRAWN`                                                                                                                         |
 | `educations.education_level`                         | `OTHER`, `HIGH_SCHOOL`, `ASSOCIATE`, `BACHELOR`, `MASTER`, `DOCTORATE`                                                                                                                                  |
 | `cover_letter_answer_versions.created_by`            | `USER`, `AI`                                                                                                                                                                                            |
+| `career_guide_posts.status`                           | `DRAFT`, `PUBLISHED`, `ARCHIVED`                                                                                                                                                                         |
 
 표의 scalar enum column은 명시적 `CHECK`를 갖는다. JSON 안의 `VerificationIssueCode`, `IssueSeverity`, `MockFeedbackCategory`는 versioned JSON schema와 domain validation으로 같은 값을 강제한다. `OutdatedReason`, `RequiredUserActionType`, `ProfileCompletionItem`은 저장 enum이 아닌 계산 projection이다.
 
@@ -180,7 +181,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 상태는 `PENDING→PROCESSING→SUCCEEDED|DEAD`이고 lease가 만료된 PROCESSING은 PENDING으로 회수한다. retry는 1분, 5분, 30분, 2시간, 12시간, 이후 24시간이며 최대 10회 뒤 `DEAD`+운영 경보다. storage key와 provider 오류는 client에 노출하지 않는다.
 
-## 5. 회사·공고·분석
+## 5. 회사·공고·분석·취업 가이드
 
 ### 5.1 `companies`
 
@@ -209,7 +210,15 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 `id,user_id,job_posting_id`, `from_status varchar(30) NULL`, `to_status,reason varchar(100),changed_by(USER|SCHEDULER|SYSTEM),changed_at`; 복합 parent FK.
 
-### 5.5 `job_analyses`와 rubric
+### 5.5 `career_guide_posts`
+
+사용자 소유 데이터가 아닌 전역 읽기 콘텐츠다. `id`, unique `slug varchar(120)`, `status`, `display_order int >=0`, `category varchar(60)`, `title varchar(200)`, `summary varchar(500)`, `body text <=10000`, `published_at NULL`, `version bigint >=0`, timestamps를 가진다.
+
+- `PUBLISHED`는 `published_at`이 반드시 존재하며 사용자 조회는 `status=PUBLISHED AND published_at<=now`만 반환한다.
+- 사용자 조회 정렬은 `display_order ASC, published_at DESC, id ASC`다.
+- V17은 최초 게시 콘텐츠 5개를 안전한 seed로 제공한다. 관리자 화면과 mutation API는 현재 범위가 아니다.
+
+### 5.6 `job_analyses`와 rubric
 
 `job_analyses`: `id,user_id,job_posting_id,analysis_version`, 내부 job/profile/evidence hash, `eligibility`, `fit_score numeric(5,2) NULL CHECK 0..100`, `analysis_summary varchar(10000) NULL`, `rubric_version`, `agent_run_id`, `created_at`; unique `(user_id,job_posting_id,analysis_version)`.
 
@@ -451,7 +460,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-현재 latest implemented migration은 공고 자동 분석 후속 의도를 추가한 V16이다. V1~V16은 수정하지 않는다. 아래 미래 번호와 filename은 V17부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 취업 준비 가이드 게시물을 추가한 V17이다. V1~V17은 수정하지 않는다. 아래 미래 번호와 filename은 V18부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -464,12 +473,13 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | research/interview           | combined research, source links, answer/feedback, mock turn/message/feedback     |
 | additional implemented V15   | 사용자 직접 대외활동, ACTIVITY source와 direct evidence 불변식                   |
 | additional implemented V16   | 공고 revision별 자동 분석 의도, lease reconciliation, Agent Run 연결             |
-| P8.6, tentative V17          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V18          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| additional implemented V17   | 전역 취업 준비 가이드 게시 상태·노출 순서·초기 콘텐츠                           |
+| P8.6, tentative V18          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V19          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V19        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-A, tentative V20        | USER/ADMIN role 확장, provisioning/access audit                                  |
 | P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V20                                     |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V21                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

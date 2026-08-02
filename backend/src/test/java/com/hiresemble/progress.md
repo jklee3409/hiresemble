@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·공통부터 P8 Interview·migration·actual E2E 테스트를 기능별로 구성한다.
+P1 인증·공통부터 P8 Interview·Dashboard·migration·actual E2E 테스트를 기능별로 구성한다.
+
+## [2026-08-02] Session Summary (Dashboard·Career Guide Backend 회귀)
+
+- What was done:
+  - owner 집계·서울 월 경계·게시 가이드 통합, V17 upgrade와 OpenAPI 회귀를 추가했다.
+- Key decisions:
+  - 실제 PostgreSQL에서 두 사용자와 UTC/서울 경계 fixture를 검증한다.
+- Issues encountered:
+  - Instant fixture binding을 `OffsetDateTime`으로 보정했다.
+- Validation:
+  - Backend 전체 73 suites/498 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-31] Session Summary (P8 Backend·AI·actual 검증)
 

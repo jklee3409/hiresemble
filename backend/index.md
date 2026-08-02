@@ -17,7 +17,7 @@
 ## 구성 요소 역할
 
 - [`src/main/java/`](src/main/java/)는 실행 진입점과 `common`·`auth`·`profile`·`agentrun`·`ai`·`document`·`job`·`coverletter`·`research`·`interview` 운영 코드를 소유한다.
-- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V16 Flyway migration을 소유한다. V16은 공고 revision별 자동 분석 의도와 재조정 상태를 영속화한다.
+- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V17 Flyway migration을 소유한다. V17은 전역 취업 준비 가이드 게시물과 초기 콘텐츠를 영속화한다.
 - [`src/test/`](src/test/)는 PostgreSQL·MinIO Testcontainers 기반 인증·프로필·Agent Run·AI runtime·Document·Job·Cover Letter·Interview·migration·E2E 검증을 소유한다.
 - `build/`와 `.gradle/`은 재생성 가능한 빌드·캐시 영역이므로 소스나 추적 문서를 두지 않는다.
 
@@ -25,7 +25,7 @@
 
 - API·DB 계약은 [`../docs/spec/`](../docs/spec/)을 기준으로 한다.
 - 로컬 PostgreSQL/pgvector와 Object Storage는 루트 [`../compose.yaml`](../compose.yaml)에서 제공한다.
-- 프론트엔드는 P8 면접 11개, P7 자기소개서 17개, 계정 닉네임 변경과 Agent Run history delete를 포함한 84개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다.
+- 프론트엔드는 Dashboard·Career Guide read를 포함한 92개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다.
 - CI는 `.\gradlew.bat check`에 대응하는 백엔드 검증을 실행한다.
 
 ## 변경 시 주의사항

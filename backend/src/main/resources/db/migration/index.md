@@ -24,6 +24,7 @@
 | [`V14__canonicalize_openai_embedding_policy.sql`](V14__canonicalize_openai_embedding_policy.sql)                                 | OpenAI embedding provider key canonical 정책 전환         |
 | [`V15__create_user_activities.sql`](V15__create_user_activities.sql)                                                             | 사용자 직접 대외활동과 ACTIVITY evidence 불변식           |
 | [`V16__create_job_auto_analysis_requests.sql`](V16__create_job_auto_analysis_requests.sql)                                       | 공고 revision별 자동 분석 의도·lease·Run 연결             |
+| [`V17__create_career_guide_posts.sql`](V17__create_career_guide_posts.sql)                                                       | 취업 준비 가이드 게시 상태·정렬·초기 5개 콘텐츠          |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -44,6 +45,7 @@
 - V14는 과거 embedding 정책 version 1을 보존·비활성화하고 canonical `openai` provider key의 version 2를 활성화한다.
 - V15는 문서와 독립된 사용자 소유 `activities`를 추가하고 명시적 소재 사용 선택을 ACTIVITY direct evidence와 같은 transaction에서 유지한다.
 - V16은 usable 공고 revision마다 하나인 `BALANCED` 자동 분석 후속 의도와 lease reconciliation·owner Run FK를 추가한다.
+- V17은 전역 `career_guide_posts`의 게시 상태·노출 순서·version 제약과 최초 게시 콘텐츠 5개를 추가한다.
 - P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

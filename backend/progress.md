@@ -3,9 +3,22 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, 계정 닉네임 변경과 Agent Run history delete까지 총 84 operations/63 paths가 구현되어 있다.
-- V1~V16 migration이 적용됐고 V16은 공고 revision별 자동 분석 의도·claim·재조정 상태를 소유한다.
-- Backend 전체 70 suites/491 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
+- V1~V17 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물과 초기 콘텐츠를 소유한다.
+- Backend 전체 73 suites/498 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (Dashboard projection·Career Guide read)
+
+- What was done:
+  - `/dashboard?month=YYYY-MM` owner 집계·서울 마감과 `/career-guides` 게시 조회, V17 seed·OpenAPI 계약을 구현했다.
+- Key decisions:
+  - 기존 aggregate를 변경하지 않는 JDBC read projection과 전역 guide table을 사용하고 `CLOSED`·미게시·미도래 게시물을 제외한다.
+- Issues encountered:
+  - 초기 mapper method reference와 test JDBC Instant binding을 보정했다. 첫 전체 check는 5분 제한으로 중단됐으나 장시간 재실행은 통과했다.
+- Validation:
+  - `gradlew check --console=plain --max-workers=1`: 73 suites/498 tests, 실패·오류·skip 0.
+- Next steps:
+  - 관리자 guide mutation은 별도 승인 범위다.
 
 ## [2026-08-02] Session Summary (공고 자동 분석 durable orchestration)
 

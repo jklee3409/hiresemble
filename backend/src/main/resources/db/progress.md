@@ -3,7 +3,20 @@
 ## Overview
 
 - Flyway 기본 경로인 `migration` 하위 디렉터리만 존재한다.
-- V1 extension부터 공고 자동 분석 intent V16까지 있으며 별도 운영 seed·fixture 리소스는 없다.
+- V1 extension부터 Career Guide 게시 V17까지 있으며 최초 공개 가이드 5개 외 별도 운영 seed·fixture 리소스는 없다.
+
+## [2026-08-02] Session Summary (V17 Career Guide DB 리소스 연결)
+
+- What was done:
+  - 게시 상태·노출 순서·version 제약과 초기 5개 콘텐츠 migration을 연결했다.
+- Key decisions:
+  - `career_guide_posts`는 명세상 전역 read 콘텐츠 예외다.
+- Issues encountered:
+  - None.
+- Validation:
+  - fresh·V16 upgrade migration tests와 Backend 전체 `check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (V16 자동 분석 DB 리소스 연결)
 

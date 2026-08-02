@@ -13,7 +13,7 @@
 ## 구성 요소 역할
 
 - 이 계층은 DB 리소스의 namespace를 제공한다.
-- 실제 schema 변경은 `migration` 하위의 SQL 파일이 소유하며, 현재 최신 V16은 공고 자동 분석 요청의 durable claim을 정의한다.
+- 실제 schema 변경은 `migration` 하위의 SQL 파일이 소유하며, 현재 최신 V17은 전역 Career Guide 게시 계약을 정의한다.
 
 ## 다른 디렉터리와의 의존 관계
 
