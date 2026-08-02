@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (embedding route 오용 회귀 검증)
+
+- What was done:
+  - workflow의 Chat `ModelRoute`가 `fake/fake`여도 embedding 요청은 active policy의 `openai/text-embedding-test`를 사용한다는 assertion을 Job Analysis와 Cover Letter 테스트에 추가했다.
+- Key decisions:
+  - 실제 Provider 없이 capability route 분리를 직접 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 두 workflow test와 Job Analysis workflow contract test가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job image prompt identity v4 회귀)
 
 - What was done:

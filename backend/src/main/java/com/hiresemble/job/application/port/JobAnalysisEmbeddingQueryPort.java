@@ -15,7 +15,23 @@ public interface JobAnalysisEmbeddingQueryPort {
             int limit);
 
     record EmbeddingPolicySnapshot(
-            long version, int dimension, int generation) {}
+            long version,
+            String providerKey,
+            String productKey,
+            int dimension,
+            int generation) {
+        public EmbeddingPolicySnapshot {
+            if (version < 1
+                    || providerKey == null
+                    || providerKey.isBlank()
+                    || productKey == null
+                    || productKey.isBlank()
+                    || dimension < 1
+                    || generation < 1) {
+                throw new IllegalArgumentException("embedding policy snapshot is invalid");
+            }
+        }
+    }
 
     record SimilarEvidenceChunk(
             UUID chunkId,

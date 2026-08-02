@@ -55,6 +55,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Bounded P6 JOB_ANALYSIS workflow. Job content is untrusted data, retrieval is owner-scoped,
@@ -280,7 +281,7 @@ public final class JobAnalysisWorkflow {
                     state.snapshot().jobVersion());
         }
 
-        protected final JsonNode baseRefs(AnalysisState state) {
+        protected final ObjectNode baseRefs(AnalysisState state) {
             JobAnalysisSnapshot snapshot = state.snapshot();
             return objectMapper.createObjectNode()
                     .put("jobId", snapshot.jobId().toString())
@@ -778,7 +779,7 @@ public final class JobAnalysisWorkflow {
                     context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class);
             requiredEphemeral(
                     context, ASSESS_ELIGIBILITY, EligibilityAssessmentOutput.class);
-            JsonNode refs = baseRefs(state);
+            ObjectNode refs = baseRefs(state);
             if (state.reusing()) {
                 return localInput(
                         state,
@@ -787,10 +788,21 @@ public final class JobAnalysisWorkflow {
                         tree(new ReuseInput(INPUT_SCHEMA, state.reusableAnalysisId())));
             }
             String query = retrievalQuery(requirements.requirements());
+            refs.put("embeddingProviderKey", state.embeddingPolicy().providerKey())
+                    .put("embeddingProductKey", state.embeddingPolicy().productKey());
+            String embeddingRoute = state.embeddingPolicy().version()
+                    + "|"
+                    + state.embeddingPolicy().providerKey()
+                    + "|"
+                    + state.embeddingPolicy().productKey()
+                    + "|"
+                    + state.embeddingPolicy().dimension()
+                    + "|"
+                    + state.embeddingPolicy().generation();
             return localInput(
                     state,
                     refs,
-                    sha256(query),
+                    sha256(query + "|embedding-route=" + embeddingRoute),
                     tree(new RetrieveEvidenceInput(
                             INPUT_SCHEMA,
                             query,
@@ -818,8 +830,8 @@ public final class JobAnalysisWorkflow {
             RetrieveEvidenceInput input =
                     read(invocation.input().gatewayPayload(), RetrieveEvidenceInput.class);
             AiGatewayResponse embedding = invocation.embeddingGateway().embed(new EmbeddingRequest(
-                    invocation.modelRoute().providerKey(),
-                    invocation.modelRoute().productKey(),
+                    state.embeddingPolicy().providerKey(),
+                    state.embeddingPolicy().productKey(),
                     List.of(maskAndLimit(input.queryText(), 2_000)),
                     state.embeddingPolicy().dimension(),
                     EMBEDDING_TIMEOUT,

@@ -182,7 +182,8 @@ ADMIN 읽기 전용 운영 기반은 포함하지만 결제·구독은 계속 �
 | `WorkflowRegistry`  | workflow type/version별 고정 단계·입출력·허용 Tool·진행률·실패 정책                 |
 | `AgentOrchestrator` | run 상태 전이, 단계 순서, 재시도·취소·복구·재사용·결과 반영 조정                    |
 | `ContextBuilder`    | 사용자별 최신 resource와 provenance를 조회·마스킹·순위화·token 절단해 snapshot 생성 |
-| `ModelRouter`       | task, 공개 품질 선택, capability, 활성 정책을 provider/model로 해석                 |
+| `ModelRouter`       | Chat·image text task와 공개 품질 선택을 내부 model tier·product로 해석              |
+| embedding policy   | vector retrieval의 provider·product·dimension·version·generation typed route 제공   |
 | `BudgetGuard`       | 실행 전·호출 전·호출 후 비용 한도 검사와 예약·정산 경계                             |
 | `PromptRegistry`    | 검토되고 version이 있는 prompt와 structured schema 제공                             |
 | `AgentExecutor`     | Chat/Embedding/허용 Tool 호출, timeout, schema 검증, 안전한 오류 변환               |
@@ -352,6 +353,7 @@ latest job snapshot
 
 - 적합도는 합격 확률이 아니라 공고 요구와 등록 정보의 일치도다.
 - 분석 입력에는 공고 content hash와 profile/evidence snapshot hash를 포함한다.
+- verified evidence retrieval은 Chat model route가 아니라 활성 embedding policy의 provider·product·dimension을 사용하고 이 route identity를 checkpoint hash에 포함한다.
 - 최신 hash와 분석 hash가 다르면 기존 결과를 보존한 채 `analysisOutdated=true`와 `outdatedReasons`를 계산한다. `OUTDATED`는 저장 상태 enum이 아니다.
 - URL 추출과 분석은 별도 workflow type·Agent Run·상태를 유지하되, usable 본문 domain apply 뒤 서버의 durable 후속 의도가 분석 접수를 자동으로 연결한다. 브라우저 연쇄 호출에 의존하지 않는다.
 - 분석 run 생성은 공고 transaction과 Provider 호출 밖에서 수행한다. crash·restart는 lease reconciliation으로 복구하고, 예산·prerequisite 실패는 공고·추출 결과를 보존한 `BLOCKED`, 더 최신 revision은 `SUPERSEDED`로 표시한다.

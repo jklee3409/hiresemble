@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (embedding capability route 계약 명확화)
+
+- What was done:
+  - 기능·기술 명세에 verified evidence retrieval이 Chat tier가 아닌 active embedding policy tuple을 사용하고 route identity를 checkpoint hash에 포함하는 계약을 반영했다.
+- Key decisions:
+  - 공개 품질 모드와 내부 Chat route는 embedding product 선택에 사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현 port·workflow·price policy와 명세를 교차 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (이미지 reference Provider 전달 계약 명확화)
 
 - What was done:

@@ -25,7 +25,11 @@ public class DocumentJobAnalysisEmbeddingAdapter
     public EmbeddingPolicySnapshot activePolicy() {
         EmbeddingPolicy policy = store.activeEmbeddingPolicy();
         return new EmbeddingPolicySnapshot(
-                policy.version(), policy.dimension(), policy.generation());
+                policy.version(),
+                policy.provider(),
+                policy.model(),
+                policy.dimension(),
+                policy.generation());
     }
 
     @Override

@@ -1056,7 +1056,8 @@ class JobAnalysisWorkflowTest {
 
         @Override
         public EmbeddingPolicySnapshot activePolicy() {
-            return new EmbeddingPolicySnapshot(1L, dimension, 1);
+            return new EmbeddingPolicySnapshot(
+                    1L, "openai", "text-embedding-test", dimension, 1);
         }
 
         @Override
@@ -1115,6 +1116,8 @@ class JobAnalysisWorkflowTest {
         @Override
         public AiGatewayResponse embed(EmbeddingRequest request) {
             calls.incrementAndGet();
+            assertThat(request.providerKey()).isEqualTo("openai");
+            assertThat(request.productKey()).isEqualTo("text-embedding-test");
             assertThat(request.dimension()).isEqualTo(dimension);
             assertThat(request.maskedInputs()).hasSize(1);
             try {

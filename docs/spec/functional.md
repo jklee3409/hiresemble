@@ -369,6 +369,8 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 
 `Eligibility`와 `fitScore`는 별도로 계산하고 표시한다. `INELIGIBLE`이어도 점수를 0으로 만들거나 상한을 두지 않으며 합격 기준점이나 합격 확률을 제공하지 않는다.
 
+승인 근거 검색의 embedding 요청은 Chat `ModelTier` route를 재사용하지 않고 활성 immutable embedding policy의 provider·product·dimension·version·generation을 하나의 typed route로 사용한다. 이 route identity는 retrieval step hash에 포함하며 Provider 호출 전 가격 catalog와 일치해야 한다.
+
 적합도 점수는 0.00~100.00이고 다음 가중치를 사용한다.
 
 | 기준             | 가중치 |

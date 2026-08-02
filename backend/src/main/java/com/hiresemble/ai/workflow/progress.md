@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-02] Session Summary (retrieval embedding route 분리)
+
+- What was done:
+  - Job Analysis와 Cover Letter retrieval executor가 active embedding policy route로 embedding을 호출하고 provider·product·dimension·generation을 포함한 hash로 checkpoint 재사용을 격리하도록 변경했다.
+- Key decisions:
+  - Chat workflow routing은 유지하고 embedding capability만 정책 snapshot 경계로 분리했다.
+- Issues encountered:
+  - 해당 executor의 refs 선언 타입을 정확히 좁히기 전 compile 오류가 발생했으며 최종 `ObjectNode` 선언으로 교정했다.
+- Validation:
+  - `compileJava`와 두 workflow focused test가 통과했다.
+- Next steps:
+  - 기존 terminal run은 재해석하지 않고 retry successor만 새 route를 사용한다.
+
 ## [2026-08-02] Session Summary (Job image association checkpoint identity v4)
 
 - What was done:

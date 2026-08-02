@@ -766,11 +766,22 @@ public final class CoverLetterGenerationWorkflow {
             refs.put(
                     "embeddingGeneration",
                     state.embeddingPolicy().generation());
+            refs.put("embeddingProviderKey", state.embeddingPolicy().providerKey());
+            refs.put("embeddingProductKey", state.embeddingPolicy().productKey());
+            String embeddingRoute = state.embeddingPolicy().version()
+                    + "|"
+                    + state.embeddingPolicy().providerKey()
+                    + "|"
+                    + state.embeddingPolicy().productKey()
+                    + "|"
+                    + state.embeddingPolicy().dimension()
+                    + "|"
+                    + state.embeddingPolicy().generation();
             return localInput(
                     state,
                     question.questionId().toString(),
                     refs,
-                    sha256(queryText),
+                    sha256(queryText + "|embedding-route=" + embeddingRoute),
                     tree(new RetrieveEvidenceInput(
                             INPUT_SCHEMA,
                             question.questionId(),
@@ -788,8 +799,8 @@ public final class CoverLetterGenerationWorkflow {
                     read(invocation.input().gatewayPayload(), RetrieveEvidenceInput.class);
             AiGatewayResponse embedding = invocation.embeddingGateway().embed(
                     new EmbeddingRequest(
-                            invocation.modelRoute().providerKey(),
-                            invocation.modelRoute().productKey(),
+                            state.embeddingPolicy().providerKey(),
+                            state.embeddingPolicy().productKey(),
                             List.of(input.queryText()),
                             state.embeddingPolicy().dimension(),
                             EMBEDDING_TIMEOUT,

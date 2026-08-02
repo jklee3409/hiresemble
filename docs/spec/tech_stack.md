@@ -120,7 +120,8 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | Spring AI Structured Output        | Java DTO 기반 결과 생성                                    |
 | Spring AI Tool Calling             | 검색·근거 조회 등 제한된 도구 호출                         |
 | JdbcClient 중심 Vector Search port | user/model/dimension/generation 조건의 pgvector exact 검색 |
-| ModelRouter                        | 작업별 모델 선택                                           |
+| ModelRouter                        | Chat·image text 작업의 품질별 모델 선택                     |
+| Embedding policy route             | 검색 embedding의 provider·product·dimension 선택           |
 | BudgetGuard                        | 호출 수·토큰·비용 상한                                     |
 | PromptRegistry                     | 버전이 있는 프롬프트 관리                                  |
 | AiUsageRecorder                    | chat·embedding·search usage와 immutable 가격 version 기록  |
@@ -207,7 +208,7 @@ MVP 구현체는 Tavily REST API를 사용한다.
 - 문서 청크와 사용자 근거 검색에 사용
 - 모든 검색 쿼리에 `user_id` 조건 필수
 - MVP active policy: provider `OpenAI`, model `text-embedding-3-small`, dimension `1536`, cosine distance
-- provider·model·dimension·embedding generation을 하나의 immutable policy version으로 관리
+- provider·model·dimension·embedding generation을 하나의 immutable policy version으로 관리하고 Job Analysis·Cover Letter retrieval은 이 tuple을 typed route로 사용
 - `vector(1536)` typed column을 사용하고 boot 시 configured model dimension과 DB typmod가 다르면 fail fast
 - active document와 승인된 provider/model/dimension/generation을 모든 검색 조건에 포함
 - 초기 검색은 exact cosine이며 HNSW index를 만들지 않음
@@ -328,6 +329,8 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 ## 9. 모델 라우팅과 비용
 
 공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 결과다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않고 Agent Run의 `highestModelTierUsed`만 표시한다.
+
+`ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다.
 
 | 공개 모드      | 내부 정책                                                                                          |
 | -------------- | -------------------------------------------------------------------------------------------------- |

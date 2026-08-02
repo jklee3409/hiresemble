@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-02] Session Summary (active embedding route adapter 보강)
+
+- What was done:
+  - Job Analysis용 embedding policy snapshot에 active policy의 provider와 model을 함께 매핑했다.
+- Key decisions:
+  - 문서 embedding과 retrieval query가 동일한 immutable policy tuple을 공유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - embedding policy validator와 Job Analysis integration test가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (문서 evidence apply 통계 전달)
 
 - What was done:

@@ -7,6 +7,20 @@
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
 - Backend 전체 suite는 508 tests다. 이번 작업의 집중 검증은 통과했지만 최종 전체 check는 범위 밖 Interview 통합 fixture 1건의 간헐 DB 무결성 오류로 실패했고 해당 단일 테스트 격리 실행은 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-02] Session Summary (retrieval embedding route 오용 보정)
+
+- What was done:
+  - 공고 분석과 자기소개서 근거 검색의 `EmbeddingRequest`가 Chat route 대신 active embedding policy snapshot의 provider·product·dimension을 사용하도록 보정했다.
+  - snapshot에 route 필드를 추가하고 adapter·checkpoint identity·회귀 assertion을 함께 갱신했다.
+- Key decisions:
+  - 기존 V2 embedding policy와 price catalog를 그대로 사용하므로 migration과 공개 API 변경은 없다.
+- Issues encountered:
+  - 전체 check 두 번이 수정 중 지역 변수 compile 오류에서 중단됐다. 정확한 `ObjectNode` 선언 교정 후 compile과 focused test는 성공했지만 전체 suite 재실행은 규칙상 생략했다.
+- Validation:
+  - `compileJava` 성공, Job Analysis·Cover Letter workflow focused test 성공, 앞선 Job Analysis integration·auto analysis·policy validator test 성공. 구현 검증 외부 network 0회.
+- Next steps:
+  - 서버 반영 뒤 기존 실패 공고 분석을 명시적으로 retry해 successor run 결과를 확인한다.
+
 ## [2026-08-02] Session Summary (OpenAI image reference 직렬화 보정)
 
 - What was done:

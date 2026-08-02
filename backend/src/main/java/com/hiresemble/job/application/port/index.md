@@ -13,7 +13,7 @@ Job application과 외부 URL fetch·AI workflow 사이의 최소 typed 경계�
 - `JobWorkflowCommandPort`: 추출 성공·사용자 입력 필요·기술 실패 apply
 - `JobAnalysisQueryPort`: owner·version/hash snapshot, reusable result와 VERIFIED evidence 검색
 - `JobAnalysisCommandPort`: immutable 분석 persist·reuse Run link apply
-- `JobAnalysisEmbeddingQueryPort`: active embedding policy와 exact cosine 검색
+- `JobAnalysisEmbeddingQueryPort`: provider·product·dimension·version·generation을 묶은 active embedding policy route와 exact cosine 검색
 - [`progress.md`](progress.md): port 계약 상태
 
 ## 구성 요소 역할

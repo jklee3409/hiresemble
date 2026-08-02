@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (공고 분석 embedding capability route 분리)
+
+- What was done:
+  - 하나캐피탈 공고의 최신 실패 run을 추적해 Chat용 `gpt-5-mini` route가 embedding 요청에 재사용되어 가격 catalog 검증 전에 실패한 원인을 확인하고, 공고 분석과 자기소개서 근거 검색이 활성 embedding policy의 provider·product·dimension을 사용하도록 수정했다.
+  - route identity를 retrieval checkpoint hash와 safe refs에 포함하고 회귀 테스트·활성 명세·아키텍처 문서를 갱신했다.
+- Key decisions:
+  - Chat `ModelTier`와 vector embedding route를 분리하되 기존 immutable embedding policy v2를 재사용하므로 API·DB·workflow version과 migration은 변경하지 않는다.
+- Issues encountered:
+  - 전체 `check`는 수정 중 잘못 좁힌 지역 변수 타입 때문에 compile 단계에서 두 번 중단됐다. 정확한 executor 선언을 교정한 뒤 compile과 핵심 workflow 테스트는 통과했으며, 저장소 재검증 한도에 따라 전체 suite는 다시 실행하지 않았다.
+- Validation:
+  - `compileJava`와 Job Analysis·Cover Letter workflow focused test 통과. 수정 전 통합 범위인 Job Analysis/Auto Analysis/Embedding policy validator도 통과했다. 진단 승인 범위에서 실제 OpenAI embedding 호출은 정확히 1회 성공했고 구현 검증 중 추가 외부 호출은 0회였다.
+- Next steps:
+  - 배포 후 기존 terminal 실패 run은 변경하지 않고 사용자가 retry하면 현재 embedding policy route를 사용하는 successor run으로 재실행한다.
+
 ## [2026-08-02] Session Summary (공고 이미지 reference 전달 계약 구조 보정)
 
 - What was done:

@@ -710,6 +710,8 @@ class CoverLetterGenerationWorkflowTest {
 
         @Override
         public AiGatewayResponse embed(EmbeddingRequest request) {
+            assertThat(request.providerKey()).isEqualTo("openai");
+            assertThat(request.productKey()).isEqualTo("text-embedding-test");
             var output = mapper.createObjectNode();
             var vector = output.putArray("vectors").addArray();
             for (int index = 0; index < request.dimension(); index++) {
@@ -724,7 +726,8 @@ class CoverLetterGenerationWorkflowTest {
 
         @Override
         public EmbeddingPolicySnapshot activePolicy() {
-            return new EmbeddingPolicySnapshot(1L, 4, 1);
+            return new EmbeddingPolicySnapshot(
+                    1L, "openai", "text-embedding-test", 4, 1);
         }
 
         @Override

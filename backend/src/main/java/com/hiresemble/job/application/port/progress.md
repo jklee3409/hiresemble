@@ -4,6 +4,19 @@
 
 P5 Job fetch/extraction과 P6 analysis query/command/embedding port가 구현됐다.
 
+## [2026-08-02] Session Summary (embedding policy typed route 확장)
+
+- What was done:
+  - `EmbeddingPolicySnapshot`이 version·provider·product·dimension·generation을 함께 전달하고 invalid snapshot을 생성 시 거부하도록 확장했다.
+- Key decisions:
+  - embedding route를 Chat model route에서 유추하지 않고 document module의 active immutable policy에서 조회한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend compile과 관련 workflow test가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (공고 page/image fetch typed port)
 
 - What was done:
