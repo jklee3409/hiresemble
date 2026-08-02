@@ -28,8 +28,13 @@ test('protected app shell stays usable without horizontal overflow at required w
   ).toContain('Noto Sans KR Variable')
   await expect(dashboardShortcuts.getByRole('link')).toHaveCount(4)
   expect(await dashboardShortcuts.evaluate((element) => getComputedStyle(element).position)).toBe(
-    'static',
+    'sticky',
   )
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await expect
+    .poll(async () => (await dashboardShortcuts.boundingBox())?.y ?? -1)
+    .toBeGreaterThanOrEqual(60)
+  await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page.locator('#app-content')).toBeFocused()
   expect(
     await page.locator('#app-content').evaluate((element) => ({

@@ -247,7 +247,7 @@ API:
 - 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
 - 중복되는 `한눈에 보기`, `지원 준비 요약` 타이틀은 시각적으로 노출하지 않되 screen reader용 heading은 유지한다. 섹션 제목은 self-hosted variable `Noto Sans KR`, 절제된 굵기와 자간을 사용한다.
-- Desktop 오른쪽에는 지원 현황·마감 캘린더·최근 활동·취업 준비 가이드 anchor를 제공하는 작은 바로가기를 일반 문서 흐름으로 배치한다. fixed·sticky positioning을 사용하지 않으며 좁은 화면에서는 가로형 탐색으로 전환한다.
+- Desktop 오른쪽에는 지원 현황·마감 캘린더·최근 활동·취업 준비 가이드 anchor를 제공하는 작은 바로가기를 Dashboard container 안의 sticky sidebar로 배치해 스크롤 중에도 접근할 수 있게 한다. fixed positioning은 사용하지 않으며 좁은 화면에서는 일반 흐름의 가로형 탐색으로 전환한다.
 
 ## 마감 캘린더
 
@@ -264,6 +264,7 @@ API:
 - 카드를 누르면 category, 순번, 제목, 요약, 여러 문단의 상세 본문, 게시일과 콘텐츠 version을 위계화한 modal에서 보여 준다. modal은 ESC·배경·닫기 버튼, focus trap, trigger focus 복귀, body scroll lock과 mobile sheet layout을 지원한다.
 - 게시 상태·순서·카테고리·게시 시각·version은 Backend/DB가 소유하며 이번 범위에는 관리자 mutation UI/API가 없다.
 - 준비 workspace의 `전체 이용 순서 보기` CTA는 설명 바로 뒤가 아니라 카드 하단에 고정해 다른 콘텐츠 높이에서도 행동 위치를 유지한다.
+- 준비 workspace 제목의 `한 번 정리한 정보는`과 `다음 지원에도 이어져요.`는 각각 하나의 의미 단위로 유지해 단어 중간에서 줄바꿈하지 않는다.
 
 route 변경 시 `#app-content[tabindex="-1"]`로 프로그램적 focus를 이동하는 접근성 동작은 유지한다. 이 비상호작용 workspace의 focus에만 outline과 box-shadow를 표시하지 않으며 링크, 버튼과 form control의 keyboard focus ring은 유지한다.
 
@@ -472,7 +473,7 @@ API:
 ### Overview Tab
 
 - 공통 resource header의 회사·직무·상태·마감·원본 URL
-- 긴 공고 제목은 header의 넓어진 한 줄 영역에서만 표시하고 overflow가 있을 때 hover·keyboard focus·직접 가로 scroll로 내용을 확인한다. `prefers-reduced-motion`에서는 자동 이동을 사용하지 않는다.
+- 긴 공고 제목은 header의 넓어진 한 줄 영역에서 `1.4–2.2rem` 크기로 표시하고 overflow가 있을 때 hover·keyboard focus·직접 가로 scroll로 내용을 확인한다. `prefers-reduced-motion`에서는 자동 이동을 사용하지 않는다.
 - 회사·직무·근무 형태·위치·마감·본문 출처·최신 분석 상태 요약
 - plain text 원문을 heading, 문단, 순서·비순서 목록, 안전한 link node로만 변환하는 읽기 전용 document view
 - 긴 본문은 페이지 흐름에서 읽고 `전체 보기/접기`를 제공하며 작은 내부 scroll box나 `v-html`을 사용하지 않음
@@ -496,7 +497,7 @@ API:
 - 최초 자동 분석 진행 단계와 안전한 실패·본문 보완 CTA
 - 최초 화면에서는 품질 dropdown과 큰 수동 실행 card를 노출하지 않음
 - 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하며 프론트 요청은 `BALANCED`로 고정한다. `BALANCED`·`ECONOMY` 선택 문구와 재분석 옵션은 노출하지 않는다.
-- 진행 여정 문구는 한 줄로 유지하고, structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
+- 진행 여정 문구는 한 줄로 유지하고 Desktop의 네 단계는 각 문구 폭과 무관하게 단계 블록 사이 여백을 균일하게 배분한다. structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
 - 적합도·강점 수·보완점 수 요약과 점수 tooltip 안내
 - 주요 업무

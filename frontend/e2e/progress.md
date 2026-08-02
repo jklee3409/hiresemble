@@ -15,6 +15,33 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-02] Session Summary (Dashboard sticky 바로가기 회귀)
+
+- What was done:
+  - Desktop 바로가기의 `sticky` 계산 style과 페이지 하단 스크롤 후 header 아래 추종 위치를 Browser 회귀로 고정했다.
+  - 1440·390px Dashboard를 다시 캡처해 workspace 제목과 좁은 화면의 가로형 바로가기를 확인했다.
+- Key decisions:
+  - viewport 고정 좌표가 아닌 실제 bounding box로 container sticky 동작을 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Chromium `ui-shell.spec.ts` 3/3 통과.
+- Next steps:
+  - 생성 screenshot은 ignored `test-results`의 로컬 검수 artifact로만 유지한다.
+
+## [2026-08-02] Session Summary (Job header·journey spacing 시각 회귀)
+
+- What was done:
+  - `job-analysis.spec.ts`에 공고 제목 35.2px 상한과 Desktop 네 단계 사이 bounding-box gap 균등 assertion을 추가했다.
+- Key decisions:
+  - 고정 fixture와 실제 computed style·geometry를 사용하고 제품 코드에 test-only selector는 추가하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job analysis Chromium 1/1과 전체 화면 visual capture Chromium 1/1 통과.
+- Next steps:
+  - 생성 screenshot은 ignored `output/playwright/after`의 로컬 검수 artifact로만 유지한다.
+
 ## [2026-08-02] Session Summary (Dashboard 반응형·focus·상호작용 회귀)
 
 - What was done:

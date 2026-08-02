@@ -957,7 +957,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
             <aside class="workspace-note" aria-labelledby="workspace-note-heading">
               <span class="workspace-note__art" aria-hidden="true"><AppIcon name="guide" /></span>
               <p class="section-kicker">준비 워크스페이스</p>
-              <h2 id="workspace-note-heading">한 번 정리한 정보는 다음 지원에도 이어져요.</h2>
+              <h2 id="workspace-note-heading">
+                <span>한 번 정리한 정보는</span> <span>다음 지원에도 이어져요.</span>
+              </h2>
               <p>
                 내 정보와 등록한 이력서·자료를 먼저 다듬어 두면 공고 분석부터 자기소개서와 면접
                 준비까지 같은 근거를 활용할 수 있어요.
@@ -1122,6 +1124,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 .dashboard-toc {
+  position: sticky;
+  top: calc(var(--global-header-height) + 1rem);
   padding: 0.85rem;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
@@ -2145,6 +2149,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-size: 1.25rem;
   line-height: 1.35;
 }
+.workspace-note h2 span {
+  display: inline-block;
+}
 .workspace-note p:not(.section-kicker) {
   margin-top: 0;
   color: rgb(255 255 255 / 72%);
@@ -2420,6 +2427,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     grid-template-columns: 1fr;
   }
   .dashboard-toc {
+    position: static;
     order: -1;
     overflow-x: auto;
   }

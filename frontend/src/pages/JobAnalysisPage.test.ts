@@ -187,9 +187,7 @@ describe('P6 Job analysis page', () => {
       '공고와 등록한 지원 정보는 그대로 보존되어 있으니 잠시 후 다시 시도해 주세요.',
     )
     expect(wrapper.text()).not.toContain('AI 결과의 의미 제약을 확인하지 못했습니다.')
-    const retry = wrapper
-      .findAll('button')
-      .find((button) => button.text() === '같은 입력으로 재시도')
+    const retry = wrapper.findAll('button').find((button) => button.text() === '재시도')
     expect(retry).toBeDefined()
     await retry?.trigger('click')
     await flushPromises()

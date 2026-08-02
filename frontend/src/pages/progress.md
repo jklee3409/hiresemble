@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Dashboard sticky 탐색·workspace 문구 보정)
+
+- What was done:
+  - Dashboard 우측 섹션 바로가기를 Desktop container sticky로 전환하고 좁은 화면에서는 기존 일반 흐름을 유지했다.
+  - 준비 workspace 제목을 중간 단어가 끊기지 않는 두 의미 묶음으로 렌더링하고 Job Analysis 재시도 CTA를 간결하게 변경했다.
+- Key decisions:
+  - `fixed` positioning이나 전역 focus 변경 없이 Dashboard page 범위의 layout·문구만 조정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Dashboard·JobAnalysis Vitest 12/12와 Chromium UI shell 3/3 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard section 탐색·Job Analysis 실패 UX)
 
 - What was done:

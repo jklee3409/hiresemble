@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-02] Session Summary (분석 journey 단계 간격 균등화)
+
+- What was done:
+  - Desktop 4단계 grid를 동일 폭 column에서 내용 기반 column과 균등한 track 사이 여백으로 변경했다.
+- Key decisions:
+  - 긴 진행 문구 nowrap과 중간 2열·mobile 1열 layout은 그대로 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Chromium에서 세 단계 사이 실제 bounding-box gap 편차 1px 이하와 desktop/mobile overflow 없음 확인.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 고정 quality·실패 안내)
 
 - What was done:

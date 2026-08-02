@@ -7,6 +7,34 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/265 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-02] Session Summary (Dashboard 스크롤 바로가기·문구 흐름 보정)
+
+- What was done:
+  - Desktop Dashboard의 우측 바로가기를 문서에 고정하지 않는 container `sticky` 방식으로 바꿔 페이지 스크롤을 따라오게 했다.
+  - 준비 workspace 제목을 의미 단위 두 묶음으로 유지하고 공고 분석 실패 CTA를 `재시도`로 줄였다.
+- Key decisions:
+  - 74rem 이하에서는 기존 가로형 일반 흐름을 유지하고 상호작용 요소의 focus 표현은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 표준 check 67 files/265 tests·build, Chromium UI shell 3/3과 1440·390px 시각 검수가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (공고 진행 단계 간격·제목 크기 보정)
+
+- What was done:
+  - Desktop 공고 분석 4단계의 각 내용 폭을 기준으로 단계 블록 사이 여백을 균일하게 재배치했다.
+  - 공고 상세 제목 크기를 기존 범위의 80%인 `1.4–2.2rem`으로 낮췄다.
+- Key decisions:
+  - 기존 한 줄 slide, reduced motion, 70rem 2열과 48rem 1열 반응형 계약은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 표준 check 67 files/265 tests·build, Job analysis Chromium 1/1과 1440·390px visual capture 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 바로가기·공고 분석 표시 개선)
 
 - What was done:

@@ -97,8 +97,10 @@ const automaticFailure = computed(() => {
 
 .job-journey__steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(4, max-content);
+  justify-content: space-between;
+  column-gap: var(--space-4);
+  row-gap: var(--space-3);
   margin-top: var(--space-4);
 }
 

@@ -60,6 +60,12 @@ describe('DashboardPage', () => {
       ['최근 활동', '#dashboard-activity'],
       ['취업 준비 가이드', '#dashboard-guides'],
     ])
+    expect(
+      wrapper
+        .get('#workspace-note-heading')
+        .findAll('span')
+        .map((phrase) => phrase.text()),
+    ).toEqual(['한 번 정리한 정보는', '다음 지원에도 이어져요.'])
     wrapper.unmount()
   })
 

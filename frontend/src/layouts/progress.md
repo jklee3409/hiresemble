@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-02] Session Summary (공고 resource title 80% 축소)
+
+- What was done:
+  - 공고 상세 제목의 responsive font 범위를 `1.75–2.75rem`에서 `1.4–2.2rem`으로 축소했다.
+- Key decisions:
+  - 58rem 제목 영역, overflow 측정, hover·focus slide와 직접 가로 scroll은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 1440px computed 최대 크기 35.2px와 390px 문서 overflow 없음, Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (긴 공고 제목 한 줄 slide)
 
 - What was done:

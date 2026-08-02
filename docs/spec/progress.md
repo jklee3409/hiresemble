@@ -6,6 +6,33 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (Dashboard 바로가기·문구 계약 보정)
+
+- What was done:
+  - Desktop 바로가기는 Dashboard container 안에서 스크롤을 따라오는 sticky이고 좁은 화면은 일반 가로 흐름이라는 계약을 명확히 했다.
+  - 준비 workspace 제목은 단어 중간을 자르지 않는 의미 단위로 표시하도록 page 명세를 보강했다.
+- Key decisions:
+  - viewport `fixed` sidebar와 API·DB 변경 없이 presentation 계약만 갱신했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - page 명세와 Dashboard 구현·unit·Chromium 회귀 결과를 교차 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (공고 제목 크기·journey 간격 계약 보정)
+
+- What was done:
+  - 공고 resource 제목의 `1.4–2.2rem` 범위와 Desktop 4단계 사이 균등 여백을 page 명세에 반영했다.
+- Key decisions:
+  - 분석 상태·API·한 줄 slide와 responsive 단계 전환 계약은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 1440·390px visual capture, geometry regression과 Frontend 표준 check 결과를 명세와 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 탐색·Job Analysis 표시 계약 정리)
 
 - What was done:

@@ -194,7 +194,7 @@ onBeforeUnmount(() => titleResizeObserver?.disconnect())
   margin-top: var(--space-2);
   overflow-x: auto;
   overflow-y: hidden;
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-size: clamp(1.4rem, 2.8vw, 2.2rem);
   font-weight: 790;
   letter-spacing: -0.035em;
   line-height: 1.17;

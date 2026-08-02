@@ -27,6 +27,9 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
     })),
   ).toEqual(expect.objectContaining({ whiteSpace: 'nowrap' }))
   expect(await jobTitle.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
+  expect(
+    await jobTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+  ).toBeCloseTo(35.2, 1)
   await expect(page.getByRole('link', { name: '공고 분석', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
@@ -57,6 +60,14 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.goto(`/jobs/${JOB_ID}/overview`)
   const journeyProgress = page.getByText('주요 업무와 지원 조건을 정리했어요', { exact: true })
   await expect(journeyProgress).toHaveCSS('white-space', 'nowrap')
+  const stepRects = await page.locator('.job-journey__steps li').evaluateAll((steps) =>
+    steps.map((step) => {
+      const rect = step.getBoundingClientRect()
+      return { left: rect.left, right: rect.right }
+    }),
+  )
+  const stepGaps = stepRects.slice(1).map((rect, index) => rect.left - stepRects[index]!.right)
+  expect(Math.max(...stepGaps) - Math.min(...stepGaps)).toBeLessThanOrEqual(1)
   await expectNoHorizontalOverflow(page)
 
   await page.setViewportSize({ width: 390, height: 844 })

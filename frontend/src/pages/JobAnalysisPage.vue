@@ -501,7 +501,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               :disabled="retryMutation.isPending.value"
               @click="retryFailedRun"
             >
-              {{ retryMutation.isPending.value ? '재시도 접수 중…' : '같은 입력으로 재시도' }}
+              {{ retryMutation.isPending.value ? '재시도 접수 중…' : '재시도' }}
             </button>
           </div>
           <RouterLink
