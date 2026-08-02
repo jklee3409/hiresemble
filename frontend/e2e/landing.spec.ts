@@ -215,7 +215,9 @@ test('root navigation waits for authentication and preserves protected returnTo'
 
   await page.goto('/')
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByRole('heading', { name: /지금 준비 중인 지원/ })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '랜딩 확인 사용자님의 지원 준비 현황' }),
+  ).toBeVisible()
   expect(
     await page.evaluate(
       () => (window as typeof window & { __landingObserved?: boolean }).__landingObserved,
@@ -241,13 +243,17 @@ for (const scenario of [
     await installDashboardFixture(page, scenario)
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.goto('/dashboard')
-    await expect(page.getByRole('heading', { name: '지원 준비 현황' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '랜딩 확인 사용자님의 지원 준비 현황' }),
+    ).toBeVisible()
     await expect(page.getByRole('heading', { name: '최근 활동' })).toBeVisible()
 
     if (scenario.count === null) {
       await expect(page.locator('.start-checklist')).toHaveCount(0)
     } else {
-      await expect(page.locator('.start-checklist__progress')).toContainText(scenario.count)
+      await expect(page.locator('.start-checklist__heading')).toContainText(
+        `${scenario.count} 완료`,
+      )
       await expect(page.getByRole('link', { name: /전체 이용 순서 보기/ })).toBeVisible()
     }
 
@@ -294,6 +300,43 @@ async function installDashboardFixture(
         displayName: '랜딩 확인 사용자',
       })
     }
+    if (path === '/dashboard') {
+      return json(route, {
+        generatedAt: '2026-08-02T03:00:00Z',
+        month: url.searchParams.get('month') ?? '2026-08',
+        profile: {
+          displayName: '랜딩 확인 사용자',
+          legalName: state.profile ? '랜딩 확인 사용자' : null,
+          desiredRoles: state.profile ? ['백엔드 개발자'] : [],
+          desiredLocations: state.profile ? ['서울'] : [],
+          completed: state.profile,
+          completionPercent: state.profile ? 100 : 0,
+          missingItems: state.profile
+            ? []
+            : [
+                'LEGAL_NAME',
+                'DESIRED_ROLE',
+                'DESIRED_INDUSTRY',
+                'DESIRED_LOCATION',
+                'PRIMARY_EDUCATION',
+              ],
+          primaryEducation: null,
+        },
+        documents: {
+          registeredCount: state.documents,
+          processingCount: 0,
+          needsActionCount: 0,
+        },
+        jobs: {
+          registeredCount: state.jobs,
+          preparingCount: state.jobs,
+          submittedCount: 0,
+        },
+        agentRuns: { activeCount: 0 },
+        deadlineDays: [],
+      })
+    }
+    if (path === '/career-guides') return json(route, [])
     if (path === '/profile') {
       return json(route, {
         legalName: state.profile ? '랜딩 확인 사용자' : null,

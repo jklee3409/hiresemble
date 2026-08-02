@@ -11,7 +11,7 @@
 | [`.gitkeep`](.gitkeep)                                                         | 초기 디렉터리 추적용 placeholder로 보존                                                                                      |
 | [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                                                        |
 | [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                                                            |
-| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px dashboard·profile overflow, keyboard·shell·reduced-motion fixture                              |
+| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px Dashboard overflow·focus·캘린더·가이드 dialog, profile와 shell fixture                         |
 | [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                                             |
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                                                    |
 | [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                                              |
@@ -35,7 +35,7 @@
 - P7 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - P8 actual spec은 격리 PostgreSQL·Fake Chat/Search·Vue·Chromium만 사용하며 desktop/mobile·200% page scale과 DB provenance를 함께 검증한다.
 - unit/component test로 확인하기 어려운 route 이동, form 상호작용, 화면 상태 연결을 다룬다.
-- UI shell fixture는 Backend 없이 인증·profile·Document·Job·active Run 응답을 가로채 데이터가 있는 dashboard, profile desktop navigation·mobile selector, 추천 keyboard 선택, focus 복원, password 표시와 reduced-motion을 검증한다.
+- UI shell fixture는 Backend 없이 인증·Dashboard·Career Guide·profile·Document·Job·active Run 응답을 가로채 Dashboard 캘린더·modal·route focus, profile desktop navigation·mobile selector, 추천 keyboard 선택, focus 복원, password 표시와 reduced-motion을 검증한다.
 - Playwright 설정은 테스트 전에 Vite 개발 서버를 시작하고 Chromium desktop 환경을 사용한다.
 
 ## 다른 디렉터리와의 의존 관계

@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import AppLayout from './AppLayout.vue'
+import appLayoutSource from './AppLayout.vue?raw'
 import { useAuthStore } from '@/stores/auth'
 
 const DashboardPage = {
@@ -40,6 +41,25 @@ describe('AppLayout', () => {
     expect(wrapper.find('.user-avatar').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('모의 면접')
     expect(document.activeElement).toBe(wrapper.get('#app-content').element)
+    wrapper.unmount()
+  })
+
+  it('keeps route focus on the non-interactive workspace and scopes the wider canvas to dashboard', async () => {
+    const { wrapper, router } = await mountLayout('/dashboard')
+    const workspace = wrapper.get<HTMLElement>('#app-content')
+
+    expect(workspace.attributes('tabindex')).toBe('-1')
+    expect(workspace.classes()).toContain('workspace-content--dashboard')
+    expect(document.activeElement).toBe(workspace.element)
+
+    await router.push('/documents')
+    await flushPromises()
+
+    expect(workspace.classes()).not.toContain('workspace-content--dashboard')
+    expect(document.activeElement).toBe(workspace.element)
+    expect(getComputedStyle(workspace.element).outlineStyle).toBe('none')
+    expect(appLayoutSource).toContain(".workspace-content[tabindex='-1']:focus-visible")
+    expect(appLayoutSource).toContain('box-shadow: none;')
     wrapper.unmount()
   })
 

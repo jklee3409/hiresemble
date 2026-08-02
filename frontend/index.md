@@ -39,7 +39,7 @@
 
 ## 변경 시 주의사항
 
-- Dashboard는 현재 Backend에 별도 `/dashboard` endpoint가 없으므로 구현된 owner-scoped API의 `totalElements`와 최근 항목만 사용한다. 명세의 미구현 집계 field, AI 설정과 P9 이후 route를 가짜 데이터·placeholder로 선행 구현하지 않는다.
+- Dashboard는 `/dashboard?month=YYYY-MM`의 owner-scoped 정확 집계·서울 기준 활성 마감과 `/career-guides`의 게시 콘텐츠를 사용한다. 최근 활동은 기존 owner-scoped 목록을 사용하며 AI 설정과 P9 이후 route를 가짜 데이터·placeholder로 선행 구현하지 않는다.
 - 서버 상태는 Vue Query, 꼭 필요한 클라이언트 전역 상태만 Pinia로 관리한다.
 - `pnpm-lock.yaml`을 직접 편집하지 않고 pnpm을 통해 갱신한다.
 - `frontend/` 아래 Markdown도 Prettier 검사 대상이 될 수 있으므로 문서 변경 후 `corepack pnpm check`를 확인한다.

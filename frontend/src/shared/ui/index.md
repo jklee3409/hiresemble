@@ -7,7 +7,7 @@
 ## 주요 파일 및 하위 디렉터리
 
 - [`BrandMark.vue`](BrandMark.vue): H·node·orbit를 결합한 재사용 가능한 inline SVG 브랜드 mark
-- [`AppIcon.vue`](AppIcon.vue): currentColor 기반 장식·기능 SVG icon
+- [`AppIcon.vue`](AppIcon.vue): Dashboard calendar·guide·sparkle을 포함한 currentColor 기반 장식·기능 SVG icon
 - [`PageHeader.vue`](PageHeader.vue): list·detail·editor·compact variant와 선택적 heading level을 지원하는 route page 제목·설명·action 영역
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status
 - [`productJourney.ts`](productJourney.ts): Landing과 보호 `/guide`가 공유하는 5단계 번호·아이콘·canonical 제목·핵심 설명

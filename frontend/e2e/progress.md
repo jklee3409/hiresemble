@@ -15,6 +15,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-02] Session Summary (Dashboard 반응형·focus·상호작용 회귀)
+
+- What was done:
+  - UI shell fixture에 Dashboard·Career Guide 응답, 캘린더 날짜 선택, guide dialog ESC·focus 복귀와 workspace focus style assertion을 추가했다.
+  - 1920·1440·1280·1024·768·390px overflow와 1440·1024·390px full-page 시각 상태를 확인했다.
+- Key decisions:
+  - screenshot은 `output/playwright` 또는 ignored test result 아래에만 두고 운영·외부 서비스는 호출하지 않았다.
+- Issues encountered:
+  - 첫 1440 capture는 modal trigger focus로 scroll된 상태였고 capture 전 `scrollTo(0,0)`로 검증 artifact만 보정했다.
+- Validation:
+  - Chromium `landing.spec.ts`·`ui-shell.spec.ts` 10/10 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Landing 카피·무수동 control 회귀)
 
 - What was done:

@@ -24,7 +24,7 @@
 
 ## 변경 시 주의사항
 
-- 미구현 P9 navigation과 Dashboard mock 집계를 선행 추가하지 않는다. Header count는 owner-scoped active 목록의 `totalElements`, Drawer 항목은 최근 5개로 표시한다.
+- 미구현 P9 navigation을 선행 추가하지 않는다. Dashboard에만 88rem workspace 폭을 허용하고 route focus 대상 `main[tabindex=-1]`의 시각 outline만 억제하며 상호작용 요소의 focus ring은 유지한다. Header count는 owner-scoped active 목록의 `totalElements`, Drawer 항목은 최근 5개로 표시한다.
 - mobile drawer는 accessible name, Escape·Tab focus 처리와 trigger focus 복원을 유지한다.
 - 닉네임 Modal은 header trigger focus 복원, Escape·Tab focus trap과 body scroll lock을 유지한다.
 

@@ -8,6 +8,8 @@ import App from '@/App.vue'
 import * as agentRunApi from '@/shared/api/agentRunApi'
 import * as authApi from '@/shared/api/authApi'
 import type { AuthSessionDto, ErrorResponseDto, ProfileDto } from '@/shared/api/contracts'
+import * as dashboardApi from '@/shared/api/dashboardApi'
+import type { DashboardDto } from '@/shared/api/dashboardContracts'
 import * as documentApi from '@/shared/api/documentApi'
 import { ApiClientError } from '@/shared/api/errors'
 import * as jobApi from '@/shared/api/jobApi'
@@ -35,6 +37,11 @@ vi.mock('@/shared/api/documentApi', () => ({
   listDocuments: vi.fn(),
 }))
 
+vi.mock('@/shared/api/dashboardApi', () => ({
+  getDashboard: vi.fn(),
+  listCareerGuides: vi.fn(),
+}))
+
 vi.mock('@/shared/api/jobApi', () => ({
   listJobs: vi.fn(),
 }))
@@ -52,6 +59,8 @@ describe('authentication route policy', () => {
     vi.mocked(documentApi.listDocuments).mockResolvedValue(emptyPage())
     vi.mocked(jobApi.listJobs).mockResolvedValue(emptyPage())
     vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(emptyPage())
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue(emptyDashboard())
+    vi.mocked(dashboardApi.listCareerGuides).mockResolvedValue([])
   })
 
   it('keeps anonymous users on the landing and redirects authenticated users before rendering it', async () => {
@@ -158,10 +167,11 @@ describe('authentication route policy', () => {
     })
 
     await flushPromises()
-    expect(wrapper.get('h1').text()).toContain('user-1, 지금 준비 중인 지원')
-    expect(wrapper.text()).toContain('기본 정보 준비')
-    expect(wrapper.text()).toContain('이력서 또는 포트폴리오 등록')
-    expect(wrapper.text()).toContain('지원 준비 현황')
+    expect(wrapper.get('h1').text()).toBe('user-1님의 지원 준비 현황')
+    expect(wrapper.text()).toContain('지원 정보')
+    expect(wrapper.text()).toContain('이력서·자료')
+    expect(wrapper.text()).toContain('관심 공고')
+    expect(wrapper.text()).toContain('지원 준비 요약')
     expect(wrapper.text()).not.toContain('다음 단계에서 연결됩니다')
     await router.push('/onboarding')
     await flushPromises()
@@ -278,6 +288,33 @@ function session(id: string): AuthSessionDto {
   return {
     user: { id, email: `${id}@example.com`, displayName: id },
     csrf: { headerName: 'X-CSRF-TOKEN', parameterName: '_csrf', token: `csrf-${id}` },
+  }
+}
+
+function emptyDashboard(): DashboardDto {
+  return {
+    generatedAt: '2026-08-02T00:00:00Z',
+    month: '2026-08',
+    profile: {
+      displayName: 'user-1',
+      legalName: null,
+      desiredRoles: [],
+      desiredLocations: [],
+      completed: false,
+      completionPercent: 0,
+      missingItems: [
+        'LEGAL_NAME',
+        'DESIRED_ROLE',
+        'DESIRED_INDUSTRY',
+        'DESIRED_LOCATION',
+        'PRIMARY_EDUCATION',
+      ],
+      primaryEducation: null,
+    },
+    documents: { registeredCount: 0, processingCount: 0, needsActionCount: 0 },
+    jobs: { registeredCount: 0, preparingCount: 0, submittedCount: 0 },
+    agentRuns: { activeCount: 0 },
+    deadlineDays: [],
   }
 }
 

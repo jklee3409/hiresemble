@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Dashboard 지원 워크스페이스 재구성)
+
+- What was done:
+  - 자연스러운 개인화 제목, 커리어 카드·첫 준비·다음 할 일·행동형 요약, 월별 마감 캘린더와 5개 서버 가이드 modal을 구현했다.
+- Key decisions:
+  - loading·partial error·empty·unknown을 분리하고 mobile deadline은 native `details`, guide는 focus trap dialog를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Dashboard component/API/router tests와 Frontend 전체 264 tests, Chromium 반응형 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Landing Hero 크기·카피·데모 control 정리)
 
 - What was done:

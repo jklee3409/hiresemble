@@ -5,7 +5,20 @@
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
 - `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
 - P1 auth·Session부터 P7 `features/cover-letters`, API·page·lazy route 구현·테스트가 있다.
-- 공개 Landing과 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계와 AI 설정 기능은 아직 없다.
+- 공개 Landing과 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·게시 가이드 read가 연결되어 있고 AI 설정 기능은 아직 없다.
+
+## [2026-08-02] Session Summary (Dashboard source·layout·API 연결)
+
+- What was done:
+  - Dashboard page, AppLayout 폭·focus, typed API client와 router fixture를 현재 Dashboard/Career Guide 계약에 연결했다.
+- Key decisions:
+  - 전역 앱 폭은 유지하고 Dashboard route에만 넓은 canvas를 적용한다.
+- Issues encountered:
+  - 기존 router 회귀의 과거 Dashboard fixture를 새 projection으로 교체했다.
+- Validation:
+  - Frontend `pnpm check` 67 files/264 tests와 Playwright UI shell 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (공개 진입과 제품 첫 사용 Source)
 

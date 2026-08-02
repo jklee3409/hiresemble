@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-02] Session Summary (Dashboard 폭·route focus outline 보정)
+
+- What was done:
+  - Dashboard route에만 88rem workspace 폭을 적용하고 programmatic focus main의 outline·box-shadow를 억제했다.
+- Key decisions:
+  - `tabindex=-1` main에만 selector를 제한하고 link·button·input의 전역 keyboard focus ring은 유지했다.
+- Issues encountered:
+  - JSDOM은 box-shadow computed value를 빈 문자열로 반환해 component source selector와 실제 Chromium computed style을 함께 검증했다.
+- Validation:
+  - AppLayout 5 tests와 Chromium workspace `outline:none`, `box-shadow:none` assertion 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (인증 shell Landing 복귀·title 책임 분리)
 
 - What was done:

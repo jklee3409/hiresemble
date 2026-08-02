@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P8 OpenAPI와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-08-02] Session Summary (Dashboard·Career Guide typed client)
+
+- What was done:
+  - Dashboard profile/count/deadline과 게시 Guide strict Zod 계약·Axios consumer·endpoint mapping tests를 추가했다.
+- Key decisions:
+  - 날짜별 `count === items.length`를 client 경계에서도 검증하고 guide 상태는 `PUBLISHED` literal로 제한한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - API tests, typecheck와 Frontend 전체 `pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (공고 자동 분석 typed projection)
 

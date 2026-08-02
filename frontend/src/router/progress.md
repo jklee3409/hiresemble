@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-02] Session Summary (Dashboard route fixture 계약 갱신)
+
+- What was done:
+  - 보호 shell 회귀에 새 Dashboard·Career Guide API fixture와 자연스러운 대시보드 문구 assertion을 반영했다.
+- Key decisions:
+  - route 접근 정책은 변경하지 않고 화면 데이터 source만 현재 공개 계약과 맞췄다.
+- Issues encountered:
+  - 전체 check에서 과거 Dashboard 문구 assertion이 실패해 대상 test로 재현·보정했다.
+- Validation:
+  - Router 7 tests와 Frontend 전체 `pnpm check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공개 home·공통 route title 정책)
 
 - What was done:

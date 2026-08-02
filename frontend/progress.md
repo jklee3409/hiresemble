@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 66 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/264 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (Dashboard B2C 워크스페이스·캘린더·가이드)
+
+- What was done:
+  - 새 Dashboard typed client를 연결하고 커리어 카드, 행동 요약, 서울 월간 캘린더, 최근 활동과 서버 가이드 modal로 화면을 재구성했다.
+  - Dashboard 전용 폭과 route workspace focus 회귀를 보정하고 1440·1024·390px fixture를 갱신했다.
+- Key decisions:
+  - 실제 count·deadline은 Dashboard projection, 최근 활동은 기존 owner 목록을 사용한다. 가이드 본문은 프론트 상수로 두지 않는다.
+- Issues encountered:
+  - 전체 check에서 기존 router test가 과거 문구·source를 기대해 실패했고 새 API fixture와 문구로 보정 후 통과했다.
+- Validation:
+  - `pnpm check`: 67 files/264 tests, lint·format·typecheck·build 통과. Playwright Landing/UI shell 10/10 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (Landing Hero 크기·카피 후속 조정)
 

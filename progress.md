@@ -11,9 +11,23 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 P8 면접 API 11개를 포함해 총 84 operations·63 paths다.
+- 공개 Spring/OpenAPI는 Dashboard·Career Guide read를 포함해 총 92 operations·68 paths다.
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-02] Session Summary (행동 중심 Dashboard·마감 캘린더·Career Guide)
+
+- What was done:
+  - owner-scoped Dashboard 정확 집계·서울 월별 마감 API와 게시 Career Guide DB/read API를 추가하고 Dashboard를 커리어 카드·다음 행동·캘린더·가이드 modal 중심 B2C 화면으로 재구성했다.
+  - route workspace focus 이동은 유지하면서 비상호작용 main의 파란 outline/box-shadow만 제거하고 명세·계층 문서를 동기화했다.
+- Key decisions:
+  - 날짜별 count는 paginated 목록으로 추정하지 않고 전용 projection을 사용하며 `CLOSED`를 제외한다. 가이드는 V17 전역 게시 데이터로 제공하고 관리자 mutation은 범위에서 제외했다.
+- Issues encountered:
+  - in-app Browser 인스턴스를 사용할 수 없어 공식 서비스는 공개 웹 페이지로 확인했다. 첫 Backend 전체 check는 5분 도구 제한으로 결과가 완성되지 않았고 더 긴 단일 재실행이 통과했다.
+- Validation:
+  - Backend `gradlew check`: 73 suites/498 tests, 실패 0. Frontend `pnpm check`: 67 files/264 tests와 build 통과. Playwright Landing/UI shell 10/10, Docker Compose config 통과.
+- Next steps:
+  - Career Guide 관리자 UI·mutation API는 별도 Backoffice 범위에서 구현한다.
 
 ## [2026-08-02] Session Summary (공개 Landing 카피·Hero 후속 조정)
 

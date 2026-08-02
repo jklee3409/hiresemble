@@ -347,7 +347,13 @@ async function logout(): Promise<void> {
       <p v-if="logoutError" class="product-header__error" role="alert">{{ logoutError }}</p>
     </header>
 
-    <main id="app-content" ref="workspaceContent" class="workspace-content" tabindex="-1">
+    <main
+      id="app-content"
+      ref="workspaceContent"
+      class="workspace-content"
+      :class="{ 'workspace-content--dashboard': route.path === '/dashboard' }"
+      tabindex="-1"
+    >
       <RouterView />
     </main>
 
@@ -751,6 +757,16 @@ async function logout(): Promise<void> {
   outline: none;
 }
 
+.workspace-content--dashboard {
+  width: min(100% - clamp(2rem, 5vw, 4rem), 88rem);
+}
+
+.workspace-content[tabindex='-1']:focus,
+.workspace-content[tabindex='-1']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .mobile-bottom-navigation {
   position: fixed;
   right: 0;
@@ -981,6 +997,10 @@ async function logout(): Promise<void> {
   .workspace-content {
     width: min(100% - 2rem, var(--content-width));
   }
+
+  .workspace-content--dashboard {
+    width: min(100% - 2rem, 88rem);
+  }
 }
 
 @media (max-width: 35rem) {
@@ -995,6 +1015,10 @@ async function logout(): Promise<void> {
   .workspace-content {
     width: min(100% - 1.5rem, var(--content-width));
     padding-top: var(--space-6);
+  }
+
+  .workspace-content--dashboard {
+    width: min(100% - 1.5rem, 88rem);
   }
 
   .mobile-more__account {

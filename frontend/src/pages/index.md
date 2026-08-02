@@ -12,11 +12,11 @@
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·학력 단계와 서버 계산 최종 학력·희망 조건·문서 이동/추후 입력 P2 흐름
 - [`GuidePage.vue`](GuidePage.vue): 실제 공통 UI mini preview로 내 정보→자료→자동 공고 분석→자기소개서→면접 순서를 안내하는 재방문 가능 가이드
-- [`DashboardPage.vue`](DashboardPage.vue): 현재 profile·Document·Job·Agent Run API의 정확한 total과 최근 항목을 조합하는 지원 현황, 부분 완료·query unknown을 구분하는 3항목 첫 사용 체크리스트
+- [`DashboardPage.vue`](DashboardPage.vue): 커리어 카드, 다음 행동·요약, 서울 기준 월간 마감 캘린더, 최근 활동과 서버 게시 취업 가이드를 조합하는 지원 워크스페이스
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 편집 영역, Form 하단 저장 상태·409 재적용
 - [`LandingPage.test.ts`](LandingPage.test.ts): Hero heading/body 순서, 공개 CTA·semantic landmark·5단계·anchor·금지 문구, reveal fallback과 reduced motion 회귀
 - [`LandingProductDemo.test.ts`](LandingProductDemo.test.ts): scene 계약·자동 loop·offscreen·문서 visibility·observer fallback·reduced motion·timer cleanup 회귀
-- [`DashboardPage.test.ts`](DashboardPage.test.ts): 0/3~3/3·AI 작업·일반 현황 공존과 profile/document/job 부분 조회 오류 회귀
+- [`DashboardPage.test.ts`](DashboardPage.test.ts): 새 문구·커리어 카드·날짜 선택·가이드 modal focus·오류·빈 상태 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력 단계·서버 계산 최종 학력, 경력·자격증·어학·수상 목록·form·삭제·409 재적용과 학력 상태 한국어 표시
 - [`ProfileActivitiesPage.vue`](ProfileActivitiesPage.vue): 문서 AI 추출 경험과 분리된 사용자 직접 대외활동 CRUD·소재 후보 사용 선택
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort와 terminal 작업 개별·현재 페이지 선택 삭제
@@ -49,7 +49,7 @@
 
 ## 변경 시 주의사항
 
-- Dashboard의 명세상 전용 집계 endpoint는 아직 구현되지 않았다. 현재 API의 `totalElements`와 반환된 최근 항목만 표시하고 paginated `items.length`를 전체 수치로 사용하지 않는다.
+- Dashboard count와 날짜별 마감은 전용 projection만 사용하고 paginated `items.length`로 추정하지 않는다. 최근 활동 목록 실패는 빈 성공 상태와 구분한다.
 - Landing의 주요 CTA는 `/signup`과 `/login`만 사용하고 보호 제품 route를 anonymous 사용자에게 직접 연결하지 않는다.
 - 공고 분석 결과는 해당 Job child page에서만 표시하며 Agent Run 목록·상세에 결과 전체를 복제하지 않는다.
 - 자기소개서 전체 editor는 canonical edit route에만 두고 공고 tab과 Agent Run에는 상태·resource link만 표시한다.

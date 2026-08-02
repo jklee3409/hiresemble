@@ -81,7 +81,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | Route group                                        | Implementation status | Phase     | prerequisite API                                 |
 | -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 63 paths/84 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 68 paths/92 operations              |
 | `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
 | account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
@@ -226,7 +226,7 @@ API:
 
 # 4. 대시보드 `/dashboard`
 
-현재 구현은 별도 Dashboard API가 아직 없으므로 기존 owner-scoped profile·Document·Job·Agent Run query의 `totalElements`와 최근 항목을 조합한다. 목표 `GET /dashboard` projection은 P10-A 구현 전까지 `PLANNED`이며 현재 API처럼 취급하지 않는다.
+대시보드는 로그인 직후 사용자가 현재 준비 상태, 먼저 할 일, 이번 달 마감, 최근 활동과 짧은 가이드를 한 흐름에서 확인하는 지원 워크스페이스다. 요약과 마감은 `GET /dashboard?month=YYYY-MM`, 가이드는 `GET /career-guides`를 사용하며 최근 활동은 기존 owner-scoped Document·Job·Agent Run 목록을 조합한다.
 
 첫 사용 체크리스트:
 
@@ -236,32 +236,31 @@ API:
 
 - 완료 항목 수를 `n / 3`으로 표시하고 하나를 완료해도 남은 항목을 유지한다.
 - 세 항목을 모두 완료했을 때만 체크리스트를 숨기며 AI 작업 수는 표시 여부에 영향을 주지 않는다.
-- profile·document·job query 실패는 미완료나 0개로 계산하지 않고 항목별 `확인하지 못했어요`와 재조회 action을 제공한다.
+- Dashboard query 실패는 미완료나 0개로 계산하지 않고 `확인 필요`, `—`와 재조회 action을 제공한다.
 - 체크리스트와 일반 지원 현황, 다음 할 일, 최근 활동은 함께 표시한다. 영구 dismiss 상태와 profile 완료 route gate는 사용하지 않는다.
 
-## 주요 카드
+## 정보 구조와 문구
 
-1. 프로필 완성도
-2. 처리 중 문서
-3. 지원 중 공고 수
-4. 서류 제출 공고 수
-5. 마감 임박 공고
-6. 검증 경고가 있는 자기소개서
-7. 최근 모의 면접
-8. 진행 중 Agent Run
+- 제목은 `{displayName}님의 지원 준비 현황`, 설명은 `마감 일정과 다음 할 일을 한눈에 확인하세요.`를 사용한다.
+- 커리어 카드는 서버가 안전하게 제공하는 이름, 희망 직무·지역, 최종 학력, `지원 정보 준비도`와 프로필 CTA를 표시한다. 사진 대신 이름 첫 글자 모노그램과 추상 CSS 장식을 사용하며 미입력 값은 명시한다.
+- 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다.
+- 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다.
+- Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
 
-## 빠른 작업
+## 마감 캘린더
 
-- 공고 URL 등록
-- 이력서 업로드
-- 지원서 작성
-- 모의 면접 시작
+- 월 이동과 오늘 복귀를 제공하고 날짜별 활성 마감 공고 수를 배지로 표시한다.
+- 선택 날짜의 회사, 공고명, 상태, `Asia/Seoul` 마감 시각과 상세 링크를 같은 화면에 보여 준다. Desktop은 옆 패널, mobile은 접근 가능한 `details` 패널을 사용한다.
+- `CLOSED` 공고는 제외하고 월 경계는 서울 자정으로 계산한다. 월별 수를 paginated 첫 page의 `items.length`로 추정하지 않는다.
+- loading, 오류, 일정 없음과 선택 날짜 결과 없음은 서로 다른 상태로 표시한다.
 
-## 목표 API (`PLANNED` P10-A)
+## 취업 준비 가이드
 
-- `GET /dashboard`
+- 게시된 서버 콘텐츠를 노출 순서대로 최대 5개 카드에 표시한다. 프론트 상수 콘텐츠를 사용하지 않는다.
+- 카드를 누르면 제목, 요약, 본문, 게시일을 modal에서 보여 준다. modal은 ESC·배경·닫기 버튼, focus trap, trigger focus 복귀, body scroll lock과 mobile sheet layout을 지원한다.
+- 게시 상태·순서·카테고리·게시 시각·version은 Backend/DB가 소유하며 이번 범위에는 관리자 mutation UI/API가 없다.
 
-목표 Dashboard count와 최근 항목은 paginated 목록 첫 page에서 추정하지 않는다. 현재 임시 구현도 `items.length`가 아니라 각 owner-scoped 목록의 `totalElements`를 사용한다. 프로필 카드에는 완료율, 부족 항목과 `/profile/basic` 링크를 표시하며 미완료를 기능 차단으로 표현하지 않는다.
+route 변경 시 `#app-content[tabindex="-1"]`로 프로그램적 focus를 이동하는 접근성 동작은 유지한다. 이 비상호작용 workspace의 focus에만 outline과 box-shadow를 표시하지 않으며 링크, 버튼과 form control의 keyboard focus ring은 유지한다.
 
 ---
 

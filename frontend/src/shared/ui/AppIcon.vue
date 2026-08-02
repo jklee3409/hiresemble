@@ -16,6 +16,9 @@ type AppIconName =
   | 'plus'
   | 'check'
   | 'clock'
+  | 'calendar'
+  | 'guide'
+  | 'sparkle'
   | 'alert'
   | 'inbox'
   | 'filter'
@@ -94,6 +97,19 @@ defineProps<{
     <template v-else-if="name === 'clock'">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
+    </template>
+    <template v-else-if="name === 'calendar'">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M7 3v4M17 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+    </template>
+    <template v-else-if="name === 'guide'">
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z" />
+      <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z" />
+    </template>
+    <template v-else-if="name === 'sparkle'">
+      <path
+        d="m12 3 1.3 4.2L17 9l-3.7 1.8L12 15l-1.3-4.2L7 9l3.7-1.8zM18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7z"
+      />
     </template>
     <template v-else-if="name === 'alert'">
       <path d="M12 3 2.8 20h18.4zM12 9v4M12 17h.01" />

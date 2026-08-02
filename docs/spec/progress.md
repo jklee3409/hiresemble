@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (Dashboard·Career Guide API/DB/Page 계약)
+
+- What was done:
+  - 68 paths/92 operations, Dashboard exact projection, V17 guide schema·게시 정책과 커리어 카드·캘린더·modal·focus 페이지 계약을 동기화했다.
+- Key decisions:
+  - Guide는 전역 게시 콘텐츠 예외이며 Dashboard deadline은 서울 월 경계와 owner scope를 사용한다.
+- Issues encountered:
+  - 기존 tentative V17 이후 migration 번호를 latest V17 기준으로 한 단계 이동했다.
+- Validation:
+  - OpenAPI exact contract, migration upgrade, Backend/Frontend 표준 검증 통과.
+- Next steps:
+  - Backoffice guide mutation은 별도 계약 승인 시 추가한다.
+
 ## [2026-08-02] Session Summary (공개 Landing·첫 사용 페이지 계약)
 
 - What was done:

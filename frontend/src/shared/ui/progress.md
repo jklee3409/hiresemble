@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-02] Session Summary (Dashboard 공용 아이콘 확장)
+
+- What was done:
+  - 외부 asset 없이 calendar·guide·sparkle currentColor SVG icon을 `AppIcon`에 추가했다.
+- Key decisions:
+  - Dashboard 배치는 page가 소유하고 공용 icon은 의미 없는 장식 또는 호출부 accessible label과 함께 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend lint·typecheck·264 tests·build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (제품 5단계 canonical journey 정의)
 
 - What was done:

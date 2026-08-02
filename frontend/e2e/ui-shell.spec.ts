@@ -9,10 +9,30 @@ test('protected app shell stays usable without horizontal overflow at required w
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/dashboard')
   await expect(
-    page.getByRole('heading', { name: '반응형 확인 사용자, 지금 준비 중인 지원' }),
+    page.getByRole('heading', { name: '반응형 확인 사용자님의 지원 준비 현황' }),
   ).toBeVisible()
-  await expect(page.getByRole('heading', { name: '지원 준비 현황' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '지원 준비 요약' })).toBeVisible()
+  await expect(page.locator('#app-content')).toBeFocused()
+  expect(
+    await page.locator('#app-content').evaluate((element) => ({
+      outline: getComputedStyle(element).outlineStyle,
+      boxShadow: getComputedStyle(element).boxShadow,
+    })),
+  ).toEqual({ outline: 'none', boxShadow: 'none' })
+
+  const deadlineDate = page.getByRole('button', { name: /^2026-08-15,/ })
+  await deadlineDate.click()
+  await expect(page.locator('.deadline-detail--desktop')).toContainText('플랫폼 엔지니어')
+
+  const guideTrigger = page.locator('.guide-card').first()
+  await guideTrigger.click()
+  const guideDialog = page.getByRole('dialog', { name: '공고 분석 전에 확인할 항목' })
+  await expect(guideDialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(guideDialog).toBeHidden()
+  await expect(guideTrigger).toBeFocused()
   if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.evaluate(() => window.scrollTo(0, 0))
     await page.screenshot({
       path: testInfo.outputPath('dashboard-1440.png'),
       fullPage: true,
@@ -29,14 +49,15 @@ test('protected app shell stays usable without horizontal overflow at required w
 
   for (const width of [1920, ...viewportWidths.slice(0, 1), 1280, ...viewportWidths.slice(1)]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+    await page.evaluate(() => window.scrollTo(0, 0))
 
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     )
     expect(hasHorizontalOverflow, `${width}px에서 가로 overflow가 없어야 합니다.`).toBe(false)
-    if (width === 390 && process.env.UI_SCREENSHOTS === 'true') {
+    if ((width === 1024 || width === 390) && process.env.UI_SCREENSHOTS === 'true') {
       await page.screenshot({
-        path: testInfo.outputPath('dashboard-390.png'),
+        path: testInfo.outputPath(`dashboard-${width}.png`),
         fullPage: true,
       })
     }
@@ -256,6 +277,81 @@ async function installAuthenticatedRoutes(page: Page): Promise<void> {
         email: 'responsive@example.com',
         displayName: '반응형 확인 사용자',
       }),
+    })
+  })
+  await page.route('**/api/v1/dashboard?*', async (route) => {
+    const month = new URL(route.request().url()).searchParams.get('month') ?? '2026-08'
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        generatedAt: '2026-08-02T03:00:00Z',
+        month,
+        profile: {
+          displayName: '반응형 확인 사용자',
+          legalName: null,
+          desiredRoles: [],
+          desiredLocations: [],
+          completed: false,
+          completionPercent: 0,
+          missingItems: [
+            'LEGAL_NAME',
+            'DESIRED_ROLE',
+            'DESIRED_INDUSTRY',
+            'DESIRED_LOCATION',
+            'PRIMARY_EDUCATION',
+          ],
+          primaryEducation: null,
+        },
+        documents: { registeredCount: 1, processingCount: 0, needsActionCount: 0 },
+        jobs: { registeredCount: 2, preparingCount: 1, submittedCount: 1 },
+        agentRuns: { activeCount: 0 },
+        deadlineDays:
+          month === '2026-08'
+            ? [
+                {
+                  date: '2026-08-15',
+                  count: 1,
+                  items: [
+                    {
+                      id: '00000000-0000-4000-8000-000000000099',
+                      companyName: '하이어셈블랩',
+                      title: '플랫폼 엔지니어',
+                      positionName: '플랫폼 엔지니어',
+                      status: 'IN_PROGRESS',
+                      deadlineAt: '2026-08-15T05:30:00Z',
+                    },
+                  ],
+                },
+              ]
+            : [],
+      }),
+    })
+  })
+  await page.route('**/api/v1/career-guides', async (route) => {
+    const topics = [
+      ['공고 분석', '공고 분석 전에 확인할 항목'],
+      ['경험 정리', '경험을 자기소개서 소재로 정리하는 방법'],
+      ['강점 선택', '지원 직무에 맞는 강점 선택 방법'],
+      ['면접 준비', '면접 답변을 간결하게 구성하는 방법'],
+      ['최종 점검', '마감 전 최종 점검 체크리스트'],
+    ]
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        topics.map(([category, title], index) => ({
+          id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+          status: 'PUBLISHED',
+          displayOrder: (index + 1) * 10,
+          category,
+          title,
+          summary: '핵심을 빠르게 확인하고 내 지원 준비에 바로 적용해 보세요.',
+          body: '요구 사항을 나누어 읽고, 내 경험에서 확인 가능한 근거를 연결해 보세요.',
+          publishedAt: '2026-08-01T00:00:00Z',
+          version: 1,
+        })),
+      ),
     })
   })
   await page.route('**/api/v1/agent-runs**', async (route) => {
