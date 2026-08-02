@@ -5,7 +5,20 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/264 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/265 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (Dashboard 세부 시각·장문 Guide modal 보완)
+
+- What was done:
+  - 사람 SVG, 이름 단독 blue 강조, 일요일 red·토요일 blue, 날짜별 `N건`, workspace 하단 CTA와 장문 guide modal hierarchy를 구현했다.
+- Key decisions:
+  - PageHeader title slot과 AppIcon을 additive하게 확장하고 Dashboard 전용 color alias로 공통 토큰 계약을 유지했다.
+- Issues encountered:
+  - 실제 Browser에서 정의되지 않은 page color alias가 상속색으로 떨어지는 현상을 발견해 Dashboard와 Teleport modal 범위에서 보정했다.
+- Validation:
+  - `corepack pnpm check`: 67 files/265 tests와 production build 통과. Chromium UI shell 3/3 및 1440·1024·390px screenshot 확인.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (Dashboard B2C 워크스페이스·캘린더·가이드)
 

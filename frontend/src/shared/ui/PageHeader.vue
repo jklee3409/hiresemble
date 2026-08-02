@@ -23,7 +23,7 @@ withDefaults(
     <div class="page-header__body">
       <p v-if="eyebrow" class="page-eyebrow">{{ eyebrow }}</p>
       <component :is="level === 1 ? 'h1' : 'h2'" :id="headingId" class="page-title">
-        {{ title }}
+        <slot name="title">{{ title }}</slot>
       </component>
       <p v-if="description" class="page-description">{{ description }}</p>
       <slot />

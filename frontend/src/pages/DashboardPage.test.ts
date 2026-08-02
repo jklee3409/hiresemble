@@ -35,7 +35,10 @@ describe('DashboardPage', () => {
     const wrapper = await mountDashboard()
 
     expect(wrapper.get('h1').text()).toBe('이종규님의 지원 준비 현황')
+    expect(wrapper.get('.dashboard-title__name').text()).toBe('이종규')
     expect(wrapper.text()).toContain('마감 일정과 다음 할 일을 한눈에 확인하세요.')
+    expect(wrapper.find('.career-card__person svg').exists()).toBe(true)
+    expect(wrapper.find('.career-card__monogram').exists()).toBe(false)
     expect(wrapper.get('.career-card').text()).toContain('백엔드 개발자')
     expect(wrapper.get('.career-card').text()).toContain('서울')
     expect(wrapper.get('.career-card').text()).toContain('한국대학교 · 컴퓨터공학 · 학사 · 졸업')
@@ -51,8 +54,11 @@ describe('DashboardPage', () => {
   it('selects a calendar date and shows the exact deadline details in Seoul time', async () => {
     const wrapper = await mountDashboard()
     const dateButton = wrapper.get<HTMLButtonElement>('button[aria-label^="2026-08-15,"]')
+    const sundayButton = wrapper.get<HTMLButtonElement>('button[aria-label^="2026-08-02,"]')
 
-    expect(dateButton.text()).toContain('2')
+    expect(dateButton.text()).toContain('2건')
+    expect(dateButton.classes()).toContain('calendar-day--saturday')
+    expect(sundayButton.classes()).toContain('calendar-day--sunday')
     await dateButton.trigger('click')
 
     const detail = wrapper.get('.deadline-detail--desktop')
@@ -82,6 +88,9 @@ describe('DashboardPage', () => {
     expect(dialog?.getAttribute('aria-modal')).toBe('true')
     expect(dialog?.textContent).toContain('공고 분석 전에 확인할 항목')
     expect(dialog?.textContent).toContain('필수 역량을 먼저 표시하세요.')
+    expect(dialog?.querySelector('.guide-modal__hero')).not.toBeNull()
+    expect(dialog?.querySelectorAll('.guide-modal__content p')).toHaveLength(2)
+    expect(dialog?.textContent).toContain('콘텐츠 v2')
     expect(document.body.style.overflow).toBe('hidden')
     expect(document.activeElement?.getAttribute('aria-label')).toBe('가이드 닫기')
 
@@ -242,9 +251,9 @@ function guides(): CareerGuidePostDto[] {
       category: '공고 분석',
       title: '공고 분석 전에 확인할 항목',
       summary: '회사와 역할, 자격 요건을 나눠 읽어 보세요.',
-      body: '공고를 처음 읽을 때는 필수 역량을 먼저 표시하세요.',
+      body: '공고를 처음 읽을 때는 필수 역량을 먼저 표시하세요. 담당 업무의 동사와 기대 결과를 함께 적으면 역할의 중심이 선명해집니다.\n\n지원 전에는 우대 조건과 근무 조건을 분리해 확인하고, 내 경험에서 연결할 수 있는 근거를 한 줄씩 남겨 보세요.',
       publishedAt: '2026-08-01T00:00:00Z',
-      version: 1,
+      version: 2,
     },
   ]
 }

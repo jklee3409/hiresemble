@@ -57,6 +57,18 @@ const guideQuery = useQuery({
   queryFn: dashboardApi.listCareerGuides,
   enabled: computed(() => userId.value !== ''),
 })
+const selectedGuideNumber = computed(() => {
+  const index = (guideQuery.data.value ?? []).findIndex(
+    (guide) => guide.id === selectedGuide.value?.id,
+  )
+  return index < 0 ? '01' : String(index + 1).padStart(2, '0')
+})
+const selectedGuideParagraphs = computed(() =>
+  (selectedGuide.value?.body ?? '')
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean),
+)
 const recentDocumentsQuery = useDocumentListQuery(
   userId,
   computed(() => ({ page: 0, size: 5, sort: 'updatedAt,desc' as const })),
@@ -79,13 +91,15 @@ const recentRunsQuery = useAgentRunListQuery(
   computed(() => ({ page: 0, size: 5, sort: 'updatedAt,desc' as const })),
 )
 
-const dashboardTitle = computed(() => {
-  const name =
+const dashboardName = computed(
+  () =>
     dashboardQuery.data.value?.profile.displayName.trim() ||
     authStore.currentUser?.displayName.trim() ||
-    ''
-  return name === '' ? '지원 준비 현황' : `${name}님의 지원 준비 현황`
-})
+    '',
+)
+const dashboardTitle = computed(() =>
+  dashboardName.value === '' ? '지원 준비 현황' : `${dashboardName.value}님의 지원 준비 현황`,
+)
 const profile = computed(() => dashboardQuery.data.value?.profile ?? null)
 const dashboardUnavailable = computed(() => dashboardQuery.isError.value)
 const documentNeedsAction = computed(() =>
@@ -383,11 +397,6 @@ function deadlineTitle(job: DashboardDeadlineJobDto): string {
   return job.positionName?.trim() || job.title?.trim() || '채용 공고'
 }
 
-function profileInitial(): string {
-  const name = profile.value?.displayName || authStore.currentUser?.displayName || 'H'
-  return Array.from(name.trim())[0] || 'H'
-}
-
 function primaryEducationLabel(): string {
   const education = profile.value?.primaryEducation
   if (education === null || education === undefined) return '최종 학력 미입력'
@@ -436,6 +445,7 @@ type CalendarCell = {
   key: string
   date: string | null
   day: number | null
+  weekday: number | null
   count: number
   isToday: boolean
 }
@@ -449,6 +459,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     key: `before-${index}`,
     date: null,
     day: null,
+    weekday: null,
     count: 0,
     isToday: false,
   }))
@@ -458,12 +469,20 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
       key: date,
       date,
       day,
+      weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay(),
       count: counts.get(date) ?? 0,
       isToday: date === seoulToday(),
     })
   }
   while (cells.length % 7 !== 0) {
-    cells.push({ key: `after-${cells.length}`, date: null, day: null, count: 0, isToday: false })
+    cells.push({
+      key: `after-${cells.length}`,
+      date: null,
+      day: null,
+      weekday: null,
+      count: 0,
+      isToday: false,
+    })
   }
   return cells
 }
@@ -477,6 +496,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
       description="마감 일정과 다음 할 일을 한눈에 확인하세요."
       variant="list"
     >
+      <template #title>
+        <template v-if="dashboardName">
+          <span class="dashboard-title__name">{{ dashboardName }}</span
+          ><span class="dashboard-title__suffix">님의 지원 준비 현황</span>
+        </template>
+        <template v-else>지원 준비 현황</template>
+      </template>
       <template #actions>
         <RouterLink class="button button--secondary" to="/documents">
           <AppIcon name="upload" />
@@ -513,7 +539,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
       <section class="dashboard-hero" aria-label="사용자 커리어와 다음 행동">
         <article class="career-card">
           <div class="career-card__identity">
-            <span class="career-card__monogram" aria-hidden="true">{{ profileInitial() }}</span>
+            <span class="career-card__person" aria-hidden="true">
+              <AppIcon name="person-card" />
+            </span>
             <div>
               <p>MY CAREER</p>
               <h2>{{ profile?.legalName || profile?.displayName || '지원자' }}</h2>
@@ -769,13 +797,15 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                     'calendar-day--selected': selectedDate === cell.date,
                     'calendar-day--today': cell.isToday,
                     'calendar-day--has-deadline': cell.count > 0,
+                    'calendar-day--sunday': cell.weekday === 0,
+                    'calendar-day--saturday': cell.weekday === 6,
                   }"
                   :aria-pressed="selectedDate === cell.date"
                   :aria-label="`${cell.date}, 마감 공고 ${cell.count}건${cell.isToday ? ', 오늘' : ''}`"
                   @click="selectedDate = cell.date"
                 >
                   <span>{{ cell.day }}</span>
-                  <strong v-if="cell.count > 0">{{ cell.count }}</strong>
+                  <strong v-if="cell.count > 0" aria-hidden="true">{{ cell.count }}건</strong>
                   <small v-if="cell.isToday">오늘</small>
                 </button>
               </template>
@@ -962,8 +992,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
           :aria-labelledby="`guide-modal-title-${selectedGuide.id}`"
           tabindex="-1"
         >
-          <header>
-            <span class="guide-modal__category">{{ selectedGuide.category }}</span>
+          <header class="guide-modal__topbar">
+            <span class="guide-modal__category">
+              <AppIcon name="guide" />
+              {{ selectedGuide.category }}
+            </span>
             <button
               ref="guideCloseButton"
               type="button"
@@ -974,21 +1007,31 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
             </button>
           </header>
           <div class="guide-modal__body">
-            <p class="section-kicker">CAREER NOTE</p>
-            <h2 :id="`guide-modal-title-${selectedGuide.id}`">{{ selectedGuide.title }}</h2>
-            <p class="guide-modal__summary">{{ selectedGuide.summary }}</p>
-            <div class="guide-modal__content">{{ selectedGuide.body }}</div>
+            <section class="guide-modal__hero">
+              <span class="guide-modal__number" aria-hidden="true">{{ selectedGuideNumber }}</span>
+              <p class="section-kicker">CAREER NOTE {{ selectedGuideNumber }}</p>
+              <h2 :id="`guide-modal-title-${selectedGuide.id}`">{{ selectedGuide.title }}</h2>
+              <p class="guide-modal__summary">{{ selectedGuide.summary }}</p>
+            </section>
+            <div class="guide-modal__content" aria-label="가이드 본문">
+              <p v-for="(paragraph, index) in selectedGuideParagraphs" :key="index">
+                {{ paragraph }}
+              </p>
+            </div>
           </div>
           <footer>
-            <small
-              >{{
-                new Intl.DateTimeFormat('ko-KR', {
-                  timeZone: SEOUL_TIME_ZONE,
-                  dateStyle: 'medium',
-                }).format(new Date(selectedGuide.publishedAt))
-              }}
-              게시</small
-            >
+            <span class="guide-modal__meta">
+              <small
+                >{{
+                  new Intl.DateTimeFormat('ko-KR', {
+                    timeZone: SEOUL_TIME_ZONE,
+                    dateStyle: 'medium',
+                  }).format(new Date(selectedGuide.publishedAt))
+                }}
+                게시</small
+              >
+              <em>콘텐츠 v{{ selectedGuide.version }}</em>
+            </span>
             <button type="button" class="button button--primary" @click="closeGuide">
               확인했어요
             </button>
@@ -1000,6 +1043,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 </template>
 
 <style scoped>
+.dashboard,
+.guide-modal {
+  --color-primary: var(--color-brand);
+  --color-subtle: var(--color-muted);
+}
 .dashboard {
   width: min(100%, 88rem);
   margin-inline: auto;
@@ -1056,6 +1104,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   margin: 0.2rem 0 0;
   color: var(--color-muted);
   font-size: 0.875rem;
+}
+.dashboard-title__name {
+  color: var(--color-primary);
+}
+.dashboard-title__suffix {
+  color: var(--color-ink);
 }
 
 .dashboard-hero {
@@ -1115,7 +1169,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: 0.85rem;
   align-items: center;
 }
-.career-card__monogram {
+.career-card__person {
   display: grid;
   width: 3.25rem;
   height: 3.25rem;
@@ -1123,8 +1177,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 1rem;
   background: rgb(255 255 255 / 13%);
-  font-size: 1.25rem;
-  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.career-card__person :deep(.icon) {
+  width: 1.8rem;
+  height: 1.8rem;
+  stroke-width: 1.75;
 }
 .career-card__identity p {
   margin-bottom: 0.1rem;
@@ -1583,6 +1641,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .calendar-weekdays span:first-child {
   color: var(--color-danger);
 }
+.calendar-weekdays span:last-child {
+  color: var(--color-primary);
+}
 .calendar-day {
   position: relative;
   display: grid;
@@ -1604,16 +1665,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-weight: 700;
 }
 .calendar-day > strong {
-  display: grid;
-  min-width: 1.45rem;
-  height: 1.45rem;
-  place-items: center;
+  display: inline-flex;
+  min-height: 1.45rem;
+  align-items: center;
+  justify-content: center;
   margin-top: 0.45rem;
-  padding-inline: 0.3rem;
+  padding: 0.18rem 0.42rem;
   border-radius: 999px;
   color: white;
   background: var(--color-primary);
   font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 .calendar-day > small {
   position: absolute;
@@ -1629,6 +1692,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 .calendar-day--today > span {
+  color: var(--color-primary);
+}
+.calendar-day--sunday > span {
+  color: var(--color-danger);
+}
+.calendar-day--saturday > span {
   color: var(--color-primary);
 }
 .calendar-day--blank {
@@ -1770,6 +1839,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .workspace-note {
   position: relative;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   color: white;
   border: 0;
@@ -1813,6 +1884,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   line-height: 1.65;
 }
 .workspace-note .text-link {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 1.5rem;
   color: white;
 }
 .compact-empty {
@@ -1926,31 +2000,34 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(12 18 38 / 66%);
-  backdrop-filter: blur(5px);
+  background: rgb(12 18 38 / 72%);
+  backdrop-filter: blur(7px);
 }
 .guide-modal {
-  width: min(100%, 42rem);
+  width: min(100%, 46rem);
   max-height: min(48rem, calc(100dvh - 2rem));
   overflow: auto;
   border: 1px solid var(--color-border);
-  border-radius: 1.25rem;
+  border-radius: 1.5rem;
   background: var(--color-surface);
-  box-shadow: 0 30px 90px rgb(8 18 48 / 35%);
+  box-shadow: 0 34px 100px rgb(8 18 48 / 44%);
 }
-.guide-modal > header {
+.guide-modal__topbar {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid rgb(209 219 237 / 72%);
   background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(12px);
 }
 .guide-modal__category {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
   padding: 0.3rem 0.55rem;
   border-radius: 999px;
   color: var(--color-primary);
@@ -1958,7 +2035,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-size: 0.75rem;
   font-weight: 800;
 }
-.guide-modal > header button {
+.guide-modal__category :deep(.icon) {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.guide-modal__topbar button {
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
@@ -1969,38 +2050,101 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--color-canvas);
 }
 .guide-modal__body {
-  padding: clamp(1.25rem, 4vw, 2.25rem);
+  padding: 0;
 }
-.guide-modal__body h2 {
-  margin-bottom: 0.8rem;
+.guide-modal__hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.5rem, 5vw, 2.75rem);
+  border-bottom: 1px solid var(--hs-blue-100);
+  background:
+    radial-gradient(circle at 92% 20%, rgb(49 87 255 / 12%), transparent 34%),
+    linear-gradient(145deg, #f8faff 0%, var(--hs-blue-50) 100%);
+}
+.guide-modal__hero > *:not(.guide-modal__number) {
+  position: relative;
+  z-index: 1;
+}
+.guide-modal__number {
+  position: absolute;
+  right: clamp(1rem, 4vw, 2rem);
+  bottom: -1.35rem;
+  color: rgb(49 87 255 / 8%);
+  font-size: clamp(6rem, 18vw, 9rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  pointer-events: none;
+}
+.guide-modal__hero h2 {
+  max-width: 32rem;
+  margin: 0.4rem 0 0.85rem;
   color: var(--color-ink);
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-size: clamp(1.55rem, 4vw, 2.2rem);
+  line-height: 1.3;
 }
 .guide-modal__summary {
+  max-width: 34rem;
+  margin: 0;
   color: var(--color-muted);
-  font-size: 0.95rem;
-  line-height: 1.65;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 .guide-modal__content {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 0;
+  padding: clamp(1.5rem, 5vw, 2.75rem);
   color: var(--color-ink);
   font-size: 0.95rem;
-  line-height: 1.85;
-  white-space: pre-line;
+  line-height: 1.9;
+}
+.guide-modal__content p {
+  position: relative;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+.guide-modal__content p::before {
+  position: absolute;
+  top: 0.7em;
+  left: 0;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  content: '';
+}
+.guide-modal__content p + p {
+  margin-top: 1.35rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--color-border);
+}
+.guide-modal__content p + p::before {
+  top: calc(1.35rem + 0.7em);
 }
 .guide-modal > footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--color-border);
-  background: var(--color-canvas);
+  background: rgb(247 249 253 / 96%);
+  backdrop-filter: blur(12px);
 }
-.guide-modal > footer small {
+.guide-modal__meta {
+  display: grid;
+  gap: 0.15rem;
+}
+.guide-modal__meta small {
   color: var(--color-muted);
+}
+.guide-modal__meta em {
+  color: var(--color-subtle);
+  font-size: 0.7rem;
+  font-style: normal;
 }
 
 @media (max-width: 74rem) {
@@ -2091,9 +2235,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     padding: 0.35rem;
   }
   .calendar-day > strong {
-    min-width: 1.15rem;
-    height: 1.15rem;
+    min-height: 1.15rem;
     margin-top: 0.25rem;
+    padding: 0.16rem 0.3rem;
     font-size: 0.62rem;
   }
   .calendar-day > small {
@@ -2120,6 +2264,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   .guide-modal {
     max-height: 92dvh;
     border-radius: 1.25rem 1.25rem 0 0;
+  }
+  .guide-modal__hero {
+    padding: 1.5rem 1.25rem;
+  }
+  .guide-modal__content {
+    padding: 1.5rem 1.25rem 2rem;
   }
   .guide-modal > footer {
     align-items: stretch;

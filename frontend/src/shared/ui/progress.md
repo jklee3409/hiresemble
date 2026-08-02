@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-02] Session Summary (Career person icon·PageHeader title slot)
+
+- What was done:
+  - AppIcon에 별도 `person-card` currentColor SVG를 추가하고 PageHeader에 fallback을 보존하는 named title slot을 제공했다.
+- Key decisions:
+  - Dashboard의 이름 부분 강조만 slot이 소유하며 기존 title prop 호출부는 변경 없이 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Shared UI unit test와 Frontend `pnpm check` 67 files/265 tests·build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 공용 아이콘 확장)
 
 - What was done:

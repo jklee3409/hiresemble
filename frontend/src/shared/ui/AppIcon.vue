@@ -2,6 +2,7 @@
 type AppIconName =
   | 'dashboard'
   | 'profile'
+  | 'person-card'
   | 'documents'
   | 'jobs'
   | 'cover-letter'
@@ -48,6 +49,11 @@ defineProps<{
     <template v-else-if="name === 'profile'">
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20c.8-4 3.2-6 7-6s6.2 2 7 6" />
+    </template>
+    <template v-else-if="name === 'person-card'">
+      <circle cx="12" cy="8.25" r="3.35" />
+      <path d="M5.25 20c.55-4.1 3.05-6.15 6.75-6.15S18.2 15.9 18.75 20" />
+      <path d="M8.2 15.1c.95 1.2 2.22 1.8 3.8 1.8s2.85-.6 3.8-1.8" />
     </template>
     <template v-else-if="name === 'documents'">
       <path d="M6 3h8l4 4v14H6z" />

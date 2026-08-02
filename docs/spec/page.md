@@ -241,15 +241,15 @@ API:
 
 ## 정보 구조와 문구
 
-- 제목은 `{displayName}님의 지원 준비 현황`, 설명은 `마감 일정과 다음 할 일을 한눈에 확인하세요.`를 사용한다.
-- 커리어 카드는 서버가 안전하게 제공하는 이름, 희망 직무·지역, 최종 학력, `지원 정보 준비도`와 프로필 CTA를 표시한다. 사진 대신 이름 첫 글자 모노그램과 추상 CSS 장식을 사용하며 미입력 값은 명시한다.
+- 제목은 `{displayName}님의 지원 준비 현황`, 설명은 `마감 일정과 다음 할 일을 한눈에 확인하세요.`를 사용한다. 제목에서는 이름만 Hiresemble Blue로 강조한다.
+- 커리어 카드는 서버가 안전하게 제공하는 이름, 희망 직무·지역, 최종 학력, `지원 정보 준비도`와 프로필 CTA를 표시한다. 사진이나 이름 첫 글자 avatar 대신 별도 사람 SVG icon과 추상 CSS 장식을 사용하며 미입력 값은 명시한다.
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다.
 - 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
 
 ## 마감 캘린더
 
-- 월 이동과 오늘 복귀를 제공하고 날짜별 활성 마감 공고 수를 배지로 표시한다.
+- 월 이동과 오늘 복귀를 제공하고 날짜별 활성 마감 공고 수를 `N건` 배지로 표시한다. 일요일 날짜는 red, 토요일 날짜는 Hiresemble Blue를 사용하되 선택·오늘 상태는 border와 label로도 구분한다.
 - 선택 날짜의 회사, 공고명, 상태, `Asia/Seoul` 마감 시각과 상세 링크를 같은 화면에 보여 준다. Desktop은 옆 패널, mobile은 접근 가능한 `details` 패널을 사용한다.
 - `CLOSED` 공고는 제외하고 월 경계는 서울 자정으로 계산한다. 월별 수를 paginated 첫 page의 `items.length`로 추정하지 않는다.
 - loading, 오류, 일정 없음과 선택 날짜 결과 없음은 서로 다른 상태로 표시한다.
@@ -257,8 +257,9 @@ API:
 ## 취업 준비 가이드
 
 - 게시된 서버 콘텐츠를 노출 순서대로 최대 5개 카드에 표시한다. 프론트 상수 콘텐츠를 사용하지 않는다.
-- 카드를 누르면 제목, 요약, 본문, 게시일을 modal에서 보여 준다. modal은 ESC·배경·닫기 버튼, focus trap, trigger focus 복귀, body scroll lock과 mobile sheet layout을 지원한다.
+- 카드를 누르면 category, 순번, 제목, 요약, 여러 문단의 상세 본문, 게시일과 콘텐츠 version을 위계화한 modal에서 보여 준다. modal은 ESC·배경·닫기 버튼, focus trap, trigger focus 복귀, body scroll lock과 mobile sheet layout을 지원한다.
 - 게시 상태·순서·카테고리·게시 시각·version은 Backend/DB가 소유하며 이번 범위에는 관리자 mutation UI/API가 없다.
+- 준비 workspace의 `전체 이용 순서 보기` CTA는 설명 바로 뒤가 아니라 카드 하단에 고정해 다른 콘텐츠 높이에서도 행동 위치를 유지한다.
 
 route 변경 시 `#app-content[tabindex="-1"]`로 프로그램적 focus를 이동하는 접근성 동작은 유지한다. 이 비상호작용 workspace의 focus에만 outline과 box-shadow를 표시하지 않으며 링크, 버튼과 form control의 keyboard focus ring은 유지한다.
 

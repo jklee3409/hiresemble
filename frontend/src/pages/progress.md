@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Dashboard 사람 icon·주말 캘린더·Guide modal 개선)
+
+- What was done:
+  - 커리어 avatar를 사람 SVG로 교체하고 제목 이름만 theme color로 강조했으며 주말과 날짜별 마감 건수, workspace CTA 위치, 장문 modal을 보완했다.
+- Key decisions:
+  - Calendar cell에 weekday를 명시해 색상 규칙을 testable하게 만들고 modal 본문은 서버의 빈 줄 기준 문단으로 렌더링한다.
+- Issues encountered:
+  - Dashboard 내부의 미정의 color alias를 기존 brand·muted token에 연결했다.
+- Validation:
+  - Dashboard·shared UI unit test, Frontend 67 files/265 tests·build와 Chromium 1440·1024·390px 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 지원 워크스페이스 재구성)
 
 - What was done:

@@ -1,12 +1,27 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
+import AppIcon from './AppIcon.vue'
 import BrandMark from './BrandMark.vue'
+import PageHeader from './PageHeader.vue'
 import PaginationNav from './PaginationNav.vue'
 import StatePanel from './StatePanel.vue'
 import StatusBadge from './StatusBadge.vue'
 
 describe('shared UI state components', () => {
+  it('renders a custom title slot and the career-card person icon', () => {
+    const header = mount(PageHeader, {
+      props: { title: '기본 제목' },
+      slots: { title: '<span class="custom-title">이종규</span>님의 지원 준비 현황' },
+    })
+    const icon = mount(AppIcon, { props: { name: 'person-card' } })
+
+    expect(header.get('h1').text()).toBe('이종규님의 지원 준비 현황')
+    expect(header.get('.custom-title').text()).toBe('이종규')
+    expect(icon.get('svg').findAll('circle')).toHaveLength(1)
+    expect(icon.get('svg').findAll('path')).toHaveLength(2)
+  })
+
   it('renders the shared H network mark without an external image', () => {
     const wrapper = mount(BrandMark)
 

@@ -11,6 +11,11 @@ test('protected app shell stays usable without horizontal overflow at required w
   await expect(
     page.getByRole('heading', { name: '반응형 확인 사용자님의 지원 준비 현황' }),
   ).toBeVisible()
+  const titleName = page.locator('.dashboard-title__name')
+  const titleSuffix = page.locator('.dashboard-title__suffix')
+  expect(await titleName.evaluate((element) => getComputedStyle(element).color)).not.toBe(
+    await titleSuffix.evaluate((element) => getComputedStyle(element).color),
+  )
   await expect(page.getByRole('heading', { name: '지원 준비 요약' })).toBeVisible()
   await expect(page.locator('#app-content')).toBeFocused()
   expect(
@@ -21,6 +26,7 @@ test('protected app shell stays usable without horizontal overflow at required w
   ).toEqual({ outline: 'none', boxShadow: 'none' })
 
   const deadlineDate = page.getByRole('button', { name: /^2026-08-15,/ })
+  await expect(deadlineDate).toContainText('1건')
   await deadlineDate.click()
   await expect(page.locator('.deadline-detail--desktop')).toContainText('플랫폼 엔지니어')
 
@@ -28,6 +34,10 @@ test('protected app shell stays usable without horizontal overflow at required w
   await guideTrigger.click()
   const guideDialog = page.getByRole('dialog', { name: '공고 분석 전에 확인할 항목' })
   await expect(guideDialog).toBeVisible()
+  await expect(guideDialog.locator('.guide-modal__content p')).toHaveCount(3)
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.screenshot({ path: testInfo.outputPath('guide-modal-1440.png') })
+  }
   await page.keyboard.press('Escape')
   await expect(guideDialog).toBeHidden()
   await expect(guideTrigger).toBeFocused()
@@ -347,9 +357,9 @@ async function installAuthenticatedRoutes(page: Page): Promise<void> {
           category,
           title,
           summary: '핵심을 빠르게 확인하고 내 지원 준비에 바로 적용해 보세요.',
-          body: '요구 사항을 나누어 읽고, 내 경험에서 확인 가능한 근거를 연결해 보세요.',
+          body: '담당 업무에서 반복되는 동사와 기대 결과를 찾아 역할의 중심을 정리해 보세요. 직무명만으로 판단하지 않고 실제로 해결할 문제를 확인하는 것이 먼저입니다.\n\n필수 조건과 우대 조건을 나누고, 각 항목에 연결할 수 있는 내 경험의 행동과 결과를 한 줄씩 남겨 보세요. 사용하지 않은 기술은 과장하지 않고 비슷한 문제를 해결한 근거를 찾습니다.\n\n마지막으로 근무 조건과 마감 시각을 다시 확인하고, 자기소개서와 면접에서 강조할 핵심 업무 세 가지를 골라 준비에 활용하세요.',
           publishedAt: '2026-08-01T00:00:00Z',
-          version: 1,
+          version: 2,
         })),
       ),
     })
