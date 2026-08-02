@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-02] Session Summary (긴 공고 제목 한 줄 slide)
+
+- What was done:
+  - 공고 resource header의 제목 영역을 58rem까지 넓히고 실제 overflow를 측정해 hover·focus 시 한 줄로 slide하도록 했다.
+- Key decisions:
+  - 제목은 keyboard focus와 직접 가로 scroll을 지원하고 `prefers-reduced-motion`에서는 transform을 비활성화한다.
+- Issues encountered:
+  - 비동기 Job 조회 뒤 생성되는 제목 element를 ResizeObserver에 연결하도록 query 갱신 watch에서 재관찰했다.
+- Validation:
+  - JobDetailLayout unit test와 긴 한국어 제목 Desktop·mobile Chromium overflow 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 폭·route focus outline 보정)
 
 - What was done:

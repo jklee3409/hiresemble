@@ -15,6 +15,34 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (Dashboard 탐색·공고 분석 UX 보정)
+
+- What was done:
+  - Dashboard 중복 제목·캘린더 보조 문구와 오늘 버튼을 제거하고 일반 흐름 우측 바로가기, self-hosted variable Noto Sans KR 제목 typography를 추가했다.
+  - 긴 공고 제목 한 줄 slide, 분석 진행 문구 nowrap, `BALANCED` 고정 요청과 품질 옵션 미노출, safe code별 사용자 실패 안내를 구현했다.
+  - 지정 owner의 최근 실패 Run을 read-only 조회해 `EXTRACT_REQUIREMENTS`의 Java record validation이 correction 1회 뒤에도 실패한 사실을 확인했다.
+- Key decisions:
+  - Backend quality mode API 계약은 유지하고 현재 Frontend에서만 `BALANCED` literal을 전송한다. 계정 진단 중 재시도·데이터 수정·원문 조회는 수행하지 않았다.
+- Issues encountered:
+  - 첫 전체 check는 E2E 테스트 format에서, 첫 Browser 회귀는 검증 순서와 journey 노출 조건에서 중단됐으며 각각 테스트 계약을 보정한 뒤 통과했다.
+- Validation:
+  - `corepack pnpm check` 67 files/265 tests·typecheck·lint·format·build 통과, Chromium UI shell 3/3과 Job analysis 1/1 통과.
+- Next steps:
+  - 해당 실패의 정확한 invalid field는 보안 정책상 raw invalid output을 저장하지 않아 현재 metadata만으로 확정할 수 없다.
+
+## [2026-08-02] Session Summary (Dashboard 캘린더 UI 완성도·hover 회귀 보정)
+
+- What was done:
+  - 캘린더 header·월 controls·요약, 날짜 grid·event chip·상태 표현을 제품형 일정 카드로 개선하고 workspace 문단 간격을 보정했다.
+- Key decisions:
+  - Dashboard frontend presentation만 변경하고 날짜별 count·선택 상세·서울 시간 API 계약은 유지했다.
+- Issues encountered:
+  - 선택된 오늘과 바로 다음 hover cell의 외곽 효과가 맞닿는 문제를 실제 첨부 화면 기준으로 재현해 gap·inset 강조로 수정했다.
+- Validation:
+  - Dashboard unit 5 tests, Chromium UI shell 3/3과 1440·1024·390px 시각·overflow·인접 cell gap 검증 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 주말·건수·장문 가이드 UI 보완)
 
 - What was done:

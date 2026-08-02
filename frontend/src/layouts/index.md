@@ -8,7 +8,7 @@
 
 - [`PublicLayout.vue`](PublicLayout.vue): `/` Landing과 분리된 비대칭 brand canvas, Landing 복귀 브랜드와 form 우선 mobile signup/login shell
 - [`AppLayout.vue`](AppLayout.vue): desktop 상단 navigation, mobile bottom navigation·focus-trapped 더보기, 단일 account menu와 닉네임 Modal
-- [`JobDetailLayout.vue`](JobDetailLayout.vue): 공통 공고 resource header, header offset sticky tab, 명확한 body gap과 Job detail outlet
+- [`JobDetailLayout.vue`](JobDetailLayout.vue): 한 줄 overflow slide를 지원하는 공통 공고 resource header, header offset sticky tab, 명확한 body gap과 Job detail outlet
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

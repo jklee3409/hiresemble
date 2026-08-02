@@ -7,6 +7,34 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/265 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-02] Session Summary (Dashboard 바로가기·공고 분석 표시 개선)
+
+- What was done:
+  - Dashboard에 비고정 섹션 바로가기와 self-hosted variable Noto Sans KR 제목 typography를 추가하고 중복 요약 제목·오늘 이동·서울 기준 보조 문구를 제거했다.
+  - 공고 header 긴 제목 slide와 분석 진행 한 줄 표현, 품질 선택 제거, safe error 사용자 문구를 적용했다.
+- Key decisions:
+  - 공고 분석 API 요청은 선택 UI 없이 항상 `BALANCED`를 보내며 reduced motion 사용자는 제목 자동 slide 대신 직접 가로 scroll을 사용한다.
+- Issues encountered:
+  - 첫 check에서 E2E format 한 건이 발견됐고 Prettier 적용 후 재검증했다.
+- Validation:
+  - Frontend 표준 check 67 files/265 tests·build, UI shell Chromium 3/3, Job analysis Chromium 1/1 통과.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (Dashboard 캘린더 제품 UI 개선)
+
+- What was done:
+  - 캘린더 월 header·요약·이동 controls를 재구성하고 날짜 cell gap·경계·밀도, 오늘·선택·마감 chip과 hover/focus 상태를 정돈했다.
+  - 준비 workspace 제목과 설명 사이에 명시적인 간격을 추가했다.
+- Key decisions:
+  - 날짜 선택과 상세 panel 데이터 흐름은 유지하고 CSS·presentational markup만 개선했다. 선택 강조는 외부 shadow 대신 내부 border를 사용한다.
+- Issues encountered:
+  - 선택된 오늘 바로 다음 날짜 hover가 gap 없는 grid에서 맞닿아 겹쳐 보였고 0.35rem cell gap과 내부 shadow로 해소했다.
+- Validation:
+  - Dashboard unit 5 tests와 Chromium UI shell 3/3, 1440·1024·390px screenshot 및 인접 cell 간격 assertion 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 세부 시각·장문 Guide modal 보완)
 
 - What was done:

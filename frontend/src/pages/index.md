@@ -12,7 +12,7 @@
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·학력 단계와 서버 계산 최종 학력·희망 조건·문서 이동/추후 입력 P2 흐름
 - [`GuidePage.vue`](GuidePage.vue): 실제 공통 UI mini preview로 내 정보→자료→자동 공고 분석→자기소개서→면접 순서를 안내하는 재방문 가능 가이드
-- [`DashboardPage.vue`](DashboardPage.vue): 사람 SVG 커리어 카드, 다음 행동·요약, 주말·건수 표현을 포함한 서울 기준 월간 마감 캘린더, 최근 활동과 장문 서버 가이드 modal을 조합하는 지원 워크스페이스
+- [`DashboardPage.vue`](DashboardPage.vue): 사람 SVG 커리어 카드, 다음 행동·요약, 섹션 바로가기, 주말·건수 표현을 포함한 서울 기준 월간 마감 캘린더, 최근 활동과 장문 서버 가이드 modal을 조합하는 지원 워크스페이스
 - [`ProfileBasicPage.vue`](ProfileBasicPage.vue): Career Profile Workspace 안의 기본 정보·자기소개·희망 조건 편집 영역, Form 하단 저장 상태·409 재적용
 - [`LandingPage.test.ts`](LandingPage.test.ts): Hero heading/body 순서, 공개 CTA·semantic landmark·5단계·anchor·금지 문구, reveal fallback과 reduced motion 회귀
 - [`LandingProductDemo.test.ts`](LandingProductDemo.test.ts): scene 계약·자동 loop·offscreen·문서 visibility·observer fallback·reduced motion·timer cleanup 회귀
@@ -26,7 +26,7 @@
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·마감일과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 자동 준비 journey, 읽기 전용 document view와 분리된 편집·추출·retry·delete·version conflict
-- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): 최초 자동 분석 진행, 결과 summary·다음 행동, 보조 재분석·Eligibility/fit score·criterion/evidence·OUTDATED·이력
+- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, 결과 summary·다음 행동, 보조 재분석·Eligibility/fit score·criterion/evidence·OUTDATED·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
 - [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 문항·TipTap·evidence·AI·version·verification·finalize canonical editor

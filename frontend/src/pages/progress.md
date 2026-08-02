@@ -4,6 +4,33 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Dashboard section 탐색·Job Analysis 실패 UX)
+
+- What was done:
+  - Dashboard의 시각적 중복 제목을 숨기고 screen reader heading은 유지했으며 self-hosted variable Noto Sans KR 제목과 섹션 anchor를 연결하는 비고정 바로가기를 추가했다.
+  - Job Analysis의 재분석 품질 control을 제거하고 `BALANCED` 요청으로 고정하며 내부 structured output 문구를 사용자 안내로 변환했다.
+- Key decisions:
+  - Dashboard 바로가기는 Desktop 우측 일반 flow, 좁은 화면 가로 navigation으로 제공한다.
+- Issues encountered:
+  - Journey는 완료된 분석 page에서는 숨겨져 Overview에서 노출되므로 Browser nowrap 검증을 실제 노출 route로 이동했다.
+- Validation:
+  - Dashboard·JobAnalysis·JobDetail unit 13 tests, Frontend 전체 265 tests와 Browser 회귀 통과.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (마감 캘린더 밀도·상태 hierarchy 개선)
+
+- What was done:
+  - 캘린더 상단 summary와 월 toolbar, 고정 간격 날짜 grid, today marker, selected surface와 deadline event chip을 B2C dashboard tone으로 재설계했다.
+- Key decisions:
+  - 기존 click·month navigation·today·desktop/mobile detail 연동과 서울 시간 계약은 변경하지 않았다.
+- Issues encountered:
+  - 오늘 다음 셀 hover가 선택 외곽선과 시각적으로 겹치는 문제를 grid gap과 inset selection으로 보정했다.
+- Validation:
+  - Dashboard unit test, Chromium responsive 3/3과 hover cell bounding-box regression 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 사람 icon·주말 캘린더·Guide modal 개선)
 
 - What was done:

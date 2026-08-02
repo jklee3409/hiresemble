@@ -19,7 +19,7 @@ P5 Job URL filter·mutation과 P6 자동 Analysis projection·query·presentatio
 
 Backend의 extraction v3·WebP·legacy retry 승격은 공개 상태와 step key를 바꾸지 않는다. retry 응답의 successor Run ID로 query를 갱신하고 알 수 없는 step은 공용 안전 fallback label을 사용한다.
 
-- `analysisPresentation.ts`: Eligibility·criterion·match·OUTDATED·analysis quality label
+- `analysisPresentation.ts`: Eligibility·criterion·match·OUTDATED label과 structured output·timeout·Provider 실패의 사용자 안내 문구
 - `*.test.ts`, `testFixtures.ts`: feature 계약 검증
 - [`progress.md`](progress.md): P5 feature 상태
 

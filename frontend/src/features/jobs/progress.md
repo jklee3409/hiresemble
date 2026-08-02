@@ -4,6 +4,21 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-02] Session Summary (공고 분석 고정 quality·실패 안내)
+
+- What was done:
+  - 분석 방식 label·selector를 제거하고 자동·재분석 요청을 `BALANCED`로 고정했다.
+  - structured output, 데이터 부족, timeout, Provider, 취소와 기타 실패를 사용자 행동 중심 title·description으로 변환했다.
+  - 진행 단계의 긴 문구를 한 줄로 유지하고 중간 viewport에서는 2열로 전환했다.
+- Key decisions:
+  - 공개 DTO enum은 향후 모델 선택 확장을 위해 유지하며 현재 presentation에서만 품질 모드를 숨긴다.
+- Issues encountered:
+  - None.
+- Validation:
+  - JobAnalysis unit와 Desktop·mobile Chromium overflow 회귀, Frontend 표준 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 문서 view·자동 분석 journey)
 
 - What was done:

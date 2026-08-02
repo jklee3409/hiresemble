@@ -246,10 +246,14 @@ API:
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다.
 - 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
+- 중복되는 `한눈에 보기`, `지원 준비 요약` 타이틀은 시각적으로 노출하지 않되 screen reader용 heading은 유지한다. 섹션 제목은 self-hosted variable `Noto Sans KR`, 절제된 굵기와 자간을 사용한다.
+- Desktop 오른쪽에는 지원 현황·마감 캘린더·최근 활동·취업 준비 가이드 anchor를 제공하는 작은 바로가기를 일반 문서 흐름으로 배치한다. fixed·sticky positioning을 사용하지 않으며 좁은 화면에서는 가로형 탐색으로 전환한다.
 
 ## 마감 캘린더
 
-- 월 이동과 오늘 복귀를 제공하고 날짜별 활성 마감 공고 수를 `N건` 배지로 표시한다. 일요일 날짜는 red, 토요일 날짜는 Hiresemble Blue를 사용하되 선택·오늘 상태는 border와 label로도 구분한다.
+- 이전·다음 월 이동을 제공하고 날짜별 활성 마감 공고 수를 `N건` 배지로 표시한다. 별도 오늘 이동 버튼은 노출하지 않는다. 일요일 날짜는 red, 토요일 날짜는 Hiresemble Blue를 사용하되 선택·오늘 상태는 border와 label로도 구분한다.
+- 캘린더 header는 이번 달 마감 요약과 월·연도, 이전·다음 이동을 분리해 위계를 만들고, 날짜 grid는 명시적인 cell 간격과 부드러운 경계로 인접 hover·선택 강조가 서로 침범하지 않게 한다.
+- 일반·오늘·선택·마감 보유 날짜는 날짜 marker, soft surface, 내부 border와 작은 event chip을 조합해 구분하며 큰 외곽 outline이나 셀 밖으로 뜨는 badge를 사용하지 않는다.
 - 선택 날짜의 회사, 공고명, 상태, `Asia/Seoul` 마감 시각과 상세 링크를 같은 화면에 보여 준다. Desktop은 옆 패널, mobile은 접근 가능한 `details` 패널을 사용한다.
 - `CLOSED` 공고는 제외하고 월 경계는 서울 자정으로 계산한다. 월별 수를 paginated 첫 page의 `items.length`로 추정하지 않는다.
 - loading, 오류, 일정 없음과 선택 날짜 결과 없음은 서로 다른 상태로 표시한다.
@@ -468,6 +472,7 @@ API:
 ### Overview Tab
 
 - 공통 resource header의 회사·직무·상태·마감·원본 URL
+- 긴 공고 제목은 header의 넓어진 한 줄 영역에서만 표시하고 overflow가 있을 때 hover·keyboard focus·직접 가로 scroll로 내용을 확인한다. `prefers-reduced-motion`에서는 자동 이동을 사용하지 않는다.
 - 회사·직무·근무 형태·위치·마감·본문 출처·최신 분석 상태 요약
 - plain text 원문을 heading, 문단, 순서·비순서 목록, 안전한 link node로만 변환하는 읽기 전용 document view
 - 긴 본문은 페이지 흐름에서 읽고 `전체 보기/접기`를 제공하며 작은 내부 scroll box나 `v-html`을 사용하지 않음
@@ -490,7 +495,8 @@ API:
 
 - 최초 자동 분석 진행 단계와 안전한 실패·본문 보완 CTA
 - 최초 화면에서는 품질 dropdown과 큰 수동 실행 card를 노출하지 않음
-- 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하고 기본은 `BALANCED`; `ECONOMY`는 접힌 재분석 옵션에 유지
+- 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하며 프론트 요청은 `BALANCED`로 고정한다. `BALANCED`·`ECONOMY` 선택 문구와 재분석 옵션은 노출하지 않는다.
+- 진행 여정 문구는 한 줄로 유지하고, structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
 - 적합도·강점 수·보완점 수 요약과 점수 tooltip 안내
 - 주요 업무

@@ -6,6 +6,33 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (Dashboard 탐색·Job Analysis 표시 계약 정리)
+
+- What was done:
+  - Dashboard의 비고정 섹션 바로가기, 시각적으로 숨긴 중복 요약 제목, 캘린더 이동 control과 self-hosted variable Noto Sans KR 제목 계약을 실제 구현에 맞췄다.
+  - 공고 긴 제목 한 줄 slide, Frontend `BALANCED` 고정·품질 옵션 미노출과 사용자 실패 문구 계약을 반영했다.
+- Key decisions:
+  - Backend API의 `ECONOMY|BALANCED` 입력 계약은 유지하고 Frontend 선택 노출만 현재 범위에서 제거한다.
+- Issues encountered:
+  - 기존 page 명세에 오늘 복귀와 접힌 `ECONOMY` 옵션이 남아 있어 현재 제품 결정으로 교정했다.
+- Validation:
+  - page 명세와 Frontend component·unit·Chromium 결과를 교차 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (Dashboard 캘린더 시각 상태 계약 보강)
+
+- What was done:
+  - 캘린더 summary·month toolbar, cell gap·soft border, today·selected·deadline event 상태와 hover 비침범 조건을 page 명세에 반영했다.
+- Key decisions:
+  - Backend/API·상세 목록 계약은 유지하고 presentation 계약만 구체화했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Dashboard 구현, component test와 Chromium 1440·390px 결과를 page 명세와 교차 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 세부 UI·V18 Guide 계약 동기화)
 
 - What was done:
