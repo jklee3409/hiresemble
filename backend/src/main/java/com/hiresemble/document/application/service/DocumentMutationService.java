@@ -87,6 +87,7 @@ public class DocumentMutationService {
     @Transactional
     public WorkflowLaunchResult reparse(
             UUID userId, UUID documentId, long expectedVersion, String canonicalInputHash) {
+        Instant now = clock.instant();
         DocumentRecord current = active(userId, documentId);
         if (current.version() != expectedVersion) throw versionConflict();
         AgentRunSnapshot latest = latestRun(current);
@@ -96,8 +97,9 @@ public class DocumentMutationService {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
         DocumentRecord updated = store.resetForReparse(
-                        userId, documentId, expectedVersion, clock.instant())
+                        userId, documentId, expectedVersion, now)
                 .orElseThrow(this::versionConflict);
+        evidencePort.retireDocumentEvidence(userId, documentId, now);
         return creationService.launchRevision(updated, canonicalInputHash);
     }
 
@@ -111,7 +113,7 @@ public class DocumentMutationService {
         if (latest != null && latest.cancellable()) {
             cancellationPort.requestCancellation(userId, latest.id(), latest.stateVersion(), now);
         }
-        evidencePort.handleDocumentDeletion(userId, documentId, now);
+        evidencePort.retireDocumentEvidence(userId, documentId, now);
         store.deleteDerivedContent(userId, documentId);
         outbox.enqueueDocument(userId, documentId, document.storageKey(), now);
     }

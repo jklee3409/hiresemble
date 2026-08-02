@@ -88,11 +88,11 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
 
     @Override
     @Transactional
-    public void handleDocumentDeletion(UUID userId, UUID documentId, Instant deletedAt) {
+    public void retireDocumentEvidence(UUID userId, UUID documentId, Instant retiredAt) {
         for (EvidenceRecord evidence : store.findDocumentEvidence(userId, documentId)) {
             if (referenceQueries.stream()
                     .anyMatch(query -> query.isReferenced(userId, evidence.id()))) {
-                store.tombstoneEvidence(userId, evidence.id(), deletedAt);
+                store.tombstoneEvidence(userId, evidence.id(), retiredAt);
             } else {
                 store.deleteEvidence(userId, evidence.id());
             }

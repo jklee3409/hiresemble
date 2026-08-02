@@ -15,6 +15,6 @@ public interface DocumentEvidenceCommandPort {
             List<DocumentEvidenceCandidate> candidates,
             Instant now);
 
-    void handleDocumentDeletion(UUID userId, UUID documentId, Instant deletedAt);
+    void retireDocumentEvidence(UUID userId, UUID documentId, Instant retiredAt);
 
 }

@@ -27,6 +27,7 @@ import com.hiresemble.document.domain.model.EvidenceExtractionStatus;
 import com.hiresemble.document.infrastructure.adapter.DocumentFileInspector;
 import com.hiresemble.document.infrastructure.persistence.DocumentStore;
 import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
+import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -75,6 +76,7 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     @Autowired private DocumentStore documentStore;
     @Autowired private ObjectDeletionOutboxService outbox;
     @Autowired private BudgetReservationPort budgetReservations;
+    @Autowired private ProfileAnalysisQueryPort profileAnalysisQuery;
 
     @DynamicPropertySource
     static void slowerBackgroundScans(DynamicPropertyRegistry registry) {
@@ -442,6 +444,14 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 longText("reparse@example.com").getBytes(StandardCharsets.UTF_8), 202);
         UUID documentId = UUID.fromString(accepted.get("documentId").asText());
         UUID originalRun = UUID.fromString(accepted.get("agentRunId").asText());
+        UUID originalEvidence = createEvidence(owner, documentId, originalRun);
+        jdbcTemplate.update("""
+                UPDATE profile_evidence SET verification_status='VERIFIED',verified_at=now(),
+                    version=version+1,updated_at=now() WHERE user_id=? AND id=?
+                """, owner.userId(), originalEvidence);
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .extracting(value -> value.id())
+                .contains(originalEvidence);
         mockMvc.perform(put("/api/v1/documents/" + documentId + "/manual-text")
                         .cookie(owner.cookie()).header("X-CSRF-TOKEN", owner.csrfToken())
                         .header("Idempotency-Key", "active-manual-key-01")
@@ -475,6 +485,12 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 Long.class, newRun, documentId)).isEqualTo(1L);
         assertThat(documentStore.findActive(owner.userId(), documentId).orElseThrow().sourceRevision())
                 .isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM profile_evidence WHERE user_id=? AND id=?",
+                Long.class, owner.userId(), originalEvidence)).isZero();
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .extracting(value -> value.id())
+                .doesNotContain(originalEvidence);
 
         mockMvc.perform(post("/api/v1/documents/" + documentId + "/reparse")
                         .cookie(owner.cookie()).header("X-CSRF-TOKEN", owner.csrfToken())
