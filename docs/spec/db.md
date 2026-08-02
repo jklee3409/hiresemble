@@ -8,7 +8,7 @@
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 대시보드 취업 준비 가이드 게시물을 추가한 V17이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 대시보드 취업 준비 가이드 본문을 보강한 V18이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
 
 ## 1. 공통 무결성·소유권
 
@@ -216,7 +216,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 - `PUBLISHED`는 `published_at`이 반드시 존재하며 사용자 조회는 `status=PUBLISHED AND published_at<=now`만 반환한다.
 - 사용자 조회 정렬은 `display_order ASC, published_at DESC, id ASC`다.
-- V17은 최초 게시 콘텐츠 5개를 안전한 seed로 제공한다. 관리자 화면과 mutation API는 현재 범위가 아니다.
+- V17은 최초 게시 콘텐츠 5개를 안전한 seed로 제공하고 V18은 version 1·미수정 seed만 장문 본문으로 갱신해 version 2로 올린다. 관리자 화면과 mutation API는 현재 범위가 아니다.
 
 ### 5.6 `job_analyses`와 rubric
 
@@ -460,7 +460,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 13. 향후 migration 책임
 
-현재 latest implemented migration은 취업 준비 가이드 게시물을 추가한 V17이다. V1~V17은 수정하지 않는다. 아래 미래 번호와 filename은 V18부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 취업 준비 가이드 본문을 보강한 V18이다. V1~V18은 수정하지 않는다. 아래 미래 번호와 filename은 V19부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -474,12 +474,13 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | additional implemented V15   | 사용자 직접 대외활동, ACTIVITY source와 direct evidence 불변식                   |
 | additional implemented V16   | 공고 revision별 자동 분석 의도, lease reconciliation, Agent Run 연결             |
 | additional implemented V17   | 전역 취업 준비 가이드 게시 상태·노출 순서·초기 콘텐츠                           |
-| P8.6, tentative V18          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V19          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| additional implemented V18   | 미수정 초기 가이드 5개의 장문 본문·content version 2 보강                        |
+| P8.6, tentative V19          | feature policy/assignment/override/period/reservation/event                      |
+| P8.7, tentative V20          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V20        | USER/ADMIN role 확장, provisioning/access audit                                  |
+| P8.9-A, tentative V21        | USER/ADMIN role 확장, provisioning/access audit                                  |
 | P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V21                                     |
+| P9                           | P8.9-A 완료 시 next available, 현재 예상 V22                                     |
 | vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.

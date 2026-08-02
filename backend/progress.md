@@ -4,8 +4,21 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
-- V1~V17 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물과 초기 콘텐츠를 소유한다.
-- Backend 전체 73 suites/498 tests와 final-source actual P8~P4 wrapper가 통과했고 local은 실제 provider, local-offline/test는 network-disabled다.
+- V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
+- Backend 전체 suite는 499 tests이며 이번 실행에서 기존 Interview timing test 1개가 최초 실패 후 격리 재실행 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (V18 Career Guide 장문 콘텐츠 보강)
+
+- What was done:
+  - 기존 API·schema를 유지하면서 미수정 V17 seed 5개의 본문을 실용적인 장문 콘텐츠로 갱신하는 V18 migration과 upgrade test를 추가했다.
+- Key decisions:
+  - `version=1 AND updated_at=created_at`인 stable seed ID만 갱신해 별도 편집본을 보존하고 version을 2로 올린다.
+- Issues encountered:
+  - 전체 check의 기존 Interview test가 transaction `now()`와 application 생성 시각의 183ms 차로 한 번 실패했고 격리 재실행은 통과했다.
+- Validation:
+  - `DashboardMigrationTest` 통과. 전체 check는 499 tests 중 1개 최초 실패, 해당 test 격리 실행 통과.
+- Next steps:
+  - Interview integration fixture timing 안정화는 별도 범위로 남긴다.
 
 ## [2026-08-02] Session Summary (Dashboard projection·Career Guide read)
 

@@ -36,7 +36,7 @@ class DashboardMigrationTest {
 
     @BeforeEach
     void cleanSchema() {
-        flyway("17").clean();
+        flyway("18").clean();
     }
 
     @Test
@@ -71,7 +71,7 @@ class DashboardMigrationTest {
 
     @Test
     void emptyDatabaseAddsGuideConstraintsAndStableInitialOrder() throws Exception {
-        Flyway latest = flyway("17");
+        Flyway latest = flyway("18");
         assertThat(latest.migrate().success).isTrue();
         assertThat(latest.validateWithResult().validationSuccessful).isTrue();
         assertThat(queryLong("SELECT count(*) FROM career_guide_posts"))
@@ -79,7 +79,9 @@ class DashboardMigrationTest {
         assertThat(queryLong("SELECT min(display_order) FROM career_guide_posts"))
                 .isEqualTo(10);
         assertThat(queryLong("SELECT max(version) FROM career_guide_posts"))
-                .isEqualTo(1);
+                .isEqualTo(2);
+        assertThat(queryLong("SELECT count(*) FROM career_guide_posts WHERE char_length(body) >= 500"))
+                .isEqualTo(5);
 
         assertThatThrownBy(() -> execute("""
                 INSERT INTO career_guide_posts (
@@ -91,6 +93,27 @@ class DashboardMigrationTest {
                 )
                 """))
                 .hasMessageContaining("career_guide_posts_publish_state_ck");
+    }
+
+    @Test
+    void v18ExpandsOnlyPristineSeedContent() throws Exception {
+        assertThat(flyway("17").migrate().success).isTrue();
+        execute("""
+                UPDATE career_guide_posts
+                SET body='관리자가 편집한 본문', version=2, updated_at='2026-08-02T00:30:00Z'
+                WHERE slug='before-job-analysis'
+                """);
+
+        Flyway upgraded = flyway("18");
+        assertThat(upgraded.migrate().success).isTrue();
+        assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+        assertThat(queryString(
+                        "SELECT body FROM career_guide_posts WHERE slug='before-job-analysis'"))
+                .isEqualTo("관리자가 편집한 본문");
+        assertThat(queryLong("SELECT count(*) FROM career_guide_posts WHERE version=2"))
+                .isEqualTo(5);
+        assertThat(queryLong("SELECT count(*) FROM career_guide_posts WHERE char_length(body) >= 500"))
+                .isEqualTo(4);
     }
 
     private void execute(String sql) throws Exception {
@@ -105,6 +128,15 @@ class DashboardMigrationTest {
                 ResultSet resultSet = statement.executeQuery(sql)) {
             assertThat(resultSet.next()).isTrue();
             return resultSet.getLong(1);
+        }
+    }
+
+    private String queryString(String sql) throws Exception {
+        try (Connection connection = connection();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(sql)) {
+            assertThat(resultSet.next()).isTrue();
+            return resultSet.getString(1);
         }
     }
 

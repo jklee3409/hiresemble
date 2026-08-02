@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (Dashboard 세부 UI·V18 Guide 계약 동기화)
+
+- What was done:
+  - 이름 단독 강조, 사람 SVG, 주말·`N건` 캘린더, workspace CTA와 장문 modal 계약 및 V18 콘텐츠 보강을 page·DB 명세에 반영했다.
+- Key decisions:
+  - V18은 schema 변경 없이 미수정 seed만 version 2로 올리고 미래 migration은 V19 이후로 이동한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현·migration test·Frontend Browser 결과와 page/db 명세를 교차 확인했다.
+- Next steps:
+  - P8.6 착수 시 latest V18을 기준으로 tentative V19를 재확인한다.
+
 ## [2026-08-02] Session Summary (Dashboard·Career Guide API/DB/Page 계약)
 
 - What was done:

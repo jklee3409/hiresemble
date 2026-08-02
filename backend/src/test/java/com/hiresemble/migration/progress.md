@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V17 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V18 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-02] Session Summary (V18 장문 Guide 안전 update 검증)
+
+- What was done:
+  - fresh V18의 5개 장문 version 2와 V17에서 편집된 guide를 V18이 덮어쓰지 않는 경로를 추가했다.
+- Key decisions:
+  - 본문 최소 길이와 custom body 보존을 함께 assertion해 콘텐츠 보강과 update guard를 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `gradlew test --tests com.hiresemble.migration.DashboardMigrationTest`: 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (V17 Career Guide migration 검증)
 

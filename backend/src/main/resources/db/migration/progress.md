@@ -14,12 +14,26 @@
 - `V10__exclude_document_education_evidence.sql`은 문서 교육 category 근거를 정리하고 새 active row를 차단한다.
 - `V11__derive_final_education.sql`은 학력 단계를 backfill하고 active 최종 학력을 hierarchy로 재계산한다.
 - `V12__create_interview_research_questions_and_feedback.sql`은 P8 조사·질문·immutable 답변·피드백과 typed Agent Run link를 생성한다.
-- `V17__create_career_guide_posts.sql`은 게시 상태·노출 순서·version을 가진 전역 가이드와 초기 콘텐츠 5개를 생성한다.
 - `V13__add_external_ai_provider_price_catalog.sql`은 실제 OpenAI·Tavily immutable 가격 항목과 provider call usage identity를 추가한다.
 - `V14__canonicalize_openai_embedding_policy.sql`은 legacy 정책을 보존하고 canonical `openai` version 2를 활성화한다.
 - `V15__create_activities_and_extend_profile_evidence.sql`은 사용자 직접 대외활동과 ACTIVITY evidence 불변식을 추가한다.
 - `V16__create_job_auto_analysis_requests.sql`은 공고 revision별 자동 분석 intent·lease claim·retry·terminal 상태를 추가한다.
+- `V17__create_career_guide_posts.sql`은 게시 상태·노출 순서·version을 가진 전역 가이드와 초기 콘텐츠 5개를 생성한다.
+- `V18__expand_career_guide_content.sql`은 미수정 초기 가이드 5개의 장문 본문을 version 2로 보강한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-02] Session Summary (V18 Career Guide 본문 보강)
+
+- What was done:
+  - 5개 초기 취업 준비 가이드를 공고 분석·경험 정리·강점 선택·면접 답변·마감 점검의 장문 실전 콘텐츠로 보강했다.
+- Key decisions:
+  - 적용된 V17은 수정하지 않고 stable ID, version 1, 미변경 timestamp를 모두 만족하는 row만 forward update한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - fresh V18과 V17→V18 사용자 편집 보존 migration test 통과.
+- Next steps:
+  - P8.6 tentative migration은 V19부터 사용한다.
 
 ## [2026-08-02] Session Summary (V17 Career Guide 게시 스키마)
 

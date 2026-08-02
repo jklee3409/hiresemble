@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (Dashboard 주말·건수·장문 가이드 UI 보완)
+
+- What was done:
+  - Dashboard에 별도 사람 SVG, 이름 단독 theme 강조, 주말 색상·날짜별 `N건`, workspace 하단 CTA와 장문 Career Guide modal을 반영하고 V18 콘텐츠 migration을 추가했다.
+- Key decisions:
+  - V17은 불변으로 보존하고 V18은 version 1·미수정 seed만 version 2 장문 본문으로 갱신한다.
+- Issues encountered:
+  - 전역에 없는 Dashboard color alias를 page·Teleport modal 범위에서 기존 brand token으로 연결했다. Backend 전체 check는 기존 Interview 시간 경계 test 1개가 183ms timing 차로 실패했으나 동일 test 격리 재실행은 통과했다.
+- Validation:
+  - Frontend `pnpm check` 67 files/265 tests·build, Chromium 3/3, Dashboard migration test, `docker compose config --quiet` 통과. Backend 전체는 499 tests 중 1개 최초 실패 후 해당 test 격리 통과.
+- Next steps:
+  - 기존 Interview integration fixture의 transaction `now()` timing flake는 별도 안정화 대상이다.
+
 ## [2026-08-02] Session Summary (행동 중심 Dashboard·마감 캘린더·Career Guide)
 
 - What was done:

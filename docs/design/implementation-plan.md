@@ -639,7 +639,7 @@ P0 계약 기준선
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: tentative V17 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`. V15는 사용자 직접 대외활동, V16은 공고 자동 분석 후속 의도에 사용됐다.
+- DB: tentative V19 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`. V15는 사용자 직접 대외활동, V16은 공고 자동 분석 후속 의도, V17~V18은 Dashboard Career Guide에 사용됐다.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -652,7 +652,7 @@ P0 계약 기준선
 - Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
 - Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
 - Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
-- Migration responsibility: V17 `TENTATIVE`; 구현 완료된 V1~V16 수정 금지.
+- Migration responsibility: V19 `TENTATIVE`; 구현 완료된 V1~V18 수정 금지.
 
 ### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -674,7 +674,7 @@ P0 계약 기준선
 ### 15.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `billing` module이 immutable zero-rate policy, SQL read model과 reconciliation을 소유하며 payment 책임은 갖지 않는다.
-- DB: tentative V18 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
+- DB: tentative V20 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
 - API: P8.6의 `/settings/usage` summary/history를 완성한다.
 - Frontend/Page: `/settings/usage`에서 사용량·남은 횟수·reset·기간 내역·현재 무료/청구 없음만 표시한다.
 - Source: 내부 원가=`ai_usage_records`, 제품·과금 가능 unit=`feature_usage_events`.
@@ -686,7 +686,7 @@ P0 계약 기준선
 - State lifecycle: raw append→SQL projection→watermark/reconciliation finding→append-only correction.
 - Idempotency/Concurrency: provider call/price item와 feature event unique를 유지하며 집계 재실행은 동일 결과다.
 - Failure semantics: aggregation lag는 stale로 표시하고 reconciliation 불일치를 숨기지 않는다.
-- Migration responsibility: V17 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
+- Migration responsibility: V20 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
 
 ### 15.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -738,7 +738,7 @@ P0 계약 기준선
 ### 17.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `backoffice` query module, ADMIN Security, provisioning command, access audit; domain query port/read model만 사용한다.
-- DB: tentative V19로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
+- DB: tentative V21로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
 - API: overview, users/detail/usage, ai-costs, agent-runs, failures, configuration GET을 `/api/v1/backoffice` 아래 `PLANNED`로 구현한다.
 - Frontend/Page: 별도 `BackofficeLayout`과 overview/users/usage/ai-costs/agent-runs/failures/configuration route. AppLayout에는 노출하지 않는다.
 
@@ -749,7 +749,7 @@ P0 계약 기준선
 - State lifecycle: provisioning/access audit append-only, readiness는 configuration/live 분리, aggregate watermark/lag 표시.
 - Idempotency/Concurrency: stable pagination/sort/snapshot; provisioning은 idempotency와 expected current role.
 - Failure semantics: audit 실패 시 민감 상세 조회 fail-closed, stale aggregate는 마지막 정상 시각 표시.
-- Migration responsibility: V18 `TENTATIVE`; P8.9-B 번호 예약 금지.
+- Migration responsibility: V21 `TENTATIVE`; P8.9-B 번호 예약 금지.
 
 ### 17.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -782,7 +782,7 @@ P0 계약 기준선
 ### 19.1 Backend·DB·API·Frontend responsibility
 
 - Backend: session 상태/CAS, `clientRequestId`, message sequence, bounded synchronous turn, complete와 async feedback run.
-- DB: P8.9-A 완료 시 next available migration(현재 예상 V20, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
+- DB: P8.9-A 완료 시 next available migration(현재 예상 V22, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
 - API: 기존 명세의 mock endpoints를 구현하며 merge될 때만 implemented path/operation 수를 갱신한다.
 - Frontend/Page: `/mock-interviews/:sessionId`, 생성 form, READY/IN_PROGRESS/COMPLETED/CANCELLED, feedback 상태.
 - AI: turn당 Chat 1회, Provider retry 0, structured `TurnDecision`, async aggregate feedback.
@@ -803,7 +803,7 @@ P0 계약 기준선
 - State lifecycle: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`; feedback 독립 상태.
 - Idempotency/Concurrency: session CAS, `(user,session,clientRequestId)` unique, message sequence, 다중 tab 경쟁 차단.
 - Failure semantics: timeout/invalid output의 원 terminal 응답을 replay하고 same ID로 재호출하지 않는다.
-- Migration responsibility: 현재 예상 V20은 tentative이며 시작 시 latest migration을 확인한다.
+- Migration responsibility: 현재 예상 V22는 tentative이며 시작 시 latest migration을 확인한다.
 
 ### 19.4 Test strategy·Actual E2E boundary
 
