@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-02] Session Summary (재분석·삭제 evidence 수명주기 통합)
+
+- What was done:
+  - 문서 evidence retire가 미참조 row는 삭제하고 분석 이력 참조 row는 `SOURCE_DELETED` tombstone으로 전환하도록 삭제·재분석 경로를 통합했다.
+- Key decisions:
+  - immutable 과거 분석 참조 무결성은 보존하면서 이후 snapshot·RAG에서는 즉시 제외한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 재분석 후 evidence 조회와 Job Analysis snapshot 제외 integration 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (stable candidate rejection 집계)
 
 - What was done:

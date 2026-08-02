@@ -4,6 +4,19 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (OpenAI reasoning·verbosity mapping 회귀)
+
+- What was done:
+  - request-scoped low reasoning effort와 low verbosity가 Spring AI OpenAI options에 전달되는 assertion을 추가했다.
+- Key decisions:
+  - 실제 network 없이 native option mapping만 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `SpringAiOpenAiGatewayTest`가 단일-use Gradle 실행에서 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (image reference 실제 직렬화 회귀)
 
 - What was done:

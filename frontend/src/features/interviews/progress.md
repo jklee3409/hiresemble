@@ -4,6 +4,19 @@
 
 P8 조사 출처·예상 질문·답변 version·feedback Frontend 상호작용이 구현되어 있다.
 
+## [2026-08-02] Session Summary (답변 피드백 Run 복구)
+
+- What was done:
+  - 선택한 답변 version의 활성 feedback Run을 route 재진입 시 monitor에 복구하고 중복 피드백 요청을 차단했다.
+- Key decisions:
+  - terminal 이벤트 후 local accepted ID를 비우고 active Run 목록을 재조회한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `InterviewQuestionCard.test.ts` 복구 회귀와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (면접 준비 문구 일관성)
 
 - What was done:

@@ -5,7 +5,21 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- Backend 전체 suite는 509 tests다. 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Job Analysis 통합 테스트의 Hikari connection 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
+- 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Dashboard migration 테스트의 PostgreSQL Testcontainer 시작 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (문서 경험 retire와 Job Analysis 비교 복구)
+
+- What was done:
+  - 문서 재분석 시작 transaction에서 이전 문서 유래 evidence를 삭제 또는 `SOURCE_DELETED` 처리해 새 결과 적용 전부터 공고 분석·자기소개서 snapshot에서 제외했다.
+  - Job Analysis 비교 요청에 low reasoning/verbosity를 지정해 약 4분 network boundary 초과를 제거하고, 허용된 근거의 support type 불일치는 `UNKNOWN`으로 강등했다. 기존 비교 오류 retry는 성공 단계를 재사용하는 로컬 보수 fallback을 사용한다.
+- Key decisions:
+  - hallucinated/stale reference는 계속 거부하고, allowlist 안의 근거가 요건 유형과 호환되지 않는 경우에만 근거를 비워 보수 판정한다.
+- Issues encountered:
+  - 전체 `check`는 `DashboardMigrationTest.startPostgres`의 Testcontainers log wait에서 5분 timeout됐다. 정지된 Gradle 결과 stream의 EOF는 `--no-daemon cleanTest`로 초기화했다.
+- Validation:
+  - `JobAnalysisWorkflowTest`, `SpringAiOpenAiGatewayTest`, `DocumentIntegrationTest`가 단일-use Gradle에서 통과했다. 공개 API retry가 실제 분석을 저장했고 해당 Run의 `ai_usage_records`는 0건, 누적 distinct provider call은 9건이었다.
+- Next steps:
+  - Testcontainers 시작 문제를 별도 환경 이슈로 점검한 뒤 전체 `check`를 재실행한다.
 
 ## [2026-08-02] Session Summary (공고 분석 profile fact provenance·compatibility)
 

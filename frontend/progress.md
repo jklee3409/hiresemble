@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/269 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/275 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (활성 AI 작업 route 복구와 중복 실행 차단)
+
+- What was done:
+  - 문서 재분석, 공고 추출·분석, 자기소개서 생성·검증, 면접 준비·답변 피드백 화면이 서버의 활성 Agent Run을 조회해 route 재진입 후 monitor를 복구하고 동일 실행 버튼을 잠근다.
+  - 공고 분석 OUTDATED 알림의 중복 재분석 버튼을 제거해 상단 CTA 한 개만 유지했다.
+- Key decisions:
+  - 로컬 mutation pending뿐 아니라 persisted `QUEUED/RUNNING/WAITING_USER`와 조회 loading/error도 실행 금지 상태로 취급한다.
+- Issues encountered:
+  - 최초 전체 check에서 5개 파일 format과 테스트의 `get().exists()` 타입 오류 2건을 보정했다.
+- Validation:
+  - `corepack pnpm check`가 lint·format·typecheck·67 files/275 tests·production build까지 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (Dashboard 본문 중심 기준 정렬)
 

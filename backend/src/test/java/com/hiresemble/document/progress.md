@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-02] Session Summary (자료 재분석 이전 경험 제거 회귀)
+
+- What was done:
+  - verified 문서 evidence가 재분석 전 Job Analysis snapshot에 포함되고, reparse 수락 직후 row와 snapshot에서 제거되는 통합 회귀를 추가했다.
+- Key decisions:
+  - 새 AI 결과 완료가 아니라 reparse API 수락 시점을 무효화 기준으로 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `DocumentIntegrationTest`가 단일-use Gradle 실행에서 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (소재 batch 재검토·문서 삭제 독립성 회귀)
 
 - What was done:

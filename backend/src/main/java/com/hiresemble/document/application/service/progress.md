@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-02] Session Summary (재분석 시작 시 기존 경험 retire)
+
+- What was done:
+  - reparse revision reset과 동일 transaction·동일 시각에 이전 문서 evidence retire를 실행한 뒤 새 ingestion Run을 시작한다.
+- Key decisions:
+  - 새 추출 성공까지 옛 경험을 유지하지 않고 재분석 수락 즉시 downstream snapshot에서 제외한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Document integration에서 재분석 전 analysis snapshot 포함, 재분석 수락 후 evidence 삭제·snapshot 제외를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (active embedding route adapter 보강)
 
 - What was done:

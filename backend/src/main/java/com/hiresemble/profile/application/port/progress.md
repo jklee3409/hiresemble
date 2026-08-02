@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-02] Session Summary (문서 evidence retire command 계약)
+
+- What was done:
+  - 삭제 전용 이름을 재분석에서도 사용하는 `retireDocumentEvidence(userId, documentId, retiredAt)` 계약으로 명확히 했다.
+- Key decisions:
+  - 사용자·문서 owner scope와 호출 transaction 경계를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 컴파일과 Document integration 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (candidate apply 진단 계약)
 
 - What was done:

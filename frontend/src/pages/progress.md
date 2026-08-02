@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (AI page 활성 실행 복구·단일 재분석 CTA)
+
+- What was done:
+  - Document detail, Job overview/analysis/interview와 Cover Letter edit가 persisted active Run을 복구하고 동일 resource의 새 AI command를 비활성화한다.
+  - 문서 재분석 확인 문구에 기존 경험 즉시 제거와 downstream 미사용을 명시하고 Job Analysis OUTDATED CTA를 한 개로 줄였다.
+- Key decisions:
+  - Run 상태 조회를 확인할 수 없는 동안에도 중복 실행보다 안전한 버튼 비활성화를 우선한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 관련 6개 test file 42개 회귀와 최종 Frontend 전체 67 files/275 tests·build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 중앙 본문·CTA 정렬)
 
 - What was done:

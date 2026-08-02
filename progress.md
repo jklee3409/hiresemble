@@ -15,6 +15,23 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (AI 작업 복구·자료 재분석·공고 분석 실사용 복구)
+
+- What was done:
+  - 문서·공고 추출·공고 분석·자기소개서·면접 준비·답변 피드백 화면이 route 재진입 시 활성 Agent Run을 복구하고 동일 자원 중복 실행을 막도록 통합했다.
+  - 자료 재분석을 수락하면 기존 문서 유래 경험을 같은 transaction에서 즉시 retire하고 새 분석만 다시 적재하게 했다.
+  - 공고 분석 비교 단계의 장시간 network failure와 근거 유형 불일치를 보정했으며 공개 API 테스트 실행이 `PERSIST_ANALYSIS`까지 완료돼 분석 1건을 저장했다. OUTDATED 알림의 재분석 CTA는 한 개로 정리했다.
+- Key decisions:
+  - 모델이 허용된 근거를 잘못된 요건 유형에 연결하면 긍정 판정을 유지하지 않고 해당 항목만 `UNKNOWN`으로 강등한다. 같은 비교 오류의 retry는 성공 checkpoint를 재사용하고 보수 결과로 완료한다.
+  - 외부 호출은 단계별 최대 3회, 전체는 provider call ID 기준 9회(Chat 7, Embedding 2)에서 중단했다.
+- Issues encountered:
+  - in-app Browser가 제공되지 않아 저장된 인증 Session을 사용한 실제 공개 API pipeline으로 대체했다.
+  - Backend 전체 `check`는 기존 `DashboardMigrationTest`의 PostgreSQL Testcontainer 시작 대기에서 두 차례 timeout됐다. 변경 범위 단일-use 테스트는 통과했다.
+- Validation:
+  - Backend 관련 3개 테스트 클래스, Frontend `corepack pnpm check` 67 files/275 tests·typecheck·build, `docker compose config --quiet`, 실제 재시도 Run `5176b6a4-231f-4917-b7ca-c818871683a5` 성공과 신규 provider usage 0건을 확인했다.
+- Next steps:
+  - Docker/Testcontainers 시작 지연을 해소한 환경에서 Backend 전체 `check`를 다시 실행한다.
+
 ## [2026-08-02] Session Summary (Dashboard 본문·바로가기 정렬 분리)
 
 - What was done:

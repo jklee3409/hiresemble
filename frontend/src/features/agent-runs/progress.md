@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-02] Session Summary (공통 활성 Run 조회)
+
+- What was done:
+  - 현재 사용자 기준 `QUEUED/RUNNING/WAITING_USER` Run을 최신순으로 조회하는 공통 query를 추가하고 빈 user ID에서는 요청을 비활성화했다.
+- Key decisions:
+  - page가 resource type/id를 좁혀 복구 대상을 선택하고 query 자체는 한 번의 owner-scoped 목록을 공유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 사용하는 문서·공고·자기소개서·면접 page 회귀와 전체 Frontend check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (진행 중 공고 분석 단계명 보정)
 
 - What was done:

@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-02] Session Summary (Job Analysis 비교 단계 보수 복구)
+
+- What was done:
+  - allowlist 안의 evidence/fact가 requirement support type과 호환되지 않으면 해당 criterion을 `UNKNOWN`으로 강등하고 연관 strength를 제거했다.
+  - 기존 match validation 실패 retry에서는 predecessor safe error를 확인해 provider 없이 전체 criterion을 보수 판정하고 후속 score·validate·persist를 계속한다.
+- Key decisions:
+  - unknown reference는 강등으로 숨기지 않고 기존 nonretryable evidence 검증으로 차단한다.
+- Issues encountered:
+  - 실제 correction 출력도 근거 호환성 규칙을 지키지 못해 retry fallback이 필요했다.
+- Validation:
+  - 호환·비호환·retry fallback 단위 회귀와 실제 공개 API의 8단계 완료·분석 저장을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job Analysis 한국어 record 검증)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 Chat·Embedding·Search gateway, multi-usage와 immutable price query 계약이 구현됐다.
 
+## [2026-08-02] Session Summary (request-scoped OpenAI 품질 옵션)
+
+- What was done:
+  - `ChatRequest`에 선택적 reasoning effort와 verbosity 계약을 추가하고 기존 생성자 호환성을 유지했다.
+- Key decisions:
+  - 허용 값만 port 경계에서 검증하고 null은 기존 Provider 기본값을 의미한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 기존 호출부 compile과 gateway·workflow 집중 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (ImageTextExtractionGateway 경계)
 
 - What was done:

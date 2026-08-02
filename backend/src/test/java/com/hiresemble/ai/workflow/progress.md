@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (비호환 근거 강등·retry fallback 회귀)
+
+- What was done:
+  - 자격증·어학·근무일·미입력 자기신고에 잘못 연결된 허용 근거가 `UNKNOWN`으로 강등되는 회귀를 추가했다.
+  - 비교 호환성 오류 predecessor의 retry가 match chat을 호출하지 않고 후속 저장까지 완료되는 회귀를 추가했다.
+- Key decisions:
+  - hallucinated reference 거부 회귀는 그대로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `JobAnalysisWorkflowTest`가 단일-use Gradle 실행에서 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (criterion support compatibility 회귀)
 
 - What was done:

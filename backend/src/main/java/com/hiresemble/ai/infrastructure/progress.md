@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-02] Session Summary (공고 비교 request reasoning·verbosity 제한)
+
+- What was done:
+  - Chat gateway의 선택적 reasoning effort·verbosity를 OpenAI request options에 전달했다.
+- Key decisions:
+  - 공고 분석 `MATCH_EVIDENCE`만 low/low로 제한하고 다른 workflow·step의 기본 모델 동작은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Spring AI OpenAI gateway option mapping 테스트와 실제 비교 단계의 4분 network timeout 미재발을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Provider-visible image reference binding)
 
 - What was done:
