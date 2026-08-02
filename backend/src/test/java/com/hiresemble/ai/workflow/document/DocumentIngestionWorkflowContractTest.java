@@ -101,6 +101,9 @@ class DocumentIngestionWorkflowContractTest {
                         "Do not invent",
                         "Do not extract education",
                         "Do not output document IDs",
+                        "natural Korean",
+                        "English-only user-facing",
+                        "evidence prose",
                         "metadata")
                 .doesNotContain("sourceChunkIds", "sourceRevision");
         var prompt = prompts.require(
@@ -167,9 +170,9 @@ class DocumentIngestionWorkflowContractTest {
 
         var valid = mapper.readValue("""
                 {"candidates":[{
-                  "evidenceCategory":"PROJECT",
-                  "title":"Synthetic title",
-                  "content":"Synthetic grounded evidence.",
+                  "evidenceCategory":"프로젝트",
+                  "title":"백엔드 프로젝트",
+                  "content":"검증 가능한 백엔드 기능을 구현했습니다.",
                   "confidence":0.95,
                   "sourceChunkRefs":["C1","C2"],
                   "validationWarning":null
@@ -179,9 +182,9 @@ class DocumentIngestionWorkflowContractTest {
 
         var invalid = mapper.readValue("""
                 {"candidates":[{
-                  "evidenceCategory":"PROJECT",
-                  "title":"Synthetic title",
-                  "content":"Synthetic grounded evidence.",
+                  "evidenceCategory":"프로젝트",
+                  "title":"백엔드 프로젝트",
+                  "content":"검증 가능한 백엔드 기능을 구현했습니다.",
                   "confidence":1.01,
                   "sourceChunkRefs":["C1"],
                   "validationWarning":null
@@ -192,6 +195,28 @@ class DocumentIngestionWorkflowContractTest {
                         StructuredOutputValidationException.class,
                         error -> assertThat(error.safeReason())
                                 .isEqualTo("AI_SO_RECORD_DOCUMENT_CONFIDENCE_INVALID"));
+    }
+
+    @Test
+    void englishOnlyEvidenceProseRequestsOneKoreanCorrection() {
+        var candidate = new DocumentIngestionWorkflow.EvidenceCandidatePayload(
+                "PROJECT",
+                "Backend project",
+                "Improved API reliability.",
+                new BigDecimal("0.9"),
+                List.of("C1"),
+                null);
+
+        assertThatThrownBy(() -> DocumentEvidenceOutputPolicy.validateBatch(
+                        new DocumentIngestionWorkflow.EvidenceCandidateBatch(List.of(candidate)), 2))
+                .isInstanceOfSatisfying(
+                        StructuredOutputValidationException.class,
+                        error -> {
+                            assertThat(error.safeReason())
+                                    .isEqualTo("AI_SO_RECORD_DOCUMENT_KOREAN_OUTPUT_REQUIRED");
+                            assertThat(error.retryDisposition())
+                                    .isEqualTo(StructuredOutputValidationException.RetryDisposition.REPAIR_ONCE);
+                        });
     }
 
     private void assertReason(
@@ -209,7 +234,7 @@ class DocumentIngestionWorkflowContractTest {
     private DocumentIngestionWorkflow.EvidenceCandidatePayload candidate(
             List<String> refs, String warning) {
         return new DocumentIngestionWorkflow.EvidenceCandidatePayload(
-                "PROJECT", "Synthetic title", "Synthetic grounded evidence.",
+                "프로젝트", "백엔드 프로젝트", "검증 가능한 백엔드 기능을 구현했습니다.",
                 new BigDecimal("0.9"), refs, warning);
     }
 }

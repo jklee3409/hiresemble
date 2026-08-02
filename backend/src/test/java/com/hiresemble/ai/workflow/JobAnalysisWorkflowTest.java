@@ -328,7 +328,7 @@ class JobAnalysisWorkflowTest {
                 List.of(new ProviderRequirementCandidate(
                         RequirementSection.RESPONSIBILITY,
                         FitCriterionCategory.PREFERRED_QUALIFICATION,
-                        "private requirement value",
+                        "비공개 요구사항 값",
                         true,
                         null)));
         ProviderRequirementsOutput invalidRequired = new ProviderRequirementsOutput(
@@ -336,7 +336,7 @@ class JobAnalysisWorkflowTest {
                 List.of(new ProviderRequirementCandidate(
                         RequirementSection.PREFERRED_QUALIFICATION,
                         FitCriterionCategory.PREFERRED_QUALIFICATION,
-                        "private requirement value",
+                        "비공개 요구사항 값",
                         true,
                         null)));
 
@@ -350,6 +350,26 @@ class JobAnalysisWorkflowTest {
                 context,
                 invalidRequired,
                 "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID");
+    }
+
+    @Test
+    void englishOnlyRequirementAndInternalSourcePathRequestOneKoreanCorrection() {
+        Fixture fixture = fixture(false, false);
+        StepExecutionContext context = requirementsContext(fixture);
+        var executor = fixture.workflow.contribution().steps().get(1).executor();
+
+        assertRepairableFailure(
+                executor,
+                context,
+                new ProviderRequirementsOutput(
+                        "job-analysis-requirements-output-v2",
+                        List.of(new ProviderRequirementCandidate(
+                                RequirementSection.REQUIRED_QUALIFICATION,
+                                FitCriterionCategory.REQUIRED_QUALIFICATION,
+                                "Three years of Java experience",
+                                true,
+                                "$.untrustedJobPosting.descriptionText"))),
+                "JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED");
     }
 
     @Test

@@ -238,6 +238,8 @@
 
 문서 AI 추출 근거는 `PENDING`으로 시작한다. 사용자가 `VERIFIED`로 승인한 항목만 공고 분석·자기소개서·면접 준비의 근거로 사용하며, 활용하지 않을 항목은 `REJECTED`로 제외한다. `VERIFIED|REJECTED`는 `PENDING`으로 되돌려 재검토할 수 있고 최대 100개를 한 transaction에서 선택 승인·제외할 수 있다. 제외는 원본 문서나 분석 이력을 삭제하지 않는다. 사용자가 구조화 프로필에 직접 입력한 근거는 별도 문서 승인 대상이 아니며, 대외활동은 자신의 `useAsMaterial` 선택으로 활용 여부를 정한다. `SOURCE_DELETED` tombstone은 읽기 전용이다.
 
+이력서·자기소개서에서 AI가 추출하는 근거의 제목·내용과 검토 경고는 사용자에게 자연스러운 한국어로 제공한다. 원문이 다른 언어여도 고유명사·제품명·기술 용어는 보존하면서 설명을 한국어로 옮긴다.
+
 `confidence`는 AI가 문서에서 후보를 추출한 확신도 `0..1`이며 사실 여부나 사용자의 신뢰성을 보증하는 점수가 아니다. 직접 입력 근거에는 confidence를 산정하지 않는다.
 
 문서 근거 적용 단계의 candidate 단위 domain rejection은 정상적인 filtering이다. 일부 또는 전체 candidate가 교육 category, 근거 없는 수치, 중복 등으로 제외돼도 command와 문서 최종화가 완료되면 `parseStatus=PARSED`, `evidenceExtractionStatus=SUCCEEDED`, Agent Run `SUCCEEDED`로 끝난다. 저장할 evidence가 0건인 결과와 추출 시스템 실패를 구분한다. candidate/applied/rejected count와 값 없는 stable reason count만 안전한 step 통계로 남기며, 거절 candidate를 독립 실패 scope나 성공 evidence reference로 취급하지 않는다.
@@ -368,6 +370,8 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - 직무 적합도 점수와 근거
 
 `Eligibility`와 `fitScore`는 별도로 계산하고 표시한다. `INELIGIBLE`이어도 점수를 0으로 만들거나 상한을 두지 않으며 합격 기준점이나 합격 확률을 제공하지 않는다.
+
+주요 업무·지원 자격·우대 사항의 설명, 지원 가능 여부 근거, criterion 설명·미충족 사유, 강점·부족한 점과 분석 요약은 자연스러운 한국어로 제공한다. 공고가 다른 언어로 작성됐어도 고유명사·제품명·기술 용어는 보존하면서 설명을 한국어로 옮긴다. criterion 출처는 `null` 또는 `주요 업무`, `지원 자격`, `우대 사항` 같은 짧은 한국어 구역명이어야 하며 JSONPath·객체 경로·내부 필드명을 저장 결과에 노출하지 않는다.
 
 승인 근거 검색의 embedding 요청은 Chat `ModelTier` route를 재사용하지 않고 활성 immutable embedding policy의 provider·product·dimension·version·generation을 하나의 typed route로 사용한다. 이 route identity는 retrieval step hash에 포함하며 Provider 호출 전 가격 catalog와 일치해야 한다.
 

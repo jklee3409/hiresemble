@@ -4,6 +4,19 @@
 
 P3 응답 5단계 validation 앞에 OpenAI strict request schema의 중앙 생성·호환성 검증 경계가 구현됐다.
 
+## [2026-08-02] Session Summary (한국어 사용자 문장 최소 검증 정책)
+
+- What was done:
+  - 공고 분석과 문서 소재가 공유하는 `KoreanUserFacingTextPolicy`를 추가해 한국어 음절 포함 여부를 값 비노출 방식으로 검사했다.
+- Key decisions:
+  - 고유명사·제품명·기술 용어가 섞인 한국어 문장을 허용하고 자연어 품질 전체를 정규식으로 판단하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 한국어·기술 용어 혼합, 영어 전용 문장과 null 단위 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Structured Output phase·reason 분리)
 
 - What was done:

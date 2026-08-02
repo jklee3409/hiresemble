@@ -12,6 +12,7 @@ AI structured output의 parsing부터 domain command까지 검증 순서를 강�
 - `OpenAiStrictSchemaCompatibilityValidator`: 모든 중첩 object·required·`additionalProperties`와 OpenAI strict subset 한도를 요청 전에 재귀 검증
 - `StrictStructuredOutputSchemaRegistry`: 검증된 schema 원문과 deterministic contract name·version·SHA-256 fingerprint를 runtime에 고정
 - `ProviderNullable`: Provider output record의 필수 nullable property 표시
+- `KoreanUserFacingTextPolicy`: 사용자에게 직접 노출되는 AI 문장에 최소 한국어 음절 계약 적용
 - [`progress.md`](progress.md): 검증 상태
 
 ## 구성 요소 역할

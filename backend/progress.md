@@ -5,7 +5,22 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- Backend 전체 suite는 508 tests다. 이번 작업의 집중 검증은 통과했지만 최종 전체 check는 범위 밖 Interview 통합 fixture 1건의 간헐 DB 무결성 오류로 실패했고 해당 단일 테스트 격리 실행은 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 suite는 509 tests다. 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Job Analysis 통합 테스트의 Hikari connection 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (AI 사용자 노출 결과 한국어 계약)
+
+- What was done:
+  - Job Analysis의 requirement·eligibility·match 사용자 문장과 Document evidence 소재 title·content·warning에 한국어 prompt·record validation 계약을 추가했다.
+  - 공고 출처의 JSONPath·내부 필드명을 거부하고 두 workflow의 prompt identity를 v3로 갱신했다.
+- Key decisions:
+  - API·DB·workflow/output schema는 유지하고 최소 한국어 음절 검증 실패만 기존 correction-once 경계로 처리한다.
+- Issues encountered:
+  - prompt 줄바꿈 때문에 집중 계약 assertion 1건이 실패했으며 값이나 계약 변경 없이 assertion을 교정했다.
+  - 전체 `check`는 기존 `JobAnalysisIntegrationTest`의 자동 분석 이벤트가 Hikari connection을 기다리며 실행 제한을 넘겨 thread dump 확인 후 해당 프로세스만 종료했다.
+- Validation:
+  - Job Analysis workflow·prompt, Document evidence contract와 공통 한국어 policy 집중 테스트 28건 통과. 전체 suite는 위 connection 대기로 미완료다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (retrieval embedding route 오용 보정)
 

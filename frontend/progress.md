@@ -7,6 +7,20 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-02] Session Summary (공고 분석 결과 문구·내부 경로 보정)
+
+- What was done:
+  - 최신 결과 hero에서 분석 버전 대신 `공고와 잘 맞는 강점을 분석했어요.`를 표시하고 저장된 버전 이력은 유지했다.
+  - 과거 requirement 출처의 JSONPath·내부 field path를 화면에서 `공고 본문`으로 치환했다.
+- Key decisions:
+  - API DTO와 분석 이력 구조를 변경하지 않고 presentation helper에서 이전 저장 결과까지 안전하게 처리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job Analysis page 집중 테스트 7건, 전체 67 files/267 tests, ESLint·Prettier·Vue typecheck·production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 사용자 단계명 완성)
 
 - What was done:

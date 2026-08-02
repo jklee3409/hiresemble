@@ -17,6 +17,7 @@ import {
   evidenceCurrentStateLabel,
   formatAnalysisInstant,
   formatFitScore,
+  formatRequirementSourceLocation,
   isCurrentlyVerifiedEvidence,
   jobAnalysisFailureCopy,
 } from '@/features/jobs/analysisPresentation'
@@ -629,10 +630,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         <section class="analysis-result__hero section-surface">
           <div class="analysis-result__heading">
             <div>
-              <p class="section-kicker">최신 분석</p>
-              <h2 id="analysis-result-heading">
-                분석 버전 {{ latestAnalysis.data.value.analysisVersion }}
-              </h2>
+              <h2 id="analysis-result-heading">공고와 잘 맞는 강점을 분석했어요.</h2>
               <p>{{ formatAnalysisInstant(latestAnalysis.data.value.createdAt) }}</p>
             </div>
             <RouterLink
@@ -706,7 +704,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 :key="`${item.category}/${item.text}`"
               >
                 <span>{{ item.text }}</span>
-                <small v-if="item.sourceLocation">{{ item.sourceLocation }}</small>
+                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                </small>
               </li>
             </ul>
             <p v-else class="analysis-empty-copy">확인된 주요 업무가 없어요.</p>
@@ -720,7 +720,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 :key="`${item.category}/${item.text}`"
               >
                 <span>{{ item.text }}</span>
-                <small v-if="item.sourceLocation">{{ item.sourceLocation }}</small>
+                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                </small>
               </li>
             </ul>
             <p v-else class="analysis-empty-copy">확인된 필수 지원 자격이 없어요.</p>
@@ -734,7 +736,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 :key="`${item.category}/${item.text}`"
               >
                 <span>{{ item.text }}</span>
-                <small v-if="item.sourceLocation">{{ item.sourceLocation }}</small>
+                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                </small>
               </li>
             </ul>
             <p v-else class="analysis-empty-copy">확인된 우대 사항이 없어요.</p>

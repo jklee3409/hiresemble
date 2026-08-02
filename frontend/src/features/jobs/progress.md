@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-02] Session Summary (공고 criterion 출처 사용자용 치환)
+
+- What was done:
+  - JSONPath·`untrustedJobPosting`·`descriptionText`를 포함한 sourceLocation을 `공고 본문`으로 표시하는 presentation helper를 추가했다.
+- Key decisions:
+  - 정상 한국어 sourceLocation은 그대로 표시하고 null·blank는 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 과거 내부 경로 fixture가 원문 없이 `공고 본문`으로 표시되는 page 테스트와 Frontend 전체 67 files/267 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (분석 journey 단계 간격 균등화)
 
 - What was done:

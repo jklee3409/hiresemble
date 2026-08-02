@@ -6,6 +6,7 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
 import com.hiresemble.ai.validation.ProviderNullable;
 import com.hiresemble.ai.validation.StructuredOutputValidationException;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
@@ -724,6 +725,10 @@ public final class JobAnalysisWorkflow {
                             || output.eligibility() != Eligibility.UNKNOWN)) {
                 throw configurationFailure();
             }
+            if (!reusing
+                    && !KoreanUserFacingTextPolicy.containsKorean(output.explanation())) {
+                throw koreanOutputRequired();
+            }
         }
 
         @Override
@@ -1101,6 +1106,23 @@ public final class JobAnalysisWorkflow {
                             ValidationPhase.JAVA_RECORD,
                             "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
                             "Return gaps with nonblank text and a valid criterion index.");
+                }
+            }
+            if (!reusing) {
+                boolean invalidKorean = !KoreanUserFacingTextPolicy.containsKorean(
+                                output.analysisSummary())
+                        || output.criteria().stream().anyMatch(criterion ->
+                                !KoreanUserFacingTextPolicy.containsKorean(
+                                                criterion.explanation())
+                                        || (criterion.missingReason() != null
+                                                && !KoreanUserFacingTextPolicy.containsKorean(
+                                                        criterion.missingReason())))
+                        || output.strengths().stream().anyMatch(strength ->
+                                !KoreanUserFacingTextPolicy.containsKorean(strength.text()))
+                        || output.gaps().stream().anyMatch(gap ->
+                                !KoreanUserFacingTextPolicy.containsKorean(gap.text()));
+                if (invalidKorean) {
+                    throw koreanOutputRequired();
                 }
             }
         }
@@ -1947,6 +1969,27 @@ public final class JobAnalysisWorkflow {
                     "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
                     "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
         }
+        if (!KoreanUserFacingTextPolicy.containsKorean(requirement.text())
+                || (requirement.sourceLocation() != null
+                        && (!KoreanUserFacingTextPolicy.containsKorean(
+                                        requirement.sourceLocation())
+                                || isTechnicalSourceLocation(requirement.sourceLocation())))) {
+            throw koreanOutputRequired();
+        }
+    }
+
+    private boolean isTechnicalSourceLocation(String value) {
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        return normalized.startsWith("$")
+                || normalized.contains("untrustedjobposting")
+                || normalized.contains("descriptiontext");
+    }
+
+    private StructuredOutputValidationException koreanOutputRequired() {
+        return repairable(
+                ValidationPhase.JAVA_RECORD,
+                "JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED",
+                "Previous output used English-only user-facing prose or an internal source path. Return all user-facing text in natural Korean and use null or a concise Korean source section label.");
     }
 
     private boolean hasTrimmedText(String value, int maxLength) {

@@ -4,6 +4,20 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-02] Session Summary (공고 분석·문서 소재 한국어 prompt v3)
+
+- What was done:
+  - Job Analysis 세 Chat prompt에 requirement·eligibility·match 결과의 자연스러운 한국어 출력과 내부 source path 금지 규칙을 추가했다.
+  - Document evidence prompt에 이력서·자기소개서 소재 category·title·content·warning 한국어 출력 규칙을 추가했다.
+- Key decisions:
+  - output schema는 v2를 유지하고 변경된 언어 계약의 checkpoint 격리를 위해 prompt identity만 각각 v3로 올렸다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 두 prompt registry의 identity·instruction contract 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job image reference binding prompt v4)
 
 - What was done:

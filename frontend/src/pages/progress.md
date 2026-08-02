@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (공고 분석 결과 hero 문구 보정)
+
+- What was done:
+  - 최신 공고 분석 결과 hero의 `최신 분석`·`분석 버전 N` 노출을 단일 사용자 문장으로 교체했다.
+  - requirement 내부 출처 경로가 사용자에게 노출되지 않는 page 회귀를 추가했다.
+- Key decisions:
+  - 분석 버전은 과거 이력 선택 영역에서 계속 제공한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job Analysis page 집중 테스트 7건과 Frontend 전체 67 files/267 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard sticky 탐색·workspace 문구 보정)
 
 - What was done:

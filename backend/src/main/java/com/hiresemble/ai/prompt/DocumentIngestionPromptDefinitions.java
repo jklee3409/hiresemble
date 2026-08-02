@@ -14,7 +14,7 @@ import tools.jackson.databind.JsonNode;
 /** Versioned P4 prompt/schema metadata. Only evidence extraction contains model instructions. */
 public final class DocumentIngestionPromptDefinitions {
 
-    public static final String PROMPT_VERSION = "document-ingestion-v2";
+    public static final String PROMPT_VERSION = "document-ingestion-v3";
 
     private DocumentIngestionPromptDefinitions() {}
 

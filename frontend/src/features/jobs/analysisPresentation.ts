@@ -109,6 +109,21 @@ export function formatFitScore(value: number | null): string {
   return value === null ? '산정하지 못함' : `${value.toFixed(2)}점`
 }
 
+export function formatRequirementSourceLocation(value: string | null): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+
+  const normalized = trimmed.toLowerCase()
+  if (
+    normalized.startsWith('$') ||
+    normalized.includes('untrustedjobposting') ||
+    normalized.includes('descriptiontext')
+  ) {
+    return '공고 본문'
+  }
+  return trimmed
+}
+
 export function isCurrentlyVerifiedEvidence(evidence: EvidenceRefDto): boolean {
   return evidence.verificationStatus === 'VERIFIED' && !evidence.sourceDeleted
 }

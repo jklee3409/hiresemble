@@ -4,6 +4,19 @@
 
 P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
 
+## [2026-08-02] Session Summary (문서 추출 소재 한국어 검증)
+
+- What was done:
+  - evidence title·content와 선택 warning이 한국어 사용자 문장을 포함하도록 record policy를 보강했다.
+- Key decisions:
+  - 교육 category domain filtering과 기존 DTO를 유지하고 영어 전용 사용자 문장만 correction-once로 교정한다.
+- Issues encountered:
+  - prompt contract assertion이 문장 줄바꿈 때문에 1회 실패해 두 의미 조각으로 교정했다.
+- Validation:
+  - manual JSON, 후보 의미 제약, 영어 소재 거부를 포함한 Document workflow contract 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (candidate rejection 성공 계약)
 
 - What was done:

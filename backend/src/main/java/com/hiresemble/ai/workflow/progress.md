@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-02] Session Summary (Job Analysis 한국어 record 검증)
+
+- What was done:
+  - requirement·eligibility explanation·criterion·strength·gap·summary가 한국어 사용자 문장인지 Java record phase에서 검증했다.
+  - sourceLocation의 JSONPath·내부 field path를 repairable 실패로 거부했다.
+- Key decisions:
+  - reuse checkpoint의 서버 생성 placeholder는 검증 대상에서 제외하고 새 Provider 출력만 correction-once 대상으로 삼는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 정상 한국어 분석, 영어 requirement와 내부 경로 거부, 기존 의미 제약 회귀 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (retrieval embedding route 분리)
 
 - What was done:

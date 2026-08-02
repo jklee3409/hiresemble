@@ -1,5 +1,6 @@
 package com.hiresemble.ai.workflow.document;
 
+import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
 import com.hiresemble.ai.validation.StructuredOutputValidationException;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import java.math.BigDecimal;
@@ -62,7 +63,11 @@ public final class DocumentEvidenceOutputPolicy {
                 Do not repeat the same fact across candidates. Do not invent roles, achievements,
                 dates, numbers, or outcomes. Do not extract education or academic history because
                 education is managed only in the structured profile. Omit uncertain candidates or
-                add a concise review warning. Do not output document IDs, revisions, UUIDs, owner
+                add a concise review warning. Write evidenceCategory, title, content, and every
+                non-null validationWarning in natural Korean. Translate source descriptions when
+                the resume or cover letter is written in another language while preserving proper
+                nouns, product names, and technical terms. Do not return English-only user-facing
+                evidence prose. Do not output document IDs, revisions, UUIDs, owner
                 data, run IDs, storage identifiers, server policy values, metadata, masked
                 placeholders, prompts, provider data, or credentials.
                 """.formatted(
@@ -114,6 +119,13 @@ public final class DocumentEvidenceOutputPolicy {
                     "AI_SO_RECORD_DOCUMENT_FIELD_INVALID",
                     "Previous output violated a category, title, or content constraint. Return concise non-empty fields within every stated limit.");
         }
+        if (!KoreanUserFacingTextPolicy.containsKorean(candidate.title())
+                || !KoreanUserFacingTextPolicy.containsKorean(candidate.content())) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "AI_SO_RECORD_DOCUMENT_KOREAN_OUTPUT_REQUIRED",
+                    "Previous output used English-only user-facing evidence prose. Return every title and content in natural Korean while preserving proper nouns and technical terms.");
+        }
         BigDecimal confidence = candidate.confidence();
         if (confidence == null || confidence.signum() < 0
                 || confidence.compareTo(BigDecimal.ONE) > 0) {
@@ -131,6 +143,12 @@ public final class DocumentEvidenceOutputPolicy {
                     ValidationPhase.JAVA_RECORD,
                     "AI_SO_RECORD_DOCUMENT_WARNING_INVALID",
                     "Previous output used an invalid warning. Use null when absent or a concise non-blank review warning within the stated limit.");
+        }
+        if (warning != null && !KoreanUserFacingTextPolicy.containsKorean(warning)) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "AI_SO_RECORD_DOCUMENT_KOREAN_OUTPUT_REQUIRED",
+                    "Previous output used an English-only review warning. Return every non-null validationWarning in natural Korean while preserving proper nouns and technical terms.");
         }
     }
 

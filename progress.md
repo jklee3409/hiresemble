@@ -15,6 +15,21 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (공고 분석·문서 소재 한국어 출력 보정)
+
+- What was done:
+  - 공고 분석 결과 hero 문구를 사용자 중심 문장으로 교체하고 내부 공고 경로를 `공고 본문`으로 치환했다.
+  - 공고 적합도·강점·부족한 점과 이력서·자기소개서 추출 소재가 한국어로 생성되도록 prompt와 structured output 검증을 보강했다.
+- Key decisions:
+  - 공개 API·DB·output schema와 저장된 분석 버전 구조는 유지하고 prompt identity만 v3로 올려 이전 영어 checkpoint 재사용을 차단했다.
+- Issues encountered:
+  - 문서 prompt 계약 테스트의 줄바꿈 경계 assertion 1건이 실패해 의미 단위 assertion으로 교정한 뒤 재검증했다.
+  - Backend 전체 `check`는 기존 `JobAnalysisIntegrationTest`의 자동 분석 이벤트에서 Hikari connection 대기가 지속돼 120초 제한을 넘겼으며 thread dump로 위치를 확인한 뒤 해당 테스트 프로세스만 종료했다.
+- Validation:
+  - Backend 변경 범위 집중 테스트 28건 통과. Frontend 67 files/267 tests, ESLint·Prettier·Vue typecheck·production build 통과. Backend 전체 suite는 위 connection 대기로 미완료다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 embedding capability route 분리)
 
 - What was done:

@@ -198,11 +198,16 @@ describe('P6 Job analysis page', () => {
   })
 
   it('renders eligibility separately from a high score, all evidence sections, OUTDATED reasons and history', async () => {
+    const base = jobAnalysisDetailFixture()
     const latest = jobAnalysisDetailFixture({
       eligibility: 'INELIGIBLE',
       fitScore: 82.5,
       analysisOutdated: true,
       outdatedReasons: ['JOB_CONTENT_CHANGED', 'PROFILE_CHANGED', 'EVIDENCE_CHANGED'],
+      responsibilities: base.responsibilities.map((item) => ({
+        ...item,
+        sourceLocation: '$.untrustedJobPosting.descriptionText',
+      })),
     })
     const older = jobAnalysisSummaryFixture({
       id: '50000000-0000-4000-8000-000000000090',
@@ -220,10 +225,17 @@ describe('P6 Job analysis page', () => {
     const { wrapper } = await mountPage()
 
     expect(wrapper.text()).toContain('필수 조건 미충족')
+    expect(wrapper.get('.analysis-result__hero').text()).toContain(
+      '공고와 잘 맞는 강점을 분석했어요.',
+    )
+    expect(wrapper.get('.analysis-result__hero').text()).not.toContain('최신 분석')
+    expect(wrapper.get('.analysis-result__hero').text()).not.toContain('분석 버전 2')
     expect(wrapper.text()).toContain('82.50점')
     expect(wrapper.get('abbr').attributes('title')).toContain('합격 가능성')
     expect(wrapper.text()).toContain('Java 개발 경력 3년 이상')
     expect(wrapper.text()).toContain('대규모 트래픽 경험')
+    expect(wrapper.text()).toContain('공고 본문')
+    expect(wrapper.text()).not.toContain('$.untrustedJobPosting.descriptionText')
     expect(wrapper.text()).toContain('Spring API 개발 경험이 요구사항과 일치해요')
     expect(wrapper.text()).toContain('필수 경력 기간은 추가 확인이 필요해요')
     expect(wrapper.text()).toContain('결제 API 개선 프로젝트')
