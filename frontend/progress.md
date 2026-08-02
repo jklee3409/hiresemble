@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/269 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (Dashboard 본문 중심 기준 정렬)
+
+- What was done:
+  - Dashboard 헤더·CTA·본문을 바로가기와 독립된 중앙 열로 정렬하고 우측 sticky 바로가기와 좁은 화면 가로 탐색을 유지했다.
+  - UI shell에 중심선·우측 경계 geometry 회귀를 추가했다.
+- Key decisions:
+  - 전역 AppLayout과 다른 page 폭은 변경하지 않고 Dashboard page의 88rem 내부 grid만 조정했다.
+- Issues encountered:
+  - 최초 check의 두 파일 format 실패는 범위 formatter로 보정했다. 전체 UI shell 병렬 실행에서는 무관한 프로필 제안 테스트 1건이 timeout됐으나 Dashboard 격리 회귀는 통과했다.
+- Validation:
+  - `corepack pnpm check`가 ESLint·Prettier·typecheck·67 files/269 tests·production build까지 통과했고 Dashboard Chromium 1/1과 responsive screenshot 검수도 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (지원 자격 확인 정보 입력)
 

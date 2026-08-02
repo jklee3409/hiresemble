@@ -246,6 +246,7 @@ API:
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다.
 - 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
+- Desktop에서는 바로가기 열을 제외한 헤더·CTA·본문을 동일한 중앙 열에 배치한다. 중앙 열은 Dashboard viewport 중심에 맞추고 `자료 등록`·`공고 등록` CTA의 우측 끝도 중앙 열의 우측 경계에 맞춘다.
 - 중복되는 `한눈에 보기`, `지원 준비 요약` 타이틀은 시각적으로 노출하지 않되 screen reader용 heading은 유지한다. 섹션 제목은 self-hosted variable `Noto Sans KR`, 절제된 굵기와 자간을 사용한다.
 - Desktop 오른쪽에는 지원 현황·마감 캘린더·최근 활동·취업 준비 가이드 anchor를 제공하는 작은 바로가기를 Dashboard container 안의 sticky sidebar로 배치해 스크롤 중에도 접근할 수 있게 한다. fixed positioning은 사용하지 않으며 좁은 화면에서는 일반 흐름의 가로형 탐색으로 전환한다.
 

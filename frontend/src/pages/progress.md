@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Dashboard 중앙 본문·CTA 정렬)
+
+- What was done:
+  - Dashboard를 동일한 좌우 레일과 중앙 본문으로 나눠 우측 바로가기를 제외한 헤더·CTA·본문의 중심을 viewport 중심에 맞췄다.
+  - `자료 등록`·`공고 등록` CTA의 우측 끝을 중앙 본문 우측 경계에 맞추고 87rem 이하에서는 기존 가로형 바로가기로 전환했다.
+- Key decisions:
+  - Dashboard의 88rem 외곽 폭과 container sticky 바로가기를 유지하고 page 범위의 CSS grid만 조정했다.
+- Issues encountered:
+  - 최초 전체 check에서 변경한 Vue·E2E 파일의 Prettier 형식 검사만 실패해 두 파일만 formatter로 정리했다.
+- Validation:
+  - Dashboard Vitest 5/5, Frontend 전체 check 67 files/269 tests·production build와 Chromium Dashboard 회귀 1/1이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (프로필 지원 자격 입력 영역)
 
 - What was done:

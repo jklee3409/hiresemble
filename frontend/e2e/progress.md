@@ -15,6 +15,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-02] Session Summary (Dashboard 중앙 정렬 geometry 회귀)
+
+- What was done:
+  - 1440px Dashboard에서 본문 중심과 viewport 중심, 헤더 폭, CTA·본문 우측 경계와 바로가기 우측 배치를 bounding box로 검증했다.
+  - 1440·1024·390px screenshot으로 Desktop 우측 레일과 좁은 화면 가로형 바로가기를 직접 확인했다.
+- Key decisions:
+  - 제품 코드에 test-only selector를 추가하지 않고 기존 Dashboard class와 실제 geometry를 사용한다.
+- Issues encountered:
+  - `ui-shell.spec.ts` 전체 3건 병렬 실행에서는 별도 프로필 제안 테스트가 `희망 직무` 입력을 찾지 못해 30초 timeout됐고 Dashboard를 포함한 나머지 2건은 통과했다.
+- Validation:
+  - Dashboard 시나리오 격리 Chromium 1/1과 1920·1440·1280·1024·768·390px overflow 회귀가 통과했다.
+- Next steps:
+  - 프로필 제안 테스트의 병렬 timeout이 재발하면 별도 범위에서 원인을 조사한다.
+
 ## [2026-08-02] Session Summary (Dashboard sticky 바로가기 회귀)
 
 - What was done:

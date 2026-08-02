@@ -30,6 +30,36 @@ test('protected app shell stays usable without horizontal overflow at required w
   expect(await dashboardShortcuts.evaluate((element) => getComputedStyle(element).position)).toBe(
     'sticky',
   )
+  const dashboardContent = page.locator('.dashboard-content')
+  const dashboardHeader = page.locator('.dashboard > .page-header')
+  const dashboardActions = dashboardHeader.locator('.page-header__actions')
+  const [contentBox, headerBox, actionsBox, shortcutsBox] = await Promise.all([
+    dashboardContent.boundingBox(),
+    dashboardHeader.boundingBox(),
+    dashboardActions.boundingBox(),
+    dashboardShortcuts.boundingBox(),
+  ])
+  expect(contentBox).not.toBeNull()
+  expect(headerBox).not.toBeNull()
+  expect(actionsBox).not.toBeNull()
+  expect(shortcutsBox).not.toBeNull()
+  expect(Math.abs((contentBox?.x ?? 0) + (contentBox?.width ?? 0) / 2 - 720)).toBeLessThan(1)
+  expect(Math.abs((headerBox?.x ?? 0) - (contentBox?.x ?? 0))).toBeLessThan(1)
+  expect(
+    Math.abs(
+      (headerBox?.x ?? 0) +
+        (headerBox?.width ?? 0) -
+        ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)),
+    ),
+  ).toBeLessThan(1)
+  expect(
+    Math.abs(
+      (actionsBox?.x ?? 0) +
+        (actionsBox?.width ?? 0) -
+        ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)),
+    ),
+  ).toBeLessThan(1)
+  expect(shortcutsBox?.x ?? 0).toBeGreaterThan((contentBox?.x ?? 0) + (contentBox?.width ?? 0))
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await expect
     .poll(async () => (await dashboardShortcuts.boundingBox())?.y ?? -1)

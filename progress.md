@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (Dashboard 본문·바로가기 정렬 분리)
+
+- What was done:
+  - Dashboard의 헤더·CTA·본문을 viewport 중앙 열에 맞추고 바로가기를 독립된 우측 sticky 레일로 분리했으며 page 계약과 Browser geometry 회귀를 동기화했다.
+- Key decisions:
+  - API·DB·Workflow와 전역 page 폭은 변경하지 않고 Dashboard presentation 범위만 수정했다.
+- Issues encountered:
+  - UI shell 전체 병렬 실행의 별도 프로필 제안 테스트 1건이 timeout됐지만 Dashboard 시나리오와 Frontend 전체 check는 통과했다.
+- Validation:
+  - Frontend 67 files/269 tests·build, Dashboard Chromium 1/1과 1440·1024·390px 시각 검수가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 구조화 프로필·근거 호환성 보강)
 
 - What was done:

@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (Dashboard 중앙 열 정렬 계약)
+
+- What was done:
+  - Dashboard 바로가기를 제외한 헤더·CTA·본문을 viewport 중심의 동일 열에 배치하고 CTA 우측 경계를 본문 우측 경계에 맞추는 page 계약을 추가했다.
+- Key decisions:
+  - 기존 88rem Dashboard 외곽 폭, 우측 container sticky와 좁은 화면 가로 탐색 계약은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - page 명세를 Dashboard CSS grid, 1440px geometry assertion과 1024·390px 반응형 screenshot에 교차 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 구조화 fact 활성 계약)
 
 - What was done:

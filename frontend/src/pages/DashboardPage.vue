@@ -1099,6 +1099,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   --color-subtle: var(--color-muted);
 }
 .dashboard {
+  --dashboard-toc-width: 11.5rem;
+  --dashboard-layout-gap: 1.25rem;
   width: min(100%, 88rem);
   margin-inline: auto;
   display: grid;
@@ -1107,14 +1109,17 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 11.5rem;
-  gap: 1.25rem;
+  grid-template-columns:
+    var(--dashboard-toc-width) minmax(0, 1fr)
+    var(--dashboard-toc-width);
+  column-gap: var(--dashboard-layout-gap);
   align-items: start;
   min-width: 0;
 }
 
 .dashboard-content {
   display: grid;
+  grid-column: 2;
   min-width: 0;
   gap: clamp(2rem, 4vw, 3.5rem);
 }
@@ -1126,6 +1131,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .dashboard-toc {
   position: sticky;
   top: calc(var(--global-header-height) + 1rem);
+  grid-column: 3;
   padding: 0.85rem;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
@@ -1176,7 +1182,20 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 .dashboard :deep(.page-header) {
+  width: calc(
+    100% - var(--dashboard-toc-width) - var(--dashboard-layout-gap) - var(--dashboard-toc-width) -
+      var(--dashboard-layout-gap)
+  );
+  margin-inline: auto;
   align-items: center;
+}
+.dashboard > :deep(.state-panel),
+.dashboard-error {
+  width: calc(
+    100% - var(--dashboard-toc-width) - var(--dashboard-layout-gap) - var(--dashboard-toc-width) -
+      var(--dashboard-layout-gap)
+  );
+  margin-inline: auto;
 }
 .dashboard :deep(.page-header__description) {
   max-width: 38rem;
@@ -2422,9 +2441,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-style: normal;
 }
 
-@media (max-width: 74rem) {
+@media (max-width: 87rem) {
+  .dashboard :deep(.page-header),
+  .dashboard > :deep(.state-panel),
+  .dashboard-error {
+    width: 100%;
+  }
   .dashboard-layout {
     grid-template-columns: 1fr;
+  }
+  .dashboard-content,
+  .dashboard-toc {
+    grid-column: 1;
   }
   .dashboard-toc {
     position: static;
