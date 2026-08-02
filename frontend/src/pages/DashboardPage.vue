@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import '@fontsource-variable/noto-sans-kr/wght.css'
 
 import { STATUS_LABELS, WORKFLOW_LABELS } from '@/features/agent-runs/presentation'
 import { useAgentRunListQuery } from '@/features/agent-runs/queries'
@@ -116,6 +117,9 @@ const waitingRuns = computed(() =>
 const deadlineDays = computed(() => dashboardQuery.data.value?.deadlineDays ?? [])
 const deadlineCount = computed(() =>
   deadlineDays.value.reduce((total, day) => total + day.count, 0),
+)
+const deadlineCountLabel = computed(() =>
+  dashboardQuery.isPending.value || dashboardUnavailable.value ? '—' : `${deadlineCount.value}건`,
 )
 const selectedDeadlineDay = computed(
   () => deadlineDays.value.find((day) => day.date === selectedDate.value) ?? null,
@@ -330,12 +334,6 @@ function moveMonth(offset: number): void {
   currentMonth.value = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
-function returnToToday(): void {
-  const today = seoulToday()
-  currentMonth.value = today.slice(0, 7)
-  selectedDate.value = today
-}
-
 function openGuide(post: CareerGuidePostDto, event: MouseEvent): void {
   guideTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   selectedGuide.value = post
@@ -536,450 +534,500 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
         </button>
       </aside>
 
-      <section class="dashboard-hero" aria-label="사용자 커리어와 다음 행동">
-        <article class="career-card">
-          <div class="career-card__identity">
-            <span class="career-card__person" aria-hidden="true">
-              <AppIcon name="person-card" />
-            </span>
-            <div>
-              <p>MY CAREER</p>
-              <h2>{{ profile?.legalName || profile?.displayName || '지원자' }}</h2>
-            </div>
-            <span
-              class="career-card__readiness"
-              :class="{ 'career-card__readiness--unknown': dashboardUnavailable }"
-            >
-              {{
-                dashboardUnavailable ? '확인 필요' : `준비도 ${profile?.completionPercent ?? 0}%`
-              }}
-            </span>
-          </div>
-
-          <div class="career-card__role">
-            <span class="career-card__role-icon"><AppIcon name="jobs" /></span>
-            <div>
-              <small>희망 직무</small>
-              <strong>{{ profile?.desiredRoles.join(', ') || '희망 직무 미입력' }}</strong>
-            </div>
-          </div>
-
-          <dl class="career-card__facts">
-            <div>
-              <dt><AppIcon name="profile" /> 희망 지역</dt>
-              <dd>{{ profile?.desiredLocations.join(', ') || '미입력' }}</dd>
-            </div>
-            <div>
-              <dt><AppIcon name="documents" /> 최종 학력</dt>
-              <dd>{{ primaryEducationLabel() }}</dd>
-            </div>
-          </dl>
-
-          <div class="career-card__progress">
-            <span>
-              <strong>지원 정보 준비도</strong>
-              <small v-if="!dashboardUnavailable">
-                {{
-                  profile?.completed
-                    ? '지원에 필요한 기본 정보를 채웠어요.'
-                    : `${profile?.missingItems.length ?? 5}개 항목이 남아 있어요.`
-                }}
-              </small>
-              <small v-else>현재 준비도를 확인하지 못했어요.</small>
-            </span>
-            <strong>{{
-              dashboardUnavailable ? '—' : `${profile?.completionPercent ?? 0}%`
-            }}</strong>
-          </div>
-          <progress
-            v-if="!dashboardUnavailable"
-            class="career-card__track"
-            :value="profile?.completionPercent ?? 0"
-            max="100"
+      <div class="dashboard-layout">
+        <div class="dashboard-content">
+          <section
+            id="dashboard-overview"
+            class="dashboard-hero"
+            aria-label="사용자 커리어와 다음 행동"
           >
-            {{ profile?.completionPercent ?? 0 }}%
-          </progress>
+            <article class="career-card">
+              <div class="career-card__identity">
+                <span class="career-card__person" aria-hidden="true">
+                  <AppIcon name="person-card" />
+                </span>
+                <div>
+                  <p>MY CAREER</p>
+                  <h2>{{ profile?.legalName || profile?.displayName || '지원자' }}</h2>
+                </div>
+                <span
+                  class="career-card__readiness"
+                  :class="{ 'career-card__readiness--unknown': dashboardUnavailable }"
+                >
+                  {{
+                    dashboardUnavailable
+                      ? '확인 필요'
+                      : `준비도 ${profile?.completionPercent ?? 0}%`
+                  }}
+                </span>
+              </div>
 
-          <div v-if="showStartChecklist" class="start-checklist" aria-labelledby="start-heading">
-            <div class="start-checklist__heading">
-              <h3 id="start-heading">첫 지원 준비</h3>
-              <span>{{ completedStartCount }} / 3 완료</span>
+              <div class="career-card__role">
+                <span class="career-card__role-icon"><AppIcon name="jobs" /></span>
+                <div>
+                  <small>희망 직무</small>
+                  <strong>{{ profile?.desiredRoles.join(', ') || '희망 직무 미입력' }}</strong>
+                </div>
+              </div>
+
+              <dl class="career-card__facts">
+                <div>
+                  <dt><AppIcon name="profile" /> 희망 지역</dt>
+                  <dd>{{ profile?.desiredLocations.join(', ') || '미입력' }}</dd>
+                </div>
+                <div>
+                  <dt><AppIcon name="documents" /> 최종 학력</dt>
+                  <dd>{{ primaryEducationLabel() }}</dd>
+                </div>
+              </dl>
+
+              <div class="career-card__progress">
+                <span>
+                  <strong>지원 정보 준비도</strong>
+                  <small v-if="!dashboardUnavailable">
+                    {{
+                      profile?.completed
+                        ? '지원에 필요한 기본 정보를 채웠어요.'
+                        : `${profile?.missingItems.length ?? 5}개 항목이 남아 있어요.`
+                    }}
+                  </small>
+                  <small v-else>현재 준비도를 확인하지 못했어요.</small>
+                </span>
+                <strong>{{
+                  dashboardUnavailable ? '—' : `${profile?.completionPercent ?? 0}%`
+                }}</strong>
+              </div>
+              <progress
+                v-if="!dashboardUnavailable"
+                class="career-card__track"
+                :value="profile?.completionPercent ?? 0"
+                max="100"
+              >
+                {{ profile?.completionPercent ?? 0 }}%
+              </progress>
+
+              <div
+                v-if="showStartChecklist"
+                class="start-checklist"
+                aria-labelledby="start-heading"
+              >
+                <div class="start-checklist__heading">
+                  <h3 id="start-heading">첫 지원 준비</h3>
+                  <span>{{ completedStartCount }} / 3 완료</span>
+                </div>
+                <ul>
+                  <li v-for="item in startItems" :key="item.key" :data-state="item.state">
+                    <AppIcon
+                      :name="
+                        item.state === 'completed'
+                          ? 'check'
+                          : item.state === 'unknown'
+                            ? 'alert'
+                            : 'plus'
+                      "
+                    />
+                    <span>{{ item.title }}</span>
+                    <button
+                      v-if="item.state === 'unknown'"
+                      type="button"
+                      @click="dashboardQuery.refetch()"
+                    >
+                      다시 확인
+                    </button>
+                    <RouterLink v-else-if="item.state === 'pending'" :to="item.to">{{
+                      item.action
+                    }}</RouterLink>
+                    <small v-else>완료</small>
+                  </li>
+                </ul>
+              </div>
+
+              <RouterLink to="/profile/basic" class="career-card__cta">
+                지원 정보 확인
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+            </article>
+
+            <article class="priority-card">
+              <header>
+                <span class="priority-card__icon"><AppIcon name="sparkle" /></span>
+                <div>
+                  <p class="section-kicker">지금 먼저</p>
+                  <h2>다음 할 일</h2>
+                </div>
+              </header>
+              <ul v-if="nextTasks.length" class="task-list">
+                <li v-for="(task, index) in nextTasks" :key="task.key">
+                  <RouterLink :to="task.to" :class="`task-item--${task.tone ?? 'default'}`">
+                    <span class="task-item__order">{{ String(index + 1).padStart(2, '0') }}</span>
+                    <span class="task-item__icon"><AppIcon :name="task.icon" /></span>
+                    <span class="task-item__body">
+                      <strong>{{ task.title }}</strong>
+                      <small>{{ task.description }}</small>
+                    </span>
+                    <span class="task-item__action" :aria-label="task.action"
+                      ><AppIcon name="arrow-right"
+                    /></span>
+                  </RouterLink>
+                </li>
+              </ul>
+              <div v-else class="compact-empty">
+                <AppIcon name="alert" />
+                <div>
+                  <strong>다음 할 일을 아직 정리하지 못했어요.</strong>
+                  <p>지원 준비 현황을 다시 불러오면 우선순위를 안내할게요.</p>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="summary-section" aria-labelledby="summary-heading">
+            <h2 id="summary-heading" class="sr-only">지원 준비 요약</h2>
+            <div class="summary-section__actions">
+              <RouterLink to="/jobs" class="text-link"
+                >전체 공고 <AppIcon name="arrow-right"
+              /></RouterLink>
             </div>
-            <ul>
-              <li v-for="item in startItems" :key="item.key" :data-state="item.state">
+            <div class="summary-grid">
+              <RouterLink to="/jobs?status=IN_PROGRESS" class="summary-card summary-card--primary">
+                <span class="summary-card__icon"><AppIcon name="jobs" /></span>
+                <span>
+                  <small>준비 중인 공고</small>
+                  <strong>{{
+                    dashboardUnavailable
+                      ? '—'
+                      : (dashboardQuery.data.value?.jobs.preparingCount ?? 0)
+                  }}</strong>
+                </span>
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+              <RouterLink to="/jobs?status=SUBMITTED" class="summary-card">
+                <span class="summary-card__icon summary-card__icon--success"
+                  ><AppIcon name="check"
+                /></span>
+                <span>
+                  <small>지원 완료</small>
+                  <strong>{{
+                    dashboardUnavailable
+                      ? '—'
+                      : (dashboardQuery.data.value?.jobs.submittedCount ?? 0)
+                  }}</strong>
+                </span>
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+              <RouterLink to="/agent-runs" class="summary-card">
+                <span class="summary-card__icon"><AppIcon name="runs" /></span>
+                <span>
+                  <small>AI가 확인 중</small>
+                  <strong>{{
+                    dashboardUnavailable
+                      ? '—'
+                      : (dashboardQuery.data.value?.agentRuns.activeCount ?? 0)
+                  }}</strong>
+                </span>
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+              <RouterLink to="/documents" class="summary-card">
+                <span class="summary-card__icon"><AppIcon name="documents" /></span>
+                <span>
+                  <small>등록한 이력서·자료</small>
+                  <strong>{{
+                    dashboardUnavailable
+                      ? '—'
+                      : (dashboardQuery.data.value?.documents.registeredCount ?? 0)
+                  }}</strong>
+                </span>
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+            </div>
+          </section>
+
+          <section
+            id="dashboard-deadlines"
+            class="deadline-section"
+            aria-labelledby="deadline-heading"
+          >
+            <div class="deadline-section__heading">
+              <div>
+                <p class="section-kicker">다가오는 일정</p>
+                <h2 id="deadline-heading">공고 마감 캘린더</h2>
+              </div>
+              <div class="deadline-section__summary" aria-label="이번 달 마감 공고 수">
+                <span aria-hidden="true"><AppIcon name="calendar" /></span>
+                <div>
+                  <small>이번 달 마감</small>
+                  <strong>{{ deadlineCountLabel }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="dashboardQuery.isFetching.value && !dashboardQuery.data.value"
+              class="calendar-state"
+            >
+              <AppIcon name="clock" />
+              <span>이번 달 마감 일정을 불러오는 중…</span>
+            </div>
+            <div
+              v-else-if="dashboardUnavailable"
+              class="calendar-state calendar-state--error"
+              role="alert"
+            >
+              <AppIcon name="alert" />
+              <span>이 달의 마감 일정을 확인하지 못했어요.</span>
+              <button
+                type="button"
+                class="button button--secondary button--compact"
+                @click="dashboardQuery.refetch()"
+              >
+                다시 확인
+              </button>
+            </div>
+            <div v-else class="calendar-layout">
+              <div class="calendar-card">
+                <div class="calendar-card__toolbar">
+                  <div class="calendar-card__month">
+                    <span class="calendar-card__month-icon" aria-hidden="true">
+                      <AppIcon name="calendar" />
+                    </span>
+                    <div>
+                      <small>MONTHLY DEADLINE</small>
+                      <strong aria-live="polite">{{ monthLabel }}</strong>
+                    </div>
+                  </div>
+                  <div class="calendar-controls" aria-label="캘린더 월 이동">
+                    <span class="calendar-controls__step">
+                      <button type="button" aria-label="이전 달" @click="moveMonth(-1)">
+                        <AppIcon name="arrow-left" />
+                      </button>
+                      <button type="button" aria-label="다음 달" @click="moveMonth(1)">
+                        <AppIcon name="arrow-right" />
+                      </button>
+                    </span>
+                  </div>
+                </div>
+                <div class="calendar-weekdays" aria-hidden="true">
+                  <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span
+                  ><span>금</span><span>토</span>
+                </div>
+                <div class="calendar-grid" role="grid" :aria-label="`${monthLabel} 공고 마감 일정`">
+                  <template v-for="cell in calendarCells" :key="cell.key">
+                    <span
+                      v-if="cell.date === null"
+                      class="calendar-day calendar-day--blank"
+                      aria-hidden="true"
+                    />
+                    <button
+                      v-else
+                      type="button"
+                      class="calendar-day"
+                      :class="{
+                        'calendar-day--selected': selectedDate === cell.date,
+                        'calendar-day--today': cell.isToday,
+                        'calendar-day--has-deadline': cell.count > 0,
+                        'calendar-day--sunday': cell.weekday === 0,
+                        'calendar-day--saturday': cell.weekday === 6,
+                      }"
+                      :aria-pressed="selectedDate === cell.date"
+                      :aria-label="`${cell.date}, 마감 공고 ${cell.count}건${cell.isToday ? ', 오늘' : ''}`"
+                      @click="selectedDate = cell.date"
+                    >
+                      <span>{{ cell.day }}</span>
+                      <strong v-if="cell.count > 0" aria-hidden="true">{{ cell.count }}건</strong>
+                      <small v-if="cell.isToday">오늘</small>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <aside class="deadline-detail deadline-detail--desktop" aria-live="polite">
+                <header>
+                  <div>
+                    <small>선택한 날짜</small>
+                    <h3>{{ selectedDate }}</h3>
+                  </div>
+                  <span>{{ selectedDeadlineItems.length }}건</span>
+                </header>
+                <ul v-if="selectedDeadlineItems.length" class="deadline-items">
+                  <li v-for="job in selectedDeadlineItems" :key="job.id">
+                    <span class="deadline-items__status">{{
+                      job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
+                    }}</span>
+                    <strong>{{ deadlineTitle(job) }}</strong>
+                    <small>{{ jobCompanyLabel(job.companyName) }}</small>
+                    <time :datetime="job.deadlineAt">{{
+                      formatDeadlineDateTime(job.deadlineAt)
+                    }}</time>
+                    <RouterLink :to="`/jobs/${job.id}/overview`"
+                      >공고 상세 <AppIcon name="arrow-right"
+                    /></RouterLink>
+                  </li>
+                </ul>
+                <div v-else class="compact-empty compact-empty--calendar">
+                  <AppIcon name="calendar" />
+                  <div>
+                    <strong>이날 마감되는 공고가 없어요.</strong>
+                    <p>다른 날짜를 선택하거나 새 공고에 마감 시각을 입력해 보세요.</p>
+                  </div>
+                </div>
+              </aside>
+
+              <details class="deadline-detail deadline-detail--mobile" open>
+                <summary>{{ selectedDate }} 마감 공고 {{ selectedDeadlineItems.length }}건</summary>
+                <ul v-if="selectedDeadlineItems.length" class="deadline-items">
+                  <li v-for="job in selectedDeadlineItems" :key="job.id">
+                    <span class="deadline-items__status">{{
+                      job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
+                    }}</span>
+                    <strong>{{ deadlineTitle(job) }}</strong>
+                    <small>{{ jobCompanyLabel(job.companyName) }}</small>
+                    <time :datetime="job.deadlineAt">{{
+                      formatDeadlineDateTime(job.deadlineAt)
+                    }}</time>
+                    <RouterLink :to="`/jobs/${job.id}/overview`"
+                      >공고 상세 <AppIcon name="arrow-right"
+                    /></RouterLink>
+                  </li>
+                </ul>
+                <p v-else class="deadline-detail__empty">이날 마감되는 공고가 없어요.</p>
+              </details>
+            </div>
+          </section>
+
+          <div class="dashboard-columns">
+            <section
+              id="dashboard-activity"
+              class="dashboard-section"
+              aria-labelledby="activity-heading"
+            >
+              <div class="dashboard-section-heading">
+                <div>
+                  <p class="section-kicker">최근 업데이트</p>
+                  <h2 id="activity-heading">최근 활동</h2>
+                </div>
+                <RouterLink to="/agent-runs" class="text-link"
+                  >AI 작업 <AppIcon name="arrow-right"
+                /></RouterLink>
+              </div>
+              <ul v-if="recentActivity.length" class="activity-list">
+                <li v-for="activity in recentActivity" :key="activity.key">
+                  <RouterLink :to="activity.to">
+                    <span>
+                      <small>{{ activity.eyebrow }}</small>
+                      <strong>{{ activity.title }}</strong>
+                    </span>
+                    <span class="activity-list__meta">
+                      <span>{{ activity.description }}</span>
+                      <time :datetime="activity.at">{{ formatActivityDate(activity.at) }}</time>
+                    </span>
+                  </RouterLink>
+                </li>
+              </ul>
+              <div v-else class="compact-empty">
                 <AppIcon
                   :name="
-                    item.state === 'completed'
-                      ? 'check'
-                      : item.state === 'unknown'
-                        ? 'alert'
-                        : 'plus'
+                    recentDocumentsQuery.isError.value ||
+                    recentJobsQuery.isError.value ||
+                    recentRunsQuery.isError.value
+                      ? 'alert'
+                      : 'inbox'
                   "
                 />
-                <span>{{ item.title }}</span>
-                <button
-                  v-if="item.state === 'unknown'"
-                  type="button"
-                  @click="dashboardQuery.refetch()"
-                >
-                  다시 확인
-                </button>
-                <RouterLink v-else-if="item.state === 'pending'" :to="item.to">{{
-                  item.action
-                }}</RouterLink>
-                <small v-else>완료</small>
-              </li>
-            </ul>
-          </div>
-
-          <RouterLink to="/profile/basic" class="career-card__cta">
-            지원 정보 확인
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-        </article>
-
-        <article class="priority-card">
-          <header>
-            <span class="priority-card__icon"><AppIcon name="sparkle" /></span>
-            <div>
-              <p class="section-kicker">지금 먼저</p>
-              <h2>다음 할 일</h2>
-            </div>
-          </header>
-          <ul v-if="nextTasks.length" class="task-list">
-            <li v-for="(task, index) in nextTasks" :key="task.key">
-              <RouterLink :to="task.to" :class="`task-item--${task.tone ?? 'default'}`">
-                <span class="task-item__order">{{ String(index + 1).padStart(2, '0') }}</span>
-                <span class="task-item__icon"><AppIcon :name="task.icon" /></span>
-                <span class="task-item__body">
-                  <strong>{{ task.title }}</strong>
-                  <small>{{ task.description }}</small>
-                </span>
-                <span class="task-item__action" :aria-label="task.action"
-                  ><AppIcon name="arrow-right"
-                /></span>
-              </RouterLink>
-            </li>
-          </ul>
-          <div v-else class="compact-empty">
-            <AppIcon name="alert" />
-            <div>
-              <strong>다음 할 일을 아직 정리하지 못했어요.</strong>
-              <p>지원 준비 현황을 다시 불러오면 우선순위를 안내할게요.</p>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="summary-section" aria-labelledby="summary-heading">
-        <div class="dashboard-section-heading">
-          <div>
-            <p class="section-kicker">한눈에 보기</p>
-            <h2 id="summary-heading">지원 준비 요약</h2>
-          </div>
-          <RouterLink to="/jobs" class="text-link"
-            >전체 공고 <AppIcon name="arrow-right"
-          /></RouterLink>
-        </div>
-        <div class="summary-grid">
-          <RouterLink to="/jobs?status=IN_PROGRESS" class="summary-card summary-card--primary">
-            <span class="summary-card__icon"><AppIcon name="jobs" /></span>
-            <span>
-              <small>준비 중인 공고</small>
-              <strong>{{
-                dashboardUnavailable ? '—' : (dashboardQuery.data.value?.jobs.preparingCount ?? 0)
-              }}</strong>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink to="/jobs?status=SUBMITTED" class="summary-card">
-            <span class="summary-card__icon summary-card__icon--success"
-              ><AppIcon name="check"
-            /></span>
-            <span>
-              <small>지원 완료</small>
-              <strong>{{
-                dashboardUnavailable ? '—' : (dashboardQuery.data.value?.jobs.submittedCount ?? 0)
-              }}</strong>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink to="/agent-runs" class="summary-card">
-            <span class="summary-card__icon"><AppIcon name="runs" /></span>
-            <span>
-              <small>AI가 확인 중</small>
-              <strong>{{
-                dashboardUnavailable ? '—' : (dashboardQuery.data.value?.agentRuns.activeCount ?? 0)
-              }}</strong>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-          <RouterLink to="/documents" class="summary-card">
-            <span class="summary-card__icon"><AppIcon name="documents" /></span>
-            <span>
-              <small>등록한 이력서·자료</small>
-              <strong>{{
-                dashboardUnavailable
-                  ? '—'
-                  : (dashboardQuery.data.value?.documents.registeredCount ?? 0)
-              }}</strong>
-            </span>
-            <AppIcon name="arrow-right" />
-          </RouterLink>
-        </div>
-      </section>
-
-      <section class="deadline-section" aria-labelledby="deadline-heading">
-        <div class="deadline-section__heading">
-          <div>
-            <p class="section-kicker">다가오는 일정</p>
-            <h2 id="deadline-heading">공고 마감 캘린더</h2>
-            <p>모든 날짜와 시각은 Asia/Seoul 기준으로 표시합니다.</p>
-          </div>
-          <div class="calendar-controls" aria-label="캘린더 월 이동">
-            <button type="button" aria-label="이전 달" @click="moveMonth(-1)">
-              <AppIcon name="arrow-left" />
-            </button>
-            <strong aria-live="polite">{{ monthLabel }}</strong>
-            <button type="button" aria-label="다음 달" @click="moveMonth(1)">
-              <AppIcon name="arrow-right" />
-            </button>
-            <button type="button" class="calendar-controls__today" @click="returnToToday">
-              오늘
-            </button>
-          </div>
-        </div>
-
-        <div
-          v-if="dashboardQuery.isFetching.value && !dashboardQuery.data.value"
-          class="calendar-state"
-        >
-          <AppIcon name="clock" />
-          <span>이번 달 마감 일정을 불러오는 중…</span>
-        </div>
-        <div
-          v-else-if="dashboardUnavailable"
-          class="calendar-state calendar-state--error"
-          role="alert"
-        >
-          <AppIcon name="alert" />
-          <span>이 달의 마감 일정을 확인하지 못했어요.</span>
-          <button
-            type="button"
-            class="button button--secondary button--compact"
-            @click="dashboardQuery.refetch()"
-          >
-            다시 확인
-          </button>
-        </div>
-        <div v-else class="calendar-layout">
-          <div class="calendar-card">
-            <div class="calendar-card__meta">
-              <span>{{ monthLabel }} 활성 마감</span>
-              <strong>{{ deadlineCount }}건</strong>
-            </div>
-            <div class="calendar-weekdays" aria-hidden="true">
-              <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span
-              ><span>금</span><span>토</span>
-            </div>
-            <div class="calendar-grid" role="grid" :aria-label="`${monthLabel} 공고 마감 일정`">
-              <template v-for="cell in calendarCells" :key="cell.key">
-                <span
-                  v-if="cell.date === null"
-                  class="calendar-day calendar-day--blank"
-                  aria-hidden="true"
-                />
-                <button
-                  v-else
-                  type="button"
-                  class="calendar-day"
-                  :class="{
-                    'calendar-day--selected': selectedDate === cell.date,
-                    'calendar-day--today': cell.isToday,
-                    'calendar-day--has-deadline': cell.count > 0,
-                    'calendar-day--sunday': cell.weekday === 0,
-                    'calendar-day--saturday': cell.weekday === 6,
-                  }"
-                  :aria-pressed="selectedDate === cell.date"
-                  :aria-label="`${cell.date}, 마감 공고 ${cell.count}건${cell.isToday ? ', 오늘' : ''}`"
-                  @click="selectedDate = cell.date"
-                >
-                  <span>{{ cell.day }}</span>
-                  <strong v-if="cell.count > 0" aria-hidden="true">{{ cell.count }}건</strong>
-                  <small v-if="cell.isToday">오늘</small>
-                </button>
-              </template>
-            </div>
-          </div>
-
-          <aside class="deadline-detail deadline-detail--desktop" aria-live="polite">
-            <header>
-              <div>
-                <small>선택한 날짜</small>
-                <h3>{{ selectedDate }}</h3>
+                <div>
+                  <strong>{{
+                    recentDocumentsQuery.isError.value ||
+                    recentJobsQuery.isError.value ||
+                    recentRunsQuery.isError.value
+                      ? '최근 활동을 모두 확인하지 못했어요.'
+                      : '아직 최근 활동이 없어요.'
+                  }}</strong>
+                  <p>
+                    {{
+                      recentDocumentsQuery.isError.value ||
+                      recentJobsQuery.isError.value ||
+                      recentRunsQuery.isError.value
+                        ? '확인되지 않은 항목을 0건으로 계산하지 않았어요.'
+                        : '자료나 공고를 등록하면 준비 기록이 이곳에 나타나요.'
+                    }}
+                  </p>
+                </div>
               </div>
-              <span>{{ selectedDeadlineItems.length }}건</span>
-            </header>
-            <ul v-if="selectedDeadlineItems.length" class="deadline-items">
-              <li v-for="job in selectedDeadlineItems" :key="job.id">
-                <span class="deadline-items__status">{{
-                  job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
-                }}</span>
-                <strong>{{ deadlineTitle(job) }}</strong>
-                <small>{{ jobCompanyLabel(job.companyName) }}</small>
-                <time :datetime="job.deadlineAt">{{ formatDeadlineDateTime(job.deadlineAt) }}</time>
-                <RouterLink :to="`/jobs/${job.id}/overview`"
-                  >공고 상세 <AppIcon name="arrow-right"
-                /></RouterLink>
-              </li>
-            </ul>
-            <div v-else class="compact-empty compact-empty--calendar">
-              <AppIcon name="calendar" />
-              <div>
-                <strong>이날 마감되는 공고가 없어요.</strong>
-                <p>다른 날짜를 선택하거나 새 공고에 마감 시각을 입력해 보세요.</p>
-              </div>
-            </div>
-          </aside>
+            </section>
 
-          <details class="deadline-detail deadline-detail--mobile" open>
-            <summary>{{ selectedDate }} 마감 공고 {{ selectedDeadlineItems.length }}건</summary>
-            <ul v-if="selectedDeadlineItems.length" class="deadline-items">
-              <li v-for="job in selectedDeadlineItems" :key="job.id">
-                <span class="deadline-items__status">{{
-                  job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
-                }}</span>
-                <strong>{{ deadlineTitle(job) }}</strong>
-                <small>{{ jobCompanyLabel(job.companyName) }}</small>
-                <time :datetime="job.deadlineAt">{{ formatDeadlineDateTime(job.deadlineAt) }}</time>
-                <RouterLink :to="`/jobs/${job.id}/overview`"
-                  >공고 상세 <AppIcon name="arrow-right"
-                /></RouterLink>
-              </li>
-            </ul>
-            <p v-else class="deadline-detail__empty">이날 마감되는 공고가 없어요.</p>
-          </details>
-        </div>
-      </section>
-
-      <div class="dashboard-columns">
-        <section class="dashboard-section" aria-labelledby="activity-heading">
-          <div class="dashboard-section-heading">
-            <div>
-              <p class="section-kicker">최근 업데이트</p>
-              <h2 id="activity-heading">최근 활동</h2>
-            </div>
-            <RouterLink to="/agent-runs" class="text-link"
-              >AI 작업 <AppIcon name="arrow-right"
-            /></RouterLink>
-          </div>
-          <ul v-if="recentActivity.length" class="activity-list">
-            <li v-for="activity in recentActivity" :key="activity.key">
-              <RouterLink :to="activity.to">
-                <span>
-                  <small>{{ activity.eyebrow }}</small>
-                  <strong>{{ activity.title }}</strong>
-                </span>
-                <span class="activity-list__meta">
-                  <span>{{ activity.description }}</span>
-                  <time :datetime="activity.at">{{ formatActivityDate(activity.at) }}</time>
-                </span>
-              </RouterLink>
-            </li>
-          </ul>
-          <div v-else class="compact-empty">
-            <AppIcon
-              :name="
-                recentDocumentsQuery.isError.value ||
-                recentJobsQuery.isError.value ||
-                recentRunsQuery.isError.value
-                  ? 'alert'
-                  : 'inbox'
-              "
-            />
-            <div>
-              <strong>{{
-                recentDocumentsQuery.isError.value ||
-                recentJobsQuery.isError.value ||
-                recentRunsQuery.isError.value
-                  ? '최근 활동을 모두 확인하지 못했어요.'
-                  : '아직 최근 활동이 없어요.'
-              }}</strong>
+            <aside class="workspace-note" aria-labelledby="workspace-note-heading">
+              <span class="workspace-note__art" aria-hidden="true"><AppIcon name="guide" /></span>
+              <p class="section-kicker">준비 워크스페이스</p>
+              <h2 id="workspace-note-heading">한 번 정리한 정보는 다음 지원에도 이어져요.</h2>
               <p>
-                {{
-                  recentDocumentsQuery.isError.value ||
-                  recentJobsQuery.isError.value ||
-                  recentRunsQuery.isError.value
-                    ? '확인되지 않은 항목을 0건으로 계산하지 않았어요.'
-                    : '자료나 공고를 등록하면 준비 기록이 이곳에 나타나요.'
-                }}
+                내 정보와 등록한 이력서·자료를 먼저 다듬어 두면 공고 분석부터 자기소개서와 면접
+                준비까지 같은 근거를 활용할 수 있어요.
               </p>
-            </div>
+              <RouterLink to="/guide" class="text-link"
+                >전체 이용 순서 보기 <AppIcon name="arrow-right"
+              /></RouterLink>
+            </aside>
           </div>
-        </section>
 
-        <aside class="workspace-note" aria-labelledby="workspace-note-heading">
-          <span class="workspace-note__art" aria-hidden="true"><AppIcon name="guide" /></span>
-          <p class="section-kicker">준비 워크스페이스</p>
-          <h2 id="workspace-note-heading">한 번 정리한 정보는 다음 지원에도 이어져요.</h2>
-          <p>
-            내 정보와 등록한 이력서·자료를 먼저 다듬어 두면 공고 분석부터 자기소개서와 면접 준비까지
-            같은 근거를 활용할 수 있어요.
-          </p>
-          <RouterLink to="/guide" class="text-link"
-            >전체 이용 순서 보기 <AppIcon name="arrow-right"
-          /></RouterLink>
+          <section id="dashboard-guides" class="guide-section" aria-labelledby="guide-heading">
+            <div class="dashboard-section-heading">
+              <div>
+                <p class="section-kicker">5분 커리어 노트</p>
+                <h2 id="guide-heading">취업 준비 가이드</h2>
+                <p>지금 필요한 주제만 짧게 읽고 바로 준비에 적용해 보세요.</p>
+              </div>
+            </div>
+            <StatePanel
+              v-if="guideQuery.isPending.value"
+              kind="loading"
+              title="가이드를 불러오는 중…"
+              description="준비에 도움이 될 내용을 확인하고 있어요."
+            />
+            <div v-else-if="guideQuery.isError.value" class="guide-state" role="alert">
+              <AppIcon name="alert" />
+              <span>취업 준비 가이드를 불러오지 못했어요.</span>
+              <button
+                type="button"
+                class="button button--secondary button--compact"
+                @click="guideQuery.refetch()"
+              >
+                다시 확인
+              </button>
+            </div>
+            <div v-else-if="guideQuery.data.value?.length" class="guide-grid">
+              <button
+                v-for="(post, index) in guideQuery.data.value"
+                :key="post.id"
+                type="button"
+                class="guide-card"
+                @click="openGuide(post, $event)"
+              >
+                <span class="guide-card__number">{{ String(index + 1).padStart(2, '0') }}</span>
+                <span class="guide-card__icon"
+                  ><AppIcon :name="index === 3 ? 'interview' : index === 4 ? 'check' : 'guide'"
+                /></span>
+                <small>{{ post.category }}</small>
+                <strong>{{ post.title }}</strong>
+                <span>{{ post.summary }}</span>
+                <em>읽어보기 <AppIcon name="arrow-right" /></em>
+              </button>
+            </div>
+            <div v-else class="guide-state">
+              <AppIcon name="inbox" />
+              <span>현재 게시된 취업 준비 가이드가 없어요.</span>
+            </div>
+          </section>
+        </div>
+
+        <aside class="dashboard-toc" aria-label="대시보드 바로가기">
+          <p>바로가기</p>
+          <nav>
+            <a href="#dashboard-overview"><AppIcon name="profile" />지원 현황</a>
+            <a href="#dashboard-deadlines"><AppIcon name="calendar" />마감 캘린더</a>
+            <a href="#dashboard-activity"><AppIcon name="clock" />최근 활동</a>
+            <a href="#dashboard-guides"><AppIcon name="guide" />취업 준비 가이드</a>
+          </nav>
         </aside>
       </div>
-
-      <section class="guide-section" aria-labelledby="guide-heading">
-        <div class="dashboard-section-heading">
-          <div>
-            <p class="section-kicker">5분 커리어 노트</p>
-            <h2 id="guide-heading">취업 준비 가이드</h2>
-            <p>지금 필요한 주제만 짧게 읽고 바로 준비에 적용해 보세요.</p>
-          </div>
-        </div>
-        <StatePanel
-          v-if="guideQuery.isPending.value"
-          kind="loading"
-          title="가이드를 불러오는 중…"
-          description="준비에 도움이 될 내용을 확인하고 있어요."
-        />
-        <div v-else-if="guideQuery.isError.value" class="guide-state" role="alert">
-          <AppIcon name="alert" />
-          <span>취업 준비 가이드를 불러오지 못했어요.</span>
-          <button
-            type="button"
-            class="button button--secondary button--compact"
-            @click="guideQuery.refetch()"
-          >
-            다시 확인
-          </button>
-        </div>
-        <div v-else-if="guideQuery.data.value?.length" class="guide-grid">
-          <button
-            v-for="(post, index) in guideQuery.data.value"
-            :key="post.id"
-            type="button"
-            class="guide-card"
-            @click="openGuide(post, $event)"
-          >
-            <span class="guide-card__number">{{ String(index + 1).padStart(2, '0') }}</span>
-            <span class="guide-card__icon"
-              ><AppIcon :name="index === 3 ? 'interview' : index === 4 ? 'check' : 'guide'"
-            /></span>
-            <small>{{ post.category }}</small>
-            <strong>{{ post.title }}</strong>
-            <span>{{ post.summary }}</span>
-            <em>읽어보기 <AppIcon name="arrow-right" /></em>
-          </button>
-        </div>
-        <div v-else class="guide-state">
-          <AppIcon name="inbox" />
-          <span>현재 게시된 취업 준비 가이드가 없어요.</span>
-        </div>
-      </section>
     </template>
 
     <Teleport to="body">
@@ -1055,6 +1103,74 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: clamp(2rem, 4vw, 3.5rem);
 }
 
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11.5rem;
+  gap: 1.25rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.dashboard-content {
+  display: grid;
+  min-width: 0;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.dashboard-content > [id] {
+  scroll-margin-top: calc(var(--global-header-height) + 1rem);
+}
+
+.dashboard-toc {
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--hs-blue-50));
+  box-shadow: var(--shadow-xs);
+}
+
+.dashboard-toc > p {
+  margin: 0 0 0.55rem;
+  padding-inline: 0.45rem;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.dashboard-toc nav {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.dashboard-toc a {
+  display: flex;
+  min-height: 2.45rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.7rem;
+  color: var(--color-muted-strong);
+  font-size: 0.78rem;
+  font-weight: 720;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.dashboard-toc a:hover,
+.dashboard-toc a:focus-visible {
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+}
+
+.dashboard-toc a :deep(.icon) {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
 .dashboard :deep(.page-header) {
   align-items: center;
 }
@@ -1074,8 +1190,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .dashboard p {
   margin-top: 0;
 }
+.dashboard :deep(.page-header h1),
 .dashboard h2 {
-  letter-spacing: -0.035em;
+  font-family:
+    'Noto Sans KR Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-weight: 750;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
 }
 
 .dashboard-error {
@@ -1495,6 +1616,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   display: grid;
   gap: 1rem;
 }
+.summary-section__actions {
+  display: flex;
+  justify-content: flex-end;
+}
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1560,31 +1685,87 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 .deadline-section {
+  overflow: hidden;
   padding: clamp(1.25rem, 2.8vw, 2rem);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg, var(--hs-blue-100), var(--color-border), var(--hs-blue-50)) border-box;
+}
+.deadline-section__heading {
+  align-items: center;
+}
+.deadline-section__summary {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-width: 9.5rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--hs-blue-100);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--hs-blue-50), #fafbff);
+}
+.deadline-section__summary > span {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.75rem;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+.deadline-section__summary > span :deep(.icon) {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.deadline-section__summary small,
+.deadline-section__summary strong {
+  display: block;
+}
+.deadline-section__summary small {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+.deadline-section__summary strong {
+  margin-top: 0.08rem;
+  color: var(--color-ink);
+  font-size: 1.05rem;
 }
 .calendar-controls {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.55rem;
   align-items: center;
 }
 .calendar-controls button {
   display: grid;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
   place-items: center;
-  padding: 0 0.65rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.7rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 0.62rem;
   color: var(--color-ink);
+  background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.calendar-controls button:hover {
+  color: var(--color-primary);
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
 }
-.calendar-controls strong {
-  min-width: 7.5rem;
-  text-align: center;
+.calendar-controls__step {
+  display: inline-flex;
+  padding: 0.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.82rem;
+  background: var(--color-canvas);
 }
-.calendar-controls__today {
-  color: var(--color-primary) !important;
-  font-weight: 800;
+.calendar-controls__step button + button {
+  margin-left: 0.1rem;
 }
 .calendar-state,
 .guide-state {
@@ -1605,36 +1786,78 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.75fr);
-  gap: 1rem;
+  gap: 1.15rem;
+  align-items: start;
   margin-top: 1.25rem;
 }
 .calendar-card {
   min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  background: var(--color-canvas);
+  padding: clamp(0.85rem, 1.6vw, 1.15rem);
+  border: 1px solid #dfe4ef;
+  border-radius: 1.2rem;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px rgb(32 46 120 / 6%);
 }
-.calendar-card__meta {
+.calendar-card__toolbar {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
   align-items: center;
-  margin-bottom: 0.8rem;
-  color: var(--color-muted);
-  font-size: 0.78rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--color-border);
 }
-.calendar-card__meta strong {
+.calendar-card__month {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.calendar-card__month-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.8rem;
   color: var(--color-primary);
+  background: var(--hs-blue-50);
+}
+.calendar-card__month-icon :deep(.icon) {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.calendar-card__month small,
+.calendar-card__month strong {
+  display: block;
+}
+.calendar-card__month small {
+  color: var(--color-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.calendar-card__month strong {
+  margin-top: 0.08rem;
+  color: var(--color-ink);
+  font-size: 1.08rem;
 }
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.calendar-weekdays {
+  margin-bottom: 0.35rem;
+  padding: 0.22rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-canvas);
 }
 .calendar-weekdays span {
-  padding: 0.35rem;
+  padding: 0.3rem 0.2rem;
   color: var(--color-subtle);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   text-align: center;
 }
@@ -1648,51 +1871,87 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: 5rem;
+  min-height: 4.35rem;
   align-content: start;
   justify-items: start;
-  padding: 0.55rem;
-  border: 1px solid transparent;
-  border-radius: 0.8rem;
+  overflow: hidden;
+  padding: 0.48rem;
+  border: 1px solid #edf0f6;
+  border-radius: 0.72rem;
   color: var(--color-ink);
-  background: transparent;
+  background: var(--color-surface);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 .calendar-day:hover {
-  background: var(--hs-blue-50);
+  z-index: 1;
+  border-color: var(--hs-blue-200);
+  background: #f8faff;
+  box-shadow: inset 0 0 0 1px rgb(49 87 255 / 8%);
+}
+.calendar-day:focus-visible {
+  z-index: 2;
+  outline: 3px solid rgb(49 87 255 / 24%);
+  outline-offset: 1px;
 }
 .calendar-day > span {
-  font-size: 0.8rem;
-  font-weight: 700;
+  display: grid;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: 0.52rem;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 .calendar-day > strong {
   display: inline-flex;
-  min-height: 1.45rem;
+  min-height: 1.3rem;
   align-items: center;
   justify-content: center;
-  margin-top: 0.45rem;
-  padding: 0.18rem 0.42rem;
+  margin-top: auto;
+  padding: 0.14rem 0.4rem;
+  border: 1px solid var(--hs-blue-100);
   border-radius: 999px;
-  color: white;
-  background: var(--color-primary);
-  font-size: 0.7rem;
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+  font-size: 0.65rem;
   line-height: 1;
   white-space: nowrap;
 }
+.calendar-day > strong::before {
+  width: 0.3rem;
+  height: 0.3rem;
+  margin-right: 0.25rem;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
 .calendar-day > small {
   position: absolute;
-  top: 0.5rem;
-  right: 0.45rem;
+  top: 0.58rem;
+  right: 0.5rem;
+  padding: 0.12rem 0.3rem;
+  border-radius: 999px;
   color: var(--color-primary);
-  font-size: 0.62rem;
+  background: var(--hs-blue-50);
+  font-size: 0.58rem;
   font-weight: 800;
 }
-.calendar-day--selected {
-  border-color: var(--color-primary);
-  background: var(--hs-blue-50);
-  box-shadow: 0 0 0 1px var(--color-primary);
+.calendar-day--has-deadline {
+  border-color: var(--hs-blue-100);
+  background: #fbfcff;
 }
-.calendar-day--today > span {
-  color: var(--color-primary);
+.calendar-day--selected {
+  border-color: var(--hs-blue-400);
+  background: linear-gradient(145deg, var(--hs-blue-50), #f8faff);
+  box-shadow: inset 0 0 0 1px var(--hs-blue-300);
+}
+.calendar-day--selected > strong {
+  color: white;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
 }
 .calendar-day--sunday > span {
   color: var(--color-danger);
@@ -1700,9 +1959,16 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .calendar-day--saturday > span {
   color: var(--color-primary);
 }
+.calendar-day--today > span {
+  color: white;
+  background: var(--color-primary);
+}
 .calendar-day--blank {
   display: block;
-  min-height: 5rem;
+  min-height: 4.35rem;
+  border-color: transparent;
+  background: var(--color-canvas);
+  opacity: 0.55;
 }
 .deadline-detail {
   padding: 1rem;
@@ -1874,11 +2140,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   color: var(--hs-blue-100);
 }
 .workspace-note h2 {
+  margin-bottom: 0.7rem;
   color: white;
   font-size: 1.25rem;
   line-height: 1.35;
 }
 .workspace-note p:not(.section-kicker) {
+  margin-top: 0;
   color: rgb(255 255 255 / 72%);
   font-size: 0.85rem;
   line-height: 1.65;
@@ -2148,6 +2416,25 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 @media (max-width: 74rem) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-toc {
+    order: -1;
+    overflow-x: auto;
+  }
+  .dashboard-toc > p {
+    display: none;
+  }
+  .dashboard-toc nav {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+  }
+  .dashboard-toc a {
+    flex: 1 0 auto;
+    white-space: nowrap;
+  }
   .dashboard-hero,
   .calendar-layout {
     grid-template-columns: 1fr;
@@ -2219,26 +2506,41 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     align-items: stretch;
     flex-direction: column;
   }
-  .calendar-controls {
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
+  .deadline-section__summary {
+    align-self: flex-start;
   }
-  .calendar-controls strong {
-    min-width: 0;
+  .calendar-card__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .calendar-controls {
+    justify-content: space-between;
   }
   .calendar-card {
-    padding: 0.5rem;
+    padding: 0.65rem;
+  }
+  .calendar-weekdays,
+  .calendar-grid {
+    gap: 0.22rem;
   }
   .calendar-day,
   .calendar-day--blank {
-    min-height: 3.75rem;
-    padding: 0.35rem;
+    min-height: 3.65rem;
+    padding: 0.3rem;
+    border-radius: 0.58rem;
+  }
+  .calendar-day > span {
+    min-width: 1.4rem;
+    height: 1.4rem;
+    font-size: 0.7rem;
   }
   .calendar-day > strong {
-    min-height: 1.15rem;
-    margin-top: 0.25rem;
+    min-height: 1.05rem;
     padding: 0.16rem 0.3rem;
-    font-size: 0.62rem;
+    font-size: 0.58rem;
+  }
+  .calendar-day > strong::before {
+    display: none;
   }
   .calendar-day > small {
     display: none;

@@ -16,7 +16,20 @@ test('protected app shell stays usable without horizontal overflow at required w
   expect(await titleName.evaluate((element) => getComputedStyle(element).color)).not.toBe(
     await titleSuffix.evaluate((element) => getComputedStyle(element).color),
   )
-  await expect(page.getByRole('heading', { name: '지원 준비 요약' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '지원 준비 요약' })).toHaveClass(/sr-only/)
+  await expect(page.getByText('한눈에 보기', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '오늘로 이동' })).toHaveCount(0)
+  await expect(page.getByText('모든 날짜와 시각은 Asia/Seoul 기준으로 표시합니다.')).toHaveCount(0)
+  const dashboardShortcuts = page.getByRole('complementary', { name: '대시보드 바로가기' })
+  expect(
+    await page
+      .getByRole('heading', { name: '공고 마감 캘린더' })
+      .evaluate((element) => getComputedStyle(element).fontFamily),
+  ).toContain('Noto Sans KR Variable')
+  await expect(dashboardShortcuts.getByRole('link')).toHaveCount(4)
+  expect(await dashboardShortcuts.evaluate((element) => getComputedStyle(element).position)).toBe(
+    'static',
+  )
   await expect(page.locator('#app-content')).toBeFocused()
   expect(
     await page.locator('#app-content').evaluate((element) => ({
@@ -24,6 +37,26 @@ test('protected app shell stays usable without horizontal overflow at required w
       boxShadow: getComputedStyle(element).boxShadow,
     })),
   ).toEqual({ outline: 'none', boxShadow: 'none' })
+  await dashboardShortcuts.getByRole('link', { name: '마감 캘린더' }).click()
+  await expect(page).toHaveURL(/#dashboard-deadlines$/)
+  await expect(page.locator('#dashboard-deadlines')).toBeInViewport()
+
+  const currentDate = page.getByRole('button', { name: /^2026-08-02,/ })
+  const nextDate = page.getByRole('button', { name: /^2026-08-03,/ })
+  await currentDate.click()
+  await nextDate.hover()
+  const currentDateBox = await currentDate.boundingBox()
+  const nextDateBox = await nextDate.boundingBox()
+  expect(currentDateBox).not.toBeNull()
+  expect(nextDateBox).not.toBeNull()
+  expect(
+    (nextDateBox?.x ?? 0) - ((currentDateBox?.x ?? 0) + (currentDateBox?.width ?? 0)),
+  ).toBeGreaterThan(3)
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.locator('.calendar-card').screenshot({
+      path: testInfo.outputPath('calendar-hover-1440.png'),
+    })
+  }
 
   const deadlineDate = page.getByRole('button', { name: /^2026-08-15,/ })
   await expect(deadlineDate).toContainText('1건')

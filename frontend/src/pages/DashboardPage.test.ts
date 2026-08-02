@@ -48,6 +48,18 @@ describe('DashboardPage', () => {
     expect(wrapper.get('.summary-grid').text()).toContain('지원 완료')
     expect(wrapper.get('.summary-grid').text()).toContain('AI가 확인 중')
     expect(wrapper.get('.summary-grid').text()).toContain('등록한 이력서·자료')
+    expect(wrapper.find('.summary-section .section-kicker').exists()).toBe(false)
+    expect(wrapper.get('.summary-section > h2').classes()).toContain('sr-only')
+    expect(wrapper.text()).not.toContain('오늘로 이동')
+    expect(wrapper.text()).not.toContain('모든 날짜와 시각은 Asia/Seoul 기준으로 표시합니다.')
+
+    const shortcuts = wrapper.get('aside[aria-label="대시보드 바로가기"]')
+    expect(shortcuts.findAll('a').map((link) => [link.text(), link.attributes('href')])).toEqual([
+      ['지원 현황', '#dashboard-overview'],
+      ['마감 캘린더', '#dashboard-deadlines'],
+      ['최근 활동', '#dashboard-activity'],
+      ['취업 준비 가이드', '#dashboard-guides'],
+    ])
     wrapper.unmount()
   })
 
@@ -124,7 +136,7 @@ describe('DashboardPage', () => {
 
     const wrapper = await mountDashboard()
 
-    expect(wrapper.get('.calendar-card__meta').text()).toContain('0건')
+    expect(wrapper.get('.deadline-section__summary').text()).toContain('0건')
     expect(wrapper.get('.deadline-detail--desktop').text()).toContain(
       '이날 마감되는 공고가 없어요.',
     )

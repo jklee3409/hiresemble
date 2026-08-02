@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource-variable/noto-sans-kr':
+        specifier: 5.3.0
+        version: 5.3.0
       '@primeuix/themes':
         specifier: 3.0.0
         version: 3.0.0
@@ -261,6 +264,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/noto-sans-kr@5.3.0':
+    resolution: {integrity: sha512-h863ZOIVMKjX0PSr0hLMUp/SjrwOul2yp0f5P61avqXdhqDABSkakzG2Ee07d3W8gVYgS9dMmxULdCkoN09f1A==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2304,6 +2310,8 @@ snapshots:
       '@floating-ui/utils': 0.2.12
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/noto-sans-kr@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
