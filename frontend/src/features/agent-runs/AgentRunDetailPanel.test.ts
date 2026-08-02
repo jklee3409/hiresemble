@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import AgentRunDetailPanel from './AgentRunDetailPanel.vue'
+import { formatStepName } from './presentation'
 import { agentRunDetail } from './testFixtures'
 
 const global = {
@@ -11,6 +12,89 @@ const global = {
 }
 
 describe('AgentRunDetailPanel', () => {
+  it('uses user-friendly labels for every Job analysis step', () => {
+    expect(
+      [
+        'BUILD_JOB_SNAPSHOT',
+        'EXTRACT_REQUIREMENTS',
+        'ASSESS_ELIGIBILITY',
+        'RETRIEVE_VERIFIED_EVIDENCE',
+        'MATCH_EVIDENCE',
+        'SCORE_FIT',
+        'VALIDATE_ANALYSIS',
+        'PERSIST_ANALYSIS',
+      ].map((stepKey, index) => formatStepName(stepKey, index + 1)),
+    ).toEqual([
+      '공고 분석 준비',
+      '지원 요건 정리',
+      '지원 가능 여부 확인',
+      '관련 경험 찾기',
+      '공고와 경험 비교',
+      '직무 적합도 계산',
+      '분석 결과 확인',
+      '결과 저장',
+    ])
+  })
+
+  it('shows friendly names only through the currently running Job analysis step', () => {
+    const wrapper = mount(AgentRunDetailPanel, {
+      props: {
+        run: agentRunDetail({
+          currentStep: 'ASSESS_ELIGIBILITY',
+          progressPercent: 30,
+          steps: [
+            {
+              id: '10000000-0000-4000-8000-000000000011',
+              stepKey: 'BUILD_JOB_SNAPSHOT',
+              scopeKey: null,
+              stepOrder: 1,
+              status: 'SUCCEEDED',
+              attempt: 1,
+              maxAttempts: 1,
+              startedAt: '2026-07-19T00:00:01Z',
+              completedAt: '2026-07-19T00:00:02Z',
+              safeError: null,
+            },
+            {
+              id: '10000000-0000-4000-8000-000000000012',
+              stepKey: 'EXTRACT_REQUIREMENTS',
+              scopeKey: null,
+              stepOrder: 2,
+              status: 'SUCCEEDED',
+              attempt: 1,
+              maxAttempts: 2,
+              startedAt: '2026-07-19T00:00:02Z',
+              completedAt: '2026-07-19T00:00:03Z',
+              safeError: null,
+            },
+            {
+              id: '10000000-0000-4000-8000-000000000013',
+              stepKey: 'ASSESS_ELIGIBILITY',
+              scopeKey: null,
+              stepOrder: 3,
+              status: 'RUNNING',
+              attempt: 1,
+              maxAttempts: 2,
+              startedAt: '2026-07-19T00:00:03Z',
+              completedAt: null,
+              safeError: null,
+            },
+          ],
+        }),
+        connectionState: 'connected',
+      },
+      global,
+    })
+
+    expect(wrapper.text()).toContain('3개 과정')
+    expect(wrapper.text()).toContain('공고 분석 준비')
+    expect(wrapper.text()).toContain('지원 요건 정리')
+    expect(wrapper.text()).toContain('지원 가능 여부 확인')
+    expect(wrapper.text()).not.toContain('3번째 작업')
+    expect(wrapper.text()).not.toContain('관련 경험 찾기')
+    expect(wrapper.text()).not.toContain('ASSESS_ELIGIBILITY')
+  })
+
   it('projects safe detail fields and the catalog cost notice without internal provider data', () => {
     const wrapper = mount(AgentRunDetailPanel, {
       props: {

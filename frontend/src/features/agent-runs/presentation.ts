@@ -75,7 +75,14 @@ const STEP_LABELS: Record<string, string> = {
   MERGE_USER_OVERRIDES: '입력 내용 반영',
   VALIDATE_JOB_EXTRACTION: '채용 정보 확인',
   APPLY_JOB_EXTRACTION: '결과 저장',
+  BUILD_JOB_SNAPSHOT: '공고 분석 준비',
   EXTRACT_REQUIREMENTS: '지원 요건 정리',
+  ASSESS_ELIGIBILITY: '지원 가능 여부 확인',
+  RETRIEVE_VERIFIED_EVIDENCE: '관련 경험 찾기',
+  MATCH_EVIDENCE: '공고와 경험 비교',
+  SCORE_FIT: '직무 적합도 계산',
+  VALIDATE_ANALYSIS: '분석 결과 확인',
+  PERSIST_ANALYSIS: '결과 저장',
 }
 
 export function formatStepName(stepKey: string, stepOrder: number): string {

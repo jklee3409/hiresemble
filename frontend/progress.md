@@ -5,7 +5,20 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/265 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (공고 분석 사용자 단계명 완성)
+
+- What was done:
+  - 진행 중인 `JOB_ANALYSIS` 상세가 순번 대신 실제 도달한 과정의 사용자용 이름을 표시하도록 누락된 단계명과 회귀 테스트를 보강했다.
+- Key decisions:
+  - 공고 추출·분석 Run과 공개 API 계약은 유지하고 Agent Run presentation 범위에서만 수정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run 상세 집중 테스트 9개와 Frontend 표준 check 67 files/267 tests·production build가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (Dashboard 스크롤 바로가기·문구 흐름 보정)
 

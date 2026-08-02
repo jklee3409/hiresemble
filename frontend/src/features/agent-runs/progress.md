@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-02] Session Summary (진행 중 공고 분석 단계명 보정)
+
+- What was done:
+  - `JOB_ANALYSIS` 8개 내부 step key를 공고 분석 준비, 지원 요건 정리, 지원 가능 여부 확인, 관련 경험 찾기, 공고와 경험 비교, 직무 적합도 계산, 분석 결과 확인, 결과 저장의 사용자용 명칭으로 완성했다.
+  - 완료된 단계와 현재 실행 중인 단계까지만 있는 Run 상세에서 순번 fallback·내부 key·미도달 단계가 노출되지 않는 회귀 테스트를 추가했다.
+- Key decisions:
+  - Backend가 실제 시작한 step row만 반환하는 계약을 유지하고 API·Workflow를 변경하지 않은 채 Frontend presentation 매핑만 보정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `corepack pnpm exec vitest run src/features/agent-runs/AgentRunDetailPanel.test.ts` 9개 테스트와 Frontend 표준 `corepack pnpm check` 67 files/267 tests·typecheck·lint·format·build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (AI 작업 사용자 문구 정리)
 
 - What was done:
