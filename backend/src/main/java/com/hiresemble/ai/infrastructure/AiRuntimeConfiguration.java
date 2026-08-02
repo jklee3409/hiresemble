@@ -119,9 +119,10 @@ public class AiRuntimeConfiguration {
             JobAnalysisQueryPort queryPort,
             JobAnalysisCommandPort commandPort,
             JobAnalysisEmbeddingQueryPort embeddingQueryPort,
+            com.hiresemble.agentrun.application.port.AgentRunQueryPort agentRunQueryPort,
             ObjectMapper objectMapper) {
         return new JobAnalysisWorkflow(
-                queryPort, commandPort, embeddingQueryPort, objectMapper);
+                queryPort, commandPort, embeddingQueryPort, agentRunQueryPort, objectMapper);
     }
 
     @Bean

@@ -72,15 +72,22 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         PriceSet prices = prices(request);
         ValidatedSchema schema = schemaRegistry.require(
                 request.outputType(), request.outputSchemaVersion());
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
+        var optionsBuilder = OpenAiChatOptions.builder();
+        optionsBuilder
                 .model(request.productKey())
                 .timeout(boundedTimeout(request.timeout()))
                 .maxRetries(0)
                 .maxCompletionTokens(request.maxOutputTokens())
                 .n(1)
                 .store(false)
-                .outputSchema(schema.schema())
-                .build();
+                .outputSchema(schema.schema());
+        if (request.reasoningEffort() != null) {
+            optionsBuilder.reasoningEffort(request.reasoningEffort());
+        }
+        if (request.verbosity() != null) {
+            optionsBuilder.verbosity(request.verbosity());
+        }
+        OpenAiChatOptions options = optionsBuilder.build();
         Prompt prompt = new Prompt(
                 List.of(
                         new SystemMessage(request.instructions()),

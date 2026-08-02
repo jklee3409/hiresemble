@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
+import com.hiresemble.agentrun.application.model.AgentRunPage;
+import com.hiresemble.agentrun.application.model.ReusableStepSnapshot;
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.query.AgentRunListCriteria;
 import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
+import com.hiresemble.agentrun.domain.model.SafeError;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.context.ContextBuilder.ContextRequest;
 import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
@@ -111,6 +116,13 @@ class JobAnalysisWorkflowTest {
                         ProviderRequirementsOutput.class,
                         ProviderEligibilityOutput.class,
                         ProviderMatchOutput.class);
+        assertThat(fixture.chat.requests.subList(0, 2))
+                .allSatisfy(request -> {
+                    assertThat(request.reasoningEffort()).isNull();
+                    assertThat(request.verbosity()).isNull();
+                });
+        assertThat(fixture.chat.requests.get(2).reasoningEffort()).isEqualTo("low");
+        assertThat(fixture.chat.requests.get(2).verbosity()).isEqualTo("low");
         assertThat(fixture.embedding.calls.get()).isEqualTo(1);
         assertThat(fixture.query.searchCalls.get()).isEqualTo(1);
         assertThat(fixture.command.persisted).isNotNull();
@@ -514,7 +526,7 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
-    void certificationAndLanguageCriteriaRejectIncompatibleCareerEvidence() {
+    void certificationAndLanguageCriteriaDowngradeIncompatibleCareerEvidence() {
         for (CriterionSupportType supportType : List.of(
                 CriterionSupportType.CERTIFICATION, CriterionSupportType.LANGUAGE)) {
             Fixture fixture = fixture(false, false);
@@ -523,11 +535,57 @@ class JobAnalysisWorkflowTest {
                     eligibility(Eligibility.UNKNOWN),
                     singleEvidenceMatch(fixture.evidence.id()));
 
-            assertThatThrownBy(() -> execute(fixture))
-                    .isInstanceOfSatisfying(AiExecutionException.class, failure ->
-                            assertThat(failure.safeCode())
-                                    .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+            execute(fixture);
+
+            assertThat(fixture.command.persisted.criteria()).singleElement().satisfies(criterion -> {
+                assertThat(criterion.matchLevel()).isEqualTo(MatchLevel.UNKNOWN);
+                assertThat(criterion.evidenceIds()).isEmpty();
+                assertThat(criterion.structuredFactRefs()).isEmpty();
+            });
         }
+    }
+
+    @Test
+    void retryAfterMatchCompatibilityFailureUsesConservativeLocalFallback() {
+        Fixture fixture = fixture(false, false);
+        AgentRunSnapshot predecessor = copyRun(
+                fixture.run,
+                fixture.run.id(),
+                AgentRunStatus.FAILED,
+                JobAnalysisWorkflow.MATCH_EVIDENCE,
+                null,
+                fixture.run.rootRunId(),
+                1,
+                true,
+                new SafeError(
+                        "JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID",
+                        "비교 근거를 안전하게 연결하지 못했습니다."));
+        AgentRunSnapshot retryRun = copyRun(
+                fixture.run,
+                UUID.randomUUID(),
+                AgentRunStatus.RUNNING,
+                null,
+                predecessor.id(),
+                predecessor.rootRunId(),
+                2,
+                false,
+                null);
+        fixture.agentRunQuery.predecessor = predecessor;
+        Fixture retryFixture = fixture.withRun(retryRun);
+        retryFixture.chat.enqueue(
+                requirements(),
+                eligibility(Eligibility.ELIGIBLE, retryFixture.evidence.id()));
+
+        ExecutionResult result = execute(retryFixture);
+
+        assertThat(result.providerInvocations()).isEqualTo(3);
+        assertThat(retryFixture.chat.requests).hasSize(2);
+        assertThat(retryFixture.command.persisted.criteria())
+                .allSatisfy(criterion -> {
+                    assertThat(criterion.matchLevel()).isEqualTo(MatchLevel.UNKNOWN);
+                    assertThat(criterion.evidenceIds()).isEmpty();
+                    assertThat(criterion.structuredFactRefs()).isEmpty();
+                });
     }
 
     @Test
@@ -607,10 +665,9 @@ class JobAnalysisWorkflowTest {
                         expectedGraduation.reference(),
                         MatchLevel.MATCHED,
                         "졸업 예정일을 근무 가능일로 확인했습니다."));
-        assertThatThrownBy(() -> execute(invalid))
-                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
-                        assertThat(failure.safeCode())
-                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+        execute(invalid);
+        assertThat(invalid.command.persisted.criteria().getFirst().matchLevel())
+                .isEqualTo(MatchLevel.UNKNOWN);
 
         Fixture conservative = fixture(
                 false, false, EvidenceSourceType.CAREER, List.of(expectedGraduation));
@@ -665,10 +722,9 @@ class JobAnalysisWorkflowTest {
                         late.reference(),
                         MatchLevel.MATCHED,
                         "사용자 입력 기준 근무 가능일이 요구일 이전입니다."));
-        assertThatThrownBy(() -> execute(invalid))
-                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
-                        assertThat(failure.safeCode())
-                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+        execute(invalid);
+        assertThat(invalid.command.persisted.criteria().getFirst().matchLevel())
+                .isEqualTo(MatchLevel.UNKNOWN);
     }
 
     @Test
@@ -688,10 +744,9 @@ class JobAnalysisWorkflowTest {
                 singleFactMatch(
                         military.reference(), MatchLevel.MATCHED, "사용자 입력 기준 병역 조건을 충족합니다."));
 
-        assertThatThrownBy(() -> execute(fixture))
-                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
-                        assertThat(failure.safeCode())
-                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+        execute(fixture);
+        assertThat(fixture.command.persisted.criteria().getFirst().matchLevel())
+                .isEqualTo(MatchLevel.UNKNOWN);
     }
 
     private ExecutionResult execute(Fixture fixture) {
@@ -921,10 +976,11 @@ class JobAnalysisWorkflowTest {
         FakeEmbeddingPolicy embeddingPolicy = new FakeEmbeddingPolicy();
         FakeEmbedding embedding = new FakeEmbedding(objectMapper, embeddingPolicy.dimension);
         FakeChat chat = new FakeChat(objectMapper);
+        FakeAgentRunQuery agentRunQuery = new FakeAgentRunQuery();
         AgentRunSnapshot run = run(
                 userId, jobId, runId, snapshot, false, reusableId);
         JobAnalysisWorkflow workflow = new JobAnalysisWorkflow(
-                query, command, embeddingPolicy, objectMapper);
+                query, command, embeddingPolicy, agentRunQuery, objectMapper);
         return new Fixture(
                 snapshot,
                 evidence,
@@ -932,6 +988,7 @@ class JobAnalysisWorkflowTest {
                 query,
                 command,
                 embeddingPolicy,
+                agentRunQuery,
                 chat,
                 embedding,
                 workflow,
@@ -1214,6 +1271,7 @@ class JobAnalysisWorkflowTest {
             FakeQuery query,
             FakeCommand command,
             FakeEmbeddingPolicy embeddingPolicy,
+            FakeAgentRunQuery agentRunQuery,
             FakeChat chat,
             FakeEmbedding embedding,
             JobAnalysisWorkflow workflow,
@@ -1227,12 +1285,77 @@ class JobAnalysisWorkflowTest {
                     query,
                     command,
                     embeddingPolicy,
+                    agentRunQuery,
                     chat,
                     embedding,
                     workflow,
                     JobAnalysisWorkflowTest.thisRun(
                             run, snapshot, force, force ? null : reusableAnalysisId));
         }
+
+        Fixture withRun(AgentRunSnapshot replacement) {
+            return new Fixture(
+                    snapshot,
+                    evidence,
+                    reusableAnalysisId,
+                    query,
+                    command,
+                    embeddingPolicy,
+                    agentRunQuery,
+                    chat,
+                    embedding,
+                    workflow,
+                    replacement);
+        }
+    }
+
+    private static AgentRunSnapshot copyRun(
+            AgentRunSnapshot original,
+            UUID id,
+            AgentRunStatus status,
+            String currentStep,
+            UUID retryOfRunId,
+            UUID rootRunId,
+            int runAttemptNo,
+            boolean retryableFailure,
+            SafeError safeError) {
+        return new AgentRunSnapshot(
+                id,
+                original.userId(),
+                original.workflowType(),
+                status,
+                currentStep,
+                original.progressPercent(),
+                original.workflowVersion(),
+                original.canonicalInputHash(),
+                original.inputReferenceSnapshot(),
+                original.budgetPolicyVersion(),
+                original.priceVersion(),
+                original.requestedQualityMode(),
+                original.highestModelTierUsed(),
+                original.estimatedCostUsd(),
+                original.reservedCostUsd(),
+                original.actualCostUsd(),
+                original.resourceType(),
+                original.resourceId(),
+                retryOfRunId,
+                rootRunId,
+                runAttemptNo,
+                retryableFailure,
+                safeError,
+                original.partialResult(),
+                original.claimToken(),
+                original.claimedBy(),
+                original.leaseExpiresAt(),
+                original.heartbeatAt(),
+                original.cancelRequestedAt(),
+                original.requiredUserAction(),
+                original.stateVersion(),
+                original.queuedAt(),
+                original.startedAt(),
+                original.completedAt(),
+                original.updatedAt(),
+                original.steps());
     }
 
     private static AgentRunSnapshot thisRun(
@@ -1286,6 +1409,35 @@ class JobAnalysisWorkflowTest {
                 original.completedAt(),
                 original.updatedAt(),
                 original.steps());
+    }
+
+    private static final class FakeAgentRunQuery implements AgentRunQueryPort {
+
+        private AgentRunSnapshot predecessor;
+
+        @Override
+        public Optional<AgentRunSnapshot> findByOwner(UUID userId, UUID agentRunId) {
+            return predecessor != null
+                            && predecessor.userId().equals(userId)
+                            && predecessor.id().equals(agentRunId)
+                    ? Optional.of(predecessor)
+                    : Optional.empty();
+        }
+
+        @Override
+        public AgentRunPage findPage(AgentRunListCriteria criteria) {
+            return new AgentRunPage(List.of(), criteria.page(), criteria.size(), 0, 0);
+        }
+
+        @Override
+        public Optional<ReusableStepSnapshot> findReusableStep(
+                UUID userId,
+                String stepKey,
+                String scopeKey,
+                String inputHash,
+                AiQualityMode requestedQualityMode) {
+            return Optional.empty();
+        }
     }
 
     private static final class FakeQuery implements JobAnalysisQueryPort {

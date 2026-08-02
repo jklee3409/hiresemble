@@ -90,7 +90,9 @@ class SpringAiOpenAiGatewayTest {
                 Duration.ofSeconds(3),
                 PRICE_VERSION,
                 32,
-                TestOutput.class));
+                TestOutput.class,
+                "low",
+                "low"));
 
         ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
         verify(model).call(prompt.capture());
@@ -100,6 +102,8 @@ class SpringAiOpenAiGatewayTest {
         assertThat(options.getMaxCompletionTokens()).isEqualTo(32);
         assertThat(options.getN()).isEqualTo(1);
         assertThat(options.getStore()).isFalse();
+        assertThat(options.getReasoningEffort()).isEqualTo("low");
+        assertThat(options.getVerbosity()).isEqualTo("low");
         assertThat(options.getParallelToolCalls()).isNull();
         assertThat(options.getToolChoice()).isNull();
         assertThat(options.getOutputSchema()).contains("\"additionalProperties\" : false");

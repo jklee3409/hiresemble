@@ -1,5 +1,6 @@
 package com.hiresemble.ai.workflow;
 
+import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
@@ -115,16 +116,19 @@ public final class JobAnalysisWorkflow {
     private final JobAnalysisQueryPort queryPort;
     private final JobAnalysisCommandPort commandPort;
     private final JobAnalysisEmbeddingQueryPort embeddingQueryPort;
+    private final AgentRunQueryPort agentRunQueryPort;
     private final ObjectMapper objectMapper;
 
     public JobAnalysisWorkflow(
             JobAnalysisQueryPort queryPort,
             JobAnalysisCommandPort commandPort,
             JobAnalysisEmbeddingQueryPort embeddingQueryPort,
+            AgentRunQueryPort agentRunQueryPort,
             ObjectMapper objectMapper) {
         this.queryPort = Objects.requireNonNull(queryPort);
         this.commandPort = Objects.requireNonNull(commandPort);
         this.embeddingQueryPort = Objects.requireNonNull(embeddingQueryPort);
+        this.agentRunQueryPort = Objects.requireNonNull(agentRunQueryPort);
         this.objectMapper = Objects.requireNonNull(objectMapper);
     }
 
@@ -1029,7 +1033,7 @@ public final class JobAnalysisWorkflow {
 
         @Override
         public boolean requiresProvider(StepExecutionContext context) {
-            return !state(context).reusing();
+            return !state(context).reusing() && !usesConservativeRetryFallback(context);
         }
 
         @Override
@@ -1043,6 +1047,13 @@ public final class JobAnalysisWorkflow {
                         List.of(),
                         null));
             }
+            if (usesConservativeRetryFallback(invocation.executionContext())) {
+                ExtractRequirementsOutput requirements = requiredEphemeral(
+                        invocation.executionContext(),
+                        EXTRACT_REQUIREMENTS,
+                        ExtractRequirementsOutput.class);
+                return localResponse(conservativeMatchOutput(requirements));
+            }
             return invocation.chatGateway().chat(new ChatRequest(
                     invocation.modelRoute().providerKey(),
                     invocation.modelRoute().productKey(),
@@ -1055,7 +1066,9 @@ public final class JobAnalysisWorkflow {
                     CHAT_TIMEOUT,
                     invocation.executionContext().run().priceVersion(),
                     invocation.prompt().maxOutputTokens(),
-                    invocation.prompt().outputType()));
+                    invocation.prompt().outputType(),
+                    "low",
+                    "low"));
         }
 
         @Override
@@ -1190,6 +1203,23 @@ public final class JobAnalysisWorkflow {
                             "Connect every supplied requirement index exactly once without omissions.");
                 }
             }
+            RetrievedEvidenceOutput retrieved = requiredEphemeral(
+                    context,
+                    RETRIEVE_VERIFIED_EVIDENCE,
+                    RetrievedEvidenceOutput.class);
+            Set<UUID> retrievedIds = retrieved.candidates().stream()
+                    .map(RetrievedEvidenceCandidate::evidenceId)
+                    .collect(java.util.stream.Collectors.toSet());
+            for (MatchedCriterion criterion : orderedCriteria(output.criteria())) {
+                requireEvidenceSubset(criterion.evidenceIds(), retrievedIds);
+                requireAllowedFactRefs(state(context).snapshot(), criterion.structuredFactRefs());
+                validateSupportCompatibility(
+                        requirements.requirements().get(criterion.criterionIndex()),
+                        criterion,
+                        state(context).snapshot(),
+                        retrieved,
+                        true);
+            }
         }
 
         @Override
@@ -1233,7 +1263,8 @@ public final class JobAnalysisWorkflow {
                         requirements.requirements().get(criterion.criterionIndex()),
                         criterion,
                         state.snapshot(),
-                        retrieved);
+                        retrieved,
+                        false);
                 rejectProbabilityLanguage(criterion.explanation());
                 rejectProbabilityLanguage(criterion.missingReason());
             }
@@ -1277,16 +1308,49 @@ public final class JobAnalysisWorkflow {
                         List.of(),
                         null);
             }
+            ExtractRequirementsOutput requirements = requiredEphemeral(
+                    context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class);
+            RetrievedEvidenceOutput retrieved = requiredEphemeral(
+                    context,
+                    RETRIEVE_VERIFIED_EVIDENCE,
+                    RetrievedEvidenceOutput.class);
+            Set<UUID> retrievedIds = retrieved.candidates().stream()
+                    .map(RetrievedEvidenceCandidate::evidenceId)
+                    .collect(java.util.stream.Collectors.toSet());
+            Set<String> allowedFactRefs = state.snapshot().profile().structuredFacts().stream()
+                    .map(StructuredProfileFact::reference)
+                    .collect(java.util.stream.Collectors.toSet());
+            Set<Integer> downgradedIndexes = new HashSet<>();
             List<MatchedCriterion> criteria = output.criteria().stream()
-                    .map(value -> new MatchedCriterion(
+                    .map(value -> {
+                        MatchedCriterion mapped = new MatchedCriterion(
                             value.criterionIndex(),
                             value.matchLevel(),
                             List.copyOf(value.evidenceIds()),
                             List.copyOf(value.structuredFactRefs()),
                             value.explanation().trim(),
-                            trimNullable(value.missingReason())))
+                            trimNullable(value.missingReason()));
+                        boolean positive = mapped.matchLevel() == MatchLevel.MATCHED
+                                || mapped.matchLevel() == MatchLevel.PARTIAL;
+                        boolean knownReferences = retrievedIds.containsAll(mapped.evidenceIds())
+                                && allowedFactRefs.containsAll(mapped.structuredFactRefs());
+                        if (positive
+                                && knownReferences
+                                && mapped.criterionIndex() >= 0
+                                && mapped.criterionIndex() < requirements.requirements().size()
+                                && !supportCompatible(
+                                        requirements.requirements().get(mapped.criterionIndex()),
+                                        mapped,
+                                        state.snapshot(),
+                                        retrieved)) {
+                            downgradedIndexes.add(mapped.criterionIndex());
+                            return conservativeUnknownCriterion(mapped.criterionIndex());
+                        }
+                        return mapped;
+                    })
                     .toList();
             List<StrengthDraft> strengths = output.strengths().stream()
+                    .filter(value -> !downgradedIndexes.contains(value.criterionIndex()))
                     .map(value -> new StrengthDraft(
                             value.text().trim(),
                             value.criterionIndex(),
@@ -1302,7 +1366,51 @@ public final class JobAnalysisWorkflow {
                     criteria,
                     strengths,
                     gaps,
-                    output.analysisSummary().trim());
+                    downgradedIndexes.isEmpty()
+                            ? output.analysisSummary().trim()
+                            : "확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.");
+        }
+
+        private boolean usesConservativeRetryFallback(StepExecutionContext context) {
+            UUID predecessorId = context.run().retryOfRunId();
+            if (predecessorId == null) {
+                return false;
+            }
+            return agentRunQueryPort.findByOwner(context.run().userId(), predecessorId)
+                    .filter(predecessor -> MATCH_EVIDENCE.equals(predecessor.currentStep()))
+                    .filter(predecessor -> predecessor.safeError() != null)
+                    .map(predecessor -> predecessor.safeError().code())
+                    .filter(code -> code.equals("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID")
+                            || code.startsWith("JOB_ANALYSIS_MATCH_"))
+                    .isPresent();
+        }
+
+        private ProviderMatchOutput conservativeMatchOutput(
+                ExtractRequirementsOutput requirements) {
+            return new ProviderMatchOutput(
+                    MATCH_SCHEMA,
+                    java.util.stream.IntStream.range(0, requirements.requirements().size())
+                            .mapToObj(index -> new ProviderMatchedCriterion(
+                                    index,
+                                    MatchLevel.UNKNOWN,
+                                    List.of(),
+                                    List.of(),
+                                    "현재 확인 가능한 근거만으로는 이 요건의 충족 여부를 판단할 수 없습니다.",
+                                    "요건에 맞는 근거 유형을 추가로 확인해야 합니다."))
+                            .toList(),
+                    List.of(),
+                    List.of(),
+                    "확인 가능한 근거만으로 보수적으로 분석했으며, 일부 요건은 추가 확인이 필요합니다.");
+        }
+
+        private MatchedCriterion conservativeUnknownCriterion(int criterionIndex) {
+            return new MatchedCriterion(
+                    criterionIndex,
+                    MatchLevel.UNKNOWN,
+                    List.of(),
+                    List.of(),
+                    "현재 확인 가능한 근거만으로는 이 요건의 충족 여부를 판단할 수 없습니다.",
+                    "요건에 맞는 근거 유형을 추가로 확인해야 합니다.");
         }
     }
 
@@ -2194,11 +2302,29 @@ public final class JobAnalysisWorkflow {
             RequirementCandidate requirement,
             MatchedCriterion criterion,
             JobAnalysisSnapshot snapshot,
-            RetrievedEvidenceOutput retrieved) {
+            RetrievedEvidenceOutput retrieved,
+            boolean repairableProviderOutput) {
         if (criterion.matchLevel() != MatchLevel.MATCHED
                 && criterion.matchLevel() != MatchLevel.PARTIAL) {
             return;
         }
+        boolean compatible = supportCompatible(requirement, criterion, snapshot, retrieved);
+        if (!compatible) {
+            if (repairableProviderOutput) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID",
+                        "Previous output attached an incompatible evidence or structured-fact reference. Use only the exact reference type allowed for each requirement. If no compatible supplied reference exists, return MISSING or UNKNOWN with empty evidenceIds and structuredFactRefs plus a nonblank missingReason.");
+            }
+            throw invalidSupport();
+        }
+    }
+
+    private boolean supportCompatible(
+            RequirementCandidate requirement,
+            MatchedCriterion criterion,
+            JobAnalysisSnapshot snapshot,
+            RetrievedEvidenceOutput retrieved) {
         Map<UUID, RetrievedEvidenceCandidate> evidence = retrieved.candidates().stream()
                 .collect(java.util.stream.Collectors.toMap(
                         RetrievedEvidenceCandidate::evidenceId, value -> value));
@@ -2214,7 +2340,7 @@ public final class JobAnalysisWorkflow {
                 .map(facts::get)
                 .filter(Objects::nonNull)
                 .toList();
-        boolean compatible = switch (requirement.supportType()) {
+        return switch (requirement.supportType()) {
             case EDUCATION -> evidenceTypes.isEmpty()
                     && exactFacts(usedFacts, StructuredProfileFactType.PRIMARY_EDUCATION);
             case CERTIFICATION -> usedFacts.isEmpty()
@@ -2244,9 +2370,6 @@ public final class JobAnalysisWorkflow {
                             || value == EvidenceSourceType.DOCUMENT_CHUNK);
             case GENERAL -> !evidenceTypes.isEmpty() || !usedFacts.isEmpty();
         };
-        if (!compatible) {
-            throw invalidSupport();
-        }
     }
 
     private void validateEligibilityFacts(
