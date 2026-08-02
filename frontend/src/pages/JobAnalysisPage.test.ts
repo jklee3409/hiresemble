@@ -97,7 +97,7 @@ describe('P6 Job analysis page', () => {
     const { wrapper } = await mountPage()
 
     expect(wrapper.text()).toContain('공고 분석 진행 상황')
-    expect(wrapper.text()).toContain('기본 분석 · 균형 모드')
+    expect(wrapper.text()).toContain('공고 저장 후 자동으로 진행돼요')
     expect(wrapper.text()).toContain('공고 등록 뒤 분석이 자동으로 이어져요.')
     expect(wrapper.text()).toContain('프로필을 더 채우면 비교 근거가 풍부해져요')
     expect(agentRunApi.listAgentRuns).toHaveBeenCalledWith({
@@ -109,6 +109,8 @@ describe('P6 Job analysis page', () => {
       sort: 'queuedAt,desc',
     })
     expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('균형형')
+    expect(wrapper.text()).not.toContain('경제형')
     expect(wrapper.text()).not.toContain('HIGH_QUALITY')
     expect(jobApi.analyzeJob).not.toHaveBeenCalled()
     expect(wrapper.get('progress').attributes('aria-label')).toBe('공고 분석 진행률 0%')
@@ -164,8 +166,8 @@ describe('P6 Job analysis page', () => {
         retryable: true,
         cancellable: false,
         safeError: {
-          code: 'STRUCTURED_OUTPUT_INVALID',
-          message: '분석 결과 형식을 확인하지 못했어요.',
+          code: 'AI_SO_WORKFLOW_CONTEXT_INVALID',
+          message: 'AI 결과의 의미 제약을 확인하지 못했습니다.',
         },
       }),
     )
@@ -178,7 +180,13 @@ describe('P6 Job analysis page', () => {
     })
     const { wrapper } = await mountPage()
 
-    expect(wrapper.get('[role="alert"]').text()).toContain('분석 결과 형식을 확인하지 못했어요')
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      '분석 결과를 안정적으로 정리하지 못했어요.',
+    )
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      '공고와 등록한 지원 정보는 그대로 보존되어 있으니 잠시 후 다시 시도해 주세요.',
+    )
+    expect(wrapper.text()).not.toContain('AI 결과의 의미 제약을 확인하지 못했습니다.')
     const retry = wrapper
       .findAll('button')
       .find((button) => button.text() === '같은 입력으로 재시도')
@@ -228,6 +236,9 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).toContain('확인한 경험이 변경됨')
     expect(wrapper.text()).toContain('아래 기존 결과는 그대로 유지돼요')
     expect(wrapper.text()).toContain('과거 분석 이력')
+    expect(wrapper.text()).not.toContain('재분석 옵션')
+    expect(wrapper.text()).not.toContain('균형형')
+    expect(wrapper.text()).not.toContain('경제형')
 
     const olderButton = wrapper
       .findAll('.analysis-history__list button')
@@ -241,7 +252,7 @@ describe('P6 Job analysis page', () => {
     await flushPromises()
     expect(jobApi.analyzeJob).toHaveBeenCalledWith(
       JOB_ID,
-      expect.objectContaining({ forceReanalyze: true, jobVersion: 2 }),
+      expect.objectContaining({ qualityMode: 'BALANCED', forceReanalyze: true, jobVersion: 2 }),
       'job-analysis:key-1234',
     )
   })

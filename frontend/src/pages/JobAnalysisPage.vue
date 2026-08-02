@@ -12,13 +12,13 @@ import {
 import {
   ELIGIBILITY_LABELS,
   FIT_CRITERION_CATEGORY_LABELS,
-  JOB_ANALYSIS_QUALITY_LABELS,
   MATCH_LEVEL_LABELS,
   OUTDATED_REASON_LABELS,
   evidenceCurrentStateLabel,
   formatAnalysisInstant,
   formatFitScore,
   isCurrentlyVerifiedEvidence,
+  jobAnalysisFailureCopy,
 } from '@/features/jobs/analysisPresentation'
 import JobPreparationJourney from '@/features/jobs/JobPreparationJourney.vue'
 import {
@@ -30,7 +30,7 @@ import {
 } from '@/features/jobs/queries'
 import type { AgentRunStatus } from '@/shared/api/agentRunContracts'
 import { normalizeApiError, type ApiClientError } from '@/shared/api/errors'
-import type { Eligibility, JobAnalysisQualityMode, MatchLevel } from '@/shared/api/jobContracts'
+import type { Eligibility, MatchLevel } from '@/shared/api/jobContracts'
 import type { JobAnalysisListParams } from '@/shared/api/jobApi'
 import { getProfile } from '@/shared/api/profileApi'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
@@ -71,7 +71,6 @@ const cache = useQueryClient()
 const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
-const qualityMode = ref<JobAnalysisQualityMode>('BALANCED')
 const acceptedRunId = ref('')
 const actionError = ref<ApiClientError | null>(null)
 const historyPage = ref(0)
@@ -175,6 +174,20 @@ const runFailed = computed(
     currentRun.data.value !== undefined &&
     TERMINAL_FAILURE_STATUSES.includes(currentRun.data.value.status),
 )
+const runFailureCopy = computed(() =>
+  jobAnalysisFailureCopy(
+    currentRun.data.value?.safeError?.code,
+    currentRun.data.value?.safeError?.message,
+    currentRun.data.value?.status,
+  ),
+)
+const automaticFailureCopy = computed(() => {
+  const error = job.data.value?.automaticAnalysis.error
+  return jobAnalysisFailureCopy(error?.code, error?.message)
+})
+const actionFailureCopy = computed(() =>
+  jobAnalysisFailureCopy(actionError.value?.code, actionError.value?.message),
+)
 const acceptedRunPending = computed(
   () => acceptedRunId.value !== '' && currentRun.data.value === undefined,
 )
@@ -253,7 +266,7 @@ async function requestAnalysis(forceReanalyze: boolean): Promise<void> {
     const accepted = await analyzeMutation.mutateAsync({
       jobId: jobId.value,
       request: {
-        qualityMode: qualityMode.value,
+        qualityMode: 'BALANCED',
         forceReanalyze,
         jobVersion: job.data.value.version,
       },
@@ -401,7 +414,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         {{
           actionError.code === 'RESOURCE_VERSION_CONFLICT'
             ? '공고가 변경됐어요. 최신 내용을 확인한 뒤 다시 분석해 주세요.'
-            : actionError.message
+            : actionFailureCopy.description
         }}
       </p>
       <p
@@ -478,15 +491,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </div>
           <div v-if="runFailed" class="analysis-run__failure alert alert--danger" role="alert">
             <div>
-              <h4>분석을 완료하지 못했어요.</h4>
-              <p>
-                {{
-                  currentRun.data.value.safeError?.message ??
-                  (currentRun.data.value.status === 'CANCELLED'
-                    ? '사용자 요청으로 분석을 취소했어요.'
-                    : '안전하게 다시 시도할 수 있는지 AI 작업 상세에서 확인해 주세요.')
-                }}
-              </p>
+              <h4>{{ runFailureCopy.title }}</h4>
+              <p>{{ runFailureCopy.description }}</p>
             </div>
             <button
               v-if="currentRun.data.value.retryable"
@@ -524,41 +530,28 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
             현재 공고 내용과 내가 확인한 경험을 기준으로 새 결과를 만들어요.
           </p>
         </div>
-        <div class="analysis-command__controls">
-          <button
-            type="button"
-            class="button button--primary"
-            :disabled="commandUnavailable"
-            @click="requestAnalysis(Boolean(latestAnalysis.data.value))"
-          >
-            {{
-              submissionPending
-                ? '분석 진행 중…'
-                : latestAnalysisRun.isLoading.value
-                  ? 'AI 작업 확인 중…'
-                  : latestAnalysisRun.isError.value
-                    ? 'AI 작업 확인 필요'
-                    : runStateUnresolved
-                      ? 'AI 작업 확인 중…'
-                      : latestAnalysis.isLoading.value
-                        ? '결과 확인 중…'
-                        : latestAnalysis.data.value
-                          ? '최신 정보로 다시 분석'
-                          : '분석 다시 시도'
-            }}
-          </button>
-          <details class="analysis-command__options">
-            <summary>재분석 옵션</summary>
-            <label class="field analysis-command__quality">
-              <span class="field__label">분석 방식</span>
-              <select v-model="qualityMode" class="control" :disabled="commandUnavailable">
-                <option value="BALANCED">{{ JOB_ANALYSIS_QUALITY_LABELS.BALANCED }}</option>
-                <option value="ECONOMY">{{ JOB_ANALYSIS_QUALITY_LABELS.ECONOMY }}</option>
-              </select>
-              <span class="field__help">기본값은 내용과 비용을 고르게 고려해요.</span>
-            </label>
-          </details>
-        </div>
+        <button
+          type="button"
+          class="button button--primary"
+          :disabled="commandUnavailable"
+          @click="requestAnalysis(Boolean(latestAnalysis.data.value))"
+        >
+          {{
+            submissionPending
+              ? '분석 진행 중…'
+              : latestAnalysisRun.isLoading.value
+                ? 'AI 작업 확인 중…'
+                : latestAnalysisRun.isError.value
+                  ? 'AI 작업 확인 필요'
+                  : runStateUnresolved
+                    ? 'AI 작업 확인 중…'
+                    : latestAnalysis.isLoading.value
+                      ? '결과 확인 중…'
+                      : latestAnalysis.data.value
+                        ? '최신 정보로 다시 분석'
+                        : '분석 다시 시도'
+          }}
+        </button>
       </section>
 
       <StatePanel
@@ -586,15 +579,18 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         class="job-analysis__state"
         :kind="job.data.value.automaticAnalysis.state === 'BLOCKED' ? 'error' : 'loading'"
         :title="
-          job.data.value.automaticAnalysis.state === 'BLOCKED'
-            ? '자동 분석을 시작하지 못했어요.'
-            : job.data.value.automaticAnalysis.state === 'WAITING_FOR_CONTENT'
-              ? '공고 본문을 확인하고 있어요.'
-              : '분석 결과를 준비하고 있어요.'
+          job.data.value.automaticAnalysis.error
+            ? automaticFailureCopy.title
+            : job.data.value.automaticAnalysis.state === 'BLOCKED'
+              ? '자동 분석을 시작하지 못했어요.'
+              : job.data.value.automaticAnalysis.state === 'WAITING_FOR_CONTENT'
+                ? '공고 본문을 확인하고 있어요.'
+                : '분석 결과를 준비하고 있어요.'
         "
         :description="
-          job.data.value.automaticAnalysis.error?.message ??
-          '공고 등록 뒤 분석이 자동으로 이어져요. 이 페이지를 닫아도 작업은 계속됩니다.'
+          job.data.value.automaticAnalysis.error
+            ? automaticFailureCopy.description
+            : '공고 등록 뒤 분석이 자동으로 이어져요. 이 페이지를 닫아도 작업은 계속됩니다.'
         "
       />
 
@@ -1066,35 +1062,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   color: var(--color-text-secondary);
 }
 
-.analysis-command__controls {
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.analysis-command__options {
-  min-width: 15rem;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  text-align: right;
-}
-
-.analysis-command__options summary {
-  cursor: pointer;
-  font-weight: 680;
-}
-
-.analysis-command__options .field {
-  margin-top: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
-  text-align: left;
-}
-
-.analysis-command__quality {
-  min-width: 9rem;
+.analysis-command > .button {
+  justify-self: end;
 }
 
 .analysis-command__disclaimer {
@@ -1451,7 +1420,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   .analysis-outdated,
   .analysis-run__failure,
   .analysis-run__waiting,
-  .analysis-command__controls,
   .analysis-result__heading,
   .analysis-history__header,
   .analysis-criterion__header {
@@ -1471,15 +1439,12 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
     flex-direction: column;
   }
 
-  .analysis-command__quality {
-    width: 100%;
-  }
-
-  .analysis-command__controls .button,
+  .analysis-command > .button,
   .analysis-prerequisite .button,
   .analysis-outdated .button,
   .analysis-run__failure .button {
     width: 100%;
+    justify-self: stretch;
   }
 }
 </style>

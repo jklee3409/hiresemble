@@ -2,7 +2,6 @@ import type {
   EvidenceRefDto,
   Eligibility,
   FitCriterionCategory,
-  JobAnalysisQualityMode,
   MatchLevel,
   OutdatedReason,
 } from '@/shared/api/jobContracts'
@@ -35,9 +34,70 @@ export const MATCH_LEVEL_LABELS: Record<MatchLevel, string> = {
   UNKNOWN: '판단 정보 부족',
 }
 
-export const JOB_ANALYSIS_QUALITY_LABELS: Record<JobAnalysisQualityMode, string> = {
-  ECONOMY: '경제형',
-  BALANCED: '균형형',
+export interface JobAnalysisFailureCopy {
+  title: string
+  description: string
+}
+
+export function jobAnalysisFailureCopy(
+  code: string | null | undefined,
+  message: string | null | undefined,
+  status?: string,
+): JobAnalysisFailureCopy {
+  const normalizedCode = code?.toUpperCase() ?? ''
+  const normalizedMessage = message ?? ''
+
+  if (status === 'CANCELLED') {
+    return {
+      title: '분석이 취소됐어요.',
+      description:
+        '사용자 요청으로 진행 중이던 분석을 멈췄어요. 공고와 등록한 지원 정보는 그대로 보존되어 있습니다.',
+    }
+  }
+  if (normalizedCode === 'INSUFFICIENT_JOB_DATA') {
+    return {
+      title: '공고에서 분석 기준을 충분히 찾지 못했어요.',
+      description:
+        '주요 업무나 지원 조건이 포함되도록 공고 본문을 보완한 뒤 다시 시도해 주세요. 저장한 공고 정보는 그대로 유지됩니다.',
+    }
+  }
+  if (
+    normalizedCode.startsWith('AI_SO_') ||
+    normalizedCode.includes('STRUCTURED_OUTPUT') ||
+    normalizedCode.includes('OUTPUT_INVALID') ||
+    normalizedMessage.includes('의미 제약') ||
+    normalizedMessage.includes('결과 형식')
+  ) {
+    return {
+      title: '분석 결과를 안정적으로 정리하지 못했어요.',
+      description:
+        'AI가 공고 내용을 화면에 보여 줄 수 있는 일관된 결과로 정리하지 못했습니다. 공고와 등록한 지원 정보는 그대로 보존되어 있으니 잠시 후 다시 시도해 주세요.',
+    }
+  }
+  if (normalizedCode.includes('TIMEOUT')) {
+    return {
+      title: 'AI 응답이 예상보다 오래 걸렸어요.',
+      description:
+        '분석 요청은 안전하게 종료됐고 저장한 공고 정보는 그대로입니다. 잠시 후 같은 입력으로 다시 시도해 주세요.',
+    }
+  }
+  if (
+    normalizedCode.includes('PROVIDER') ||
+    normalizedCode.includes('TEMPORARY') ||
+    normalizedCode.includes('NETWORK') ||
+    normalizedCode.includes('RATE_LIMIT')
+  ) {
+    return {
+      title: 'AI 서비스 연결이 원활하지 않아요.',
+      description:
+        '현재 일시적인 연결 문제로 분석을 마치지 못했습니다. 공고와 지원 정보는 보존되어 있으니 잠시 후 다시 시도해 주세요.',
+    }
+  }
+  return {
+    title: '공고 분석을 완료하지 못했어요.',
+    description:
+      '진행 중 문제가 발생해 분석을 안전하게 종료했습니다. 저장한 공고와 지원 정보는 그대로이며, 재시도 가능한 경우 아래 버튼으로 다시 요청할 수 있어요.',
+  }
 }
 
 export function formatAnalysisInstant(value: string): string {

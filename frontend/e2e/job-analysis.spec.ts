@@ -6,6 +6,8 @@ const ANALYSIS_ID = '50000000-0000-4000-8000-000000000003'
 const RUN_ID = '50000000-0000-4000-8000-000000000004'
 const EVIDENCE_ID = '50000000-0000-4000-8000-000000000005'
 const NOW = '2026-07-29T00:00:00Z'
+const LONG_JOB_TITLE =
+  '글로벌 결제 플랫폼의 대규모 트래픽을 안정적으로 운영하고 서비스 아키텍처를 함께 설계할 시니어 백엔드 엔지니어'
 
 test('Job analysis stays owner-scoped, accessible and overflow-free at desktop and mobile', async ({
   page,
@@ -15,6 +17,16 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.goto(`/jobs/${JOB_ID}/analysis`)
 
   await expect(page.getByRole('heading', { name: '공고 분석', exact: true }).last()).toBeVisible()
+  const jobTitle = page.getByRole('heading', { level: 1, name: LONG_JOB_TITLE })
+  await expect(jobTitle).toHaveClass(/job-resource-title--overflowing/)
+  expect(
+    await jobTitle.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      whiteSpace: getComputedStyle(element).whiteSpace,
+    })),
+  ).toEqual(expect.objectContaining({ whiteSpace: 'nowrap' }))
+  expect(await jobTitle.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
   await expect(page.getByRole('link', { name: '공고 분석', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
@@ -27,6 +39,9 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('결제 API 개선 프로젝트', { exact: true }).first()).toBeVisible()
   await expect(page.getByRole('heading', { name: '과거 분석 이력' })).toBeVisible()
+  await expect(page.getByText('균형형', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('경제형', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('재분석 옵션', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: '자기소개서 준비하기', exact: true })).toBeVisible()
   await expect(
     page.locator('.analysis-result__next').getByRole('link', { name: '면접 준비하기' }),
@@ -39,8 +54,13 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await analysisTab.press('Enter')
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/analysis$`))
 
+  await page.goto(`/jobs/${JOB_ID}/overview`)
+  const journeyProgress = page.getByText('주요 업무와 지원 조건을 정리했어요', { exact: true })
+  await expect(journeyProgress).toHaveCSS('white-space', 'nowrap')
+  await expectNoHorizontalOverflow(page)
+
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.reload()
+  await page.goto(`/jobs/${JOB_ID}/analysis`)
   await expect(page.getByText('82.50점', { exact: true }).first()).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
@@ -151,7 +171,7 @@ function jobDetail() {
   return {
     id: JOB_ID,
     companyName: 'Hiresemble',
-    title: 'Backend Engineer',
+    title: LONG_JOB_TITLE,
     positionName: '백엔드 개발자',
     status: 'IN_PROGRESS',
     extractionStatus: 'EXTRACTED',

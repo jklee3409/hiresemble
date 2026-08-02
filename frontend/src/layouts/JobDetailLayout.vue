@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 import {
@@ -18,6 +18,10 @@ const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
 const job = useJobDetailQuery(userId, jobId)
+const titleElement = ref<HTMLElement | null>(null)
+const titleOverflow = ref(0)
+let titleResizeObserver: ResizeObserver | null = null
+const titleStyle = computed(() => ({ '--job-title-shift': `${titleOverflow.value}px` }))
 const activeTab = computed(() => {
   if (route.name === 'job-analysis') return 'analysis'
   if (route.name === 'job-cover-letter') return 'cover-letter'
@@ -37,6 +41,31 @@ const analysisLabel = computed(() => {
     SUPERSEDED: '최신 내용 확인 중',
   }[value.automaticAnalysis.state]
 })
+
+function measureTitleOverflow(): void {
+  const element = titleElement.value
+  titleOverflow.value =
+    element === null ? 0 : Math.max(0, element.scrollWidth - element.clientWidth)
+}
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined') {
+    titleResizeObserver = new ResizeObserver(measureTitleOverflow)
+    if (titleElement.value !== null) titleResizeObserver.observe(titleElement.value)
+  }
+  void nextTick(measureTitleOverflow)
+})
+
+watch(
+  () => job.data.value,
+  async () => {
+    await nextTick()
+    if (titleElement.value !== null) titleResizeObserver?.observe(titleElement.value)
+    measureTitleOverflow()
+  },
+)
+
+onBeforeUnmount(() => titleResizeObserver?.disconnect())
 </script>
 
 <template>
@@ -48,7 +77,16 @@ const analysisLabel = computed(() => {
     <header v-if="job.data.value" class="job-resource-header">
       <div class="job-resource-header__main">
         <p>{{ jobCompanyLabel(job.data.value.companyName) }}</p>
-        <h1>{{ jobDisplayTitle(job.data.value) }}</h1>
+        <h1
+          ref="titleElement"
+          class="job-resource-title"
+          :class="{ 'job-resource-title--overflowing': titleOverflow > 0 }"
+          :style="titleStyle"
+          :title="jobDisplayTitle(job.data.value)"
+          tabindex="0"
+        >
+          <span>{{ jobDisplayTitle(job.data.value) }}</span>
+        </h1>
         <div class="job-resource-header__meta">
           <span v-if="job.data.value.positionName">{{ job.data.value.positionName }}</span>
           <span v-if="job.data.value.location">{{ job.data.value.location }}</span>
@@ -141,6 +179,7 @@ const analysisLabel = computed(() => {
 
 .job-resource-header__main {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .job-resource-header__main > p {
@@ -150,13 +189,33 @@ const analysisLabel = computed(() => {
 }
 
 .job-resource-header h1 {
-  max-width: 48rem;
+  width: 100%;
+  max-width: 58rem;
   margin-top: var(--space-2);
+  overflow-x: auto;
+  overflow-y: hidden;
   font-size: clamp(1.75rem, 3.5vw, 2.75rem);
   font-weight: 790;
   letter-spacing: -0.035em;
   line-height: 1.17;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.job-resource-header h1::-webkit-scrollbar {
+  display: none;
+}
+
+.job-resource-title > span {
+  display: inline-block;
+  transform: translateX(0);
+  transition: transform 4s ease-in-out 180ms;
+}
+
+.job-resource-title--overflowing:hover > span,
+.job-resource-title--overflowing:focus-visible > span {
+  transform: translateX(calc(var(--job-title-shift) * -1));
 }
 
 .job-resource-header__meta,
@@ -265,6 +324,12 @@ const analysisLabel = computed(() => {
     justify-items: start;
   }
 
+  .job-resource-header__main,
+  .job-resource-header h1 {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .job-detail-tabs {
     top: var(--global-header-height);
     margin-inline: calc(var(--space-4) * -1);
@@ -273,6 +338,17 @@ const analysisLabel = computed(() => {
 
   .job-detail-tab {
     padding-inline: var(--space-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job-resource-title > span {
+    transition: none;
+  }
+
+  .job-resource-title--overflowing:hover > span,
+  .job-resource-title--overflowing:focus-visible > span {
+    transform: none;
   }
 }
 
