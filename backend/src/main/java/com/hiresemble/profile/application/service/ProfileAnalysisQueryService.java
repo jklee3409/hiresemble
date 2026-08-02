@@ -4,6 +4,8 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
 import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ProfileEligibilityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileRecord;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
 import java.util.UUID;
@@ -24,6 +26,12 @@ public class ProfileAnalysisQueryService implements ProfileAnalysisQueryPort {
     public AnalysisProfileSnapshot loadAnalysisSnapshot(UUID userId) {
         ProfileRecord profile = store.findProfile(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        EducationRecord primaryEducation = store.listActiveEducations(userId).stream()
+                .filter(EducationRecord::primary)
+                .findFirst()
+                .orElse(null);
+        ProfileEligibilityRecord eligibility = store.findEligibility(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         return new AnalysisProfileSnapshot(
                 profile.id(),
                 profile.version(),
@@ -32,6 +40,22 @@ public class ProfileAnalysisQueryService implements ProfileAnalysisQueryPort {
                 profile.desiredIndustries(),
                 profile.desiredLocations(),
                 profile.expectedGraduationDate(),
+                primaryEducation == null ? null : new AnalysisEducation(
+                        primaryEducation.id(),
+                        primaryEducation.version(),
+                        primaryEducation.educationLevel(),
+                        primaryEducation.educationStatus(),
+                        primaryEducation.degree(),
+                        primaryEducation.major(),
+                        primaryEducation.graduationDate(),
+                        primaryEducation.primary()),
+                new AnalysisEligibility(
+                        eligibility.id(),
+                        eligibility.version(),
+                        eligibility.workAvailableDate(),
+                        eligibility.militaryStatus(),
+                        eligibility.overseasTravelEligibility(),
+                        eligibility.employmentDisqualificationStatus()),
                 store.findVerifiedEvidenceForAnalysis(userId).stream()
                         .map(this::evidence)
                         .toList());

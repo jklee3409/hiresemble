@@ -81,7 +81,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | Route group                                        | Implementation status | Phase     | prerequisite API                                 |
 | -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 68 paths/92 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 69 paths/94 operations              |
 | `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
 | account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
@@ -285,10 +285,14 @@ Desktop 프로필 하위 내비게이션은 부가 설명 없이 항목명만 �
 - 희망 산업
 - 희망 지역
 
+작은 `지원 자격 확인 정보` 영역에서 근무 가능일, 병역 상태, 해외여행 가능 여부, 채용 결격 제한 여부를 별도로 저장한다. 이 값은 자기신고이며 실제 지원 단계에서 별도 확인될 수 있고 미선택 값은 분석에서 알 수 없음으로 처리된다는 안내를 표시한다.
+
 API:
 
 - `GET /profile`
 - `PUT /profile`
+- `GET /profile/eligibility`
+- `PUT /profile/eligibility`
 
 기본 정보 Form의 변경 상태와 `변경 사항 저장` action은 모든 입력 항목 뒤 페이지 하단에 둔다.
 닉네임은 기본 정보 Form에 포함하지 않는다. 보호 화면 상단의 현재 닉네임을 누르면 접근 가능한 Modal을 열고 `PATCH /account/display-name`으로 별도 저장한다.

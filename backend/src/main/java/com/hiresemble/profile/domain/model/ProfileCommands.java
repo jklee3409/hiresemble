@@ -19,6 +19,13 @@ public final class ProfileCommands {
             LocalDate expectedGraduationDate,
             long version) {}
 
+    public record ProfileEligibilityUpdate(
+            LocalDate workAvailableDate,
+            MilitaryStatus militaryStatus,
+            OverseasTravelEligibility overseasTravelEligibility,
+            EmploymentDisqualificationStatus employmentDisqualificationStatus,
+            long version) {}
+
     public record EducationWrite(
             String schoolName,
             String major,

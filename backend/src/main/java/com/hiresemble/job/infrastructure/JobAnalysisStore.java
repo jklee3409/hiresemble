@@ -9,6 +9,7 @@ import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSnapsho
 import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSummary;
 import com.hiresemble.job.application.model.JobAnalysisModels.PersistJobAnalysis;
 import com.hiresemble.job.application.model.JobAnalysisModels.RequirementItem;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredProfileFact;
 import com.hiresemble.job.application.model.JobAnalysisModels.ScoreCriterion;
 import com.hiresemble.job.application.model.JobAnalysisModels.VerifiedEvidence;
 import com.hiresemble.job.domain.Eligibility;
@@ -121,7 +122,12 @@ public class JobAnalysisStore {
 
         Map<UUID, VerifiedEvidence> evidence = snapshot.verifiedEvidence().stream()
                 .collect(java.util.stream.Collectors.toMap(VerifiedEvidence::id, value -> value));
+        Map<String, StructuredProfileFact> facts = snapshot.profile().structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::reference, value -> value));
+        int criterionOrder = 0;
         for (ScoredCriterion criterion : score.criteria()) {
+            var criterionDraft = command.criteria().get(criterionOrder);
             UUID criterionId = UUID.randomUUID();
             jdbc.sql("""
                             INSERT INTO job_analysis_score_criteria (
@@ -153,6 +159,16 @@ public class JobAnalysisStore {
                         JobAnalysisEvidenceUsageType.CRITERION_MATCH,
                         createdAt);
             }
+            for (String factReference : new LinkedHashSet<>(criterionDraft.structuredFactRefs())) {
+                insertStructuredFactLink(
+                        snapshot.userId(),
+                        analysisId,
+                        criterionId,
+                        facts.get(factReference),
+                        JobAnalysisEvidenceUsageType.CRITERION_MATCH,
+                        createdAt);
+            }
+            criterionOrder++;
         }
         for (EvidenceUsage usage : new LinkedHashSet<>(command.additionalEvidenceUsages())) {
             insertEvidenceLink(
@@ -160,6 +176,15 @@ public class JobAnalysisStore {
                     analysisId,
                     null,
                     evidence.get(usage.evidenceId()),
+                    usage.usageType(),
+                    createdAt);
+        }
+        for (var usage : new LinkedHashSet<>(command.additionalStructuredFactUsages())) {
+            insertStructuredFactLink(
+                    snapshot.userId(),
+                    analysisId,
+                    null,
+                    facts.get(usage.reference()),
                     usage.usageType(),
                     createdAt);
         }
@@ -378,6 +403,38 @@ public class JobAnalysisStore {
                 .param("evidenceId", evidence.id())
                 .param("evidenceVersion", evidence.version())
                 .param("evidenceHash", evidence.evidenceHash())
+                .param("usageType", usageType.name())
+                .param("createdAt", utc(createdAt))
+                .update();
+    }
+
+    private void insertStructuredFactLink(
+            UUID userId,
+            UUID analysisId,
+            UUID criterionId,
+            StructuredProfileFact fact,
+            JobAnalysisEvidenceUsageType usageType,
+            Instant createdAt) {
+        if (fact == null) {
+            throw new IllegalArgumentException("analysis structured fact is not allowlisted");
+        }
+        jdbc.sql("""
+                        INSERT INTO job_analysis_structured_fact_links (
+                            id,user_id,job_analysis_id,score_criterion_id,source_entity_id,
+                            source_entity_version,fact_type,fact_hash,usage_type,created_at
+                        ) VALUES (
+                            :id,:userId,:analysisId,:criterionId,:sourceEntityId,
+                            :sourceEntityVersion,:factType,:factHash,:usageType,:createdAt
+                        )
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("userId", userId)
+                .param("analysisId", analysisId)
+                .param("criterionId", criterionId)
+                .param("sourceEntityId", fact.sourceEntityId())
+                .param("sourceEntityVersion", fact.sourceEntityVersion())
+                .param("factType", fact.factType().name())
+                .param("factHash", fact.factHash())
                 .param("usageType", usageType.name())
                 .param("createdAt", utc(createdAt))
                 .update();

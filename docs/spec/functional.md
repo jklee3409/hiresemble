@@ -168,6 +168,10 @@
 - 문서에서 AI가 추출한 근거와 사용자가 직접 입력한 근거를 구분
 - 기존 학력 근거는 원문·metadata·confidence와 source 연결을 제거한 `SOURCE_DELETED` tombstone으로 전환하고 일반 근거 조회·분석에서 제외
 
+## PROF-008 지원 자격 자기신고
+
+프로필은 사용자별 1:1 지원 자격 자기신고로 근무 가능일, 병역 상태, 해외여행 가능 여부, 채용 결격 제한 여부를 관리한다. 병역 사유·성별·법적 세부 내용은 수집하지 않는다. 미입력 enum은 `UNSPECIFIED`이며 공고 분석에서 `UNKNOWN`으로만 취급한다. 입력값을 근거로 판단한 설명에는 `사용자 입력 기준`을 표시하고 실제 지원 단계에서 별도 확인될 수 있음을 안내한다.
+
 ---
 
 # 5. 문서와 사용자 근거
@@ -386,6 +390,10 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 | 학력·자격·어학   |      5 |
 
 각 criterion은 `MATCHED=1.0`, `PARTIAL=0.5`, `MISSING|UNKNOWN=0`으로 계산하고, 공고에 없는 category 가중치는 존재 category에 비례 재배분한다. 점수 근거는 구조화 프로필과 `VERIFIED` evidence만 사용한다. 추출 가능한 criterion이 하나도 없으면 분석 결과 row를 만들지 않고 Agent Run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. rubric version과 criterion별 공고 source·승인 evidence를 저장한다. 화면에는 다음 문구를 표시한다.
+
+공고 section, 점수 category, 필요한 support type은 서로 다른 값이다. 우대 사항에 있는 학력·자격증·어학 조건도 `EDUCATION_CERTIFICATION_LANGUAGE` category를 사용한다. 학력은 구조화된 최종 학력 fact, 자격증은 `CERTIFICATION`, 어학은 `LANGUAGE_SCORE`, 병역·해외여행·결격 제한은 해당 자기신고 fact만 positive 근거가 될 수 있다. 일반 경력·프로젝트 근거로 자격증·학력·어학 보유를 충족시키지 않는다. 구조화 fact와 `VERIFIED` evidence는 별도 typed provenance로 저장한다.
+
+명시적 근무 가능일이 공고 요구일 이하이면 positive match가 가능하다. 명시적 값 없이 졸업 예정일만 요구 월과 같거나 이전이면 `PARTIAL` 또는 eligibility `CONDITIONAL`이며 `졸업 예정일은 확인되지만 정확한 근무 가능일은 별도 확인이 필요함`을 표시한다. 졸업 예정일이 뒤면 충족으로 판정하지 않고 날짜가 모두 없으면 `UNKNOWN`이다. 대표 학력·자기신고 변경은 profile/context hash를 변경해 기존 분석을 `PROFILE_CHANGED`로 표시하고 성공 분석·checkpoint 재사용을 막는다.
 
 > 적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.
 

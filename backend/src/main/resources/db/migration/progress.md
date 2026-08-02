@@ -22,6 +22,19 @@
 - `V18__expand_career_guide_content.sql`은 미수정 초기 가이드 5개의 장문 본문을 version 2로 보강한다.
 - P9 모의 면접 table은 구현하지 않았다.
 
+## [2026-08-02] Session Summary (V19 지원 자격·structured fact provenance)
+
+- What was done:
+  - V19에서 owner 1:1 `profile_eligibility_declarations`와 immutable `job_analysis_structured_fact_links`를 추가했다.
+- Key decisions:
+  - 기존 V1~V18은 수정하지 않고 신규 사용자와 기존 사용자 모두 `UNSPECIFIED` 기본값으로 안전하게 초기화했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 빈 DB 전체 적용과 populated V18→V19 upgrade 테스트가 실제 PostgreSQL Testcontainers에서 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (V18 Career Guide 본문 보강)
 
 - What was done:

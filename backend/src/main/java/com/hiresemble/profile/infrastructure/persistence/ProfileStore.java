@@ -6,6 +6,9 @@ import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
+import com.hiresemble.profile.domain.model.EmploymentDisqualificationStatus;
+import com.hiresemble.profile.domain.model.MilitaryStatus;
+import com.hiresemble.profile.domain.model.OverseasTravelEligibility;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
@@ -14,6 +17,7 @@ import com.hiresemble.profile.domain.model.ProfileCommands.EducationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
+import com.hiresemble.profile.domain.model.ProfileCommands.ProfileEligibilityUpdate;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
@@ -23,6 +27,7 @@ import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.LanguageScoreRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.PageSlice;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ProfileEligibilityRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -70,6 +75,55 @@ public class ProfileStore {
                 .param("userId", userId)
                 .param("now", utc(now))
                 .update();
+        jdbcClient
+                .sql("""
+                        INSERT INTO profile_eligibility_declarations (
+                            id,user_id,work_available_date,military_status,
+                            overseas_travel_eligibility,employment_disqualification_status,
+                            version,created_at,updated_at
+                        ) VALUES (
+                            :id,:userId,NULL,'UNSPECIFIED','UNSPECIFIED','UNSPECIFIED',0,:now,:now
+                        )
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("userId", userId)
+                .param("now", utc(now))
+                .update();
+    }
+
+    public Optional<ProfileEligibilityRecord> findEligibility(UUID userId) {
+        return jdbcClient
+                .sql("""
+                        SELECT * FROM profile_eligibility_declarations
+                        WHERE user_id=:userId
+                        """)
+                .param("userId", userId)
+                .query(this::eligibility)
+                .optional();
+    }
+
+    public Optional<ProfileEligibilityRecord> updateEligibility(
+            UUID userId, ProfileEligibilityUpdate command, Instant now) {
+        return jdbcClient
+                .sql("""
+                        UPDATE profile_eligibility_declarations
+                        SET work_available_date=:workAvailableDate,
+                            military_status=:militaryStatus,
+                            overseas_travel_eligibility=:overseasTravelEligibility,
+                            employment_disqualification_status=:employmentDisqualificationStatus,
+                            version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND version=:version
+                        RETURNING *
+                        """)
+                .param("workAvailableDate", command.workAvailableDate())
+                .param("militaryStatus", command.militaryStatus().name())
+                .param("overseasTravelEligibility", command.overseasTravelEligibility().name())
+                .param("employmentDisqualificationStatus", command.employmentDisqualificationStatus().name())
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("version", command.version())
+                .query(this::eligibility)
+                .optional();
     }
 
     public Optional<ProfileRecord> findProfile(UUID userId) {
@@ -1029,6 +1083,21 @@ public class ProfileStore {
                 read(resultSet.getString("desired_industries"), STRING_LIST),
                 read(resultSet.getString("desired_locations"), STRING_LIST),
                 resultSet.getObject("expected_graduation_date", java.time.LocalDate.class),
+                resultSet.getLong("version"),
+                instant(resultSet, "created_at"),
+                instant(resultSet, "updated_at"));
+    }
+
+    private ProfileEligibilityRecord eligibility(ResultSet resultSet, int rowNumber)
+            throws SQLException {
+        return new ProfileEligibilityRecord(
+                uuid(resultSet, "id"),
+                uuid(resultSet, "user_id"),
+                resultSet.getObject("work_available_date", java.time.LocalDate.class),
+                MilitaryStatus.valueOf(resultSet.getString("military_status")),
+                OverseasTravelEligibility.valueOf(resultSet.getString("overseas_travel_eligibility")),
+                EmploymentDisqualificationStatus.valueOf(
+                        resultSet.getString("employment_disqualification_status")),
                 resultSet.getLong("version"),
                 instant(resultSet, "created_at"),
                 instant(resultSet, "updated_at"));

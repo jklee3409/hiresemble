@@ -24,6 +24,8 @@ import type {
   LanguageScoreUpdateRequest,
   PageResponse,
   ProfileDto,
+  ProfileEligibilityDto,
+  ProfileEligibilityWrite,
   ProfileWrite,
 } from './contracts'
 import { apiClient } from './http'
@@ -50,6 +52,16 @@ export function getProfile(): Promise<ProfileDto> {
 
 export function updateProfile(request: ProfileWrite): Promise<ProfileDto> {
   return apiClient.put('/profile', request)
+}
+
+export function getProfileEligibility(): Promise<ProfileEligibilityDto> {
+  return apiClient.get('/profile/eligibility')
+}
+
+export function updateProfileEligibility(
+  request: ProfileEligibilityWrite,
+): Promise<ProfileEligibilityDto> {
+  return apiClient.put('/profile/eligibility', request)
 }
 
 export function listEducations(params: PageParams = {}): Promise<PageResponse<EducationDto>> {

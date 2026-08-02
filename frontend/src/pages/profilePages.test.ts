@@ -8,7 +8,13 @@ import ProfileBasicPage from '@/pages/ProfileBasicPage.vue'
 import ProfileActivitiesPage from '@/pages/ProfileActivitiesPage.vue'
 import ProfileEvidencePage from '@/pages/ProfileEvidencePage.vue'
 import StructuredProfilePage from '@/pages/StructuredProfilePage.vue'
-import type { EducationDto, EvidenceDto, PageResponse, ProfileDto } from '@/shared/api/contracts'
+import type {
+  EducationDto,
+  EvidenceDto,
+  PageResponse,
+  ProfileDto,
+  ProfileEligibilityDto,
+} from '@/shared/api/contracts'
 import { ApiClientError } from '@/shared/api/errors'
 import * as documentApi from '@/shared/api/documentApi'
 import * as profileApi from '@/shared/api/profileApi'
@@ -18,6 +24,8 @@ import { useAuthStore } from '@/stores/auth'
 vi.mock('@/shared/api/profileApi', () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
+  getProfileEligibility: vi.fn(),
+  updateProfileEligibility: vi.fn(),
   listEducations: vi.fn(),
   createEducation: vi.fn(),
   updateEducation: vi.fn(),
@@ -57,6 +65,8 @@ describe('P2 profile pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(documentApi.listDocuments).mockResolvedValue(pageOf([]))
+    vi.mocked(profileApi.getProfileEligibility).mockResolvedValue(eligibility())
+    vi.mocked(profileApi.updateProfileEligibility).mockResolvedValue(eligibility())
   })
 
   it('fetches and saves the basic profile, showing server completion and missing items without blocking', async () => {
@@ -99,6 +109,38 @@ describe('P2 profile pages', () => {
     expect(wrapper.text()).toContain('저장 완료')
     expect(wrapper.text()).toContain('100%')
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('saves self-reported application eligibility information separately', async () => {
+    vi.mocked(profileApi.getProfile).mockResolvedValue(profile())
+    vi.mocked(profileApi.getProfileEligibility).mockResolvedValue(eligibility())
+    vi.mocked(profileApi.updateProfileEligibility).mockResolvedValue({
+      ...eligibility(),
+      workAvailableDate: '2026-08-01',
+      militaryStatus: 'COMPLETED',
+      overseasTravelEligibility: 'ELIGIBLE',
+      employmentDisqualificationStatus: 'NONE_DECLARED',
+      version: 1,
+    })
+    const wrapper = await mountPage(ProfileBasicPage)
+
+    expect(wrapper.text()).toContain('지원 자격 확인 정보')
+    expect(wrapper.text()).toContain('사용자 입력 기준')
+    await wrapper.get('#profile-workAvailableDate').setValue('2026-08-01')
+    await wrapper.get('#profile-militaryStatus').setValue('COMPLETED')
+    await wrapper.get('#profile-overseasTravelEligibility').setValue('ELIGIBLE')
+    await wrapper.get('#profile-employmentDisqualificationStatus').setValue('NONE_DECLARED')
+    await wrapper.get('form.profile-eligibility').trigger('submit')
+    await flushPromises()
+
+    expect(profileApi.updateProfileEligibility).toHaveBeenCalledWith({
+      workAvailableDate: '2026-08-01',
+      militaryStatus: 'COMPLETED',
+      overseasTravelEligibility: 'ELIGIBLE',
+      employmentDisqualificationStatus: 'NONE_DECLARED',
+      version: 0,
+    })
+    expect(wrapper.text()).toContain('지원 자격 확인 정보를 저장했습니다.')
   })
 
   it('keeps nickname editing out of the basic profile form', async () => {
@@ -493,6 +535,19 @@ function profile(): ProfileDto {
     version: 1,
     createdAt: '2026-07-19T00:00:00Z',
     updatedAt: '2026-07-19T00:00:00Z',
+  }
+}
+
+function eligibility(): ProfileEligibilityDto {
+  return {
+    id: 'eligibility-id',
+    workAvailableDate: null,
+    militaryStatus: 'UNSPECIFIED',
+    overseasTravelEligibility: 'UNSPECIFIED',
+    employmentDisqualificationStatus: 'UNSPECIFIED',
+    version: 0,
+    createdAt: '2026-08-02T00:00:00Z',
+    updatedAt: '2026-08-02T00:00:00Z',
   }
 }
 

@@ -24,6 +24,8 @@ import com.hiresemble.job.application.model.JobAnalysisModels.EvidenceUsage;
 import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSnapshot;
 import com.hiresemble.job.application.model.JobAnalysisModels.PersistJobAnalysis;
 import com.hiresemble.job.application.model.JobAnalysisModels.ProfileContext;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredProfileFact;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredFactUsage;
 import com.hiresemble.job.application.model.JobAnalysisModels.RequirementItem;
 import com.hiresemble.job.application.model.JobAnalysisModels.RetrievedVerifiedEvidence;
 import com.hiresemble.job.application.model.JobAnalysisModels.VerifiedEvidence;
@@ -32,11 +34,13 @@ import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort;
 import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort.EmbeddingPolicySnapshot;
 import com.hiresemble.job.application.port.JobAnalysisQueryPort;
 import com.hiresemble.job.domain.Eligibility;
+import com.hiresemble.job.domain.CriterionSupportType;
 import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.JobAnalysisEvidenceUsageType;
 import com.hiresemble.job.domain.JobFitScoringPolicy;
 import com.hiresemble.job.domain.JobFitScoringPolicy.CriterionInput;
 import com.hiresemble.job.domain.MatchLevel;
+import com.hiresemble.job.domain.StructuredProfileFactType;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import java.math.BigDecimal;
@@ -49,6 +53,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -77,10 +82,10 @@ public final class JobAnalysisWorkflow {
     public static final String RETRIEVAL_POLICY_VERSION = "verified-evidence-rag-v1";
 
     private static final String BUILD_SCHEMA = "job-analysis-build-output-v1";
-    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-output-v2";
-    private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v2";
+    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-output-v3";
+    private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v3";
     private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v1";
-    private static final String MATCH_SCHEMA = "job-analysis-match-output-v2";
+    private static final String MATCH_SCHEMA = "job-analysis-match-output-v3";
     private static final String SCORE_SCHEMA = "job-analysis-score-output-v1";
     private static final String VALIDATION_SCHEMA = "job-analysis-validation-output-v1";
     private static final String PERSIST_SCHEMA = "job-analysis-persist-output-v1";
@@ -618,7 +623,9 @@ public final class JobAnalysisWorkflow {
                             value.category(),
                             value.text().trim(),
                             value.required(),
-                            trimNullable(value.sourceLocation())))
+                            trimNullable(value.sourceLocation()),
+                            value.supportType(),
+                            value.requiredByDate()))
                     .toList();
             return new ExtractRequirementsOutput(
                     REQUIREMENTS_SCHEMA, false, null, requirements);
@@ -656,6 +663,9 @@ public final class JobAnalysisWorkflow {
                     maskList(profile.desiredIndustries(), 100),
                     maskList(profile.desiredLocations(), 100),
                     profile.expectedGraduationDate(),
+                    profile.structuredFacts().stream()
+                            .map(JobAnalysisWorkflow.this::descriptor)
+                            .toList(),
                     state.snapshot().verifiedEvidence().stream()
                             .sorted(Comparator.comparing(VerifiedEvidence::id))
                             .limit(100)
@@ -688,6 +698,7 @@ public final class JobAnalysisWorkflow {
                         ELIGIBILITY_SCHEMA,
                         Eligibility.UNKNOWN,
                         List.of(),
+                        List.of(),
                         null));
             }
             return invocation.chatGateway().chat(new ChatRequest(
@@ -712,7 +723,9 @@ public final class JobAnalysisWorkflow {
             if (!ELIGIBILITY_SCHEMA.equals(output.schemaVersion())
                     || output.eligibility() == null
                     || output.evidenceIds() == null
+                    || output.structuredFactRefs() == null
                     || output.evidenceIds().size() > 20
+                    || output.structuredFactRefs().size() > 20
                     || (!reusing && !hasTrimmedText(output.explanation(), 2_000))) {
                 throw repairable(
                         ValidationPhase.JAVA_RECORD,
@@ -721,6 +734,7 @@ public final class JobAnalysisWorkflow {
             }
             if (reusing
                     && (!output.evidenceIds().isEmpty()
+                            || !output.structuredFactRefs().isEmpty()
                             || output.explanation() != null
                             || output.eligibility() != Eligibility.UNKNOWN)) {
                 throw configurationFailure();
@@ -741,6 +755,13 @@ public final class JobAnalysisWorkflow {
                     output.reusable(),
                     output.reusableAnalysisId());
             requireAllowedEvidenceIds(state.snapshot(), output.evidenceIds());
+            requireAllowedFactRefs(state.snapshot(), output.structuredFactRefs());
+            rejectUnspecifiedPositiveFacts(state.snapshot(), output.structuredFactRefs());
+            requireSelfReportedWording(
+                    state.snapshot(), output.structuredFactRefs(), output.explanation());
+            ExtractRequirementsOutput requirements = requiredEphemeral(
+                    context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class);
+            validateEligibilityFacts(requirements.requirements(), output, state.snapshot());
             rejectProbabilityLanguage(output.explanation());
         }
 
@@ -755,6 +776,7 @@ public final class JobAnalysisWorkflow {
                         state.reusableAnalysisId(),
                         Eligibility.UNKNOWN,
                         List.of(),
+                        List.of(),
                         null);
             }
             return new EligibilityAssessmentOutput(
@@ -763,6 +785,7 @@ public final class JobAnalysisWorkflow {
                     null,
                     output.eligibility(),
                     List.copyOf(output.evidenceIds()),
+                    List.copyOf(output.structuredFactRefs()),
                     output.explanation().trim());
         }
     }
@@ -998,7 +1021,10 @@ public final class JobAnalysisWorkflow {
                             INPUT_SCHEMA,
                             requirements.requirements(),
                             eligibility.eligibility(),
-                            retrieved.candidates())));
+                            retrieved.candidates(),
+                            state.snapshot().profile().structuredFacts().stream()
+                                    .map(JobAnalysisWorkflow.this::descriptor)
+                                    .toList())));
         }
 
         @Override
@@ -1061,7 +1087,9 @@ public final class JobAnalysisWorkflow {
                         || criterion.criterionIndex() < 0
                         || criterion.matchLevel() == null
                         || criterion.evidenceIds() == null
+                        || criterion.structuredFactRefs() == null
                         || criterion.evidenceIds().size() > 20
+                        || criterion.structuredFactRefs().size() > 20
                         || !hasTrimmedText(criterion.explanation(), 2_000)) {
                     throw repairable(
                             ValidationPhase.JAVA_RECORD,
@@ -1070,8 +1098,10 @@ public final class JobAnalysisWorkflow {
                 }
                 boolean positive = criterion.matchLevel() == MatchLevel.MATCHED
                         || criterion.matchLevel() == MatchLevel.PARTIAL;
-                if ((positive && criterion.evidenceIds().isEmpty())
-                        || (!positive && !criterion.evidenceIds().isEmpty())) {
+                if ((positive && criterion.evidenceIds().isEmpty()
+                                && criterion.structuredFactRefs().isEmpty())
+                        || (!positive && (!criterion.evidenceIds().isEmpty()
+                                || !criterion.structuredFactRefs().isEmpty()))) {
                     throw repairable(
                             ValidationPhase.JAVA_RECORD,
                             "JOB_ANALYSIS_MATCH_LEVEL_EVIDENCE_INVALID",
@@ -1174,6 +1204,8 @@ public final class JobAnalysisWorkflow {
             if (output.reusable()) {
                 return;
             }
+            ExtractRequirementsOutput requirements = requiredEphemeral(
+                    context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class);
             RetrievedEvidenceOutput retrieved = requiredEphemeral(
                     context,
                     RETRIEVE_VERIFIED_EVIDENCE,
@@ -1184,16 +1216,24 @@ public final class JobAnalysisWorkflow {
             List<MatchedCriterion> ordered = orderedCriteria(output.criteria());
             for (MatchedCriterion criterion : ordered) {
                 requireEvidenceSubset(criterion.evidenceIds(), retrievedIds);
+                requireAllowedFactRefs(state.snapshot(), criterion.structuredFactRefs());
                 if ((criterion.matchLevel() == MatchLevel.MATCHED
                                 || criterion.matchLevel() == MatchLevel.PARTIAL)
-                        && criterion.evidenceIds().isEmpty()) {
+                        && criterion.evidenceIds().isEmpty()
+                        && criterion.structuredFactRefs().isEmpty()) {
                     throw invalidEvidence();
                 }
                 if ((criterion.matchLevel() == MatchLevel.MISSING
                                 || criterion.matchLevel() == MatchLevel.UNKNOWN)
-                        && !criterion.evidenceIds().isEmpty()) {
+                        && (!criterion.evidenceIds().isEmpty()
+                                || !criterion.structuredFactRefs().isEmpty())) {
                     throw invalidEvidence();
                 }
+                validateSupportCompatibility(
+                        requirements.requirements().get(criterion.criterionIndex()),
+                        criterion,
+                        state.snapshot(),
+                        retrieved);
                 rejectProbabilityLanguage(criterion.explanation());
                 rejectProbabilityLanguage(criterion.missingReason());
             }
@@ -1242,6 +1282,7 @@ public final class JobAnalysisWorkflow {
                             value.criterionIndex(),
                             value.matchLevel(),
                             List.copyOf(value.evidenceIds()),
+                            List.copyOf(value.structuredFactRefs()),
                             value.explanation().trim(),
                             trimNullable(value.missingReason())))
                     .toList();
@@ -1354,6 +1395,9 @@ public final class JobAnalysisWorkflow {
                         criterion.explanation(),
                         criterion.sourceLocation(),
                         criterion.evidenceIds(),
+                        matched.get(requirementIndex).structuredFactRefs(),
+                        requirement.supportType(),
+                        requirement.requiredByDate(),
                         requirement.required(),
                         requirement.section()));
             }
@@ -1364,6 +1408,7 @@ public final class JobAnalysisWorkflow {
                     null,
                     eligibility.eligibility(),
                     eligibility.evidenceIds(),
+                    eligibility.structuredFactRefs(),
                     scoredCriteria,
                     requirementList,
                     match.strengths(),
@@ -1415,6 +1460,8 @@ public final class JobAnalysisWorkflow {
                         || criterion.score().compareTo(BigDecimal.ZERO) < 0
                         || criterion.score().compareTo(criterion.weight()) > 0
                         || criterion.evidenceIds() == null
+                        || criterion.structuredFactRefs() == null
+                        || criterion.supportType() == null
                         || criterion.section() == null) {
                     throw new IllegalArgumentException("scored criterion is invalid");
                 }
@@ -1470,8 +1517,10 @@ public final class JobAnalysisWorkflow {
                 }
             }
             requireAllowedEvidenceIds(state.snapshot(), output.eligibilityEvidenceIds());
+            requireAllowedFactRefs(state.snapshot(), output.eligibilityStructuredFactRefs());
             for (ScoredCriterionOutput criterion : output.criteria()) {
                 requireAllowedEvidenceIds(state.snapshot(), criterion.evidenceIds());
+                requireAllowedFactRefs(state.snapshot(), criterion.structuredFactRefs());
             }
         }
     }
@@ -1699,7 +1748,10 @@ public final class JobAnalysisWorkflow {
                             value.matchLevel(),
                             value.explanation(),
                             value.sourceLocation(),
-                            value.evidenceIds()))
+                            value.evidenceIds(),
+                            value.structuredFactRefs(),
+                            value.supportType(),
+                            value.requiredByDate()))
                     .toList();
             List<RequirementItem> responsibilities =
                     requirements(scored, RequirementSection.RESPONSIBILITY);
@@ -1710,6 +1762,10 @@ public final class JobAnalysisWorkflow {
             Set<EvidenceUsage> usages = new LinkedHashSet<>();
             scored.eligibilityEvidenceIds().forEach(id -> usages.add(new EvidenceUsage(
                     id, JobAnalysisEvidenceUsageType.ELIGIBILITY)));
+            List<StructuredFactUsage> factUsages = scored.eligibilityStructuredFactRefs().stream()
+                    .map(reference -> new StructuredFactUsage(
+                            reference, JobAnalysisEvidenceUsageType.ELIGIBILITY))
+                    .toList();
             scored.strengths().stream()
                     .flatMap(value -> value.evidenceIds().stream())
                     .forEach(id -> usages.add(new EvidenceUsage(
@@ -1735,6 +1791,7 @@ public final class JobAnalysisWorkflow {
                                     .toList(),
                             scored.gaps().stream().map(GapDraft::text).toList(),
                             List.copyOf(usages),
+                            factUsages,
                             scored.analysisSummary()));
         } catch (BusinessException exception) {
             throw mapBusiness(exception);
@@ -1776,8 +1833,10 @@ public final class JobAnalysisWorkflow {
                     "적합도 점수 검증에 실패했습니다.");
         }
         requireAllowedEvidenceIds(state.snapshot(), scored.eligibilityEvidenceIds());
+        requireAllowedFactRefs(state.snapshot(), scored.eligibilityStructuredFactRefs());
         for (ScoredCriterionOutput criterion : scored.criteria()) {
             requireAllowedEvidenceIds(state.snapshot(), criterion.evidenceIds());
+            requireAllowedFactRefs(state.snapshot(), criterion.structuredFactRefs());
             if (criterion.score().compareTo(criterion.weight()) > 0) {
                 throw domainFailure(
                         "JOB_ANALYSIS_SCORE_RANGE_INVALID",
@@ -1931,6 +1990,7 @@ public final class JobAnalysisWorkflow {
         if (requirement == null
                 || requirement.section() == null
                 || requirement.category() == null
+                || requirement.supportType() == null
                 || !hasTrimmedText(requirement.text(), 2_000)
                 || (requirement.sourceLocation() != null
                         && !hasTrimmedText(requirement.sourceLocation(), 500))) {
@@ -1962,12 +2022,38 @@ public final class JobAnalysisWorkflow {
                     "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
         }
         if (requirement.section() == RequirementSection.PREFERRED_QUALIFICATION
+                && requirement.category() != FitCriterionCategory.PREFERRED_QUALIFICATION
                 && requirement.category()
-                        != FitCriterionCategory.PREFERRED_QUALIFICATION) {
+                        != FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE) {
             throw repairable(
                     ValidationPhase.JAVA_RECORD,
                     "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
-                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
+                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL. Preferred education, certification, or language conditions must use EDUCATION_CERTIFICATION_LANGUAGE; other preferred conditions use PREFERRED_QUALIFICATION.");
+        }
+        if ((requirement.supportType() == CriterionSupportType.EDUCATION
+                        || requirement.supportType() == CriterionSupportType.CERTIFICATION
+                        || requirement.supportType() == CriterionSupportType.LANGUAGE)
+                && requirement.category()
+                        != FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_SUPPORT_CATEGORY_INVALID",
+                    "Education, certification, and language requirements must use EDUCATION_CERTIFICATION_LANGUAGE regardless of posting section.");
+        }
+        if ((requirement.supportType() == CriterionSupportType.WORK_AVAILABLE_DATE)
+                != (requirement.requiredByDate() != null)) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_DATE_INVALID",
+                    "WORK_AVAILABLE_DATE requires requiredByDate. Other support types must use requiredByDate=null. Convert a year-month requirement to its final calendar day.");
+        }
+        CriterionSupportType contentRequiredSupport = strictSupportType(requirement.text());
+        if (contentRequiredSupport != null
+                && requirement.supportType() != contentRequiredSupport) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_SUPPORT_TYPE_INVALID",
+                    "The requirement text has an explicit education, certification, language, work-date, military, overseas-travel, or employment-disqualification condition. Use its matching supportType; split mixed general-skill and certification-example prose into separate criteria without inventing requirements.");
         }
         if (!KoreanUserFacingTextPolicy.containsKorean(requirement.text())
                 || (requirement.sourceLocation() != null
@@ -1983,6 +2069,48 @@ public final class JobAnalysisWorkflow {
         return normalized.startsWith("$")
                 || normalized.contains("untrustedjobposting")
                 || normalized.contains("descriptiontext");
+    }
+
+    private CriterionSupportType strictSupportType(String text) {
+        String normalized = text.trim().toLowerCase(Locale.ROOT);
+        if (normalized.contains("근무 가능") || normalized.contains("입사 가능")) {
+            return CriterionSupportType.WORK_AVAILABLE_DATE;
+        }
+        if (normalized.contains("병역")) return CriterionSupportType.MILITARY_STATUS;
+        if (normalized.contains("해외여행") || normalized.contains("해외 여행")) {
+            return CriterionSupportType.OVERSEAS_TRAVEL_ELIGIBILITY;
+        }
+        if (normalized.contains("채용 결격") || normalized.contains("결격 사유")) {
+            return CriterionSupportType.EMPLOYMENT_DISQUALIFICATION_STATUS;
+        }
+        if (normalized.contains("자격증")
+                || normalized.contains("자격 보유")
+                || normalized.contains("자격 취득")
+                || normalized.contains("자격 소지")) {
+            return CriterionSupportType.CERTIFICATION;
+        }
+        if (normalized.contains("toeic")
+                || normalized.contains("toefl")
+                || normalized.contains("opic")
+                || normalized.contains("토익")
+                || normalized.contains("토플")
+                || normalized.contains("오픽")
+                || normalized.contains("어학 점수")
+                || normalized.contains("외국어 점수")) {
+            return CriterionSupportType.LANGUAGE;
+        }
+        if (normalized.contains("4년제")
+                || normalized.contains("학사")
+                || normalized.contains("석사")
+                || normalized.contains("박사")
+                || normalized.contains("학력")
+                || (normalized.contains("대학")
+                        && (normalized.contains("졸업")
+                                || normalized.contains("학위")
+                                || normalized.contains("재학")))) {
+            return CriterionSupportType.EDUCATION;
+        }
+        return null;
     }
 
     private StructuredOutputValidationException koreanOutputRequired() {
@@ -2017,6 +2145,199 @@ public final class JobAnalysisWorkflow {
                 .map(VerifiedEvidence::id)
                 .collect(java.util.stream.Collectors.toSet());
         requireEvidenceSubset(evidenceIds, allowlist);
+    }
+
+    private StructuredFactDescriptor descriptor(StructuredProfileFact fact) {
+        return new StructuredFactDescriptor(
+                fact.reference(), fact.factType(), maskAndLimit(fact.value(), 1_000), fact.selfReported());
+    }
+
+    private void requireAllowedFactRefs(
+            JobAnalysisSnapshot snapshot, List<String> references) {
+        Set<String> allowlist = snapshot.profile().structuredFacts().stream()
+                .map(StructuredProfileFact::reference)
+                .collect(java.util.stream.Collectors.toSet());
+        if (references == null
+                || references.stream().anyMatch(value -> value == null || value.isBlank())
+                || new HashSet<>(references).size() != references.size()
+                || !allowlist.containsAll(references)) {
+            throw invalidEvidence();
+        }
+    }
+
+    private void rejectUnspecifiedPositiveFacts(
+            JobAnalysisSnapshot snapshot, List<String> references) {
+        Map<String, StructuredProfileFact> facts = snapshot.profile().structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::reference, value -> value));
+        if (references.stream().map(facts::get).filter(Objects::nonNull)
+                .anyMatch(value -> "UNSPECIFIED".equals(value.value()))) {
+            throw invalidSupport();
+        }
+    }
+
+    private void requireSelfReportedWording(
+            JobAnalysisSnapshot snapshot, List<String> references, String explanation) {
+        Map<String, StructuredProfileFact> facts = snapshot.profile().structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::reference, value -> value));
+        boolean selfReported = references.stream()
+                .map(facts::get)
+                .filter(Objects::nonNull)
+                .anyMatch(StructuredProfileFact::selfReported);
+        if (selfReported && (explanation == null || !explanation.contains("사용자 입력 기준"))) {
+            throw invalidSupport();
+        }
+    }
+
+    private void validateSupportCompatibility(
+            RequirementCandidate requirement,
+            MatchedCriterion criterion,
+            JobAnalysisSnapshot snapshot,
+            RetrievedEvidenceOutput retrieved) {
+        if (criterion.matchLevel() != MatchLevel.MATCHED
+                && criterion.matchLevel() != MatchLevel.PARTIAL) {
+            return;
+        }
+        Map<UUID, RetrievedEvidenceCandidate> evidence = retrieved.candidates().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        RetrievedEvidenceCandidate::evidenceId, value -> value));
+        Map<String, StructuredProfileFact> facts = snapshot.profile().structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::reference, value -> value));
+        List<EvidenceSourceType> evidenceTypes = criterion.evidenceIds().stream()
+                .map(evidence::get)
+                .filter(Objects::nonNull)
+                .map(RetrievedEvidenceCandidate::sourceType)
+                .toList();
+        List<StructuredProfileFact> usedFacts = criterion.structuredFactRefs().stream()
+                .map(facts::get)
+                .filter(Objects::nonNull)
+                .toList();
+        boolean compatible = switch (requirement.supportType()) {
+            case EDUCATION -> evidenceTypes.isEmpty()
+                    && exactFacts(usedFacts, StructuredProfileFactType.PRIMARY_EDUCATION);
+            case CERTIFICATION -> usedFacts.isEmpty()
+                    && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.CERTIFICATION);
+            case LANGUAGE -> usedFacts.isEmpty()
+                    && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.LANGUAGE_SCORE);
+            case MILITARY_STATUS -> evidenceTypes.isEmpty()
+                    && exactFacts(usedFacts, StructuredProfileFactType.MILITARY_STATUS)
+                    && usedFacts.stream().noneMatch(value -> "UNSPECIFIED".equals(value.value()))
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case OVERSEAS_TRAVEL_ELIGIBILITY -> evidenceTypes.isEmpty()
+                    && exactFacts(usedFacts, StructuredProfileFactType.OVERSEAS_TRAVEL_ELIGIBILITY)
+                    && usedFacts.stream().noneMatch(value -> "UNSPECIFIED".equals(value.value()))
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case EMPLOYMENT_DISQUALIFICATION_STATUS -> evidenceTypes.isEmpty()
+                    && exactFacts(usedFacts, StructuredProfileFactType.EMPLOYMENT_DISQUALIFICATION_STATUS)
+                    && usedFacts.stream().noneMatch(value -> "UNSPECIFIED".equals(value.value()))
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case WORK_AVAILABLE_DATE -> evidenceTypes.isEmpty()
+                    && workAvailabilityCompatible(requirement, criterion, usedFacts);
+            case EXPERIENCE_OR_SKILL -> usedFacts.isEmpty()
+                    && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.CAREER
+                            || value == EvidenceSourceType.ACTIVITY
+                            || value == EvidenceSourceType.DOCUMENT_CHUNK);
+            case GENERAL -> !evidenceTypes.isEmpty() || !usedFacts.isEmpty();
+        };
+        if (!compatible) {
+            throw invalidSupport();
+        }
+    }
+
+    private void validateEligibilityFacts(
+            List<RequirementCandidate> requirements,
+            EligibilityAssessmentOutput output,
+            JobAnalysisSnapshot snapshot) {
+        Map<StructuredProfileFactType, StructuredProfileFact> facts = snapshot.profile()
+                .structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::factType, value -> value));
+        for (RequirementCandidate requirement : requirements) {
+            if (!requirement.required()) continue;
+            StructuredProfileFactType requiredFact = switch (requirement.supportType()) {
+                case MILITARY_STATUS -> StructuredProfileFactType.MILITARY_STATUS;
+                case OVERSEAS_TRAVEL_ELIGIBILITY ->
+                        StructuredProfileFactType.OVERSEAS_TRAVEL_ELIGIBILITY;
+                case EMPLOYMENT_DISQUALIFICATION_STATUS ->
+                        StructuredProfileFactType.EMPLOYMENT_DISQUALIFICATION_STATUS;
+                default -> null;
+            };
+            if (requiredFact != null) {
+                StructuredProfileFact fact = facts.get(requiredFact);
+                if (fact == null || "UNSPECIFIED".equals(fact.value())) {
+                    if (output.eligibility() != Eligibility.UNKNOWN) throw invalidSupport();
+                } else if (output.eligibility() != Eligibility.UNKNOWN
+                        && !output.structuredFactRefs().contains(fact.reference())) {
+                    throw invalidSupport();
+                }
+            }
+            if (requirement.supportType() == CriterionSupportType.WORK_AVAILABLE_DATE) {
+                StructuredProfileFact available = facts.get(StructuredProfileFactType.WORK_AVAILABLE_DATE);
+                if (available != null) {
+                    if (output.eligibility() != Eligibility.UNKNOWN
+                            && !output.structuredFactRefs().contains(available.reference())) {
+                        throw invalidSupport();
+                    }
+                    if (output.eligibility() == Eligibility.ELIGIBLE
+                            && java.time.LocalDate.parse(available.value())
+                                            .compareTo(requirement.requiredByDate())
+                                    > 0) {
+                        throw invalidSupport();
+                    }
+                    continue;
+                }
+                StructuredProfileFact graduation =
+                        facts.get(StructuredProfileFactType.EXPECTED_GRADUATION_DATE);
+                if (graduation == null) {
+                    if (output.eligibility() != Eligibility.UNKNOWN) throw invalidSupport();
+                    continue;
+                }
+                boolean sameOrEarlierMonth = !java.time.YearMonth.from(
+                                java.time.LocalDate.parse(graduation.value()))
+                        .isAfter(java.time.YearMonth.from(requirement.requiredByDate()));
+                if (sameOrEarlierMonth) {
+                    if (output.eligibility() != Eligibility.CONDITIONAL
+                            || !output.structuredFactRefs().contains(graduation.reference())
+                            || !output.explanation().contains("정확한 근무 가능일은 별도 확인이 필요")) {
+                        throw invalidSupport();
+                    }
+                } else if (output.eligibility() == Eligibility.ELIGIBLE) {
+                    throw invalidSupport();
+                }
+            }
+        }
+    }
+
+    private boolean exactFacts(
+            List<StructuredProfileFact> facts, StructuredProfileFactType expected) {
+        return facts.size() == 1 && facts.getFirst().factType() == expected;
+    }
+
+    private boolean workAvailabilityCompatible(
+            RequirementCandidate requirement,
+            MatchedCriterion criterion,
+            List<StructuredProfileFact> facts) {
+        if (exactFacts(facts, StructuredProfileFactType.WORK_AVAILABLE_DATE)) {
+            return java.time.LocalDate.parse(facts.getFirst().value())
+                            .compareTo(requirement.requiredByDate()) <= 0
+                    && criterion.explanation().contains("사용자 입력 기준");
+        }
+        return criterion.matchLevel() == MatchLevel.PARTIAL
+                && exactFacts(facts, StructuredProfileFactType.EXPECTED_GRADUATION_DATE)
+                && !java.time.YearMonth.from(java.time.LocalDate.parse(facts.getFirst().value()))
+                        .isAfter(java.time.YearMonth.from(requirement.requiredByDate()))
+                && criterion.explanation().contains("정확한 근무 가능일은 별도 확인이 필요");
+    }
+
+    private AiExecutionException invalidSupport() {
+        return domainFailure(
+                "JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID",
+                "공고 요건과 지원 근거 유형이 일치하지 않습니다.");
     }
 
     private void requireEvidenceSubset(
@@ -2217,6 +2538,7 @@ public final class JobAnalysisWorkflow {
             List<String> desiredIndustries,
             List<String> desiredLocations,
             java.time.LocalDate expectedGraduationDate,
+            List<StructuredFactDescriptor> structuredProfileFacts,
             List<ApprovedEvidenceDescriptor> verifiedEvidence) {
         public ApprovedProfileInput {
             desiredRoles = desiredRoles == null ? List.of() : List.copyOf(desiredRoles);
@@ -2224,6 +2546,9 @@ public final class JobAnalysisWorkflow {
                     desiredIndustries == null ? List.of() : List.copyOf(desiredIndustries);
             desiredLocations =
                     desiredLocations == null ? List.of() : List.copyOf(desiredLocations);
+            structuredProfileFacts = structuredProfileFacts == null
+                    ? List.of()
+                    : List.copyOf(structuredProfileFacts);
             verifiedEvidence =
                     verifiedEvidence == null ? List.of() : List.copyOf(verifiedEvidence);
         }
@@ -2245,7 +2570,14 @@ public final class JobAnalysisWorkflow {
             String schemaVersion,
             List<RequirementCandidate> requirements,
             Eligibility eligibility,
-            List<RetrievedEvidenceCandidate> verifiedEvidenceCandidates) {}
+            List<RetrievedEvidenceCandidate> verifiedEvidenceCandidates,
+            List<StructuredFactDescriptor> structuredProfileFacts) {}
+
+    public record StructuredFactDescriptor(
+            String reference,
+            StructuredProfileFactType factType,
+            String value,
+            boolean selfReported) {}
 
     public record ScoreFitInput(
             String schemaVersion,
@@ -2300,14 +2632,56 @@ public final class JobAnalysisWorkflow {
             FitCriterionCategory category,
             String text,
             boolean required,
-            String sourceLocation) {}
+            String sourceLocation,
+            CriterionSupportType supportType,
+            java.time.LocalDate requiredByDate) {
+        public RequirementCandidate(
+                RequirementSection section,
+                FitCriterionCategory category,
+                String text,
+                boolean required,
+                String sourceLocation) {
+            this(section, category, text, required, sourceLocation, CriterionSupportType.GENERAL, null);
+        }
+
+        public RequirementCandidate(
+                RequirementSection section,
+                FitCriterionCategory category,
+                String text,
+                boolean required,
+                String sourceLocation,
+                CriterionSupportType supportType) {
+            this(section, category, text, required, sourceLocation, supportType, null);
+        }
+    }
 
     public record ProviderRequirementCandidate(
             RequirementSection section,
             FitCriterionCategory category,
             String text,
             boolean required,
-            @ProviderNullable String sourceLocation) {}
+            @ProviderNullable String sourceLocation,
+            CriterionSupportType supportType,
+            @ProviderNullable java.time.LocalDate requiredByDate) {
+        public ProviderRequirementCandidate(
+                RequirementSection section,
+                FitCriterionCategory category,
+                String text,
+                boolean required,
+                String sourceLocation) {
+            this(section, category, text, required, sourceLocation, CriterionSupportType.GENERAL, null);
+        }
+
+        public ProviderRequirementCandidate(
+                RequirementSection section,
+                FitCriterionCategory category,
+                String text,
+                boolean required,
+                String sourceLocation,
+                CriterionSupportType supportType) {
+            this(section, category, text, required, sourceLocation, supportType, null);
+        }
+    }
 
     public record ProviderRequirementsOutput(
             String schemaVersion, List<ProviderRequirementCandidate> requirements) {
@@ -2334,9 +2708,21 @@ public final class JobAnalysisWorkflow {
             UUID reusableAnalysisId,
             Eligibility eligibility,
             List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
             String explanation) {
         public EligibilityAssessmentOutput {
             evidenceIds = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
+            structuredFactRefs = structuredFactRefs == null ? List.of() : List.copyOf(structuredFactRefs);
+        }
+
+        public EligibilityAssessmentOutput(
+                String schemaVersion,
+                boolean reusable,
+                UUID reusableAnalysisId,
+                Eligibility eligibility,
+                List<UUID> evidenceIds,
+                String explanation) {
+            this(schemaVersion, reusable, reusableAnalysisId, eligibility, evidenceIds, List.of(), explanation);
         }
     }
 
@@ -2344,11 +2730,23 @@ public final class JobAnalysisWorkflow {
             String schemaVersion,
             Eligibility eligibility,
             List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
             String explanation) {
         public ProviderEligibilityOutput {
             if (evidenceIds != null) {
                 evidenceIds = List.copyOf(evidenceIds);
             }
+            if (structuredFactRefs != null) {
+                structuredFactRefs = List.copyOf(structuredFactRefs);
+            }
+        }
+
+        public ProviderEligibilityOutput(
+                String schemaVersion,
+                Eligibility eligibility,
+                List<UUID> evidenceIds,
+                String explanation) {
+            this(schemaVersion, eligibility, evidenceIds, List.of(), explanation);
         }
     }
 
@@ -2380,10 +2778,12 @@ public final class JobAnalysisWorkflow {
             int criterionIndex,
             MatchLevel matchLevel,
             List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
             String explanation,
             String missingReason) {
         public MatchedCriterion {
             evidenceIds = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
+            structuredFactRefs = structuredFactRefs == null ? List.of() : List.copyOf(structuredFactRefs);
         }
     }
 
@@ -2391,12 +2791,25 @@ public final class JobAnalysisWorkflow {
             int criterionIndex,
             MatchLevel matchLevel,
             List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
             String explanation,
             @ProviderNullable String missingReason) {
         public ProviderMatchedCriterion {
             if (evidenceIds != null) {
                 evidenceIds = List.copyOf(evidenceIds);
             }
+            if (structuredFactRefs != null) {
+                structuredFactRefs = List.copyOf(structuredFactRefs);
+            }
+        }
+
+        public ProviderMatchedCriterion(
+                int criterionIndex,
+                MatchLevel matchLevel,
+                List<UUID> evidenceIds,
+                String explanation,
+                String missingReason) {
+            this(criterionIndex, matchLevel, evidenceIds, List.of(), explanation, missingReason);
         }
     }
 
@@ -2464,10 +2877,14 @@ public final class JobAnalysisWorkflow {
             String explanation,
             String sourceLocation,
             List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
+            CriterionSupportType supportType,
+            java.time.LocalDate requiredByDate,
             boolean required,
             RequirementSection section) {
         public ScoredCriterionOutput {
             evidenceIds = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
+            structuredFactRefs = structuredFactRefs == null ? List.of() : List.copyOf(structuredFactRefs);
         }
     }
 
@@ -2477,6 +2894,7 @@ public final class JobAnalysisWorkflow {
             UUID reusableAnalysisId,
             Eligibility eligibility,
             List<UUID> eligibilityEvidenceIds,
+            List<String> eligibilityStructuredFactRefs,
             List<ScoredCriterionOutput> criteria,
             List<RequirementCandidate> requirements,
             List<StrengthDraft> strengths,
@@ -2487,6 +2905,9 @@ public final class JobAnalysisWorkflow {
             eligibilityEvidenceIds = eligibilityEvidenceIds == null
                     ? List.of()
                     : List.copyOf(eligibilityEvidenceIds);
+            eligibilityStructuredFactRefs = eligibilityStructuredFactRefs == null
+                    ? List.of()
+                    : List.copyOf(eligibilityStructuredFactRefs);
             criteria = criteria == null ? List.of() : List.copyOf(criteria);
             requirements = requirements == null ? List.of() : List.copyOf(requirements);
             strengths = strengths == null ? List.of() : List.copyOf(strengths);
@@ -2499,6 +2920,7 @@ public final class JobAnalysisWorkflow {
                     true,
                     reusableAnalysisId,
                     Eligibility.UNKNOWN,
+                    List.of(),
                     List.of(),
                     List.of(),
                     List.of(),

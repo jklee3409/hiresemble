@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
+import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisProfileSnapshot;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
@@ -30,6 +31,53 @@ class ProfileIntegrationTest extends PostgresIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private ProfileAnalysisQueryPort profileAnalysisQuery;
+
+    @Test
+    void eligibilityApiAndAnalysisSnapshotAreOwnerScopedAndVersioned() throws Exception {
+        Session owner = authenticated("eligibility-owner@example.com");
+        Session stranger = authenticated("eligibility-stranger@example.com");
+
+        JsonNode education = json(mutation(
+                post("/api/v1/profile/educations")
+                        .content(educationBody("Owner University", "BACHELOR", null)),
+                owner,
+                201));
+        mutation(put("/api/v1/profile").content(profileBody(0)), owner, 200);
+        JsonNode saved = json(mutation(
+                put("/api/v1/profile/eligibility").content("""
+                        {"workAvailableDate":"2026-08-25","militaryStatus":"COMPLETED",
+                         "overseasTravelEligibility":"ELIGIBLE",
+                         "employmentDisqualificationStatus":"NONE_DECLARED","version":0}
+                        """),
+                owner,
+                200));
+
+        assertThat(saved.get("version").asLong()).isEqualTo(1);
+        mockMvc.perform(put("/api/v1/profile/eligibility")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"workAvailableDate":null,"militaryStatus":"UNSPECIFIED",
+                                 "overseasTravelEligibility":"UNSPECIFIED",
+                                 "employmentDisqualificationStatus":"UNSPECIFIED","version":0}
+                                """))
+                .andExpect(status().isConflict());
+
+        AnalysisProfileSnapshot ownerSnapshot = profileAnalysisQuery.loadAnalysisSnapshot(owner.userId());
+        AnalysisProfileSnapshot strangerSnapshot = profileAnalysisQuery.loadAnalysisSnapshot(stranger.userId());
+        assertThat(ownerSnapshot.primaryEducation().id().toString())
+                .isEqualTo(education.get("id").asText());
+        assertThat(ownerSnapshot.primaryEducation().primary()).isTrue();
+        assertThat(ownerSnapshot.eligibility().workAvailableDate().toString())
+                .isEqualTo("2026-08-25");
+        assertThat(ownerSnapshot.eligibility().militaryStatus().name()).isEqualTo("COMPLETED");
+        assertThat(strangerSnapshot.primaryEducation()).isNull();
+        assertThat(strangerSnapshot.eligibility().militaryStatus().name())
+                .isEqualTo("UNSPECIFIED");
+        assertThat(strangerSnapshot.eligibility().id())
+                .isNotEqualTo(ownerSnapshot.eligibility().id());
+    }
 
     @Test
     void incompleteProfileIsReadableAndDoesNotGateOtherProfileRoutes() throws Exception {

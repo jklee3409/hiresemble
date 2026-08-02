@@ -25,13 +25,13 @@ class JobAnalysisStrictStructuredOutputContractTest {
 
         JsonNode requirements = schema(registry.require(
                 JobAnalysisWorkflow.ProviderRequirementsOutput.class,
-                "job-analysis-requirements-output-v2"));
+                "job-analysis-requirements-output-v3"));
         JsonNode eligibility = schema(registry.require(
                 JobAnalysisWorkflow.ProviderEligibilityOutput.class,
-                "job-analysis-eligibility-output-v2"));
+                "job-analysis-eligibility-output-v3"));
         JsonNode match = schema(registry.require(
                 JobAnalysisWorkflow.ProviderMatchOutput.class,
-                "job-analysis-match-output-v2"));
+                "job-analysis-match-output-v3"));
 
         assertServerFieldsAbsent(requirements);
         assertServerFieldsAbsent(eligibility);

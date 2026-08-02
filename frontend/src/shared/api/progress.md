@@ -4,6 +4,19 @@
 
 Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-02] Session Summary (Profile eligibility typed client)
+
+- What was done:
+  - eligibility GET/PUT DTO·enum·Axios consumer와 query key를 추가했다.
+- Key decisions:
+  - 기존 profile API를 변경하지 않고 `/api/v1/profile/eligibility` additive endpoint만 노출한다.
+- Issues encountered:
+  - 테스트 mock에 신규 GET 응답이 없어 최초 실패했으며 계약 fixture를 추가해 해결했다.
+- Validation:
+  - API 단위 테스트와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard·Career Guide typed client)
 
 - What was done:

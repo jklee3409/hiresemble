@@ -4,6 +4,19 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-08-02] Session Summary (지원 자격 자기신고 form)
+
+- What was done:
+  - 프로필 기본 화면에 지원 자격 조회·수정 form, enum 선택지, 날짜 입력과 자기신고 안내를 추가했다.
+- Key decisions:
+  - 기존 기본 프로필 저장과 독립된 query/mutation/version conflict 경계를 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - profile page·API 단위 테스트와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (직접 대외활동 navigation·행동)
 
 - What was done:

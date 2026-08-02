@@ -384,11 +384,11 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
-                case "job-analysis-requirements-output-v2" ->
+                case "job-analysis-requirements-output-v3" ->
                         jobRequirements(request.input());
-                case "job-analysis-eligibility-output-v2" ->
+                case "job-analysis-eligibility-output-v3" ->
                         jobEligibility(request.input());
-                case "job-analysis-match-output-v2" ->
+                case "job-analysis-match-output-v3" ->
                         jobMatches(request.input());
                 case "cover-generation-plan-output-v1" ->
                         generationPlan(request.input());
@@ -446,7 +446,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
 
         private ProviderRequirementsOutput jobRequirements(JsonNode input) {
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-output-v2",
+                    "job-analysis-requirements-output-v3",
                     List.of(
                             new ProviderRequirementCandidate(
                                     RequirementSection.REQUIRED_QUALIFICATION,
@@ -466,7 +466,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             UUID evidenceId =
                     firstUuid(input.path("approvedProfile").path("verifiedEvidence"), "id");
             return new ProviderEligibilityOutput(
-                    "job-analysis-eligibility-output-v2",
+                    "job-analysis-eligibility-output-v3",
                     Eligibility.ELIGIBLE,
                     List.of(evidenceId),
                     "The approved evidence satisfies the required qualification.");
@@ -476,7 +476,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             UUID evidenceId =
                     firstUuid(input.path("verifiedEvidenceCandidates"), "evidenceId");
             return new ProviderMatchOutput(
-                    "job-analysis-match-output-v2",
+                    "job-analysis-match-output-v3",
                     List.of(
                             new ProviderMatchedCriterion(
                                     0,

@@ -35,6 +35,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             "/paths/~1api~1v1~1account~1display-name/patch";
     private static final String DASHBOARD_PATH = "/paths/~1api~1v1~1dashboard/get";
     private static final String CAREER_GUIDES_PATH = "/paths/~1api~1v1~1career-guides/get";
+    private static final String PROFILE_ELIGIBILITY_GET_PATH =
+            "/paths/~1api~1v1~1profile~1eligibility/get";
+    private static final String PROFILE_ELIGIBILITY_PUT_PATH =
+            "/paths/~1api~1v1~1profile~1eligibility/put";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -43,7 +47,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyNinetyTwoOperationsAndSixtyEightPaths() {
+    void liveSpringMappingsHaveExactlyNinetyFourOperationsAndSixtyNinePaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -59,12 +63,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(68);
-        assertThat(operations[0]).isEqualTo(92);
+        assertThat(paths).hasSize(69);
+        assertThat(operations[0]).isEqualTo(94);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyNinetyTwoOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyNinetyFourOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -99,6 +103,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/dashboard",
                         "/api/v1/career-guides",
                         "/api/v1/profile",
+                        "/api/v1/profile/eligibility",
                         "/api/v1/profile/educations",
                         "/api/v1/profile/educations/{educationId}",
                         "/api/v1/profile/certifications",
@@ -158,7 +163,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(92);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(94);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -176,9 +181,18 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseCodes(document.at(DISPLAY_NAME_PATH), "200", "400", "401", "403");
         assertResponseCodes(document.at(DASHBOARD_PATH), "200", "400", "401");
         assertResponseCodes(document.at(CAREER_GUIDES_PATH), "200", "401");
+        assertResponseCodes(
+                document.at(PROFILE_ELIGIBILITY_GET_PATH), "200", "400", "401", "404");
+        assertResponseCodes(
+                document.at(PROFILE_ELIGIBILITY_PUT_PATH),
+                "200", "400", "401", "403", "404", "409");
 
         assertProfileOperation(document, "/api/v1/profile", "get", "getProfile");
         assertProfileOperation(document, "/api/v1/profile", "put", "updateProfile");
+        assertProfileOperation(
+                document, "/api/v1/profile/eligibility", "get", "getProfileEligibility");
+        assertProfileOperation(
+                document, "/api/v1/profile/eligibility", "put", "updateProfileEligibility");
         assertProfileOperation(document, "/api/v1/profile/educations", "get", "listEducations");
         assertProfileOperation(document, "/api/v1/profile/educations", "post", "createEducation");
         assertProfileOperation(document, "/api/v1/profile/educations/{educationId}", "put", "updateEducation");
@@ -503,6 +517,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 document.at("/paths/~1api~1v1~1jobs/get"), "sessionCookie");
         assertSingleSecurityRequirement(document.at(DASHBOARD_PATH), "sessionCookie");
         assertSingleSecurityRequirement(document.at(CAREER_GUIDES_PATH), "sessionCookie");
+        assertSingleSecurityRequirement(
+                document.at(PROFILE_ELIGIBILITY_GET_PATH), "sessionCookie");
+        JsonNode eligibilityMutationSecurity =
+                document.at(PROFILE_ELIGIBILITY_PUT_PATH).get("security");
+        assertThat(eligibilityMutationSecurity).hasSize(1);
+        assertThat(fieldNames(eligibilityMutationSecurity.get(0)))
+                .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
         JsonNode jobMutationSecurity =
                 document.at("/paths/~1api~1v1~1jobs~1{jobId}~1status/patch/security");
         assertThat(jobMutationSecurity).hasSize(1);
@@ -605,6 +626,23 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 .isTrue();
         assertThat(schemas.at("/ProfileDto/properties/missingCompletionItems/readOnly").asBoolean())
                 .isTrue();
+        assertThat(fieldNames(schemas.at("/ProfileEligibilityDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id",
+                        "workAvailableDate",
+                        "militaryStatus",
+                        "overseasTravelEligibility",
+                        "employmentDisqualificationStatus",
+                        "version",
+                        "createdAt",
+                        "updatedAt");
+        assertThat(fieldNames(schemas.at("/ProfileEligibilityWrite/properties")))
+                .containsExactlyInAnyOrder(
+                        "workAvailableDate",
+                        "militaryStatus",
+                        "overseasTravelEligibility",
+                        "employmentDisqualificationStatus",
+                        "version");
         assertThat(fieldNames(schemas.at("/EducationStatus/enum"))).isEmpty();
         assertThat(fieldNames(schemas.at("/DocumentSummaryDto/properties")))
                 .containsExactlyInAnyOrder(
@@ -677,6 +715,31 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseSchema(document, DASHBOARD_PATH, "200", "DashboardDto");
         assertResponseSchema(document, DASHBOARD_PATH, "400", "ErrorResponseDto");
         assertResponseSchema(document, DASHBOARD_PATH, "401", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_GET_PATH, "200", "ProfileEligibilityDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_GET_PATH, "400", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_GET_PATH, "401", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_GET_PATH, "404", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "200", "ProfileEligibilityDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "400", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "401", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "403", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "404", "ErrorResponseDto");
+        assertResponseSchema(
+                document, PROFILE_ELIGIBILITY_PUT_PATH, "409", "ErrorResponseDto");
+        assertThat(document.at(
+                                PROFILE_ELIGIBILITY_PUT_PATH
+                                        + "/requestBody/content/application~1json/schema/$ref")
+                        .asText())
+                .endsWith("/ProfileEligibilityWrite");
 
         assertThat(document.at(SIGNUP_PATH + "/requestBody/content/application~1json/schema/$ref")
                         .asText())

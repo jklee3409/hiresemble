@@ -9,6 +9,7 @@ import com.hiresemble.profile.api.dto.ProfileDtos.ActivityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CareerDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CertificationDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EducationDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.ProfileEligibilityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EvidenceDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.LanguageScoreDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.ProfileDto;
@@ -28,6 +29,7 @@ import com.hiresemble.profile.api.dto.ProfileRequests.EvidenceVerificationBatchR
 import com.hiresemble.profile.api.dto.ProfileRequests.LanguageScoreCreateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.LanguageScoreUpdateRequest;
 import com.hiresemble.profile.api.dto.ProfileRequests.ProfileUpdateRequest;
+import com.hiresemble.profile.api.dto.ProfileRequests.ProfileEligibilityUpdateRequest;
 import com.hiresemble.profile.application.service.ProfileApplicationService;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
@@ -35,6 +37,7 @@ import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CertificationWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EducationWrite;
+import com.hiresemble.profile.domain.model.ProfileCommands.ProfileEligibilityUpdate;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceVersion;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
@@ -111,6 +114,48 @@ public class ProfileController {
                         request.legalName(), request.introduction(), request.desiredRoles(),
                         request.desiredIndustries(), request.desiredLocations(),
                         request.expectedGraduationDate(), request.version())));
+    }
+
+    @GetMapping("/eligibility")
+    @Operation(
+            operationId = "getProfileEligibility",
+            summary = "Get self-reported application eligibility information",
+            description = "Returns the current owner's work availability and limited self-reported eligibility values.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ProfileEligibilityDto.class))),
+        @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public ProfileEligibilityDto getEligibility(
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ProfileDtoMapper.eligibility(service.getEligibility(user.id()));
+    }
+
+    @PutMapping(value = "/eligibility", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            operationId = "updateProfileEligibility",
+            summary = "Update self-reported application eligibility information",
+            description = "Uses owner scope and optimistic versioning. UNSPECIFIED values remain unknown during analysis.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ProfileEligibilityDto.class))),
+        @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
+        @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+    })
+    public ProfileEligibilityDto updateEligibility(
+            @Valid @RequestBody ProfileEligibilityUpdateRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        return ProfileDtoMapper.eligibility(service.updateEligibility(
+                user.id(),
+                new ProfileEligibilityUpdate(
+                        request.workAvailableDate(),
+                        request.militaryStatus(),
+                        request.overseasTravelEligibility(),
+                        request.employmentDisqualificationStatus(),
+                        request.version())));
     }
 
     @GetMapping("/educations")

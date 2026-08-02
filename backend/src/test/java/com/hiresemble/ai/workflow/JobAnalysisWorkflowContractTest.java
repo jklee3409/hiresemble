@@ -108,7 +108,7 @@ class JobAnalysisWorkflowContractTest {
                                 JobAnalysisWorkflow.MATCH_EVIDENCE)
                         .instructions())
                 .contains(
-                        "never create, guess",
+                        "never create,",
                         "MATCHED and PARTIAL require",
                         "Do not output weights",
                         "strength text, gap text, and analysisSummary in natural",
@@ -120,7 +120,8 @@ class JobAnalysisWorkflowContractTest {
         assertThat(componentNames(JobAnalysisWorkflow.ProviderRequirementsOutput.class))
                 .containsExactly("schemaVersion", "requirements");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderEligibilityOutput.class))
-                .containsExactly("schemaVersion", "eligibility", "evidenceIds", "explanation");
+                .containsExactly(
+                        "schemaVersion", "eligibility", "evidenceIds", "structuredFactRefs", "explanation");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderMatchOutput.class))
                 .containsExactly(
                         "schemaVersion", "criteria", "strengths", "gaps", "analysisSummary");
@@ -142,7 +143,7 @@ class JobAnalysisWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
 
         assertThat(JobAnalysisPromptDefinitions.PROMPT_VERSION)
-                .isEqualTo("job-analysis-prompt-v3");
+                .isEqualTo("job-analysis-prompt-v4");
         assertThat(definition.steps())
                 .filteredOn(step -> Set.of(
                                 JobAnalysisWorkflow.EXTRACT_REQUIREMENTS,
@@ -151,9 +152,9 @@ class JobAnalysisWorkflowContractTest {
                         .contains(step.stepKey()))
                 .extracting(WorkflowRegistry.StepDefinition::outputSchemaVersion)
                 .containsExactly(
-                        "job-analysis-requirements-output-v2",
-                        "job-analysis-eligibility-output-v2",
-                        "job-analysis-match-output-v2");
+                        "job-analysis-requirements-output-v3",
+                        "job-analysis-eligibility-output-v3",
+                        "job-analysis-match-output-v3");
         assertThat(prompts.require(
                                 WorkflowType.JOB_ANALYSIS,
                                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,

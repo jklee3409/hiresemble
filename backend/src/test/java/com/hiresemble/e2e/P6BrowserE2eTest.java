@@ -215,9 +215,9 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
-                case "job-analysis-requirements-output-v2" -> requirements(request.input());
-                case "job-analysis-eligibility-output-v2" -> eligibility(request.input());
-                case "job-analysis-match-output-v2" -> matches(request.input());
+                case "job-analysis-requirements-output-v3" -> requirements(request.input());
+                case "job-analysis-eligibility-output-v3" -> eligibility(request.input());
+                case "job-analysis-match-output-v3" -> matches(request.input());
                 default -> throw new AssertionError(
                         "Unexpected P6 chat schema: " + request.outputSchemaVersion());
             };
@@ -242,11 +242,11 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                     .asText();
             if (description.contains("NO_REQUIREMENTS_FIXTURE")) {
                 return new ProviderRequirementsOutput(
-                        "job-analysis-requirements-output-v2",
+                        "job-analysis-requirements-output-v3",
                         List.of());
             }
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-output-v2",
+                    "job-analysis-requirements-output-v3",
                     List.of(
                             new ProviderRequirementCandidate(
                                     RequirementSection.REQUIRED_QUALIFICATION,
@@ -266,7 +266,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
             UUID evidenceId = firstUuid(
                     input.path("approvedProfile").path("verifiedEvidence"), "id");
             return new ProviderEligibilityOutput(
-                    "job-analysis-eligibility-output-v2",
+                    "job-analysis-eligibility-output-v3",
                     Eligibility.ELIGIBLE,
                     List.of(evidenceId),
                     "승인된 경력 정보에서 필수 지원 자격을 확인했습니다.");
@@ -276,7 +276,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
             UUID evidenceId =
                     firstUuid(input.path("verifiedEvidenceCandidates"), "evidenceId");
             return new ProviderMatchOutput(
-                    "job-analysis-match-output-v2",
+                    "job-analysis-match-output-v3",
                     List.of(
                             new ProviderMatchedCriterion(
                                     0,

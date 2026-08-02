@@ -353,6 +353,8 @@ latest job snapshot
 
 - 적합도는 합격 확률이 아니라 공고 요구와 등록 정보의 일치도다.
 - 분석 입력에는 공고 content hash와 profile/evidence snapshot hash를 포함한다.
+- profile snapshot은 구조화된 최종 학력과 지원 자격 자기신고를 typed fact allowlist로 포함한다. 모델은 allowlist reference만 반환하며 서버가 source entity ID·version·fact type·hash를 검증해 evidence link와 별도 provenance에 저장한다.
+- 공고 section, scoring category, support type은 분리한다. 학력·자격증·어학과 병역·여행·결격·근무일 조건은 서버의 strict support compatibility 검증을 통과해야 positive match가 된다.
 - verified evidence retrieval은 Chat model route가 아니라 활성 embedding policy의 provider·product·dimension을 사용하고 이 route identity를 checkpoint hash에 포함한다.
 - 최신 hash와 분석 hash가 다르면 기존 결과를 보존한 채 `analysisOutdated=true`와 `outdatedReasons`를 계산한다. `OUTDATED`는 저장 상태 enum이 아니다.
 - URL 추출과 분석은 별도 workflow type·Agent Run·상태를 유지하되, usable 본문 domain apply 뒤 서버의 durable 후속 의도가 분석 접수를 자동으로 연결한다. 브라우저 연쇄 호출에 의존하지 않는다.

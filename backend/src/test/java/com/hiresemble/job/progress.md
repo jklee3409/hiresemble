@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안과 P6 자동 분석 orchestration 회귀 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (structured provenance·PROFILE_CHANGED 회귀)
+
+- What was done:
+  - evidence와 structured fact link 분리 저장, 학력 변경 후 hash·재사용·OUTDATED 경계를 검증했다.
+- Key decisions:
+  - 기존 분석 이력은 유지한 채 현재 profile hash와의 비교만으로 오래됨을 판정한다.
+- Issues encountered:
+  - 전체 Job Analysis 필터 실행은 기존 Hikari connection 대기에서 timeout됐다.
+- Validation:
+  - 신규 통합 시나리오 단일 실행은 통과했다.
+- Next steps:
+  - 전체 통합 suite hang은 별도 진단이 필요하다.
+
 ## [2026-08-02] Session Summary (공고 자동 분석 내구성 회귀)
 
 - What was done:

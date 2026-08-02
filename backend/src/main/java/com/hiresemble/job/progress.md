@@ -4,6 +4,20 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결, revision별 durable 자동 분석 orchestration이 구현됐다.
 
+## [2026-08-02] Session Summary (구조화 profile fact provenance·재사용 경계)
+
+- What was done:
+  - 분석 snapshot에 서버 생성 allowlist fact를 포함하고 criterion/eligibility별 typed structured provenance를 별도 저장했다.
+  - 학력·지원 자격을 profile hash에 포함하고 context·Agent Run canonical input·step checkpoint·OUTDATED 경계까지 전파했다.
+- Key decisions:
+  - 기존 `job_analysis_evidence_links`와 `matchedEvidenceRefs` 의미는 유지하고 구조화 fact link를 별도 저장한다.
+- Issues encountered:
+  - 전체 Job Analysis suite는 기존 Hikari connection 대기에서 timeout됐다.
+- Validation:
+  - hashing 테스트와 신규 provenance persistence/PROFILE_CHANGED 통합 테스트 단일 실행이 통과했다.
+- Next steps:
+  - 통합 suite connection 대기 문제는 기능 변경과 분리해 진단한다.
+
 ## [2026-08-02] Session Summary (공고 등록·추출 후 자동 분석 연결)
 
 - What was done:

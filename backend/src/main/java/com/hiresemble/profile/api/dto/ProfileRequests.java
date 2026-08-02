@@ -2,6 +2,9 @@ package com.hiresemble.profile.api.dto;
 
 import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
+import com.hiresemble.profile.domain.model.EmploymentDisqualificationStatus;
+import com.hiresemble.profile.domain.model.MilitaryStatus;
+import com.hiresemble.profile.domain.model.OverseasTravelEligibility;
 import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,6 +34,14 @@ public final class ProfileRequests {
             @NotNull @Size(max = 10) List<@NotBlank @Size(max = 100) String> desiredIndustries,
             @NotNull @Size(max = 10) List<@NotBlank @Size(max = 100) String> desiredLocations,
             @Schema(nullable = true) LocalDate expectedGraduationDate,
+            @NotNull @PositiveOrZero Long version) {}
+
+    @Schema(name = "ProfileEligibilityWrite")
+    public record ProfileEligibilityUpdateRequest(
+            @Schema(nullable = true) LocalDate workAvailableDate,
+            @NotNull MilitaryStatus militaryStatus,
+            @NotNull OverseasTravelEligibility overseasTravelEligibility,
+            @NotNull EmploymentDisqualificationStatus employmentDisqualificationStatus,
             @NotNull @PositiveOrZero Long version) {}
 
     public interface EducationFields {

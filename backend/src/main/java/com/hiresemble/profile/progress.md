@@ -4,6 +4,20 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-02] Session Summary (공고 분석용 구조화 학력·지원 자격 snapshot)
+
+- What was done:
+  - 대표 학력의 ID/version/단계/상태/학위/전공/졸업일/대표 여부와 지원 자격 자기신고를 owner-scoped analysis snapshot에 추가했다.
+  - 근무 가능일·병역·해외여행·채용 결격 상태를 관리하는 1:1 record와 version 기반 조회·수정 경계를 추가했다.
+- Key decisions:
+  - 학력은 기존 구조화 profile aggregate로 유지하고 `EDUCATION profile_evidence`를 생성하지 않는다. 신규 enum 기본값은 `UNSPECIFIED`다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `*ProfileAnalysis*` 및 Profile 통합 집중 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (직접 대외활동과 소재 상태 경계)
 
 - What was done:

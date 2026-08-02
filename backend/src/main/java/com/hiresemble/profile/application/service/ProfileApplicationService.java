@@ -17,6 +17,7 @@ import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.EvidenceVersion;
 import com.hiresemble.profile.domain.model.ProfileCommands.LanguageScoreWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ProfileUpdate;
+import com.hiresemble.profile.domain.model.ProfileCommands.ProfileEligibilityUpdate;
 import com.hiresemble.profile.domain.model.ProfileCompletion;
 import com.hiresemble.profile.domain.model.ProfileRecords.AwardRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
@@ -27,6 +28,7 @@ import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.LanguageScoreRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.PageSlice;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ProfileEligibilityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.ProfileView;
 import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
@@ -124,6 +126,37 @@ public class ProfileApplicationService {
                 updated.desiredLocations(),
                 store.hasPrimaryEducation(userId));
         return new ProfileView(updated, completion);
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileEligibilityRecord getEligibility(UUID userId) {
+        if (store.findProfile(userId).isEmpty()) {
+            throw notFound();
+        }
+        return store.findEligibility(userId).orElseThrow(this::notFound);
+    }
+
+    @Transactional
+    public ProfileEligibilityRecord updateEligibility(
+            UUID userId, ProfileEligibilityUpdate input) {
+        if (input.militaryStatus() == null
+                || input.overseasTravelEligibility() == null
+                || input.employmentDisqualificationStatus() == null
+                || input.version() < 0) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        ProfileEligibilityUpdate command = new ProfileEligibilityUpdate(
+                input.workAvailableDate(),
+                input.militaryStatus(),
+                input.overseasTravelEligibility(),
+                input.employmentDisqualificationStatus(),
+                input.version());
+        return store.updateEligibility(userId, command, Instant.now()).orElseGet(() -> {
+            if (store.findEligibility(userId).isPresent()) {
+                throw versionConflict();
+            }
+            throw notFound();
+        });
     }
 
     @Transactional(readOnly = true)

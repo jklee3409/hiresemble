@@ -18,6 +18,7 @@ import com.hiresemble.job.application.model.JobAnalysisModels.EvidenceUsage;
 import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSnapshot;
 import com.hiresemble.job.application.model.JobAnalysisModels.PersistJobAnalysis;
 import com.hiresemble.job.application.model.JobAnalysisModels.RequirementItem;
+import com.hiresemble.job.domain.CriterionSupportType;
 import com.hiresemble.job.domain.Eligibility;
 import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.JobAnalysisEvidenceUsageType;
@@ -65,6 +66,89 @@ class JobAnalysisIntegrationTest extends PostgresIntegrationTest {
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "1h");
         registry.add("hiresemble.job-deadline-scheduler.cron", () -> "0 0 0 1 1 *");
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
+    }
+
+    @Test
+    void structuredEducationProvenancePersistsAndProfileChangeInvalidatesReuse() throws Exception {
+        Session owner = authenticated("analysis-education-owner@example.com");
+        JsonNode education = json(mockMvc.perform(post("/api/v1/profile/educations")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"schoolName":"Owner University","major":"Computer Science",
+                                 "degree":"Bachelor","educationLevel":"BACHELOR",
+                                 "educationStatus":"EXPECTED_GRADUATION","admissionDate":"2022-03-01",
+                                 "graduationDate":"2026-08-25","gpa":null,"gpaScale":null,
+                                 "description":null}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn());
+        UUID jobId = manualJob(owner, "analysis-education-job", "analysis/education");
+        UUID runId = UUID.fromString(json(analyze(
+                        owner, jobId, 0, "ECONOMY", false, "analysis-education-run", 202))
+                .get("agentRunId").asText());
+        JobAnalysisSnapshot snapshot =
+                analysisService.loadSnapshot(owner.userId(), jobId, 0, AiQualityMode.ECONOMY, null);
+        var educationFact = snapshot.profile().structuredFacts().stream()
+                .filter(value -> value.factType().name().equals("PRIMARY_EDUCATION"))
+                .findFirst()
+                .orElseThrow();
+        var requirement = new RequirementItem(
+                FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
+                "4년제 대학 졸업 또는 졸업 예정",
+                true,
+                "지원 자격");
+        markRunning(runId);
+        var persisted = analysisService.persist(
+                owner.userId(),
+                runId,
+                new PersistJobAnalysis(
+                        snapshot.jobId(), snapshot.jobVersion(), snapshot.jobContentHash(),
+                        snapshot.profileSnapshotHash(), snapshot.evidenceSnapshotHash(),
+                        snapshot.contextHash(), snapshot.qualityMode(), Eligibility.ELIGIBLE,
+                        List.of(new CriterionDraft(
+                                FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
+                                requirement.text(), MatchLevel.MATCHED,
+                                "구조화된 대표 학력이 학사 졸업 예정 조건과 일치합니다.",
+                                requirement.sourceLocation(), List.of(),
+                                List.of(educationFact.reference()), CriterionSupportType.EDUCATION)),
+                        List.of(), List.of(requirement), List.of(), List.of(), List.of(),
+                        List.of(), List.of(), "구조화된 학력 기준 분석입니다."));
+
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT fact_type || ':' || source_entity_id::text || ':' || source_entity_version
+                        FROM job_analysis_structured_fact_links
+                        WHERE user_id=? AND job_analysis_id=? AND usage_type='CRITERION_MATCH'
+                        """,
+                        String.class,
+                        owner.userId(),
+                        persisted.summary().id()))
+                .isEqualTo("PRIMARY_EDUCATION:" + education.get("id").asText() + ":1");
+
+        mockMvc.perform(put("/api/v1/profile/educations/" + education.get("id").asText())
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"schoolName":"Owner Graduate School","major":"Computer Science",
+                                 "degree":"Master","educationLevel":"MASTER",
+                                 "educationStatus":"GRADUATED","admissionDate":"2022-03-01",
+                                 "graduationDate":"2026-08-26","gpa":null,"gpaScale":null,
+                                 "description":null,"version":1}
+                                """))
+                .andExpect(status().isOk());
+
+        JobAnalysisSnapshot changed =
+                analysisService.loadSnapshot(owner.userId(), jobId, 0, AiQualityMode.ECONOMY, null);
+        assertThat(changed.profileSnapshotHash()).isNotEqualTo(snapshot.profileSnapshotHash());
+        assertThat(changed.contextHash()).isNotEqualTo(snapshot.contextHash());
+        assertThat(changed.reusableAnalysisId()).isNull();
+        mockMvc.perform(get("/api/v1/jobs/" + jobId + "/analyses/latest").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.analysisOutdated").value(true))
+                .andExpect(jsonPath("$.outdatedReasons[0]").value("PROFILE_CHANGED"));
     }
 
     @Test

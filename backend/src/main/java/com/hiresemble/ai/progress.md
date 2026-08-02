@@ -4,6 +4,20 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-02] Session Summary (JOB_ANALYSIS support type·구조화 fact 검증)
+
+- What was done:
+  - requirement section/category/support type을 분리하고 학력·자격증·어학·자기신고·근무일의 positive support compatibility를 서버에서 검증했다.
+  - structured outputs에 allowlisted fact reference를 추가하고 prompt v4/output schema v3로 checkpoint 계약을 갱신했다.
+- Key decisions:
+  - 학력은 대표 학력 fact만, 자격증은 `CERTIFICATION`, 어학은 `LANGUAGE_SCORE`, 자기신고는 해당 explicit fact만 positive support로 허용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow·strict structured output·contract 집중 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (공고 image workflow v3·Provider parity)
 
 - What was done:

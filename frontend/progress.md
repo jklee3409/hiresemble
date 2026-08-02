@@ -7,6 +7,19 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-02] Session Summary (지원 자격 확인 정보 입력)
+
+- What was done:
+  - 기존 프로필 화면에 근무 가능일·병역·해외여행·채용 결격 자기신고 입력 영역과 additive typed API client를 추가했다.
+- Key decisions:
+  - 공고 분석 결과 UI와 기존 profile form은 유지하고 별도 version/mutation 경계의 작은 form만 추가했다.
+- Issues encountered:
+  - 최초 check에서 formatting과 API mock 누락이 발견되어 최소 수정 후 재검증했다.
+- Validation:
+  - `corepack pnpm check`가 67 files/269 tests, typecheck, build, formatting까지 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 결과 문구·내부 경로 보정)
 
 - What was done:

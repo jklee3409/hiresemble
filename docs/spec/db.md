@@ -123,6 +123,8 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 `profile_completed`는 입력 column이 아니라 다음 항목의 계산 projection이다: legal name, 각 희망 배열 1개 이상, active primary education 1개. 다섯 항목을 모두 충족하면 true이고 `completion_percent`는 충족 항목 수×20이다. 필요하면 transactionally maintained projection을 쓰되 같은 계산 규칙을 사용한다.
 
+`profile_eligibility_declarations`: 사용자별 1:1 row로 `id,user_id UNIQUE`, `work_available_date date NULL`, `military_status`, `overseas_travel_eligibility`, `employment_disqualification_status`, `version`, timestamps를 가진다. 신규·기존 사용자 모두 세 enum을 `UNSPECIFIED`로 안전하게 초기화하며 owner scope와 optimistic version을 적용한다.
+
 ### 3.3 구조화 프로필 table
 
 모두 `id,user_id,version,created_at,updated_at,deleted_at NULL`, `UNIQUE(user_id,id)`와 user FK를 가진다. 일반 목록과 최종 학력은 `deleted_at IS NULL` row만 사용하며, 직접 evidence 동기화는 학력을 제외한 자격증·어학·수상·경력·대외활동의 active row에만 적용한다.
@@ -225,6 +227,8 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 `job_analysis_score_criteria`: `id,user_id,job_analysis_id,category,criterion varchar(2000)`, `weight numeric(5,2) CHECK 0..100`, `match_level`, `score numeric(5,2) CHECK 0..weight`, `explanation varchar(2000)`, `source_location varchar(500) NULL`.
 
 `job_analysis_evidence_links`: `id,user_id,job_analysis_id,score_criterion_id NULL,profile_evidence_id,usage_type,created_at`; 모든 복합 FK. requirements·strength/gap snapshot JSON은 display용이고 provenance 원천은 link다.
+
+`job_analysis_structured_fact_links`: `id,user_id,job_analysis_id,score_criterion_id NULL,source_entity_id,source_entity_version,fact_type,fact_hash,usage_type,created_at`. `PRIMARY_EDUCATION`, `EXPECTED_GRADUATION_DATE`, `WORK_AVAILABLE_DATE`, `MILITARY_STATUS`, `OVERSEAS_TRAVEL_ELIGIBILITY`, `EMPLOYMENT_DISQUALIFICATION_STATUS` provenance만 저장한다. 기존 evidence link 의미를 확장하지 않으며 analysis seal 이후 immutable이다.
 
 가중치는 40/30/15/10/5이며 `Eligibility`와 점수는 별도다. 성공한 analysis는 criterion을 최소 1개 가지며 criterion을 추출하지 못하면 analysis row 없이 run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. stale 여부·reason은 저장 enum이 아니라 current hash 비교 projection이다.
 

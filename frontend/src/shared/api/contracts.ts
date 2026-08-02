@@ -100,6 +100,26 @@ export interface ProfileWrite {
   version: number
 }
 
+export type MilitaryStatus =
+  'COMPLETED' | 'EXEMPT' | 'NOT_APPLICABLE' | 'NOT_COMPLETED' | 'UNSPECIFIED'
+export type OverseasTravelEligibility = 'ELIGIBLE' | 'RESTRICTED' | 'UNSPECIFIED'
+export type EmploymentDisqualificationStatus = 'NONE_DECLARED' | 'HAS_RESTRICTION' | 'UNSPECIFIED'
+
+export interface ProfileEligibilityDto extends VersionedProfileResource {
+  workAvailableDate: string | null
+  militaryStatus: MilitaryStatus
+  overseasTravelEligibility: OverseasTravelEligibility
+  employmentDisqualificationStatus: EmploymentDisqualificationStatus
+}
+
+export interface ProfileEligibilityWrite {
+  workAvailableDate: string | null
+  militaryStatus: MilitaryStatus
+  overseasTravelEligibility: OverseasTravelEligibility
+  employmentDisqualificationStatus: EmploymentDisqualificationStatus
+  version: number
+}
+
 interface VersionedProfileResource {
   id: string
   version: number

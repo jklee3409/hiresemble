@@ -41,14 +41,17 @@ import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSummary
 import com.hiresemble.job.application.model.JobAnalysisModels.PersistJobAnalysis;
 import com.hiresemble.job.application.model.JobAnalysisModels.ProfileContext;
 import com.hiresemble.job.application.model.JobAnalysisModels.RetrievedVerifiedEvidence;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredProfileFact;
 import com.hiresemble.job.application.model.JobAnalysisModels.VerifiedEvidence;
 import com.hiresemble.job.application.port.JobAnalysisCommandPort;
 import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort;
 import com.hiresemble.job.application.port.JobAnalysisQueryPort;
 import com.hiresemble.job.domain.Eligibility;
+import com.hiresemble.job.domain.CriterionSupportType;
 import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.JobFitScoringPolicy;
 import com.hiresemble.job.domain.MatchLevel;
+import com.hiresemble.job.domain.StructuredProfileFactType;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import java.math.BigDecimal;
@@ -172,7 +175,7 @@ class JobAnalysisWorkflowTest {
     void zeroCriterionFailsSafelyWithoutPersistence() {
         Fixture fixture = fixture(false, true);
         fixture.chat.enqueue(new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v2",
+                "job-analysis-requirements-output-v3",
                 List.of()));
 
         assertThatThrownBy(() -> execute(fixture))
@@ -284,7 +287,7 @@ class JobAnalysisWorkflowTest {
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         ProviderRequirementsOutput provider = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v2",
+                "job-analysis-requirements-output-v3",
                 List.of(new ProviderRequirementCandidate(
                         RequirementSection.REQUIRED_QUALIFICATION,
                         FitCriterionCategory.REQUIRED_QUALIFICATION,
@@ -324,7 +327,7 @@ class JobAnalysisWorkflowTest {
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         ProviderRequirementsOutput invalidCategory = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v2",
+                "job-analysis-requirements-output-v3",
                 List.of(new ProviderRequirementCandidate(
                         RequirementSection.RESPONSIBILITY,
                         FitCriterionCategory.PREFERRED_QUALIFICATION,
@@ -332,7 +335,7 @@ class JobAnalysisWorkflowTest {
                         true,
                         null)));
         ProviderRequirementsOutput invalidRequired = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v2",
+                "job-analysis-requirements-output-v3",
                 List.of(new ProviderRequirementCandidate(
                         RequirementSection.PREFERRED_QUALIFICATION,
                         FitCriterionCategory.PREFERRED_QUALIFICATION,
@@ -350,6 +353,52 @@ class JobAnalysisWorkflowTest {
                 context,
                 invalidRequired,
                 "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID");
+        ProviderRequirementsOutput downgradedCertification = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v3",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.PREFERRED_QUALIFICATION,
+                        FitCriterionCategory.PREFERRED_QUALIFICATION,
+                        "ADSP 자격증 보유자 우대",
+                        false,
+                        "우대 사항",
+                        CriterionSupportType.GENERAL)));
+        assertRepairableFailure(
+                executor,
+                context,
+                downgradedCertification,
+                "JOB_ANALYSIS_REQUIREMENT_SUPPORT_TYPE_INVALID");
+
+        ProviderRequirementsOutput preferredEducation = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v3",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.PREFERRED_QUALIFICATION,
+                        FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
+                        "학사 학위 보유자 우대",
+                        false,
+                        "우대 사항",
+                        CriterionSupportType.EDUCATION)));
+        assertThat(validate(executor, json(preferredEducation), context))
+                .isEqualTo(preferredEducation);
+
+        ProviderRequirementsOutput splitItSkillAndCertification = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v3",
+                List.of(
+                        new ProviderRequirementCandidate(
+                                RequirementSection.PREFERRED_QUALIFICATION,
+                                FitCriterionCategory.PREFERRED_QUALIFICATION,
+                                "IT 및 디지털 역량 보유자 우대",
+                                false,
+                                "우대 사항",
+                                CriterionSupportType.EXPERIENCE_OR_SKILL),
+                        new ProviderRequirementCandidate(
+                                RequirementSection.PREFERRED_QUALIFICATION,
+                                FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
+                                "ADSP 등 관련 자격증 보유",
+                                false,
+                                "우대 사항",
+                                CriterionSupportType.CERTIFICATION)));
+        assertThat(validate(executor, json(splitItSkillAndCertification), context))
+                .isEqualTo(splitItSkillAndCertification);
     }
 
     @Test
@@ -362,7 +411,7 @@ class JobAnalysisWorkflowTest {
                 executor,
                 context,
                 new ProviderRequirementsOutput(
-                        "job-analysis-requirements-output-v2",
+                        "job-analysis-requirements-output-v3",
                         List.of(new ProviderRequirementCandidate(
                                 RequirementSection.REQUIRED_QUALIFICATION,
                                 FitCriterionCategory.REQUIRED_QUALIFICATION,
@@ -407,7 +456,7 @@ class JobAnalysisWorkflowTest {
                 requirements(),
                 eligibility(Eligibility.UNKNOWN),
                 new ProviderMatchOutput(
-                        "job-analysis-match-output-v2",
+                        "job-analysis-match-output-v3",
                         List.of(
                                 new ProviderMatchedCriterion(
                                         0,
@@ -437,7 +486,7 @@ class JobAnalysisWorkflowTest {
                 requirements(),
                 eligibility(Eligibility.ELIGIBLE, matchedWithReason.evidence.id()),
                 new ProviderMatchOutput(
-                        "job-analysis-match-output-v2",
+                        "job-analysis-match-output-v3",
                         List.of(
                                 new ProviderMatchedCriterion(
                                         0,
@@ -462,6 +511,187 @@ class JobAnalysisWorkflowTest {
                     assertThat(failure.correctionGuidance())
                             .doesNotContain("must be private");
                 });
+    }
+
+    @Test
+    void certificationAndLanguageCriteriaRejectIncompatibleCareerEvidence() {
+        for (CriterionSupportType supportType : List.of(
+                CriterionSupportType.CERTIFICATION, CriterionSupportType.LANGUAGE)) {
+            Fixture fixture = fixture(false, false);
+            fixture.chat.enqueue(
+                    singleRequirement(supportType),
+                    eligibility(Eligibility.UNKNOWN),
+                    singleEvidenceMatch(fixture.evidence.id()));
+
+            assertThatThrownBy(() -> execute(fixture))
+                    .isInstanceOfSatisfying(AiExecutionException.class, failure ->
+                            assertThat(failure.safeCode())
+                                    .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+        }
+    }
+
+    @Test
+    void certificationCriterionAcceptsOnlyCertificationEvidence() {
+        Fixture fixture = fixture(false, false, EvidenceSourceType.CERTIFICATION, List.of());
+        fixture.chat.enqueue(
+                singleRequirement(CriterionSupportType.CERTIFICATION),
+                eligibility(Eligibility.UNKNOWN),
+                singleEvidenceMatch(fixture.evidence.id()));
+
+        execute(fixture);
+
+        assertThat(fixture.command.persisted.criteria()).singleElement().satisfies(criterion -> {
+            assertThat(criterion.matchLevel()).isEqualTo(MatchLevel.MATCHED);
+            assertThat(criterion.evidenceIds()).containsExactly(fixture.evidence.id());
+            assertThat(criterion.structuredFactRefs()).isEmpty();
+        });
+    }
+
+    @Test
+    void educationCriterionUsesAllowlistedPrimaryEducationFactWithoutCareerEvidence() {
+        StructuredProfileFact education = new StructuredProfileFact(
+                "PROFILE_FACT:PRIMARY_EDUCATION",
+                StructuredProfileFactType.PRIMARY_EDUCATION,
+                UUID.randomUUID(),
+                2L,
+                "educationLevel=BACHELOR;educationStatus=EXPECTED_GRADUATION;graduationDate=2026-08-25;primary=true",
+                false,
+                "f".repeat(64));
+        Fixture fixture = fixture(false, false, EvidenceSourceType.CAREER, List.of(education));
+        fixture.chat.enqueue(
+                singleRequirement(CriterionSupportType.EDUCATION),
+                eligibility(Eligibility.UNKNOWN),
+                new ProviderMatchOutput(
+                        "job-analysis-match-output-v3",
+                        List.of(new ProviderMatchedCriterion(
+                                0,
+                                MatchLevel.MATCHED,
+                                List.of(),
+                                List.of(education.reference()),
+                                "구조화된 대표 학력이 학사 졸업 예정 조건과 일치합니다.",
+                                null)),
+                        List.of(),
+                        List.of(),
+                        "대표 학력을 기준으로 공고 조건을 확인했습니다."));
+
+        execute(fixture);
+
+        assertThat(fixture.chat.requests.get(1).input().toString())
+                .contains("PRIMARY_EDUCATION", education.reference());
+        assertThat(fixture.chat.requests.get(2).input().toString())
+                .contains("PRIMARY_EDUCATION", education.reference());
+        assertThat(fixture.command.persisted.criteria()).singleElement().satisfies(criterion -> {
+            assertThat(criterion.evidenceIds()).isEmpty();
+            assertThat(criterion.structuredFactRefs()).containsExactly(education.reference());
+        });
+    }
+
+    @Test
+    void expectedGraduationDateCannotBecomeConfirmedWorkAvailability() {
+        StructuredProfileFact expectedGraduation = new StructuredProfileFact(
+                "PROFILE_FACT:EXPECTED_GRADUATION_DATE",
+                StructuredProfileFactType.EXPECTED_GRADUATION_DATE,
+                UUID.randomUUID(),
+                3L,
+                "2026-08-25",
+                false,
+                "1".repeat(64));
+        Fixture invalid = fixture(false, false, EvidenceSourceType.CAREER, List.of(expectedGraduation));
+        invalid.chat.enqueue(
+                singleRequirement(CriterionSupportType.WORK_AVAILABLE_DATE),
+                eligibilityWithFact(
+                        Eligibility.CONDITIONAL,
+                        expectedGraduation.reference(),
+                        "졸업 예정일은 확인되지만 정확한 근무 가능일은 별도 확인이 필요함"),
+                singleFactMatch(
+                        expectedGraduation.reference(),
+                        MatchLevel.MATCHED,
+                        "졸업 예정일을 근무 가능일로 확인했습니다."));
+        assertThatThrownBy(() -> execute(invalid))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
+                        assertThat(failure.safeCode())
+                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+
+        Fixture conservative = fixture(
+                false, false, EvidenceSourceType.CAREER, List.of(expectedGraduation));
+        conservative.chat.enqueue(
+                singleRequirement(CriterionSupportType.WORK_AVAILABLE_DATE),
+                eligibilityWithFact(
+                        Eligibility.CONDITIONAL,
+                        expectedGraduation.reference(),
+                        "졸업 예정일은 확인되지만 정확한 근무 가능일은 별도 확인이 필요함"),
+                singleFactMatch(
+                        expectedGraduation.reference(),
+                        MatchLevel.PARTIAL,
+                        "졸업 예정일은 확인되지만 정확한 근무 가능일은 별도 확인이 필요함"));
+        execute(conservative);
+        assertThat(conservative.command.persisted.criteria().getFirst().matchLevel())
+                .isEqualTo(MatchLevel.PARTIAL);
+    }
+
+    @Test
+    void explicitWorkAvailableDateMustMeetRequiredDate() {
+        StructuredProfileFact available = new StructuredProfileFact(
+                "PROFILE_FACT:WORK_AVAILABLE_DATE",
+                StructuredProfileFactType.WORK_AVAILABLE_DATE,
+                UUID.randomUUID(),
+                1L,
+                "2026-08-25",
+                true,
+                "3".repeat(64));
+        Fixture matching = fixture(false, false, EvidenceSourceType.CAREER, List.of(available));
+        matching.chat.enqueue(
+                singleRequirement(CriterionSupportType.WORK_AVAILABLE_DATE),
+                eligibilityWithFact(
+                        Eligibility.ELIGIBLE,
+                        available.reference(),
+                        "사용자 입력 기준 근무 가능일이 요구일 이전입니다."),
+                singleFactMatch(
+                        available.reference(),
+                        MatchLevel.MATCHED,
+                        "사용자 입력 기준 근무 가능일이 요구일 이전입니다."));
+        execute(matching);
+        assertThat(matching.command.persisted.criteria().getFirst().matchLevel())
+                .isEqualTo(MatchLevel.MATCHED);
+
+        StructuredProfileFact late = new StructuredProfileFact(
+                available.reference(), available.factType(), available.sourceEntityId(), 2L,
+                "2026-09-01", true, "4".repeat(64));
+        Fixture invalid = fixture(false, false, EvidenceSourceType.CAREER, List.of(late));
+        invalid.chat.enqueue(
+                singleRequirement(CriterionSupportType.WORK_AVAILABLE_DATE),
+                eligibility(Eligibility.UNKNOWN),
+                singleFactMatch(
+                        late.reference(),
+                        MatchLevel.MATCHED,
+                        "사용자 입력 기준 근무 가능일이 요구일 이전입니다."));
+        assertThatThrownBy(() -> execute(invalid))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
+                        assertThat(failure.safeCode())
+                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
+    }
+
+    @Test
+    void unspecifiedSelfReportCannotSupportPositiveMatch() {
+        StructuredProfileFact military = new StructuredProfileFact(
+                "PROFILE_FACT:MILITARY_STATUS",
+                StructuredProfileFactType.MILITARY_STATUS,
+                UUID.randomUUID(),
+                0L,
+                "UNSPECIFIED",
+                true,
+                "2".repeat(64));
+        Fixture fixture = fixture(false, false, EvidenceSourceType.CAREER, List.of(military));
+        fixture.chat.enqueue(
+                singleRequirement(CriterionSupportType.MILITARY_STATUS),
+                eligibility(Eligibility.UNKNOWN),
+                singleFactMatch(
+                        military.reference(), MatchLevel.MATCHED, "사용자 입력 기준 병역 조건을 충족합니다."));
+
+        assertThatThrownBy(() -> execute(fixture))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
+                        assertThat(failure.safeCode())
+                                .isEqualTo("JOB_ANALYSIS_SUPPORT_COMPATIBILITY_INVALID"));
     }
 
     private ExecutionResult execute(Fixture fixture) {
@@ -612,6 +842,14 @@ class JobAnalysisWorkflowTest {
     }
 
     private Fixture fixture(boolean reusable, boolean noSearchResults) {
+        return fixture(reusable, noSearchResults, EvidenceSourceType.CAREER, List.of());
+    }
+
+    private Fixture fixture(
+            boolean reusable,
+            boolean noSearchResults,
+            EvidenceSourceType sourceType,
+            List<StructuredProfileFact> structuredFacts) {
         UUID userId = UUID.randomUUID();
         UUID jobId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
@@ -619,7 +857,7 @@ class JobAnalysisWorkflowTest {
         UUID reusableId = reusable ? UUID.randomUUID() : null;
         VerifiedEvidence evidence = new VerifiedEvidence(
                 evidenceId,
-                EvidenceSourceType.MANUAL,
+                sourceType,
                 null,
                 null,
                 "CAREER",
@@ -652,7 +890,8 @@ class JobAnalysisWorkflowTest {
                         List.of("Backend"),
                         List.of("Software"),
                         List.of("Seoul"),
-                        null),
+                        null,
+                        structuredFacts),
                 List.of(evidence),
                 PROFILE_HASH,
                 EVIDENCE_HASH,
@@ -793,7 +1032,7 @@ class JobAnalysisWorkflowTest {
 
     private ProviderRequirementsOutput requirements() {
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v2",
+                "job-analysis-requirements-output-v3",
                 List.of(
                         new ProviderRequirementCandidate(
                                 RequirementSection.REQUIRED_QUALIFICATION,
@@ -809,18 +1048,84 @@ class JobAnalysisWorkflowTest {
                                 "주요 업무")));
     }
 
+    private ProviderRequirementsOutput singleRequirement(CriterionSupportType supportType) {
+        FitCriterionCategory category = switch (supportType) {
+            case EDUCATION, CERTIFICATION, LANGUAGE ->
+                    FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE;
+            default -> FitCriterionCategory.REQUIRED_QUALIFICATION;
+        };
+        String text = switch (supportType) {
+            case EDUCATION -> "국내외 4년제 대학 졸업자 또는 졸업 예정자";
+            case CERTIFICATION -> "ADSP 자격증 보유";
+            case LANGUAGE -> "TOEIC 800점 이상";
+            default -> "관련 경험 보유";
+        };
+        return new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v3",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.REQUIRED_QUALIFICATION,
+                        category,
+                        text,
+                        true,
+                        "지원 자격",
+                        supportType,
+                        supportType == CriterionSupportType.WORK_AVAILABLE_DATE
+                                ? java.time.LocalDate.parse("2026-08-31")
+                                : null)));
+    }
+
+    private ProviderMatchOutput singleEvidenceMatch(UUID evidenceId) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v3",
+                List.of(new ProviderMatchedCriterion(
+                        0,
+                        MatchLevel.MATCHED,
+                        List.of(evidenceId),
+                        "등록된 근거가 공고 조건과 일치합니다.",
+                        null)),
+                List.of(),
+                List.of(),
+                "등록된 근거를 기준으로 공고 조건을 확인했습니다.");
+    }
+
+    private ProviderMatchOutput singleFactMatch(
+            String factReference, MatchLevel matchLevel, String explanation) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v3",
+                List.of(new ProviderMatchedCriterion(
+                        0,
+                        matchLevel,
+                        List.of(),
+                        List.of(factReference),
+                        explanation,
+                        null)),
+                List.of(),
+                List.of(),
+                "구조화된 프로필 정보를 기준으로 공고 조건을 확인했습니다.");
+    }
+
     private ProviderEligibilityOutput eligibility(
             Eligibility eligibility, UUID... evidenceIds) {
         return new ProviderEligibilityOutput(
-                "job-analysis-eligibility-output-v2",
+                "job-analysis-eligibility-output-v3",
                 eligibility,
                 List.of(evidenceIds),
                 "필수 지원 자격을 별도로 검토했습니다.");
     }
 
+    private ProviderEligibilityOutput eligibilityWithFact(
+            Eligibility eligibility, String factReference, String explanation) {
+        return new ProviderEligibilityOutput(
+                "job-analysis-eligibility-output-v3",
+                eligibility,
+                List.of(),
+                List.of(factReference),
+                explanation);
+    }
+
     private ProviderMatchOutput matchedAll(UUID evidenceId) {
         return new ProviderMatchOutput(
-                "job-analysis-match-output-v2",
+                "job-analysis-match-output-v3",
                 List.of(
                         new ProviderMatchedCriterion(
                                 0,
@@ -842,7 +1147,7 @@ class JobAnalysisWorkflowTest {
 
     private ProviderMatchOutput missingAll() {
         return new ProviderMatchOutput(
-                "job-analysis-match-output-v2",
+                "job-analysis-match-output-v3",
                 List.of(
                         new ProviderMatchedCriterion(
                                 0,
@@ -865,7 +1170,7 @@ class JobAnalysisWorkflowTest {
 
     private ProviderMatchOutput partiallyMatched(UUID evidenceId) {
         return new ProviderMatchOutput(
-                "job-analysis-match-output-v2",
+                "job-analysis-match-output-v3",
                 List.of(
                         new ProviderMatchedCriterion(
                                 0,

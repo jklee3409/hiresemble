@@ -116,6 +116,51 @@ class DashboardMigrationTest {
                 .isEqualTo(4);
     }
 
+    @Test
+    void emptyDatabaseAndPopulatedV18UpgradeCreateEligibilityAndFactProvenance() throws Exception {
+        Flyway empty = flyway("19");
+        assertThat(empty.migrate().success).isTrue();
+        assertThat(empty.validateWithResult().validationSuccessful).isTrue();
+        assertThat(queryLong("""
+                SELECT count(*) FROM information_schema.tables
+                WHERE table_schema='public' AND table_name IN (
+                    'profile_eligibility_declarations',
+                    'job_analysis_structured_fact_links'
+                )
+                """)).isEqualTo(2);
+
+        flyway("19").clean();
+        assertThat(flyway("18").migrate().success).isTrue();
+        execute("""
+                INSERT INTO users (
+                    id,email,password_hash,display_name,role,status,terms_agreed_at,
+                    ai_consent_at,last_login_at,withdrawn_at,created_at,updated_at
+                ) VALUES (
+                    '19000000-0000-4000-8000-000000000100',
+                    'v19-upgrade@example.com','hash','V19 User','USER','ACTIVE',
+                    now(),now(),NULL,NULL,now(),now()
+                );
+                INSERT INTO user_profiles (
+                    id,user_id,legal_name,introduction,desired_roles,desired_industries,
+                    desired_locations,expected_graduation_date,version,created_at,updated_at
+                ) VALUES (
+                    '19000000-0000-4000-8000-000000000101',
+                    '19000000-0000-4000-8000-000000000100',NULL,NULL,'[]','[]','[]',NULL,0,now(),now()
+                );
+                """);
+
+        Flyway upgraded = flyway("19");
+        assertThat(upgraded.migrate().success).isTrue();
+        assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+        assertThat(queryLong("""
+                SELECT count(*) FROM profile_eligibility_declarations
+                WHERE user_id='19000000-0000-4000-8000-000000000100'
+                  AND military_status='UNSPECIFIED'
+                  AND overseas_travel_eligibility='UNSPECIFIED'
+                  AND employment_disqualification_status='UNSPECIFIED'
+                """)).isEqualTo(1);
+    }
+
     private void execute(String sql) throws Exception {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             statement.execute(sql);

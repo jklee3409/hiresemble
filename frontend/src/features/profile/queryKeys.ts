@@ -4,6 +4,9 @@ export const profileQueryKeys = {
   profile(userId: string) {
     return ['user', userId, 'profile'] as const
   },
+  eligibility(userId: string) {
+    return ['user', userId, 'profile', 'eligibility'] as const
+  },
   educations(userId: string, filters: PageParams) {
     return ['user', userId, 'profile', 'educations', filters] as const
   },

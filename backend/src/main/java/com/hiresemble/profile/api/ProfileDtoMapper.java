@@ -6,6 +6,7 @@ import com.hiresemble.profile.api.dto.ProfileDtos.ActivityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CareerDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.CertificationDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EducationDto;
+import com.hiresemble.profile.api.dto.ProfileDtos.ProfileEligibilityDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.EvidenceDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.LanguageScoreDto;
 import com.hiresemble.profile.api.dto.ProfileDtos.ProfileDto;
@@ -14,6 +15,7 @@ import com.hiresemble.profile.domain.model.ProfileRecords.ActivityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CareerRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.CertificationRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.EducationRecord;
+import com.hiresemble.profile.domain.model.ProfileRecords.ProfileEligibilityRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.LanguageScoreRecord;
 import com.hiresemble.profile.domain.model.ProfileRecords.PageSlice;
@@ -46,6 +48,18 @@ final class ProfileDtoMapper {
                 value.educationStatus(), value.admissionDate(), value.graduationDate(), value.gpa(),
                 value.gpaScale(), value.primary(), value.description(), value.version(),
                 value.createdAt(), value.updatedAt());
+    }
+
+    static ProfileEligibilityDto eligibility(ProfileEligibilityRecord value) {
+        return new ProfileEligibilityDto(
+                value.id(),
+                value.workAvailableDate(),
+                value.militaryStatus(),
+                value.overseasTravelEligibility(),
+                value.employmentDisqualificationStatus(),
+                value.version(),
+                value.createdAt(),
+                value.updatedAt());
     }
 
     static CertificationDto certification(CertificationRecord value) {

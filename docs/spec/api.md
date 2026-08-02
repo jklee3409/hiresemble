@@ -10,7 +10,7 @@
 
 이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다.
 
-현재 implemented baseline은 68 paths/92 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 새 미래 경계는 13장에 phase와 `PLANNED`를 명시한다.
+현재 implemented baseline은 69 paths/94 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 새 미래 경계는 13장에 phase와 `PLANNED`를 명시한다.
 
 ## 1. 공통 HTTP 계약
 
@@ -274,6 +274,7 @@ signup은 `/onboarding`으로 이동한다. 이후 route는 `profileCompleted=fa
 공통 write schema:
 
 - `ProfileWrite`: `legalName:string? 1..100`, `introduction:string? <=2000`, 세 희망 배열 `string[0..10]` 각 항목 1..100·중복 금지, `expectedGraduationDate:LocalDate?`, `version:long`.
+- `ProfileEligibilityWrite`: `workAvailableDate:LocalDate?`, `militaryStatus:COMPLETED|EXEMPT|NOT_APPLICABLE|NOT_COMPLETED|UNSPECIFIED`, `overseasTravelEligibility:ELIGIBLE|RESTRICTED|UNSPECIFIED`, `employmentDisqualificationStatus:NONE_DECLARED|HAS_RESTRICTION|UNSPECIFIED`, `version:long >=0`.
 - `EducationWrite`: `schoolName`, `major`, `degree`, `educationLevel`, `educationStatus`, 두 날짜, `gpa`, `gpaScale`, `description`를 `EducationDto`와 같은 nullability·상한으로 받고 날짜 순서와 `gpa<=gpaScale`을 검증한다. `isPrimary`는 request로 받지 않고 mutation 뒤 서버가 최종 학력을 계산한다.
 - `CertificationWrite`: `name`, `issuer`, `credentialNumber`, `acquiredDate`, `expiresAt`, `description`, `evidenceDocumentId`를 `CertificationDto`와 같은 nullability·상한으로 받는다.
 - `LanguageScoreWrite`: `testName`, `score`, `grade`, `testedAt`, `expiresAt`, `evidenceDocumentId`를 `LanguageScoreDto`와 같은 nullability·상한으로 받는다.
@@ -286,6 +287,8 @@ signup은 `/onboarding`으로 이동한다. 이후 route는 `profileCompleted=fa
 | --------------------------------------------------- | ----------------------------------------------------------- | ------------- | ------------------------------------ | --------------- |
 | `GET /profile`                                      | 없음                                                        | 없음          | 200 `ProfileDto`                     | 401             |
 | `PUT /profile`                                      | `ProfileWrite`                                              | body version  | 200 `ProfileDto`                     | 400/401/403/409 |
+| `GET /profile/eligibility`                          | 없음                                                        | 없음          | 200 `ProfileEligibilityDto`          | 400/401/404         |
+| `PUT /profile/eligibility`                          | `ProfileEligibilityWrite`                                  | body version  | 200 `ProfileEligibilityDto`          | 400/401/403/404/409 |
 | `GET /profile/educations`                           | page,size; sort `createdAt,desc` 또는 `graduationDate,desc` | 없음          | 200 `PageResponse<EducationDto>`     | 400/401         |
 | `POST /profile/educations`                          | `EducationWrite`                                            | 없음          | 201 `EducationDto`                   | 400/401/403/409 |
 | `PUT /profile/educations/{educationId}`             | `EducationWrite`                                            | body version  | 200 `EducationDto`                   | 400/404/409     |
@@ -457,7 +460,7 @@ commit마다 stateVersion을 증가시키고 event ID로 사용한다. heartbeat
 
 ## 13. Planned future contracts
 
-다음 API는 현재 68 paths/92 operations에 포함되지 않는다. 각 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
+다음 API는 현재 69 paths/94 operations에 포함되지 않는다. 각 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
 
 ### 13.1 사용자 사용량 (`PLANNED` P8.6~P8.7)
 

@@ -4,6 +4,19 @@
 
 Flyway 단계별 보존과 최신 V18 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
 
+## [2026-08-02] Session Summary (V19 fresh·V18 upgrade 검증)
+
+- What was done:
+  - 빈 DB V1→V19 적용과 기존 populated V18 schema의 V19 upgrade fixture를 추가했다.
+- Key decisions:
+  - 이전 migration fingerprint·내용은 그대로 두고 V19 생성물과 기본값만 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `DashboardMigrationTest.emptyDatabaseAndPopulatedV18UpgradeCreateEligibilityAndFactProvenance`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (V18 장문 Guide 안전 update 검증)
 
 - What was done:

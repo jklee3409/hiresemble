@@ -4,6 +4,19 @@
 
 P2 프로필 HTTP·transaction 통합 테스트가 구현되어 있다.
 
+## [2026-08-02] Session Summary (대표 학력·지원 자격 owner scope 회귀)
+
+- What was done:
+  - 대표 학력과 지원 자격 snapshot, 타 사용자 격리, eligibility API version/validation 회귀를 추가했다.
+- Key decisions:
+  - 실제 application/service/store 경계를 통과하는 owner-scoped fixture로 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `*ProfileAnalysis*`와 Profile 통합 집중 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (대외활동 CRUD·소재 후보 회귀)
 
 - What was done:

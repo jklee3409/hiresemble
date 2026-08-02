@@ -2,6 +2,8 @@ package com.hiresemble.job.domain;
 
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisEvidence;
+import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisEducation;
+import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisEligibility;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisProfileSnapshot;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -16,7 +18,7 @@ public final class JobAnalysisHashing {
 
     public static String profileHash(UUID userId, AnalysisProfileSnapshot profile) {
         StringBuilder canonical = new StringBuilder()
-                .append("profile-v1|")
+                .append("profile-v2|")
                 .append(userId).append('|')
                 .append(profile.profileId()).append('|')
                 .append(profile.version()).append('|')
@@ -24,8 +26,26 @@ public final class JobAnalysisHashing {
                 .append(sorted(profile.desiredRoles())).append('|')
                 .append(sorted(profile.desiredIndustries())).append('|')
                 .append(sorted(profile.desiredLocations())).append('|')
-                .append(nullSafe(profile.expectedGraduationDate()));
+                .append(nullSafe(profile.expectedGraduationDate())).append('|')
+                .append(education(profile.primaryEducation())).append('|')
+                .append(eligibility(profile.eligibility()));
         return sha256(canonical.toString());
+    }
+
+    public static String structuredFactHash(
+            UUID userId,
+            StructuredProfileFactType factType,
+            UUID sourceEntityId,
+            long sourceEntityVersion,
+            String value) {
+        return sha256(String.join(
+                "|",
+                "structured-profile-fact-v1",
+                userId.toString(),
+                factType.name(),
+                sourceEntityId.toString(),
+                Long.toString(sourceEntityVersion),
+                nullSafe(value)));
     }
 
     public static String evidenceHash(UUID userId, AnalysisEvidence evidence) {
@@ -99,6 +119,32 @@ public final class JobAnalysisHashing {
                 .sorted()
                 .map(JobAnalysisHashing::nullSafe)
                 .collect(java.util.stream.Collectors.joining("\u001f"));
+    }
+
+    private static String education(AnalysisEducation value) {
+        if (value == null) return "-";
+        return String.join(
+                "~",
+                value.id().toString(),
+                Long.toString(value.version()),
+                value.educationLevel().name(),
+                value.educationStatus().name(),
+                nullSafe(value.degree()),
+                nullSafe(value.major()),
+                nullSafe(value.graduationDate()),
+                Boolean.toString(value.primary()));
+    }
+
+    private static String eligibility(AnalysisEligibility value) {
+        if (value == null) return "-";
+        return String.join(
+                "~",
+                value.id().toString(),
+                Long.toString(value.version()),
+                nullSafe(value.workAvailableDate()),
+                value.militaryStatus().name(),
+                value.overseasTravelEligibility().name(),
+                value.employmentDisqualificationStatus().name());
     }
 
     private static String nullSafe(Object value) {

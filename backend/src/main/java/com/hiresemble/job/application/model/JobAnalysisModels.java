@@ -2,9 +2,11 @@ package com.hiresemble.job.application.model;
 
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.job.domain.Eligibility;
+import com.hiresemble.job.domain.CriterionSupportType;
 import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.JobAnalysisEvidenceUsageType;
 import com.hiresemble.job.domain.MatchLevel;
+import com.hiresemble.job.domain.StructuredProfileFactType;
 import com.hiresemble.job.domain.OutdatedReason;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
@@ -25,13 +27,40 @@ public final class JobAnalysisModels {
             List<String> desiredRoles,
             List<String> desiredIndustries,
             List<String> desiredLocations,
-            LocalDate expectedGraduationDate) {
+            LocalDate expectedGraduationDate,
+            List<StructuredProfileFact> structuredFacts) {
         public ProfileContext {
             desiredRoles = List.copyOf(desiredRoles);
             desiredIndustries = List.copyOf(desiredIndustries);
             desiredLocations = List.copyOf(desiredLocations);
+            structuredFacts = structuredFacts == null ? List.of() : List.copyOf(structuredFacts);
+        }
+
+        public ProfileContext(
+                UUID profileId,
+                long version,
+                String introduction,
+                List<String> desiredRoles,
+                List<String> desiredIndustries,
+                List<String> desiredLocations,
+                LocalDate expectedGraduationDate) {
+            this(profileId, version, introduction, desiredRoles, desiredIndustries,
+                    desiredLocations, expectedGraduationDate, List.of());
         }
     }
+
+    public record StructuredProfileFact(
+            String reference,
+            StructuredProfileFactType factType,
+            UUID sourceEntityId,
+            long sourceEntityVersion,
+            String value,
+            boolean selfReported,
+            String factHash) {}
+
+    public record StructuredFactUsage(
+            String reference,
+            JobAnalysisEvidenceUsageType usageType) {}
 
     public record VerifiedEvidence(
             UUID id,
@@ -95,9 +124,48 @@ public final class JobAnalysisModels {
             MatchLevel matchLevel,
             String explanation,
             String sourceLocation,
-            List<UUID> evidenceIds) {
+            List<UUID> evidenceIds,
+            List<String> structuredFactRefs,
+            CriterionSupportType supportType,
+            LocalDate requiredByDate) {
         public CriterionDraft {
             evidenceIds = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
+            structuredFactRefs = structuredFactRefs == null ? List.of() : List.copyOf(structuredFactRefs);
+        }
+
+        public CriterionDraft(
+                FitCriterionCategory category,
+                String criterion,
+                MatchLevel matchLevel,
+                String explanation,
+                String sourceLocation,
+                List<UUID> evidenceIds) {
+            this(category, criterion, matchLevel, explanation, sourceLocation, evidenceIds, List.of());
+        }
+
+        public CriterionDraft(
+                FitCriterionCategory category,
+                String criterion,
+                MatchLevel matchLevel,
+                String explanation,
+                String sourceLocation,
+                List<UUID> evidenceIds,
+                List<String> structuredFactRefs) {
+            this(category, criterion, matchLevel, explanation, sourceLocation, evidenceIds,
+                    structuredFactRefs, CriterionSupportType.GENERAL, null);
+        }
+
+        public CriterionDraft(
+                FitCriterionCategory category,
+                String criterion,
+                MatchLevel matchLevel,
+                String explanation,
+                String sourceLocation,
+                List<UUID> evidenceIds,
+                List<String> structuredFactRefs,
+                CriterionSupportType supportType) {
+            this(category, criterion, matchLevel, explanation, sourceLocation, evidenceIds,
+                    structuredFactRefs, supportType, null);
         }
     }
 
@@ -121,6 +189,7 @@ public final class JobAnalysisModels {
             List<String> strengths,
             List<String> gaps,
             List<EvidenceUsage> additionalEvidenceUsages,
+            List<StructuredFactUsage> additionalStructuredFactUsages,
             String analysisSummary) {
         public PersistJobAnalysis {
             criteria = List.copyOf(criteria);
@@ -131,6 +200,24 @@ public final class JobAnalysisModels {
             gaps = List.copyOf(gaps);
             additionalEvidenceUsages =
                     additionalEvidenceUsages == null ? List.of() : List.copyOf(additionalEvidenceUsages);
+            additionalStructuredFactUsages = additionalStructuredFactUsages == null
+                    ? List.of()
+                    : List.copyOf(additionalStructuredFactUsages);
+        }
+
+        public PersistJobAnalysis(
+                UUID jobId, long expectedJobVersion, String expectedJobContentHash,
+                String expectedProfileSnapshotHash, String expectedEvidenceSnapshotHash,
+                String expectedContextHash, AiQualityMode qualityMode, Eligibility eligibility,
+                List<CriterionDraft> criteria, List<RequirementItem> responsibilities,
+                List<RequirementItem> requiredQualifications,
+                List<RequirementItem> preferredQualifications, List<String> strengths,
+                List<String> gaps, List<EvidenceUsage> additionalEvidenceUsages,
+                String analysisSummary) {
+            this(jobId, expectedJobVersion, expectedJobContentHash, expectedProfileSnapshotHash,
+                    expectedEvidenceSnapshotHash, expectedContextHash, qualityMode, eligibility,
+                    criteria, responsibilities, requiredQualifications, preferredQualifications,
+                    strengths, gaps, additionalEvidenceUsages, List.of(), analysisSummary);
         }
     }
 

@@ -17,7 +17,13 @@ import {
 } from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import { type ProfileFormValues, validateProfileForm } from '@/features/profile/schemas'
-import type { ProfileCompletionItem, ProfileDto, ProfileWrite } from '@/shared/api/contracts'
+import type {
+  ProfileCompletionItem,
+  ProfileDto,
+  ProfileEligibilityDto,
+  ProfileEligibilityWrite,
+  ProfileWrite,
+} from '@/shared/api/contracts'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
@@ -48,12 +54,22 @@ const router = useRouter()
 const queryClient = useQueryClient()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const queryKey = computed(() => profileQueryKeys.profile(userId.value))
+const eligibilityQueryKey = computed(() => profileQueryKeys.eligibility(userId.value))
 const form = reactive<ProfileFormValues>(emptyForm())
 const baselineSignature = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const message = ref('')
 const generalError = ref('')
 const conflict = ref<{ draft: Record<string, unknown>; latest: ProfileDto } | null>(null)
+const eligibilityForm = reactive<ProfileEligibilityWrite>({
+  workAvailableDate: null,
+  militaryStatus: 'UNSPECIFIED',
+  overseasTravelEligibility: 'UNSPECIFIED',
+  employmentDisqualificationStatus: 'UNSPECIFIED',
+  version: 0,
+})
+const eligibilityMessage = ref('')
+const eligibilityError = ref('')
 const formSignature = computed(() => signature(form))
 const isProfileDirty = computed(
   () => baselineSignature.value !== '' && formSignature.value !== baselineSignature.value,
@@ -65,6 +81,30 @@ const profileQuery = useQuery({
   queryFn: profileApi.getProfile,
   enabled: computed(() => userId.value !== ''),
 })
+
+const eligibilityQuery = useQuery({
+  queryKey: eligibilityQueryKey,
+  queryFn: profileApi.getProfileEligibility,
+  enabled: computed(() => userId.value !== ''),
+})
+
+watch(
+  () => eligibilityQuery.data.value,
+  (value) => {
+    if (value !== undefined) loadEligibility(value)
+  },
+  { immediate: true },
+)
+
+const eligibilityMutation = useMutation({
+  mutationFn: (request: ProfileEligibilityWrite) => profileApi.updateProfileEligibility(request),
+  onSuccess: (saved) => {
+    queryClient.setQueryData(eligibilityQueryKey.value, saved)
+    loadEligibility(saved)
+    eligibilityMessage.value = '지원 자격 확인 정보를 저장했습니다.'
+  },
+})
+const isEligibilitySaving = eligibilityMutation.isPending
 
 watch(
   () => profileQuery.data.value,
@@ -157,6 +197,35 @@ function loadProfile(profile: ProfileDto): void {
     version: profile.version,
   })
   baselineSignature.value = signature(form)
+}
+
+function loadEligibility(value: ProfileEligibilityDto): void {
+  Object.assign(eligibilityForm, {
+    workAvailableDate: value.workAvailableDate,
+    militaryStatus: value.militaryStatus,
+    overseasTravelEligibility: value.overseasTravelEligibility,
+    employmentDisqualificationStatus: value.employmentDisqualificationStatus,
+    version: value.version,
+  })
+}
+
+async function saveEligibility(): Promise<void> {
+  eligibilityMessage.value = ''
+  eligibilityError.value = ''
+  try {
+    await eligibilityMutation.mutateAsync({ ...eligibilityForm })
+  } catch (error) {
+    const apiError = normalizeApiError(error)
+    if (isVersionConflict(apiError)) {
+      const latest = await profileApi.getProfileEligibility()
+      queryClient.setQueryData(eligibilityQueryKey.value, latest)
+      loadEligibility(latest)
+      eligibilityError.value =
+        '다른 변경이 먼저 저장되어 최신 값을 불러왔습니다. 다시 입력해 주세요.'
+      return
+    }
+    eligibilityError.value = apiError.message
+  }
 }
 
 function cancelConflict(): void {
@@ -428,6 +497,89 @@ function emptyForm(): ProfileFormValues {
           </footer>
         </form>
 
+        <form
+          v-if="eligibilityQuery.data.value"
+          class="profile-editor profile-eligibility"
+          @submit.prevent="saveEligibility"
+        >
+          <section class="profile-editor__section" aria-labelledby="profile-eligibility-heading">
+            <header class="profile-editor__section-heading">
+              <h2 id="profile-eligibility-heading">지원 자격 확인 정보</h2>
+              <p>
+                아래 내용은 사용자 입력 기준이며, 실제 지원 단계에서 회사가 별도로 확인할 수 있어요.
+                선택하지 않은 항목은 공고 분석에서 알 수 없음으로 처리합니다.
+              </p>
+            </header>
+            <div class="profile-editor__fields profile-editor__fields--two">
+              <div class="field">
+                <label class="field-label" for="profile-workAvailableDate">근무 가능일</label>
+                <input
+                  id="profile-workAvailableDate"
+                  v-model="eligibilityForm.workAvailableDate"
+                  class="control"
+                  type="date"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label" for="profile-militaryStatus">병역 상태</label>
+                <select
+                  id="profile-militaryStatus"
+                  v-model="eligibilityForm.militaryStatus"
+                  class="control"
+                >
+                  <option value="UNSPECIFIED">선택하지 않음</option>
+                  <option value="COMPLETED">이행</option>
+                  <option value="EXEMPT">면제</option>
+                  <option value="NOT_APPLICABLE">해당 없음</option>
+                  <option value="NOT_COMPLETED">미이행</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="profile-overseasTravelEligibility"
+                  >해외여행 가능 여부</label
+                >
+                <select
+                  id="profile-overseasTravelEligibility"
+                  v-model="eligibilityForm.overseasTravelEligibility"
+                  class="control"
+                >
+                  <option value="UNSPECIFIED">선택하지 않음</option>
+                  <option value="ELIGIBLE">가능</option>
+                  <option value="RESTRICTED">제한 있음</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="profile-employmentDisqualificationStatus"
+                  >채용 결격 사유 여부</label
+                >
+                <select
+                  id="profile-employmentDisqualificationStatus"
+                  v-model="eligibilityForm.employmentDisqualificationStatus"
+                  class="control"
+                >
+                  <option value="UNSPECIFIED">선택하지 않음</option>
+                  <option value="NONE_DECLARED">없음으로 입력</option>
+                  <option value="HAS_RESTRICTION">제한 있음</option>
+                </select>
+              </div>
+            </div>
+          </section>
+          <p v-if="eligibilityError" class="alert alert--danger" role="alert">
+            {{ eligibilityError }}
+          </p>
+          <footer class="profile-editor__footer">
+            <p role="status" aria-live="polite">{{ eligibilityMessage }}</p>
+            <button
+              type="button"
+              class="button button--secondary"
+              :disabled="isEligibilitySaving"
+              @click="saveEligibility"
+            >
+              {{ isEligibilitySaving ? '저장 중…' : '지원 자격 정보 저장' }}
+            </button>
+          </footer>
+        </form>
+
         <div class="profile-savebar">
           <div class="profile-savebar__status" role="status" aria-live="polite">
             <span :class="{ 'profile-savebar__dot--dirty': isDirty }" aria-hidden="true" />
@@ -615,6 +767,10 @@ function emptyForm(): ProfileFormValues {
   color: var(--color-muted);
   font-size: var(--font-size-xs);
   line-height: 1.65;
+}
+
+.profile-eligibility {
+  margin-top: var(--space-6);
 }
 
 .profile-editor__fields {

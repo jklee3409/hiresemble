@@ -4,6 +4,19 @@
 
 P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
 
+## [2026-08-02] Session Summary (Profile eligibility OpenAPI 계약)
+
+- What was done:
+  - profile eligibility GET/PUT path, operation, response, request·response schema와 security를 exact allowlist에 추가했다.
+- Key decisions:
+  - 기존 endpoint는 유지하고 공개 기준선을 69 paths/94 operations로 additive 확장한다.
+- Issues encountered:
+  - 첫 실행은 GET 자동 `400`, 수정 후 두 번째 실행은 PUT CSRF `403` 누락으로 실패했다. 두 번째 실패 뒤 재검증 제한에 따라 마지막 assertion 보정은 재실행하지 않았다.
+- Validation:
+  - Spring mapping의 69 paths/94 operations와 security까지 실행 확인했고, 마지막 `403` response code/schema assertion은 이후 `compileTestJava`만 통과해 `NOT_VERIFIED`다.
+- Next steps:
+  - 다음 검증 회차에서 보정된 exact response assertion을 1회 실행한다.
+
 ## [2026-08-02] Session Summary (Dashboard·Career Guide OpenAPI 계약)
 
 - What was done:

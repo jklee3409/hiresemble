@@ -11,9 +11,25 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 Dashboard·Career Guide read를 포함해 총 92 operations·68 paths다.
+- 공개 Spring/OpenAPI는 profile eligibility GET/PUT을 포함해 총 94 operations·69 paths다.
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-02] Session Summary (공고 분석 구조화 프로필·근거 호환성 보강)
+
+- What was done:
+  - 대표 학력과 지원 자격 자기신고를 공고 분석 snapshot에 포함하고, 검증 근거와 구분되는 구조화 fact provenance·strict support compatibility·입력 UI를 구현했다.
+  - V19 forward migration과 additive profile eligibility API를 추가하고 활성 기능·API·DB·페이지·아키텍처 계약을 갱신했다.
+- Key decisions:
+  - 학력은 `profile_evidence`로 되돌리지 않고 owner-scoped 구조화 fact로 유지하며, section·scoring category·support type을 서로 독립된 계약으로 검증한다.
+  - `UNSPECIFIED` 자기신고는 `UNKNOWN`, 졸업 예정일만 있는 근무 가능 조건은 보수적으로 `PARTIAL`/`CONDITIONAL`로 제한한다.
+- Issues encountered:
+  - Backend `*JobAnalysis*`와 전체 `check`는 기존 PostgreSQL 통합 테스트의 Hikari connection 대기에서 각각 184초·304초 timeout되어 전체 완료 여부를 확인하지 못했다.
+  - OpenAPI exact test는 신규 GET의 자동 `400`, PUT의 CSRF `403` 기준선을 순차 확인하며 두 번 실패했고, 마지막 `403` 보정은 재시도 제한에 따라 컴파일만 확인했다.
+- Validation:
+  - Profile/Workflow/Hash 집중 테스트, V19 fresh·V18 upgrade migration 테스트, 신규 structured provenance 통합 테스트와 Frontend `pnpm check`(67 files/269 tests)가 통과했다. OpenAPI final exact assertion은 미검증이며 실제 외부 Provider 호출은 0회다.
+- Next steps:
+  - OpenAPI exact test를 다음 검증 회차에 1회 확인하고, 기존 Job Analysis 통합 suite의 connection 대기 원인을 별도로 조사해야 전체 Backend `check`를 완주할 수 있다.
 
 ## [2026-08-02] Session Summary (공고 분석·문서 소재 한국어 출력 보정)
 

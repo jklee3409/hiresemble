@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (공고 분석 구조화 fact 활성 계약)
+
+- What was done:
+  - 기능·API·DB·페이지 계약에 지원 자격 자기신고와 structured fact provenance, strict support compatibility를 반영했다.
+- Key decisions:
+  - verified evidence와 structured profile fact, 공고 section과 scoring category/support type을 구분하고 기존 공개 evidence DTO는 유지한다.
+- Issues encountered:
+  - OpenAPI exact test는 신규 자동 `400`·CSRF `403` 기준선을 순차 보정한 뒤 재시도 상한에 도달해 마지막 assertion을 재실행하지 못했다.
+- Validation:
+  - 구현·집중 테스트·migration과 문서 계약을 대조했으며 최종 OpenAPI exact assertion은 `NOT_VERIFIED`다.
+- Next steps:
+  - 다음 검증 회차에서 69 paths/94 operations OpenAPI exact assertion을 확인한다.
+
 ## [2026-08-02] Session Summary (AI 결과 한국어·내부 경로 비노출 계약)
 
 - What was done:

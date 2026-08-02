@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (프로필 지원 자격 입력 영역)
+
+- What was done:
+  - `ProfileBasicPage`에 기존 화면 구조를 유지한 지원 자격 확인 정보 section을 추가했다.
+- Key decisions:
+  - 자기신고이며 실제 지원 단계에서 재확인이 필요하다는 안내를 form 내부에 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석 결과 hero 문구 보정)
 
 - What was done:

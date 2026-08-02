@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (criterion support compatibility 회귀)
+
+- What was done:
+  - 학력 fact positive match, 자격증·어학의 잘못된 evidence 거부, 명시 근무일 우선, 졸업 예정일 보수 판정, 자기신고 미입력 UNKNOWN 회귀를 추가했다.
+  - 우대 section의 학력 category 보정과 일반 IT 역량/자격증 criterion 분리를 검증했다.
+- Key decisions:
+  - Provider가 호환되지 않거나 hallucinated/stale fact reference를 반환하면 stable domain validation error로 차단한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow, contract, strict structured output, hashing 집중 테스트가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (embedding route 오용 회귀 검증)
 
 - What was done:

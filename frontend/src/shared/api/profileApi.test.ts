@@ -37,6 +37,20 @@ describe('P2 profile API contract', () => {
     expect(apiClient.put).toHaveBeenCalledWith('/profile', request)
   })
 
+  it('uses the additive owner-scoped eligibility endpoint', async () => {
+    const request = {
+      workAvailableDate: '2026-08-01',
+      militaryStatus: 'COMPLETED' as const,
+      overseasTravelEligibility: 'ELIGIBLE' as const,
+      employmentDisqualificationStatus: 'NONE_DECLARED' as const,
+      version: 1,
+    }
+    await profileApi.getProfileEligibility()
+    await profileApi.updateProfileEligibility(request)
+    expect(apiClient.get).toHaveBeenCalledWith('/profile/eligibility')
+    expect(apiClient.put).toHaveBeenCalledWith('/profile/eligibility', request)
+  })
+
   it.each([
     {
       name: 'education',

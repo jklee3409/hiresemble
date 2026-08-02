@@ -22,6 +22,8 @@ import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSnapsho
 import com.hiresemble.job.application.model.JobAnalysisModels.JobAnalysisSummary;
 import com.hiresemble.job.application.model.JobAnalysisModels.PersistJobAnalysis;
 import com.hiresemble.job.application.model.JobAnalysisModels.ProfileContext;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredProfileFact;
+import com.hiresemble.job.application.model.JobAnalysisModels.StructuredFactUsage;
 import com.hiresemble.job.application.model.JobAnalysisModels.RequirementItem;
 import com.hiresemble.job.application.model.JobAnalysisModels.RetrievedVerifiedEvidence;
 import com.hiresemble.job.application.model.JobAnalysisModels.VerifiedEvidence;
@@ -30,6 +32,7 @@ import com.hiresemble.job.application.port.JobAnalysisCommandPort;
 import com.hiresemble.job.application.port.JobAnalysisEmbeddingQueryPort;
 import com.hiresemble.job.application.port.JobAnalysisQueryPort;
 import com.hiresemble.job.domain.JobAnalysisEvidenceUsageType;
+import com.hiresemble.job.domain.CriterionSupportType;
 import com.hiresemble.job.domain.JobAnalysisHashing;
 import com.hiresemble.job.domain.MatchLevel;
 import com.hiresemble.job.domain.JobFitScoringPolicy;
@@ -37,6 +40,7 @@ import com.hiresemble.job.domain.JobFitScoringPolicy.CriterionInput;
 import com.hiresemble.job.domain.JobPolicy;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
 import com.hiresemble.job.domain.OutdatedReason;
+import com.hiresemble.job.domain.StructuredProfileFactType;
 import com.hiresemble.job.infrastructure.JobAnalysisAiCostProperties;
 import com.hiresemble.job.infrastructure.JobAnalysisStore;
 import com.hiresemble.job.infrastructure.JobStore;
@@ -45,6 +49,7 @@ import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisEvidence;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort.AnalysisProfileSnapshot;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
+import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -487,6 +492,7 @@ public class JobAnalysisApplicationService
                         item.version(),
                         JobAnalysisHashing.evidenceHash(userId, item)))
                 .toList();
+        List<StructuredProfileFact> structuredFacts = structuredFacts(userId, sourceProfile);
         UUID reusableAnalysisId = analysisStore.findReusable(
                         userId, jobId, contextHash, qualityMode)
                 .map(value -> value.summary().id())
@@ -511,7 +517,8 @@ public class JobAnalysisApplicationService
                         sourceProfile.desiredRoles(),
                         sourceProfile.desiredIndustries(),
                         sourceProfile.desiredLocations(),
-                        sourceProfile.expectedGraduationDate()),
+                        sourceProfile.expectedGraduationDate(),
+                        structuredFacts),
                 verifiedEvidence,
                 profileHash,
                 evidenceHash,
@@ -560,18 +567,44 @@ public class JobAnalysisApplicationService
         Set<UUID> allowedEvidence = snapshot.verifiedEvidence().stream()
                 .map(VerifiedEvidence::id)
                 .collect(java.util.stream.Collectors.toSet());
+        Set<String> allowedFacts = snapshot.profile().structuredFacts().stream()
+                .map(StructuredProfileFact::reference)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<UUID, VerifiedEvidence> evidenceById = snapshot.verifiedEvidence().stream()
+                .collect(java.util.stream.Collectors.toMap(VerifiedEvidence::id, value -> value));
+        Map<String, StructuredProfileFact> factsByReference = snapshot.profile().structuredFacts().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        StructuredProfileFact::reference, value -> value));
         List<CriterionInput> criteria = new ArrayList<>();
         for (var criterion : command.criteria()) {
             if (criterion == null
                     || criterion.matchLevel() == null
                     || criterion.category() == null
+                    || criterion.supportType() == null
+                    || criterion.criterion() == null
+                    || criterion.criterion().isBlank()
+                    || criterion.criterion().length() > 2_000
+                    || criterion.explanation() == null
+                    || criterion.explanation().isBlank()
+                    || criterion.explanation().length() > 2_000
+                    || (criterion.sourceLocation() != null
+                            && (criterion.sourceLocation().isBlank()
+                                    || criterion.sourceLocation().length() > 500))
                     || criterion.evidenceIds() == null
+                    || criterion.structuredFactRefs() == null
                     || !allowedEvidence.containsAll(criterion.evidenceIds())
+                    || !allowedFacts.containsAll(criterion.structuredFactRefs())
                     || ((criterion.matchLevel() == MatchLevel.MISSING
                                     || criterion.matchLevel() == MatchLevel.UNKNOWN)
-                            && !criterion.evidenceIds().isEmpty())) {
+                            && (!criterion.evidenceIds().isEmpty()
+                                    || !criterion.structuredFactRefs().isEmpty()))
+                    || ((criterion.matchLevel() == MatchLevel.MATCHED
+                                    || criterion.matchLevel() == MatchLevel.PARTIAL)
+                            && criterion.evidenceIds().isEmpty()
+                            && criterion.structuredFactRefs().isEmpty())) {
                 throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
             }
+            validateSupportCompatibility(criterion, evidenceById, factsByReference);
             criteria.add(new CriterionInput(
                     criterion.category(),
                     criterion.criterion(),
@@ -579,6 +612,15 @@ public class JobAnalysisApplicationService
                     criterion.explanation(),
                     criterion.sourceLocation(),
                     criterion.evidenceIds()));
+        }
+        Set<StructuredFactUsage> uniqueFactUsages = new HashSet<>();
+        for (StructuredFactUsage usage : command.additionalStructuredFactUsages()) {
+            if (usage == null
+                    || usage.usageType() != JobAnalysisEvidenceUsageType.ELIGIBILITY
+                    || !allowedFacts.contains(usage.reference())
+                    || !uniqueFactUsages.add(usage)) {
+                throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+            }
         }
         Set<EvidenceUsage> uniqueUsages = new HashSet<>();
         for (EvidenceUsage usage : command.additionalEvidenceUsages()) {
@@ -607,8 +649,204 @@ public class JobAnalysisApplicationService
                         command.strengths(),
                         command.gaps(),
                         command.additionalEvidenceUsages(),
+                        command.additionalStructuredFactUsages(),
                         summary),
                 criteria);
+    }
+
+    private List<StructuredProfileFact> structuredFacts(
+            UUID userId, AnalysisProfileSnapshot profile) {
+        List<StructuredProfileFact> facts = new ArrayList<>();
+        if (profile.primaryEducation() != null) {
+            var education = profile.primaryEducation();
+            addFact(
+                    facts,
+                    userId,
+                    StructuredProfileFactType.PRIMARY_EDUCATION,
+                    education.id(),
+                    education.version(),
+                    String.join(
+                            ";",
+                            "educationLevel=" + education.educationLevel(),
+                            "educationStatus=" + education.educationStatus(),
+                            "degree=" + nullSafe(education.degree()),
+                            "major=" + nullSafe(education.major()),
+                            "graduationDate=" + nullSafe(education.graduationDate()),
+                            "primary=" + education.primary()),
+                    false);
+        }
+        if (profile.expectedGraduationDate() != null) {
+            addFact(facts, userId, StructuredProfileFactType.EXPECTED_GRADUATION_DATE,
+                    profile.profileId(), profile.version(), profile.expectedGraduationDate().toString(), false);
+        }
+        if (profile.eligibility() != null) {
+            var eligibility = profile.eligibility();
+            if (eligibility.workAvailableDate() != null) {
+                addFact(facts, userId, StructuredProfileFactType.WORK_AVAILABLE_DATE,
+                        eligibility.id(), eligibility.version(), eligibility.workAvailableDate().toString(), true);
+            }
+            addFact(facts, userId, StructuredProfileFactType.MILITARY_STATUS,
+                    eligibility.id(), eligibility.version(), eligibility.militaryStatus().name(), true);
+            addFact(facts, userId, StructuredProfileFactType.OVERSEAS_TRAVEL_ELIGIBILITY,
+                    eligibility.id(), eligibility.version(), eligibility.overseasTravelEligibility().name(), true);
+            addFact(facts, userId, StructuredProfileFactType.EMPLOYMENT_DISQUALIFICATION_STATUS,
+                    eligibility.id(), eligibility.version(),
+                    eligibility.employmentDisqualificationStatus().name(), true);
+        }
+        return List.copyOf(facts);
+    }
+
+    private void validateSupportCompatibility(
+            com.hiresemble.job.application.model.JobAnalysisModels.CriterionDraft criterion,
+            Map<UUID, VerifiedEvidence> evidence,
+            Map<String, StructuredProfileFact> facts) {
+        if (criterion.matchLevel() != MatchLevel.MATCHED
+                && criterion.matchLevel() != MatchLevel.PARTIAL) {
+            return;
+        }
+        List<EvidenceSourceType> evidenceTypes = criterion.evidenceIds().stream()
+                .map(evidence::get)
+                .filter(Objects::nonNull)
+                .map(VerifiedEvidence::sourceType)
+                .toList();
+        List<StructuredProfileFact> usedFacts = criterion.structuredFactRefs().stream()
+                .map(facts::get)
+                .filter(Objects::nonNull)
+                .toList();
+        CriterionSupportType supportType = criterion.supportType();
+        CriterionSupportType contentRequiredSupport = strictSupportType(criterion.criterion());
+        boolean compatible = (contentRequiredSupport == null || contentRequiredSupport == supportType)
+                && ((supportType != CriterionSupportType.EDUCATION
+                                && supportType != CriterionSupportType.CERTIFICATION
+                                && supportType != CriterionSupportType.LANGUAGE)
+                        || criterion.category()
+                                == com.hiresemble.job.domain.FitCriterionCategory
+                                        .EDUCATION_CERTIFICATION_LANGUAGE)
+                && ((supportType == CriterionSupportType.WORK_AVAILABLE_DATE)
+                        == (criterion.requiredByDate() != null))
+                && switch (supportType) {
+            case EDUCATION -> evidenceTypes.isEmpty()
+                    && exactFacts(usedFacts, StructuredProfileFactType.PRIMARY_EDUCATION);
+            case CERTIFICATION -> usedFacts.isEmpty() && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.CERTIFICATION);
+            case LANGUAGE -> usedFacts.isEmpty() && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.LANGUAGE_SCORE);
+            case MILITARY_STATUS -> exactDeclaredFact(
+                    evidenceTypes, usedFacts, StructuredProfileFactType.MILITARY_STATUS)
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case OVERSEAS_TRAVEL_ELIGIBILITY -> exactDeclaredFact(
+                    evidenceTypes, usedFacts, StructuredProfileFactType.OVERSEAS_TRAVEL_ELIGIBILITY)
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case EMPLOYMENT_DISQUALIFICATION_STATUS -> exactDeclaredFact(
+                    evidenceTypes, usedFacts,
+                    StructuredProfileFactType.EMPLOYMENT_DISQUALIFICATION_STATUS)
+                    && criterion.explanation().contains("사용자 입력 기준");
+            case WORK_AVAILABLE_DATE -> evidenceTypes.isEmpty()
+                    && ((exactFacts(usedFacts, StructuredProfileFactType.WORK_AVAILABLE_DATE)
+                                    && criterion.requiredByDate() != null
+                                    && java.time.LocalDate.parse(usedFacts.getFirst().value())
+                                                    .compareTo(criterion.requiredByDate())
+                                            <= 0
+                                    && criterion.explanation().contains("사용자 입력 기준"))
+                            || (criterion.matchLevel() == MatchLevel.PARTIAL
+                                    && criterion.requiredByDate() != null
+                                    && exactFacts(usedFacts,
+                                            StructuredProfileFactType.EXPECTED_GRADUATION_DATE)
+                                    && !java.time.YearMonth.from(java.time.LocalDate.parse(
+                                                    usedFacts.getFirst().value()))
+                                            .isAfter(java.time.YearMonth.from(
+                                                    criterion.requiredByDate()))
+                                    && criterion.explanation().contains(
+                                            "정확한 근무 가능일은 별도 확인이 필요")));
+            case EXPERIENCE_OR_SKILL -> usedFacts.isEmpty() && !evidenceTypes.isEmpty()
+                    && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.CAREER
+                            || value == EvidenceSourceType.ACTIVITY
+                            || value == EvidenceSourceType.DOCUMENT_CHUNK);
+            case GENERAL -> !evidenceTypes.isEmpty() || !usedFacts.isEmpty();
+        };
+        if (!compatible) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+    }
+
+    private CriterionSupportType strictSupportType(String text) {
+        String normalized = text.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized.contains("근무 가능") || normalized.contains("입사 가능")) {
+            return CriterionSupportType.WORK_AVAILABLE_DATE;
+        }
+        if (normalized.contains("병역")) return CriterionSupportType.MILITARY_STATUS;
+        if (normalized.contains("해외여행") || normalized.contains("해외 여행")) {
+            return CriterionSupportType.OVERSEAS_TRAVEL_ELIGIBILITY;
+        }
+        if (normalized.contains("채용 결격") || normalized.contains("결격 사유")) {
+            return CriterionSupportType.EMPLOYMENT_DISQUALIFICATION_STATUS;
+        }
+        if (normalized.contains("자격증")
+                || normalized.contains("자격 보유")
+                || normalized.contains("자격 취득")
+                || normalized.contains("자격 소지")) {
+            return CriterionSupportType.CERTIFICATION;
+        }
+        if (normalized.contains("toeic")
+                || normalized.contains("toefl")
+                || normalized.contains("opic")
+                || normalized.contains("토익")
+                || normalized.contains("토플")
+                || normalized.contains("오픽")
+                || normalized.contains("어학 점수")
+                || normalized.contains("외국어 점수")) {
+            return CriterionSupportType.LANGUAGE;
+        }
+        if (normalized.contains("4년제")
+                || normalized.contains("학사")
+                || normalized.contains("석사")
+                || normalized.contains("박사")
+                || normalized.contains("학력")
+                || (normalized.contains("대학")
+                        && (normalized.contains("졸업")
+                                || normalized.contains("학위")
+                                || normalized.contains("재학")))) {
+            return CriterionSupportType.EDUCATION;
+        }
+        return null;
+    }
+
+    private boolean exactFacts(
+            List<StructuredProfileFact> facts, StructuredProfileFactType expected) {
+        return facts.size() == 1 && facts.getFirst().factType() == expected;
+    }
+
+    private boolean exactDeclaredFact(
+            List<EvidenceSourceType> evidence,
+            List<StructuredProfileFact> facts,
+            StructuredProfileFactType expected) {
+        return evidence.isEmpty()
+                && exactFacts(facts, expected)
+                && !"UNSPECIFIED".equals(facts.getFirst().value());
+    }
+
+    private void addFact(
+            List<StructuredProfileFact> facts,
+            UUID userId,
+            StructuredProfileFactType type,
+            UUID sourceEntityId,
+            long sourceEntityVersion,
+            String value,
+            boolean selfReported) {
+        String factHash = JobAnalysisHashing.structuredFactHash(
+                userId, type, sourceEntityId, sourceEntityVersion, value);
+        facts.add(new StructuredProfileFact(
+                "PROFILE_FACT:" + type.name() + ":" + factHash,
+                type,
+                sourceEntityId,
+                sourceEntityVersion,
+                value,
+                selfReported,
+                factHash));
+    }
+
+    private String nullSafe(Object value) {
+        return value == null ? "-" : value.toString();
     }
 
     private void validateRequirements(List<RequirementItem> items) {

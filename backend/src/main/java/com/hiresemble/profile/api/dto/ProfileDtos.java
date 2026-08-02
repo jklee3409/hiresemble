@@ -2,6 +2,9 @@ package com.hiresemble.profile.api.dto;
 
 import com.hiresemble.profile.domain.model.EducationLevel;
 import com.hiresemble.profile.domain.model.EducationStatus;
+import com.hiresemble.profile.domain.model.EmploymentDisqualificationStatus;
+import com.hiresemble.profile.domain.model.MilitaryStatus;
+import com.hiresemble.profile.domain.model.OverseasTravelEligibility;
 import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
@@ -36,6 +39,17 @@ public final class ProfileDtos {
                             maxItems = 5,
                             schema = @Schema(implementation = ProfileCompletionItem.class))
                     List<ProfileCompletionItem> missingCompletionItems,
+            long version,
+            Instant createdAt,
+            Instant updatedAt) {}
+
+    @Schema(name = "ProfileEligibilityDto")
+    public record ProfileEligibilityDto(
+            UUID id,
+            @Schema(nullable = true) LocalDate workAvailableDate,
+            MilitaryStatus militaryStatus,
+            OverseasTravelEligibility overseasTravelEligibility,
+            EmploymentDisqualificationStatus employmentDisqualificationStatus,
             long version,
             Instant createdAt,
             Instant updatedAt) {}

@@ -3,9 +3,24 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
+- P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
 - Backend 전체 suite는 509 tests다. 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Job Analysis 통합 테스트의 Hikari connection 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (공고 분석 profile fact provenance·compatibility)
+
+- What was done:
+  - Profile owner 1:1 지원 자격 record/API, 대표 학력 포함 analysis snapshot, JOB_ANALYSIS structured fact allowlist/provenance와 근거 유형 호환성 검증을 추가했다.
+  - profile/context/canonical/step hash를 profile-v2 계약으로 갱신해 학력·지원 자격 변경이 `PROFILE_CHANGED`와 checkpoint 무효화로 이어지게 했다.
+- Key decisions:
+  - 기존 8단계, 점수 가중치·계수, evidence link/공개 DTO 의미와 immutable 분석 이력은 유지했다.
+- Issues encountered:
+  - `*JobAnalysis*`는 184초, 전체 `check`는 304초 동안 기존 통합 테스트 connection 대기에서 timeout됐다. 존재하지 않는 `spotlessCheck` task는 검증 수단에서 제외했다.
+  - OpenAPI exact test의 자동 응답 코드 기준선은 두 번의 실행에서 각각 GET `400`, PUT `403` 누락을 드러냈고 마지막 보정 후 재실행하지 않았다.
+- Validation:
+  - `compileJava`, `testClasses`, ProfileAnalysis·JobAnalysis workflow/hash 집중 테스트, V19 migration, 신규 Job integration 단일 테스트가 통과했다. 마지막 OpenAPI assertion 보정은 이후 `compileTestJava` 통과만 확인했다.
+- Next steps:
+  - OpenAPI exact test를 다음 검증 회차에 확인하고 Hikari 대기 문제를 별도 진단한 뒤 전체 Backend suite를 재검증한다.
 
 ## [2026-08-02] Session Summary (AI 사용자 노출 결과 한국어 계약)
 

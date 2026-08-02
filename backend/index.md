@@ -25,7 +25,7 @@
 
 - API·DB 계약은 [`../docs/spec/`](../docs/spec/)을 기준으로 한다.
 - 로컬 PostgreSQL/pgvector와 Object Storage는 루트 [`../compose.yaml`](../compose.yaml)에서 제공한다.
-- 프론트엔드는 Dashboard·Career Guide read를 포함한 92개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다.
+- 프론트엔드는 profile eligibility GET/PUT을 포함한 94개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다.
 - CI는 `.\gradlew.bat check`에 대응하는 백엔드 검증을 실행한다.
 
 ## 변경 시 주의사항

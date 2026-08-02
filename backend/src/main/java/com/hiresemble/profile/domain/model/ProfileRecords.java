@@ -26,6 +26,17 @@ public final class ProfileRecords {
 
     public record ProfileView(ProfileRecord profile, ProfileCompletion completion) {}
 
+    public record ProfileEligibilityRecord(
+            UUID id,
+            UUID userId,
+            LocalDate workAvailableDate,
+            MilitaryStatus militaryStatus,
+            OverseasTravelEligibility overseasTravelEligibility,
+            EmploymentDisqualificationStatus employmentDisqualificationStatus,
+            long version,
+            Instant createdAt,
+            Instant updatedAt) {}
+
     public record EducationRecord(
             UUID id,
             UUID userId,

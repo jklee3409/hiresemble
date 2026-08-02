@@ -296,7 +296,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(0)),
                         analysisStep(
                                 "EXTRACT_REQUIREMENTS",
-                                "job-analysis-requirements-output-v2",
+                                "job-analysis-requirements-output-v3",
                                 Set.of(),
                                 1,
                                 RETRYABLE,
@@ -304,7 +304,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(1)),
                         analysisStep(
                                 "ASSESS_ELIGIBILITY",
-                                "job-analysis-eligibility-output-v2",
+                                "job-analysis-eligibility-output-v3",
                                 Set.of(),
                                 1,
                                 RETRYABLE,
@@ -320,7 +320,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(3)),
                         analysisStep(
                                 "MATCH_EVIDENCE",
-                                "job-analysis-match-output-v2",
+                                "job-analysis-match-output-v3",
                                 Set.of(),
                                 1,
                                 RETRYABLE,

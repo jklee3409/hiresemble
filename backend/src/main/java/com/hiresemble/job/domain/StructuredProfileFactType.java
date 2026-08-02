@@ -1,0 +1,10 @@
+package com.hiresemble.job.domain;
+
+public enum StructuredProfileFactType {
+    PRIMARY_EDUCATION,
+    EXPECTED_GRADUATION_DATE,
+    WORK_AVAILABLE_DATE,
+    MILITARY_STATUS,
+    OVERSEAS_TRAVEL_ELIGIBILITY,
+    EMPLOYMENT_DISQUALIFICATION_STATUS
+}

@@ -24,7 +24,7 @@ registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run applica
 
 ## 변경 시 주의사항
 
-전체 HTML·문서, 전체 prompt와 provider response를 저장·로그하지 않는다. P6~P8은 VERIFIED 비학력 evidence만 positive provenance로 사용하고 source·createdBy·score·persist를 모델에 위임하지 않는다. 실제 Chat/Search provider 기본값은 `none`이며 Tavily는 명시적 설정과 key가 있을 때만 활성화한다.
+전체 HTML·문서, 전체 prompt와 provider response를 저장·로그하지 않는다. P6은 서버 allowlist의 구조화 profile fact와 호환되는 `VERIFIED` evidence만 positive provenance로 사용하고, P7~P8은 `VERIFIED` 비학력 evidence 경계를 유지한다. source·createdBy·score·persist를 모델에 위임하지 않는다. 실제 Chat/Search provider 기본값은 `none`이며 Tavily는 명시적 설정과 key가 있을 때만 활성화한다.
 
 ## 관련 규칙 및 문서
 

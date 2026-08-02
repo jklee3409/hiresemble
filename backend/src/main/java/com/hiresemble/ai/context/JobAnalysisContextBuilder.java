@@ -58,13 +58,18 @@ public final class JobAnalysisContextBuilder implements ContextBuilder {
             throw ownerFailure();
         }
 
-        List<ContextRef> evidenceRefs = snapshot.verifiedEvidence().stream()
+        List<ContextRef> evidenceRefs = new ArrayList<>(snapshot.verifiedEvidence().stream()
                 .map(evidence -> new ContextRef(
                         "PROFILE_EVIDENCE",
                         evidence.id(),
                         evidence.version(),
                         evidence.verificationStatus().name()))
-                .toList();
+                .toList());
+        snapshot.profile().structuredFacts().forEach(fact -> evidenceRefs.add(new ContextRef(
+                "STRUCTURED_PROFILE_FACT",
+                fact.sourceEntityId(),
+                fact.sourceEntityVersion(),
+                fact.factType().name())));
         List<String> omittedKinds = new ArrayList<>();
         if (snapshot.descriptionText() != null
                 && snapshot.descriptionText().length() > MAX_JOB_CONTENT_CHARACTERS) {
@@ -84,7 +89,7 @@ public final class JobAnalysisContextBuilder implements ContextBuilder {
                         omittedKinds.isEmpty() ? 0 : 1,
                         omittedKinds),
                 snapshot.contextHash(),
-                "VERIFIED_EVIDENCE_ONLY",
+                "VERIFIED_EVIDENCE_AND_STRUCTURED_PROFILE_FACTS",
                 modelPolicyVersion,
                 false,
                 true);

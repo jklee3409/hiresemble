@@ -1,0 +1,13 @@
+package com.hiresemble.job.domain;
+
+public enum CriterionSupportType {
+    EDUCATION,
+    CERTIFICATION,
+    LANGUAGE,
+    EXPERIENCE_OR_SKILL,
+    WORK_AVAILABLE_DATE,
+    MILITARY_STATUS,
+    OVERSEAS_TRAVEL_ELIGIBILITY,
+    EMPLOYMENT_DISQUALIFICATION_STATUS,
+    GENERAL
+}
