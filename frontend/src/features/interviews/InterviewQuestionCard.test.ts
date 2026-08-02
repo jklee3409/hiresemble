@@ -37,6 +37,14 @@ const mocks = vi.hoisted(() => ({
       totalPages: 0,
     },
   },
+  activeRuns: {
+    data: {
+      value: { items: [], page: 0, size: 100, totalElements: 0, totalPages: 0 } as unknown,
+    },
+    isLoading: { value: false },
+    isError: { value: false },
+    refetch: vi.fn(async () => undefined),
+  },
 }))
 
 vi.mock('./queries', () => ({
@@ -66,12 +74,17 @@ vi.mock('@/shared/api/interviewApi', () => ({
   getInterviewQuestion: mocks.getQuestion,
 }))
 
+vi.mock('@/features/agent-runs/queries', () => ({
+  useActiveAgentRunsQuery: () => mocks.activeRuns,
+}))
+
 describe('P8 interview answer conflict and feedback UI', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     const current = answerFixture()
     mocks.answerPage.value = page([current])
     mocks.feedbackPage.value = page([])
+    mocks.activeRuns.data.value = page([])
     mocks.answerRefetch.mockResolvedValue(undefined)
     mocks.feedbackRefetch.mockResolvedValue(undefined)
     mocks.save.mockResolvedValue(current)
@@ -189,6 +202,27 @@ describe('P8 interview answer conflict and feedback UI', () => {
       answerVersionId: older.id,
       request: { qualityMode: 'BALANCED' },
     })
+  })
+
+  it('restores feedback for the selected answer version and blocks a duplicate request', async () => {
+    mocks.activeRuns.data.value = page([
+      {
+        id: uuid(75),
+        workflowType: 'INTERVIEW_ANSWER_FEEDBACK',
+        resourceType: 'INTERVIEW_ANSWER_VERSION',
+        resourceId: INTERVIEW_ANSWER_ID,
+        status: 'RUNNING',
+      },
+    ])
+    const wrapper = mountCard()
+    const request = wrapper.get(
+      `[data-testid="request-interview-feedback-${questionFixture().id}"]`,
+    )
+
+    expect(request.attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="run-monitor"]').exists()).toBe(true)
+    await request.trigger('click')
+    expect(mocks.requestFeedback).not.toHaveBeenCalled()
   })
 })
 

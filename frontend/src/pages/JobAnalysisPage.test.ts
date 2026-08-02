@@ -257,7 +257,11 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.get('.analysis-history__selection').text()).toContain('45.00점')
     expect(wrapper.get('.analysis-history__selection').text()).toContain('과거')
 
-    const reanalyze = wrapper.findAll('button').find((button) => button.text() === '재분석하기')
+    const reanalyzeButtons = wrapper
+      .findAll('button')
+      .filter((button) => button.text() === '최신 정보로 다시 분석')
+    expect(reanalyzeButtons).toHaveLength(1)
+    const reanalyze = reanalyzeButtons[0]
     await reanalyze?.trigger('click')
     await flushPromises()
     expect(jobApi.analyzeJob).toHaveBeenCalledWith(

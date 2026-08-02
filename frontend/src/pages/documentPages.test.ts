@@ -11,6 +11,18 @@ import * as profileApi from '@/shared/api/profileApi'
 import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
+const runMocks = vi.hoisted(() => ({
+  detail: {
+    data: { value: { status: 'SUCCEEDED' } as { status: string } | undefined },
+    isLoading: { value: false },
+    isError: { value: false },
+  },
+}))
+
+vi.mock('@/features/agent-runs/queries', () => ({
+  useAgentRunDetailQuery: () => runMocks.detail,
+}))
+
 vi.mock('@/shared/api/documentApi', () => ({
   DOCUMENT_SORTS: ['uploadedAt,desc', 'updatedAt,desc'],
   listDocuments: vi.fn(),
@@ -36,6 +48,9 @@ describe('P4 document pages', () => {
     vi.clearAllMocks()
     vi.mocked(documentApi.listDocuments).mockResolvedValue(page([]))
     vi.mocked(profileApi.listEvidence).mockResolvedValue(page([]))
+    runMocks.detail.data.value = { status: 'SUCCEEDED' }
+    runMocks.detail.isLoading.value = false
+    runMocks.detail.isError.value = false
   })
 
   it('renders both state axes and preserves text when evidence extraction fails', async () => {
@@ -92,6 +107,17 @@ describe('P4 document pages', () => {
       'manual-text-key-1234',
     )
     expect(wrapper.text()).toContain('같은 작업을 다시 시작했어요')
+  })
+
+  it('restores an active document run and prevents a duplicate reanalysis request', async () => {
+    runMocks.detail.data.value = { status: 'RUNNING' }
+    vi.mocked(documentApi.getDocument).mockResolvedValue(detail())
+    const { wrapper } = await mountDetail()
+
+    const reparse = wrapper.findAll('button').find((button) => button.text() === '분석 진행 중…')
+    expect(reparse?.attributes('disabled')).toBeDefined()
+    await reparse?.trigger('click')
+    expect(documentApi.reparseDocument).not.toHaveBeenCalled()
   })
 
   it('purges detail/text caches and navigates to the list after immediate delete', async () => {

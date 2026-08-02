@@ -250,6 +250,18 @@ const verifications = useVerificationListQuery(
   computed(() => ({ page: 0, size: 100, sort: 'createdAt,desc' as const })),
 )
 const currentRunId = computed(() => acceptedRunId.value || latestRun.data.value?.items[0]?.id || '')
+const coverLetterRunActive = computed(() =>
+  ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(latestRun.data.value?.items[0]?.status ?? ''),
+)
+const aiActionUnavailable = computed(
+  () =>
+    generateMutation.isPending.value ||
+    verifyMutation.isPending.value ||
+    acceptedRunId.value !== '' ||
+    coverLetterRunActive.value ||
+    latestRun.isLoading.value ||
+    latestRun.isError.value,
+)
 const questionLabels = computed<Record<string, string>>(() =>
   Object.fromEntries(
     activeQuestions.value.map((question) => [
@@ -814,7 +826,13 @@ async function submitAnswerRestore(
 
 async function generateAnswers(): Promise<void> {
   const detail = coverLetter.data.value
-  if (!detail || readOnly.value || generationQuestionIds.value.size === 0) return
+  if (
+    !detail ||
+    readOnly.value ||
+    generationQuestionIds.value.size === 0 ||
+    aiActionUnavailable.value
+  )
+    return
   const snapshot: GenerationSnapshot = Object.freeze({
     questionIds: Object.freeze([...generationQuestionIds.value]),
     preferredEvidenceIds: Object.freeze([...selectedEvidenceIds.value]),
@@ -858,7 +876,7 @@ async function verifyCurrentAnswer(): Promise<void> {
   const detail = coverLetter.data.value
   const question = selectedQuestion.value
   const answer = question?.currentAnswer
-  if (!detail || !question || !answer || readOnly.value) return
+  if (!detail || !question || !answer || readOnly.value || aiActionUnavailable.value) return
   const snapshot: VerificationSnapshot = Object.freeze({
     questionId: question.id,
     versionId: answer.id,
@@ -1020,7 +1038,9 @@ async function submitUnarchive(
 }
 
 async function handleRunTerminal(run: AgentRunDetailDto): Promise<void> {
+  acceptedRunId.value = ''
   await invalidateCoverLetterQueries(cache, userId.value, coverLetterId.value)
+  await latestRun.refetch()
   await coverLetter.refetch()
   if (selectedQuestionId.value) await versions.refetch()
   if (verificationVersionId.value) await verifications.refetch()
@@ -1737,20 +1757,20 @@ function verificationTone(
             <button
               type="button"
               class="button button--primary"
-              :disabled="generationQuestionIds.size === 0 || generateMutation.isPending.value"
+              :disabled="generationQuestionIds.size === 0 || aiActionUnavailable"
               data-testid="generate-cover-letter"
               @click="generateAnswers()"
             >
-              {{ generateMutation.isPending.value ? '접수 중…' : '선택 문항 AI 초안 생성' }}
+              {{ aiActionUnavailable ? 'AI 작업 진행 중…' : '선택 문항 AI 초안 생성' }}
             </button>
             <button
               type="button"
               class="button button--secondary"
-              :disabled="!selectedQuestion?.currentAnswer || verifyMutation.isPending.value"
+              :disabled="!selectedQuestion?.currentAnswer || aiActionUnavailable"
               data-testid="verify-answer-version"
               @click="verifyCurrentAnswer"
             >
-              {{ verifyMutation.isPending.value ? '접수 중…' : '현재 답변 검증' }}
+              {{ aiActionUnavailable ? 'AI 작업 진행 중…' : '현재 답변 검증' }}
             </button>
           </section>
 

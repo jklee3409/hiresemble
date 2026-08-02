@@ -28,6 +28,8 @@ export const agentRunQueryKeys = {
   },
 }
 
+export const ACTIVE_AGENT_RUN_STATUSES = ['QUEUED', 'RUNNING', 'WAITING_USER'] as const
+
 export function useAgentRunListQuery(
   userId: MaybeRefOrGetter<string>,
   filters: MaybeRefOrGetter<AgentRunListParams>,
@@ -35,7 +37,18 @@ export function useAgentRunListQuery(
   return useQuery({
     queryKey: computed(() => agentRunQueryKeys.list(toValue(userId), toValue(filters))),
     queryFn: () => listAgentRuns(toValue(filters)),
+    enabled: computed(() => toValue(userId) !== ''),
   })
+}
+
+export function useActiveAgentRunsQuery(userId: MaybeRefOrGetter<string>) {
+  const filters = computed<AgentRunListParams>(() => ({
+    status: [...ACTIVE_AGENT_RUN_STATUSES],
+    page: 0,
+    size: 100,
+    sort: 'updatedAt,desc',
+  }))
+  return useAgentRunListQuery(userId, filters)
 }
 
 export function useAgentRunDetailQuery(

@@ -617,14 +617,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
             </ul>
             <p>아래 기존 결과는 그대로 유지돼요. 필요할 때 현재 정보로 재분석해 주세요.</p>
           </div>
-          <button
-            type="button"
-            class="button button--primary"
-            :disabled="commandUnavailable"
-            @click="requestAnalysis(true)"
-          >
-            재분석하기
-          </button>
         </section>
 
         <section class="analysis-result__hero section-surface">

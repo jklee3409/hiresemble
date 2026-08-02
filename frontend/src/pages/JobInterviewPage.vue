@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useCoverLetterListQuery } from '@/features/cover-letters/queries'
+import { useActiveAgentRunsQuery } from '@/features/agent-runs/queries'
 import InterviewRunMonitor from '@/features/interviews/InterviewRunMonitor.vue'
 import {
   AGENT_RUN_STATUS_LABELS,
@@ -54,6 +55,7 @@ const questionSets = useQuestionSetListQuery(
   })),
 )
 const prepareMutation = useCreateInterviewPreparationMutation(userId)
+const activeRuns = useActiveAgentRunsQuery(userId)
 
 const selectedCoverLetterId = ref('')
 const researchQuality = ref<ResearchQuality>('BASIC')
@@ -77,11 +79,32 @@ const usableCoverLetters = computed(
     ) ?? [],
 )
 const latestQuestionSet = computed(() => questionSets.data.value?.items[0] ?? null)
+const activePreparationRun = computed(() => {
+  const questionSetIds = new Set(questionSets.data.value?.items.map((item) => item.id) ?? [])
+  if (acceptedQuestionSetId.value !== '') questionSetIds.add(acceptedQuestionSetId.value)
+  return (
+    activeRuns.data.value?.items.find(
+      (run) =>
+        run.workflowType === 'INTERVIEW_PREPARATION' &&
+        run.resourceType === 'QUESTION_SET' &&
+        run.resourceId !== null &&
+        questionSetIds.has(run.resourceId),
+    ) ?? null
+  )
+})
 const monitoredQuestionSetId = computed(
-  () => acceptedQuestionSetId.value || latestQuestionSet.value?.id || '',
+  () =>
+    acceptedQuestionSetId.value ||
+    activePreparationRun.value?.resourceId ||
+    latestQuestionSet.value?.id ||
+    '',
 )
 const monitoredAgentRunId = computed(
-  () => acceptedAgentRunId.value || latestQuestionSet.value?.agentRun.id || '',
+  () =>
+    acceptedAgentRunId.value ||
+    activePreparationRun.value?.id ||
+    latestQuestionSet.value?.agentRun.id ||
+    '',
 )
 const canSubmit = computed(
   () =>
@@ -89,7 +112,10 @@ const canSubmit = computed(
     selectedQuestionTypes.value.length > 0 &&
     questionCount.value >= 1 &&
     questionCount.value <= 20 &&
-    !prepareMutation.isPending.value,
+    !prepareMutation.isPending.value &&
+    activePreparationRun.value === null &&
+    !activeRuns.isLoading.value &&
+    !activeRuns.isError.value,
 )
 const prerequisiteMessage = computed(() => {
   if (actionError.value === null) return null
@@ -150,7 +176,9 @@ async function submitPreparation(): Promise<void> {
 }
 
 async function refreshAfterRun(): Promise<void> {
-  await Promise.all([job.refetch(), questionSets.refetch()])
+  acceptedQuestionSetId.value = ''
+  acceptedAgentRunId.value = ''
+  await Promise.all([job.refetch(), questionSets.refetch(), activeRuns.refetch()])
 }
 
 async function refreshPage(): Promise<void> {

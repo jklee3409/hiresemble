@@ -17,6 +17,7 @@ import {
 } from '@/features/documents/queries'
 import { validateManualText } from '@/features/documents/validation'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import { useAgentRunDetailQuery } from '@/features/agent-runs/queries'
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import DocumentRunMonitor from '@/features/documents/DocumentRunMonitor.vue'
 import DocumentEvidencePanel from '@/features/documents/DocumentEvidencePanel.vue'
@@ -54,6 +55,10 @@ const activeRunId = ref(typeof route.query.run === 'string' ? route.query.run : 
 const monitoredRunId = computed(
   () => activeRunId.value || document.data.value?.latestAgentRunId || '',
 )
+const monitoredRun = useAgentRunDetailQuery(userId, monitoredRunId)
+const documentRunActive = computed(() =>
+  ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(monitoredRun.data.value?.status ?? ''),
+)
 let manualIdempotencyKey = ''
 let reparseIdempotencyKey = ''
 
@@ -73,6 +78,12 @@ const reparseMutation = useMutation({
   mutationFn: (input: { version: number; key: string }) =>
     reparseDocument(documentId.value, { version: input.version }, input.key),
 })
+const reparseUnavailable = computed(
+  () =>
+    reparseMutation.isPending.value ||
+    documentRunActive.value ||
+    (monitoredRunId.value !== '' && (monitoredRun.isLoading.value || monitoredRun.isError.value)),
+)
 const downloadMutation = useMutation({
   mutationFn: () => createDocumentDownloadUrl(documentId.value),
 })
@@ -111,11 +122,11 @@ async function submitManualText(): Promise<void> {
 }
 
 async function reparse(): Promise<void> {
-  if (document.data.value === undefined) return
+  if (document.data.value === undefined || reparseUnavailable.value) return
   const confirmed = await notifications.confirm({
     title: '자료를 다시 분석할까요?',
     message:
-      'AI 사용량이 새로 집계될 수 있어요. 기존 원본과 검토 결과는 새 분석이 끝날 때까지 유지됩니다.',
+      '기존에 추출한 경험은 즉시 삭제되어 공고 분석과 자기소개서 작성에 더 이상 사용되지 않아요. 새 분석에서 경험을 다시 추출합니다.',
     confirmLabel: '다시 분석',
   })
   if (!confirmed) return
@@ -253,8 +264,13 @@ function fileTypeLabel(mimeType: string): string {
       >
         <template #actions>
           <div class="document-detail__actions">
-            <button class="button button--secondary button--compact" type="button" @click="reparse">
-              다시 분석
+            <button
+              class="button button--secondary button--compact"
+              type="button"
+              :disabled="reparseUnavailable"
+              @click="reparse"
+            >
+              {{ documentRunActive ? '분석 진행 중…' : '다시 분석' }}
             </button>
             <button class="button button--ghost button--compact" type="button" @click="download">
               원본 열기

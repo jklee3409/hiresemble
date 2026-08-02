@@ -86,6 +86,16 @@ const requestedRunId = computed(() => {
 const monitoredRunId = computed(
   () => requestedRunId.value || latestRun.data.value?.items[0]?.id || '',
 )
+const extractionRunActive = computed(() =>
+  ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(latestRun.data.value?.items[0]?.status ?? ''),
+)
+const extractionCommandUnavailable = computed(
+  () =>
+    retryMutation.isPending.value ||
+    extractionRunActive.value ||
+    latestRun.isLoading.value ||
+    latestRun.isError.value,
+)
 const loadError = computed(() => {
   if (job.error.value === null) return ''
   const error = normalizeApiError(job.error.value)
@@ -189,7 +199,7 @@ async function changeStatus(): Promise<void> {
 
 async function retryExtraction(): Promise<void> {
   const current = job.data.value
-  if (current === undefined) return
+  if (current === undefined || extractionCommandUnavailable.value) return
   message.value = ''
   actionError.value = ''
   try {
@@ -411,10 +421,10 @@ function extractionTone(
             id="job-retry-extraction"
             type="button"
             class="button button--secondary button--compact"
-            :disabled="retryMutation.isPending.value"
+            :disabled="extractionCommandUnavailable"
             @click="retryExtraction"
           >
-            {{ retryMutation.isPending.value ? '다시 불러오는 중…' : '공고 다시 불러오기' }}
+            {{ extractionRunActive ? '불러오는 중…' : '공고 다시 불러오기' }}
           </button>
           <button
             id="job-delete"

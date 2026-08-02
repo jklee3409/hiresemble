@@ -296,11 +296,37 @@ describe('CoverLetterEditPage', () => {
 
     await wrapper.get('[data-testid="verify-answer-version"]').trigger('click')
     await flushPromises()
+    expect(mocks.verify.mutateAsync).not.toHaveBeenCalled()
+    expect(
+      wrapper.get('[data-testid="verify-answer-version"]').attributes('disabled'),
+    ).toBeDefined()
+  })
+
+  it('submits answer verification when no other AI command is active', async () => {
+    const wrapper = await mountPage()
+    await wrapper.get('[data-testid="verify-answer-version"]').trigger('click')
+    await flushPromises()
+
     expect(mocks.verify.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
       versionId: COVER_LETTER_ANSWER_ID,
-      request: { qualityMode: 'HIGH_QUALITY' },
+      request: { qualityMode: 'BALANCED' },
     })
+  })
+
+  it('restores an active cover-letter run and disables both AI command buttons', async () => {
+    mocks.latestRun.data.value = page([{ id: COVER_LETTER_RUN_ID, status: 'RUNNING' }])
+    const wrapper = await mountPage()
+
+    expect(wrapper.find('[data-testid="run-monitor"]').exists()).toBe(true)
+    expect(
+      wrapper.get('[data-testid="generate-cover-letter"]').attributes('disabled'),
+    ).toBeDefined()
+    expect(
+      wrapper.get('[data-testid="verify-answer-version"]').attributes('disabled'),
+    ).toBeDefined()
+    await wrapper.get('[data-testid="generate-cover-letter"]').trigger('click')
+    expect(mocks.generate.mutateAsync).not.toHaveBeenCalled()
   })
 
   it('submits a valid new question from the browser form', async () => {

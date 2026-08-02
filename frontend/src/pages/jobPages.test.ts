@@ -12,6 +12,7 @@ import { ApiClientError } from '@/shared/api/errors'
 import * as jobApi from '@/shared/api/jobApi'
 import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
+import { agentRunSummary } from '@/features/agent-runs/testFixtures'
 import {
   JOB_ID,
   JOB_RUN_ID,
@@ -216,6 +217,31 @@ describe('P5 Job pages', () => {
       { version: 2 },
       expect.stringMatching(/^[A-Za-z0-9._:-]{8,128}$/),
     )
+  })
+
+  it('restores an active extraction run and blocks another extraction retry', async () => {
+    vi.mocked(jobApi.getJob).mockResolvedValue(
+      jobDetailFixture({
+        extractionStatus: 'FAILED',
+        extractionError: { code: 'JOB_EXTRACTION_FAILED', message: '본문 추출에 실패했습니다.' },
+      }),
+    )
+    vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(
+      page([
+        agentRunSummary('RUNNING', {
+          id: JOB_RUN_ID,
+          workflowType: 'JOB_POSTING_EXTRACTION',
+          resourceType: 'JOB',
+          resourceId: JOB_ID,
+        }),
+      ]),
+    )
+    const { wrapper } = await mountOverview()
+    const retryButton = wrapper.findAll('button').find((button) => button.text() === '불러오는 중…')
+
+    expect(retryButton?.attributes('disabled')).toBeDefined()
+    await retryButton?.trigger('click')
+    expect(jobApi.retryJobExtraction).not.toHaveBeenCalled()
   })
 
   it('compares a 409 draft and explicitly reapplies it with the latest version', async () => {

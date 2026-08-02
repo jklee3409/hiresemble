@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { useActiveAgentRunsQuery } from '@/features/agent-runs/queries'
 import InterviewRunMonitor from './InterviewRunMonitor.vue'
 import {
   INTERVIEW_QUESTION_TYPE_LABELS,
@@ -86,6 +87,7 @@ const feedbacks = useInterviewFeedbackListQuery(
 )
 const saveMutation = useSaveInterviewAnswerMutation(computed(() => props.userId))
 const feedbackMutation = useRequestInterviewFeedbackMutation(computed(() => props.userId))
+const activeRuns = useActiveAgentRunsQuery(computed(() => props.userId))
 
 watch(
   () => answerVersions.data.value,
@@ -105,6 +107,24 @@ const selectedFeedbackVersion = computed(
   () =>
     answerVersions.data.value?.items.find((item) => item.id === selectedFeedbackVersionId.value) ??
     (serverCurrent.value?.id === selectedFeedbackVersionId.value ? serverCurrent.value : null),
+)
+const restoredFeedbackRun = computed(
+  () =>
+    activeRuns.data.value?.items.find(
+      (run) =>
+        run.workflowType === 'INTERVIEW_ANSWER_FEEDBACK' &&
+        run.resourceType === 'INTERVIEW_ANSWER_VERSION' &&
+        run.resourceId === selectedFeedbackVersionId.value,
+    ) ?? null,
+)
+const feedbackRunIsActive = computed(
+  () => feedbackRunActive.value || restoredFeedbackRun.value !== null,
+)
+const monitoredFeedbackRunId = computed(
+  () => feedbackRunId.value || restoredFeedbackRun.value?.id || '',
+)
+const monitoredFeedbackVersionId = computed(
+  () => feedbackRunVersionId.value || restoredFeedbackRun.value?.resourceId || '',
 )
 
 async function saveAnswer(
@@ -170,7 +190,9 @@ async function requestFeedback(): Promise<void> {
   if (
     selectedFeedbackVersionId.value === '' ||
     feedbackMutation.isPending.value ||
-    feedbackRunActive.value
+    feedbackRunIsActive.value ||
+    activeRuns.isLoading.value ||
+    activeRuns.isError.value
   ) {
     return
   }
@@ -192,7 +214,9 @@ async function requestFeedback(): Promise<void> {
 
 async function refreshFeedbackAfterRun(): Promise<void> {
   feedbackRunActive.value = false
-  await feedbacks.refetch()
+  feedbackRunId.value = ''
+  feedbackRunVersionId.value = ''
+  await Promise.all([feedbacks.refetch(), activeRuns.refetch()])
   emit('changed')
 }
 </script>
@@ -419,7 +443,12 @@ async function refreshFeedbackAfterRun(): Promise<void> {
         <button
           type="button"
           class="button button--secondary"
-          :disabled="feedbackMutation.isPending.value || feedbackRunActive"
+          :disabled="
+            feedbackMutation.isPending.value ||
+            feedbackRunIsActive ||
+            activeRuns.isLoading.value ||
+            activeRuns.isError.value
+          "
           :data-testid="`request-interview-feedback-${question.id}`"
           @click="requestFeedback"
         >
@@ -428,12 +457,12 @@ async function refreshFeedbackAfterRun(): Promise<void> {
       </div>
 
       <InterviewRunMonitor
-        v-if="feedbackRunId && feedbackRunVersionId"
+        v-if="monitoredFeedbackRunId && monitoredFeedbackVersionId"
         :user-id="userId"
-        :agent-run-id="feedbackRunId"
+        :agent-run-id="monitoredFeedbackRunId"
         workflow-type="INTERVIEW_ANSWER_FEEDBACK"
         resource-type="INTERVIEW_ANSWER_VERSION"
-        :resource-id="feedbackRunVersionId"
+        :resource-id="monitoredFeedbackVersionId"
         @terminal="refreshFeedbackAfterRun"
         @unavailable="refreshFeedbackAfterRun"
       />

@@ -10,6 +10,7 @@ import {
   INTERVIEW_QUESTION_SET_ID,
   INTERVIEW_RESEARCH_RUN_ID,
   page,
+  questionSetSummaryFixture,
 } from '@/features/interviews/testFixtures'
 import { ApiClientError } from '@/shared/api/errors'
 
@@ -42,6 +43,14 @@ const mocks = vi.hoisted(() => ({
     isPending: { value: false },
     mutateAsync: vi.fn(),
   },
+  activeRuns: {
+    data: {
+      value: { items: [], page: 0, size: 100, totalElements: 0, totalPages: 0 } as unknown,
+    },
+    isLoading: { value: false },
+    isError: { value: false },
+    refetch: vi.fn(async () => undefined),
+  },
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -56,6 +65,9 @@ vi.mock('@/features/cover-letters/queries', () => ({
 vi.mock('@/features/interviews/queries', () => ({
   useQuestionSetListQuery: () => mocks.sets,
   useCreateInterviewPreparationMutation: () => mocks.prepare,
+}))
+vi.mock('@/features/agent-runs/queries', () => ({
+  useActiveAgentRunsQuery: () => mocks.activeRuns,
 }))
 
 describe('P8 Job interview preparation page', () => {
@@ -92,6 +104,9 @@ describe('P8 Job interview preparation page', () => {
     mocks.sets.isLoading.value = false
     mocks.sets.isError.value = false
     mocks.prepare.isPending.value = false
+    mocks.activeRuns.data.value = page([])
+    mocks.activeRuns.isLoading.value = false
+    mocks.activeRuns.isError.value = false
     mocks.prepare.mutateAsync.mockResolvedValue({
       questionSetId: INTERVIEW_QUESTION_SET_ID,
       researchRunId: INTERVIEW_RESEARCH_RUN_ID,
@@ -173,6 +188,39 @@ describe('P8 Job interview preparation page', () => {
     const { wrapper } = await mountPage()
     const submit = wrapper.get<HTMLButtonElement>('[data-testid="submit-interview-preparation"]')
     expect(submit.attributes('disabled')).toBeDefined()
+    await submit.trigger('click')
+    expect(mocks.prepare.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('restores an active preparation run and prevents another preparation request', async () => {
+    mocks.sets.data.value = page([
+      questionSetSummaryFixture({
+        id: INTERVIEW_QUESTION_SET_ID,
+        agentRun: {
+          id: INTERVIEW_AGENT_RUN_ID,
+          status: 'RUNNING',
+          currentStep: 'GENERATE_QUESTIONS',
+          progressPercent: 60,
+        },
+      }),
+    ])
+    mocks.activeRuns.data.value = page([
+      {
+        id: INTERVIEW_AGENT_RUN_ID,
+        workflowType: 'INTERVIEW_PREPARATION',
+        resourceType: 'QUESTION_SET',
+        resourceId: INTERVIEW_QUESTION_SET_ID,
+        status: 'RUNNING',
+      },
+    ])
+    const { wrapper } = await mountPage()
+    const submit = wrapper.get<HTMLButtonElement>('[data-testid="submit-interview-preparation"]')
+
+    expect(submit.attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="run-monitor"]').attributes()).toMatchObject({
+      'agent-run-id': INTERVIEW_AGENT_RUN_ID,
+      'resource-id': INTERVIEW_QUESTION_SET_ID,
+    })
     await submit.trigger('click')
     expect(mocks.prepare.mutateAsync).not.toHaveBeenCalled()
   })
