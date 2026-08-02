@@ -1,10 +1,67 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import BrandMark from '@/shared/ui/BrandMark.vue'
 import { PRODUCT_JOURNEY_STEPS } from '@/shared/ui/productJourney'
-import StatusBadge from '@/shared/ui/StatusBadge.vue'
+
+import LandingProductDemo from './LandingProductDemo.vue'
+
+const landingRoot = ref<HTMLElement | null>(null)
+const motionReady = ref(false)
+const heroRevealed = ref(false)
+
+let revealObserver: IntersectionObserver | undefined
+let firstFrame: number | undefined
+let secondFrame: number | undefined
+
+function revealEverySection(): void {
+  landingRoot.value
+    ?.querySelectorAll<HTMLElement>('[data-reveal-section]')
+    .forEach((section) => section.classList.add('is-revealed'))
+}
+
+onMounted(() => {
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  if (reducedMotion || !('IntersectionObserver' in window)) {
+    heroRevealed.value = true
+    revealEverySection()
+    return
+  }
+
+  motionReady.value = true
+  firstFrame = window.requestAnimationFrame(() => {
+    secondFrame = window.requestAnimationFrame(() => {
+      heroRevealed.value = true
+    })
+  })
+
+  try {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('is-revealed')
+          revealObserver?.unobserve(entry.target)
+        })
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -6% 0px' },
+    )
+
+    landingRoot.value
+      ?.querySelectorAll<HTMLElement>('[data-reveal-section]')
+      .forEach((section) => revealObserver?.observe(section))
+  } catch {
+    revealEverySection()
+  }
+})
+
+onBeforeUnmount(() => {
+  revealObserver?.disconnect()
+  if (firstFrame !== undefined) window.cancelAnimationFrame(firstFrame)
+  if (secondFrame !== undefined) window.cancelAnimationFrame(secondFrame)
+})
 
 const problems = [
   {
@@ -54,7 +111,7 @@ const aiPrinciples = [
 </script>
 
 <template>
-  <div class="landing-page">
+  <div ref="landingRoot" class="landing-page" :class="{ 'motion-ready': motionReady }">
     <a class="sr-only-focusable landing-skip-link" href="#landing-content">본문으로 건너뛰기</a>
 
     <header class="landing-header">
@@ -76,59 +133,39 @@ const aiPrinciples = [
 
     <main id="landing-content">
       <section class="landing-hero" aria-labelledby="landing-heading">
-        <div class="landing-shell landing-hero__grid">
-          <div class="landing-hero__copy">
-            <p class="landing-eyebrow">내 경험을, 다음 기회로</p>
-            <h1 id="landing-heading">흩어진 취업 준비를,<br />하나의 흐름으로.</h1>
-            <p class="landing-hero__description">
-              이력서와 포트폴리오에서 경험을 정리하고, 관심 공고 분석부터 자기소개서와 면접 준비까지
-              이어가세요.
+        <div class="landing-shell landing-hero__inner" :class="{ 'is-revealed': heroRevealed }">
+          <div class="landing-hero__heading">
+            <p class="landing-eyebrow" data-hero-reveal style="--reveal-order: 0">
+              내 경험을, 다음 기회로
             </p>
-            <div class="landing-hero__actions">
-              <RouterLink class="button button--primary landing-button" to="/signup">
-                시작하기
-                <AppIcon name="arrow-right" />
-              </RouterLink>
-              <RouterLink class="button button--secondary landing-button" to="/login">
-                로그인
-              </RouterLink>
-            </div>
-            <p class="landing-hero__note">
-              AI가 지원을 대신하지 않아요. 확인한 경험을 바탕으로 다음 준비를 이어갈 수 있게 도와요.
-            </p>
+            <h1 id="landing-heading">
+              <span data-hero-reveal style="--reveal-order: 1">흩어진 취업 준비를,</span>
+              <span data-hero-reveal style="--reveal-order: 2">하나의 흐름으로.</span>
+            </h1>
           </div>
 
-          <div class="product-preview" aria-label="Hiresemble에서 지원 준비가 이어지는 화면 예시">
-            <div class="product-preview__top">
-              <span><BrandMark compact :show-name="false" />지원 준비 흐름</span>
-              <StatusBadge label="자동 연결" tone="brand" />
+          <div class="landing-hero__body">
+            <div class="landing-hero__copy">
+              <p class="landing-hero__description" data-hero-reveal style="--reveal-order: 3">
+                이력서와 포트폴리오에서 경험을 정리하고, 관심 공고 분석부터 자기소개서와 면접
+                준비까지 이어가세요.
+              </p>
+              <div class="landing-hero__actions" data-hero-reveal style="--reveal-order: 4">
+                <RouterLink class="button button--primary landing-button" to="/signup">
+                  시작하기
+                  <AppIcon name="arrow-right" />
+                </RouterLink>
+                <RouterLink class="button button--secondary landing-button" to="/login">
+                  로그인
+                </RouterLink>
+              </div>
+              <p class="landing-hero__note" data-hero-reveal style="--reveal-order: 5">
+                AI가 지원을 대신하지 않아요. 확인한 경험을 바탕으로 다음 준비를 이어갈 수 있게
+                도와요.
+              </p>
             </div>
-            <ol class="product-preview__flow">
-              <li class="is-complete">
-                <span class="product-preview__marker"><AppIcon name="check" /></span>
-                <span><small>경험 준비</small><strong>이력서 등록 완료</strong></span>
-                <StatusBadge label="확인 완료" tone="success" />
-              </li>
-              <li class="is-active">
-                <span class="product-preview__marker"><AppIcon name="jobs" /></span>
-                <span><small>관심 공고</small><strong>공고 내용을 읽는 중</strong></span>
-                <StatusBadge label="진행 중" tone="info" />
-              </li>
-              <li>
-                <span class="product-preview__marker"><AppIcon name="profile" /></span>
-                <span><small>공고 분석</small><strong>내 경험과 비교</strong></span>
-                <span class="product-preview__waiting">다음 단계</span>
-              </li>
-              <li>
-                <span class="product-preview__marker"><AppIcon name="cover-letter" /></span>
-                <span><small>이어지는 준비</small><strong>자기소개서 준비 가능</strong></span>
-                <span class="product-preview__waiting">준비 전</span>
-              </li>
-            </ol>
-            <div class="product-preview__footer">
-              <span>등록한 정보와 공고 요구사항을 비교해요.</span>
-              <strong>결과는 직접 확인하고 수정할 수 있어요.</strong>
-            </div>
+
+            <LandingProductDemo data-hero-reveal style="--reveal-order: 6" />
           </div>
         </div>
       </section>
@@ -137,12 +174,13 @@ const aiPrinciples = [
         id="service-intro"
         class="landing-section landing-problem"
         aria-labelledby="problem-heading"
+        data-reveal-section
       >
         <div class="landing-shell">
-          <div class="landing-section__heading">
+          <div class="landing-section__heading" data-reveal-item style="--reveal-order: 0">
             <p class="landing-eyebrow">서비스 소개</p>
             <h2 id="problem-heading">
-              지원 준비가 이어지지 않으면<br />같은 일을 여러 번 하게 돼요.
+              준비가 한곳에 쌓이지 않으면<br />지원할 때마다 다시 정리해야 해요.
             </h2>
             <p>
               Hiresemble은 흩어진 정보를 한 번에 없애기보다, 확인한 경험을 다음 준비에 이어 쓰는
@@ -150,13 +188,18 @@ const aiPrinciples = [
             </p>
           </div>
           <div class="problem-list">
-            <article v-for="problem in problems" :key="problem.title">
+            <article
+              v-for="(problem, index) in problems"
+              :key="problem.title"
+              data-reveal-item
+              :style="{ '--reveal-order': index + 1 }"
+            >
               <AppIcon :name="problem.icon" />
               <h3>{{ problem.title }}</h3>
               <p>{{ problem.description }}</p>
             </article>
           </div>
-          <p class="landing-conclusion">
+          <p class="landing-conclusion" data-reveal-item style="--reveal-order: 4">
             한 번 정리한 경험을 확인하고,<br />지원하는 공고에 맞춰 다음 준비로 이어갑니다.
           </p>
         </div>
@@ -166,12 +209,17 @@ const aiPrinciples = [
         id="journey"
         class="landing-section landing-journey"
         aria-labelledby="journey-heading"
+        data-reveal-section
       >
         <div class="landing-shell">
-          <div class="landing-section__heading landing-section__heading--wide">
+          <div
+            class="landing-section__heading landing-section__heading--wide"
+            data-reveal-item
+            style="--reveal-order: 0"
+          >
             <div>
               <p class="landing-eyebrow">이용 흐름</p>
-              <h2 id="journey-heading">내 정보부터 면접 준비까지,<br />다섯 단계로 이어져요.</h2>
+              <h2 id="journey-heading">지원 정보부터 면접 준비까지,<br />다섯 단계로 이어져요.</h2>
             </div>
             <p>
               모든 단계를 한 번에 끝낼 필요는 없어요. 지금 준비된 정보부터 시작하고 필요한 순간에
@@ -179,7 +227,12 @@ const aiPrinciples = [
             </p>
           </div>
           <ol class="journey-list">
-            <li v-for="step in PRODUCT_JOURNEY_STEPS" :key="step.number">
+            <li
+              v-for="step in PRODUCT_JOURNEY_STEPS"
+              :key="step.number"
+              data-reveal-item
+              :style="{ '--reveal-order': step.number }"
+            >
               <article>
                 <div class="journey-list__number">{{ String(step.number).padStart(2, '0') }}</div>
                 <div class="journey-list__icon"><AppIcon :name="step.icon" /></div>
@@ -208,14 +261,23 @@ const aiPrinciples = [
         </div>
       </section>
 
-      <section class="landing-section landing-values" aria-labelledby="values-heading">
+      <section
+        class="landing-section landing-values"
+        aria-labelledby="values-heading"
+        data-reveal-section
+      >
         <div class="landing-shell">
-          <div class="landing-section__heading">
+          <div class="landing-section__heading" data-reveal-item style="--reveal-order: 0">
             <p class="landing-eyebrow">Hiresemble이 잇는 것</p>
-            <h2 id="values-heading">기능보다 중요한 건<br />준비의 근거와 흐름이에요.</h2>
+            <h2 id="values-heading">쌓아 온 경험이,<br />다음 지원의 준비로 이어져요.</h2>
           </div>
           <div class="value-grid">
-            <article v-for="(value, index) in values" :key="value.title">
+            <article
+              v-for="(value, index) in values"
+              :key="value.title"
+              data-reveal-item
+              :style="{ '--reveal-order': index + 1 }"
+            >
               <span class="value-grid__number">0{{ index + 1 }}</span>
               <AppIcon :name="value.icon" />
               <h3>{{ value.title }}</h3>
@@ -229,18 +291,24 @@ const aiPrinciples = [
         id="ai-principles"
         class="landing-section ai-principles"
         aria-labelledby="ai-heading"
+        data-reveal-section
       >
         <div class="landing-shell ai-principles__grid">
-          <div>
+          <div data-reveal-item style="--reveal-order: 0">
             <p class="landing-eyebrow">AI 활용 원칙</p>
-            <h2 id="ai-heading">AI의 결과보다,<br />사용자가 확인한 경험을 먼저 봅니다.</h2>
+            <h2 id="ai-heading">AI가 찾아낸 경험도,<br />사용자가 확인한 뒤에 활용해요.</h2>
             <p class="ai-principles__description">
               적합도는 합격 확률이 아니에요. 등록한 정보와 공고 요구사항이 얼마나 일치하는지 준비
               방향을 살펴보는 기준이에요.
             </p>
           </div>
           <ul>
-            <li v-for="principle in aiPrinciples" :key="principle">
+            <li
+              v-for="(principle, index) in aiPrinciples"
+              :key="principle"
+              data-reveal-item
+              :style="{ '--reveal-order': index + 1 }"
+            >
               <span><AppIcon name="check" /></span>
               {{ principle }}
             </li>
@@ -248,13 +316,13 @@ const aiPrinciples = [
         </div>
       </section>
 
-      <section class="landing-final-cta" aria-labelledby="final-cta-heading">
+      <section class="landing-final-cta" aria-labelledby="final-cta-heading" data-reveal-section>
         <div class="landing-shell landing-final-cta__inner">
-          <div>
+          <div data-reveal-item style="--reveal-order: 0">
             <p class="landing-eyebrow">다음 지원을 준비할 때</p>
             <h2 id="final-cta-heading">흩어진 지원 준비를<br />이제 한곳에서 이어가세요.</h2>
           </div>
-          <div class="landing-final-cta__actions">
+          <div class="landing-final-cta__actions" data-reveal-item style="--reveal-order: 1">
             <RouterLink class="button button--primary landing-button" to="/signup">
               시작하기
               <AppIcon name="arrow-right" />
@@ -377,12 +445,20 @@ const aiPrinciples = [
   pointer-events: none;
 }
 
-.landing-hero__grid {
+.landing-hero__inner {
   position: relative;
+}
+
+.landing-hero__heading {
+  max-width: 72rem;
+}
+
+.landing-hero__body {
   display: grid;
-  grid-template-columns: minmax(0, 0.88fr) minmax(28rem, 1.12fr);
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(32rem, 1.28fr);
   align-items: center;
-  gap: clamp(3rem, 7vw, 7rem);
+  gap: clamp(3rem, 6vw, 5.5rem);
+  margin-top: clamp(2.75rem, 5vw, 4.5rem);
 }
 
 .landing-eyebrow {
@@ -403,14 +479,18 @@ const aiPrinciples = [
 }
 
 .landing-hero h1 {
-  font-size: clamp(2.8rem, 5vw, 4.75rem);
+  font-size: clamp(2.8rem, 5.44vw, 5rem);
   font-weight: 840;
-  line-height: 1.08;
+  line-height: 0.99;
+}
+
+.landing-hero h1 span {
+  display: block;
 }
 
 .landing-hero__description {
-  max-width: 38rem;
-  margin: var(--space-6) 0 0;
+  max-width: 31rem;
+  margin: 0;
   color: var(--color-text-secondary);
   font-size: clamp(1rem, 1.6vw, 1.125rem);
   line-height: 1.85;
@@ -437,124 +517,28 @@ const aiPrinciples = [
   line-height: 1.7;
 }
 
-.product-preview {
-  overflow: hidden;
-  border: 1px solid var(--hs-blue-200);
-  border-radius: var(--radius-lg);
-  background: rgb(255 255 255 / 96%);
-  box-shadow: 0 30px 80px rgb(32 57 189 / 16%);
+.landing-page.motion-ready .landing-hero__inner:not(.is-revealed) [data-hero-reveal],
+.landing-page.motion-ready [data-reveal-section]:not(.is-revealed) [data-reveal-item] {
+  opacity: 0;
+  transform: translateY(22px);
 }
 
-.product-preview__top,
-.product-preview__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
+.landing-page.motion-ready .landing-hero__inner.is-revealed [data-hero-reveal],
+.landing-page.motion-ready [data-reveal-section].is-revealed [data-reveal-item] {
+  animation: landing-reveal-up 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--reveal-order, 0) * 80ms);
 }
 
-.product-preview__top {
-  border-bottom: 1px solid var(--color-border);
-}
+@keyframes landing-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
 
-.product-preview__top > span {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-ink-soft);
-  font-size: var(--font-size-sm);
-  font-weight: 750;
-}
-
-.product-preview__flow {
-  margin: 0;
-  padding: var(--space-3) var(--space-5);
-  list-style: none;
-}
-
-.product-preview__flow li {
-  position: relative;
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-4);
-}
-
-.product-preview__flow li + li {
-  border-top: 1px solid var(--color-border);
-}
-
-.product-preview__marker {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--color-neutral-soft);
-  color: var(--color-muted-strong);
-}
-
-.product-preview__marker .icon {
-  width: 1.1rem;
-}
-
-.product-preview__flow .is-complete .product-preview__marker {
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.product-preview__flow .is-active {
-  margin-inline: calc(var(--space-3) * -1);
-  border: 1px solid var(--hs-blue-200);
-  border-radius: var(--radius-md);
-  background: var(--hs-blue-50);
-  padding-inline: var(--space-3);
-}
-
-.product-preview__flow .is-active + li {
-  border-top: 0;
-}
-
-.product-preview__flow .is-active .product-preview__marker {
-  background: var(--color-brand);
-  color: white;
-}
-
-.product-preview__flow small,
-.product-preview__flow strong {
-  display: block;
-}
-
-.product-preview__flow small {
-  color: var(--color-muted);
-  font-size: var(--font-size-xs);
-}
-
-.product-preview__flow strong {
-  margin-top: 0.1rem;
-  font-size: var(--font-size-sm);
-}
-
-.product-preview__waiting {
-  color: var(--color-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 650;
-}
-
-.product-preview__footer {
-  align-items: flex-start;
-  flex-direction: column;
-  gap: var(--space-1);
-  background: #11182d;
-  color: #c8d2ed;
-  font-size: var(--font-size-xs);
-}
-
-.product-preview__footer strong {
-  color: white;
-  font-size: var(--font-size-sm);
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .landing-section {
@@ -829,15 +813,16 @@ const aiPrinciples = [
 }
 
 @media (max-width: 62rem) {
-  .landing-hero__grid {
+  .landing-hero__body {
     grid-template-columns: minmax(0, 1fr);
+    gap: clamp(2.5rem, 6vw, 4rem);
   }
 
   .landing-hero__copy {
-    max-width: 44rem;
+    max-width: 38rem;
   }
 
-  .product-preview {
+  .landing-hero :deep(.landing-demo) {
     width: min(100%, 43rem);
     margin-inline: auto;
   }
@@ -867,6 +852,19 @@ const aiPrinciples = [
 
   .landing-header__actions {
     grid-column: 2;
+  }
+
+  .landing-hero {
+    padding-block: clamp(3.25rem, 10vw, 5rem);
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(2.2rem, 8.4vw, 3.4rem);
+    line-height: 1.02;
+  }
+
+  .landing-hero__body {
+    margin-top: var(--space-8);
   }
 
   .problem-list,
@@ -919,7 +917,7 @@ const aiPrinciples = [
   }
 
   .landing-hero h1 {
-    font-size: clamp(2.35rem, 12vw, 3rem);
+    font-size: clamp(1.88rem, 9.6vw, 2.4rem);
   }
 
   .landing-hero__actions,
@@ -931,21 +929,6 @@ const aiPrinciples = [
   .landing-hero__actions .button,
   .landing-final-cta__actions .button {
     width: 100%;
-  }
-
-  .product-preview__top,
-  .product-preview__flow,
-  .product-preview__footer {
-    padding-inline: var(--space-4);
-  }
-
-  .product-preview__flow li {
-    grid-template-columns: 2.5rem minmax(0, 1fr);
-  }
-
-  .product-preview__flow li > :last-child {
-    grid-column: 2;
-    justify-self: start;
   }
 
   .landing-footer__inner {
@@ -962,6 +945,13 @@ const aiPrinciples = [
 @media (prefers-reduced-motion: reduce) {
   .landing-header {
     backdrop-filter: none;
+  }
+
+  .landing-page.motion-ready .landing-hero__inner [data-hero-reveal],
+  .landing-page.motion-ready [data-reveal-section] [data-reveal-item] {
+    opacity: 1;
+    animation: none;
+    transform: none;
   }
 }
 </style>

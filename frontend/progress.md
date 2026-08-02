@@ -5,7 +5,37 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 65 files/258 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 66 files/267 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-02] Session Summary (Landing Hero 크기·카피 후속 조정)
+
+- What was done:
+  - 공개 Landing Hero heading 크기를 약 80%로 낮추고 문제·이용 흐름·핵심 가치·AI 원칙 heading 네 곳을 요청 문구로 변경했다.
+  - DOM 제품 데모의 수동 pause/play UI와 상태를 제거하고 자동 timeline의 viewport·문서 visibility·reduced motion 정지는 유지했다.
+- Key decisions:
+  - 새 dependency, video asset, API·DB·AI workflow 변경 없이 Vue state와 기존 CSS만 조정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 관련 component Vitest 10/10, Landing Chromium 7/7과 1440·390·320px 시각 검수가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (공개 Landing Hero motion 개선)
+
+- What was done:
+  - 공개 Landing Hero를 전체 폭 2줄 heading과 하단 2열로 재구성하고, 실제 구현 기능만 표현하는 5-scene 자동 DOM 제품 데모와 section reveal을 추가했다.
+  - timer·Intersection Observer·Page Visibility·pause/resume·reduced motion·점진적 향상 회귀를 Vitest와 Playwright로 고정했다.
+- Key decisions:
+  - reference MP4와 별도 video asset은 제품에 포함하지 않고 Vue state와 CSS opacity·blur·transform만 사용했으며 dependency를 변경하지 않았다.
+- Issues encountered:
+  - reference 분석은 PATH의 ffmpeg 부재로 시스템 임시 경로의 도구를 사용했고, Playwright full-page 캡처는 section 진입을 명시적으로 완료한 뒤 생성하도록 보정했다.
+  - 첫 표준 check는 `e2e/index.md` Prettier 정렬 1건에서 중단됐고 formatter 적용 후 재실행해 통과했다.
+- Validation:
+  - `corepack pnpm check`: 66 files/268 tests, lint·format·typecheck·production build 통과.
+  - Landing Chromium 7/7과 1440·390·320px screenshot 검수가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (공개 Landing·Dashboard 첫 사용 흐름)
 

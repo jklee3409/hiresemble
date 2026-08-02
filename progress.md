@@ -15,6 +15,35 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (공개 Landing 카피·Hero 후속 조정)
+
+- What was done:
+  - Landing Hero headline을 약 80% 크기로 조정하고 서비스 소개·5단계·핵심 가치·AI 활용 원칙 heading을 새 문구로 변경했다.
+  - 자동 DOM 데모에서 수동 일시 정지·재생 control을 제거하면서 offscreen·background tab·reduced motion 정지 lifecycle은 유지했다.
+- Key decisions:
+  - 변경은 Frontend 공개 Landing에만 한정했으며 Backend·API·DB·인증·AI workflow와 dependency는 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Landing component Vitest 10/10, Chromium 7/7과 1440·390·320px screenshot 검수가 통과했으며 외부 Provider 호출은 없었다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (공개 Landing Hero·제품 motion 데모)
+
+- What was done:
+  - 공개 Landing Hero의 1440px 2줄 정보 계층과 하단 설명/데모 2열을 확정하고, 실제 경험·공고·분석·자기소개서·면접 준비 흐름을 5개 DOM scene으로 자동 순환하도록 개선했다.
+  - viewport·background tab·수동 pause·reduced motion 정지와 progressive section reveal을 구현하고 공개 route·Guide·Dashboard 계약을 유지했다.
+- Key decisions:
+  - 첨부된 타 서비스 MP4는 11.8초 motion pattern 분석에만 사용하고 video asset, 타 서비스 copy/UI, audio와 새 animation dependency를 포함하지 않았다.
+- Issues encountered:
+  - 로컬 ffmpeg PATH 부재는 임시 분석 바이너리로 대체했고, Playwright screenshot의 sticky/reveal timing은 테스트 내부 캡처 절차로 안정화했다.
+- Validation:
+  - `corepack pnpm check`: 66 files/268 tests, lint·format·typecheck·production build 통과.
+  - Landing Chromium 7/7과 1440·390·320px overflow·Hero/대표 scene/reduced-motion screenshot 검수가 통과했다. 실제 외부 Provider 호출은 없었다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공개 Landing·첫 사용 체크리스트 도입)
 
 - What was done:

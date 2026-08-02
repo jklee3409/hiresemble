@@ -31,15 +31,47 @@ test('anonymous users understand the service before choosing login or signup', a
     ).toBe(false)
 
     if (viewport.width === 1440) {
+      const heroMetrics = await page.locator('.landing-hero').evaluate((hero) => {
+        const heading = hero.querySelector('h1')
+        const copy = hero.querySelector('.landing-hero__copy')
+        const lines = Array.from(hero.querySelectorAll('h1 > span'))
+        if (!heading || !copy || lines.length !== 2) return null
+        const lineHeight = Number.parseFloat(getComputedStyle(heading).lineHeight)
+        return {
+          headingWidth: heading.getBoundingClientRect().width,
+          copyWidth: copy.getBoundingClientRect().width,
+          lineHeight,
+          lineHeights: lines.map((line) => line.getBoundingClientRect().height),
+          lineTops: lines.map((line) => line.getBoundingClientRect().top),
+        }
+      })
+      expect(heroMetrics).not.toBeNull()
+      expect(heroMetrics!.headingWidth).toBeGreaterThan(heroMetrics!.copyWidth * 1.8)
+      expect(
+        heroMetrics!.lineHeights.every((height) => height <= heroMetrics!.lineHeight * 1.15),
+      ).toBe(true)
+      expect(heroMetrics!.lineTops[1]).toBeGreaterThan(heroMetrics!.lineTops[0])
       await page.locator('.landing-navigation a[href="#journey"]').click()
       await expect(page).toHaveURL(/#journey$/)
       await expect(page.locator('#journey')).toBeInViewport()
     }
 
     if (process.env.UI_SCREENSHOTS === 'true' && viewport.width !== 320) {
+      await page.locator('.landing-demo').scrollIntoViewIfNeeded()
+      for (const section of await page.locator('[data-reveal-section]').all()) {
+        await section.scrollIntoViewIfNeeded()
+        await expect(section).toHaveClass(/is-revealed/)
+        await expect(section.locator('[data-reveal-item]').first()).toBeVisible()
+      }
+      await page.evaluate(() => window.scrollTo(0, 0))
       await page.screenshot({
         path: resolve(captureDirectory, `landing-${viewport.suffix}.png`),
         fullPage: true,
+        animations: 'disabled',
+      })
+      await page.screenshot({
+        path: resolve(captureDirectory, `landing-hero-${viewport.suffix}.png`),
+        fullPage: false,
         animations: 'disabled',
       })
     }
@@ -67,16 +99,106 @@ test('anonymous users understand the service before choosing login or signup', a
 
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
+  const reducedScene = await page.locator('.landing-demo').getAttribute('data-scene-index')
+  await page.waitForTimeout(2800)
+  expect(await page.locator('.landing-demo').getAttribute('data-scene-index')).toBe(reducedScene)
+  await expect(page.locator('.landing-demo button')).toHaveCount(0)
+  await page.locator('#ai-principles').scrollIntoViewIfNeeded()
+  await expect(page.locator('#ai-principles h2')).toBeVisible()
+  expect(
+    await page
+      .locator('#ai-principles h2')
+      .evaluate((element) => getComputedStyle(element).opacity),
+  ).toBe('1')
   expect(
     await page
       .locator('.landing-hero')
       .evaluate((element) => getComputedStyle(element).animationDuration),
   ).toMatch(/^(?:1e-05|0\.00001)s$/)
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({
+      path: resolve(captureDirectory, 'landing-hero-reduced-motion.png'),
+      fullPage: false,
+      animations: 'disabled',
+    })
+  }
 
   await testInfo.attach('public-route-policy', {
     body: Buffer.from('anonymous / -> landing -> login -> landing -> signup'),
     contentType: 'text/plain',
   })
+})
+
+test('product demo advances without scroll and pauses offscreen', async ({ page }) => {
+  await installAnonymousSession(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await page.goto('/')
+
+  const demo = page.locator('.landing-demo')
+  await expect(demo).toBeInViewport()
+  const firstScene = await demo.getAttribute('data-scene-index')
+  await page.waitForFunction(
+    (scene) => document.querySelector('.landing-demo')?.getAttribute('data-scene-index') !== scene,
+    firstScene,
+    { timeout: 5500 },
+  )
+  await page.waitForTimeout(700)
+
+  const captureDirectory = resolve(process.cwd(), '..', 'output', 'playwright', 'landing')
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    mkdirSync(captureDirectory, { recursive: true })
+    await page.locator('.landing-header').evaluate((header) => {
+      header.style.visibility = 'hidden'
+    })
+    await page.locator('.landing-demo__chrome').screenshot({
+      path: resolve(captureDirectory, 'landing-demo-scene-2.png'),
+      animations: 'disabled',
+    })
+    await page.locator('.landing-header').evaluate((header) => {
+      header.style.visibility = ''
+    })
+  }
+
+  await page.waitForFunction(
+    (scene) => document.querySelector('.landing-demo')?.getAttribute('data-scene-index') !== scene,
+    await demo.getAttribute('data-scene-index'),
+    { timeout: 5500 },
+  )
+  await page.waitForTimeout(700)
+  if (process.env.UI_SCREENSHOTS === 'true') {
+    await page.locator('.landing-header').evaluate((header) => {
+      header.style.visibility = 'hidden'
+    })
+    await page.locator('.landing-demo__chrome').screenshot({
+      path: resolve(captureDirectory, 'landing-demo-scene-3.png'),
+      animations: 'disabled',
+    })
+    await page.locator('.landing-header').evaluate((header) => {
+      header.style.visibility = ''
+    })
+  }
+
+  await page.locator('#ai-principles').scrollIntoViewIfNeeded()
+  await expect(demo).not.toBeInViewport()
+  await page.waitForTimeout(300)
+  const offscreenScene = await demo.getAttribute('data-scene-index')
+  await page.waitForTimeout(2800)
+  expect(await demo.getAttribute('data-scene-index')).toBe(offscreenScene)
+
+  await demo.scrollIntoViewIfNeeded()
+  await expect(demo).toBeInViewport()
+  await page.waitForFunction(
+    (scene) => document.querySelector('.landing-demo')?.getAttribute('data-scene-index') !== scene,
+    offscreenScene,
+    { timeout: 5500 },
+  )
+
+  await page.goto('/login')
+  await page.waitForTimeout(2800)
+  expect(pageErrors).toEqual([])
 })
 
 test('root navigation waits for authentication and preserves protected returnTo', async ({

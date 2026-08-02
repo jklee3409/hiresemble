@@ -4,6 +4,36 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-02] Session Summary (Landing Hero 크기·카피·데모 control 정리)
+
+- What was done:
+  - Hero headline 크기를 기존 대비 약 80%로 낮추고 서비스 소개·이용 흐름·핵심 가치·AI 활용 원칙 heading을 요청 문구로 교체했다.
+  - 자동 DOM 데모의 일시 정지·재생 button과 수동 정지 상태를 제거하고 viewport·Page Visibility·reduced motion 기반 lifecycle은 유지했다.
+- Key decisions:
+  - 명시적인 최신 요청에 따라 수동 control을 제거하되 visual demo는 `aria-hidden`, 전체 흐름은 고정 screen reader 설명으로 제공하고 reduced motion에서는 대표 scene을 정적으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Landing component Vitest 10/10과 Chromium Landing 7/7, 1440·390·320px screenshot 검수가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-02] Session Summary (Landing Hero·자동 DOM 제품 데모)
+
+- What was done:
+  - Hero를 전체 폭 2줄 heading과 하단 설명·CTA/제품 데모 2열로 재구성하고, 정적 preview를 경험 준비→공고 등록→자동 분석→결과→다음 준비의 5개 DOM scene으로 교체했다.
+  - `LandingProductDemo.vue`에 단일 timeout loop, viewport·Page Visibility·수동 pause/resume, reduced motion 정지와 unmount cleanup을 구현했다.
+  - Hero stagger와 후속 section 최초 진입 reveal을 기본 visible·mount 후 opt-in 방식으로 추가했다.
+- Key decisions:
+  - 다른 서비스 MP4는 motion 참고에만 사용하고 production asset·문구·UI·오디오는 포함하지 않았으며 새 animation dependency도 추가하지 않았다.
+  - 자동 scene은 `aria-live`로 알리지 않고 전체 흐름을 한 번의 screen reader 설명으로 제공한다.
+- Issues encountered:
+  - 시스템 PATH에 ffmpeg가 없어 임시 `imageio-ffmpeg` 바이너리로 reference metadata와 1초 간격 frame을 분석했다.
+- Validation:
+  - 관련 ESLint·`vue-tsc`, Landing component/Vitest 11/11, Chromium Landing 7/7과 1440·390·320px 시각 검수가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (서비스 소개 Landing·Dashboard 체크리스트)
 
 - What was done:

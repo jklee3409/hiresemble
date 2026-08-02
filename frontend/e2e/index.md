@@ -6,24 +6,24 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                                                                           | 역할                                                                                            |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| [`.gitkeep`](.gitkeep)                                                         | 초기 디렉터리 추적용 placeholder로 보존                                                         |
-| [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                           |
-| [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                               |
-| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px dashboard·profile overflow, keyboard·shell·reduced-motion fixture |
-| [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                |
-| [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                       |
-| [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                 |
-| [`job-auto-analysis.spec.ts`](job-auto-analysis.spec.ts)                       | 등록→서버 자동 BALANCED 분석→결과→자기소개서 이동·desktop/mobile fixture                        |
-| [`ui-redesign.visual.spec.ts`](ui-redesign.visual.spec.ts)                     | 안전한 고정 fixture의 주요 화면 1440/390px 전후 full-page 캡처                                  |
-| [`landing.spec.ts`](landing.spec.ts)                                           | anonymous Landing→login→복귀→signup, auth-aware `/`, 1440/390/320px와 Dashboard 0/3~3/3 fixture |
-| [`job-analysis.actual.spec.ts`](job-analysis.actual.spec.ts)                   | 실제 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리                                            |
-| [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts)                   | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리                         |
-| [`interview-preparation.actual.spec.ts`](interview-preparation.actual.spec.ts) | 실제 조사 coverage·source·질문·답변 409·feedback·retry·history delete·격리                      |
-| [`index.md`](index.md)                                                         | E2E 영역의 책임과 의존 관계 설명                                                                |
-| [`progress.md`](progress.md)                                                   | E2E 구현 상태와 검증 이력 추적                                                                  |
-| [`../playwright.config.ts`](../playwright.config.ts)                           | test directory, Chromium project, Vite web server와 artifact 정책 설정                          |
+| 경로                                                                           | 역할                                                                                                                         |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`.gitkeep`](.gitkeep)                                                         | 초기 디렉터리 추적용 placeholder로 보존                                                                                      |
+| [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                                                        |
+| [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                                                            |
+| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px dashboard·profile overflow, keyboard·shell·reduced-motion fixture                              |
+| [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                                             |
+| [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                                                    |
+| [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                                              |
+| [`job-auto-analysis.spec.ts`](job-auto-analysis.spec.ts)                       | 등록→서버 자동 BALANCED 분석→결과→자기소개서 이동·desktop/mobile fixture                                                     |
+| [`ui-redesign.visual.spec.ts`](ui-redesign.visual.spec.ts)                     | 안전한 고정 fixture의 주요 화면 1440/390px 전후 full-page 캡처                                                               |
+| [`landing.spec.ts`](landing.spec.ts)                                           | anonymous Landing·Hero 2줄·자동 DOM demo lifecycle·reduced motion·1440/390/320px, auth-aware `/`와 Dashboard 0/3~3/3 fixture |
+| [`job-analysis.actual.spec.ts`](job-analysis.actual.spec.ts)                   | 실제 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리                                                                         |
+| [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts)                   | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리                                                      |
+| [`interview-preparation.actual.spec.ts`](interview-preparation.actual.spec.ts) | 실제 조사 coverage·source·질문·답변 409·feedback·retry·history delete·격리                                                   |
+| [`index.md`](index.md)                                                         | E2E 영역의 책임과 의존 관계 설명                                                                                             |
+| [`progress.md`](progress.md)                                                   | E2E 구현 상태와 검증 이력 추적                                                                                               |
+| [`../playwright.config.ts`](../playwright.config.ts)                           | test directory, Chromium project, Vite web server와 artifact 정책 설정                                                       |
 
 현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run과 P4~P8 actual spec을 관리한다.
 

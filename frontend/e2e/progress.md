@@ -15,6 +15,35 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-02] Session Summary (Landing 카피·무수동 control 회귀)
+
+- What was done:
+  - 새 Hero 크기와 네 section heading을 browser에서 확인하고 데모에 수동 pause/play button이 없음을 reduced-motion 회귀에 고정했다.
+  - 자동 전환·offscreen 정지·재진입 재개·background 정지·route 이탈 cleanup 검증은 수동 control에 의존하지 않도록 갱신했다.
+- Key decisions:
+  - 대표 scene screenshot은 semantic scene 변경을 기다린 뒤 transition이 끝난 시점에 캡처하고 test-only 제품 계약은 추가하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `UI_SCREENSHOTS=true corepack pnpm exec playwright test e2e/landing.spec.ts --project=chromium`: 7/7 통과.
+- Next steps:
+  - 생성 screenshot은 `output/playwright/landing`의 로컬 검수 artifact로 유지하고 commit하지 않는다.
+
+## [2026-08-02] Session Summary (Landing Hero motion·자동 데모 회귀)
+
+- What was done:
+  - 1440px Hero의 정확한 2개 line group과 heading/copy 폭 관계, 스크롤 입력 없는 scene 전환, offscreen 정지·재진입 재개, pause 고정과 route 이탈 cleanup을 추가했다.
+  - reduced motion 정적 scene·숨김 없는 section, 1440·390·320px overflow와 Hero·대표 scene screenshot을 검증했다.
+- Key decisions:
+  - animation millisecond 내부 구현 대신 active scene의 의미 있는 변화와 정지 상태를 기다리고, screenshot 전에는 pause control과 section 최종 reveal 상태를 사용한다.
+- Issues encountered:
+  - sticky header가 element crop에 겹치고 full-page capture가 observer callback 전에 실행되는 Playwright 특성을 캡처 순간 header 숨김과 `is-revealed` 대기로 안정화했다.
+- Validation:
+  - `corepack pnpm exec playwright test e2e/landing.spec.ts --project=chromium`: 7/7 통과.
+  - `UI_SCREENSHOTS=true`로 `output/playwright/landing`의 desktop/mobile Hero, 대표 scene 2개, reduced-motion static scene을 직접 검수했다.
+- Next steps:
+  - 생성 screenshot은 로컬 검수 artifact로 유지하고 commit하지 않는다.
+
 ## [2026-08-02] Session Summary (공개 Landing·첫 사용 브라우저 회귀)
 
 - What was done:
