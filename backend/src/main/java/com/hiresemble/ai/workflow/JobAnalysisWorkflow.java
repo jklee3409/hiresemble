@@ -6,6 +6,8 @@ import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
+import com.hiresemble.ai.validation.ProviderNullable;
+import com.hiresemble.ai.validation.StructuredOutputValidationException;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
@@ -73,10 +75,10 @@ public final class JobAnalysisWorkflow {
     public static final String RETRIEVAL_POLICY_VERSION = "verified-evidence-rag-v1";
 
     private static final String BUILD_SCHEMA = "job-analysis-build-output-v1";
-    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-output-v1";
-    private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v1";
+    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-output-v2";
+    private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v2";
     private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v1";
-    private static final String MATCH_SCHEMA = "job-analysis-match-output-v1";
+    private static final String MATCH_SCHEMA = "job-analysis-match-output-v2";
     private static final String SCORE_SCHEMA = "job-analysis-score-output-v1";
     private static final String VALIDATION_SCHEMA = "job-analysis-validation-output-v1";
     private static final String PERSIST_SCHEMA = "job-analysis-persist-output-v1";
@@ -325,6 +327,52 @@ public final class JobAnalysisWorkflow {
         }
     }
 
+    /**
+     * Keeps the strict Provider record separate from the server-owned checkpoint and downstream
+     * workflow record. Mapping happens only after all Provider validation phases have succeeded.
+     */
+    private abstract class ProviderAnalysisExecutor<P, I> extends AnalysisExecutor<P> {
+
+        private final Class<I> internalOutputType;
+
+        private ProviderAnalysisExecutor(
+                String stepKey,
+                String schemaVersion,
+                Class<P> providerOutputType,
+                Class<I> internalOutputType) {
+            super(stepKey, schemaVersion, providerOutputType);
+            this.internalOutputType = internalOutputType;
+        }
+
+        protected abstract I mapProviderOutput(P output, StepExecutionContext context);
+
+        @Override
+        public final JsonNode minimalOutput(P output, ObjectMapper ignored) {
+            throw configurationFailure();
+        }
+
+        @Override
+        public final JsonNode minimalOutput(
+                P output, ObjectMapper ignored, StepExecutionContext context) {
+            return tree(mapProviderOutput(output, context));
+        }
+
+        @Override
+        public final Object ephemeralOutput(P output) {
+            throw configurationFailure();
+        }
+
+        @Override
+        public final Object ephemeralOutput(P output, StepExecutionContext context) {
+            return mapProviderOutput(output, context);
+        }
+
+        @Override
+        public final Object ephemeralOutputFromMinimal(JsonNode minimalOutput) {
+            return read(minimalOutput, internalOutputType);
+        }
+    }
+
     private final class BuildSnapshotExecutor
             extends AnalysisExecutor<BuildSnapshotOutput> {
 
@@ -438,12 +486,13 @@ public final class JobAnalysisWorkflow {
     }
 
     private final class ExtractRequirementsExecutor
-            extends AnalysisExecutor<ExtractRequirementsOutput> {
+            extends ProviderAnalysisExecutor<ProviderRequirementsOutput, ExtractRequirementsOutput> {
 
         private ExtractRequirementsExecutor() {
             super(
                     EXTRACT_REQUIREMENTS,
                     REQUIREMENTS_SCHEMA,
+                    ProviderRequirementsOutput.class,
                     ExtractRequirementsOutput.class);
         }
 
@@ -485,11 +534,8 @@ public final class JobAnalysisWorkflow {
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             AnalysisState state = state(invocation.executionContext());
             if (state.reusing()) {
-                return localResponse(new ExtractRequirementsOutput(
-                        REQUIREMENTS_SCHEMA,
-                        true,
-                        state.reusableAnalysisId(),
-                        List.of()));
+                return localResponse(new ProviderRequirementsOutput(
+                        REQUIREMENTS_SCHEMA, List.of()));
             }
             return invocation.chatGateway().chat(new ChatRequest(
                     invocation.modelRoute().providerKey(),
@@ -508,24 +554,24 @@ public final class JobAnalysisWorkflow {
 
         @Override
         protected void validateJavaRecord(
-                ExtractRequirementsOutput output, StepExecutionContext context) {
+                ProviderRequirementsOutput output, StepExecutionContext context) {
             if (!REQUIREMENTS_SCHEMA.equals(output.schemaVersion())
                     || output.requirements() == null
-                    || output.requirements().size() > MAX_REQUIREMENTS
-                    || output.reusable() != (output.reusableAnalysisId() != null)) {
-                throw new IllegalArgumentException("requirements output is invalid");
+                    || output.requirements().size() > MAX_REQUIREMENTS) {
+                throw repairable(
+                        ValidationPhase.JAVA_RECORD,
+                        "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
+                        "Return schemaVersion and no more than 100 complete requirement objects.");
             }
-            if (output.reusable() && !output.requirements().isEmpty()) {
-                throw new IllegalArgumentException("reuse output must be reference-only");
-            }
-            for (RequirementCandidate requirement : output.requirements()) {
-                validateRequirement(requirement);
+            for (ProviderRequirementCandidate requirement : output.requirements()) {
+                validateProviderRequirement(requirement);
             }
         }
 
         @Override
         protected void validateWorkflowOutput(
-                ExtractRequirementsOutput output, StepExecutionContext context) {
+                ProviderRequirementsOutput providerOutput, StepExecutionContext context) {
+            ExtractRequirementsOutput output = mapProviderOutput(providerOutput, context);
             Set<String> unique = new HashSet<>();
             for (RequirementCandidate requirement : output.requirements()) {
                 String key = requirement.section()
@@ -534,15 +580,19 @@ public final class JobAnalysisWorkflow {
                         + "|"
                         + requirement.text().trim().toLowerCase(Locale.ROOT);
                 if (!unique.add(key)) {
-                    throw new IllegalArgumentException("duplicate requirement");
+                    throw repairable(
+                            ValidationPhase.WORKFLOW_CONTEXT,
+                            "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
+                            "Return each distinct job requirement exactly once.");
                 }
             }
         }
 
         @Override
         protected void validateDomainOutput(
-                ExtractRequirementsOutput output, StepExecutionContext context) {
+                ProviderRequirementsOutput providerOutput, StepExecutionContext context) {
             AnalysisState state = state(context);
+            ExtractRequirementsOutput output = mapProviderOutput(providerOutput, context);
             requireReuseParity(
                     state,
                     output.reusable(),
@@ -551,15 +601,36 @@ public final class JobAnalysisWorkflow {
                 throw insufficientData();
             }
         }
+
+        @Override
+        protected ExtractRequirementsOutput mapProviderOutput(
+                ProviderRequirementsOutput output, StepExecutionContext context) {
+            AnalysisState state = state(context);
+            if (state.reusing()) {
+                return new ExtractRequirementsOutput(
+                        REQUIREMENTS_SCHEMA, true, state.reusableAnalysisId(), List.of());
+            }
+            List<RequirementCandidate> requirements = output.requirements().stream()
+                    .map(value -> new RequirementCandidate(
+                            value.section(),
+                            value.category(),
+                            value.text().trim(),
+                            value.required(),
+                            trimNullable(value.sourceLocation())))
+                    .toList();
+            return new ExtractRequirementsOutput(
+                    REQUIREMENTS_SCHEMA, false, null, requirements);
+        }
     }
 
     private final class AssessEligibilityExecutor
-            extends AnalysisExecutor<EligibilityAssessmentOutput> {
+            extends ProviderAnalysisExecutor<ProviderEligibilityOutput, EligibilityAssessmentOutput> {
 
         private AssessEligibilityExecutor() {
             super(
                     ASSESS_ELIGIBILITY,
                     ELIGIBILITY_SCHEMA,
+                    ProviderEligibilityOutput.class,
                     EligibilityAssessmentOutput.class);
         }
 
@@ -611,10 +682,8 @@ public final class JobAnalysisWorkflow {
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             AnalysisState state = state(invocation.executionContext());
             if (state.reusing()) {
-                return localResponse(new EligibilityAssessmentOutput(
+                return localResponse(new ProviderEligibilityOutput(
                         ELIGIBILITY_SCHEMA,
-                        true,
-                        state.reusableAnalysisId(),
                         Eligibility.UNKNOWN,
                         List.of(),
                         null));
@@ -636,34 +705,59 @@ public final class JobAnalysisWorkflow {
 
         @Override
         protected void validateJavaRecord(
-                EligibilityAssessmentOutput output, StepExecutionContext context) {
+                ProviderEligibilityOutput output, StepExecutionContext context) {
+            boolean reusing = context != null && state(context).reusing();
             if (!ELIGIBILITY_SCHEMA.equals(output.schemaVersion())
                     || output.eligibility() == null
                     || output.evidenceIds() == null
                     || output.evidenceIds().size() > 20
-                    || output.reusable() != (output.reusableAnalysisId() != null)
-                    || (!output.reusable()
-                            && !hasText(output.explanation(), 2_000))) {
-                throw new IllegalArgumentException("eligibility output is invalid");
+                    || (!reusing && !hasTrimmedText(output.explanation(), 2_000))) {
+                throw repairable(
+                        ValidationPhase.JAVA_RECORD,
+                        "JOB_ANALYSIS_ELIGIBILITY_OUTPUT_INVALID",
+                        "Return one eligibility value, allowlisted evidence IDs, and a nonblank explanation within 2000 characters.");
             }
-            if (output.reusable()
+            if (reusing
                     && (!output.evidenceIds().isEmpty()
                             || output.explanation() != null
                             || output.eligibility() != Eligibility.UNKNOWN)) {
-                throw new IllegalArgumentException("reuse eligibility is invalid");
+                throw configurationFailure();
             }
         }
 
         @Override
         protected void validateDomainOutput(
-                EligibilityAssessmentOutput output, StepExecutionContext context) {
+                ProviderEligibilityOutput providerOutput, StepExecutionContext context) {
             AnalysisState state = state(context);
+            EligibilityAssessmentOutput output = mapProviderOutput(providerOutput, context);
             requireReuseParity(
                     state,
                     output.reusable(),
                     output.reusableAnalysisId());
             requireAllowedEvidenceIds(state.snapshot(), output.evidenceIds());
             rejectProbabilityLanguage(output.explanation());
+        }
+
+        @Override
+        protected EligibilityAssessmentOutput mapProviderOutput(
+                ProviderEligibilityOutput output, StepExecutionContext context) {
+            AnalysisState state = state(context);
+            if (state.reusing()) {
+                return new EligibilityAssessmentOutput(
+                        ELIGIBILITY_SCHEMA,
+                        true,
+                        state.reusableAnalysisId(),
+                        Eligibility.UNKNOWN,
+                        List.of(),
+                        null);
+            }
+            return new EligibilityAssessmentOutput(
+                    ELIGIBILITY_SCHEMA,
+                    false,
+                    null,
+                    output.eligibility(),
+                    List.copyOf(output.evidenceIds()),
+                    output.explanation().trim());
         }
     }
 
@@ -846,10 +940,14 @@ public final class JobAnalysisWorkflow {
     }
 
     private final class MatchEvidenceExecutor
-            extends AnalysisExecutor<MatchEvidenceOutput> {
+            extends ProviderAnalysisExecutor<ProviderMatchOutput, MatchEvidenceOutput> {
 
         private MatchEvidenceExecutor() {
-            super(MATCH_EVIDENCE, MATCH_SCHEMA, MatchEvidenceOutput.class);
+            super(
+                    MATCH_EVIDENCE,
+                    MATCH_SCHEMA,
+                    ProviderMatchOutput.class,
+                    MatchEvidenceOutput.class);
         }
 
         @Override
@@ -895,10 +993,8 @@ public final class JobAnalysisWorkflow {
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             AnalysisState state = state(invocation.executionContext());
             if (state.reusing()) {
-                return localResponse(new MatchEvidenceOutput(
+                return localResponse(new ProviderMatchOutput(
                         MATCH_SCHEMA,
-                        true,
-                        state.reusableAnalysisId(),
                         List.of(),
                         List.of(),
                         List.of(),
@@ -921,7 +1017,8 @@ public final class JobAnalysisWorkflow {
 
         @Override
         protected void validateJavaRecord(
-                MatchEvidenceOutput output, StepExecutionContext context) {
+                ProviderMatchOutput output, StepExecutionContext context) {
+            boolean reusing = context != null && state(context).reusing();
             if (!MATCH_SCHEMA.equals(output.schemaVersion())
                     || output.criteria() == null
                     || output.strengths() == null
@@ -929,80 +1026,113 @@ public final class JobAnalysisWorkflow {
                     || output.criteria().size() > MAX_REQUIREMENTS
                     || output.strengths().size() > 20
                     || output.gaps().size() > 20
-                    || output.reusable() != (output.reusableAnalysisId() != null)
-                    || (!output.reusable()
-                            && output.analysisSummary() != null
-                            && !hasText(output.analysisSummary(), 10_000))) {
-                throw new IllegalArgumentException("match output is invalid");
+                    || (!reusing && !hasTrimmedText(output.analysisSummary(), 10_000))) {
+                throw repairable(
+                        ValidationPhase.JAVA_RECORD,
+                        "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
+                        "Return bounded criteria, strengths, gaps, and a nonblank analysisSummary.");
             }
-            if (output.reusable()
+            if (reusing
                     && (!output.criteria().isEmpty()
                             || !output.strengths().isEmpty()
                             || !output.gaps().isEmpty()
                             || output.analysisSummary() != null)) {
-                throw new IllegalArgumentException("reuse match output is invalid");
+                throw configurationFailure();
             }
-            for (MatchedCriterion criterion : output.criteria()) {
+            for (ProviderMatchedCriterion criterion : output.criteria()) {
                 if (criterion == null
                         || criterion.criterionIndex() < 0
                         || criterion.matchLevel() == null
                         || criterion.evidenceIds() == null
                         || criterion.evidenceIds().size() > 20
-                        || !hasText(criterion.explanation(), 2_000)
-                        || ((criterion.matchLevel() == MatchLevel.MISSING
-                                        || criterion.matchLevel() == MatchLevel.UNKNOWN)
-                                && !hasText(criterion.missingReason(), 1_000))) {
-                    throw new IllegalArgumentException("matched criterion is invalid");
+                        || !hasTrimmedText(criterion.explanation(), 2_000)) {
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
+                            "Return a valid criterion index, match level, explanation, and no more than 20 evidence IDs.");
+                }
+                boolean positive = criterion.matchLevel() == MatchLevel.MATCHED
+                        || criterion.matchLevel() == MatchLevel.PARTIAL;
+                if ((positive && criterion.evidenceIds().isEmpty())
+                        || (!positive && !criterion.evidenceIds().isEmpty())) {
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_MATCH_LEVEL_EVIDENCE_INVALID",
+                            "MATCHED or PARTIAL requires evidence IDs; MISSING or UNKNOWN requires an empty evidenceIds list.");
+                }
+                if ((positive && criterion.missingReason() != null)
+                        || (!positive && !hasTrimmedText(criterion.missingReason(), 1_000))) {
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_MATCH_MISSING_REASON_INVALID",
+                            "MATCHED or PARTIAL requires missingReason null; MISSING or UNKNOWN requires a nonblank missingReason.");
                 }
             }
-            for (StrengthDraft strength : output.strengths()) {
+            for (ProviderStrengthDraft strength : output.strengths()) {
                 if (strength == null
-                        || !hasText(strength.text(), 1_000)
+                        || !hasTrimmedText(strength.text(), 1_000)
                         || strength.criterionIndex() < 0
                         || strength.evidenceIds() == null
                         || strength.evidenceIds().isEmpty()
                         || strength.evidenceIds().size() > 20) {
-                    throw new IllegalArgumentException("strength is invalid");
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
+                            "Return strengths with nonblank text, a valid criterion index, and supporting evidence IDs.");
                 }
             }
-            for (GapDraft gap : output.gaps()) {
+            for (ProviderGapDraft gap : output.gaps()) {
                 if (gap == null
-                        || !hasText(gap.text(), 1_000)
+                        || !hasTrimmedText(gap.text(), 1_000)
                         || gap.criterionIndex() < 0) {
-                    throw new IllegalArgumentException("gap is invalid");
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
+                            "Return gaps with nonblank text and a valid criterion index.");
                 }
             }
         }
 
         @Override
         protected void validateWorkflowOutput(
-                MatchEvidenceOutput output, StepExecutionContext context) {
-            if (output.reusable()) {
+                ProviderMatchOutput providerOutput, StepExecutionContext context) {
+            if (state(context).reusing()) {
                 return;
             }
+            MatchEvidenceOutput output = mapProviderOutput(providerOutput, context);
             ExtractRequirementsOutput requirements = requiredEphemeral(
                     context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class);
             if (output.criteria().size() != requirements.requirements().size()) {
-                throw new IllegalArgumentException("criterion count is invalid");
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "JOB_ANALYSIS_MATCH_CRITERION_MAPPING_INVALID",
+                        "Connect every supplied requirement index exactly once without omissions or extras.");
             }
             Set<Integer> indexes = new HashSet<>();
             for (MatchedCriterion criterion : output.criteria()) {
                 if (criterion.criterionIndex() >= requirements.requirements().size()
                         || !indexes.add(criterion.criterionIndex())) {
-                    throw new IllegalArgumentException("criterion index is invalid");
+                    throw repairable(
+                            ValidationPhase.WORKFLOW_CONTEXT,
+                            "JOB_ANALYSIS_MATCH_CRITERION_MAPPING_INVALID",
+                            "Connect every supplied requirement index exactly once without duplicates.");
                 }
             }
             for (int index = 0; index < requirements.requirements().size(); index++) {
                 if (!indexes.contains(index)) {
-                    throw new IllegalArgumentException("criterion is missing");
+                    throw repairable(
+                            ValidationPhase.WORKFLOW_CONTEXT,
+                            "JOB_ANALYSIS_MATCH_CRITERION_MAPPING_INVALID",
+                            "Connect every supplied requirement index exactly once without omissions.");
                 }
             }
         }
 
         @Override
         protected void validateDomainOutput(
-                MatchEvidenceOutput output, StepExecutionContext context) {
+                ProviderMatchOutput providerOutput, StepExecutionContext context) {
             AnalysisState state = state(context);
+            MatchEvidenceOutput output = mapProviderOutput(providerOutput, context);
             requireReuseParity(
                     state,
                     output.reusable(),
@@ -1057,6 +1187,47 @@ public final class JobAnalysisWorkflow {
                 rejectProbabilityLanguage(gap.text());
             }
             rejectProbabilityLanguage(output.analysisSummary());
+        }
+
+        @Override
+        protected MatchEvidenceOutput mapProviderOutput(
+                ProviderMatchOutput output, StepExecutionContext context) {
+            AnalysisState state = state(context);
+            if (state.reusing()) {
+                return new MatchEvidenceOutput(
+                        MATCH_SCHEMA,
+                        true,
+                        state.reusableAnalysisId(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        null);
+            }
+            List<MatchedCriterion> criteria = output.criteria().stream()
+                    .map(value -> new MatchedCriterion(
+                            value.criterionIndex(),
+                            value.matchLevel(),
+                            List.copyOf(value.evidenceIds()),
+                            value.explanation().trim(),
+                            trimNullable(value.missingReason())))
+                    .toList();
+            List<StrengthDraft> strengths = output.strengths().stream()
+                    .map(value -> new StrengthDraft(
+                            value.text().trim(),
+                            value.criterionIndex(),
+                            List.copyOf(value.evidenceIds())))
+                    .toList();
+            List<GapDraft> gaps = output.gaps().stream()
+                    .map(value -> new GapDraft(value.text().trim(), value.criterionIndex()))
+                    .toList();
+            return new MatchEvidenceOutput(
+                    MATCH_SCHEMA,
+                    false,
+                    null,
+                    criteria,
+                    strengths,
+                    gaps,
+                    output.analysisSummary().trim());
         }
     }
 
@@ -1722,33 +1893,64 @@ public final class JobAnalysisWorkflow {
                 .toList();
     }
 
-    private void validateRequirement(RequirementCandidate requirement) {
+    private void validateProviderRequirement(ProviderRequirementCandidate requirement) {
         if (requirement == null
                 || requirement.section() == null
                 || requirement.category() == null
-                || !hasText(requirement.text(), 2_000)
+                || !hasTrimmedText(requirement.text(), 2_000)
                 || (requirement.sourceLocation() != null
-                        && !hasText(requirement.sourceLocation(), 500))) {
-            throw new IllegalArgumentException("requirement is invalid");
+                        && !hasTrimmedText(requirement.sourceLocation(), 500))) {
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
+                    "Return complete requirement fields; use null, not a blank or placeholder, when sourceLocation is unavailable.");
         }
         if (requirement.section() == RequirementSection.REQUIRED_QUALIFICATION
                 && !requirement.required()) {
-            throw new IllegalArgumentException("required qualification must be required");
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID",
+                    "REQUIRED_QUALIFICATION must set required true and PREFERRED_QUALIFICATION must set required false.");
         }
         if (requirement.section() == RequirementSection.PREFERRED_QUALIFICATION
                 && requirement.required()) {
-            throw new IllegalArgumentException("preferred qualification cannot be required");
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID",
+                    "REQUIRED_QUALIFICATION must set required true and PREFERRED_QUALIFICATION must set required false.");
         }
         if (requirement.section() == RequirementSection.RESPONSIBILITY
                 && requirement.category()
                         != FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL) {
-            throw new IllegalArgumentException("responsibility category is invalid");
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
+                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
         }
         if (requirement.section() == RequirementSection.PREFERRED_QUALIFICATION
                 && requirement.category()
                         != FitCriterionCategory.PREFERRED_QUALIFICATION) {
-            throw new IllegalArgumentException("preferred qualification category is invalid");
+            throw repairable(
+                    ValidationPhase.JAVA_RECORD,
+                    "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
+                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
         }
+    }
+
+    private boolean hasTrimmedText(String value, int maxLength) {
+        return value != null
+                && !value.trim().isEmpty()
+                && value.trim().length() <= maxLength;
+    }
+
+    private String trimNullable(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private StructuredOutputValidationException repairable(
+            ValidationPhase phase, String safeReason, String guidance) {
+        return StructuredOutputValidationException.repairable(
+                phase, safeReason, guidance);
     }
 
     private void requireAllowedEvidenceIds(
@@ -2045,6 +2247,22 @@ public final class JobAnalysisWorkflow {
             boolean required,
             String sourceLocation) {}
 
+    public record ProviderRequirementCandidate(
+            RequirementSection section,
+            FitCriterionCategory category,
+            String text,
+            boolean required,
+            @ProviderNullable String sourceLocation) {}
+
+    public record ProviderRequirementsOutput(
+            String schemaVersion, List<ProviderRequirementCandidate> requirements) {
+        public ProviderRequirementsOutput {
+            if (requirements != null) {
+                requirements = List.copyOf(requirements);
+            }
+        }
+    }
+
     public record ExtractRequirementsOutput(
             String schemaVersion,
             boolean reusable,
@@ -2064,6 +2282,18 @@ public final class JobAnalysisWorkflow {
             String explanation) {
         public EligibilityAssessmentOutput {
             evidenceIds = evidenceIds == null ? List.of() : List.copyOf(evidenceIds);
+        }
+    }
+
+    public record ProviderEligibilityOutput(
+            String schemaVersion,
+            Eligibility eligibility,
+            List<UUID> evidenceIds,
+            String explanation) {
+        public ProviderEligibilityOutput {
+            if (evidenceIds != null) {
+                evidenceIds = List.copyOf(evidenceIds);
+            }
         }
     }
 
@@ -2102,6 +2332,19 @@ public final class JobAnalysisWorkflow {
         }
     }
 
+    public record ProviderMatchedCriterion(
+            int criterionIndex,
+            MatchLevel matchLevel,
+            List<UUID> evidenceIds,
+            String explanation,
+            @ProviderNullable String missingReason) {
+        public ProviderMatchedCriterion {
+            if (evidenceIds != null) {
+                evidenceIds = List.copyOf(evidenceIds);
+            }
+        }
+    }
+
     public record StrengthDraft(
             String text, int criterionIndex, List<UUID> evidenceIds) {
         public StrengthDraft {
@@ -2110,6 +2353,36 @@ public final class JobAnalysisWorkflow {
     }
 
     public record GapDraft(String text, int criterionIndex) {}
+
+    public record ProviderStrengthDraft(
+            String text, int criterionIndex, List<UUID> evidenceIds) {
+        public ProviderStrengthDraft {
+            if (evidenceIds != null) {
+                evidenceIds = List.copyOf(evidenceIds);
+            }
+        }
+    }
+
+    public record ProviderGapDraft(String text, int criterionIndex) {}
+
+    public record ProviderMatchOutput(
+            String schemaVersion,
+            List<ProviderMatchedCriterion> criteria,
+            List<ProviderStrengthDraft> strengths,
+            List<ProviderGapDraft> gaps,
+            String analysisSummary) {
+        public ProviderMatchOutput {
+            if (criteria != null) {
+                criteria = List.copyOf(criteria);
+            }
+            if (strengths != null) {
+                strengths = List.copyOf(strengths);
+            }
+            if (gaps != null) {
+                gaps = List.copyOf(gaps);
+            }
+        }
+    }
 
     public record MatchEvidenceOutput(
             String schemaVersion,

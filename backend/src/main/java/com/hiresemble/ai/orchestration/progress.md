@@ -4,6 +4,19 @@
 
 fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
 
+## [2026-08-02] Session Summary (검증 후 context-aware output mapping hook)
+
+- What was done:
+  - Provider 검증값을 현재 Run 상태가 포함된 내부 DTO로 바꿀 수 있도록 minimal·ephemeral output에 context-aware 기본 hook을 추가했다.
+- Key decisions:
+  - 기존 workflow executor는 이전 context-free 기본 메서드로 그대로 동작하고 Job Analysis Provider executor만 새 hook을 강제한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 공통 hook 기본값 계약과 Job Analysis mapping 집중 테스트는 통과했다. 전체 506 tests에서는 범위 밖 Object Deletion Outbox 2건만 실패했다.
+- Next steps:
+  - 새 Provider/internal DTO 분리 사용처도 Provider DTO 자체를 checkpoint에 저장하지 않는다.
+
 ## [2026-08-01] Session Summary (공용 partial 오류 하드코딩 제거)
 
 - What was done:

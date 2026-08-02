@@ -8,8 +8,8 @@
 
 - `P4BrowserE2eTest`: 격리 인프라와 test-scope Fake AI를 시작하고 Frontend Playwright 4개 시나리오를 실행
 - `P5BrowserE2eTest`: 격리 PostgreSQL과 Fake URL fetch·Chat을 시작하고 Frontend Playwright 5개 시나리오를 실행
-- `P6BrowserE2eTest`: 격리 PostgreSQL과 Fake Chat·Embedding을 시작하고 Frontend P6 분석 시나리오를 실행
-- `P7BrowserE2eTest`: 격리 PostgreSQL·MinIO·Fake AI를 시작하고 Frontend P7 자기소개서 시나리오와 DB assertions를 실행
+- `P6BrowserE2eTest`: 격리 PostgreSQL과 strict Provider DTO를 반환하는 Fake Chat·Embedding으로 Frontend P6 분석 시나리오를 실행
+- `P7BrowserE2eTest`: 격리 PostgreSQL·MinIO·strict Provider DTO Fake AI로 Frontend P7 자기소개서 시나리오와 DB assertions를 실행
 - [`progress.md`](progress.md): 실제 E2E 이력
 
 ## 구성 요소 역할

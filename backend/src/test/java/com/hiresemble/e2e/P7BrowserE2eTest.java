@@ -19,13 +19,13 @@ import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDra
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.FactCheckOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.RequirementCheckOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EligibilityAssessmentOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ExtractRequirementsOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchEvidenceOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.StrengthDraft;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.coverletter.domain.IssueSeverity;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
@@ -384,11 +384,11 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
-                case "job-analysis-requirements-output-v1" ->
+                case "job-analysis-requirements-output-v2" ->
                         jobRequirements(request.input());
-                case "job-analysis-eligibility-output-v1" ->
+                case "job-analysis-eligibility-output-v2" ->
                         jobEligibility(request.input());
-                case "job-analysis-match-output-v1" ->
+                case "job-analysis-match-output-v2" ->
                         jobMatches(request.input());
                 case "cover-generation-plan-output-v1" ->
                         generationPlan(request.input());
@@ -444,19 +444,17 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     List.of(candidate));
         }
 
-        private ExtractRequirementsOutput jobRequirements(JsonNode input) {
-            return new ExtractRequirementsOutput(
-                    "job-analysis-requirements-output-v1",
-                    false,
-                    null,
+        private ProviderRequirementsOutput jobRequirements(JsonNode input) {
+            return new ProviderRequirementsOutput(
+                    "job-analysis-requirements-output-v2",
                     List.of(
-                            new RequirementCandidate(
+                            new ProviderRequirementCandidate(
                                     RequirementSection.REQUIRED_QUALIFICATION,
                                     FitCriterionCategory.REQUIRED_QUALIFICATION,
                                     "Backend engineering experience",
                                     true,
                                     "Required experience"),
-                            new RequirementCandidate(
+                            new ProviderRequirementCandidate(
                                     RequirementSection.RESPONSIBILITY,
                                     FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
                                     "Spring Boot API development",
@@ -464,39 +462,35 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                                     "Core responsibility")));
         }
 
-        private EligibilityAssessmentOutput jobEligibility(JsonNode input) {
+        private ProviderEligibilityOutput jobEligibility(JsonNode input) {
             UUID evidenceId =
                     firstUuid(input.path("approvedProfile").path("verifiedEvidence"), "id");
-            return new EligibilityAssessmentOutput(
-                    "job-analysis-eligibility-output-v1",
-                    false,
-                    null,
+            return new ProviderEligibilityOutput(
+                    "job-analysis-eligibility-output-v2",
                     Eligibility.ELIGIBLE,
                     List.of(evidenceId),
                     "The approved evidence satisfies the required qualification.");
         }
 
-        private MatchEvidenceOutput jobMatches(JsonNode input) {
+        private ProviderMatchOutput jobMatches(JsonNode input) {
             UUID evidenceId =
                     firstUuid(input.path("verifiedEvidenceCandidates"), "evidenceId");
-            return new MatchEvidenceOutput(
-                    "job-analysis-match-output-v1",
-                    false,
-                    null,
+            return new ProviderMatchOutput(
+                    "job-analysis-match-output-v2",
                     List.of(
-                            new MatchedCriterion(
+                            new ProviderMatchedCriterion(
                                     0,
                                     MatchLevel.MATCHED,
                                     List.of(evidenceId),
                                     "The approved experience supports the qualification.",
                                     null),
-                            new MatchedCriterion(
+                            new ProviderMatchedCriterion(
                                     1,
                                     MatchLevel.MATCHED,
                                     List.of(evidenceId),
                                     "The approved Spring experience supports the responsibility.",
                                     null)),
-                    List.of(new StrengthDraft(
+                    List.of(new ProviderStrengthDraft(
                             "Spring Boot API experience", 1, List.of(evidenceId))),
                     List.of(),
                     "The verified evidence matches the posting requirements.");

@@ -22,12 +22,15 @@ import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EmbeddingValuesOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EligibilityAssessmentOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ExtractRequirementsOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.GapDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchEvidenceOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderGapDraft;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.StrengthDraft;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.GatewayInvocation;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepExecutionContext;
@@ -99,6 +102,12 @@ class JobAnalysisWorkflowTest {
                 JobAnalysisWorkflow.PERSIST_ANALYSIS);
         assertThat(result.providerInvocations()).isEqualTo(4);
         assertThat(fixture.chat.requests).hasSize(3);
+        assertThat(fixture.chat.requests)
+                .extracting(ChatGateway.ChatRequest::outputType)
+                .containsExactly(
+                        ProviderRequirementsOutput.class,
+                        ProviderEligibilityOutput.class,
+                        ProviderMatchOutput.class);
         assertThat(fixture.embedding.calls.get()).isEqualTo(1);
         assertThat(fixture.query.searchCalls.get()).isEqualTo(1);
         assertThat(fixture.command.persisted).isNotNull();
@@ -162,10 +171,8 @@ class JobAnalysisWorkflowTest {
     @Test
     void zeroCriterionFailsSafelyWithoutPersistence() {
         Fixture fixture = fixture(false, true);
-        fixture.chat.enqueue(new ExtractRequirementsOutput(
-                "job-analysis-requirements-output-v1",
-                false,
-                null,
+        fixture.chat.enqueue(new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v2",
                 List.of()));
 
         assertThatThrownBy(() -> execute(fixture))
@@ -268,7 +275,173 @@ class JobAnalysisWorkflowTest {
                 input,
                 context));
         Object valid = validate(executor, response.rawJson(), context);
-        assertThat(valid).isInstanceOf(ExtractRequirementsOutput.class);
+        assertThat(valid).isInstanceOf(ProviderRequirementsOutput.class);
+    }
+
+    @Test
+    void providerRequirementsMapToServerOwnedNewAnalysisStateAndKeepNullableSource() {
+        Fixture fixture = fixture(false, false);
+        StepExecutionContext context = requirementsContext(fixture);
+        var executor = fixture.workflow.contribution().steps().get(1).executor();
+        ProviderRequirementsOutput provider = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v2",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.REQUIRED_QUALIFICATION,
+                        FitCriterionCategory.REQUIRED_QUALIFICATION,
+                        "  관련 경력 3년 이상  ",
+                        true,
+                        null)));
+
+        Object validated = validate(executor, json(provider), context);
+        Object mapped = ephemeral(executor, validated, context);
+        JsonNode checkpoint = minimal(executor, validated, context);
+
+        assertThat(mapped).isInstanceOfSatisfying(ExtractRequirementsOutput.class, output -> {
+            assertThat(output.reusable()).isFalse();
+            assertThat(output.reusableAnalysisId()).isNull();
+            assertThat(output.requirements()).singleElement().satisfies(requirement -> {
+                assertThat(requirement.text()).isEqualTo("관련 경력 3년 이상");
+                assertThat(requirement.sourceLocation()).isNull();
+            });
+        });
+        assertThat(checkpoint.path("reusable").asBoolean()).isFalse();
+        assertThat(checkpoint.path("reusableAnalysisId").isNull()).isTrue();
+        assertThat(checkpoint.path("requirements").get(0).path("sourceLocation").isNull())
+                .isTrue();
+
+        ExtractRequirementsOutput legacyCheckpoint = new ExtractRequirementsOutput(
+                "job-analysis-requirements-output-v1",
+                false,
+                null,
+                ((ExtractRequirementsOutput) mapped).requirements());
+        assertThat(executor.ephemeralOutputFromMinimal(objectMapper.valueToTree(legacyCheckpoint)))
+                .isEqualTo(legacyCheckpoint);
+    }
+
+    @Test
+    void requirementSemanticFailuresUseStableValueFreeReasonsAndOneCorrection() {
+        Fixture fixture = fixture(false, false);
+        StepExecutionContext context = requirementsContext(fixture);
+        var executor = fixture.workflow.contribution().steps().get(1).executor();
+        ProviderRequirementsOutput invalidCategory = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v2",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.RESPONSIBILITY,
+                        FitCriterionCategory.PREFERRED_QUALIFICATION,
+                        "private requirement value",
+                        true,
+                        null)));
+        ProviderRequirementsOutput invalidRequired = new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v2",
+                List.of(new ProviderRequirementCandidate(
+                        RequirementSection.PREFERRED_QUALIFICATION,
+                        FitCriterionCategory.PREFERRED_QUALIFICATION,
+                        "private requirement value",
+                        true,
+                        null)));
+
+        assertRepairableFailure(
+                executor,
+                context,
+                invalidCategory,
+                "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID");
+        assertRepairableFailure(
+                executor,
+                context,
+                invalidRequired,
+                "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID");
+    }
+
+    @Test
+    void providerExecutorsCanReadLegacyInternalCheckpointShapes() {
+        Fixture fixture = fixture(false, false);
+        List<ExecutableWorkflowStep> steps = fixture.workflow.contribution().steps();
+        EligibilityAssessmentOutput eligibility = new EligibilityAssessmentOutput(
+                "job-analysis-eligibility-output-v1",
+                false,
+                null,
+                Eligibility.UNKNOWN,
+                List.of(),
+                "legacy explanation");
+        MatchEvidenceOutput match = new MatchEvidenceOutput(
+                "job-analysis-match-output-v1",
+                false,
+                null,
+                List.of(),
+                List.of(),
+                List.of(),
+                "legacy summary");
+
+        assertThat(steps.get(2).executor().ephemeralOutputFromMinimal(
+                        objectMapper.valueToTree(eligibility)))
+                .isEqualTo(eligibility);
+        assertThat(steps.get(4).executor().ephemeralOutputFromMinimal(
+                        objectMapper.valueToTree(match)))
+                .isEqualTo(match);
+    }
+
+    @Test
+    void matchLevelEvidenceAndMissingReasonFailuresAreSpecific() {
+        Fixture missingWithEvidence = fixture(false, false);
+        missingWithEvidence.chat.enqueue(
+                requirements(),
+                eligibility(Eligibility.UNKNOWN),
+                new ProviderMatchOutput(
+                        "job-analysis-match-output-v2",
+                        List.of(
+                                new ProviderMatchedCriterion(
+                                        0,
+                                        MatchLevel.MISSING,
+                                        List.of(missingWithEvidence.evidence.id()),
+                                        "확인하지 못했습니다.",
+                                        "근거가 없습니다."),
+                                new ProviderMatchedCriterion(
+                                        1,
+                                        MatchLevel.UNKNOWN,
+                                        List.of(),
+                                        "확인하지 못했습니다.",
+                                        "근거가 없습니다.")),
+                        List.of(),
+                        List.of(),
+                        "분석 요약"));
+
+        assertThatThrownBy(() -> execute(missingWithEvidence))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure -> {
+                    assertThat(failure.safeCode())
+                            .isEqualTo("JOB_ANALYSIS_MATCH_LEVEL_EVIDENCE_INVALID");
+                    assertThat(failure.maxAutomaticAttempts()).isEqualTo(2);
+                });
+
+        Fixture matchedWithReason = fixture(false, false);
+        matchedWithReason.chat.enqueue(
+                requirements(),
+                eligibility(Eligibility.ELIGIBLE, matchedWithReason.evidence.id()),
+                new ProviderMatchOutput(
+                        "job-analysis-match-output-v2",
+                        List.of(
+                                new ProviderMatchedCriterion(
+                                        0,
+                                        MatchLevel.MATCHED,
+                                        List.of(matchedWithReason.evidence.id()),
+                                        "일치합니다.",
+                                        "must be private"),
+                                new ProviderMatchedCriterion(
+                                        1,
+                                        MatchLevel.MATCHED,
+                                        List.of(matchedWithReason.evidence.id()),
+                                        "일치합니다.",
+                                        null)),
+                        List.of(),
+                        List.of(),
+                        "분석 요약"));
+
+        assertThatThrownBy(() -> execute(matchedWithReason))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure -> {
+                    assertThat(failure.safeCode())
+                            .isEqualTo("JOB_ANALYSIS_MATCH_MISSING_REASON_INVALID");
+                    assertThat(failure.correctionGuidance())
+                            .doesNotContain("must be private");
+                });
     }
 
     private ExecutionResult execute(Fixture fixture) {
@@ -295,10 +468,10 @@ class JobAnalysisWorkflowTest {
             var response = step.executor().invoke(
                     invocation(fixture, step.stepKey(), input, context));
             Object output = validate(step.executor(), response.rawJson(), context);
-            JsonNode minimal = minimal(step.executor(), output);
+            JsonNode minimal = minimal(step.executor(), output, context);
             apply(step.executor(), output, minimal, context);
             upstream.put(step.stepKey(), minimal);
-            ephemeral.put(step.stepKey(), ephemeral(step.executor(), output));
+            ephemeral.put(step.stepKey(), ephemeral(step.executor(), output, context));
             steps.add(step.stepKey());
         }
         return new ExecutionResult(List.copyOf(steps), providerInvocations, snapshot);
@@ -312,14 +485,26 @@ class JobAnalysisWorkflowTest {
         var response = step.executor().invoke(
                 invocation(fixture, step.stepKey(), input, context));
         Object output = validate(step.executor(), response.rawJson(), context);
-        JsonNode minimal = minimal(step.executor(), output);
-        return new StepResult(minimal, ephemeral(step.executor(), output));
+        JsonNode minimal = minimal(step.executor(), output, context);
+        return new StepResult(minimal, ephemeral(step.executor(), output, context));
     }
 
     private StepExecutionContext initialContext(Fixture fixture) {
         ContextSnapshot snapshot = new JobAnalysisContextBuilder(fixture.query, 1L)
                 .build(new ContextRequest(fixture.run));
         return new StepExecutionContext(fixture.run, snapshot, Map.of(), Map.of());
+    }
+
+    private StepExecutionContext requirementsContext(Fixture fixture) {
+        StepExecutionContext initial = initialContext(fixture);
+        StepResult build = executeStep(
+                fixture,
+                fixture.workflow.contribution().steps().getFirst(),
+                initial);
+        return contextWith(
+                fixture,
+                Map.of(JobAnalysisWorkflow.BUILD_JOB_SNAPSHOT, build.minimal()),
+                Map.of(JobAnalysisWorkflow.BUILD_JOB_SNAPSHOT, build.ephemeral()));
     }
 
     private StepExecutionContext contextWith(
@@ -361,13 +546,15 @@ class JobAnalysisWorkflowTest {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private JsonNode minimal(WorkflowStepExecutor executor, Object output) {
-        return executor.minimalOutput(output, objectMapper);
+    private JsonNode minimal(
+            WorkflowStepExecutor executor, Object output, StepExecutionContext context) {
+        return executor.minimalOutput(output, objectMapper, context);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Object ephemeral(WorkflowStepExecutor executor, Object output) {
-        return executor.ephemeralOutput(output);
+    private Object ephemeral(
+            WorkflowStepExecutor executor, Object output, StepExecutionContext context) {
+        return executor.ephemeralOutput(output, context);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -377,6 +564,31 @@ class JobAnalysisWorkflowTest {
             JsonNode minimal,
             StepExecutionContext context) {
         executor.domainApply(output, minimal, context);
+    }
+
+    private String json(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    private void assertRepairableFailure(
+            WorkflowStepExecutor<?> executor,
+            StepExecutionContext context,
+            Object value,
+            String safeCode) {
+        assertThatThrownBy(() -> validate(executor, json(value), context))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure -> {
+                    assertThat(failure.safeCode()).isEqualTo(safeCode);
+                    assertThat(failure.retryable()).isTrue();
+                    assertThat(failure.maxAutomaticAttempts()).isEqualTo(2);
+                    assertThat(failure.safeMessage())
+                            .doesNotContain("private requirement value");
+                    assertThat(failure.correctionGuidance())
+                            .doesNotContain("private requirement value");
+                });
     }
 
     private Fixture fixture(boolean reusable, boolean noSearchResults) {
@@ -559,19 +771,17 @@ class JobAnalysisWorkflowTest {
                 null);
     }
 
-    private ExtractRequirementsOutput requirements() {
-        return new ExtractRequirementsOutput(
-                "job-analysis-requirements-output-v1",
-                false,
-                null,
+    private ProviderRequirementsOutput requirements() {
+        return new ProviderRequirementsOutput(
+                "job-analysis-requirements-output-v2",
                 List.of(
-                        new RequirementCandidate(
+                        new ProviderRequirementCandidate(
                                 RequirementSection.REQUIRED_QUALIFICATION,
                                 FitCriterionCategory.REQUIRED_QUALIFICATION,
                                 "관련 경력 3년 이상",
                                 true,
                                 "필수 자격"),
-                        new RequirementCandidate(
+                        new ProviderRequirementCandidate(
                                 RequirementSection.RESPONSIBILITY,
                                 FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
                                 "Spring API 개발",
@@ -579,54 +789,48 @@ class JobAnalysisWorkflowTest {
                                 "주요 업무")));
     }
 
-    private EligibilityAssessmentOutput eligibility(
+    private ProviderEligibilityOutput eligibility(
             Eligibility eligibility, UUID... evidenceIds) {
-        return new EligibilityAssessmentOutput(
-                "job-analysis-eligibility-output-v1",
-                false,
-                null,
+        return new ProviderEligibilityOutput(
+                "job-analysis-eligibility-output-v2",
                 eligibility,
                 List.of(evidenceIds),
                 "필수 지원 자격을 별도로 검토했습니다.");
     }
 
-    private MatchEvidenceOutput matchedAll(UUID evidenceId) {
-        return new MatchEvidenceOutput(
-                "job-analysis-match-output-v1",
-                false,
-                null,
+    private ProviderMatchOutput matchedAll(UUID evidenceId) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v2",
                 List.of(
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 0,
                                 MatchLevel.MATCHED,
                                 List.of(evidenceId),
                                 "승인된 경력 근거와 일치합니다.",
                                 null),
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 1,
                                 MatchLevel.MATCHED,
                                 List.of(evidenceId),
                                 "승인된 Spring 경험과 일치합니다.",
                                 null)),
-                List.of(new StrengthDraft(
+                List.of(new ProviderStrengthDraft(
                         "Spring 서비스 경험", 1, List.of(evidenceId))),
                 List.of(),
                 "등록된 정보와 공고 요구사항의 일치도를 분석했습니다.");
     }
 
-    private MatchEvidenceOutput missingAll() {
-        return new MatchEvidenceOutput(
-                "job-analysis-match-output-v1",
-                false,
-                null,
+    private ProviderMatchOutput missingAll() {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v2",
                 List.of(
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 0,
                                 MatchLevel.MISSING,
                                 List.of(),
                                 "등록된 근거에서 확인하지 못했습니다.",
                                 "경력 기간 근거가 없습니다."),
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 1,
                                 MatchLevel.UNKNOWN,
                                 List.of(),
@@ -634,32 +838,30 @@ class JobAnalysisWorkflowTest {
                                 "기술 경험 근거가 없습니다.")),
                 List.of(),
                 List.of(
-                        new GapDraft("경력 기간 근거가 필요합니다.", 0),
-                        new GapDraft("Spring 경험 근거가 필요합니다.", 1)),
+                        new ProviderGapDraft("경력 기간 근거가 필요합니다.", 0),
+                        new ProviderGapDraft("Spring 경험 근거가 필요합니다.", 1)),
                 "등록된 근거가 없어 일치 여부를 확인하기 어렵습니다.");
     }
 
-    private MatchEvidenceOutput partiallyMatched(UUID evidenceId) {
-        return new MatchEvidenceOutput(
-                "job-analysis-match-output-v1",
-                false,
-                null,
+    private ProviderMatchOutput partiallyMatched(UUID evidenceId) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v2",
                 List.of(
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 0,
                                 MatchLevel.MATCHED,
                                 List.of(evidenceId),
                                 "승인된 경력 근거와 일치합니다.",
                                 null),
-                        new MatchedCriterion(
+                        new ProviderMatchedCriterion(
                                 1,
                                 MatchLevel.PARTIAL,
                                 List.of(evidenceId),
                                 "승인된 경험이 일부 일치합니다.",
                                 null)),
-                List.of(new StrengthDraft(
+                List.of(new ProviderStrengthDraft(
                         "관련 경험이 일부 확인됩니다.", 1, List.of(evidenceId))),
-                List.of(new GapDraft("Spring 운영 범위는 추가 확인이 필요합니다.", 1)),
+                List.of(new ProviderGapDraft("Spring 운영 범위는 추가 확인이 필요합니다.", 1)),
                 "등록된 정보와 일부 요구사항이 일치합니다.");
     }
 

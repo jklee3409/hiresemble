@@ -6,13 +6,13 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EmbeddingValuesOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EligibilityAssessmentOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ExtractRequirementsOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchEvidenceOutput;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.MatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.StrengthDraft;
 import com.hiresemble.job.domain.Eligibility;
 import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.MatchLevel;
@@ -215,9 +215,9 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
-                case "job-analysis-requirements-output-v1" -> requirements(request.input());
-                case "job-analysis-eligibility-output-v1" -> eligibility(request.input());
-                case "job-analysis-match-output-v1" -> matches(request.input());
+                case "job-analysis-requirements-output-v2" -> requirements(request.input());
+                case "job-analysis-eligibility-output-v2" -> eligibility(request.input());
+                case "job-analysis-match-output-v2" -> matches(request.input());
                 default -> throw new AssertionError(
                         "Unexpected P6 chat schema: " + request.outputSchemaVersion());
             };
@@ -236,29 +236,25 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
             calls.set(0);
         }
 
-        private ExtractRequirementsOutput requirements(JsonNode input) {
+        private ProviderRequirementsOutput requirements(JsonNode input) {
             String description = input.path("untrustedJobPosting")
                     .path("descriptionText")
                     .asText();
             if (description.contains("NO_REQUIREMENTS_FIXTURE")) {
-                return new ExtractRequirementsOutput(
-                        "job-analysis-requirements-output-v1",
-                        false,
-                        null,
+                return new ProviderRequirementsOutput(
+                        "job-analysis-requirements-output-v2",
                         List.of());
             }
-            return new ExtractRequirementsOutput(
-                    "job-analysis-requirements-output-v1",
-                    false,
-                    null,
+            return new ProviderRequirementsOutput(
+                    "job-analysis-requirements-output-v2",
                     List.of(
-                            new RequirementCandidate(
+                            new ProviderRequirementCandidate(
                                     RequirementSection.REQUIRED_QUALIFICATION,
                                     FitCriterionCategory.REQUIRED_QUALIFICATION,
                                     "백엔드 개발 경력 3년 이상",
                                     true,
                                     "필수 지원 자격"),
-                            new RequirementCandidate(
+                            new ProviderRequirementCandidate(
                                     RequirementSection.RESPONSIBILITY,
                                     FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
                                     "Spring Boot API 개발",
@@ -266,39 +262,35 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                                     "주요 업무")));
         }
 
-        private EligibilityAssessmentOutput eligibility(JsonNode input) {
+        private ProviderEligibilityOutput eligibility(JsonNode input) {
             UUID evidenceId = firstUuid(
                     input.path("approvedProfile").path("verifiedEvidence"), "id");
-            return new EligibilityAssessmentOutput(
-                    "job-analysis-eligibility-output-v1",
-                    false,
-                    null,
+            return new ProviderEligibilityOutput(
+                    "job-analysis-eligibility-output-v2",
                     Eligibility.ELIGIBLE,
                     List.of(evidenceId),
                     "승인된 경력 정보에서 필수 지원 자격을 확인했습니다.");
         }
 
-        private MatchEvidenceOutput matches(JsonNode input) {
+        private ProviderMatchOutput matches(JsonNode input) {
             UUID evidenceId =
                     firstUuid(input.path("verifiedEvidenceCandidates"), "evidenceId");
-            return new MatchEvidenceOutput(
-                    "job-analysis-match-output-v1",
-                    false,
-                    null,
+            return new ProviderMatchOutput(
+                    "job-analysis-match-output-v2",
                     List.of(
-                            new MatchedCriterion(
+                            new ProviderMatchedCriterion(
                                     0,
                                     MatchLevel.MATCHED,
                                     List.of(evidenceId),
                                     "승인된 경력 기간과 일치합니다.",
                                     null),
-                            new MatchedCriterion(
+                            new ProviderMatchedCriterion(
                                     1,
                                     MatchLevel.MATCHED,
                                     List.of(evidenceId),
                                     "승인된 Spring Boot 경험과 일치합니다.",
                                     null)),
-                    List.of(new StrengthDraft(
+                    List.of(new ProviderStrengthDraft(
                             "Spring Boot API 개발 경험", 1, List.of(evidenceId))),
                     List.of(),
                     "등록된 정보와 공고 요구사항의 일치도를 분석했습니다.");

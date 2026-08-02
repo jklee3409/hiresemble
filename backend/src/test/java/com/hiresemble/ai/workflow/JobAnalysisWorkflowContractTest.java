@@ -7,6 +7,7 @@ import com.hiresemble.ai.prompt.JobAnalysisPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class JobAnalysisWorkflowContractTest {
@@ -105,6 +106,54 @@ class JobAnalysisWorkflowContractTest {
     }
 
     @Test
+    void providerOutputTypesContainOnlyModelOwnedFields() {
+        assertThat(componentNames(JobAnalysisWorkflow.ProviderRequirementsOutput.class))
+                .containsExactly("schemaVersion", "requirements");
+        assertThat(componentNames(JobAnalysisWorkflow.ProviderEligibilityOutput.class))
+                .containsExactly("schemaVersion", "eligibility", "evidenceIds", "explanation");
+        assertThat(componentNames(JobAnalysisWorkflow.ProviderMatchOutput.class))
+                .containsExactly(
+                        "schemaVersion", "criteria", "strengths", "gaps", "analysisSummary");
+
+        assertThat(Stream.of(
+                                JobAnalysisWorkflow.ProviderRequirementsOutput.class,
+                                JobAnalysisWorkflow.ProviderEligibilityOutput.class,
+                                JobAnalysisWorkflow.ProviderMatchOutput.class)
+                        .flatMap(type -> componentNames(type).stream()))
+                .doesNotContain("reusable", "reusableAnalysisId");
+    }
+
+    @Test
+    void providerPromptAndSchemaIdentitiesInvalidateTheOldContract() {
+        var definition = CanonicalWorkflowDefinitions.all().stream()
+                .filter(value -> value.type() == WorkflowType.JOB_ANALYSIS)
+                .findFirst()
+                .orElseThrow();
+        PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
+
+        assertThat(JobAnalysisPromptDefinitions.PROMPT_VERSION)
+                .isEqualTo("job-analysis-prompt-v2");
+        assertThat(definition.steps())
+                .filteredOn(step -> Set.of(
+                                JobAnalysisWorkflow.EXTRACT_REQUIREMENTS,
+                                JobAnalysisWorkflow.ASSESS_ELIGIBILITY,
+                                JobAnalysisWorkflow.MATCH_EVIDENCE)
+                        .contains(step.stepKey()))
+                .extracting(WorkflowRegistry.StepDefinition::outputSchemaVersion)
+                .containsExactly(
+                        "job-analysis-requirements-output-v2",
+                        "job-analysis-eligibility-output-v2",
+                        "job-analysis-match-output-v2");
+        assertThat(prompts.require(
+                                WorkflowType.JOB_ANALYSIS,
+                                CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
+                                JobAnalysisWorkflow.EXTRACT_REQUIREMENTS)
+                        .instructions())
+                .contains("containing only schemaVersion and", "sourceLocation=null")
+                .doesNotContain("reusableAnalysisId");
+    }
+
+    @Test
     void commonExecutorProviderHookPreservesExistingDefault() {
         WorkflowStepExecutor<StringOutput> executor = new WorkflowStepExecutor<>() {
             @Override
@@ -128,12 +177,23 @@ class JobAnalysisWorkflowContractTest {
             public tools.jackson.databind.JsonNode minimalOutput(
                     StringOutput validatedOutput,
                     tools.jackson.databind.ObjectMapper objectMapper) {
-                throw new UnsupportedOperationException();
+                return objectMapper.valueToTree(validatedOutput);
             }
         };
 
         assertThat(executor.requiresProvider(null)).isTrue();
+        var mapper = new tools.jackson.databind.ObjectMapper();
+        StringOutput output = new StringOutput("safe");
+        assertThat(executor.minimalOutput(output, mapper, null))
+                .isEqualTo(executor.minimalOutput(output, mapper));
+        assertThat(executor.ephemeralOutput(output, null)).isSameAs(output);
     }
 
     private record StringOutput(String value) {}
+
+    private static List<String> componentNames(Class<?> type) {
+        return Stream.of(type.getRecordComponents())
+                .map(java.lang.reflect.RecordComponent::getName)
+                .toList();
+    }
 }

@@ -45,6 +45,17 @@ public interface WorkflowStepExecutor<T> {
 
     JsonNode minimalOutput(T validatedOutput, ObjectMapper objectMapper);
 
+    /**
+     * Builds the persisted minimal output when a validated provider value must first cross a
+     * server-owned mapping boundary. Existing executors keep the original context-free behavior.
+     */
+    default JsonNode minimalOutput(
+            T validatedOutput,
+            ObjectMapper objectMapper,
+            StepExecutionContext context) {
+        return minimalOutput(validatedOutput, objectMapper);
+    }
+
     default Optional<DomainApplyPlan> domainApply(
             T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {
         return Optional.empty();
@@ -86,6 +97,11 @@ public interface WorkflowStepExecutor<T> {
      */
     default Object ephemeralOutput(T validatedOutput) {
         return validatedOutput;
+    }
+
+    /** Maps a validated value into the in-memory handoff owned by the current workflow run. */
+    default Object ephemeralOutput(T validatedOutput, StepExecutionContext context) {
+        return ephemeralOutput(validatedOutput);
     }
 
     default Object ephemeralOutputFromMinimal(JsonNode minimalOutput) {

@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (Job Analysis Provider mapping·safe reason 회귀)
+
+- What was done:
+  - Provider 타입 field 경계, 신규 `false/null`·재사용 Provider 0회, nullable·trim mapping과 requirement/match 세부 safe reason 테스트를 추가했다.
+- Key decisions:
+  - correction guidance는 사용자 값 없이 최대 2 attempts만 허용하고 allowlist 밖 evidence는 기존 non-repairable domain 실패를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `*JobAnalysis*` 집중 테스트는 통과했다. Backend 전체 check는 범위 밖 Object Deletion Outbox 2건 실패로 미통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Job extraction v3 aggregate 회귀)
 
 - What was done:

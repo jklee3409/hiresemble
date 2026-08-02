@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-02] Session Summary (P6/P7 Job Analysis Provider fixture v2)
+
+- What was done:
+  - P6/P7 Fake Chat의 requirements·eligibility·match 응답을 실제 Provider DTO와 schema v2로 갱신했다.
+- Key decisions:
+  - 브라우저/API/DB 시나리오는 유지하고 실제 외부 Provider는 호출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - P6/P7 Spring 통합 fixture는 통과했다. 전체 check는 범위 밖 Object Deletion Outbox 2건 실패로 미통과했고, 별도 Chromium task는 이번 범위에서 실행하지 않았다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (P4/P7 local-ref fixture 회귀)
 
 - What was done:

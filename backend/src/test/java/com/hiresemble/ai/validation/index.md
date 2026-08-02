@@ -8,6 +8,7 @@ structured output 검증 순서와 retry 분류를 검증한다.
 
 - `StructuredOutputValidatorTest`
 - `OpenAiStrictSchemaCompatibilityValidatorTest`: 기존 bare object 회귀, 전체 등록 output 자동 열거, registry completeness, nullable·fingerprint 안정성
+- `JobAnalysisStrictStructuredOutputContractTest`: 실제 registry의 P6 Provider schema에서 서버 소유 필드 부재, 선택 nullable union과 non-null 필드 계약
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할

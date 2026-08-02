@@ -5,7 +5,21 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- Backend 전체 suite는 499 tests이며 이번 실행에서 기존 Interview timing test 1개가 최초 실패 후 격리 재실행 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 suite는 506 tests다. 이번 작업의 집중 검증은 통과했지만 최종 전체 check는 범위 밖 Object Deletion Outbox 상태 전이 2건이 간헐적으로 `PENDING`에 남아 실패했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (JOB_ANALYSIS strict Provider DTO 경계 개선)
+
+- What was done:
+  - `EXTRACT_REQUIREMENTS`, `ASSESS_ELIGIBILITY`, `MATCH_EVIDENCE`의 Provider 전용 record와 context-aware 내부 DTO mapping을 추가하고 P6/P7 Fake output을 v2 계약으로 갱신했다.
+  - 서버 소유 `reusable|reusableAnalysisId`를 Provider schema에서 제거하고 `sourceLocation|missingReason`만 required nullable로 유지했다.
+- Key decisions:
+  - API·DB·점수·persist 계약과 8단계 `job-analysis-v1`은 유지한다. 세 output schema는 v2, prompt는 `job-analysis-prompt-v2`로 올려 input hash가 구계약 checkpoint와 달라지게 한다.
+- Issues encountered:
+  - `spotlessApply` Gradle task가 존재하지 않아 실행할 수 없었다. 첫 집중 테스트 명령은 도구 timeout으로 최종 결과를 확보하지 못해 서로 다른 no-daemon 단일 worker 명령으로 다시 검증했다. 최종 전체 check는 범위 밖 `ObjectDeletionOutboxIntegrationTest` 2건이 `PENDING`으로 남아 실패했고 해당 클래스 격리 실행은 통과했으나, 허용된 전체 재검증에서 동일 실패가 재발했다.
+- Validation:
+  - `test --tests "*JobAnalysis*"`, `test --tests "*StrictStructuredOutput*"`, `test --tests "*OpenAiStrictSchema*"`와 Outbox 실패 클래스 격리 실행은 통과했다. 최종 `check`는 74 suites/506 tests 중 범위 밖 2건 실패로 미통과했다. 외부 AI/Search 호출 0회.
+- Next steps:
+  - 실제 사용자 실행에서는 8단계 `SUCCEEDED`, 실패 step·safe error 없음, Chat 3건+Embedding 1건 usage를 확인한다.
 
 ## [2026-08-02] Session Summary (V18 Career Guide 장문 콘텐츠 보강)
 

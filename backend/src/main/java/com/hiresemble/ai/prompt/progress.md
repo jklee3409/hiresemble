@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-02] Session Summary (Job Analysis 모델 소유 출력 prompt v2)
+
+- What was done:
+  - 세 Chat 단계 prompt를 모델 소유 필드만 반환하는 `job-analysis-prompt-v2`와 output schema v2로 갱신했다.
+- Key decisions:
+  - 공고 본문 untrusted 경계와 injection 방어를 유지하고 section/category/required, allowlist, missingReason/null, nonblank summary 규칙을 명시했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - prompt/schema identity와 Provider output type field allowlist 집중 테스트는 통과했다. 전체 Backend check는 범위 밖 Object Deletion Outbox 2건 실패로 미통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (Job image prompt v3)
 
 - What was done:

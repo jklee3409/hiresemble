@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-02] Session Summary (Job Analysis 실제 registry schema 회귀)
+
+- What was done:
+  - Job Analysis 전용 strict contract test를 추가해 세 최종 registry schema의 서버 필드 부재와 required nullable union을 검증했다.
+- Key decisions:
+  - `sourceLocation|missingReason`만 `string|null`, explanation·analysisSummary 등 필수 모델 필드는 non-null string으로 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `*StrictStructuredOutput*`, `*OpenAiStrictSchema*`는 통과했다. 전체 Backend check는 범위 밖 Object Deletion Outbox 2건 실패로 미통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (parse부터 domain까지 phase 검증)
 
 - What was done:

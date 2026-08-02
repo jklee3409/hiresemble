@@ -552,7 +552,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     return StepResult.terminal();
                 }
                 Object validated = validate(executor, response.rawJson(), executionContext);
-                JsonNode minimalOutput = minimalOutput(executor, validated);
+                JsonNode minimalOutput = minimalOutput(executor, validated, executionContext);
                 Optional<com.hiresemble.agentrun.domain.model.RequiredUserAction> requiredAction =
                         executorRequiredUserAction(executor, validated, minimalOutput, executionContext);
                 if (requiredAction.isPresent()) {
@@ -563,10 +563,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     activeStep = false;
                     return StepResult.waiting(
                             minimalOutput,
-                            executorEphemeralOutput(executor, validated),
+                            executorEphemeralOutput(executor, validated, executionContext),
                             requiredAction.get());
                 }
-                Object ephemeralOutput = executorEphemeralOutput(executor, validated);
+                Object ephemeralOutput =
+                        executorEphemeralOutput(executor, validated, executionContext);
                 if (completeCancellationIfRequested(current(run.userId(), run.id()), claimed.claimToken())) {
                     return StepResult.terminal();
                 }
@@ -994,8 +995,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private JsonNode minimalOutput(WorkflowStepExecutor executor, Object value) {
-        JsonNode output = executor.minimalOutput(value, objectMapper);
+    private JsonNode minimalOutput(
+            WorkflowStepExecutor executor,
+            Object value,
+            StepExecutionContext context) {
+        JsonNode output = executor.minimalOutput(value, objectMapper, context);
         if (output == null || !output.isObject()) {
             throw AiExecutionException.nonRetryable(
                     FailureKind.DOMAIN_VALIDATION,
@@ -1023,8 +1027,11 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private Object executorEphemeralOutput(WorkflowStepExecutor executor, Object value) {
-        return executor.ephemeralOutput(value);
+    private Object executorEphemeralOutput(
+            WorkflowStepExecutor executor,
+            Object value,
+            StepExecutionContext context) {
+        return executor.ephemeralOutput(value, context);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

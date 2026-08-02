@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (JOB_ANALYSIS Provider 출력 계약 분리)
+
+- What was done:
+  - requirements·eligibility·match의 OpenAI 출력에서 서버 소유 재사용 상태를 제거하고 검증된 Provider DTO를 기존 내부 workflow DTO로 매핑했다.
+  - 실제 strict schema, 8단계 신규·재사용, 세부 safe reason과 P6/P7 Fake 회귀를 보강했다.
+- Key decisions:
+  - 공개 8단계와 `job-analysis-v1` workflow version은 유지하고 변경된 세 schema와 prompt identity로 과거 Provider checkpoint 재사용을 차단한다.
+- Issues encountered:
+  - 저장소에 `spotlessApply` task가 없어 해당 명령은 실패했다. 최종 Backend 전체 check에서는 범위 밖 `ObjectDeletionOutboxIntegrationTest` 2건이 `PENDING` 상태로 남아 실패했으며, 해당 클래스 격리 실행은 통과했지만 허용된 전체 재검증에서도 같은 2건이 재발했다.
+- Validation:
+  - `*JobAnalysis*`, `*StrictStructuredOutput*`, `*OpenAiStrictSchema*` 집중 테스트와 Outbox 실패 클래스 격리 실행은 통과했다. 최종 Backend `check`는 74 suites/506 tests 중 범위 밖 Outbox 2건 실패로 미통과했고, 실제 Provider 호출은 0회다.
+- Next steps:
+  - 사용자가 실제 공고 분석을 1회 실행해 Run·step·safe error·usage를 확인한다.
+
 ## [2026-08-02] Session Summary (Dashboard 탐색·공고 분석 UX 보정)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-02] Session Summary (Job Analysis Provider DTO→내부 DTO mapping)
+
+- What was done:
+  - requirements·eligibility·match Provider record를 내부 output에서 분리하고 검증 뒤 trim·defensive copy·서버 재사용 상태 주입 mapping을 추가했다.
+- Key decisions:
+  - 재사용은 같은 공개 8단계에서 Provider 0회로 서버가 `true/analysisId`를 주입하며, 신규 분석은 Provider 결과에 `false/null`을 주입한다. `analysisSummary`는 신규 분석 필수 nonblank다.
+- Issues encountered:
+  - 기존 executor의 context-free output hook만으로는 서버 상태를 안전하게 주입할 수 없어 기존 기본 동작을 보존하는 context-aware hook을 최소 추가했다.
+- Validation:
+  - 신규·재사용 전체 흐름, nullable mapping, 기존 deterministic score·persist, legacy 내부 checkpoint 역직렬화와 세부 safe reason 테스트가 통과했다.
+- Next steps:
+  - 실제 Provider 1회 검증에서 세 Provider 단계가 v2 schema로 완료되는지 확인한다.
+
 ## [2026-08-01] Session Summary (JOB_POSTING_EXTRACTION v3 trusted aggregate)
 
 - What was done:
