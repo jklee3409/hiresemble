@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (Job image prompt identity v4 회귀)
+
+- What was done:
+  - image text step이 전용 v4 prompt identity를 사용하고 기존 v3 workflow sequence를 유지하는 계약을 갱신했다.
+- Key decisions:
+  - output schema·trusted reference validation 테스트는 기존 v3 의미를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job extraction workflow contract·orchestrator 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job Analysis Provider mapping·safe reason 회귀)
 
 - What was done:

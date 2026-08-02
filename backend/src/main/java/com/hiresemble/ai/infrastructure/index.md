@@ -7,7 +7,7 @@ local OpenAI Chat·Embedding/Tavily Search adapter, 명시적 disabled adapter, 
 ## 주요 파일 및 하위 디렉터리
 
 - `SpringAiOpenAiChatGateway`, `SpringAiOpenAiEmbeddingGateway`: Spring AI 2.0 운영 adapter, 중앙에서 검증된 strict schema 전송, 빈 tool option 비전송과 safe Provider rejection·finish reason 진단
-- `SpringAiOpenAiImageTextExtractionGateway`: 검증된 JPEG·PNG·WebP byte-backed media만 전송하는 OpenAI image text adapter, strict schema·retry 0·store false·chat token usage 적용
+- `SpringAiOpenAiImageTextExtractionGateway`: 안전한 local reference text와 검증된 JPEG·PNG·WebP byte-backed media 하나를 같은 Provider-visible message에 결합하는 OpenAI image text adapter, strict schema·retry 0·store false·chat token usage 적용
 - `OpenAiChatFailureSupport`: text/image Chat adapter가 공유하는 safe status·finish reason·refusal·usage 보존 경계
 - `TavilyWebSearchGateway`: HTTPS·bounded response 검색 adapter
 - `DisabledChatGateway`, `DisabledImageTextExtractionGateway`, `DisabledEmbeddingGateway`, `DisabledWebSearchGateway`: capability별 offline adapter

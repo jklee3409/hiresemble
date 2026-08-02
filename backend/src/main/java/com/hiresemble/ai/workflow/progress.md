@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-02] Session Summary (Job image association checkpoint identity v4)
+
+- What was done:
+  - `EXTRACT_JOB_IMAGE_TEXT` input hash에 provider-visible reference binding v4 policy identity를 반영했다.
+- Key decisions:
+  - 9단계 workflow와 output schema v3는 유지하고 구 요청 결합 계약의 image step checkpoint만 재사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job extraction contract·orchestrator 집중 테스트가 통과했다.
+- Next steps:
+  - 기존 terminal 실패 retry는 최신 canonical v3 successor에서 새 identity를 사용한다.
+
 ## [2026-08-02] Session Summary (Job Analysis Provider DTO→내부 DTO mapping)
 
 - What was done:

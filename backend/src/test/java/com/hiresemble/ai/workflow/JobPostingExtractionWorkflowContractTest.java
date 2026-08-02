@@ -90,7 +90,8 @@ class JobPostingExtractionWorkflowContractTest {
                 WorkflowType.JOB_POSTING_EXTRACTION,
                 CanonicalWorkflowDefinitions.JOB_POSTING_EXTRACTION_VERSION,
                 JobPostingExtractionWorkflow.EXTRACT_JOB_IMAGE_TEXT);
-        assertThat(imagePrompt.promptVersion()).isEqualTo("job-posting-extraction-prompt-v3");
+        assertThat(imagePrompt.promptVersion())
+                .isEqualTo("job-posting-extraction-image-text-prompt-v4");
         assertThat(imagePrompt.outputSchemaVersion()).isEqualTo("job-image-text-output-v3");
         assertThat(imagePrompt.instructions())
                 .contains(

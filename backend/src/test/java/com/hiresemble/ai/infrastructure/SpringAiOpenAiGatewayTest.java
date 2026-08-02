@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +30,7 @@ import com.openai.errors.OpenAIServiceException;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import java.math.BigDecimal;
@@ -46,6 +48,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -119,7 +122,7 @@ class SpringAiOpenAiGatewayTest {
     }
 
     @Test
-    void imageExtractionUsesByteBackedMediaStrictSchemaAndNoProviderRetryOrStorage() {
+    void imageExtractionPairsEachProviderVisibleReferenceWithExactlyOneByteBackedMedia() {
         OpenAiChatModel model = mock(OpenAiChatModel.class);
         when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
                 List.of(new Generation(
@@ -142,18 +145,85 @@ class SpringAiOpenAiGatewayTest {
         assertThat(options.getMaxRetries()).isZero();
         assertThat(options.getStore()).isFalse();
         assertThat(options.getOutputSchema()).contains("additionalProperties");
-        assertThat(prompt.getValue().getUserMessage().getMedia())
+        assertThat(prompt.getValue().getInstructions().stream()
+                        .filter(UserMessage.class::isInstance)
+                        .map(UserMessage.class::cast))
                 .satisfiesExactly(
-                        media -> {
-                            assertThat(media.getId()).isEqualTo("I1");
-                            assertThat(media.getMimeType().toString()).isEqualTo("image/png");
-                            assertThat(media.getDataAsByteArray()).containsExactly(1, 2, 3);
+                        user -> {
+                            assertThat(user.getText()).contains("Local image reference: I1");
+                            assertThat(user.getMedia()).singleElement().satisfies(media -> {
+                                assertThat(media.getId()).isNull();
+                                assertThat(media.getMimeType().toString()).isEqualTo("image/png");
+                                assertThat(media.getDataAsByteArray()).containsExactly(1, 2, 3);
+                            });
                         },
-                        media -> {
-                            assertThat(media.getId()).isEqualTo("I2");
-                            assertThat(media.getMimeType().toString()).isEqualTo("image/webp");
-                            assertThat(media.getDataAsByteArray()).containsExactly(4, 5, 6);
+                        user -> {
+                            assertThat(user.getText()).contains("Local image reference: I2");
+                            assertThat(user.getMedia()).singleElement().satisfies(media -> {
+                                assertThat(media.getId()).isNull();
+                                assertThat(media.getMimeType().toString()).isEqualTo("image/webp");
+                                assertThat(media.getDataAsByteArray()).containsExactly(4, 5, 6);
+                            });
                         });
+    }
+
+    @Test
+    void imageExtractionRejectsUnsafeOrDuplicateReferencesBeforeProviderCall() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        var gateway = new SpringAiOpenAiImageTextExtractionGateway(
+                model, prices(), schemas(), Duration.ofSeconds(60));
+
+        assertThatThrownBy(() -> gateway.extract(imageRequest(List.of(
+                        new ImageMedia("I1\ninstruction", "image/png", new byte[] {1}, "a".repeat(64))))))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception ->
+                        assertThat(exception.safeCode()).isEqualTo("AI_IMAGE_CONFIGURATION_INVALID"));
+        assertThatThrownBy(() -> gateway.extract(imageRequest(List.of(
+                        new ImageMedia("I1", "image/png", new byte[] {1}, "a".repeat(64)),
+                        new ImageMedia("I1", "image/png", new byte[] {2}, "b".repeat(64))))))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception ->
+                        assertThat(exception.safeCode()).isEqualTo("AI_IMAGE_CONFIGURATION_INVALID"));
+
+        verify(model, never()).call(any(Prompt.class));
+    }
+
+    @Test
+    void springAiSerializesEachReferenceAndItsImageInTheSameProviderMessage() {
+        OpenAIClient client = mock(OpenAIClient.class);
+        OpenAIClientAsync asyncClient = mock(OpenAIClientAsync.class);
+        ChatService chatService = mock(ChatService.class);
+        ChatCompletionService completionService = mock(ChatCompletionService.class);
+        when(client.chat()).thenReturn(chatService);
+        when(chatService.completions()).thenReturn(completionService);
+        when(completionService.create(any(ChatCompletionCreateParams.class)))
+                .thenReturn(completedChat("{\"status\":\"ok\"}"));
+        OpenAiChatModel model = OpenAiChatModel.builder()
+                .openAiClient(client)
+                .openAiClientAsync(asyncClient)
+                .options(OpenAiChatOptions.builder()
+                        .model("gpt-5-mini")
+                        .maxRetries(0)
+                        .build())
+                .build();
+        var gateway = new SpringAiOpenAiImageTextExtractionGateway(
+                model, prices(), schemas(), Duration.ofSeconds(60));
+
+        gateway.extract(imageRequest(List.of(
+                new ImageMedia("I1", "image/png", new byte[] {1, 2, 3}, "a".repeat(64)),
+                new ImageMedia("I2", "image/webp", new byte[] {4, 5, 6}, "b".repeat(64)))));
+
+        ArgumentCaptor<ChatCompletionCreateParams> captured =
+                ArgumentCaptor.forClass(ChatCompletionCreateParams.class);
+        verify(completionService).create(captured.capture());
+        var userMessages = captured.getValue().messages().stream()
+                .filter(message -> message.isUser()
+                        && message.asUser().content().isArrayOfContentParts())
+                .map(message -> message.asUser())
+                .toList();
+        assertThat(userMessages).satisfiesExactly(
+                message -> assertSerializedImageBinding(
+                        message, "I1", "data:image/png;base64,AQID"),
+                message -> assertSerializedImageBinding(
+                        message, "I2", "data:image/webp;base64,BAUG"));
     }
 
     @Test
@@ -429,6 +499,57 @@ class SpringAiOpenAiGatewayTest {
                 PRICE_VERSION,
                 32,
                 TestOutput.class);
+    }
+
+    private ImageTextExtractionRequest imageRequest(List<ImageMedia> images) {
+        return new ImageTextExtractionRequest(
+                "openai",
+                "gpt-5-mini",
+                "test-v1",
+                "Read visible text only.",
+                images,
+                "test-output-v1",
+                Duration.ofSeconds(3),
+                PRICE_VERSION,
+                32,
+                TestOutput.class);
+    }
+
+    private ChatCompletion completedChat(String content) {
+        var message = ChatCompletionMessage.builder()
+                .content(content)
+                .refusal(Optional.empty())
+                .role(JsonValue.from("assistant"))
+                .annotations(List.of())
+                .toolCalls(List.of())
+                .build();
+        var choice = ChatCompletion.Choice.builder()
+                .index(0)
+                .finishReason(ChatCompletion.Choice.FinishReason.STOP)
+                .logprobs(Optional.empty())
+                .message(message)
+                .build();
+        return ChatCompletion.builder()
+                .id("chatcmpl_image_test")
+                .choices(List.of(choice))
+                .created(1)
+                .model("gpt-5-mini")
+                .object_(JsonValue.from("chat.completion"))
+                .build();
+    }
+
+    private void assertSerializedImageBinding(
+            ChatCompletionUserMessageParam message, String imageRef, String dataUrl) {
+        assertThat(message.content().asArrayOfContentParts()).satisfiesExactly(
+                part -> {
+                    assertThat(part.isText()).isTrue();
+                    assertThat(part.asText().text())
+                            .contains("Local image reference: " + imageRef);
+                },
+                part -> {
+                    assertThat(part.isImageUrl()).isTrue();
+                    assertThat(part.asImageUrl().imageUrl().url()).isEqualTo(dataUrl);
+                });
     }
 
     private record TestOutput(String status) {}

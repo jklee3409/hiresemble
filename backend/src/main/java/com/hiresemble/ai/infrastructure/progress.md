@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-02] Session Summary (Provider-visible image reference binding)
+
+- What was done:
+  - 이미지별 user message에 안전한 local reference text와 byte-backed media 하나만 결합하고 unsafe·duplicate reference를 선검증했다.
+- Key decisions:
+  - Spring AI `Media.id/name`은 OpenAI serializer가 전달하지 않으므로 식별 계약에서 제거하고 strict output 검증은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Prompt capture와 실제 OpenAI SDK request capture에서 I1/I2 text·data URL 1:1 결합, retry 0·store false를 확인했다.
+- Next steps:
+  - 실제 Provider 호출은 0회이며 배포 후 사용자 retry로 bounded 검증한다.
+
 ## [2026-08-01] Session Summary (OpenAI image/text safe failure parity)
 
 - What was done:

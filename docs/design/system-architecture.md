@@ -331,7 +331,7 @@ evidenceExtractionStatus: NOT_STARTED
 5. 비동기 분기에서 공고 전용 URL gateway가 HTTP(S) 단일 페이지의 bounded raw bytes를 가져오고 header·BOM·meta 우선순위로 strict decode한다.
 6. DOM visible text·main 영역·link density·중복·placeholder·손상 문자와 일반 이미지 후보를 검사해 text 충분, 이미지 보강 필요, 자동 추출 부족으로 분류한다.
 7. 이미지 보강이 필요하면 같은 DNS pinning·redirect 경계와 후보 전체가 공유하는 absolute deadline을 재사용해 ranked JPEG·PNG·정적 WebP를 bounded fetch하고, 별도 image gateway가 bytes에서 보이는 텍스트만 추출한다.
-8. image gateway v3 output의 local `imageRef`를 input allowlist·중복·개수에 대해 검증하고 원래 입력 순서로 재정렬한다. 누락 reference는 유지한 채 DOM과 이미지 텍스트를 source tag로 분리하고 반복 line을 제거한다. item 20자와 aggregate 120자 기준을 분리해 통과한 source만 구조화 단계가 회사·직무·본문·마감일 후보로 만든다.
+8. image gateway는 안전한 local `imageRef` text와 해당 byte-backed image 하나를 같은 Provider-visible user message로 묶는다. Spring AI `Media.id/name`은 OpenAI 요청에 직렬화되지 않으므로 식별 계약으로 사용하지 않는다. v3 output의 reference를 input allowlist·중복·개수에 대해 검증하고 원래 입력 순서로 재정렬한다. 누락 reference는 유지한 채 DOM과 이미지 텍스트를 source tag로 분리하고 반복 line을 제거한다. item 20자와 aggregate 120자 기준을 분리해 통과한 source만 구조화 단계가 회사·직무·본문·마감일 후보로 만든다.
 9. 사용자 입력값을 자동 추출값보다 우선 병합하고 semantic null·U+FFFD·본문 품질을 검증한 성공 결과만 저장한다. 자동 경로가 부족하면 업무 상태를 유지한 채 `NEEDS_MANUAL_INPUT`/`WAITING_USER`로 전환한다.
 10. usable 본문을 저장하는 같은 transaction에서 `(user, job, revision)` unique 자동 분석 의도를 만든다. AFTER_COMMIT 처리와 scheduler reconciliation은 의도 ID를 `JOB_ANALYSIS` run ID로 재사용해 `BALANCED` 분석을 최대 한 번 접수한다.
 

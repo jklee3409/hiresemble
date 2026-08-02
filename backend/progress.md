@@ -5,7 +5,21 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read와 Agent Run history delete까지 총 92 operations/68 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- Backend 전체 suite는 506 tests다. 이번 작업의 집중 검증은 통과했지만 최종 전체 check는 범위 밖 Object Deletion Outbox 상태 전이 2건이 간헐적으로 `PENDING`에 남아 실패했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- Backend 전체 suite는 508 tests다. 이번 작업의 집중 검증은 통과했지만 최종 전체 check는 범위 밖 Interview 통합 fixture 1건의 간헐 DB 무결성 오류로 실패했고 해당 단일 테스트 격리 실행은 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-02] Session Summary (OpenAI image reference 직렬화 보정)
+
+- What was done:
+  - image adapter가 local reference text와 이미지 bytes 하나를 같은 user message에 묶도록 변경하고 unsafe·duplicate reference를 Provider 호출 전에 거부했다.
+  - image prompt identity와 workflow input association policy를 v4로 올리고 실제 OpenAI SDK request payload 회귀를 추가했다.
+- Key decisions:
+  - API·DB·9단계 `job-posting-extraction-v3`·output schema v3는 유지하며 `Media.id/name`을 Provider-visible 식별자로 사용하지 않는다.
+- Issues encountered:
+  - 전체 508 tests 중 범위 밖 Interview 통합 테스트 1건이 실패했으나 정확한 단일 테스트 격리 실행은 통과했다. 첫 격리 필터는 package 오기재로 실행되지 않았다.
+- Validation:
+  - gateway/workflow 집중 테스트 통과, 전체 `check` 508건 중 무관한 1건 실패, 해당 단일 테스트 격리 통과. 외부 AI/Search 호출 0회.
+- Next steps:
+  - 배포 뒤 기존 terminal 실패는 현재 retry contributor를 통해 최신 canonical v3 successor로 재시도한다.
 
 ## [2026-08-02] Session Summary (JOB_ANALYSIS strict Provider DTO 경계 개선)
 

@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-02] Session Summary (공고 이미지 reference 전달 계약 구조 보정)
+
+- What was done:
+  - 지정 계정의 최신 실패를 read-only 진단해 Spring AI `Media.id/name`이 OpenAI 요청에 직렬화되지 않아 v3 output의 `imageRef` 검증이 실패한 원인을 확인했다.
+  - 각 local reference text와 이미지 하나를 같은 Provider-visible message에 결합하고 reference 형식·중복을 호출 전에 검증했으며 실제 SDK 직렬화 회귀를 추가했다.
+- Key decisions:
+  - v3의 strict output allowlist·순서 복원은 완화하지 않는다. workflow/schema는 유지하고 이미지 prompt와 checkpoint association policy만 v4 identity로 분리한다.
+- Issues encountered:
+  - Backend 전체 508 tests 중 범위 밖 `InterviewApiIntegrationTest` 1건이 DB 무결성 오류로 실패했으나 정확한 단일 테스트 격리 실행은 통과했다. 첫 격리 명령은 package 오기재로 테스트를 찾지 못했다.
+- Validation:
+  - image gateway·Job extraction workflow 집중 테스트와 실패한 Interview 단일 테스트 격리 실행 통과. 전체 `check`는 508건 중 무관한 1건 때문에 최종 green이 아니며 실제 Provider 호출은 0회다.
+- Next steps:
+  - 보정 코드 배포 후 사용자가 기존 실패 공고를 retry하면 최신 v3 successor가 새 image prompt/checkpoint identity로 실행된다.
+
 ## [2026-08-02] Session Summary (JOB_ANALYSIS Provider 출력 계약 분리)
 
 - What was done:

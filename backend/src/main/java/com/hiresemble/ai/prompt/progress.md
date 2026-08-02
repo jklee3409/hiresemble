@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-02] Session Summary (Job image reference binding prompt v4)
+
+- What was done:
+  - 이미지 reference가 Provider-visible message text에 해당 이미지와 명시적으로 결합된다는 계약으로 image step prompt를 갱신했다.
+- Key decisions:
+  - 다른 Job extraction step은 prompt v3를 유지하고 `EXTRACT_JOB_IMAGE_TEXT`만 `job-posting-extraction-image-text-prompt-v4`로 분리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - prompt registry identity와 Job extraction workflow contract test가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job Analysis 모델 소유 출력 prompt v2)
 
 - What was done:

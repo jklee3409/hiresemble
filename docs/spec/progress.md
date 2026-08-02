@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-02] Session Summary (이미지 reference Provider 전달 계약 명확화)
+
+- What was done:
+  - local image reference text와 해당 이미지 하나를 같은 Provider-visible message로 전달하는 기능·기술 계약을 명시했다.
+- Key decisions:
+  - Spring AI `Media.id/name`은 전달 계약이 아니며 server allowlist·중복·순서 검증은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 실제 SDK request capture 회귀와 활성 기능·기술 명세를 교차 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 바로가기·문구 계약 보정)
 
 - What was done:

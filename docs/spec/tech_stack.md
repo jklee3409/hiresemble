@@ -300,7 +300,7 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 공고 create에 usable 수동 본문이 있으면 `JOB_POSTING_EXTRACTION` run을 만들지 않고 `MANUAL_INPUT_PROVIDED`로 저장한다. 수동 본문이 없을 때만 위 extraction workflow를 enqueue한다.
 
-`job-posting-extraction-v3`는 raw bytes를 유지한 charset 우선순위(`HTTP header → BOM → meta → strict UTF-8 → 검증된 MS949 fallback`), DOM 품질 판정, 최대 6개/이미지당 5MiB/전체 20MiB의 JPEG·PNG·정적 WebP fetch, 별도 `ImageTextExtractionGateway`, trusted `imageRef`, item 20자/aggregate 120자 품질 검증을 고정한다. text 충분 분기에서는 이미지 Provider를 호출하지 않는다. v1·v2 정의는 과거 run 식별용 non-canonical 계약만 남기고 executable을 제공하지 않아 v3 checkpoint 의미와 혼용하지 않는다.
+`job-posting-extraction-v3`는 raw bytes를 유지한 charset 우선순위(`HTTP header → BOM → meta → strict UTF-8 → 검증된 MS949 fallback`), DOM 품질 판정, 최대 6개/이미지당 5MiB/전체 20MiB의 JPEG·PNG·정적 WebP fetch, 별도 `ImageTextExtractionGateway`, trusted `imageRef`, item 20자/aggregate 120자 품질 검증을 고정한다. image adapter는 안전한 local reference text와 byte-backed image 하나를 같은 Provider-visible user message로 직렬화하며 Spring AI `Media.id/name` 전달을 가정하지 않는다. text 충분 분기에서는 이미지 Provider를 호출하지 않는다. v1·v2 정의는 과거 run 식별용 non-canonical 계약만 남기고 executable을 제공하지 않아 v3 checkpoint 의미와 혼용하지 않는다.
 
 OpenAI text Chat와 image text adapter는 service status/code/param, request ID, timeout/network, response cardinality, tool call, refusal와 finish reason을 같은 safe boundary에서 해석한다. 400 structured schema, credentials, model/endpoint, `insufficient_quota`, 일반 429, 5xx를 구분하며 quota는 자동 재시도하지 않는다. Provider usage를 읽은 뒤의 cardinality·refusal·finish·blank·parse·binding·workflow record 실패는 incurred usage를 보존한다. diagnostic에는 status와 safe code/param/request ID, schema name/version/hash, contract, capability만 남기고 body·prompt·OCR text·URL·image bytes는 기록하지 않는다.
 

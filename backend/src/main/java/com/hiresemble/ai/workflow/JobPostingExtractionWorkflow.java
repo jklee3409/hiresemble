@@ -712,7 +712,7 @@ public final class JobPostingExtractionWorkflow {
             return localInput(state, refs,
                     fetched.assets().stream().map(ImageAsset::contentHash)
                             .reduce("none", (left, right) -> left + "|" + right)
-                            + "|job-image-prompt-v3|item-min="
+                            + "|job-image-reference-binding-v4|item-min="
                             + properties.getMinImageItemMeaningfulCharacters(),
                     tree(new ExtractJobImageTextInput(fetched.assets())));
         }

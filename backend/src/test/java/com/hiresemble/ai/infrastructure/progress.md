@@ -4,6 +4,20 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-02] Session Summary (image reference 실제 직렬화 회귀)
+
+- What was done:
+  - Prompt 구조에서 이미지별 reference text·media 단일 결합을 검증하고 실제 Spring AI→OpenAI SDK 요청의 content parts까지 capture했다.
+  - unsafe·duplicate reference가 model call 전에 차단되는 회귀를 추가했다.
+- Key decisions:
+  - `Media.id` 존재만 확인하는 테스트는 제거하고 Provider가 실제 받는 text/data URL 결합을 기준으로 삼는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `SpringAiOpenAiGatewayTest` 포함 집중 테스트 통과, 실제 network 0회.
+- Next steps:
+  - Spring AI upgrade 시 native serialization test를 유지한다.
+
 ## [2026-08-01] Session Summary (OpenAI Chat/image parity 회귀)
 
 - What was done:

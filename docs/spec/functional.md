@@ -281,7 +281,7 @@
 10. semantic null·손상 문자·본문 품질 검증을 통과한 결과만 저장 및 사용자 확인
 11. usable 본문이 확보된 공고 revision은 durable 후속 의도를 저장하고 기본 `BALANCED` `JOB_ANALYSIS` run을 최대 한 번 자동 접수
 
-이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 서버는 요청 allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item을 거부하고 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
+이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 각 reference는 Provider가 실제로 받는 단일 user message의 text에 명시하고 그 message에 해당 이미지 하나만 첨부한다. Spring AI 내부 `Media.id`나 `name`은 Provider 전달 계약으로 간주하지 않는다. 서버는 안전한 reference 형식과 요청 중복을 호출 전에 거부하고, output allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item도 거부한 뒤 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
 
 JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를 통과한 경우 자동 판독한다. 이미지 item은 meaningful character 20자부터 합산 후보가 되며, item 내부와 이미지 사이의 반복 line을 제거한 DOM·이미지 aggregate가 기존 본문 최소 120자를 충족할 때만 field extraction을 계속한다. 따라서 80자 이미지 두 장 또는 DOM 70자와 이미지 70자는 처리할 수 있지만, icon label·semantic null·손상 문자나 반복 header만으로 120자를 채운 경우는 `NEEDS_MANUAL_INPUT`으로 전환한다.
 
