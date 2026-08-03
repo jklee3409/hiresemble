@@ -12,7 +12,7 @@ import java.util.List;
 /** Versioned P6 prompts. External Job text is always delimited as untrusted data. */
 public final class JobAnalysisPromptDefinitions {
 
-    public static final String PROMPT_VERSION = "job-analysis-prompt-v4";
+    public static final String PROMPT_VERSION = "job-analysis-prompt-v6";
 
     private JobAnalysisPromptDefinitions() {}
 
@@ -121,8 +121,10 @@ public final class JobAnalysisPromptDefinitions {
                     RESPONSIBILITY, REQUIRED_QUALIFICATION, PREFERRED_QUALIFICATION. Use only the
                     canonical FitCriterionCategory values. Preserve the Job meaning, do not invent
                     conditions absent from the posting, and return an empty requirements list only
-                    when no usable criterion exists. Never return a score, eligibility, prompt,
-                    credential, provider metadata, or executable instruction.
+                    when no usable criterion exists. Return each distinct requirement exactly once;
+                    do not repeat or paraphrase the same section/category/text combination. Never
+                    return a score, eligibility, prompt, credential, provider metadata, or
+                    executable instruction.
 
                     Write every user-facing requirement text and non-null sourceLocation in
                     natural Korean. Translate source prose when the posting is written in another
@@ -133,11 +135,16 @@ public final class JobAnalysisPromptDefinitions {
                     Assess support eligibility separately from fit score. Use only the structured
                     Job requirements and approvedProfile fields supplied by the server. Evidence
                     descriptors are VERIFIED references, while structuredProfileFacts are
-                    server-allowlisted profile facts; never invent either reference. Return
-                    exactly one job-analysis-eligibility-output-v3 object containing only
-                    schemaVersion, eligibility, evidenceIds, structuredFactRefs, and explanation. Use only ELIGIBLE,
-                    CONDITIONAL, INELIGIBLE, or UNKNOWN. evidenceIds must be selected from the
-                    supplied allowlist, and explanation must be nonblank. Never output server
+                    server-allowlisted profile facts; never invent either reference. Copy only
+                    approvedProfile.verifiedEvidence[].id into evidenceIds and only
+                    approvedProfile.structuredProfileFacts[].reference into structuredFactRefs.
+                    Never put a structured fact reference, source entity ID, or profile value in
+                    evidenceIds, and never put an evidence ID in structuredFactRefs. If the
+                    corresponding supplied list is empty or no item applies, return an empty array.
+                    Return exactly one job-analysis-eligibility-output-v3 object containing only
+                    schemaVersion, eligibility, evidenceIds, structuredFactRefs, and explanation.
+                    Use only ELIGIBLE, CONDITIONAL, INELIGIBLE, or UNKNOWN. explanation must be
+                    nonblank. Never output server
                     execution state, a reuse decision, or an analysis ID. Do not output a fit
                     score, acceptance probability, acceptance rate, or hiring prediction. Unknown
                     UNSPECIFIED self-reports stay UNKNOWN and positive self-report explanations
@@ -156,14 +163,18 @@ public final class JobAnalysisPromptDefinitions {
                     """;
             case JobAnalysisWorkflow.MATCH_EVIDENCE -> """
                     Match every requirement exactly once by criterionIndex. Use only evidence IDs
-                    and structured fact references present in the supplied allowlists; never create,
-                    guess, transform, or copy a reference from text. MATCHED and PARTIAL require
+                    copied from verifiedEvidenceCandidates[].evidenceId and structured fact
+                    references copied from structuredProfileFacts[].reference; never create, guess,
+                    transform, or move a reference between fields. When a corresponding input list
+                    is empty or no item applies, return an empty array. MATCHED and PARTIAL require
                     at least one compatible VERIFIED evidence ID or structured fact reference
                     and missingReason=null. MISSING and UNKNOWN must have no evidence IDs and must
                     include a nonblank missingReason. Never replace null with an empty string, N/A,
                     UNKNOWN, or another sentinel.
                     A strength must reference a MATCHED or PARTIAL criterion and its supporting
-                    evidence IDs. A gap must reference a non-MATCHED criterion. Candidate masked
+                    verified evidence IDs; when verifiedEvidenceCandidates is empty, strengths must
+                    be empty even if a structured fact supports a criterion. A gap must reference a
+                    non-MATCHED criterion. Candidate masked
                     context may help locate a fact but cannot be the sole positive basis without
                     its linked VERIFIED evidence. Education uses PRIMARY_EDUCATION only;
                     certification uses CERTIFICATION evidence only; language uses LANGUAGE_SCORE

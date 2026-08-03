@@ -203,7 +203,7 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
-    void hallucinatedEvidenceIdIsNonRetryableAndNeverPersisted() {
+    void hallucinatedMatchEvidenceIdIsRepairableAndNeverPersisted() {
         Fixture fixture = fixture(false, false);
         UUID hallucinated = UUID.randomUUID();
         fixture.chat.enqueue(
@@ -216,9 +216,38 @@ class JobAnalysisWorkflowTest {
                         AiExecutionException.class,
                         failure -> {
                             assertThat(failure.safeCode())
-                                    .isEqualTo("JOB_ANALYSIS_EVIDENCE_INVALID");
-                            assertThat(failure.retryable()).isFalse();
+                                    .isEqualTo("JOB_ANALYSIS_MATCH_REFERENCE_INVALID");
+                            assertThat(failure.retryable()).isTrue();
+                            assertThat(failure.maxAutomaticAttempts()).isEqualTo(2);
                         });
+        assertThat(fixture.command.persisted).isNull();
+    }
+
+    @Test
+    void eligibilityReferenceRoutingErrorIsRepairableAndNeverPersisted() {
+        Fixture fixture = fixture(false, false);
+        UUID hallucinated = UUID.randomUUID();
+        fixture.chat.enqueue(
+                requirements(),
+                eligibility(Eligibility.ELIGIBLE, hallucinated));
+
+        assertThatThrownBy(() -> execute(fixture))
+                .isInstanceOfSatisfying(
+                        AiExecutionException.class,
+                        failure -> {
+                            assertThat(failure.safeCode())
+                                    .isEqualTo("JOB_ANALYSIS_ELIGIBILITY_REFERENCE_INVALID");
+                            assertThat(failure.correctionGuidance())
+                                    .contains("approvedProfile.verifiedEvidence[].id")
+                                    .doesNotContain("evidenceDescriptors");
+                            assertThat(failure.retryable()).isTrue();
+                            assertThat(failure.maxAutomaticAttempts()).isEqualTo(2);
+                        });
+        assertThat(fixture.chat.requests).hasSize(2);
+        assertThat(fixture.chat.requests.get(1).instructions())
+                .contains(
+                        "approvedProfile.verifiedEvidence[].id",
+                        "approvedProfile.structuredProfileFacts[].reference");
         assertThat(fixture.command.persisted).isNull();
     }
 

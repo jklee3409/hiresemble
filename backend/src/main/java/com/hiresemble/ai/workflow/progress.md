@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-03] Session Summary (Job Analysis allowlist 참조 교정 경계)
+
+- What was done:
+  - eligibility와 match Provider 출력의 evidence ID·structured fact reference를 실제 snapshot allowlist와 대조하고, 불일치는 persistence 전에 repairable structured-output 오류로 변환했다.
+  - match criterion/strength와 eligibility 모두 중복·null·공백·비허용 참조를 같은 규칙으로 차단했다.
+- Key decisions:
+  - 기존 domain validation을 제거하지 않고 그 앞에 correction-once 경계를 추가했다. 비허용 참조를 조용히 제거하거나 `UNKNOWN`으로 임의 변경하지 않는다.
+- Issues encountered:
+  - 최종 diff 검토에서 eligibility 교정 문구의 구 필드명 `evidenceDescriptors` 잔존을 발견해 실제 `verifiedEvidence`로 고치고 회귀 단언을 추가했다.
+- Validation:
+  - `JobAnalysisWorkflowTest`, workflow contract, strict structured output contract가 통과했고 실제 Provider E2E의 eligibility/match 단계도 모두 attempt 1로 성공했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job Analysis 비교 단계 보수 복구)
 
 - What was done:

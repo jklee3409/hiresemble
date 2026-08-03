@@ -734,7 +734,7 @@ public final class JobAnalysisWorkflow {
                 throw repairable(
                         ValidationPhase.JAVA_RECORD,
                         "JOB_ANALYSIS_ELIGIBILITY_OUTPUT_INVALID",
-                        "Return one eligibility value, allowlisted evidence IDs, and a nonblank explanation within 2000 characters.");
+                        "Return one eligibility value, exact allowlisted evidence IDs and structured-fact references, and a nonblank explanation within 2000 characters.");
             }
             if (reusing
                     && (!output.evidenceIds().isEmpty()
@@ -746,6 +746,16 @@ public final class JobAnalysisWorkflow {
             if (!reusing
                     && !KoreanUserFacingTextPolicy.containsKorean(output.explanation())) {
                 throw koreanOutputRequired();
+            }
+        }
+
+        @Override
+        protected void validateWorkflowOutput(
+                ProviderEligibilityOutput output, StepExecutionContext context) {
+            AnalysisState state = state(context);
+            if (!state.reusing()) {
+                requireRepairableEligibilityReferences(
+                        state.snapshot(), output.evidenceIds(), output.structuredFactRefs());
             }
         }
 
@@ -1210,6 +1220,8 @@ public final class JobAnalysisWorkflow {
             Set<UUID> retrievedIds = retrieved.candidates().stream()
                     .map(RetrievedEvidenceCandidate::evidenceId)
                     .collect(java.util.stream.Collectors.toSet());
+            requireRepairableMatchReferences(
+                    state(context).snapshot(), output, retrievedIds);
             for (MatchedCriterion criterion : orderedCriteria(output.criteria())) {
                 requireEvidenceSubset(criterion.evidenceIds(), retrievedIds);
                 requireAllowedFactRefs(state(context).snapshot(), criterion.structuredFactRefs());
@@ -2271,6 +2283,65 @@ public final class JobAnalysisWorkflow {
                 || !allowlist.containsAll(references)) {
             throw invalidEvidence();
         }
+    }
+
+    private void requireRepairableEligibilityReferences(
+            JobAnalysisSnapshot snapshot,
+            List<UUID> evidenceIds,
+            List<String> structuredFactRefs) {
+        Set<UUID> evidenceAllowlist = snapshot.verifiedEvidence().stream()
+                .filter(value -> value.verificationStatus()
+                                == EvidenceVerificationStatus.VERIFIED
+                        && !value.sourceDeleted())
+                .map(VerifiedEvidence::id)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> factAllowlist = snapshot.profile().structuredFacts().stream()
+                .map(StructuredProfileFact::reference)
+                .collect(java.util.stream.Collectors.toSet());
+        boolean invalidEvidenceIds = evidenceIds == null
+                || evidenceIds.stream().anyMatch(Objects::isNull)
+                || new HashSet<>(evidenceIds).size() != evidenceIds.size()
+                || !evidenceAllowlist.containsAll(evidenceIds);
+        boolean invalidFactRefs = structuredFactRefs == null
+                || structuredFactRefs.stream()
+                        .anyMatch(value -> value == null || value.isBlank())
+                || new HashSet<>(structuredFactRefs).size() != structuredFactRefs.size()
+                || !factAllowlist.containsAll(structuredFactRefs);
+        if (invalidEvidenceIds || invalidFactRefs) {
+            throw repairable(
+                    ValidationPhase.WORKFLOW_CONTEXT,
+                    "JOB_ANALYSIS_ELIGIBILITY_REFERENCE_INVALID",
+                    "Copy only approvedProfile.verifiedEvidence[].id into evidenceIds and only approvedProfile.structuredProfileFacts[].reference into structuredFactRefs. If the corresponding supplied list is empty or no item applies, return an empty array. Never invent, transform, or move a reference between fields.");
+        }
+    }
+
+    private void requireRepairableMatchReferences(
+            JobAnalysisSnapshot snapshot,
+            MatchEvidenceOutput output,
+            Set<UUID> retrievedEvidenceIds) {
+        Set<String> factAllowlist = snapshot.profile().structuredFacts().stream()
+                .map(StructuredProfileFact::reference)
+                .collect(java.util.stream.Collectors.toSet());
+        boolean invalidCriterionReference = output.criteria().stream().anyMatch(criterion ->
+                invalidReferenceList(criterion.evidenceIds(), retrievedEvidenceIds)
+                        || invalidReferenceList(criterion.structuredFactRefs(), factAllowlist));
+        boolean invalidStrengthReference = output.strengths().stream()
+                .anyMatch(strength -> invalidReferenceList(
+                        strength.evidenceIds(), retrievedEvidenceIds));
+        if (invalidCriterionReference || invalidStrengthReference) {
+            throw repairable(
+                    ValidationPhase.WORKFLOW_CONTEXT,
+                    "JOB_ANALYSIS_MATCH_REFERENCE_INVALID",
+                    "Copy only verifiedEvidenceCandidates[].evidenceId into evidenceIds and only structuredProfileFacts[].reference into structuredFactRefs. If the corresponding supplied list is empty or no item applies, return an empty array. Never invent, transform, or move a reference between fields; strengths require verified evidence IDs and must be empty when none are supplied.");
+        }
+    }
+
+    private <T> boolean invalidReferenceList(List<T> references, Set<T> allowlist) {
+        return references == null
+                || references.stream().anyMatch(value -> value == null
+                        || (value instanceof String text && text.isBlank()))
+                || new HashSet<>(references).size() != references.size()
+                || !allowlist.containsAll(references);
     }
 
     private void rejectUnspecifiedPositiveFacts(

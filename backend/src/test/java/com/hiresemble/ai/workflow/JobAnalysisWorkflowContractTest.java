@@ -101,14 +101,20 @@ class JobAnalysisWorkflowContractTest {
                                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
                                 JobAnalysisWorkflow.ASSESS_ELIGIBILITY)
                         .instructions())
-                .contains("explanation in natural Korean", "English-only explanation");
+                .contains(
+                        "approvedProfile.verifiedEvidence[].id",
+                        "approvedProfile.structuredProfileFacts[].reference",
+                        "return an empty array",
+                        "explanation in natural Korean",
+                        "English-only explanation");
         assertThat(prompts.require(
                                 WorkflowType.JOB_ANALYSIS,
                                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
                                 JobAnalysisWorkflow.MATCH_EVIDENCE)
                         .instructions())
                 .contains(
-                        "never create,",
+                        "verifiedEvidenceCandidates[].evidenceId",
+                        "structuredProfileFacts[].reference",
                         "MATCHED and PARTIAL require",
                         "Do not output weights",
                         "strength text, gap text, and analysisSummary in natural",
@@ -143,7 +149,7 @@ class JobAnalysisWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
 
         assertThat(JobAnalysisPromptDefinitions.PROMPT_VERSION)
-                .isEqualTo("job-analysis-prompt-v4");
+                .isEqualTo("job-analysis-prompt-v6");
         assertThat(definition.steps())
                 .filteredOn(step -> Set.of(
                                 JobAnalysisWorkflow.EXTRACT_REQUIREMENTS,

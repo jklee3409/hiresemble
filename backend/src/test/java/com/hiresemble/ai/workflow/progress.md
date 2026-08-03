@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-03] Session Summary (Job Analysis 참조 hallucination 회귀 테스트)
+
+- What was done:
+  - eligibility와 match가 비허용 evidence ID를 반환할 때 correction-once 오류가 발생하고 분석이 저장되지 않는 테스트를 추가·갱신했다.
+  - prompt v6가 실제 입력 필드 경로를 포함하고 구 필드명을 교정 안내에 남기지 않는 계약을 검증했다.
+- Key decisions:
+  - 테스트 harness가 orchestrator 재시도를 직접 수행하지 않으므로 retryable/max attempts와 no-persist 경계를 검증하고, 실제 재시도/전체 실행은 공개 API E2E로 보완했다.
+- Issues encountered:
+  - 최초 단언이 예외 `getMessage()`를 검사해 safe code만 보았고, 실제 교정 문구 accessor인 `correctionGuidance()`로 수정했다.
+- Validation:
+  - workflow/contract/strict schema 집중 테스트 26건이 최종 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (비호환 근거 강등·retry fallback 회귀)
 
 - What was done:

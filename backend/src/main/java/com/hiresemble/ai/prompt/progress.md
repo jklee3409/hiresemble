@@ -4,6 +4,20 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-03] Session Summary (Job Analysis 실제 입력 경로 prompt v6)
+
+- What was done:
+  - eligibility prompt에 `approvedProfile.verifiedEvidence[].id`와 `approvedProfile.structuredProfileFacts[].reference`, match prompt에 `verifiedEvidenceCandidates[].evidenceId`와 `structuredProfileFacts[].reference`의 정확한 복사 경로를 명시했다.
+  - 빈 allowlist의 빈 배열 처리, cross-field 이동 금지, evidence가 없을 때 strength 금지, 요구사항 중복 금지를 명시했다.
+- Key decisions:
+  - output schema version은 유지하고 prompt identity만 v6로 올려 기존 checkpoint와 잘못된 구조 안내를 격리했다.
+- Issues encountered:
+  - v5 실제 E2E에서 eligibility는 통과했지만 match가 비허용 criterion/evidence 참조로 실패해 match 입력 경로도 같은 수준으로 명시해야 함을 확인했다.
+- Validation:
+  - prompt registry/contract 테스트와 실제 Provider v6 E2E 8단계가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 분석·문서 소재 한국어 prompt v3)
 
 - What was done:
