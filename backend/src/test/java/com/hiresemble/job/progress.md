@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안과 P6 자동 분석 orchestration 회귀 테스트가 구현됐다.
 
+## [2026-08-03] Session Summary (Job 자동 분석 connection 대기 회귀 검증)
+
+- What was done:
+  - 기존 기록의 Job Analysis Hikari connection timeout을 단일 테스트와 thread dump로 재현하고 자동 분석 listener의 중첩 트랜잭션이 원인임을 확인했다.
+- Key decisions:
+  - 테스트 pool 크기를 늘려 숨기지 않고 production transaction 경계를 짧게 고쳤다.
+- Issues encountered:
+  - 최초 broad focused 실행은 동일 connection 대기로 중단했으며 thread dump 근거를 확보한 뒤 같은 시나리오를 재검증했다.
+- Validation:
+  - 문제를 재현한 단일 structured education provenance 시나리오, 전체 `JobAnalysisIntegrationTest`, `JobAutoAnalysisIntegrationTest`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (structured provenance·PROFILE_CHANGED 회귀)
 
 - What was done:

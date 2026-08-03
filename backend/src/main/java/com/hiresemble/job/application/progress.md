@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-03] Session Summary (자동 분석 AFTER_COMMIT connection 대기 해소)
+
+- What was done:
+  - `JobAutoAnalysisCoordinator.onRequested`를 감싸던 외부 `REQUIRES_NEW`를 제거하고 기존 store claim/mark와 launch의 짧은 독립 트랜잭션만 유지했다.
+- Key decisions:
+  - durable intent 상태 전이와 launch의 `REQUIRES_NEW` 계약은 그대로 유지했다. listener는 트랜잭션을 오래 점유하지 않는 현재 설계에 맞췄다.
+- Issues encountered:
+  - thread dump에서 Test worker가 `launchAutomatic`의 connection 획득을 기다렸고, listener transaction과 내부 run creation이 pool size 2를 모두 점유한 사실을 확인했다.
+- Validation:
+  - 종전 184초 대기하던 단일 `JobAnalysisIntegrationTest` 시나리오가 38초에 통과했고, 전체 `JobAnalysisIntegrationTest`와 `JobAutoAnalysisIntegrationTest`도 각각 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (자동 분석 intent·coordinator)
 
 - What was done:
