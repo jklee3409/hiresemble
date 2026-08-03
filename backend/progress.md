@@ -7,6 +7,21 @@
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
 - 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Dashboard migration 테스트의 PostgreSQL Testcontainer 시작 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-03] Session Summary (Job Analysis 참조 라우팅과 자동 분석 트랜잭션 복구)
+
+- What was done:
+  - 프로필 구조 확장 뒤 실제 Job Analysis의 eligibility와 match 출력이 evidence ID와 structured fact reference를 혼동하는 실패를 재현하고 prompt v6와 correction-once 참조 검증으로 수정했다.
+  - `JobAutoAnalysisCoordinator.onRequested`의 외부 `REQUIRES_NEW`를 제거해 claim/launch 내부 트랜잭션이 pool size 2에서 세 번째 connection을 기다리던 문제를 해소했다.
+- Key decisions:
+  - 도메인의 최종 hard validation과 immutable snapshot/version 검증은 유지했다. 허용 목록 밖 참조는 자동 삭제하지 않고 최대 1회 교정 후 기존 실패 경계로 종료한다.
+- Issues encountered:
+  - 최초 전체 `check`에서 `CoverLetterAgentRunIntegrationTest` 2건이 `ProfileAnalysisQueryService.loadAnalysisSnapshot`의 `RESOURCE_NOT_FOUND`로 실패했다. 새 필수 eligibility 선언을 만들지 않던 공통 테스트 fixture를 보강해 해결했다.
+  - 최종 bootRun 첫 시도는 local profile 미지정으로 activation validator가 종료했으며, local profile을 명시한 재기동 후 `/actuator/health` `UP`을 확인했다.
+- Validation:
+  - Job Analysis focused 26 tests와 `JobAnalysisIntegrationTest`, `JobAutoAnalysisIntegrationTest`, Backend 전체 `check` 525건이 통과했다. 실제 API/Provider Run은 8단계 모두 1회 시도로 성공해 sealed 결과를 저장했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (문서 경험 retire와 Job Analysis 비교 복구)
 
 - What was done:

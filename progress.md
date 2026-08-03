@@ -15,6 +15,25 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-03] Session Summary (공고 분석 구조화 참조 복구와 실제 E2E 검증)
+
+- What was done:
+  - 최근 사용자 공고 분석 이력과 단계별 오류를 조회하고, 프로필 구조 확장 뒤 eligibility/match 모델 출력이 실제 입력 필드 경로와 다른 참조를 생성해 실패하는 문제를 실제 Provider E2E로 재현했다.
+  - Job Analysis prompt v6에 `verifiedEvidence[].id`, `verifiedEvidenceCandidates[].evidenceId`, `structuredProfileFacts[].reference`의 정확한 복사 규칙을 명시하고, 잘못된 참조는 저장하지 않은 채 correction-once 경계로 보냈다.
+  - 자동 분석 AFTER_COMMIT listener의 중첩 `REQUIRES_NEW`를 제거해 Hikari pool 2개 환경에서 발생하던 통합 테스트 connection 대기를 해소했다.
+- Key decisions:
+  - API·DB·8단계 workflow·점수·지원 가능 판정 규칙은 변경하지 않았고, 허용 목록 밖 참조를 삭제하거나 수용하지도 않았다. 입력/출력 구조 안내와 트랜잭션 경계만 현재 설계 계약에 맞췄다.
+  - 실제 사용자 계정의 최신 실패는 분석 도중 eligibility version이 갱신된 정상 `RESOURCE_VERSION_CONFLICT`였으므로 재시도하거나 데이터를 변경하지 않았다.
+- Issues encountered:
+  - in-app Browser에 활성 runtime이 없어 저장된 사용자 세션 기반 UI 재현은 수행하지 못했고, 공개 API로 만든 합성 계정에서 실제 Provider E2E를 수행했다.
+  - 최초 Backend 전체 `check`에서 `CoverLetterAgentRunIntegrationTest` 2건이 새 필수 eligibility fixture 부재로 `RESOURCE_NOT_FOUND` 실패했다. 프로덕션 로직 대신 공통 테스트 사용자 fixture에 기본 `UNSPECIFIED` eligibility 행을 추가해 구조 계약을 복구했다.
+  - 최종 서버 재기동 첫 시도는 local profile 누락으로 provider activation 검증에서 즉시 종료됐고, `SPRING_PROFILES_ACTIVE=local`을 명시해 정상 재기동했다. 이 실패 시 외부 요청은 발생하지 않았다.
+- Validation:
+  - 최초 합성 E2E는 `ASSESS_ELIGIBILITY/JOB_ANALYSIS_EVIDENCE_INVALID`, 중간 E2E는 eligibility 통과 뒤 `MATCH_EVIDENCE` 참조 오류를 재현했다. 최종 Run `2cf7b812-b3ce-4091-b9e9-6e13c86546b6`은 prompt v6의 8단계를 모두 attempt 1로 통과하고 sealed 분석을 저장했다(10 usage records, USD 0.013896; 이 작업의 실제 E2E 총비용 USD 0.042607).
+  - Job Analysis workflow/contract/strict schema 집중 테스트, `JobAnalysisIntegrationTest`, `JobAutoAnalysisIntegrationTest`, Backend 전체 `check` 525건, `docker compose config --quiet`, `git diff --check`가 통과했고 최종 local 서버 health는 `UP`이다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (AI 작업 복구·자료 재분석·공고 분석 실사용 복구)
 
 - What was done:
