@@ -4,6 +4,19 @@
 
 P3 Agent Run domain·PostgreSQL·API·SSE와 P4~P7 typed resource 통합 검증이 구현됐다.
 
+## [2026-08-03] Session Summary (프로필 eligibility 기반 재시도 fixture 정합성)
+
+- What was done:
+  - Agent Run 공통 `seedUser` fixture가 `user_profiles`와 함께 `profile_eligibility_declarations`의 기본 `UNSPECIFIED` 행도 생성하도록 보강했다.
+- Key decisions:
+  - production 조회 로직을 완화하지 않고 실제 signup과 동일한 필수 profile snapshot 전제만 테스트 사용자에 적용했다.
+- Issues encountered:
+  - Backend 전체 check의 Cover Letter generation/verification retry 2건이 eligibility 선언 부재로 `RESOURCE_NOT_FOUND`를 반환했다.
+- Validation:
+  - `CoverLetterAgentRunIntegrationTest` 집중 실행과 Backend 전체 `check` 525건이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (Agent Run history delete 통합 검증)
 
 - What was done:

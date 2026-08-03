@@ -37,6 +37,14 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
                 ) VALUES (?,?,NULL,NULL,'[]','[]','[]',NULL,0,now(),now())
                 """, UUID.randomUUID(), userId);
         jdbcTemplate.update("""
+                INSERT INTO profile_eligibility_declarations (
+                    id,user_id,work_available_date,military_status,overseas_travel_eligibility,
+                    employment_disqualification_status,version,created_at,updated_at
+                ) VALUES (
+                    ?,?,NULL,'UNSPECIFIED','UNSPECIFIED','UNSPECIFIED',0,now(),now()
+                )
+                """, UUID.randomUUID(), userId);
+        jdbcTemplate.update("""
                 INSERT INTO user_ai_preferences (
                     id,user_id,budget_policy_version,default_quality_mode,high_quality_enabled,
                     daily_budget_usd,active,version,created_at,updated_at
