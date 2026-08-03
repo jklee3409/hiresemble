@@ -4,6 +4,19 @@
 
 fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
 
+## [2026-08-03] Session Summary (semantic correction·transport retry 상태 분리)
+
+- What was done:
+  - semantic correction 1회와 transport retry 2회를 별도 counter로 추적하고 마지막 non-null guidance를 transport 오류 뒤에도 보존했다.
+- Key decisions:
+  - 공개·DB `attempt/maxAttempts=3`을 실제 호출 hard cap으로 유지하고 model tier와 usage는 전체 호출 순서대로 누적한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - semantic→network→valid, network→semantic→valid, semantic→transport 소진, 연속 transport 소진과 cancellation 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (검증 후 context-aware output mapping hook)
 
 - What was done:

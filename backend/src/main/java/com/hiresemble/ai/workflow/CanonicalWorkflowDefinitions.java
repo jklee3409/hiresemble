@@ -296,7 +296,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(0)),
                         analysisStep(
                                 "EXTRACT_REQUIREMENTS",
-                                "job-analysis-requirements-output-v3",
+                                "job-analysis-requirements-source-output-v4",
                                 Set.of(),
                                 1,
                                 RETRYABLE,

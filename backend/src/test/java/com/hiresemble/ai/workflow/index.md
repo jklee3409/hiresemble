@@ -11,6 +11,7 @@ canonical registry coverage와 Document·Job·Cover Letter metadata·contributio
 - `JobPostingExtractionWorkflowContractTest`: P5 고정 순서·prompt/schema·privacy 계약
 - `JobPostingExtractionOrchestratorIntegrationTest`: P5 성공·waiting·retry·cancel·reuse 통합 계약
 - `JobAnalysisWorkflowTest`: P6 Provider DTO→내부 DTO mapping, 8단계 신규·재사용·점수·persist와 세부 safe reason
+- `JobRequirementNormalizationPolicyTest`: 복합 공고 atomic 분할·typed 분류·근무일·중복 제거·source provenance와 보수 fallback
 - `JobAnalysisWorkflowContractTest`: P6 공개 step, prompt/schema identity와 Provider 타입의 모델 소유 필드 경계
 - `CoverLetterGenerationWorkflowTest`: P7 8단계·Provider TipTap mapping·partial success/retry·restart
 - `CoverLetterVerificationWorkflowTest`: P7 6단계·issue·compensation

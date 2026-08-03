@@ -116,6 +116,19 @@ public final class AiExecutionException extends RuntimeException {
     public String correctionGuidance() { return correctionGuidance; }
     public ValidationPhase validationPhase() { return validationPhase; }
 
+    public boolean isSemanticCorrectionFailure() {
+        return failureKind == FailureKind.STRUCTURED_OUTPUT
+                && retryable
+                && correctionGuidance != null;
+    }
+
+    public boolean isTransportFailure() {
+        return failureKind == FailureKind.RATE_LIMIT
+                || failureKind == FailureKind.PROVIDER_5XX
+                || failureKind == FailureKind.NETWORK
+                || failureKind == FailureKind.TIMEOUT;
+    }
+
     public AiExecutionException withIncurredUsages(List<AiUsage> usages) {
         return new AiExecutionException(
                 failureKind,

@@ -4,6 +4,19 @@
 
 P3 runtime과 P4 Document·P5 Job workflow 통합 검증 및 전체 Chat strict output 자동 검사가 구현됐다.
 
+## [2026-08-03] Session Summary (Job Analysis normalization·retry·deadline 회귀)
+
+- What was done:
+  - source-only schema, 복합 정규화, retry 순서, usage hard cap, 단계별 prompt와 wall-clock deadline 회귀를 Fake 기반으로 추가했다.
+- Key decisions:
+  - 실제 Provider·검색 network는 사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 78 suites/535 tests 통과, 외부 호출 0회.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (partial terminal·document filtering 회귀)
 
 - What was done:

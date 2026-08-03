@@ -12,7 +12,8 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
 - `JobPostingExtractionWorkflow`: P5 URL fetch, DOM/image inspection·JPEG·PNG·WebP fetch, provider-visible reference binding을 거친 trusted `imageRef` text extraction, item/aggregate source compose, 사용자 override, 품질 검증과 domain apply까지의 9단계 v3 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
-- `JobAnalysisWorkflow`: P6 owner-scoped snapshot·active embedding policy route 기반 verified RAG·결정론적 score·command-only persist 8단계 contribution과 Provider 전용 requirements·eligibility·match output→서버 내부 DTO mapping
+- `JobAnalysisWorkflow`: P6 owner-scoped snapshot·active embedding policy route 기반 verified RAG·결정론적 score·command-only persist 8단계 contribution과 Provider 전용 source requirements·eligibility·match output→서버 내부 DTO mapping
+- `JobRequirementNormalizationPolicy`: source requirement의 명확한 atomic 분할, section·required·support type·category·근무일 결정, 중복 제거와 source ordinal/text provenance를 소유하는 단일 canonical 정책
 - `CoverLetterGenerationWorkflow`: P7 generation 8단계 bounded fan-out·active embedding policy route retrieval·partial apply contribution과 Provider 전용 TipTap output→domain DTO mapping
 - `CoverLetterVerificationWorkflow`: P7 immutable answer verification 6단계 contribution
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상

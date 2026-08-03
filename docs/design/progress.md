@@ -4,6 +4,19 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-03] Session Summary (Job Analysis source normalization·retry 설계 동기화)
+
+- What was done:
+  - 시스템 아키텍처에 source-only extraction, server canonical normalization, 단계별 prompt identity와 semantic/transport retry·guidance 보존을 반영했다.
+- Key decisions:
+  - workflow version·공개 API·DB를 일괄 변경하지 않고 schema/prompt/canonical downstream hash로 무효화 범위를 결정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현·contract와 문서 표현을 대조했고 Backend 전체 check 통과.
+- Next steps:
+  - 실제 Provider 검증 결과는 live gate 기록으로 분리한다.
+
 ## [2026-08-02] Session Summary (구조화 profile fact 분석 경계)
 
 - What was done:

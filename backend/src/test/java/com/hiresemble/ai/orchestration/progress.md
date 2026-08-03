@@ -4,6 +4,19 @@
 
 P3 Fake 3-step PostgreSQL orchestration 9 scenarios가 구현됐다.
 
+## [2026-08-03] Session Summary (semantic·transport retry 순서 회귀)
+
+- What was done:
+  - 두 성공 순서와 두 소진 순서에서 correction instructions, 3-call hard cap, distinct provider call usage와 terminal 상태를 검증했다.
+- Key decisions:
+  - 실제 DB step/usage ledger를 assertion하고 Fake gateway만 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `AgentOrchestratorIntegrationTest`와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (workflow-owned partial terminal 회귀)
 
 - What was done:

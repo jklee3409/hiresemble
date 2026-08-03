@@ -513,6 +513,8 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         ModelTier previousTier = null;
         FailureKind previousFailure = null;
         String correctionGuidance = null;
+        int semanticCorrections = 0;
+        int transportRetries = 0;
 
         for (int attempt = firstAttempt; attempt <= MAX_ATTEMPTS; attempt++) {
             run = current(run.userId(), run.id());
@@ -624,11 +626,31 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 if (activeStep) checkpointFailure(run, claimed.claimToken(), step, exception);
                 previousTier = route.tier();
                 previousFailure = exception.failureKind();
-                boolean canRetry = exception.retryable()
-                        && stepDefinition.retryableFailures().contains(exception.failureKind())
-                        && attempt < Math.min(MAX_ATTEMPTS, exception.maxAutomaticAttempts());
+                if (exception.correctionGuidance() != null) {
+                    correctionGuidance = exception.correctionGuidance();
+                }
+                boolean retryClassAllowed = exception.retryable()
+                        && stepDefinition.retryableFailures().contains(exception.failureKind());
+                boolean retryStateAvailable;
+                if (exception.isSemanticCorrectionFailure()) {
+                    retryStateAvailable = semanticCorrections
+                            < exception.maxAutomaticAttempts() - 1;
+                    if (retryStateAvailable) {
+                        semanticCorrections++;
+                    }
+                } else if (exception.isTransportFailure()) {
+                    retryStateAvailable = transportRetries
+                            < exception.maxAutomaticAttempts() - 1;
+                    if (retryStateAvailable) {
+                        transportRetries++;
+                    }
+                } else {
+                    retryStateAvailable = false;
+                }
+                boolean canRetry = retryClassAllowed
+                        && retryStateAvailable
+                        && attempt < MAX_ATTEMPTS;
                 if (!canRetry) throw exception;
-                correctionGuidance = exception.correctionGuidance();
             }
         }
         throw AiExecutionException.nonRetryable(

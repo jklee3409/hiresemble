@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-03] Session Summary (Job requirement source v4·단일 정규화 정책)
+
+- What was done:
+  - Provider output을 source section/text/location/ordinal로 축소하고 `JobRequirementNormalizationPolicy`가 분할·section·required·support type·category·date·dedupe·provenance를 한 번에 결정하게 했다.
+  - Workflow와 Job application의 `strictSupportType()` 이중 keyword 판정을 제거했다.
+- Key decisions:
+  - 모호한 일반 문장은 보수적 preferred/GENERAL로 남기고 positive typed compatibility·eligibility 독립성은 유지한다.
+- Issues encountered:
+  - 초기 nullable source test가 source section fallback을 반영하지 못해 assertion을 provenance 계약으로 교정했다.
+- Validation:
+  - 복합 fixture 10 criterion, 줄바꿈 분할·접속사 보존, 8단계 완료, typed support·잘못된 reference 차단과 전체 check 통과.
+- Next steps:
+  - 실제 Provider output 분포는 live gate에서 별도 확인한다.
+
 ## [2026-08-03] Session Summary (Job Analysis allowlist 참조 교정 경계)
 
 - What was done:

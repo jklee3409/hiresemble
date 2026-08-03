@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-03] Session Summary (Job Analysis source 정규화·재시도·deadline 경계 재설계)
+
+- What was done:
+  - `EXTRACT_REQUIREMENTS` Provider 계약을 source-only v4로 교체하고 복합 조건의 atomic 분할·typed 분류·근무일·중복 제거·출처 추적을 서버 단일 정책으로 이동했다.
+  - semantic correction과 transport retry counter를 분리해 network·timeout 뒤에도 마지막 correction을 유지했고 Job Analysis 단계별 prompt/token identity와 Chat wall-clock deadline을 적용했다.
+- Key decisions:
+  - 공개 API·DB·Flyway·Frontend·8단계 workflow version은 변경하지 않았다. 변경 없는 upstream `BUILD_SNAPSHOT`은 기존 v6 identity로 재사용하고, 새 실행은 source v4 schema/prompt/input hash로 `EXTRACT_REQUIREMENTS`와 실제 downstream만 새 checkpoint에 진입한다. 기존 terminal history 조회는 유지한다.
+- Issues encountered:
+  - P6/P7 전용 Browser E2E는 P6의 기존 `직접 입력해서 등록` UI locator를 찾지 못해 두 시나리오가 각각 300초·240초 timeout됐고, 선행 task 실패로 P7은 실행되지 않았다. 제품 분석 단계나 Fake Provider 응답까지 도달하지 못한 UI harness 실패다.
+- Validation:
+  - 정규화·Workflow·contract·strict schema·Orchestrator·OpenAI gateway 집중 테스트와 Backend 전체 `check` 78 suites/535 tests가 통과했다. 실제 Provider 호출은 0회다.
+- Next steps:
+  - 별도 승인 후 실제 Provider 수직 검증을 수행하고, 범위 밖 P6 UI locator를 현재 화면 계약에 맞춘 뒤 P6/P7 Browser E2E를 재실행한다.
+
 ## [2026-08-03] Session Summary (공고 분석 구조화 참조 복구와 실제 E2E 검증)
 
 - What was done:

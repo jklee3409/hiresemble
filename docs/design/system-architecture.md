@@ -354,7 +354,8 @@ latest job snapshot
 - 적합도는 합격 확률이 아니라 공고 요구와 등록 정보의 일치도다.
 - 분석 입력에는 공고 content hash와 profile/evidence snapshot hash를 포함한다.
 - profile snapshot은 구조화된 최종 학력과 지원 자격 자기신고를 typed fact allowlist로 포함한다. 모델은 allowlist reference만 반환하며 서버가 source entity ID·version·fact type·hash를 검증해 evidence link와 별도 provenance에 저장한다.
-- 공고 section, scoring category, support type은 분리한다. 학력·자격증·어학과 병역·여행·결격·근무일 조건은 서버의 strict support compatibility 검증을 통과해야 positive match가 된다.
+- `EXTRACT_REQUIREMENTS` Provider는 source section hint·원문 requirement text·source location/ordinal만 반환한다. 서버의 단일 `JobRequirementNormalizationPolicy`가 명확한 복합 조건을 atomic criterion으로 분할하고 section·required·support type·scoring category·근무 가능일·중복 제거·source provenance를 결정한다. 학력·자격증·어학과 병역·여행·결격·근무일 조건은 이 canonical 결과에 대한 strict support compatibility 검증을 통과해야 positive match가 된다.
+- Job Analysis prompt identity와 output token budget은 단계별로 분리한다. requirement source schema 변경은 해당 step schema/prompt identity와 canonical downstream input hash로 전파하며 workflow version을 일괄 상승시켜 무효화 범위를 숨기지 않는다. 변경되지 않은 upstream `BUILD_SNAPSHOT`은 기존 v6 identity를 유지해 재사용하고, source schema가 바뀐 `EXTRACT_REQUIREMENTS`와 실제 downstream만 새 canonical input hash로 진입한다.
 - verified evidence retrieval은 Chat model route가 아니라 활성 embedding policy의 provider·product·dimension을 사용하고 이 route identity를 checkpoint hash에 포함한다.
 - 최신 hash와 분석 hash가 다르면 기존 결과를 보존한 채 `analysisOutdated=true`와 `outdatedReasons`를 계산한다. `OUTDATED`는 저장 상태 enum이 아니다.
 - URL 추출과 분석은 별도 workflow type·Agent Run·상태를 유지하되, usable 본문 domain apply 뒤 서버의 durable 후속 의도가 분석 접수를 자동으로 연결한다. 브라우저 연쇄 호출에 의존하지 않는다.
@@ -638,9 +639,9 @@ Agent Run은 DB의 claim token, 60초 lease, 15초 heartbeat, cancel request와 
 
 ### 15.3 재시도
 
-- 자동 재시도는 timeout, 429/5xx와 일시 network는 최대 3 attempt, 구조화 출력은 안전한 correction guidance가 있는 model-repairable 의미 오류만 최대 2 attempt를 대상으로 한다.
+- 자동 재시도는 공개·영속 `attempt/maxAttempts=3` hard cap 안에서 timeout·429/5xx·일시 network의 transport retry와 안전한 correction guidance가 있는 model-repairable 의미 교정을 별도 counter로 제한한다. 마지막 non-null semantic correction은 중간 transport 오류 뒤에도 같은 요청에 유지하고 새 semantic guidance가 있을 때만 갱신한다.
 - 비복구 validation·ownership·비용 오류는 자동 재시도하지 않는다.
-- `StepDefinition.maxModelCalls`는 한 persisted attempt 내부 호출 상한이고 automatic attempt는 별도 상한이다. 모든 Provider 호출과 model 승격은 attempt·usage를 소비한다.
+- `StepDefinition.maxModelCalls`는 한 persisted attempt 내부 호출 상한이고 automatic attempt는 별도 상한이다. 모든 실제 Provider 호출과 model 승격은 attempt·usage를 소비하며 transport 오류가 tier를 초기화하지 않는다.
 - `WAITING_USER`는 같은 run을 재개하고 terminal 사용자 retry는 lineage를 가진 새 run을 만든다.
 - `JOB_POSTING_EXTRACTION` terminal retry는 v1·v2를 포함한 predecessor를 최신 canonical v3으로 승격하고 현재 Job snapshot으로 input hash를 재작성한다. resource retry와 generic retry는 같은 predecessor unique successor·budget reservation·after-commit dispatch를 공유한다.
 - 재시도 전에 기존 성공 step의 input hash를 다시 검증한다.

@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-03] Session Summary (requirements source v4 strict schema)
+
+- What was done:
+  - sourceSection/sourceLocation nullable union과 sourceText/sourceOrdinal required, canonical·reuse 필드 부재를 실제 registry schema에서 검증했다.
+- Key decisions:
+  - strict JSON Schema subset validator를 그대로 사용한다.
+- Issues encountered:
+  - Jackson 3 API의 field 이름 조회를 `propertyNames()`로 맞췄다.
+- Validation:
+  - Job Analysis strict contract와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job Analysis 실제 registry schema 회귀)
 
 - What was done:

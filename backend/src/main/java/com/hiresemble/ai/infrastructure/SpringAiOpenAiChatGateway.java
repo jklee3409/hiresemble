@@ -17,11 +17,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -101,7 +108,7 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
         long started = System.nanoTime();
         List<AiUsage> incurredUsages = List.of();
         try {
-            var response = chatModel.call(prompt);
+            var response = callWithinDeadline(prompt, boundedTimeout(request.timeout()));
             Usage responseUsage = response == null || response.getMetadata() == null
                     ? null : response.getMetadata().getUsage();
             List<AiUsage> usages = usages(
@@ -141,6 +148,48 @@ public final class SpringAiOpenAiChatGateway implements ChatGateway {
                 || request.outputType() == null || !request.allowedTools().isEmpty()
                 || request.maxToolCalls() != 0) {
             throw configuration();
+        }
+    }
+
+    private ChatResponse callWithinDeadline(Prompt prompt, Duration timeout) {
+        ExecutorService executor = Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual().name("openai-chat-deadline-", 0).factory());
+        Future<ChatResponse> call = executor.submit(() -> chatModel.call(prompt));
+        try {
+            return call.get(timeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (TimeoutException exception) {
+            call.cancel(true);
+            throw OpenAiChatFailureSupport.timeout(
+                    OpenAiChatFailureSupport.Capability.CHAT, List.of());
+        } catch (InterruptedException exception) {
+            call.cancel(true);
+            Thread.currentThread().interrupt();
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.INTERRUPTION,
+                    "AI_CHAT_INTERRUPTED",
+                    "AI 응답 요청이 중단되었습니다.");
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalStateException("chat call failed", cause);
+        } finally {
+            executor.shutdownNow();
+            awaitTermination(executor);
+        }
+    }
+
+    private void awaitTermination(ExecutorService executor) {
+        try {
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                log.warn("OpenAI chat deadline worker did not terminate after cancellation");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
         }
     }
 

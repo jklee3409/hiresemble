@@ -15,7 +15,7 @@
 
 ## 구성 요소 역할
 
-registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. 외부 gateway 호출 뒤 성공·재사용 checkpoint와 domain apply는 하나의 짧은 transaction으로 완료된다. P4 `DOCUMENT_INGESTION`, P5 `JOB_POSTING_EXTRACTION`, P6 `JOB_ANALYSIS`, P7 `COVER_LETTER_GENERATION|VERIFICATION`, P8 `INTERVIEW_PREPARATION|INTERVIEW_ANSWER_FEEDBACK`은 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다. `JOB_POSTING_EXTRACTION` v3는 trusted image reference, bounded JPEG·PNG·WebP fetch, aggregate source 품질과 legacy retry 승격을 고정 step으로 관찰하며 v1·v2는 non-canonical legacy definition으로 격리한다.
+registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. 외부 gateway 호출 뒤 성공·재사용 checkpoint와 domain apply는 하나의 짧은 transaction으로 완료된다. P4 `DOCUMENT_INGESTION`, P5 `JOB_POSTING_EXTRACTION`, P6 `JOB_ANALYSIS`, P7 `COVER_LETTER_GENERATION|VERIFICATION`, P8 `INTERVIEW_PREPARATION|INTERVIEW_ANSWER_FEEDBACK`은 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다. P6 요구사항 Provider는 원문 단위와 출처만 추출하고 서버의 단일 정규화 정책이 section·required·support type·category·date와 atomic 분할을 결정한다. `JOB_POSTING_EXTRACTION` v3는 trusted image reference, bounded JPEG·PNG·WebP fetch, aggregate source 품질과 legacy retry 승격을 고정 step으로 관찰하며 v1·v2는 non-canonical legacy definition으로 격리한다.
 
 ## 다른 디렉터리와의 의존 관계
 

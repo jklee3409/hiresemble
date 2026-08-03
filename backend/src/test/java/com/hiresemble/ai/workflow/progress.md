@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-03] Session Summary (복합 공고 source normalization 회귀)
+
+- What was done:
+  - 학력·병역·근무월·여행/채용 결격·두 자격증·혼합 인턴/어학/프로젝트 fixture의 10개 criterion과 source provenance를 검증했다.
+  - source Provider record의 canonical 필드 부재, v3 checkpoint 비재사용, 단계별 prompt/token identity를 고정했다.
+- Key decisions:
+  - 괄호·`IT·데이터`는 무차별 분리하지 않고 불명확 문장은 보수적으로 유지한다.
+- Issues encountered:
+  - source section이 nullable location fallback이 되는 기존 정책을 assertion에 반영했다.
+- Validation:
+  - normalization 3건, Workflow 22건, contract와 전체 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (Job Analysis 참조 hallucination 회귀 테스트)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-03] Session Summary (Job Analysis 단계별 prompt·token identity)
+
+- What was done:
+  - 8개 Job Analysis step의 prompt version을 분리하고 source requirements v4를 `4,096` output tokens·low reasoning·low verbosity로 제한했다.
+- Key decisions:
+  - workflow version은 유지하고 step prompt/schema/canonical input hash만 필요한 checkpoint 범위를 무효화한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 단계별 identity 중복 부재, requirements 8,000 미사용과 strict schema contract가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (Job Analysis 실제 입력 경로 prompt v6)
 
 - What was done:

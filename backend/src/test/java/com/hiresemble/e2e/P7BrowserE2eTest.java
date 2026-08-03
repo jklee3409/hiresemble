@@ -22,17 +22,15 @@ import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.RequirementChe
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderSourceRequirement;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.coverletter.domain.IssueSeverity;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapNodeDto;
 import com.hiresemble.coverletter.domain.VerificationIssueCode;
 import com.hiresemble.job.domain.Eligibility;
-import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.MatchLevel;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
@@ -384,7 +382,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
-                case "job-analysis-requirements-output-v3" ->
+                case "job-analysis-requirements-source-output-v4" ->
                         jobRequirements(request.input());
                 case "job-analysis-eligibility-output-v3" ->
                         jobEligibility(request.input());
@@ -446,20 +444,12 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
 
         private ProviderRequirementsOutput jobRequirements(JsonNode input) {
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-output-v3",
+                    "job-analysis-requirements-source-output-v4",
                     List.of(
-                            new ProviderRequirementCandidate(
-                                    RequirementSection.REQUIRED_QUALIFICATION,
-                                    FitCriterionCategory.REQUIRED_QUALIFICATION,
-                                    "Backend engineering experience",
-                                    true,
-                                    "Required experience"),
-                            new ProviderRequirementCandidate(
-                                    RequirementSection.RESPONSIBILITY,
-                                    FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
-                                    "Spring Boot API development",
-                                    true,
-                                    "Core responsibility")));
+                            new ProviderSourceRequirement(
+                                    "지원 자격", "백엔드 엔지니어링 경험", "지원 자격", 0),
+                            new ProviderSourceRequirement(
+                                    "주요 업무", "Spring Boot API 개발", "주요 업무", 1)));
         }
 
         private ProviderEligibilityOutput jobEligibility(JsonNode input) {

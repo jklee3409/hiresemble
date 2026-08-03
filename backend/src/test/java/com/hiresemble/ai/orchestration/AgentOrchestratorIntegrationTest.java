@@ -321,6 +321,86 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void semanticThenNetworkKeepsCorrectionAndSucceedsWithinIndependentLimits() {
+        chatGateway.script(
+                GatewayOutcome.SEMANTIC_INVALID,
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.VALID);
+        UUID runId = launch(AiQualityMode.ECONOMY, INPUT_HASH).agentRunId();
+
+        execute(runId, fixtureOrchestrator(false, false));
+
+        assertThat(run(runId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.instructions).hasSize(3);
+        assertThat(chatGateway.instructions.get(1)).contains("outside the supplied context");
+        assertThat(chatGateway.instructions.get(2)).contains("outside the supplied context");
+        assertThat(chatGateway.products).containsExactly("low", "balanced", "balanced");
+        assertThat(usageCount(runId)).isEqualTo(3L);
+    }
+
+    @Test
+    void networkThenSemanticAddsCorrectionOnlyToFollowingSemanticAttempt() {
+        chatGateway.script(
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.SEMANTIC_INVALID,
+                GatewayOutcome.VALID);
+        UUID runId = launch(AiQualityMode.ECONOMY, INPUT_HASH).agentRunId();
+
+        execute(runId, fixtureOrchestrator(false, false));
+
+        assertThat(run(runId).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(chatGateway.instructions).hasSize(3);
+        assertThat(chatGateway.instructions.get(1))
+                .doesNotContain("Correction for this bounded retry");
+        assertThat(chatGateway.instructions.get(2)).contains("outside the supplied context");
+        assertThat(usageCount(runId)).isEqualTo(3L);
+    }
+
+    @Test
+    void semanticThenTransportExhaustionTerminatesWithoutGuidanceLossOrExtraCall() {
+        chatGateway.script(
+                GatewayOutcome.SEMANTIC_INVALID,
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.VALID);
+        UUID runId = launch(AiQualityMode.ECONOMY, INPUT_HASH).agentRunId();
+
+        execute(runId, fixtureOrchestrator(false, false));
+
+        AgentRunSnapshot failed = run(runId);
+        assertThat(failed.status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(failed.steps().stream()
+                        .filter(step -> step.stepKey().equals("TRANSFORM_FIXTURE")))
+                .hasSize(3)
+                .allSatisfy(step -> assertThat(step.status()).isEqualTo(AgentStepStatus.FAILED));
+        assertThat(chatGateway.instructions).hasSize(3);
+        assertThat(chatGateway.instructions.subList(1, 3))
+                .allSatisfy(value -> assertThat(value).contains("outside the supplied context"));
+        assertThat(usageCount(runId)).isEqualTo(3L);
+    }
+
+    @Test
+    void continuousTransportFailuresUseHardCallCapAndRecordEachCallOnce() {
+        chatGateway.script(
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.NETWORK,
+                GatewayOutcome.VALID);
+        UUID runId = launch(AiQualityMode.ECONOMY, INPUT_HASH).agentRunId();
+
+        execute(runId, fixtureOrchestrator(false, false));
+
+        assertThat(run(runId).status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(chatGateway.instructions).hasSize(3);
+        assertThat(usageCount(runId)).isEqualTo(3L);
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(DISTINCT provider_call_id) FROM ai_usage_records WHERE agent_run_id = ?",
+                        Long.class,
+                        runId))
+                .isEqualTo(3L);
+    }
+
+    @Test
     void structuredFailureExhaustionAllowsTerminalNewRunRetryWithStepAttemptsReset() {
         chatGateway.invalidResponsesBeforeSuccess.set(Integer.MAX_VALUE);
         AgentOrchestrator orchestrator = fixtureOrchestrator(false, false);
@@ -853,6 +933,13 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         return runQueryPort.findByOwner(userId, runId).orElseThrow();
     }
 
+    private long usageCount(UUID runId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM ai_usage_records WHERE agent_run_id = ?",
+                Long.class,
+                runId);
+    }
+
     private long seedModelPolicy() {
         long version = Math.floorMod(UUID.randomUUID().getMostSignificantBits(), 1_000_000_000L) + 10_000L;
         jdbcTemplate.update("""
@@ -1118,11 +1205,19 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
         }
     }
 
+    private enum GatewayOutcome {
+        SEMANTIC_INVALID,
+        NETWORK,
+        VALID
+    }
+
     private static final class FakeChatGateway implements ChatGateway {
         private final AtomicInteger failuresBeforeSuccess = new AtomicInteger();
         private final AtomicInteger invalidResponsesBeforeSuccess = new AtomicInteger();
         private final List<String> products = new java.util.concurrent.CopyOnWriteArrayList<>();
         private final List<String> instructions = new java.util.concurrent.CopyOnWriteArrayList<>();
+        private final java.util.Queue<GatewayOutcome> scriptedOutcomes =
+                new java.util.concurrent.ConcurrentLinkedQueue<>();
         private final CountDownLatch entered = new CountDownLatch(1);
         private final CountDownLatch release = new CountDownLatch(1);
         private volatile boolean block;
@@ -1145,6 +1240,20 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                             FailureKind.TIMEOUT, "AI_PROVIDER_TIMEOUT", "AI 공급자 응답 시간이 초과되었습니다.");
                 }
             }
+            GatewayOutcome scripted = scriptedOutcomes.poll();
+            if (scripted == GatewayOutcome.NETWORK) {
+                throw AiExecutionException.retryable(
+                        FailureKind.NETWORK,
+                        "AI_PROVIDER_TEMPORARY_FAILURE",
+                        "AI 공급자 연결이 일시적으로 불안정합니다.",
+                        List.of(callUsage(request)));
+            }
+            if (scripted == GatewayOutcome.SEMANTIC_INVALID) {
+                return invalidResponse(request);
+            }
+            if (scripted == GatewayOutcome.VALID) {
+                return successResponse(callUsage(request));
+            }
             if (failuresBeforeSuccess.getAndUpdate(value -> value > 0 ? value - 1 : value) > 0) {
                 throw AiExecutionException.retryable(
                         FailureKind.NETWORK,
@@ -1152,12 +1261,37 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                         "AI 공급자 연결이 일시적으로 불안정합니다.");
             }
             if (invalidResponsesBeforeSuccess.getAndUpdate(value -> value > 0 ? value - 1 : value) > 0) {
-                return new AiGatewayResponse(
-                        "{\"resultRef\":\"safe-ref\",\"resultHash\":\""
-                                + OUTPUT_HASH + "\",\"valid\":false}",
-                        zeroUsage(request));
+                return invalidResponse(request);
             }
             return successResponse(zeroUsage(request));
+        }
+
+        private void script(GatewayOutcome... outcomes) {
+            scriptedOutcomes.addAll(List.of(outcomes));
+        }
+
+        private AiGatewayResponse invalidResponse(ChatRequest request) {
+            return new AiGatewayResponse(
+                    "{\"resultRef\":\"safe-ref\",\"resultHash\":\""
+                            + OUTPUT_HASH + "\",\"valid\":false}",
+                    callUsage(request));
+        }
+
+        private AiUsage callUsage(ChatRequest request) {
+            return new AiUsage(
+                    UsageType.CHAT,
+                    request.providerKey(),
+                    request.productKey(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    null,
+                    null,
+                    BigDecimal.ZERO.setScale(6),
+                    1,
+                    UUID.randomUUID());
         }
 
         private AiUsage zeroUsage(ChatRequest request) {

@@ -5,7 +5,20 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- 이번 변경 범위 집중 검증은 통과했지만 최종 전체 check는 기존 Dashboard migration 테스트의 PostgreSQL Testcontainer 시작 대기로 완료되지 않았다. local은 실제 provider, local-offline/test는 network-disabled다.
+- 최신 Backend 전체 `check`는 78 suites/535 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-03] Session Summary (공고 요구사항 canonical 정규화와 bounded retry 복구)
+
+- What was done:
+  - source-only requirements v4, 서버 canonical normalization, 단계별 prompt/token policy, semantic/transport retry 분리와 Chat wall-clock deadline을 Backend 내부 계약으로 구현했다.
+- Key decisions:
+  - API·DB·migration·Frontend·공개 Agent Step attempt 계약은 유지하고 기존 requirements v3 checkpoint는 새 실행에서 hash/schema 불일치로 재사용하지 않는다.
+- Issues encountered:
+  - 전용 P6 Browser E2E가 분석 전 공고 등록 UI locator timeout으로 실패해 P7 task는 시작하지 못했다.
+- Validation:
+  - Backend 전체 `check` 78 suites/535 tests, focused workflow/orchestration/gateway tests 통과. 실제 Provider 호출 0회.
+- Next steps:
+  - 실제 Provider 수직 검증과 범위 밖 Browser locator 보정은 별도 수행한다.
 
 ## [2026-08-03] Session Summary (Job Analysis 참조 라우팅과 자동 분석 트랜잭션 복구)
 

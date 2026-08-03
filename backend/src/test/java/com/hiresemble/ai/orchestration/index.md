@@ -11,7 +11,7 @@ Testcontainers PostgreSQL에서 test-only 3-step workflow의 전체 execution �
 
 ## 구성 요소 역할
 
-내부 WorkflowLauncher, 실제 checkpoint·usage·budget persistence와 Fake gateway/apply를 결합한다.
+내부 WorkflowLauncher, 실제 checkpoint·usage·budget persistence와 Fake gateway/apply를 결합하고 semantic↔transport 오류 순서별 correction 보존·hard cap·usage 단일 기록을 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

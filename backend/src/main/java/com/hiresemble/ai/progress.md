@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-03] Session Summary (P6 source-only 추출과 retry/deadline 경계)
+
+- What was done:
+  - Job Analysis source schema→server normalization 책임 경계, 단계별 prompt identity, correction 보존 retry와 Chat deadline을 연결했다.
+- Key decisions:
+  - Provider는 canonical category/support/date를 소유하지 않고 실제 호출·usage·공개 attempt hard cap은 기존 계약을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AI focused tests와 Backend 전체 535 tests 통과, 외부 Provider 0회.
+- Next steps:
+  - live Provider 검증은 별도 승인 후 수행한다.
+
 ## [2026-08-02] Session Summary (JOB_ANALYSIS support type·구조화 fact 검증)
 
 - What was done:

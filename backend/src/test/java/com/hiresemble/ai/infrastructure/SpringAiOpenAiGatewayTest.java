@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -123,6 +124,58 @@ class SpringAiOpenAiGatewayTest {
                         new BigDecimal("0.000020"),
                         new BigDecimal("0.000001"),
                         new BigDecimal("0.000020"));
+    }
+
+    @Test
+    void chatEnforcesWallClockDeadlineAndCancelsTheWorker() {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        AtomicBoolean active = new AtomicBoolean();
+        AtomicBoolean interrupted = new AtomicBoolean();
+        when(model.call(any(Prompt.class))).thenAnswer(invocation -> {
+            active.set(true);
+            try {
+                Thread.sleep(Duration.ofSeconds(5));
+                throw new AssertionError("deadline did not interrupt the controlled call");
+            } catch (InterruptedException exception) {
+                interrupted.set(true);
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("controlled call interrupted", exception);
+            } finally {
+                active.set(false);
+            }
+        });
+        var gateway = new SpringAiOpenAiChatGateway(
+                model,
+                new ObjectMapper(),
+                prices(),
+                schemas(),
+                Duration.ofMillis(75));
+        ChatRequest request = new ChatRequest(
+                "openai",
+                "gpt-5-mini",
+                "test-v1",
+                "Return the required object.",
+                new ObjectMapper().createObjectNode().put("value", "untrusted"),
+                "test-output-v1",
+                Set.of(),
+                0,
+                Duration.ofMillis(75),
+                PRICE_VERSION,
+                32,
+                TestOutput.class);
+        long started = System.nanoTime();
+
+        assertThatThrownBy(() -> gateway.chat(request))
+                .isInstanceOfSatisfying(AiExecutionException.class, exception -> {
+                    assertThat(exception.failureKind())
+                            .isEqualTo(com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind.TIMEOUT);
+                    assertThat(exception.safeCode()).isEqualTo("AI_CHAT_TIMEOUT");
+                    assertThat(exception.retryable()).isTrue();
+                });
+
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(1));
+        assertThat(active).isFalse();
+        assertThat(interrupted).isTrue();
     }
 
     @Test

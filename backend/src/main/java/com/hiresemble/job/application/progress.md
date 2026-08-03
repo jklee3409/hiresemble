@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-03] Session Summary (canonical requirement compatibility 소비)
+
+- What was done:
+  - persist validation이 requirement text를 다시 keyword 분류하지 않고 Workflow의 canonical support type/category/date만 typed evidence/fact compatibility에 사용하게 했다.
+- Key decisions:
+  - positive support 불변식과 public analysis projection은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 학력·자격증·어학·근무일·자기신고 compatibility와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (자동 분석 AFTER_COMMIT connection 대기 해소)
 
 - What was done:

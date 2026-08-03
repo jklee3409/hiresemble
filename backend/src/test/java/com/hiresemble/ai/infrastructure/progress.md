@@ -4,6 +4,19 @@
 
 disabled·실제 Chat·Embedding·Search와 profile activation 테스트가 구현됐다.
 
+## [2026-08-03] Session Summary (Chat 실제 deadline 회귀)
+
+- What was done:
+  - interrupt 가능한 5초 지연 model double로 75ms wall-clock timeout, `FailureKind.TIMEOUT`, worker 종료를 검증했다.
+- Key decisions:
+  - 실제 network와 Provider는 호출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `SpringAiOpenAiGatewayTest`와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (OpenAI reasoning·verbosity mapping 회귀)
 
 - What was done:

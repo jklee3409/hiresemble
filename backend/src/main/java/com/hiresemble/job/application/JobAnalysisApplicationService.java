@@ -714,16 +714,14 @@ public class JobAnalysisApplicationService
                 .filter(Objects::nonNull)
                 .toList();
         CriterionSupportType supportType = criterion.supportType();
-        CriterionSupportType contentRequiredSupport = strictSupportType(criterion.criterion());
-        boolean compatible = (contentRequiredSupport == null || contentRequiredSupport == supportType)
-                && ((supportType != CriterionSupportType.EDUCATION
-                                && supportType != CriterionSupportType.CERTIFICATION
-                                && supportType != CriterionSupportType.LANGUAGE)
+        boolean compatible = ((supportType != CriterionSupportType.EDUCATION
+                                 && supportType != CriterionSupportType.CERTIFICATION
+                                 && supportType != CriterionSupportType.LANGUAGE)
                         || criterion.category()
                                 == com.hiresemble.job.domain.FitCriterionCategory
                                         .EDUCATION_CERTIFICATION_LANGUAGE)
-                && ((supportType == CriterionSupportType.WORK_AVAILABLE_DATE)
-                        == (criterion.requiredByDate() != null))
+                && (supportType == CriterionSupportType.WORK_AVAILABLE_DATE
+                        || criterion.requiredByDate() == null)
                 && switch (supportType) {
             case EDUCATION -> evidenceTypes.isEmpty()
                     && exactFacts(usedFacts, StructuredProfileFactType.PRIMARY_EDUCATION);
@@ -767,48 +765,6 @@ public class JobAnalysisApplicationService
         if (!compatible) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
-    }
-
-    private CriterionSupportType strictSupportType(String text) {
-        String normalized = text.trim().toLowerCase(java.util.Locale.ROOT);
-        if (normalized.contains("근무 가능") || normalized.contains("입사 가능")) {
-            return CriterionSupportType.WORK_AVAILABLE_DATE;
-        }
-        if (normalized.contains("병역")) return CriterionSupportType.MILITARY_STATUS;
-        if (normalized.contains("해외여행") || normalized.contains("해외 여행")) {
-            return CriterionSupportType.OVERSEAS_TRAVEL_ELIGIBILITY;
-        }
-        if (normalized.contains("채용 결격") || normalized.contains("결격 사유")) {
-            return CriterionSupportType.EMPLOYMENT_DISQUALIFICATION_STATUS;
-        }
-        if (normalized.contains("자격증")
-                || normalized.contains("자격 보유")
-                || normalized.contains("자격 취득")
-                || normalized.contains("자격 소지")) {
-            return CriterionSupportType.CERTIFICATION;
-        }
-        if (normalized.contains("toeic")
-                || normalized.contains("toefl")
-                || normalized.contains("opic")
-                || normalized.contains("토익")
-                || normalized.contains("토플")
-                || normalized.contains("오픽")
-                || normalized.contains("어학 점수")
-                || normalized.contains("외국어 점수")) {
-            return CriterionSupportType.LANGUAGE;
-        }
-        if (normalized.contains("4년제")
-                || normalized.contains("학사")
-                || normalized.contains("석사")
-                || normalized.contains("박사")
-                || normalized.contains("학력")
-                || (normalized.contains("대학")
-                        && (normalized.contains("졸업")
-                                || normalized.contains("학위")
-                                || normalized.contains("재학")))) {
-            return CriterionSupportType.EDUCATION;
-        }
-        return null;
     }
 
     private boolean exactFacts(

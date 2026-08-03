@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-03] Session Summary (P6/P7 source requirements v4 fixture)
+
+- What was done:
+  - P6/P7 Fake Job Analysis requirements를 source-only v4와 한국어 source provenance로 갱신했다.
+- Key decisions:
+  - 외부 Provider 호출 없이 기존 공개 Browser/API/DB 시나리오를 유지한다.
+- Issues encountered:
+  - `p6BrowserE2eTest p7BrowserE2eTest`는 P6 두 시나리오가 분석 전 `직접 입력해서 등록` locator를 찾지 못해 300초·240초 timeout됐고 P7은 선행 task 실패로 미실행이다.
+- Validation:
+  - fixture compile과 Backend 전체 check는 통과했다. P6/P7 전용 Chromium E2E는 위 UI harness failure로 미통과다.
+- Next steps:
+  - 현재 공고 등록 화면 계약에 맞춰 범위 밖 locator를 보정한 뒤 P6/P7 전용 task를 재실행한다.
+
 ## [2026-08-02] Session Summary (P6/P7 Job Analysis Provider fixture v2)
 
 - What was done:

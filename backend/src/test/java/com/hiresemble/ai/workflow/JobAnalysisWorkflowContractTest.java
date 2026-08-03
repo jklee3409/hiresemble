@@ -125,6 +125,10 @@ class JobAnalysisWorkflowContractTest {
     void providerOutputTypesContainOnlyModelOwnedFields() {
         assertThat(componentNames(JobAnalysisWorkflow.ProviderRequirementsOutput.class))
                 .containsExactly("schemaVersion", "requirements");
+        assertThat(componentNames(JobAnalysisWorkflow.ProviderSourceRequirement.class))
+                .containsExactly(
+                        "sourceSection", "sourceText", "sourceLocation", "sourceOrdinal")
+                .doesNotContain("category", "supportType", "required", "requiredByDate");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderEligibilityOutput.class))
                 .containsExactly(
                         "schemaVersion", "eligibility", "evidenceIds", "structuredFactRefs", "explanation");
@@ -148,8 +152,18 @@ class JobAnalysisWorkflowContractTest {
                 .orElseThrow();
         PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
 
-        assertThat(JobAnalysisPromptDefinitions.PROMPT_VERSION)
+        assertThat(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_PROMPT_VERSION)
+                .isEqualTo("job-analysis-extract-requirements-v7");
+        assertThat(JobAnalysisPromptDefinitions.BUILD_SNAPSHOT_PROMPT_VERSION)
+                .as("unchanged upstream snapshot checkpoints keep their previous identity")
                 .isEqualTo("job-analysis-prompt-v6");
+        assertThat(JobAnalysisPromptDefinitions.promptVersion(
+                        JobAnalysisWorkflow.EXTRACT_REQUIREMENTS))
+                .isNotEqualTo(JobAnalysisPromptDefinitions.promptVersion(
+                        JobAnalysisWorkflow.MATCH_EVIDENCE));
+        assertThat(definition.steps().stream()
+                        .map(step -> JobAnalysisPromptDefinitions.promptVersion(step.stepKey())))
+                .doesNotHaveDuplicates();
         assertThat(definition.steps())
                 .filteredOn(step -> Set.of(
                                 JobAnalysisWorkflow.EXTRACT_REQUIREMENTS,
@@ -158,16 +172,22 @@ class JobAnalysisWorkflowContractTest {
                         .contains(step.stepKey()))
                 .extracting(WorkflowRegistry.StepDefinition::outputSchemaVersion)
                 .containsExactly(
-                        "job-analysis-requirements-output-v3",
+                        "job-analysis-requirements-source-output-v4",
                         "job-analysis-eligibility-output-v3",
                         "job-analysis-match-output-v3");
-        assertThat(prompts.require(
+        var requirementsPrompt = prompts.require(
                                 WorkflowType.JOB_ANALYSIS,
                                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
-                                JobAnalysisWorkflow.EXTRACT_REQUIREMENTS)
-                        .instructions())
-                .contains("containing only schemaVersion and", "sourceLocation=null")
+                                JobAnalysisWorkflow.EXTRACT_REQUIREMENTS);
+        assertThat(requirementsPrompt.instructions())
+                .contains(
+                        "containing only schemaVersion",
+                        "sourceLocation",
+                        "Never output category, supportType, required, or requiredByDate")
                 .doesNotContain("reusableAnalysisId");
+        assertThat(requirementsPrompt.maxOutputTokens())
+                .isEqualTo(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_MAX_OUTPUT_TOKENS)
+                .isLessThan(8_000);
     }
 
     @Test

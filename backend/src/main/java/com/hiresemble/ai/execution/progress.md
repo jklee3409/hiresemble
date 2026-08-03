@@ -4,6 +4,19 @@
 
 P3 retryable/non-retryable AI 오류 분류와 안전한 projection이 구현됐다.
 
+## [2026-08-03] Session Summary (semantic·transport failure 역할 식별)
+
+- What was done:
+  - `AiExecutionException`에 semantic correction과 transport failure를 값 노출 없이 식별하는 내부 predicate를 추가했다.
+- Key decisions:
+  - 기존 safe code·retryable·maxAutomaticAttempts 공개 의미는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Orchestrator 통합과 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (failure별 automatic attempt 계약)
 
 - What was done:

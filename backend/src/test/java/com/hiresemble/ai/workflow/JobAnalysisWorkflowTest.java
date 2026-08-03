@@ -32,7 +32,7 @@ import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderGapDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderSourceRequirement;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
@@ -116,11 +116,10 @@ class JobAnalysisWorkflowTest {
                         ProviderRequirementsOutput.class,
                         ProviderEligibilityOutput.class,
                         ProviderMatchOutput.class);
-        assertThat(fixture.chat.requests.subList(0, 2))
-                .allSatisfy(request -> {
-                    assertThat(request.reasoningEffort()).isNull();
-                    assertThat(request.verbosity()).isNull();
-                });
+        assertThat(fixture.chat.requests.getFirst().reasoningEffort()).isEqualTo("low");
+        assertThat(fixture.chat.requests.getFirst().verbosity()).isEqualTo("low");
+        assertThat(fixture.chat.requests.get(1).reasoningEffort()).isNull();
+        assertThat(fixture.chat.requests.get(1).verbosity()).isNull();
         assertThat(fixture.chat.requests.get(2).reasoningEffort()).isEqualTo("low");
         assertThat(fixture.chat.requests.get(2).verbosity()).isEqualTo("low");
         assertThat(fixture.embedding.calls.get()).isEqualTo(1);
@@ -166,6 +165,37 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
+    void complexPostingCompletesAllEightStepsWithoutRequirementSemanticFailures() {
+        Fixture fixture = fixture(false, true);
+        fixture.chat.enqueue(
+                complexRequirements(),
+                eligibility(Eligibility.UNKNOWN),
+                missingAll(10));
+
+        ExecutionResult result = execute(fixture);
+
+        assertThat(result.steps()).hasSize(8);
+        assertThat(fixture.command.persisted).isNotNull();
+        assertThat(fixture.command.persisted.criteria()).hasSize(10);
+        assertThat(fixture.command.persisted.requiredQualifications())
+                .extracting(value -> value.text())
+                .contains(
+                        "4년제 대학 또는 전문대학 졸업자 및 졸업 예정자",
+                        "병역필 또는 면제자",
+                        "2026년 8월부터 근무 가능한 자",
+                        "해외여행에 결격사유가 없는 자",
+                        "채용에 결격사유가 없는 자");
+        assertThat(fixture.command.persisted.preferredQualifications())
+                .extracting(value -> value.text())
+                .contains(
+                        "금융 관련 자격증 보유자",
+                        "IT·데이터 관련 자격증 보유자",
+                        "인턴십·대외활동 우수자",
+                        "어학 우수자",
+                        "디지털 프로젝트 경험자");
+    }
+
+    @Test
     void partialMatchUsesDeterministicHalfCoefficient() {
         Fixture fixture = fixture(false, false);
         fixture.chat.enqueue(
@@ -187,7 +217,7 @@ class JobAnalysisWorkflowTest {
     void zeroCriterionFailsSafelyWithoutPersistence() {
         Fixture fixture = fixture(false, true);
         fixture.chat.enqueue(new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
+                "job-analysis-requirements-source-output-v4",
                 List.of()));
 
         assertThatThrownBy(() -> execute(fixture))
@@ -323,18 +353,14 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
-    void providerRequirementsMapToServerOwnedNewAnalysisStateAndKeepNullableSource() {
+    void providerRequirementsMapToServerOwnedStateAndKeepSourceProvenance() {
         Fixture fixture = fixture(false, false);
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         ProviderRequirementsOutput provider = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.REQUIRED_QUALIFICATION,
-                        FitCriterionCategory.REQUIRED_QUALIFICATION,
-                        "  관련 경력 3년 이상  ",
-                        true,
-                        null)));
+                "job-analysis-requirements-source-output-v4",
+                List.of(new ProviderSourceRequirement(
+                        "지원 자격", "  관련 경력 3년 이상  ", null, 0)));
 
         Object validated = validate(executor, json(provider), context);
         Object mapped = ephemeral(executor, validated, context);
@@ -345,101 +371,40 @@ class JobAnalysisWorkflowTest {
             assertThat(output.reusableAnalysisId()).isNull();
             assertThat(output.requirements()).singleElement().satisfies(requirement -> {
                 assertThat(requirement.text()).isEqualTo("관련 경력 3년 이상");
-                assertThat(requirement.sourceLocation()).isNull();
+                assertThat(requirement.sourceLocation()).isEqualTo("지원 자격");
+                assertThat(requirement.sourceOrdinal()).isZero();
+                assertThat(requirement.sourceText()).isEqualTo("관련 경력 3년 이상");
             });
         });
         assertThat(checkpoint.path("reusable").asBoolean()).isFalse();
         assertThat(checkpoint.path("reusableAnalysisId").isNull()).isTrue();
-        assertThat(checkpoint.path("requirements").get(0).path("sourceLocation").isNull())
-                .isTrue();
+        assertThat(checkpoint.path("requirements").get(0).path("sourceLocation").asText())
+                .isEqualTo("지원 자격");
 
-        ExtractRequirementsOutput legacyCheckpoint = new ExtractRequirementsOutput(
-                "job-analysis-requirements-output-v1",
-                false,
-                null,
-                ((ExtractRequirementsOutput) mapped).requirements());
-        assertThat(executor.ephemeralOutputFromMinimal(objectMapper.valueToTree(legacyCheckpoint)))
-                .isEqualTo(legacyCheckpoint);
+        assertThatThrownBy(() -> executor.ephemeralOutputFromMinimal(objectMapper.valueToTree(
+                        new ProviderRequirementsOutput(
+                                "job-analysis-requirements-output-v3",
+                                List.of(new ProviderSourceRequirement(
+                                        "지원 자격", "관련 경력 3년 이상", null, 0))))))
+                .isInstanceOf(AiExecutionException.class);
     }
 
     @Test
-    void requirementSemanticFailuresUseStableValueFreeReasonsAndOneCorrection() {
+    void providerSourceFailuresUseStableValueFreeReasonsAndOneCorrection() {
         Fixture fixture = fixture(false, false);
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
-        ProviderRequirementsOutput invalidCategory = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.RESPONSIBILITY,
-                        FitCriterionCategory.PREFERRED_QUALIFICATION,
-                        "비공개 요구사항 값",
-                        true,
-                        null)));
-        ProviderRequirementsOutput invalidRequired = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.PREFERRED_QUALIFICATION,
-                        FitCriterionCategory.PREFERRED_QUALIFICATION,
-                        "비공개 요구사항 값",
-                        true,
-                        null)));
-
-        assertRepairableFailure(
-                executor,
-                context,
-                invalidCategory,
-                "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID");
-        assertRepairableFailure(
-                executor,
-                context,
-                invalidRequired,
-                "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID");
-        ProviderRequirementsOutput downgradedCertification = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.PREFERRED_QUALIFICATION,
-                        FitCriterionCategory.PREFERRED_QUALIFICATION,
-                        "ADSP 자격증 보유자 우대",
-                        false,
-                        "우대 사항",
-                        CriterionSupportType.GENERAL)));
-        assertRepairableFailure(
-                executor,
-                context,
-                downgradedCertification,
-                "JOB_ANALYSIS_REQUIREMENT_SUPPORT_TYPE_INVALID");
-
-        ProviderRequirementsOutput preferredEducation = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.PREFERRED_QUALIFICATION,
-                        FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
-                        "학사 학위 보유자 우대",
-                        false,
-                        "우대 사항",
-                        CriterionSupportType.EDUCATION)));
-        assertThat(validate(executor, json(preferredEducation), context))
-                .isEqualTo(preferredEducation);
-
-        ProviderRequirementsOutput splitItSkillAndCertification = new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
+        ProviderRequirementsOutput duplicateOrdinals = new ProviderRequirementsOutput(
+                "job-analysis-requirements-source-output-v4",
                 List.of(
-                        new ProviderRequirementCandidate(
-                                RequirementSection.PREFERRED_QUALIFICATION,
-                                FitCriterionCategory.PREFERRED_QUALIFICATION,
-                                "IT 및 디지털 역량 보유자 우대",
-                                false,
-                                "우대 사항",
-                                CriterionSupportType.EXPERIENCE_OR_SKILL),
-                        new ProviderRequirementCandidate(
-                                RequirementSection.PREFERRED_QUALIFICATION,
-                                FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE,
-                                "ADSP 등 관련 자격증 보유",
-                                false,
-                                "우대 사항",
-                                CriterionSupportType.CERTIFICATION)));
-        assertThat(validate(executor, json(splitItSkillAndCertification), context))
-                .isEqualTo(splitItSkillAndCertification);
+                        new ProviderSourceRequirement("우대 사항", "인턴 경험자", "우대 사항", 0),
+                        new ProviderSourceRequirement("우대 사항", "어학 우수자", "우대 사항", 0)));
+
+        assertRepairableFailure(
+                executor,
+                context,
+                duplicateOrdinals,
+                "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID");
     }
 
     @Test
@@ -452,13 +417,12 @@ class JobAnalysisWorkflowTest {
                 executor,
                 context,
                 new ProviderRequirementsOutput(
-                        "job-analysis-requirements-output-v3",
-                        List.of(new ProviderRequirementCandidate(
-                                RequirementSection.REQUIRED_QUALIFICATION,
-                                FitCriterionCategory.REQUIRED_QUALIFICATION,
+                        "job-analysis-requirements-source-output-v4",
+                        List.of(new ProviderSourceRequirement(
+                                "지원 자격",
                                 "Three years of Java experience",
-                                true,
-                                "$.untrustedJobPosting.descriptionText"))),
+                                "$.untrustedJobPosting.descriptionText",
+                                0))),
                 "JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED");
     }
 
@@ -1118,46 +1082,59 @@ class JobAnalysisWorkflowTest {
 
     private ProviderRequirementsOutput requirements() {
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
+                "job-analysis-requirements-source-output-v4",
                 List.of(
-                        new ProviderRequirementCandidate(
-                                RequirementSection.REQUIRED_QUALIFICATION,
-                                FitCriterionCategory.REQUIRED_QUALIFICATION,
-                                "관련 경력 3년 이상",
-                                true,
-                                "필수 자격"),
-                        new ProviderRequirementCandidate(
-                                RequirementSection.RESPONSIBILITY,
-                                FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
-                                "Spring API 개발",
-                                true,
-                                "주요 업무")));
+                        new ProviderSourceRequirement(
+                                "필수 자격", "관련 경력 3년 이상", "필수 자격", 0),
+                        new ProviderSourceRequirement(
+                                "주요 업무", "Spring API 개발", "주요 업무", 1)));
+    }
+
+    private ProviderRequirementsOutput complexRequirements() {
+        return new ProviderRequirementsOutput(
+                "job-analysis-requirements-source-output-v4",
+                List.of(
+                        new ProviderSourceRequirement(
+                                "지원 자격",
+                                "4년제 대학 또는 전문대학 졸업자 및 졸업 예정자",
+                                "지원 자격",
+                                0),
+                        new ProviderSourceRequirement(
+                                "지원 자격", "병역필 또는 면제자", "지원 자격", 1),
+                        new ProviderSourceRequirement(
+                                "지원 자격", "2026년 8월부터 근무 가능한 자", "지원 자격", 2),
+                        new ProviderSourceRequirement(
+                                "지원 자격",
+                                "해외여행 및 채용에 결격사유가 없는 자",
+                                "지원 자격",
+                                3),
+                        new ProviderSourceRequirement(
+                                "우대 사항", "금융 관련 자격증 보유자", "우대 사항", 4),
+                        new ProviderSourceRequirement(
+                                "우대 사항", "IT·데이터 관련 자격증 보유자", "우대 사항", 5),
+                        new ProviderSourceRequirement(
+                                "우대 사항",
+                                "인턴십·대외활동 우수자, 어학 우수자, 디지털 프로젝트 경험자",
+                                "우대 사항",
+                                6)));
     }
 
     private ProviderRequirementsOutput singleRequirement(CriterionSupportType supportType) {
-        FitCriterionCategory category = switch (supportType) {
-            case EDUCATION, CERTIFICATION, LANGUAGE ->
-                    FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE;
-            default -> FitCriterionCategory.REQUIRED_QUALIFICATION;
-        };
         String text = switch (supportType) {
             case EDUCATION -> "국내외 4년제 대학 졸업자 또는 졸업 예정자";
             case CERTIFICATION -> "ADSP 자격증 보유";
             case LANGUAGE -> "TOEIC 800점 이상";
-            default -> "관련 경험 보유";
+            case WORK_AVAILABLE_DATE -> "2026년 8월부터 근무 가능한 자";
+            case MILITARY_STATUS -> "병역필 또는 면제자";
+            case OVERSEAS_TRAVEL_ELIGIBILITY -> "해외여행에 결격사유가 없는 자";
+            case EMPLOYMENT_DISQUALIFICATION_STATUS -> "채용에 결격사유가 없는 자";
+            case EXPERIENCE_OR_SKILL -> "관련 프로젝트 경험 보유";
+            case GENERAL -> "원활한 협업 능력 보유";
         };
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-output-v3",
-                List.of(new ProviderRequirementCandidate(
-                        RequirementSection.REQUIRED_QUALIFICATION,
-                        category,
-                        text,
-                        true,
-                        "지원 자격",
-                        supportType,
-                        supportType == CriterionSupportType.WORK_AVAILABLE_DATE
-                                ? java.time.LocalDate.parse("2026-08-31")
-                                : null)));
+                "job-analysis-requirements-source-output-v4",
+                List.of(new ProviderSourceRequirement(
+                        "지원 자격", text, "지원 자격", 0)));
     }
 
     private ProviderMatchOutput singleEvidenceMatch(UUID evidenceId) {
@@ -1251,6 +1228,25 @@ class JobAnalysisWorkflowTest {
                 List.of(
                         new ProviderGapDraft("경력 기간 근거가 필요합니다.", 0),
                         new ProviderGapDraft("Spring 경험 근거가 필요합니다.", 1)),
+                "등록된 근거가 없어 일치 여부를 확인하기 어렵습니다.");
+    }
+
+    private ProviderMatchOutput missingAll(int count) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v3",
+                java.util.stream.IntStream.range(0, count)
+                        .mapToObj(index -> new ProviderMatchedCriterion(
+                                index,
+                                MatchLevel.MISSING,
+                                List.of(),
+                                "등록된 근거에서 확인하지 못했습니다.",
+                                "확인 가능한 근거가 없습니다."))
+                        .toList(),
+                List.of(),
+                java.util.stream.IntStream.range(0, count)
+                        .mapToObj(index -> new ProviderGapDraft(
+                                "추가 확인이 필요한 공고 조건입니다.", index))
+                        .toList(),
                 "등록된 근거가 없어 일치 여부를 확인하기 어렵습니다.");
     }
 

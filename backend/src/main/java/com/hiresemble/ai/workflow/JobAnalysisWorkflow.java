@@ -83,7 +83,7 @@ public final class JobAnalysisWorkflow {
     public static final String RETRIEVAL_POLICY_VERSION = "verified-evidence-rag-v1";
 
     private static final String BUILD_SCHEMA = "job-analysis-build-output-v1";
-    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-output-v3";
+    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-source-output-v4";
     private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v3";
     private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v1";
     private static final String MATCH_SCHEMA = "job-analysis-match-output-v3";
@@ -92,7 +92,8 @@ public final class JobAnalysisWorkflow {
     private static final String PERSIST_SCHEMA = "job-analysis-persist-output-v1";
     private static final String INPUT_SCHEMA = "job-analysis-input-v1";
 
-    private static final int MAX_REQUIREMENTS = 100;
+    private static final int MAX_SOURCE_REQUIREMENTS = 100;
+    private static final int MAX_NORMALIZED_REQUIREMENTS = 100;
     private static final int MAX_RETRIEVED_EVIDENCE = 20;
     private static final int MAX_JOB_CONTENT_CHARACTERS = 80_000;
     private static final int MAX_EVIDENCE_CONTEXT_CHARACTERS = 2_500;
@@ -118,6 +119,7 @@ public final class JobAnalysisWorkflow {
     private final JobAnalysisEmbeddingQueryPort embeddingQueryPort;
     private final AgentRunQueryPort agentRunQueryPort;
     private final ObjectMapper objectMapper;
+    private final JobRequirementNormalizationPolicy requirementNormalizationPolicy;
 
     public JobAnalysisWorkflow(
             JobAnalysisQueryPort queryPort,
@@ -130,6 +132,7 @@ public final class JobAnalysisWorkflow {
         this.embeddingQueryPort = Objects.requireNonNull(embeddingQueryPort);
         this.agentRunQueryPort = Objects.requireNonNull(agentRunQueryPort);
         this.objectMapper = Objects.requireNonNull(objectMapper);
+        this.requirementNormalizationPolicy = new JobRequirementNormalizationPolicy();
     }
 
     public ExecutableWorkflowContribution contribution() {
@@ -560,7 +563,9 @@ public final class JobAnalysisWorkflow {
                     CHAT_TIMEOUT,
                     invocation.executionContext().run().priceVersion(),
                     invocation.prompt().maxOutputTokens(),
-                    invocation.prompt().outputType()));
+                    invocation.prompt().outputType(),
+                    "low",
+                    "low"));
         }
 
         @Override
@@ -568,14 +573,21 @@ public final class JobAnalysisWorkflow {
                 ProviderRequirementsOutput output, StepExecutionContext context) {
             if (!REQUIREMENTS_SCHEMA.equals(output.schemaVersion())
                     || output.requirements() == null
-                    || output.requirements().size() > MAX_REQUIREMENTS) {
+                    || output.requirements().size() > MAX_SOURCE_REQUIREMENTS) {
                 throw repairable(
                         ValidationPhase.JAVA_RECORD,
                         "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
-                        "Return schemaVersion and no more than 100 complete requirement objects.");
+                        "Return schemaVersion and no more than 100 complete source requirement objects.");
             }
-            for (ProviderRequirementCandidate requirement : output.requirements()) {
-                validateProviderRequirement(requirement);
+            Set<Integer> ordinals = new HashSet<>();
+            for (ProviderSourceRequirement requirement : output.requirements()) {
+                validateProviderSourceRequirement(requirement);
+                if (!ordinals.add(requirement.sourceOrdinal())) {
+                    throw repairable(
+                            ValidationPhase.JAVA_RECORD,
+                            "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
+                            "Return each source requirement once with a unique stable sourceOrdinal.");
+                }
             }
         }
 
@@ -583,19 +595,10 @@ public final class JobAnalysisWorkflow {
         protected void validateWorkflowOutput(
                 ProviderRequirementsOutput providerOutput, StepExecutionContext context) {
             ExtractRequirementsOutput output = mapProviderOutput(providerOutput, context);
-            Set<String> unique = new HashSet<>();
-            for (RequirementCandidate requirement : output.requirements()) {
-                String key = requirement.section()
-                        + "|"
-                        + requirement.category()
-                        + "|"
-                        + requirement.text().trim().toLowerCase(Locale.ROOT);
-                if (!unique.add(key)) {
-                    throw repairable(
-                            ValidationPhase.WORKFLOW_CONTEXT,
-                            "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
-                            "Return each distinct job requirement exactly once.");
-                }
+            if (output.requirements().size() > MAX_NORMALIZED_REQUIREMENTS) {
+                throw domainFailure(
+                        "JOB_ANALYSIS_REQUIREMENT_LIMIT_EXCEEDED",
+                        "공고 요구사항을 안전한 범위로 정규화하지 못했습니다.");
             }
         }
 
@@ -621,16 +624,8 @@ public final class JobAnalysisWorkflow {
                 return new ExtractRequirementsOutput(
                         REQUIREMENTS_SCHEMA, true, state.reusableAnalysisId(), List.of());
             }
-            List<RequirementCandidate> requirements = output.requirements().stream()
-                    .map(value -> new RequirementCandidate(
-                            value.section(),
-                            value.category(),
-                            value.text().trim(),
-                            value.required(),
-                            trimNullable(value.sourceLocation()),
-                            value.supportType(),
-                            value.requiredByDate()))
-                    .toList();
+            List<RequirementCandidate> requirements =
+                    requirementNormalizationPolicy.normalize(output.requirements());
             return new ExtractRequirementsOutput(
                     REQUIREMENTS_SCHEMA, false, null, requirements);
         }
@@ -1089,7 +1084,7 @@ public final class JobAnalysisWorkflow {
                     || output.criteria() == null
                     || output.strengths() == null
                     || output.gaps() == null
-                    || output.criteria().size() > MAX_REQUIREMENTS
+                    || output.criteria().size() > MAX_NORMALIZED_REQUIREMENTS
                     || output.strengths().size() > 20
                     || output.gaps().size() > 20
                     || (!reusing && !hasTrimmedText(output.analysisSummary(), 10_000))) {
@@ -2106,76 +2101,25 @@ public final class JobAnalysisWorkflow {
                 .toList();
     }
 
-    private void validateProviderRequirement(ProviderRequirementCandidate requirement) {
+    private void validateProviderSourceRequirement(ProviderSourceRequirement requirement) {
         if (requirement == null
-                || requirement.section() == null
-                || requirement.category() == null
-                || requirement.supportType() == null
-                || !hasTrimmedText(requirement.text(), 2_000)
+                || !hasTrimmedText(requirement.sourceText(), 2_000)
+                || requirement.sourceOrdinal() < 0
+                || requirement.sourceOrdinal() >= MAX_SOURCE_REQUIREMENTS
+                || (requirement.sourceSection() != null
+                        && !hasTrimmedText(requirement.sourceSection(), 500))
                 || (requirement.sourceLocation() != null
                         && !hasTrimmedText(requirement.sourceLocation(), 500))) {
             throw repairable(
                     ValidationPhase.JAVA_RECORD,
                     "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
-                    "Return complete requirement fields; use null, not a blank or placeholder, when sourceLocation is unavailable.");
+                    "Return complete source fields; use null, not a blank or placeholder, when a source hint or location is unavailable.");
         }
-        if (requirement.section() == RequirementSection.REQUIRED_QUALIFICATION
-                && !requirement.required()) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID",
-                    "REQUIRED_QUALIFICATION must set required true and PREFERRED_QUALIFICATION must set required false.");
-        }
-        if (requirement.section() == RequirementSection.PREFERRED_QUALIFICATION
-                && requirement.required()) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_REQUIRED_FLAG_INVALID",
-                    "REQUIRED_QUALIFICATION must set required true and PREFERRED_QUALIFICATION must set required false.");
-        }
-        if (requirement.section() == RequirementSection.RESPONSIBILITY
-                && requirement.category()
-                        != FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
-                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL and PREFERRED_QUALIFICATION must use PREFERRED_QUALIFICATION.");
-        }
-        if (requirement.section() == RequirementSection.PREFERRED_QUALIFICATION
-                && requirement.category() != FitCriterionCategory.PREFERRED_QUALIFICATION
-                && requirement.category()
-                        != FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_SECTION_CATEGORY_INVALID",
-                    "RESPONSIBILITY must use CORE_RESPONSIBILITY_OR_SKILL. Preferred education, certification, or language conditions must use EDUCATION_CERTIFICATION_LANGUAGE; other preferred conditions use PREFERRED_QUALIFICATION.");
-        }
-        if ((requirement.supportType() == CriterionSupportType.EDUCATION
-                        || requirement.supportType() == CriterionSupportType.CERTIFICATION
-                        || requirement.supportType() == CriterionSupportType.LANGUAGE)
-                && requirement.category()
-                        != FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_SUPPORT_CATEGORY_INVALID",
-                    "Education, certification, and language requirements must use EDUCATION_CERTIFICATION_LANGUAGE regardless of posting section.");
-        }
-        if ((requirement.supportType() == CriterionSupportType.WORK_AVAILABLE_DATE)
-                != (requirement.requiredByDate() != null)) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_DATE_INVALID",
-                    "WORK_AVAILABLE_DATE requires requiredByDate. Other support types must use requiredByDate=null. Convert a year-month requirement to its final calendar day.");
-        }
-        CriterionSupportType contentRequiredSupport = strictSupportType(requirement.text());
-        if (contentRequiredSupport != null
-                && requirement.supportType() != contentRequiredSupport) {
-            throw repairable(
-                    ValidationPhase.JAVA_RECORD,
-                    "JOB_ANALYSIS_REQUIREMENT_SUPPORT_TYPE_INVALID",
-                    "The requirement text has an explicit education, certification, language, work-date, military, overseas-travel, or employment-disqualification condition. Use its matching supportType; split mixed general-skill and certification-example prose into separate criteria without inventing requirements.");
-        }
-        if (!KoreanUserFacingTextPolicy.containsKorean(requirement.text())
+        if (!KoreanUserFacingTextPolicy.containsKorean(requirement.sourceText())
+                || (requirement.sourceSection() != null
+                        && (!KoreanUserFacingTextPolicy.containsKorean(
+                                        requirement.sourceSection())
+                                || isTechnicalSourceLocation(requirement.sourceSection())))
                 || (requirement.sourceLocation() != null
                         && (!KoreanUserFacingTextPolicy.containsKorean(
                                         requirement.sourceLocation())
@@ -2189,48 +2133,6 @@ public final class JobAnalysisWorkflow {
         return normalized.startsWith("$")
                 || normalized.contains("untrustedjobposting")
                 || normalized.contains("descriptiontext");
-    }
-
-    private CriterionSupportType strictSupportType(String text) {
-        String normalized = text.trim().toLowerCase(Locale.ROOT);
-        if (normalized.contains("근무 가능") || normalized.contains("입사 가능")) {
-            return CriterionSupportType.WORK_AVAILABLE_DATE;
-        }
-        if (normalized.contains("병역")) return CriterionSupportType.MILITARY_STATUS;
-        if (normalized.contains("해외여행") || normalized.contains("해외 여행")) {
-            return CriterionSupportType.OVERSEAS_TRAVEL_ELIGIBILITY;
-        }
-        if (normalized.contains("채용 결격") || normalized.contains("결격 사유")) {
-            return CriterionSupportType.EMPLOYMENT_DISQUALIFICATION_STATUS;
-        }
-        if (normalized.contains("자격증")
-                || normalized.contains("자격 보유")
-                || normalized.contains("자격 취득")
-                || normalized.contains("자격 소지")) {
-            return CriterionSupportType.CERTIFICATION;
-        }
-        if (normalized.contains("toeic")
-                || normalized.contains("toefl")
-                || normalized.contains("opic")
-                || normalized.contains("토익")
-                || normalized.contains("토플")
-                || normalized.contains("오픽")
-                || normalized.contains("어학 점수")
-                || normalized.contains("외국어 점수")) {
-            return CriterionSupportType.LANGUAGE;
-        }
-        if (normalized.contains("4년제")
-                || normalized.contains("학사")
-                || normalized.contains("석사")
-                || normalized.contains("박사")
-                || normalized.contains("학력")
-                || (normalized.contains("대학")
-                        && (normalized.contains("졸업")
-                                || normalized.contains("학위")
-                                || normalized.contains("재학")))) {
-            return CriterionSupportType.EDUCATION;
-        }
-        return null;
     }
 
     private StructuredOutputValidationException koreanOutputRequired() {
@@ -2471,6 +2373,12 @@ public final class JobAnalysisWorkflow {
                 }
             }
             if (requirement.supportType() == CriterionSupportType.WORK_AVAILABLE_DATE) {
+                if (requirement.requiredByDate() == null) {
+                    if (output.eligibility() != Eligibility.UNKNOWN) {
+                        throw invalidSupport();
+                    }
+                    continue;
+                }
                 StructuredProfileFact available = facts.get(StructuredProfileFactType.WORK_AVAILABLE_DATE);
                 if (available != null) {
                     if (output.eligibility() != Eligibility.UNKNOWN
@@ -2516,6 +2424,9 @@ public final class JobAnalysisWorkflow {
             RequirementCandidate requirement,
             MatchedCriterion criterion,
             List<StructuredProfileFact> facts) {
+        if (requirement.requiredByDate() == null) {
+            return false;
+        }
         if (exactFacts(facts, StructuredProfileFactType.WORK_AVAILABLE_DATE)) {
             return java.time.LocalDate.parse(facts.getFirst().value())
                             .compareTo(requirement.requiredByDate()) <= 0
@@ -2828,14 +2739,18 @@ public final class JobAnalysisWorkflow {
             boolean required,
             String sourceLocation,
             CriterionSupportType supportType,
-            java.time.LocalDate requiredByDate) {
+            java.time.LocalDate requiredByDate,
+            int sourceOrdinal,
+            String sourceText) {
         public RequirementCandidate(
                 RequirementSection section,
                 FitCriterionCategory category,
                 String text,
                 boolean required,
                 String sourceLocation) {
-            this(section, category, text, required, sourceLocation, CriterionSupportType.GENERAL, null);
+            this(
+                    section, category, text, required, sourceLocation,
+                    CriterionSupportType.GENERAL, null, -1, text);
         }
 
         public RequirementCandidate(
@@ -2845,40 +2760,31 @@ public final class JobAnalysisWorkflow {
                 boolean required,
                 String sourceLocation,
                 CriterionSupportType supportType) {
-            this(section, category, text, required, sourceLocation, supportType, null);
+            this(section, category, text, required, sourceLocation, supportType, null, -1, text);
+        }
+
+        public RequirementCandidate(
+                RequirementSection section,
+                FitCriterionCategory category,
+                String text,
+                boolean required,
+                String sourceLocation,
+                CriterionSupportType supportType,
+                java.time.LocalDate requiredByDate) {
+            this(
+                    section, category, text, required, sourceLocation,
+                    supportType, requiredByDate, -1, text);
         }
     }
 
-    public record ProviderRequirementCandidate(
-            RequirementSection section,
-            FitCriterionCategory category,
-            String text,
-            boolean required,
+    public record ProviderSourceRequirement(
+            @ProviderNullable String sourceSection,
+            String sourceText,
             @ProviderNullable String sourceLocation,
-            CriterionSupportType supportType,
-            @ProviderNullable java.time.LocalDate requiredByDate) {
-        public ProviderRequirementCandidate(
-                RequirementSection section,
-                FitCriterionCategory category,
-                String text,
-                boolean required,
-                String sourceLocation) {
-            this(section, category, text, required, sourceLocation, CriterionSupportType.GENERAL, null);
-        }
-
-        public ProviderRequirementCandidate(
-                RequirementSection section,
-                FitCriterionCategory category,
-                String text,
-                boolean required,
-                String sourceLocation,
-                CriterionSupportType supportType) {
-            this(section, category, text, required, sourceLocation, supportType, null);
-        }
-    }
+            int sourceOrdinal) {}
 
     public record ProviderRequirementsOutput(
-            String schemaVersion, List<ProviderRequirementCandidate> requirements) {
+            String schemaVersion, List<ProviderSourceRequirement> requirements) {
         public ProviderRequirementsOutput {
             if (requirements != null) {
                 requirements = List.copyOf(requirements);

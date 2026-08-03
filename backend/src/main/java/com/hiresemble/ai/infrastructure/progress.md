@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-03] Session Summary (OpenAI Chat wall-clock deadline)
+
+- What was done:
+  - request/provider timeout의 최소값으로 virtual-thread 호출 deadline을 강제하고 timeout·interrupt에서 worker를 cancel·종료한다.
+- Key decisions:
+  - Provider 내부 retry 0, strict schema, usage·safe failure 계약은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 5초 지연 Fake가 75ms deadline에서 `TIMEOUT`으로 종료되고 worker가 남지 않는 회귀 및 gateway 전체 테스트 통과.
+- Next steps:
+  - 실제 Provider latency 검증은 별도 승인 후 수행한다.
+
 ## [2026-08-02] Session Summary (공고 비교 request reasoning·verbosity 제한)
 
 - What was done:

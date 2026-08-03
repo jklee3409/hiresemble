@@ -9,12 +9,10 @@ import com.hiresemble.ai.workflow.JobAnalysisWorkflow.EmbeddingValuesOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderMatchedCriterion;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementCandidate;
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderSourceRequirement;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderRequirementsOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderStrengthDraft;
-import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
 import com.hiresemble.job.domain.Eligibility;
-import com.hiresemble.job.domain.FitCriterionCategory;
 import com.hiresemble.job.domain.MatchLevel;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.net.ServerSocket;
@@ -215,7 +213,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
-                case "job-analysis-requirements-output-v3" -> requirements(request.input());
+                case "job-analysis-requirements-source-output-v4" -> requirements(request.input());
                 case "job-analysis-eligibility-output-v3" -> eligibility(request.input());
                 case "job-analysis-match-output-v3" -> matches(request.input());
                 default -> throw new AssertionError(
@@ -242,24 +240,16 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                     .asText();
             if (description.contains("NO_REQUIREMENTS_FIXTURE")) {
                 return new ProviderRequirementsOutput(
-                        "job-analysis-requirements-output-v3",
+                        "job-analysis-requirements-source-output-v4",
                         List.of());
             }
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-output-v3",
+                    "job-analysis-requirements-source-output-v4",
                     List.of(
-                            new ProviderRequirementCandidate(
-                                    RequirementSection.REQUIRED_QUALIFICATION,
-                                    FitCriterionCategory.REQUIRED_QUALIFICATION,
-                                    "백엔드 개발 경력 3년 이상",
-                                    true,
-                                    "필수 지원 자격"),
-                            new ProviderRequirementCandidate(
-                                    RequirementSection.RESPONSIBILITY,
-                                    FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL,
-                                    "Spring Boot API 개발",
-                                    true,
-                                    "주요 업무")));
+                            new ProviderSourceRequirement(
+                                    "필수 지원 자격", "백엔드 개발 경력 3년 이상", "필수 지원 자격", 0),
+                            new ProviderSourceRequirement(
+                                    "주요 업무", "Spring Boot API 개발", "주요 업무", 1)));
         }
 
         private ProviderEligibilityOutput eligibility(JsonNode input) {
