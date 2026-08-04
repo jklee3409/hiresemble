@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (공고 분석 최신 Run 표시 오류 수정)
+
+- What was done:
+  - 재실행 성공 뒤에도 과거 자동 실패 Run이 상단과 상세 link에 노출되던 Frontend 선택 오류를 수정했다.
+- Key decisions:
+  - DB 데이터나 Backend 계약을 변경하지 않고 최신 Run query보다 자동 Run ID를 우선하던 문제 코드 한 줄을 바로잡았다.
+- Issues encountered:
+  - 대상 공고의 실제 DB 이력은 최신 `SUCCEEDED`와 과거 `FAILED` 순서로 정상이었고, 화면만 반대로 선택했다.
+- Validation:
+  - 실제 Run 시각·상태 대조, Job Analysis 집중 Vitest와 Frontend 전체 67 files/281 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 실패 화면 재실행 경로 정정)
 
 - What was done:
