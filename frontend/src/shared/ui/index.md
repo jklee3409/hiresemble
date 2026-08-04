@@ -6,7 +6,7 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`BrandMark.vue`](BrandMark.vue): H·node·orbit를 결합한 재사용 가능한 inline SVG 브랜드 mark
+- [`BrandMark.vue`](BrandMark.vue), [`hiresemble-logo.png`](hiresemble-logo.png): 승인된 두 번째 로고 자산과 full·compact·inverse lockup
 - [`AppIcon.vue`](AppIcon.vue): Dashboard calendar·guide·sparkle·career person을 포함한 currentColor 기반 장식·기능 SVG icon
 - [`PageHeader.vue`](PageHeader.vue): list·detail·editor·compact variant, 선택적 heading level과 부분 강조용 title slot을 지원하는 route page 제목·설명·action 영역
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status

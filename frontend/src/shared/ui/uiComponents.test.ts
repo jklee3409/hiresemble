@@ -22,13 +22,15 @@ describe('shared UI state components', () => {
     expect(icon.get('svg').findAll('path')).toHaveLength(2)
   })
 
-  it('renders the shared H network mark without an external image', () => {
+  it('renders the approved shared logo asset', () => {
     const wrapper = mount(BrandMark)
 
     expect(wrapper.get('[data-testid="brand-mark"]').element.tagName).toBe('SPAN')
-    expect(wrapper.get('svg').attributes('viewBox')).toBe('0 0 44 44')
+    expect(wrapper.get('img').attributes('src')).toContain('hiresemble-logo.png')
+    expect(wrapper.get('img').attributes('alt')).toBe('')
+    expect(wrapper.get('img').attributes('draggable')).toBe('false')
     expect(wrapper.text()).toContain('Hiresemble')
-    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.find('svg').exists()).toBe(false)
   })
 
   it('renders a semantic status as text instead of relying on color alone', () => {

@@ -2,8 +2,22 @@
 
 ## Overview
 
-- 현재 구현 route가 공유하는 icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
+- 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
+
+## [2026-08-04] Session Summary (두 번째 Hiresemble 로고 자산 적용)
+
+- What was done:
+  - 기존 inline H network SVG를 제공된 두 번째 Hiresemble 로고의 투명 256px PNG로 교체했다.
+  - `BrandMark`의 full·compact·inverse와 이름 표시 옵션을 유지하고 장식 이미지의 빈 대체 text·drag 방지를 고정했다.
+- Key decisions:
+  - 각 layout에 이미지를 중복 배치하지 않고 공용 `BrandMark` 한 곳에서 승인 자산을 소유한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Shared UI와 Job Analysis 집중 Vitest 12건, Frontend 전체 67 files/279 tests와 production build가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (Career person icon·PageHeader title slot)
 
