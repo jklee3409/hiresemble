@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (공고 분석 실패 카드 재실행 버튼 보완)
+
+- What was done:
+  - `JobAnalysisPage`의 terminal 실패 카드에 `공고 분석 재실행` 버튼을 항상 표시하도록 보완했다.
+  - 범용 retry 불가 Run은 현재 공고 version과 `forceReanalyze=true`로 새 `BALANCED` 분석을 요청하고, 실패 카드가 보일 때 하단 중복 분석 command는 숨긴다.
+- Key decisions:
+  - 서버가 허용한 generic retry는 기존 lineage를 유지하고, 그 외 실패의 재실행은 최신 resource snapshot을 사용하는 명시적 분석 요청으로 분리한다.
+- Issues encountered:
+  - 기존 구현은 `retryable=false`인 실패에서 버튼을 렌더링하지 않아 실제 첨부 화면에 행동 경로가 없었다.
+- Validation:
+  - Job Analysis 집중 Vitest 8건과 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (회원가입 사용자 문구·동의 상세 레이아웃)
 
 - What was done:

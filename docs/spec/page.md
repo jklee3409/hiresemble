@@ -512,6 +512,7 @@ API:
 - 최초 자동 분석 진행 단계와 안전한 실패·본문 보완 CTA
 - 최초 화면에서는 품질 dropdown과 큰 수동 실행 card를 노출하지 않음
 - 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하며 프론트 요청은 `BALANCED`로 고정한다. `BALANCED`·`ECONOMY` 선택 문구와 재분석 옵션은 노출하지 않는다.
+- 최근 분석 Run이 `FAILED|CANCELLED|INTERRUPTED`이면 실패 카드 안에 단일 `공고 분석 재실행` CTA를 제공한다. 서버가 범용 retry를 허용하면 기존 lineage retry를 사용하고, `retryable=false`이면 현재 공고 version으로 `forceReanalyze=true`인 새 `BALANCED` 분석을 요청한다.
 - 진행 여정 문구는 한 줄로 유지하고 Desktop의 네 단계는 각 문구 폭과 무관하게 단계 블록 사이 여백을 균일하게 배분한다. structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
 - 적합도·강점 수·보완점 수 요약과 점수 tooltip 안내

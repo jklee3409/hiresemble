@@ -149,7 +149,7 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.get('progress').attributes('aria-label')).toBe('공고 분석 진행률 55%')
   })
 
-  it('shows a safe failed state and launches only the server-authorized generic retry', async () => {
+  it('shows a safe failed state and launches the server-authorized generic retry', async () => {
     vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(
       page([
         agentRunSummary('FAILED', {
@@ -187,7 +187,7 @@ describe('P6 Job analysis page', () => {
       '공고와 등록한 지원 정보는 그대로 보존되어 있으니 잠시 후 다시 시도해 주세요.',
     )
     expect(wrapper.text()).not.toContain('AI 결과의 의미 제약을 확인하지 못했습니다.')
-    const retry = wrapper.findAll('button').find((button) => button.text() === '재시도')
+    const retry = wrapper.findAll('button').find((button) => button.text() === '공고 분석 재실행')
     expect(retry).toBeDefined()
     await retry?.trigger('click')
     await flushPromises()
@@ -195,6 +195,49 @@ describe('P6 Job analysis page', () => {
       JOB_ANALYSIS_RUN_ID,
       'agent-run-retry:key-1234',
     )
+  })
+
+  it('offers a fresh analysis execution when the failed run is not generically retryable', async () => {
+    vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(
+      page([
+        agentRunSummary('FAILED', {
+          id: JOB_ANALYSIS_RUN_ID,
+          workflowType: 'JOB_ANALYSIS',
+          resourceType: 'JOB',
+          resourceId: JOB_ID,
+          retryable: false,
+        }),
+      ]),
+    )
+    vi.mocked(agentRunApi.getAgentRun).mockResolvedValue(
+      analysisRun('FAILED', {
+        retryable: false,
+        cancellable: false,
+        safeError: {
+          code: 'RESOURCE_CONFLICT',
+          message: '현재 입력으로 범용 재시도를 진행할 수 없습니다.',
+        },
+      }),
+    )
+    const { wrapper } = await mountPage()
+
+    expect(wrapper.text()).toContain('아래 버튼으로 공고 분석을 다시 실행할 수 있어요.')
+    const restart = wrapper.findAll('button').find((button) => button.text() === '공고 분석 재실행')
+    expect(restart).toBeDefined()
+    await restart?.trigger('click')
+    await flushPromises()
+
+    expect(agentRunApi.retryAgentRun).not.toHaveBeenCalled()
+    expect(jobApi.analyzeJob).toHaveBeenCalledWith(
+      JOB_ID,
+      {
+        qualityMode: 'BALANCED',
+        forceReanalyze: true,
+        jobVersion: 2,
+      },
+      'job-analysis:key-1234',
+    )
+    expect(wrapper.text()).not.toContain('필요할 때만')
   })
 
   it('renders eligibility separately from a high score, all evidence sections, OUTDATED reasons and history', async () => {

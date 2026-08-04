@@ -252,6 +252,7 @@ const progressMessage = computed(() => {
   return '분석 결과를 마무리하고 있어요.'
 })
 const showAnalysisCommand = computed(() => {
+  if (runFailed.value) return false
   if (latestAnalysis.data.value) return true
   return ['NOT_REQUESTED', 'BLOCKED', 'SUPERSEDED'].includes(
     job.data.value?.automaticAnalysis.state ?? '',
@@ -293,6 +294,16 @@ async function retryFailedRun(): Promise<void> {
   } catch (error) {
     actionError.value = normalizeApiError(error)
   }
+}
+
+async function restartFailedAnalysis(): Promise<void> {
+  const run = currentRun.data.value
+  if (run === undefined || submissionPending.value || !hasUsableDescription.value) return
+  if (run.retryable) {
+    await retryFailedRun()
+    return
+  }
+  await requestAnalysis(true)
 }
 
 function eligibilityTone(
@@ -496,13 +507,12 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <p>{{ runFailureCopy.description }}</p>
             </div>
             <button
-              v-if="currentRun.data.value.retryable"
               type="button"
               class="button button--primary"
-              :disabled="retryMutation.isPending.value"
-              @click="retryFailedRun"
+              :disabled="submissionPending || !hasUsableDescription"
+              @click="restartFailedAnalysis"
             >
-              {{ retryMutation.isPending.value ? '재시도 접수 중…' : '재시도' }}
+              {{ submissionPending ? '재실행 접수 중…' : '공고 분석 재실행' }}
             </button>
           </div>
           <RouterLink

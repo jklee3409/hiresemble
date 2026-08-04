@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-04] Session Summary (공고 분석 실패 카드 재실행 계약 명확화)
+
+- What was done:
+  - Analysis Tab의 terminal 실패 카드에 단일 `공고 분석 재실행` CTA를 제공하는 계약을 명시했다.
+- Key decisions:
+  - `retryable=true`는 기존 Agent Run lineage retry를 사용하고, false이면 현재 공고 version의 강제 `BALANCED` 재분석을 새 실행으로 요청한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job Analysis component 회귀와 Frontend 전체 check에 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (가입 문구·동의 Modal 표시 계약)
 
 - What was done:

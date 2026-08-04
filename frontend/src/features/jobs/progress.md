@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-04] Session Summary (공고 분석 실패 재실행 안내 정정)
+
+- What was done:
+  - 일반 분석 실패 문구에서 조건부 재시도 표현을 제거하고 실패 카드의 재실행 버튼을 직접 안내하도록 바꿨다.
+- Key decisions:
+  - 저장된 공고와 지원 정보 보존을 먼저 설명하고 내부 retryable·Provider 용어는 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 실패 Run 두 분기의 Job Analysis component test와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 criterion 출처 사용자용 치환)
 
 - What was done:
