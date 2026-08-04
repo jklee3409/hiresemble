@@ -202,11 +202,67 @@ test('public authentication shell keeps the form readable at desktop and mobile 
 
     await page.goto('/signup')
     await expect(page.getByRole('heading', { name: '회원가입' })).toBeVisible()
+    await expect(page.getByText('비밀번호는 10자 이상 입력해주세요.')).toBeVisible()
     await expect(
-      page.getByText('다른 곳에서 사용하지 않는 비밀번호를 입력해 주세요.'),
+      page.getByText('숫자/문자/특수 문자를 최소 한 글자 이상 포함해주세요.'),
     ).toBeVisible()
+    await expect(page.getByText('다른 서비스에서 쓰지 않는 비밀번호를 권장해요.')).toBeVisible()
+    await expect(page.getByText('예시처럼 @와 도메인 주소를 모두 입력해 주세요.')).toHaveCount(0)
+
+    const signupEmail = page.locator('#signup-email')
+    const signupPassword = page.locator('#signup-password')
+    await signupEmail.fill('candidate@invalid')
+    await signupPassword.focus()
+    await expect(signupEmail).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText('이메일 형식을 확인해 주세요.')).toBeVisible()
+    await signupEmail.fill('candidate@example.com')
+    await expect(signupEmail).toHaveAttribute('aria-invalid', 'false')
+
+    await signupPassword.fill('abcdefghij')
+    await signupEmail.focus()
+    await expect(signupPassword).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText(/문자, 숫자, 특수문자를 각각 1개 이상/)).toBeVisible()
+    await signupPassword.fill('Password1!')
+    await expect(signupPassword).toHaveAttribute('aria-invalid', 'false')
     await page.getByRole('button', { name: '비밀번호 보기', exact: true }).click()
     await expect(page.getByRole('button', { name: '비밀번호 숨기기', exact: true })).toBeVisible()
+
+    const serviceDetailTrigger = page.getByRole('button', {
+      name: '이용약관·개인정보 상세 보기',
+    })
+    await serviceDetailTrigger.click()
+    const serviceDialog = page.getByRole('dialog', {
+      name: '이용약관·개인정보 수집 및 이용',
+    })
+    await expect(serviceDialog).toBeVisible()
+    await expect(serviceDialog.getByText('안전하게 저장해요', { exact: true })).toBeVisible()
+    await expect(serviceDialog.getByText('개인정보를 이렇게 다뤄요')).toBeVisible()
+    await expect(
+      serviceDialog.getByText('접근을 바로 막고, 사용자 자료를 24시간 안에 삭제해요.'),
+    ).toBeVisible()
+    await expect(serviceDialog.getByText('BCrypt')).toHaveCount(0)
+    await expect(serviceDialog.getByText('해시', { exact: false })).toHaveCount(0)
+    expect(await serviceDialog.evaluate((element) => getComputedStyle(element).overflow)).toBe(
+      'hidden',
+    )
+    expect(
+      await serviceDialog
+        .locator('.consent-modal__body')
+        .evaluate((element) => getComputedStyle(element).overflowY),
+    ).toBe('auto')
+    await page.keyboard.press('Escape')
+    await expect(serviceDialog).toBeHidden()
+    await expect(serviceDetailTrigger).toBeFocused()
+
+    await page.getByRole('button', { name: 'AI 처리 상세 보기' }).click()
+    const aiDialog = page.getByRole('dialog', { name: 'AI 처리 안내' })
+    await expect(aiDialog.getByText('OpenAI 기반으로 처리해요')).toBeVisible()
+    await expect(aiDialog.getByText('Embedding')).toHaveCount(0)
+    await expect(aiDialog.getByText('임베딩')).toHaveCount(0)
+    await expect(aiDialog.getByText('API')).toHaveCount(0)
+    await expect(aiDialog.getByText('마스킹')).toHaveCount(0)
+    await aiDialog.getByRole('button', { name: '내용을 확인했어요' }).click()
+    await expect(aiDialog).toBeHidden()
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -342,6 +398,77 @@ test('profile suggestions and document registration stay keyboard-ready and resp
     ).toBe(false)
 
     if (width === 1024) await page.goto('/profile/basic')
+  }
+})
+
+test('onboarding eligibility and 30-minute job deadlines stay responsive', async ({ page }) => {
+  await installAuthenticatedRoutes(page)
+  await page.route('**/api/v1/profile', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        legalName: null,
+        introduction: null,
+        desiredRoles: [],
+        desiredIndustries: [],
+        desiredLocations: [],
+        expectedGraduationDate: null,
+        profileCompleted: false,
+        missingCompletionItems: [
+          'LEGAL_NAME',
+          'DESIRED_ROLE',
+          'DESIRED_INDUSTRY',
+          'DESIRED_LOCATION',
+          'PRIMARY_EDUCATION',
+        ],
+        version: 0,
+        createdAt: '2026-08-04T00:00:00Z',
+        updatedAt: '2026-08-04T00:00:00Z',
+      }),
+    })
+  })
+  await page.route('**/api/v1/profile/eligibility', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: '00000000-0000-4000-8000-000000000010',
+        workAvailableDate: null,
+        militaryStatus: 'UNSPECIFIED',
+        overseasTravelEligibility: 'UNSPECIFIED',
+        employmentDisqualificationStatus: 'UNSPECIFIED',
+        version: 0,
+        createdAt: '2026-08-04T00:00:00Z',
+        updatedAt: '2026-08-04T00:00:00Z',
+      }),
+    })
+  })
+  await page.route('**/api/v1/profile/educations?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }),
+    })
+  })
+
+  for (const width of [1440, 390] as const) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+    await page.goto('/onboarding')
+    await expect(page.getByRole('group', { name: '지원 자격 확인 정보' })).toBeVisible()
+    await expect(page.getByLabel('근무 가능일')).toBeVisible()
+    await expect(page.getByLabel('병역 상태')).toBeVisible()
+    await expect(page.getByLabel('해외여행 가능 여부')).toBeVisible()
+    await expect(page.getByLabel('채용 결격 사유 여부')).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+
+    await page.goto('/jobs/new')
+    await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0)
+    await expect(page.getByLabel('마감 날짜')).toBeVisible()
+    await expect(page.getByLabel('마감 오전 또는 오후')).toHaveValue('PM')
+    await expect(page.getByLabel('마감 시간')).toHaveValue('11:30')
+    await expect(page.locator('#job-deadline-time option')).toHaveCount(24)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   }
 })
 
