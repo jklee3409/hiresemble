@@ -25,7 +25,7 @@ class JobAnalysisStrictStructuredOutputContractTest {
 
         JsonNode requirements = schema(registry.require(
                 JobAnalysisWorkflow.ProviderRequirementsOutput.class,
-                "job-analysis-requirements-source-output-v4"));
+                "job-analysis-requirements-source-output-v5"));
         JsonNode eligibility = schema(registry.require(
                 JobAnalysisWorkflow.ProviderEligibilityOutput.class,
                 "job-analysis-eligibility-output-v3"));

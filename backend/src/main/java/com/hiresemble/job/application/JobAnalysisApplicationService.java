@@ -72,8 +72,8 @@ public class JobAnalysisApplicationService
         implements JobAnalysisQueryPort, JobAnalysisCommandPort, EvidenceReferenceQueryPort {
 
     public static final String WORKFLOW_VERSION = "job-analysis-v1";
-    public static final String RUBRIC_VERSION = "job-fit-rubric-v1";
-    public static final String RETRIEVAL_POLICY_VERSION = "verified-evidence-rag-v1";
+    public static final String RUBRIC_VERSION = "job-fit-rubric-v2";
+    public static final String RETRIEVAL_POLICY_VERSION = "criterion-evidence-rag-v2";
     private static final Set<String> SORTS =
             Set.of("analysisVersion,desc", "createdAt,desc");
 
@@ -269,6 +269,7 @@ public class JobAnalysisApplicationService
                         (left, right) -> left));
         List<RetrievedVerifiedEvidence> result = new ArrayList<>();
         Set<UUID> selected = new HashSet<>();
+        int semanticLimit = limit <= 2 ? 1 : limit - 2;
         for (var chunk : embeddingQuery.exactCosineSearch(
                 userId,
                 queryVector,
@@ -295,8 +296,8 @@ public class JobAnalysisApplicationService
                     chunk.documentId(),
                     chunk.maskedContent(),
                     chunk.distance()));
-            if (result.size() == limit) {
-                return List.copyOf(result);
+            if (result.size() == semanticLimit) {
+                break;
             }
         }
         Set<String> terms = java.util.Arrays.stream(
@@ -896,6 +897,7 @@ public class JobAnalysisApplicationService
                 summary.analysisVersion(),
                 summary.eligibility(),
                 summary.fitScore(),
+                summary.analysisCoverage(),
                 !reasons.isEmpty(),
                 reasons,
                 summary.createdAt(),

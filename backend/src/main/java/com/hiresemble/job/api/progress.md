@@ -4,6 +4,19 @@
 
 P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약, 자동 분석 projection과 P7/P8 child resource projection이 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis coverage API 확장)
+
+- What was done:
+  - summary/detail DTO와 mapper에 nullable `analysisCoverage`를 추가했다.
+- Key decisions:
+  - 기존 필드는 유지하는 additive response 확장으로 호환성을 보존한다.
+- Issues encountered:
+  - 과거 rubric row에는 coverage가 없어 nullable 계약이 필요했다.
+- Validation:
+  - OpenAPI/DTO compile과 Frontend typed contract 검증 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Job detail 자동 분석 projection)
 
 - What was done:

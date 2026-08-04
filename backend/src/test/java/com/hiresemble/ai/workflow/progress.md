@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis source·retrieval v2 회귀)
+
+- What was done:
+  - Plateer형 source section, exact block provenance, batch embedding, criterion별 검색과 원문 display dedupe 회귀를 추가·갱신했다.
+- Key decisions:
+  - Fake posting도 실제 provider 계약처럼 공고 원문에 선택 가능한 source block을 포함한다.
+- Issues encountered:
+  - 기존 fixture는 model-owned section과 단일 embedding 호출을 전제했다.
+- Validation:
+  - Job Analysis workflow·section·normalization 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Eligibility production-size 회귀 테스트)
 
 - What was done:

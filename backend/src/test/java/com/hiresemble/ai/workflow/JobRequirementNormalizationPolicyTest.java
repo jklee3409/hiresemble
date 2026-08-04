@@ -2,6 +2,7 @@ package com.hiresemble.ai.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.JobSourceBlock;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderSourceRequirement;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
 import com.hiresemble.job.domain.CriterionSupportType;
@@ -18,7 +19,7 @@ class JobRequirementNormalizationPolicyTest {
     @Test
     void complexPostingIsSplitClassifiedDeduplicatedAndTracedByOnePolicy() {
         String mixed = "인턴십·대외활동 우수자, 어학 우수자, 디지털 프로젝트 경험자";
-        var normalized = policy.normalize(List.of(
+        var normalized = normalize(List.of(
                 source("지원 자격", "4년제 대학 또는 전문대학 졸업자 및 졸업 예정자", 0),
                 source("지원 자격", "병역필 또는 면제자", 1),
                 source("지원 자격", "2026년 8월부터 근무 가능한 자", 2),
@@ -81,22 +82,16 @@ class JobRequirementNormalizationPolicyTest {
     }
 
     @Test
-    void ambiguousUnsplittableSourceFallsBackWithoutBecomingRequiredOrPositiveByItself() {
-        var normalized = policy.normalize(List.of(
+    void unclassifiedSourceCannotBecomeAScoringCriterion() {
+        var normalized = normalize(List.of(
                 new ProviderSourceRequirement(null, "조직과 잘 어울리는 분", null, 0)));
 
-        assertThat(normalized).singleElement().satisfies(value -> {
-            assertThat(value.section()).isEqualTo(RequirementSection.PREFERRED_QUALIFICATION);
-            assertThat(value.required()).isFalse();
-            assertThat(value.supportType()).isEqualTo(CriterionSupportType.GENERAL);
-            assertThat(value.text()).isEqualTo("조직과 잘 어울리는 분");
-            assertThat(value.sourceOrdinal()).isZero();
-        });
+        assertThat(normalized).isEmpty();
     }
 
     @Test
     void parenthesesAndCategoryMiddleDotsAreNotBlindlySplit() {
-        var normalized = policy.normalize(List.of(
+        var normalized = normalize(List.of(
                 source("우대 사항", "관련 자격증(금융, IT·데이터) 보유자", 0)));
 
         assertThat(normalized).singleElement().satisfies(value -> {
@@ -107,7 +102,7 @@ class JobRequirementNormalizationPolicyTest {
 
     @Test
     void lineBreaksSplitAtomicConditionsWhileAmbiguousConnectorsStayIntact() {
-        var normalized = policy.normalize(List.of(
+        var normalized = normalize(List.of(
                 source("우대 사항", "어학 우수자\n디지털 프로젝트 경험자", 0),
                 source("우대 사항", "IT/데이터 관련 자격증 보유자", 1),
                 source("지원 자격", "4년제 대학 또는 전문대학 졸업자", 2),
@@ -130,5 +125,30 @@ class JobRequirementNormalizationPolicyTest {
 
     private ProviderSourceRequirement source(String section, String text, int ordinal) {
         return new ProviderSourceRequirement(section, text, section, ordinal);
+    }
+
+    private List<JobAnalysisWorkflow.RequirementCandidate> normalize(
+            List<ProviderSourceRequirement> sources) {
+        List<JobSourceBlock> blocks = sources.stream()
+                .map(source -> new JobSourceBlock(
+                        source.sourceBlockId(),
+                        section(source.sourceSection()),
+                        source.sourceText(),
+                        source.sourceOrdinal()))
+                .toList();
+        return policy.normalize(sources, blocks);
+    }
+
+    private RequirementSection section(String section) {
+        if ("지원 자격".equals(section)) {
+            return RequirementSection.REQUIRED_QUALIFICATION;
+        }
+        if ("우대 사항".equals(section)) {
+            return RequirementSection.PREFERRED_QUALIFICATION;
+        }
+        if ("주요 업무".equals(section)) {
+            return RequirementSection.RESPONSIBILITY;
+        }
+        return RequirementSection.OTHER;
     }
 }

@@ -382,7 +382,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
-                case "job-analysis-requirements-source-output-v4" ->
+                case "job-analysis-requirements-source-output-v5" ->
                         jobRequirements(request.input());
                 case "job-analysis-eligibility-output-v3" ->
                         jobEligibility(request.input());
@@ -444,7 +444,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
 
         private ProviderRequirementsOutput jobRequirements(JsonNode input) {
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-source-output-v4",
+                    "job-analysis-requirements-source-output-v5",
                     List.of(
                             new ProviderSourceRequirement(
                                     "지원 자격", "백엔드 엔지니어링 경험", "지원 자격", 0),

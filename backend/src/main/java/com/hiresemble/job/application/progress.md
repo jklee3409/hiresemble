@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-04] Session Summary (criterion별 hybrid evidence 검색)
+
+- What was done:
+  - semantic 검색 상한에 lexical slot을 예약해 direct evidence가 vector chunk에 밀리지 않게 했다.
+- Key decisions:
+  - workflow가 criterion마다 최대 5개를 요청하고 application은 semantic 3개·lexical 최대 2개를 조합한다.
+- Issues encountered:
+  - 기존 semantic 결과가 limit을 채우면 career 등 direct evidence lexical fallback이 실행되지 않았다.
+- Validation:
+  - workflow query별 검색 호출과 allowlist/hash 검증 회귀 통과.
+- Next steps:
+  - direct evidence 자체 embedding 영속화는 별도 성능 확장으로 남긴다.
+
 ## [2026-08-03] Session Summary (canonical requirement compatibility 소비)
 
 - What was done:

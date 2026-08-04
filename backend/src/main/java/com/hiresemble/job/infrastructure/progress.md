@@ -4,6 +4,19 @@
 
 P5 Job JDBC·Scheduler/fetch, P6 immutable Analysis JDBC·비용 설정과 자동 분석 claim store·reconciliation 설정이 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis coverage 저장)
+
+- What was done:
+  - analysis insert/select가 nullable fit score와 `analysis_coverage`를 저장·조회하도록 확장했다.
+- Key decisions:
+  - immutable 과거 analysis를 backfill하지 않고 null coverage로 rubric 세대를 구분한다.
+- Issues encountered:
+  - store summary와 application outdated projection 양쪽에 새 필드 전달이 필요했다.
+- Validation:
+  - JDBC compile과 관련 workflow persistence 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (자동 분석 claim store·설정)
 
 - What was done:

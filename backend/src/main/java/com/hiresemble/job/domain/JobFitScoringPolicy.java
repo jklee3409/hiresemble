@@ -28,16 +28,18 @@ public final class JobFitScoringPolicy {
                         .thenComparing(value -> value.criterion().toLowerCase(java.util.Locale.ROOT))
                         .thenComparing(value -> value.sourceLocation() == null ? "" : value.sourceLocation()))
                 .toList();
-        EnumMap<FitCriterionCategory, List<CriterionInput>> groups =
-                new EnumMap<>(FitCriterionCategory.class);
-        for (CriterionInput input : ordered) {
-            groups.computeIfAbsent(input.category(), ignored -> new ArrayList<>()).add(input);
-        }
-        BigDecimal presentBaseTotal = groups.keySet().stream()
+        EnumMap<FitCriterionCategory, List<CriterionInput>> groups = groups(ordered);
+        BigDecimal coverage = coverage(groups);
+        List<CriterionInput> assessed = ordered.stream()
+                .filter(input -> input.matchLevel() != MatchLevel.UNKNOWN)
+                .toList();
+        EnumMap<FitCriterionCategory, List<CriterionInput>> assessedGroups = groups(assessed);
+        BigDecimal assessedBaseTotal = assessedGroups.keySet().stream()
                 .map(FitCriterionCategory::baseWeight)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        Map<FitCriterionCategory, BigDecimal> categoryWeights =
-                allocateCategoryWeights(groups, presentBaseTotal);
+        Map<FitCriterionCategory, BigDecimal> categoryWeights = assessedGroups.isEmpty()
+                ? Map.of()
+                : allocateCategoryWeights(assessedGroups, assessedBaseTotal);
         List<ScoredCriterion> criteria = new ArrayList<>(ordered.size());
         int order = 0;
         for (FitCriterionCategory category : FitCriterionCategory.values()) {
@@ -45,11 +47,17 @@ public final class JobFitScoringPolicy {
             if (categoryCriteria == null) {
                 continue;
             }
-            List<BigDecimal> weights = equalAllocation(
-                    categoryWeights.get(category), categoryCriteria.size());
-            for (int index = 0; index < categoryCriteria.size(); index++) {
-                CriterionInput input = categoryCriteria.get(index);
-                BigDecimal weight = weights.get(index);
+            int assessedCount = (int) categoryCriteria.stream()
+                    .filter(input -> input.matchLevel() != MatchLevel.UNKNOWN)
+                    .count();
+            List<BigDecimal> weights = assessedCount == 0
+                    ? List.of()
+                    : equalAllocation(categoryWeights.get(category), assessedCount);
+            int assessedIndex = 0;
+            for (CriterionInput input : categoryCriteria) {
+                BigDecimal weight = input.matchLevel() == MatchLevel.UNKNOWN
+                        ? BigDecimal.ZERO.setScale(2)
+                        : weights.get(assessedIndex++);
                 BigDecimal criterionScore = weight.multiply(input.matchLevel().coefficient())
                         .setScale(2, RoundingMode.HALF_UP);
                 criteria.add(new ScoredCriterion(
@@ -64,14 +72,52 @@ public final class JobFitScoringPolicy {
                         order++));
             }
         }
-        BigDecimal total = criteria.stream()
-                .map(ScoredCriterion::score)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-        if (total.compareTo(BigDecimal.ZERO) < 0 || total.compareTo(TOTAL) > 0) {
+        BigDecimal total = assessed.isEmpty()
+                ? null
+                : criteria.stream()
+                        .map(ScoredCriterion::score)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .setScale(2, RoundingMode.HALF_UP);
+        if (total != null
+                && (total.compareTo(BigDecimal.ZERO) < 0 || total.compareTo(TOTAL) > 0)) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
-        return new ScoreResult(total, criteria);
+        return new ScoreResult(total, coverage, criteria);
+    }
+
+    private static EnumMap<FitCriterionCategory, List<CriterionInput>> groups(
+            List<CriterionInput> inputs) {
+        EnumMap<FitCriterionCategory, List<CriterionInput>> groups =
+                new EnumMap<>(FitCriterionCategory.class);
+        for (CriterionInput input : inputs) {
+            groups.computeIfAbsent(input.category(), ignored -> new ArrayList<>()).add(input);
+        }
+        return groups;
+    }
+
+    private static BigDecimal coverage(
+            EnumMap<FitCriterionCategory, List<CriterionInput>> groups) {
+        BigDecimal presentBaseTotal = groups.keySet().stream()
+                .map(FitCriterionCategory::baseWeight)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<FitCriterionCategory, BigDecimal> categoryWeights =
+                allocateCategoryWeights(groups, presentBaseTotal);
+        BigDecimal coverage = BigDecimal.ZERO;
+        for (FitCriterionCategory category : FitCriterionCategory.values()) {
+            List<CriterionInput> categoryCriteria = groups.get(category);
+            if (categoryCriteria == null) {
+                continue;
+            }
+            List<BigDecimal> weights = equalAllocation(
+                    categoryWeights.get(category), categoryCriteria.size());
+            for (int index = 0; index < categoryCriteria.size(); index++) {
+                CriterionInput input = categoryCriteria.get(index);
+                if (input.matchLevel() != MatchLevel.UNKNOWN) {
+                    coverage = coverage.add(weights.get(index));
+                }
+            }
+        }
+        return coverage.setScale(2, RoundingMode.HALF_UP);
     }
 
     private static Map<FitCriterionCategory, BigDecimal> allocateCategoryWeights(
@@ -159,7 +205,10 @@ public final class JobFitScoringPolicy {
         }
     }
 
-    public record ScoreResult(BigDecimal totalScore, List<ScoredCriterion> criteria) {
+    public record ScoreResult(
+            BigDecimal totalScore,
+            BigDecimal analysisCoverage,
+            List<ScoredCriterion> criteria) {
         public ScoreResult {
             criteria = List.copyOf(criteria);
         }

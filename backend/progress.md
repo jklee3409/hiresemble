@@ -4,8 +4,21 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
-- V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- 최신 완료된 Backend 전체 `check`는 78 suites/536 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- V1~V20 migration이 적용됐고 V19는 지원 자격 provenance, V20은 Job Analysis coverage를 소유한다.
+- 최신 완료된 Backend 전체 `check`는 79 suites/538 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-04] Session Summary (Job Analysis rubric v2 수직 구현)
+
+- What was done:
+  - server-owned posting section/source block, criterion별 evidence retrieval, coverage-aware scoring, nullable fit score와 V20/API 저장 계약을 구현했다.
+- Key decisions:
+  - `ROLE_SUMMARY|OTHER`는 점수 기준에서 제외하고 `UNKNOWN`은 분모에서 제외하며 `analysisCoverage`로 별도 표현한다.
+- Issues encountered:
+  - 기존 fake workflow가 단일 embedding/search와 provider-owned section을 전제해 source fixture와 batch embedding을 새 계약으로 교정했다.
+- Validation:
+  - `gradlew --no-daemon check`: 79 suites/538 tests 통과. 마지막 source-block 안정성 보완 후 관련 workflow·normalization·section·scoring 집중 테스트도 재통과했다.
+- Next steps:
+  - 실제 Provider 재분석에서 추출 7개 source bullet과 criterion별 근거 검색 결과를 확인한다.
 
 ## [2026-08-04] Session Summary (회원가입 비밀번호 조합 서버 검증)
 

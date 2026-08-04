@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-04] Session Summary (P6/P7 source requirements v5 fixture)
+
+- What was done:
+  - P6/P7 Fake provider의 Job requirement schema dispatch와 응답을 source-output-v5로 올렸다.
+- Key decisions:
+  - E2E 공고 원문과 동일한 source text를 유지해 server-owned block 검증을 통과시킨다.
+- Issues encountered:
+  - canonical workflow schema가 v5로 변경돼 구 v4 dispatch가 호출되지 않았다.
+- Validation:
+  - Backend 전체 `check` 79 suites/538 tests에서 P6/P7 E2E compile·실행 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (P6/P7 source requirements v4 fixture)
 
 - What was done:

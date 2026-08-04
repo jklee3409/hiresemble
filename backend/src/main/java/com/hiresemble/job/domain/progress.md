@@ -4,6 +4,19 @@
 
 P5 Job 상태·URL 정책과 P6 analysis enum·hash·결정론적 scoring, 자동 분석 request 상태 정책이 구현됐다.
 
+## [2026-08-04] Session Summary (적합도 rubric v2·analysis coverage)
+
+- What was done:
+  - `UNKNOWN` criterion을 점수 분모에서 제외하고 weighted analysis coverage를 계산하는 rubric v2를 구현했다.
+- Key decisions:
+  - `MISSING`은 0점, 전부 `UNKNOWN`이면 fit score null·coverage 0으로 구분한다.
+- Issues encountered:
+  - 기존 `UNKNOWN=0`은 근거 부족을 실제 불일치와 동일하게 낮은 점수로 만들었다.
+- Validation:
+  - category 재배분, mixed UNKNOWN, all UNKNOWN과 decimal residual 단위 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (자동 분석 상태 모델)
 
 - What was done:

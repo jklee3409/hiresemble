@@ -296,7 +296,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(0)),
                         analysisStep(
                                 "EXTRACT_REQUIREMENTS",
-                                "job-analysis-requirements-source-output-v4",
+                                "job-analysis-requirements-source-output-v5",
                                 Set.of(),
                                 1,
                                 RETRYABLE,
@@ -312,7 +312,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(2)),
                         analysisStep(
                                 "RETRIEVE_VERIFIED_EVIDENCE",
-                                "job-analysis-retrieval-output-v1",
+                                "job-analysis-retrieval-output-v2",
                                 Set.of("EMBEDDING"),
                                 1,
                                 RETRYABLE,
@@ -328,7 +328,7 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(4)),
                         analysisStep(
                                 "SCORE_FIT",
-                                "job-analysis-score-output-v1",
+                                "job-analysis-score-output-v2",
                                 Set.of(),
                                 0,
                                 Set.of(),

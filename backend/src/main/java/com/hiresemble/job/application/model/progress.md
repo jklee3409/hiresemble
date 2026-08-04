@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis application 결과·snapshot·command record, 자동 분석 request·projection model이 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis coverage projection)
+
+- What was done:
+  - analysis summary model에 nullable `analysisCoverage`를 추가했다.
+- Key decisions:
+  - null은 기존 rubric 이력으로 해석하고 신규 v2 값은 0.00..100.00을 사용한다.
+- Issues encountered:
+  - summary 재projection 호출부가 새 record component를 전달하도록 함께 교정됐다.
+- Validation:
+  - Backend compile과 workflow persistence 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (자동 분석 application model)
 
 - What was done:

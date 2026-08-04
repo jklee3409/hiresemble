@@ -213,7 +213,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
-                case "job-analysis-requirements-source-output-v4" -> requirements(request.input());
+                case "job-analysis-requirements-source-output-v5" -> requirements(request.input());
                 case "job-analysis-eligibility-output-v3" -> eligibility(request.input());
                 case "job-analysis-match-output-v3" -> matches(request.input());
                 default -> throw new AssertionError(
@@ -240,11 +240,11 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                     .asText();
             if (description.contains("NO_REQUIREMENTS_FIXTURE")) {
                 return new ProviderRequirementsOutput(
-                        "job-analysis-requirements-source-output-v4",
+                        "job-analysis-requirements-source-output-v5",
                         List.of());
             }
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-source-output-v4",
+                    "job-analysis-requirements-source-output-v5",
                     List.of(
                             new ProviderSourceRequirement(
                                     "필수 지원 자격", "백엔드 개발 경력 3년 이상", "필수 지원 자격", 0),

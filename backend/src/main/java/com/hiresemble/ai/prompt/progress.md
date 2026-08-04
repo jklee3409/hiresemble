@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-04] Session Summary (Job requirement source block prompt v8)
+
+- What was done:
+  - requirement prompt와 schema를 v8/v5로 올리고 model이 scorable source block ID·text만 복사하도록 제한했다.
+- Key decisions:
+  - section·source location·canonical category는 server-owned 계약으로 유지한다.
+- Issues encountered:
+  - 이전 prompt는 model이 source section을 생성해 역할 소개와 자격의 경계가 흔들릴 수 있었다.
+- Validation:
+  - prompt registry·strict structured output·workflow contract를 새 schema와 대조했다.
+- Next steps:
+  - 외국어 공고의 exact source와 한국어 표시 계약은 별도 확장 시 검토한다.
+
 ## [2026-08-04] Session Summary (Eligibility 전용 output 정책 복구)
 
 - What was done:

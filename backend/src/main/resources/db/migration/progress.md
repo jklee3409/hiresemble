@@ -20,7 +20,22 @@
 - `V16__create_job_auto_analysis_requests.sql`은 공고 revision별 자동 분석 intent·lease claim·retry·terminal 상태를 추가한다.
 - `V17__create_career_guide_posts.sql`은 게시 상태·노출 순서·version을 가진 전역 가이드와 초기 콘텐츠 5개를 생성한다.
 - `V18__expand_career_guide_content.sql`은 미수정 초기 가이드 5개의 장문 본문을 version 2로 보강한다.
+- `V19__add_profile_eligibility_and_structured_fact_provenance.sql`은 지원 자격 자기신고와 분석 structured fact provenance를 추가한다.
+- `V20__add_job_analysis_coverage.sql`은 rubric v2의 nullable 적합도와 분석 커버리지를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-04] Session Summary (V20 Job Analysis coverage)
+
+- What was done:
+  - V20이 `fit_score` NOT NULL을 해제하고 0.00..100.00 nullable `analysis_coverage`를 추가한다.
+- Key decisions:
+  - 기존 분석은 backfill하지 않아 v1 이력의 의미를 변경하지 않는다.
+- Issues encountered:
+  - 전부 `UNKNOWN`인 v2 분석을 0점 불일치와 구분하려면 nullable fit score가 필요했다.
+- Validation:
+  - Flyway 적용을 포함한 Backend 전체 `check` 79 suites/538 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (V19 지원 자격·structured fact provenance)
 

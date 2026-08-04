@@ -20,6 +20,7 @@ class JobFitScoringPolicyTest {
                 criterion(FitCriterionCategory.EDUCATION_CERTIFICATION_LANGUAGE, "Education", MatchLevel.MATCHED)));
 
         assertThat(result.totalScore()).isEqualByComparingTo("100.00");
+        assertThat(result.analysisCoverage()).isEqualByComparingTo("100.00");
         assertThat(result.criteria())
                 .extracting(value -> value.weight().toPlainString())
                 .containsExactly("40.00", "30.00", "15.00", "10.00", "5.00");
@@ -46,8 +47,25 @@ class JobFitScoringPolicyTest {
 
         assertThat(result.criteria())
                 .extracting(value -> value.score().toPlainString())
-                .containsExactly("25.00", "12.50", "0.00", "0.00");
-        assertThat(result.totalScore()).isEqualByComparingTo("37.50");
+                .containsExactly("33.34", "16.67", "0.00", "0.00");
+        assertThat(result.totalScore()).isEqualByComparingTo("50.01");
+        assertThat(result.analysisCoverage()).isEqualByComparingTo("75.00");
+        assertThat(result.criteria().get(3).weight()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void allUnknownCriteriaProduceNoMisleadingFitScore() {
+        var result = JobFitScoringPolicy.score(List.of(
+                criterion(FitCriterionCategory.REQUIRED_QUALIFICATION, "A", MatchLevel.UNKNOWN),
+                criterion(FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL, "B", MatchLevel.UNKNOWN)));
+
+        assertThat(result.totalScore()).isNull();
+        assertThat(result.analysisCoverage()).isEqualByComparingTo("0.00");
+        assertThat(result.criteria())
+                .allSatisfy(value -> {
+                    assertThat(value.weight()).isEqualByComparingTo("0.00");
+                    assertThat(value.score()).isEqualByComparingTo("0.00");
+                });
     }
 
     @Test

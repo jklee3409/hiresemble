@@ -49,6 +49,7 @@ public class JobAnalysisStore {
     private static final String ANALYSIS_COLUMNS = """
             id,user_id,job_posting_id,analysis_version,job_version,job_content_hash,
             profile_snapshot_hash,evidence_snapshot_hash,context_hash,eligibility,fit_score,
+            analysis_coverage,
             responsibilities::text AS responsibilities_json,
             required_qualifications::text AS required_qualifications_json,
             preferred_qualifications::text AS preferred_qualifications_json,
@@ -77,7 +78,7 @@ public class JobAnalysisStore {
                         INSERT INTO job_analyses (
                             id,user_id,job_posting_id,analysis_version,job_version,
                             job_content_hash,profile_snapshot_hash,evidence_snapshot_hash,
-                            context_hash,eligibility,fit_score,responsibilities,
+                            context_hash,eligibility,fit_score,analysis_coverage,responsibilities,
                             required_qualifications,preferred_qualifications,strengths,gaps,
                             analysis_summary,rubric_version,workflow_version,quality_mode,
                             embedding_policy_version,embedding_generation,
@@ -85,7 +86,7 @@ public class JobAnalysisStore {
                         ) VALUES (
                             :id,:userId,:jobId,:analysisVersion,:jobVersion,
                             :jobContentHash,:profileHash,:evidenceHash,:contextHash,
-                            :eligibility,:fitScore,CAST(:responsibilities AS jsonb),
+                            :eligibility,:fitScore,:analysisCoverage,CAST(:responsibilities AS jsonb),
                             CAST(:requiredQualifications AS jsonb),
                             CAST(:preferredQualifications AS jsonb),CAST(:strengths AS jsonb),
                             CAST(:gaps AS jsonb),:analysisSummary,:rubricVersion,
@@ -104,6 +105,7 @@ public class JobAnalysisStore {
                 .param("contextHash", snapshot.contextHash())
                 .param("eligibility", command.eligibility().name())
                 .param("fitScore", score.totalScore())
+                .param("analysisCoverage", score.analysisCoverage())
                 .param("responsibilities", json(command.responsibilities()))
                 .param("requiredQualifications", json(command.requiredQualifications()))
                 .param("preferredQualifications", json(command.preferredQualifications()))
@@ -477,6 +479,7 @@ public class JobAnalysisStore {
                 rs.getInt("analysis_version"),
                 Eligibility.valueOf(rs.getString("eligibility")),
                 rs.getBigDecimal("fit_score"),
+                rs.getBigDecimal("analysis_coverage"),
                 false,
                 List.of(),
                 rs.getObject("created_at", OffsetDateTime.class).toInstant(),

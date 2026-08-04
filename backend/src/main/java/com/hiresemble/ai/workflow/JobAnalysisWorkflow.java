@@ -51,6 +51,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -79,22 +80,23 @@ public final class JobAnalysisWorkflow {
     public static final String VALIDATE_ANALYSIS = "VALIDATE_ANALYSIS";
     public static final String PERSIST_ANALYSIS = "PERSIST_ANALYSIS";
 
-    public static final String RUBRIC_VERSION = "job-fit-rubric-v1";
-    public static final String RETRIEVAL_POLICY_VERSION = "verified-evidence-rag-v1";
+    public static final String RUBRIC_VERSION = "job-fit-rubric-v2";
+    public static final String RETRIEVAL_POLICY_VERSION = "criterion-evidence-rag-v2";
 
     private static final String BUILD_SCHEMA = "job-analysis-build-output-v1";
-    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-source-output-v4";
+    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-source-output-v5";
     private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v3";
-    private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v1";
+    private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v2";
     private static final String MATCH_SCHEMA = "job-analysis-match-output-v3";
-    private static final String SCORE_SCHEMA = "job-analysis-score-output-v1";
+    private static final String SCORE_SCHEMA = "job-analysis-score-output-v2";
     private static final String VALIDATION_SCHEMA = "job-analysis-validation-output-v1";
     private static final String PERSIST_SCHEMA = "job-analysis-persist-output-v1";
     private static final String INPUT_SCHEMA = "job-analysis-input-v1";
 
     private static final int MAX_SOURCE_REQUIREMENTS = 100;
     private static final int MAX_NORMALIZED_REQUIREMENTS = 100;
-    private static final int MAX_RETRIEVED_EVIDENCE = 20;
+    private static final int MAX_RETRIEVED_EVIDENCE = 100;
+    private static final int MAX_RETRIEVED_EVIDENCE_PER_CRITERION = 5;
     private static final int MAX_JOB_CONTENT_CHARACTERS = 80_000;
     private static final int MAX_EVIDENCE_CONTEXT_CHARACTERS = 2_500;
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
@@ -120,6 +122,7 @@ public final class JobAnalysisWorkflow {
     private final AgentRunQueryPort agentRunQueryPort;
     private final ObjectMapper objectMapper;
     private final JobRequirementNormalizationPolicy requirementNormalizationPolicy;
+    private final JobPostingSectionPolicy jobPostingSectionPolicy;
 
     public JobAnalysisWorkflow(
             JobAnalysisQueryPort queryPort,
@@ -133,6 +136,7 @@ public final class JobAnalysisWorkflow {
         this.agentRunQueryPort = Objects.requireNonNull(agentRunQueryPort);
         this.objectMapper = Objects.requireNonNull(objectMapper);
         this.requirementNormalizationPolicy = new JobRequirementNormalizationPolicy();
+        this.jobPostingSectionPolicy = new JobPostingSectionPolicy();
     }
 
     public ExecutableWorkflowContribution contribution() {
@@ -523,6 +527,9 @@ public final class JobAnalysisWorkflow {
                         tree(new ReuseInput(INPUT_SCHEMA, state.reusableAnalysisId())));
             }
             JobAnalysisSnapshot snapshot = state.snapshot();
+            String maskedDescription =
+                    maskAndLimit(snapshot.descriptionText(), MAX_JOB_CONTENT_CHARACTERS);
+            List<JobSourceBlock> sourceBlocks = jobPostingSectionPolicy.segment(maskedDescription);
             UntrustedJobPosting posting = new UntrustedJobPosting(
                     maskAndLimit(snapshot.companyName(), 200),
                     maskAndLimit(snapshot.title(), 300),
@@ -530,8 +537,9 @@ public final class JobAnalysisWorkflow {
                     maskAndLimit(snapshot.roleCategory(), 100),
                     maskAndLimit(snapshot.employmentType(), 100),
                     maskAndLimit(snapshot.location(), 200),
-                    maskAndLimit(snapshot.descriptionText(), MAX_JOB_CONTENT_CHARACTERS),
-                    snapshot.descriptionText().length() > MAX_JOB_CONTENT_CHARACTERS);
+                    maskedDescription,
+                    snapshot.descriptionText().length() > MAX_JOB_CONTENT_CHARACTERS,
+                    sourceBlocks);
             return localInput(
                     state,
                     refs,
@@ -580,13 +588,15 @@ public final class JobAnalysisWorkflow {
                         "Return schemaVersion and no more than 100 complete source requirement objects.");
             }
             Set<Integer> ordinals = new HashSet<>();
+            Set<String> sourceBlockIds = new HashSet<>();
             for (ProviderSourceRequirement requirement : output.requirements()) {
                 validateProviderSourceRequirement(requirement);
-                if (!ordinals.add(requirement.sourceOrdinal())) {
+                if (!ordinals.add(requirement.sourceOrdinal())
+                        || !sourceBlockIds.add(requirement.sourceBlockId())) {
                     throw repairable(
                             ValidationPhase.JAVA_RECORD,
                             "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
-                            "Return each source requirement once with a unique stable sourceOrdinal.");
+                            "Return each source block once with unique sourceBlockId and sourceOrdinal values.");
                 }
             }
         }
@@ -594,7 +604,15 @@ public final class JobAnalysisWorkflow {
         @Override
         protected void validateWorkflowOutput(
                 ProviderRequirementsOutput providerOutput, StepExecutionContext context) {
-            ExtractRequirementsOutput output = mapProviderOutput(providerOutput, context);
+            ExtractRequirementsOutput output;
+            try {
+                output = mapProviderOutput(providerOutput, context);
+            } catch (IllegalArgumentException exception) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "JOB_ANALYSIS_REQUIREMENT_SOURCE_INVALID",
+                        "Select an existing sourceBlockId and copy its sourceText exactly.");
+            }
             if (output.requirements().size() > MAX_NORMALIZED_REQUIREMENTS) {
                 throw domainFailure(
                         "JOB_ANALYSIS_REQUIREMENT_LIMIT_EXCEEDED",
@@ -624,8 +642,10 @@ public final class JobAnalysisWorkflow {
                 return new ExtractRequirementsOutput(
                         REQUIREMENTS_SCHEMA, true, state.reusableAnalysisId(), List.of());
             }
-            List<RequirementCandidate> requirements =
-                    requirementNormalizationPolicy.normalize(output.requirements());
+            List<RequirementCandidate> requirements = requirementNormalizationPolicy.normalize(
+                    output.requirements(),
+                    jobPostingSectionPolicy.segment(maskAndLimit(
+                            state.snapshot().descriptionText(), MAX_JOB_CONTENT_CHARACTERS)));
             return new ExtractRequirementsOutput(
                     REQUIREMENTS_SCHEMA, false, null, requirements);
         }
@@ -826,7 +846,7 @@ public final class JobAnalysisWorkflow {
                         "reuse|" + state.reusableAnalysisId(),
                         tree(new ReuseInput(INPUT_SCHEMA, state.reusableAnalysisId())));
             }
-            String query = retrievalQuery(requirements.requirements());
+            List<RequirementQuery> queries = retrievalQueries(requirements.requirements());
             refs.put("embeddingProviderKey", state.embeddingPolicy().providerKey())
                     .put("embeddingProductKey", state.embeddingPolicy().productKey());
             String embeddingRoute = state.embeddingPolicy().version()
@@ -841,10 +861,10 @@ public final class JobAnalysisWorkflow {
             return localInput(
                     state,
                     refs,
-                    sha256(query + "|embedding-route=" + embeddingRoute),
+                    sha256(stableHash(queries) + "|embedding-route=" + embeddingRoute),
                     tree(new RetrieveEvidenceInput(
                             INPUT_SCHEMA,
-                            query,
+                            queries,
                             state.snapshot().embeddingPolicyVersion(),
                             state.snapshot().embeddingGeneration(),
                             state.snapshot().retrievalPolicyVersion())));
@@ -871,66 +891,77 @@ public final class JobAnalysisWorkflow {
             AiGatewayResponse embedding = invocation.embeddingGateway().embed(new EmbeddingRequest(
                     state.embeddingPolicy().providerKey(),
                     state.embeddingPolicy().productKey(),
-                    List.of(maskAndLimit(input.queryText(), 2_000)),
+                    input.queries().stream().map(RequirementQuery::queryText).toList(),
                     state.embeddingPolicy().dimension(),
                     EMBEDDING_TIMEOUT,
                     invocation.executionContext().run().priceVersion()));
-            List<Double> vector = parseSingleVector(
-                    embedding.rawJson(), state.embeddingPolicy().dimension());
-            List<RetrievedVerifiedEvidence> retrieved;
-            try {
-                retrieved = queryPort.searchVerifiedEvidence(
-                        state.snapshot().userId(),
-                        state.snapshot().jobId(),
-                        state.snapshot().jobVersion(),
-                        state.snapshot().qualityMode(),
-                        state.snapshot().contextHash(),
-                        input.queryText(),
-                        vector,
-                        input.embeddingPolicyVersion(),
-                        input.embeddingGeneration(),
-                        MAX_RETRIEVED_EVIDENCE);
-            } catch (BusinessException exception) {
-                throw mapBusiness(exception);
-            }
-            List<RetrievedEvidenceCandidate> candidates = new ArrayList<>();
-            Set<UUID> selected = new HashSet<>();
+            List<List<Double>> vectors = parseVectors(
+                    embedding.rawJson(), input.queries().size(), state.embeddingPolicy().dimension());
+            Map<UUID, RetrievedEvidenceCandidate> candidatesById = new LinkedHashMap<>();
+            Map<UUID, Set<Integer>> criterionIndexesById = new LinkedHashMap<>();
             Set<UUID> allowlist = state.snapshot().verifiedEvidence().stream()
                     .map(VerifiedEvidence::id)
                     .collect(java.util.stream.Collectors.toSet());
-            for (RetrievedVerifiedEvidence item : retrieved) {
-                VerifiedEvidence evidence = item.evidence();
-                if (evidence == null
-                        || !allowlist.contains(evidence.id())
-                        || evidence.verificationStatus()
-                                != EvidenceVerificationStatus.VERIFIED
-                        || evidence.sourceDeleted()
-                        || !selected.add(evidence.id())
-                        || !hasText(evidence.title(), 250)
-                        || !hasText(item.content(), 20_000)) {
-                    throw domainFailure(
-                            "JOB_ANALYSIS_RETRIEVAL_SCOPE_INVALID",
-                            "승인된 경험 정보를 안전하게 검색하지 못했습니다.");
+            for (int queryIndex = 0; queryIndex < input.queries().size(); queryIndex++) {
+                RequirementQuery query = input.queries().get(queryIndex);
+                List<RetrievedVerifiedEvidence> retrieved;
+                try {
+                    retrieved = queryPort.searchVerifiedEvidence(
+                            state.snapshot().userId(),
+                            state.snapshot().jobId(),
+                            state.snapshot().jobVersion(),
+                            state.snapshot().qualityMode(),
+                            state.snapshot().contextHash(),
+                            query.queryText(),
+                            vectors.get(queryIndex),
+                            input.embeddingPolicyVersion(),
+                            input.embeddingGeneration(),
+                            MAX_RETRIEVED_EVIDENCE_PER_CRITERION);
+                } catch (BusinessException exception) {
+                    throw mapBusiness(exception);
                 }
-                candidates.add(new RetrievedEvidenceCandidate(
-                        evidence.id(),
-                        evidence.version(),
-                        evidence.evidenceHash(),
-                        evidence.sourceType(),
-                        evidence.evidenceCategory(),
-                        maskAndLimit(evidence.title(), 250),
-                        maskAndLimit(item.content(), MAX_EVIDENCE_CONTEXT_CHARACTERS),
-                        maskAndLimit(item.maskedContext(), 1_500),
-                        item.matchedChunkId(),
-                        item.matchedDocumentId(),
-                        item.distance()));
+                for (RetrievedVerifiedEvidence item : retrieved) {
+                    VerifiedEvidence evidence = item.evidence();
+                    if (evidence == null
+                            || !allowlist.contains(evidence.id())
+                            || evidence.verificationStatus()
+                                    != EvidenceVerificationStatus.VERIFIED
+                            || evidence.sourceDeleted()
+                            || !hasText(evidence.title(), 250)
+                            || !hasText(item.content(), 20_000)) {
+                        throw domainFailure(
+                                "JOB_ANALYSIS_RETRIEVAL_SCOPE_INVALID",
+                                "승인된 경험 정보를 안전하게 검색하지 못했습니다.");
+                    }
+                    candidatesById.putIfAbsent(evidence.id(), new RetrievedEvidenceCandidate(
+                            evidence.id(),
+                            evidence.version(),
+                            evidence.evidenceHash(),
+                            evidence.sourceType(),
+                            evidence.evidenceCategory(),
+                            maskAndLimit(evidence.title(), 250),
+                            maskAndLimit(item.content(), MAX_EVIDENCE_CONTEXT_CHARACTERS),
+                            maskAndLimit(item.maskedContext(), 1_500),
+                            item.matchedChunkId(),
+                            item.matchedDocumentId(),
+                            item.distance(),
+                            List.of()));
+                    criterionIndexesById
+                            .computeIfAbsent(evidence.id(), ignored -> new java.util.TreeSet<>())
+                            .add(query.criterionIndex());
+                }
             }
+            List<RetrievedEvidenceCandidate> candidates = candidatesById.values().stream()
+                    .limit(MAX_RETRIEVED_EVIDENCE)
+                    .map(candidate -> candidate.withCriterionIndexes(
+                            criterionIndexesById.get(candidate.evidenceId())))
+                    .toList();
             return new AiGatewayResponse(
                     write(new RetrievedEvidenceOutput(
                             RETRIEVAL_SCHEMA,
                             false,
                             null,
-                            sha256(input.queryText()),
+                            sha256(stableHash(input.queries())),
                             candidates)),
                     embedding.usages());
         }
@@ -957,6 +988,10 @@ public final class JobAnalysisWorkflow {
                 throw new IllegalArgumentException("reuse retrieval is invalid");
             }
             Set<UUID> ids = new HashSet<>();
+            int criterionCount = requiredEphemeral(
+                            context, EXTRACT_REQUIREMENTS, ExtractRequirementsOutput.class)
+                    .requirements()
+                    .size();
             for (RetrievedEvidenceCandidate candidate : output.candidates()) {
                 if (candidate == null
                         || candidate.evidenceId() == null
@@ -966,6 +1001,11 @@ public final class JobAnalysisWorkflow {
                         || !hasText(candidate.evidenceCategory(), 80)
                         || !hasText(candidate.title(), 250)
                         || !hasText(candidate.content(), MAX_EVIDENCE_CONTEXT_CHARACTERS)
+                        || candidate.criterionIndexes().isEmpty()
+                        || candidate.criterionIndexes().stream().anyMatch(index ->
+                                index == null || index < 0 || index >= criterionCount)
+                        || new HashSet<>(candidate.criterionIndexes()).size()
+                                != candidate.criterionIndexes().size()
                         || !ids.add(candidate.evidenceId())
                         || (candidate.distance() != null
                                 && !Double.isFinite(candidate.distance()))) {
@@ -1220,7 +1260,9 @@ public final class JobAnalysisWorkflow {
             requireRepairableMatchReferences(
                     state(context).snapshot(), output, retrievedIds);
             for (MatchedCriterion criterion : orderedCriteria(output.criteria())) {
-                requireEvidenceSubset(criterion.evidenceIds(), retrievedIds);
+                requireEvidenceSubset(
+                        criterion.evidenceIds(),
+                        retrievedIdsForCriterion(retrieved, criterion.criterionIndex()));
                 requireAllowedFactRefs(state(context).snapshot(), criterion.structuredFactRefs());
                 validateSupportCompatibility(
                         requirements.requirements().get(criterion.criterionIndex()),
@@ -1249,12 +1291,11 @@ public final class JobAnalysisWorkflow {
                     context,
                     RETRIEVE_VERIFIED_EVIDENCE,
                     RetrievedEvidenceOutput.class);
-            Set<UUID> retrievedIds = retrieved.candidates().stream()
-                    .map(RetrievedEvidenceCandidate::evidenceId)
-                    .collect(java.util.stream.Collectors.toSet());
             List<MatchedCriterion> ordered = orderedCriteria(output.criteria());
             for (MatchedCriterion criterion : ordered) {
-                requireEvidenceSubset(criterion.evidenceIds(), retrievedIds);
+                requireEvidenceSubset(
+                        criterion.evidenceIds(),
+                        retrievedIdsForCriterion(retrieved, criterion.criterionIndex()));
                 requireAllowedFactRefs(state.snapshot(), criterion.structuredFactRefs());
                 if ((criterion.matchLevel() == MatchLevel.MATCHED
                                 || criterion.matchLevel() == MatchLevel.PARTIAL)
@@ -1282,7 +1323,9 @@ public final class JobAnalysisWorkflow {
                     throw invalidEvidence();
                 }
                 MatchedCriterion criterion = ordered.get(strength.criterionIndex());
-                requireEvidenceSubset(strength.evidenceIds(), retrievedIds);
+                requireEvidenceSubset(
+                        strength.evidenceIds(),
+                        retrievedIdsForCriterion(retrieved, strength.criterionIndex()));
                 if (!criterion.evidenceIds().containsAll(strength.evidenceIds())
                         || (criterion.matchLevel() != MatchLevel.MATCHED
                                 && criterion.matchLevel() != MatchLevel.PARTIAL)) {
@@ -1323,9 +1366,6 @@ public final class JobAnalysisWorkflow {
                     context,
                     RETRIEVE_VERIFIED_EVIDENCE,
                     RetrievedEvidenceOutput.class);
-            Set<UUID> retrievedIds = retrieved.candidates().stream()
-                    .map(RetrievedEvidenceCandidate::evidenceId)
-                    .collect(java.util.stream.Collectors.toSet());
             Set<String> allowedFactRefs = state.snapshot().profile().structuredFacts().stream()
                     .map(StructuredProfileFact::reference)
                     .collect(java.util.stream.Collectors.toSet());
@@ -1341,7 +1381,9 @@ public final class JobAnalysisWorkflow {
                             trimNullable(value.missingReason()));
                         boolean positive = mapped.matchLevel() == MatchLevel.MATCHED
                                 || mapped.matchLevel() == MatchLevel.PARTIAL;
-                        boolean knownReferences = retrievedIds.containsAll(mapped.evidenceIds())
+                        boolean knownReferences = retrievedIdsForCriterion(
+                                                retrieved, mapped.criterionIndex())
+                                        .containsAll(mapped.evidenceIds())
                                 && allowedFactRefs.containsAll(mapped.structuredFactRefs());
                         if (positive
                                 && knownReferences
@@ -1531,6 +1573,7 @@ public final class JobAnalysisWorkflow {
                     match.strengths(),
                     match.gaps(),
                     match.analysisSummary(),
+                    score.analysisCoverage(),
                     score.totalScore()));
         }
 
@@ -1550,6 +1593,7 @@ public final class JobAnalysisWorkflow {
             if (output.reusable()) {
                 if (!output.criteria().isEmpty()
                         || !output.requirements().isEmpty()
+                        || output.analysisCoverage() != null
                         || output.fitScore() != null
                         || output.eligibility() != Eligibility.UNKNOWN) {
                     throw new IllegalArgumentException("reuse score is invalid");
@@ -1558,10 +1602,16 @@ public final class JobAnalysisWorkflow {
             }
             if (output.criteria().isEmpty()
                     || output.criteria().size() != output.requirements().size()
-                    || output.fitScore() == null
-                    || output.fitScore().scale() > 2
-                    || output.fitScore().compareTo(BigDecimal.ZERO) < 0
-                    || output.fitScore().compareTo(new BigDecimal("100.00")) > 0) {
+                    || output.analysisCoverage() == null
+                    || output.analysisCoverage().scale() > 2
+                    || output.analysisCoverage().compareTo(BigDecimal.ZERO) < 0
+                    || output.analysisCoverage().compareTo(new BigDecimal("100.00")) > 0
+                    || (output.fitScore() == null
+                            && output.analysisCoverage().compareTo(BigDecimal.ZERO) != 0)
+                    || (output.fitScore() != null
+                            && (output.fitScore().scale() > 2
+                                    || output.fitScore().compareTo(BigDecimal.ZERO) < 0
+                                    || output.fitScore().compareTo(new BigDecimal("100.00")) > 0))) {
                 throw new IllegalArgumentException("score range is invalid");
             }
             for (ScoredCriterionOutput criterion : output.criteria()) {
@@ -1608,7 +1658,8 @@ public final class JobAnalysisWorkflow {
                                     value.sourceLocation(),
                                     value.evidenceIds()))
                             .toList());
-            if (recalculated.totalScore().compareTo(output.fitScore()) != 0) {
+            if (!sameDecimal(recalculated.totalScore(), output.fitScore())
+                    || recalculated.analysisCoverage().compareTo(output.analysisCoverage()) != 0) {
                 throw domainFailure(
                         "JOB_ANALYSIS_SCORE_MISMATCH",
                         "적합도 점수 검증에 실패했습니다.");
@@ -1689,8 +1740,7 @@ public final class JobAnalysisWorkflow {
                     || !isHash(output.analysisHash())
                     || output.criterionCount() < 0
                     || output.eligibility() == null
-                    || output.reusable() != (output.reusableAnalysisId() != null)
-                    || (!output.reusable() && output.fitScore() == null)) {
+                    || output.reusable() != (output.reusableAnalysisId() != null)) {
                 throw new IllegalArgumentException("validation output is invalid");
             }
         }
@@ -1917,11 +1967,18 @@ public final class JobAnalysisWorkflow {
 
     private List<RequirementItem> requirements(
             ScoredAnalysisOutput scored, RequirementSection section) {
-        return scored.requirements().stream()
+        Map<String, RequirementCandidate> sourceBlocks = new LinkedHashMap<>();
+        scored.requirements().stream()
                 .filter(value -> value.section() == section)
+                .forEach(value -> sourceBlocks.putIfAbsent(
+                        value.sourceBlockId() == null
+                                ? value.sourceOrdinal() + "|" + value.sourceText()
+                                : value.sourceBlockId(),
+                        value));
+        return sourceBlocks.values().stream()
                 .map(value -> new RequirementItem(
                         value.category(),
-                        value.text(),
+                        value.sourceText(),
                         value.required(),
                         value.sourceLocation()))
                 .toList();
@@ -1943,8 +2000,13 @@ public final class JobAnalysisWorkflow {
         BigDecimal scores = scored.criteria().stream()
                 .map(ScoredCriterionOutput::score)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (weights.compareTo(new BigDecimal("100.00")) != 0
-                || scores.compareTo(scored.fitScore()) != 0) {
+        boolean noAssessedCriteria = scored.fitScore() == null;
+        if ((noAssessedCriteria
+                        && (weights.compareTo(BigDecimal.ZERO) != 0
+                                || scores.compareTo(BigDecimal.ZERO) != 0))
+                || (!noAssessedCriteria
+                        && (weights.compareTo(new BigDecimal("100.00")) != 0
+                                || scores.compareTo(scored.fitScore()) != 0))) {
             throw domainFailure(
                     "JOB_ANALYSIS_SCORE_MISMATCH",
                     "적합도 점수 검증에 실패했습니다.");
@@ -2039,21 +2101,24 @@ public final class JobAnalysisWorkflow {
                 exception.errorCode().defaultMessage());
     }
 
-    private List<Double> parseSingleVector(String rawJson, int dimension) {
+    private List<List<Double>> parseVectors(String rawJson, int expectedCount, int dimension) {
         try {
             EmbeddingValuesOutput output =
                     objectMapper.readValue(rawJson, EmbeddingValuesOutput.class);
-            if (output.vectors() == null || output.vectors().size() != 1) {
+            if (output.vectors() == null || output.vectors().size() != expectedCount) {
                 throw new IllegalArgumentException("embedding batch is invalid");
             }
-            List<Double> vector = output.vectors().getFirst();
-            if (vector == null
-                    || vector.size() != dimension
-                    || vector.stream().anyMatch(
-                            value -> value == null || !Double.isFinite(value))) {
-                throw new IllegalArgumentException("embedding vector is invalid");
+            List<List<Double>> vectors = new ArrayList<>();
+            for (List<Double> vector : output.vectors()) {
+                if (vector == null
+                        || vector.size() != dimension
+                        || vector.stream().anyMatch(
+                                value -> value == null || !Double.isFinite(value))) {
+                    throw new IllegalArgumentException("embedding vector is invalid");
+                }
+                vectors.add(List.copyOf(vector));
             }
-            return List.copyOf(vector);
+            return List.copyOf(vectors);
         } catch (RuntimeException exception) {
             throw AiExecutionException.deterministicStructuredOutput(
                     "JOB_ANALYSIS_EMBEDDING_OUTPUT_INVALID",
@@ -2067,16 +2132,32 @@ public final class JobAnalysisWorkflow {
         }
     }
 
-    private String retrievalQuery(List<RequirementCandidate> requirements) {
-        String query = requirements.stream()
-                .sorted(Comparator.comparing(RequirementCandidate::category)
-                        .thenComparing(RequirementCandidate::text))
-                .map(value -> value.category().name() + ": " + value.text())
-                .collect(java.util.stream.Collectors.joining("\n"));
-        if (query.isBlank()) {
+    private List<RequirementQuery> retrievalQueries(List<RequirementCandidate> requirements) {
+        List<RequirementQuery> queries = new ArrayList<>();
+        for (int index = 0; index < requirements.size(); index++) {
+            RequirementCandidate requirement = requirements.get(index);
+            String query = maskAndLimit(
+                    requirement.category().name() + ": " + requirement.text(), 2_000);
+            if (!query.isBlank()) {
+                queries.add(new RequirementQuery(index, query));
+            }
+        }
+        if (queries.isEmpty()) {
             throw insufficientData();
         }
-        return maskAndLimit(query, 2_000);
+        return List.copyOf(queries);
+    }
+
+    private Set<UUID> retrievedIdsForCriterion(
+            RetrievedEvidenceOutput retrieved, int criterionIndex) {
+        return retrieved.candidates().stream()
+                .filter(candidate -> candidate.criterionIndexes().contains(criterionIndex))
+                .map(RetrievedEvidenceCandidate::evidenceId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private boolean sameDecimal(BigDecimal left, BigDecimal right) {
+        return left == null ? right == null : right != null && left.compareTo(right) == 0;
     }
 
     private int requirementIndex(
@@ -2105,6 +2186,7 @@ public final class JobAnalysisWorkflow {
 
     private void validateProviderSourceRequirement(ProviderSourceRequirement requirement) {
         if (requirement == null
+                || !hasTrimmedText(requirement.sourceBlockId(), 50)
                 || !hasTrimmedText(requirement.sourceText(), 2_000)
                 || requirement.sourceOrdinal() < 0
                 || requirement.sourceOrdinal() >= MAX_SOURCE_REQUIREMENTS
@@ -2608,7 +2690,9 @@ public final class JobAnalysisWorkflow {
     public enum RequirementSection {
         RESPONSIBILITY,
         REQUIRED_QUALIFICATION,
-        PREFERRED_QUALIFICATION
+        PREFERRED_QUALIFICATION,
+        ROLE_SUMMARY,
+        OTHER
     }
 
     public record ReuseInput(String schemaVersion, UUID reusableAnalysisId) {}
@@ -2628,7 +2712,39 @@ public final class JobAnalysisWorkflow {
             String employmentType,
             String location,
             String descriptionText,
-            boolean truncated) {}
+            boolean truncated,
+            List<JobSourceBlock> sourceBlocks) {
+        public UntrustedJobPosting {
+            sourceBlocks = sourceBlocks == null ? List.of() : List.copyOf(sourceBlocks);
+        }
+
+        public UntrustedJobPosting(
+                String companyName,
+                String title,
+                String positionName,
+                String roleCategory,
+                String employmentType,
+                String location,
+                String descriptionText,
+                boolean truncated) {
+            this(
+                    companyName,
+                    title,
+                    positionName,
+                    roleCategory,
+                    employmentType,
+                    location,
+                    descriptionText,
+                    truncated,
+                    List.of());
+        }
+    }
+
+    public record JobSourceBlock(
+            String sourceBlockId,
+            RequirementSection section,
+            String sourceText,
+            int sourceOrdinal) {}
 
     public record ExtractRequirementsInput(
             String schemaVersion, UntrustedJobPosting untrustedJobPosting) {}
@@ -2666,12 +2782,18 @@ public final class JobAnalysisWorkflow {
             List<RequirementCandidate> requirements,
             ApprovedProfileInput approvedProfile) {}
 
+    public record RequirementQuery(int criterionIndex, String queryText) {}
+
     public record RetrieveEvidenceInput(
             String schemaVersion,
-            String queryText,
+            List<RequirementQuery> queries,
             long embeddingPolicyVersion,
             int embeddingGeneration,
-            String retrievalPolicyVersion) {}
+            String retrievalPolicyVersion) {
+        public RetrieveEvidenceInput {
+            queries = queries == null ? List.of() : List.copyOf(queries);
+        }
+    }
 
     public record MatchEvidenceInput(
             String schemaVersion,
@@ -2743,7 +2865,8 @@ public final class JobAnalysisWorkflow {
             CriterionSupportType supportType,
             java.time.LocalDate requiredByDate,
             int sourceOrdinal,
-            String sourceText) {
+            String sourceText,
+            String sourceBlockId) {
         public RequirementCandidate(
                 RequirementSection section,
                 FitCriterionCategory category,
@@ -2752,7 +2875,7 @@ public final class JobAnalysisWorkflow {
                 String sourceLocation) {
             this(
                     section, category, text, required, sourceLocation,
-                    CriterionSupportType.GENERAL, null, -1, text);
+                    CriterionSupportType.GENERAL, null, -1, text, null);
         }
 
         public RequirementCandidate(
@@ -2762,7 +2885,7 @@ public final class JobAnalysisWorkflow {
                 boolean required,
                 String sourceLocation,
                 CriterionSupportType supportType) {
-            this(section, category, text, required, sourceLocation, supportType, null, -1, text);
+            this(section, category, text, required, sourceLocation, supportType, null, -1, text, null);
         }
 
         public RequirementCandidate(
@@ -2775,15 +2898,30 @@ public final class JobAnalysisWorkflow {
                 java.time.LocalDate requiredByDate) {
             this(
                     section, category, text, required, sourceLocation,
-                    supportType, requiredByDate, -1, text);
+                    supportType, requiredByDate, -1, text, null);
         }
     }
 
     public record ProviderSourceRequirement(
+            String sourceBlockId,
             @ProviderNullable String sourceSection,
             String sourceText,
             @ProviderNullable String sourceLocation,
-            int sourceOrdinal) {}
+            int sourceOrdinal) {
+        public ProviderSourceRequirement(
+                String sourceSection,
+                String sourceText,
+                String sourceLocation,
+                int sourceOrdinal) {
+            this(
+                    JobPostingSectionPolicy.sourceBlockId(
+                            JobPostingSectionPolicy.sourceSectionHint(sourceSection), sourceText),
+                    sourceSection,
+                    sourceText,
+                    sourceLocation,
+                    sourceOrdinal);
+        }
+    }
 
     public record ProviderRequirementsOutput(
             String schemaVersion, List<ProviderSourceRequirement> requirements) {
@@ -2863,7 +3001,28 @@ public final class JobAnalysisWorkflow {
             String maskedCandidateContext,
             UUID matchedChunkId,
             UUID matchedDocumentId,
-            Double distance) {}
+            Double distance,
+            List<Integer> criterionIndexes) {
+        public RetrievedEvidenceCandidate {
+            criterionIndexes = criterionIndexes == null ? List.of() : List.copyOf(criterionIndexes);
+        }
+
+        private RetrievedEvidenceCandidate withCriterionIndexes(Set<Integer> indexes) {
+            return new RetrievedEvidenceCandidate(
+                    evidenceId,
+                    evidenceVersion,
+                    evidenceHash,
+                    sourceType,
+                    evidenceCategory,
+                    title,
+                    content,
+                    maskedCandidateContext,
+                    matchedChunkId,
+                    matchedDocumentId,
+                    distance,
+                    indexes == null ? List.of() : List.copyOf(indexes));
+        }
+    }
 
     public record RetrievedEvidenceOutput(
             String schemaVersion,
@@ -3002,6 +3161,7 @@ public final class JobAnalysisWorkflow {
             List<StrengthDraft> strengths,
             List<GapDraft> gaps,
             String analysisSummary,
+            BigDecimal analysisCoverage,
             BigDecimal fitScore) {
         public ScoredAnalysisOutput {
             eligibilityEvidenceIds = eligibilityEvidenceIds == null
@@ -3028,6 +3188,7 @@ public final class JobAnalysisWorkflow {
                     List.of(),
                     List.of(),
                     List.of(),
+                    null,
                     null,
                     null);
         }

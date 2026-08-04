@@ -4,6 +4,19 @@
 
 P5 Job domain과 URL canonicalization 단위 테스트가 구현됐다.
 
+## [2026-08-04] Session Summary (Job fit coverage rubric 회귀)
+
+- What was done:
+  - mixed/all UNKNOWN의 분모 제외, coverage와 nullable fit score 단위 테스트를 추가했다.
+- Key decisions:
+  - MISSING은 평가 완료 0점으로 coverage에 포함하고 UNKNOWN만 제외한다.
+- Issues encountered:
+  - decimal residual 때문에 mixed 결과는 50.01처럼 criterion별 반올림 합으로 계산된다.
+- Validation:
+  - `JobFitScoringPolicyTest` 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-27] Session Summary (상태·canonical URL 회귀 고정)
 
 - What was done:

@@ -251,6 +251,7 @@ public final class JobAnalysisModels {
             int analysisVersion,
             Eligibility eligibility,
             BigDecimal fitScore,
+            BigDecimal analysisCoverage,
             boolean analysisOutdated,
             List<OutdatedReason> outdatedReasons,
             Instant createdAt,

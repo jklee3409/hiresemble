@@ -1,5 +1,6 @@
 package com.hiresemble.ai.workflow;
 
+import com.hiresemble.ai.workflow.JobAnalysisWorkflow.JobSourceBlock;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderSourceRequirement;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementCandidate;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.RequirementSection;
@@ -28,21 +29,40 @@ public final class JobRequirementNormalizationPolicy {
     private static final Pattern WORK_DATE = Pattern.compile(
             "(?<!\\d)(?<year>20\\d{2})\\s*[년./-]\\s*(?<month>0?[1-9]|1[0-2])\\s*(?:월|[./-])?\\s*(?:(?<day>0?[1-9]|[12]\\d|3[01])\\s*일?)?");
 
-    public List<RequirementCandidate> normalize(List<ProviderSourceRequirement> sources) {
-        if (sources == null || sources.isEmpty()) {
+    public List<RequirementCandidate> normalize(
+            List<ProviderSourceRequirement> sources, List<JobSourceBlock> sourceBlocks) {
+        if (sources == null || sources.isEmpty() || sourceBlocks == null || sourceBlocks.isEmpty()) {
             return List.of();
+        }
+        Map<String, JobSourceBlock> blocksById = new LinkedHashMap<>();
+        for (JobSourceBlock block : sourceBlocks) {
+            if (block != null && block.sourceBlockId() != null) {
+                blocksById.put(block.sourceBlockId(), block);
+            }
         }
         Map<String, RequirementCandidate> unique = new LinkedHashMap<>();
         for (ProviderSourceRequirement source : sources) {
             if (source == null || source.sourceText() == null) {
                 continue;
             }
-            String sourceText = cleanSourceText(source.sourceText());
+            JobSourceBlock block = blocksById.get(source.sourceBlockId());
+            if (block == null) {
+                throw new IllegalArgumentException("Unknown job source block: " + source.sourceBlockId());
+            }
+            String sourceText = cleanSourceText(block.sourceText());
+            if (!sourceText.equals(cleanSourceText(source.sourceText()))) {
+                throw new IllegalArgumentException(
+                        "Job requirement source text must exactly match source block "
+                                + source.sourceBlockId());
+            }
             if (sourceText.isBlank()) {
                 continue;
             }
-            RequirementSection section = section(source, sourceText);
-            String sourceLocation = sourceLocation(source);
+            RequirementSection section = block.section();
+            if (section == RequirementSection.ROLE_SUMMARY || section == RequirementSection.OTHER) {
+                continue;
+            }
+            String sourceLocation = sourceLocation(section);
             for (String clause : atomicClauses(sourceText)) {
                 CriterionSupportType supportType = supportType(clause);
                 LocalDate requiredByDate = supportType == CriterionSupportType.WORK_AVAILABLE_DATE
@@ -57,8 +77,9 @@ public final class JobRequirementNormalizationPolicy {
                         sourceLocation,
                         supportType,
                         requiredByDate,
-                        source.sourceOrdinal(),
-                        sourceText);
+                        block.sourceOrdinal(),
+                        sourceText,
+                        block.sourceBlockId());
                 String key = deduplicationKey(normalized);
                 RequirementCandidate existing = unique.get(key);
                 if (existing == null || (!existing.required() && normalized.required())) {
@@ -117,32 +138,6 @@ public final class JobRequirementNormalizationPolicy {
         current.setLength(0);
     }
 
-    private RequirementSection section(ProviderSourceRequirement source, String sourceText) {
-        String hint = normalize((source.sourceSection() == null ? "" : source.sourceSection())
-                + " "
-                + (source.sourceLocation() == null ? "" : source.sourceLocation()));
-        if (containsAny(hint, "우대", "preferred", "plus")) {
-            return RequirementSection.PREFERRED_QUALIFICATION;
-        }
-        if (containsAny(hint, "주요 업무", "담당 업무", "업무 내용", "responsibil", "duties")) {
-            return RequirementSection.RESPONSIBILITY;
-        }
-        if (containsAny(hint, "지원 자격", "자격 요건", "필수", "required", "qualification")) {
-            return RequirementSection.REQUIRED_QUALIFICATION;
-        }
-
-        String text = normalize(sourceText);
-        if (containsAny(text, "우대", "우수자", "가점", "preferred")) {
-            return RequirementSection.PREFERRED_QUALIFICATION;
-        }
-        if (containsAny(text, "담당", "수행", "개발 및 운영", "responsible for")) {
-            return RequirementSection.RESPONSIBILITY;
-        }
-        // An unknown section must not silently turn an ambiguous sentence into a hard eligibility
-        // gate. Explicit source-section hints still preserve required qualifications above.
-        return RequirementSection.PREFERRED_QUALIFICATION;
-    }
-
     private FitCriterionCategory category(
             RequirementSection section, CriterionSupportType supportType) {
         if (supportType == CriterionSupportType.EDUCATION
@@ -154,6 +149,8 @@ public final class JobRequirementNormalizationPolicy {
             case RESPONSIBILITY -> FitCriterionCategory.CORE_RESPONSIBILITY_OR_SKILL;
             case PREFERRED_QUALIFICATION -> FitCriterionCategory.PREFERRED_QUALIFICATION;
             case REQUIRED_QUALIFICATION -> FitCriterionCategory.REQUIRED_QUALIFICATION;
+            case ROLE_SUMMARY, OTHER -> throw new IllegalArgumentException(
+                    "Non-scorable job section cannot become a fit criterion: " + section);
         };
     }
 
@@ -212,9 +209,13 @@ public final class JobRequirementNormalizationPolicy {
         }
     }
 
-    private String sourceLocation(ProviderSourceRequirement source) {
-        String location = cleanNullable(source.sourceLocation());
-        return location != null ? location : cleanNullable(source.sourceSection());
+    private String sourceLocation(RequirementSection section) {
+        return switch (section) {
+            case RESPONSIBILITY -> "주요 업무";
+            case REQUIRED_QUALIFICATION -> "지원 자격";
+            case PREFERRED_QUALIFICATION -> "우대 사항";
+            case ROLE_SUMMARY, OTHER -> null;
+        };
     }
 
     private String deduplicationKey(RequirementCandidate value) {
@@ -259,11 +260,6 @@ public final class JobRequirementNormalizationPolicy {
                 .replaceAll("[\\p{Zs}\\t\\f]+", " ")
                 .replaceAll(" *\\n *", "\n");
         return LEADING_MARKER.matcher(normalizedLines).replaceFirst("").trim();
-    }
-
-    private String cleanNullable(String value) {
-        String cleaned = clean(value);
-        return cleaned.isBlank() ? null : cleaned;
     }
 
     private String normalize(String value) {

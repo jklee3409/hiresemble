@@ -127,7 +127,11 @@ class JobAnalysisWorkflowContractTest {
                 .containsExactly("schemaVersion", "requirements");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderSourceRequirement.class))
                 .containsExactly(
-                        "sourceSection", "sourceText", "sourceLocation", "sourceOrdinal")
+                        "sourceBlockId",
+                        "sourceSection",
+                        "sourceText",
+                        "sourceLocation",
+                        "sourceOrdinal")
                 .doesNotContain("category", "supportType", "required", "requiredByDate");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderEligibilityOutput.class))
                 .containsExactly(
@@ -153,7 +157,7 @@ class JobAnalysisWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
 
         assertThat(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_PROMPT_VERSION)
-                .isEqualTo("job-analysis-extract-requirements-v7");
+                .isEqualTo("job-analysis-extract-requirements-v8");
         assertThat(JobAnalysisPromptDefinitions.BUILD_SNAPSHOT_PROMPT_VERSION)
                 .as("unchanged upstream snapshot checkpoints keep their previous identity")
                 .isEqualTo("job-analysis-prompt-v6");
@@ -172,7 +176,7 @@ class JobAnalysisWorkflowContractTest {
                         .contains(step.stepKey()))
                 .extracting(WorkflowRegistry.StepDefinition::outputSchemaVersion)
                 .containsExactly(
-                        "job-analysis-requirements-source-output-v4",
+                        "job-analysis-requirements-source-output-v5",
                         "job-analysis-eligibility-output-v3",
                         "job-analysis-match-output-v3");
         var requirementsPrompt = prompts.require(

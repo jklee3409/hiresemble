@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis source block·criterion RAG v2)
+
+- What was done:
+  - 공고 section/source block을 서버가 확정하고 display bullet과 atomic criterion을 분리했으며 criterion별 batch embedding·hybrid retrieval과 evidence scope 검증을 구현했다.
+- Key decisions:
+  - 역할 소개와 미분류 block은 점수에서 제외하고 model은 block 선택만 담당한다.
+- Issues encountered:
+  - 기존 단일 2,000자 query가 뒤 criterion을 잘라내고 검색 evidence를 모든 criterion이 공유했다.
+- Validation:
+  - Plateer형 4개 업무·3개 자격 fixture와 8단계 workflow·typed evidence 회귀 통과.
+- Next steps:
+  - 실제 Provider source block 선택 분포를 확인한다.
+
 ## [2026-08-04] Session Summary (ASSESS_ELIGIBILITY truncation 방지)
 
 - What was done:
