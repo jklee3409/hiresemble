@@ -118,8 +118,10 @@ class JobAnalysisWorkflowTest {
                         ProviderMatchOutput.class);
         assertThat(fixture.chat.requests.getFirst().reasoningEffort()).isEqualTo("low");
         assertThat(fixture.chat.requests.getFirst().verbosity()).isEqualTo("low");
-        assertThat(fixture.chat.requests.get(1).reasoningEffort()).isNull();
-        assertThat(fixture.chat.requests.get(1).verbosity()).isNull();
+        assertThat(fixture.chat.requests.get(1).maxOutputTokens())
+                .isEqualTo(JobAnalysisPromptDefinitions.ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS);
+        assertThat(fixture.chat.requests.get(1).reasoningEffort()).isEqualTo("low");
+        assertThat(fixture.chat.requests.get(1).verbosity()).isEqualTo("low");
         assertThat(fixture.chat.requests.get(2).reasoningEffort()).isEqualTo("low");
         assertThat(fixture.chat.requests.get(2).verbosity()).isEqualTo("low");
         assertThat(fixture.embedding.calls.get()).isEqualTo(1);
@@ -193,6 +195,24 @@ class JobAnalysisWorkflowTest {
                         "인턴십·대외활동 우수자",
                         "어학 우수자",
                         "디지털 프로젝트 경험자");
+    }
+
+    @Test
+    void eligibilityUsesDedicatedLowOutputPolicyForProductionSizedRequirements() {
+        Fixture fixture = fixture(false, true);
+        fixture.chat.enqueue(
+                productionSizedRequirements(),
+                eligibility(Eligibility.UNKNOWN),
+                missingAll(18));
+
+        execute(fixture);
+
+        ChatGateway.ChatRequest eligibilityRequest = fixture.chat.requests.get(1);
+        assertThat(eligibilityRequest.input().path("requirements")).hasSize(18);
+        assertThat(eligibilityRequest.maxOutputTokens())
+                .isEqualTo(JobAnalysisPromptDefinitions.ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS);
+        assertThat(eligibilityRequest.reasoningEffort()).isEqualTo("low");
+        assertThat(eligibilityRequest.verbosity()).isEqualTo("low");
     }
 
     @Test
@@ -1117,6 +1137,18 @@ class JobAnalysisWorkflowTest {
                                 "인턴십·대외활동 우수자, 어학 우수자, 디지털 프로젝트 경험자",
                                 "우대 사항",
                                 6)));
+    }
+
+    private ProviderRequirementsOutput productionSizedRequirements() {
+        return new ProviderRequirementsOutput(
+                "job-analysis-requirements-source-output-v4",
+                java.util.stream.IntStream.range(0, 18)
+                        .mapToObj(index -> new ProviderSourceRequirement(
+                                "주요 업무",
+                                "서비스 역량 항목 " + (index + 1),
+                                "주요 업무",
+                                index))
+                        .toList());
     }
 
     private ProviderRequirementsOutput singleRequirement(CriterionSupportType supportType) {

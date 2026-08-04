@@ -28,6 +28,7 @@ public final class JobAnalysisPromptDefinitions {
             "job-analysis-persist-analysis-v1";
 
     public static final int EXTRACT_REQUIREMENTS_MAX_OUTPUT_TOKENS = 4_096;
+    public static final int ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS = 8_000;
 
     private JobAnalysisPromptDefinitions() {}
 
@@ -83,7 +84,8 @@ public final class JobAnalysisPromptDefinitions {
         return switch (stepKey) {
             case JobAnalysisWorkflow.EXTRACT_REQUIREMENTS ->
                     EXTRACT_REQUIREMENTS_MAX_OUTPUT_TOKENS;
-            case JobAnalysisWorkflow.ASSESS_ELIGIBILITY -> 2_048;
+            case JobAnalysisWorkflow.ASSESS_ELIGIBILITY ->
+                    ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS;
             case JobAnalysisWorkflow.MATCH_EVIDENCE -> 6_144;
             default -> 1;
         };

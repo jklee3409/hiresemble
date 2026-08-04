@@ -712,7 +712,9 @@ public final class JobAnalysisWorkflow {
                     CHAT_TIMEOUT,
                     invocation.executionContext().run().priceVersion(),
                     invocation.prompt().maxOutputTokens(),
-                    invocation.prompt().outputType()));
+                    invocation.prompt().outputType(),
+                    "low",
+                    "low"));
         }
 
         @Override

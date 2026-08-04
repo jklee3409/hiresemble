@@ -188,6 +188,12 @@ class JobAnalysisWorkflowContractTest {
         assertThat(requirementsPrompt.maxOutputTokens())
                 .isEqualTo(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_MAX_OUTPUT_TOKENS)
                 .isLessThan(8_000);
+        var eligibilityPrompt = prompts.require(
+                WorkflowType.JOB_ANALYSIS,
+                CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
+                JobAnalysisWorkflow.ASSESS_ELIGIBILITY);
+        assertThat(eligibilityPrompt.maxOutputTokens())
+                .isEqualTo(JobAnalysisPromptDefinitions.ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS);
     }
 
     @Test
