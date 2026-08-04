@@ -15,6 +15,33 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (공고 분석 실패 화면 재실행 경로 정정)
+
+- What was done:
+  - `retryable=false`인 실패 공고 분석 화면에도 실패 카드 내 재실행 버튼을 제공하고 현재 공고 기준 새 분석 요청을 연결했다.
+- Key decisions:
+  - generic retry 가능 여부와 사용자가 현재 resource로 분석을 새로 실행하는 행동을 구분한다.
+- Issues encountered:
+  - 이전 확인은 generic retry 분기에 한정돼 실제 첨부 화면의 버튼 부재를 놓쳤다.
+- Validation:
+  - Job Analysis 집중 Vitest와 Frontend 전체 67 files/280 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 재시도 확인·두 번째 로고 적용)
+
+- What was done:
+  - 실패한 공고 분석이 서버의 `retryable` 판정에 따라 기존 Agent Run retry endpoint로 successor 실행을 생성하는 흐름을 명세·코드·테스트에서 확인했다.
+  - 제공된 두 번째 로고를 투명 256px 자산으로 최적화해 서비스 공용 BrandMark와 파비콘에 적용했다.
+- Key decisions:
+  - 이미 구현된 공고 분석 재시도 계약과 API를 중복 변경하지 않고 회귀 검증으로 고정했다. 로고 이름 text와 full·compact·inverse 호출 계약은 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 공고 분석·공용 UI 집중 Vitest 12건과 Frontend 전체 `corepack pnpm check` 67 files/279 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (회원가입 안내 문구·동의 상세 레이아웃 개선)
 
 - What was done:

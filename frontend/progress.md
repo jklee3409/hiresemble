@@ -5,7 +5,34 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/279 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/280 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-04] Session Summary (공고 분석 실패 재실행 행동 경로 보완)
+
+- What was done:
+  - 실제 첨부 화면처럼 `FAILED`이지만 `retryable=false`인 공고 분석에서도 실패 카드의 `공고 분석 재실행` 버튼으로 새 분석을 요청할 수 있게 했다.
+- Key decisions:
+  - generic retry 가능 Run은 predecessor lineage를 유지하고, 불가능한 Run은 현재 Job version의 강제 `BALANCED` 분석으로 복구한다.
+- Issues encountered:
+  - 첫 작업에서는 generic retry 가능 분기만 확인해 버튼이 없는 실제 상태를 완료로 잘못 판단했다.
+- Validation:
+  - 집중 Vitest 8건과 전체 `corepack pnpm check` 67 files/280 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 실패 재시도 회귀·브랜드 로고 교체)
+
+- What was done:
+  - `JobAnalysisPage`가 실패·중단된 `JOB_ANALYSIS` Run 중 서버가 `retryable=true`로 허용한 경우에만 범용 retry를 호출하고 successor Run을 추적하는 기존 흐름을 확인했다.
+  - 두 번째 로고를 공용 `BrandMark`의 모든 보호·공개 shell과 Landing 사용처에 연결하고 같은 자산을 파비콘으로 번들링했다.
+- Key decisions:
+  - 공고 분석 retry는 새 resource endpoint나 자동 재호출을 만들지 않고 기존 idempotent Agent Run lineage를 유지한다. 로고는 원본의 투명 여백을 정리한 50KB PNG 한 개를 재사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Vitest 2 files/12 tests와 전체 `corepack pnpm check`의 lint·format·typecheck·67 files/279 tests·production build가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-04] Session Summary (회원가입 안내 용어·동의 Modal 개선)
 
