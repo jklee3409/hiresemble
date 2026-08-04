@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-04] Session Summary (Requirements source v6 최소 schema)
+
+- What was done:
+  - 실제 registry schema의 requirement item이 sourceBlockId·sourceText·sourceOrdinal만 소유하고 sourceSection/sourceLocation이 없음을 고정했다.
+- Key decisions:
+  - property 순서가 아니라 정확한 field 집합과 strict schema 호환성을 검증한다.
+- Issues encountered:
+  - 최초 assertion이 schema generator의 정렬 순서를 불필요하게 고정해 field 집합 검증으로 교정했다.
+- Validation:
+  - `JobAnalysisStrictStructuredOutputContractTest`와 전체 `check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (requirements source v4 strict schema)
 
 - What was done:

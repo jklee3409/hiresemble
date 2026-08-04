@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-04] Session Summary (P6/P7 requirements v6 Fake 계약)
+
+- What was done:
+  - P6/P7 Fake chat gateway가 실제 요청의 sourceBlocks에서 ID·text·ordinal을 복사해 source-output-v6만 반환하도록 갱신했다.
+- Key decisions:
+  - E2E Fake에서도 제거된 sourceSection/sourceLocation을 재생성하지 않는다.
+- Issues encountered:
+  - `p6BrowserE2eTest p7BrowserE2eTest`는 P6 Chrome 대기로 3분 timeout됐다. P7 단독은 Job Analysis 이전 문서 정리 UI가 120초 안에 나타나지 않아 실패했다.
+- Validation:
+  - 두 fixture는 `compileTestJava`와 전체 `check`에서 컴파일됐다. P6/P7 Job Analysis 브라우저 경로는 미검증이다.
+- Next steps:
+  - 범위 밖 browser/document 대기 문제를 해결한 후 전용 E2E를 재검증한다.
+
 ## [2026-08-04] Session Summary (P6/P7 source requirements v5 fixture)
 
 - What was done:

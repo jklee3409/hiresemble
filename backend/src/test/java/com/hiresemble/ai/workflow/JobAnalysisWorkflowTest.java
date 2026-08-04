@@ -234,7 +234,7 @@ class JobAnalysisWorkflowTest {
     void zeroCriterionFailsSafelyWithoutPersistence() {
         Fixture fixture = fixture(false, true);
         fixture.chat.enqueue(new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
+                "job-analysis-requirements-source-output-v6",
                 List.of()));
 
         assertThatThrownBy(() -> execute(fixture))
@@ -375,9 +375,8 @@ class JobAnalysisWorkflowTest {
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         ProviderRequirementsOutput provider = new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
-                List.of(new ProviderSourceRequirement(
-                        "지원 자격", "  관련 경력 3년 이상  ", null, 0)));
+                "job-analysis-requirements-source-output-v6",
+                List.of(source("지원 자격", "  관련 경력 3년 이상  ", 0)));
 
         Object validated = validate(executor, json(provider), context);
         Object mapped = ephemeral(executor, validated, context);
@@ -401,8 +400,7 @@ class JobAnalysisWorkflowTest {
         assertThatThrownBy(() -> executor.ephemeralOutputFromMinimal(objectMapper.valueToTree(
                         new ProviderRequirementsOutput(
                                 "job-analysis-requirements-output-v3",
-                                List.of(new ProviderSourceRequirement(
-                                        "지원 자격", "관련 경력 3년 이상", null, 0))))))
+                                List.of(source("지원 자격", "관련 경력 3년 이상", 0))))))
                 .isInstanceOf(AiExecutionException.class);
     }
 
@@ -412,10 +410,10 @@ class JobAnalysisWorkflowTest {
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
         ProviderRequirementsOutput duplicateOrdinals = new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
+                "job-analysis-requirements-source-output-v6",
                 List.of(
-                        new ProviderSourceRequirement("우대 사항", "인턴 경험자", "우대 사항", 0),
-                        new ProviderSourceRequirement("우대 사항", "어학 우수자", "우대 사항", 0)));
+                        source("우대 사항", "인턴 경험자", 0),
+                        source("우대 사항", "어학 우수자", 0)));
 
         assertRepairableFailure(
                 executor,
@@ -425,7 +423,7 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
-    void englishOnlyRequirementAndInternalSourcePathRequestOneKoreanCorrection() {
+    void englishOnlyRequirementRequestsOneKoreanCorrection() {
         Fixture fixture = fixture(false, false);
         StepExecutionContext context = requirementsContext(fixture);
         var executor = fixture.workflow.contribution().steps().get(1).executor();
@@ -434,12 +432,9 @@ class JobAnalysisWorkflowTest {
                 executor,
                 context,
                 new ProviderRequirementsOutput(
-                        "job-analysis-requirements-source-output-v5",
-                        List.of(new ProviderSourceRequirement(
-                                "지원 자격",
-                                "Three years of Java experience",
-                                "$.untrustedJobPosting.descriptionText",
-                                0))),
+                        "job-analysis-requirements-source-output-v6",
+                        List.of(source(
+                                "지원 자격", "Three years of Java experience", 0))),
                 "JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED");
     }
 
@@ -1096,12 +1091,10 @@ class JobAnalysisWorkflowTest {
 
     private ProviderRequirementsOutput requirements() {
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
+                "job-analysis-requirements-source-output-v6",
                 List.of(
-                        new ProviderSourceRequirement(
-                                "필수 자격", "관련 경력 3년 이상", "필수 자격", 0),
-                        new ProviderSourceRequirement(
-                                "주요 업무", "Spring API 개발", "주요 업무", 1)));
+                        source("필수 자격", "관련 경력 3년 이상", 0),
+                        source("주요 업무", "Spring API 개발", 1)));
     }
 
     private String fixturePostingDescription() {
@@ -1136,41 +1129,33 @@ class JobAnalysisWorkflowTest {
 
     private ProviderRequirementsOutput complexRequirements() {
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
+                "job-analysis-requirements-source-output-v6",
                 List.of(
-                        new ProviderSourceRequirement(
+                        source(
                                 "지원 자격",
                                 "4년제 대학 또는 전문대학 졸업자 및 졸업 예정자",
-                                "지원 자격",
                                 0),
-                        new ProviderSourceRequirement(
-                                "지원 자격", "병역필 또는 면제자", "지원 자격", 1),
-                        new ProviderSourceRequirement(
-                                "지원 자격", "2026년 8월부터 근무 가능한 자", "지원 자격", 2),
-                        new ProviderSourceRequirement(
+                        source("지원 자격", "병역필 또는 면제자", 1),
+                        source("지원 자격", "2026년 8월부터 근무 가능한 자", 2),
+                        source(
                                 "지원 자격",
                                 "해외여행 및 채용에 결격사유가 없는 자",
-                                "지원 자격",
                                 3),
-                        new ProviderSourceRequirement(
-                                "우대 사항", "금융 관련 자격증 보유자", "우대 사항", 4),
-                        new ProviderSourceRequirement(
-                                "우대 사항", "IT·데이터 관련 자격증 보유자", "우대 사항", 5),
-                        new ProviderSourceRequirement(
+                        source("우대 사항", "금융 관련 자격증 보유자", 4),
+                        source("우대 사항", "IT·데이터 관련 자격증 보유자", 5),
+                        source(
                                 "우대 사항",
                                 "인턴십·대외활동 우수자, 어학 우수자, 디지털 프로젝트 경험자",
-                                "우대 사항",
                                 6)));
     }
 
     private ProviderRequirementsOutput productionSizedRequirements() {
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
+                "job-analysis-requirements-source-output-v6",
                 java.util.stream.IntStream.range(0, 18)
-                        .mapToObj(index -> new ProviderSourceRequirement(
+                        .mapToObj(index -> source(
                                 "주요 업무",
                                 "서비스 역량 항목 " + (index + 1),
-                                "주요 업무",
                                 index))
                         .toList());
     }
@@ -1188,9 +1173,21 @@ class JobAnalysisWorkflowTest {
             case GENERAL -> "원활한 협업 능력 보유";
         };
         return new ProviderRequirementsOutput(
-                "job-analysis-requirements-source-output-v5",
-                List.of(new ProviderSourceRequirement(
-                        "지원 자격", text, "지원 자격", 0)));
+                "job-analysis-requirements-source-output-v6",
+                List.of(source("지원 자격", text, 0)));
+    }
+
+    private ProviderSourceRequirement source(String section, String text, int ordinal) {
+        RequirementSection requirementSection = switch (section) {
+            case "필수 자격", "지원 자격" -> RequirementSection.REQUIRED_QUALIFICATION;
+            case "주요 업무" -> RequirementSection.RESPONSIBILITY;
+            case "우대 사항" -> RequirementSection.PREFERRED_QUALIFICATION;
+            default -> RequirementSection.OTHER;
+        };
+        return new ProviderSourceRequirement(
+                JobPostingSectionPolicy.sourceBlockId(requirementSection, text),
+                text,
+                ordinal);
     }
 
     private ProviderMatchOutput singleEvidenceMatch(UUID evidenceId) {

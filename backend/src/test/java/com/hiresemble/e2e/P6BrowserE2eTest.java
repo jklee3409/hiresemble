@@ -213,7 +213,7 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
         public AiGatewayResponse chat(ChatRequest request) {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
-                case "job-analysis-requirements-source-output-v5" -> requirements(request.input());
+                case "job-analysis-requirements-source-output-v6" -> requirements(request.input());
                 case "job-analysis-eligibility-output-v3" -> eligibility(request.input());
                 case "job-analysis-match-output-v3" -> matches(request.input());
                 default -> throw new AssertionError(
@@ -240,16 +240,26 @@ class P6BrowserE2eTest extends PostgresIntegrationTest {
                     .asText();
             if (description.contains("NO_REQUIREMENTS_FIXTURE")) {
                 return new ProviderRequirementsOutput(
-                        "job-analysis-requirements-source-output-v5",
+                        "job-analysis-requirements-source-output-v6",
                         List.of());
             }
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-source-output-v5",
+                    "job-analysis-requirements-source-output-v6",
                     List.of(
-                            new ProviderSourceRequirement(
-                                    "필수 지원 자격", "백엔드 개발 경력 3년 이상", "필수 지원 자격", 0),
-                            new ProviderSourceRequirement(
-                                    "주요 업무", "Spring Boot API 개발", "주요 업무", 1)));
+                            sourceRequirement(input, "백엔드 개발 경력 3년 이상"),
+                            sourceRequirement(input, "Spring Boot API 개발")));
+        }
+
+        private ProviderSourceRequirement sourceRequirement(JsonNode input, String sourceText) {
+            for (JsonNode block : input.path("untrustedJobPosting").path("sourceBlocks")) {
+                if (sourceText.equals(block.path("sourceText").asText())) {
+                    return new ProviderSourceRequirement(
+                            block.path("sourceBlockId").asText(),
+                            block.path("sourceText").asText(),
+                            block.path("sourceOrdinal").asInt());
+                }
+            }
+            throw new AssertionError("Missing P6 source block for fake requirement");
         }
 
         private ProviderEligibilityOutput eligibility(JsonNode input) {

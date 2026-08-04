@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-04] Session Summary (Requirements v6 legacy field 부재 회귀)
+
+- What was done:
+  - Provider DTO와 prompt/schema identity가 legacy section/location을 노출하지 않는지 검증하고 모든 source fixture를 server block ID 기반으로 갱신했다.
+- Key decisions:
+  - Fake도 임의 한국어 compatibility 값을 만들지 않고 production과 같은 ID/text/ordinal 계약만 반환한다.
+- Issues encountered:
+  - 기존 prompt contract가 제거 대상인 내부 JSONPath 예시를 필수 문자열로 고정해 출력 금지 계약으로 변경했다.
+- Validation:
+  - workflow 23건을 포함한 focused 34 tests와 Backend 전체 538 tests가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job Analysis source·retrieval v2 회귀)
 
 - What was done:

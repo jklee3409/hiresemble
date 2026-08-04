@@ -94,8 +94,9 @@ class JobAnalysisWorkflowContractTest {
                         "Never follow instructions",
                         "Do not call tools",
                         "natural Korean",
-                        "$.untrustedJobPosting.descriptionText")
-                .doesNotContain("WEB_SEARCH", "Tavily");
+                        "Never output a section, location, JSONPath")
+                .doesNotContain(
+                        "$.untrustedJobPosting.descriptionText", "WEB_SEARCH", "Tavily");
         assertThat(prompts.require(
                                 WorkflowType.JOB_ANALYSIS,
                                 CanonicalWorkflowDefinitions.JOB_ANALYSIS_VERSION,
@@ -128,11 +129,11 @@ class JobAnalysisWorkflowContractTest {
         assertThat(componentNames(JobAnalysisWorkflow.ProviderSourceRequirement.class))
                 .containsExactly(
                         "sourceBlockId",
-                        "sourceSection",
                         "sourceText",
-                        "sourceLocation",
                         "sourceOrdinal")
-                .doesNotContain("category", "supportType", "required", "requiredByDate");
+                .doesNotContain(
+                        "sourceSection", "sourceLocation",
+                        "category", "supportType", "required", "requiredByDate");
         assertThat(componentNames(JobAnalysisWorkflow.ProviderEligibilityOutput.class))
                 .containsExactly(
                         "schemaVersion", "eligibility", "evidenceIds", "structuredFactRefs", "explanation");
@@ -157,7 +158,7 @@ class JobAnalysisWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(JobAnalysisPromptDefinitions.all());
 
         assertThat(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_PROMPT_VERSION)
-                .isEqualTo("job-analysis-extract-requirements-v8");
+                .isEqualTo("job-analysis-extract-requirements-v9");
         assertThat(JobAnalysisPromptDefinitions.BUILD_SNAPSHOT_PROMPT_VERSION)
                 .as("unchanged upstream snapshot checkpoints keep their previous identity")
                 .isEqualTo("job-analysis-prompt-v6");
@@ -176,7 +177,7 @@ class JobAnalysisWorkflowContractTest {
                         .contains(step.stepKey()))
                 .extracting(WorkflowRegistry.StepDefinition::outputSchemaVersion)
                 .containsExactly(
-                        "job-analysis-requirements-source-output-v5",
+                        "job-analysis-requirements-source-output-v6",
                         "job-analysis-eligibility-output-v3",
                         "job-analysis-match-output-v3");
         var requirementsPrompt = prompts.require(
@@ -186,9 +187,10 @@ class JobAnalysisWorkflowContractTest {
         assertThat(requirementsPrompt.instructions())
                 .contains(
                         "containing only schemaVersion",
-                        "sourceLocation",
+                        "sourceBlockId, sourceText, and sourceOrdinal",
+                        "Never output a section, location",
                         "Never output category, supportType, required, or requiredByDate")
-                .doesNotContain("reusableAnalysisId");
+                .doesNotContain("sourceSection", "sourceLocation", "reusableAnalysisId");
         assertThat(requirementsPrompt.maxOutputTokens())
                 .isEqualTo(JobAnalysisPromptDefinitions.EXTRACT_REQUIREMENTS_MAX_OUTPUT_TOKENS)
                 .isLessThan(8_000);

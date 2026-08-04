@@ -45,29 +45,6 @@ public final class JobPostingSectionPolicy {
                 (section.name() + "|" + normalized).getBytes(StandardCharsets.UTF_8));
     }
 
-    static RequirementSection sourceSectionHint(String sourceSection) {
-        String normalized = sourceSection == null ? "" : sourceSection.toLowerCase(Locale.ROOT);
-        if (containsAnyStatic(normalized, "우대", "preferred")) {
-            return RequirementSection.PREFERRED_QUALIFICATION;
-        }
-        if (containsAnyStatic(normalized, "업무", "responsibil", "duties")) {
-            return RequirementSection.RESPONSIBILITY;
-        }
-        if (containsAnyStatic(normalized, "자격", "필수", "required", "qualification")) {
-            return RequirementSection.REQUIRED_QUALIFICATION;
-        }
-        return RequirementSection.OTHER;
-    }
-
-    private static boolean containsAnyStatic(String value, String... candidates) {
-        for (String candidate : candidates) {
-            if (value.contains(candidate)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private RequirementSection heading(String value) {
         String heading = value.toLowerCase(Locale.ROOT)
                 .replaceAll("[\\p{So}\\p{Sk}\\p{Punct}]", " ")

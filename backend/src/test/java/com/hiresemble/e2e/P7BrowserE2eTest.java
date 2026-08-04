@@ -382,7 +382,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
-                case "job-analysis-requirements-source-output-v5" ->
+                case "job-analysis-requirements-source-output-v6" ->
                         jobRequirements(request.input());
                 case "job-analysis-eligibility-output-v3" ->
                         jobEligibility(request.input());
@@ -444,12 +444,22 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
 
         private ProviderRequirementsOutput jobRequirements(JsonNode input) {
             return new ProviderRequirementsOutput(
-                    "job-analysis-requirements-source-output-v5",
+                    "job-analysis-requirements-source-output-v6",
                     List.of(
-                            new ProviderSourceRequirement(
-                                    "지원 자격", "백엔드 엔지니어링 경험", "지원 자격", 0),
-                            new ProviderSourceRequirement(
-                                    "주요 업무", "Spring Boot API 개발", "주요 업무", 1)));
+                            sourceRequirement(input, "백엔드 엔지니어링 경험"),
+                            sourceRequirement(input, "Spring Boot API 개발")));
+        }
+
+        private ProviderSourceRequirement sourceRequirement(JsonNode input, String sourceText) {
+            for (JsonNode block : input.path("untrustedJobPosting").path("sourceBlocks")) {
+                if (sourceText.equals(block.path("sourceText").asText())) {
+                    return new ProviderSourceRequirement(
+                            block.path("sourceBlockId").asText(),
+                            block.path("sourceText").asText(),
+                            block.path("sourceOrdinal").asInt());
+                }
+            }
+            throw new AssertionError("Missing P7 source block for fake requirement");
         }
 
         private ProviderEligibilityOutput jobEligibility(JsonNode input) {

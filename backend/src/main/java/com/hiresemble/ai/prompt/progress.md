@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-04] Session Summary (Job requirement source-only prompt v9)
+
+- What was done:
+  - requirement prompt/schema를 v9/v6로 올리고 각 항목이 sourceBlockId·sourceText·sourceOrdinal만 exact-copy하도록 변경했다.
+- Key decisions:
+  - section/location/JSONPath는 Provider 출력 대상이 아니며 sourceText 번역·의역도 금지한다.
+- Issues encountered:
+  - v8/v5는 server-owned라고 선언한 section/location을 strict Provider schema에 계속 요구하는 모순이 있었다.
+- Validation:
+  - prompt identity와 field 부재 contract, strict OpenAI schema 검사가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job requirement source block prompt v8)
 
 - What was done:

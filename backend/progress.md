@@ -7,6 +7,19 @@
 - V1~V20 migration이 적용됐고 V19는 지원 자격 provenance, V20은 Job Analysis coverage를 소유한다.
 - 최신 완료된 Backend 전체 `check`는 79 suites/538 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-04] Session Summary (Job requirement legacy Provider 필드 제거)
+
+- What was done:
+  - 동일 공고·profile/evidence snapshot이 source output v4에서는 성공하고 v5에서 `JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED`로 4회 실패한 회귀를 확인해 Provider requirement를 block ID·원문·ordinal 3필드로 축소했다.
+- Key decisions:
+  - section·source location은 기존 server-owned source block에서만 파생하고 공개 API·DB·workflow version은 유지한다. 변경된 Provider schema/prompt만 v6/v9로 격리했다.
+- Issues encountered:
+  - P6 전용 Browser E2E는 Chrome 대기로 3분 timeout, P7은 Job Analysis 이전 문서 `정리 완료` UI 대기로 실패해 실제 Job Analysis 브라우저 경로는 검증되지 않았다.
+- Validation:
+  - strict schema·workflow·normalization focused tests와 Backend 전체 `check` 79 suites/538 tests가 통과했다. 실제 Provider 호출은 수행하지 않았다.
+- Next steps:
+  - 인증된 로컬 세션에서 동일 공고를 실제 Provider로 한 번 재분석해 source-output-v6의 수직 동작을 확인한다.
+
 ## [2026-08-04] Session Summary (Job Analysis rubric v2 수직 구현)
 
 - What was done:

@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-04] Session Summary (Source block Provider 책임 회귀 수정)
+
+- What was done:
+  - `ProviderSourceRequirement`를 block ID·text·ordinal로 축소하고 한국어 검증을 faithful sourceText에만 적용했다.
+  - 사용처가 사라진 legacy section hint 변환도 제거했다.
+- Key decisions:
+  - normalization은 block ID로 원본 block을 조회해 section과 표시용 location을 계속 서버에서 결정하며 exact text 검증을 유지한다.
+- Issues encountered:
+  - v5의 nullable compatibility 필드는 입력의 영어 section enum을 모델이 되돌려 주면 source mapping 전에 한국어 검증이 실패했다.
+- Validation:
+  - focused workflow/normalization tests와 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - 실제 Provider 수직 검증 전에는 실서비스 복구로 판정하지 않는다.
+
 ## [2026-08-04] Session Summary (Job Analysis source block·criterion RAG v2)
 
 - What was done:

@@ -84,7 +84,7 @@ public final class JobAnalysisWorkflow {
     public static final String RETRIEVAL_POLICY_VERSION = "criterion-evidence-rag-v2";
 
     private static final String BUILD_SCHEMA = "job-analysis-build-output-v1";
-    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-source-output-v5";
+    private static final String REQUIREMENTS_SCHEMA = "job-analysis-requirements-source-output-v6";
     private static final String ELIGIBILITY_SCHEMA = "job-analysis-eligibility-output-v3";
     private static final String RETRIEVAL_SCHEMA = "job-analysis-retrieval-output-v2";
     private static final String MATCH_SCHEMA = "job-analysis-match-output-v3";
@@ -2189,41 +2189,22 @@ public final class JobAnalysisWorkflow {
                 || !hasTrimmedText(requirement.sourceBlockId(), 50)
                 || !hasTrimmedText(requirement.sourceText(), 2_000)
                 || requirement.sourceOrdinal() < 0
-                || requirement.sourceOrdinal() >= MAX_SOURCE_REQUIREMENTS
-                || (requirement.sourceSection() != null
-                        && !hasTrimmedText(requirement.sourceSection(), 500))
-                || (requirement.sourceLocation() != null
-                        && !hasTrimmedText(requirement.sourceLocation(), 500))) {
+                || requirement.sourceOrdinal() >= MAX_SOURCE_REQUIREMENTS) {
             throw repairable(
                     ValidationPhase.JAVA_RECORD,
                     "JOB_ANALYSIS_REQUIREMENT_FIELD_INVALID",
-                    "Return complete source fields; use null, not a blank or placeholder, when a source hint or location is unavailable.");
+                    "Return complete sourceBlockId, sourceText, and sourceOrdinal values copied from one source block.");
         }
-        if (!KoreanUserFacingTextPolicy.containsKorean(requirement.sourceText())
-                || (requirement.sourceSection() != null
-                        && (!KoreanUserFacingTextPolicy.containsKorean(
-                                        requirement.sourceSection())
-                                || isTechnicalSourceLocation(requirement.sourceSection())))
-                || (requirement.sourceLocation() != null
-                        && (!KoreanUserFacingTextPolicy.containsKorean(
-                                        requirement.sourceLocation())
-                                || isTechnicalSourceLocation(requirement.sourceLocation())))) {
+        if (!KoreanUserFacingTextPolicy.containsKorean(requirement.sourceText())) {
             throw koreanOutputRequired();
         }
-    }
-
-    private boolean isTechnicalSourceLocation(String value) {
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
-        return normalized.startsWith("$")
-                || normalized.contains("untrustedjobposting")
-                || normalized.contains("descriptiontext");
     }
 
     private StructuredOutputValidationException koreanOutputRequired() {
         return repairable(
                 ValidationPhase.JAVA_RECORD,
                 "JOB_ANALYSIS_KOREAN_OUTPUT_REQUIRED",
-                "Previous output used English-only user-facing prose or an internal source path. Return all user-facing text in natural Korean and use null or a concise Korean source section label.");
+                "Previous output used English-only requirement text. Select a Korean-containing source block and copy its sourceBlockId, sourceText, and sourceOrdinal exactly.");
     }
 
     private boolean hasTrimmedText(String value, int maxLength) {
@@ -2904,24 +2885,8 @@ public final class JobAnalysisWorkflow {
 
     public record ProviderSourceRequirement(
             String sourceBlockId,
-            @ProviderNullable String sourceSection,
             String sourceText,
-            @ProviderNullable String sourceLocation,
-            int sourceOrdinal) {
-        public ProviderSourceRequirement(
-                String sourceSection,
-                String sourceText,
-                String sourceLocation,
-                int sourceOrdinal) {
-            this(
-                    JobPostingSectionPolicy.sourceBlockId(
-                            JobPostingSectionPolicy.sourceSectionHint(sourceSection), sourceText),
-                    sourceSection,
-                    sourceText,
-                    sourceLocation,
-                    sourceOrdinal);
-        }
-    }
+            int sourceOrdinal) {}
 
     public record ProviderRequirementsOutput(
             String schemaVersion, List<ProviderSourceRequirement> requirements) {

@@ -25,7 +25,7 @@ class JobAnalysisStrictStructuredOutputContractTest {
 
         JsonNode requirements = schema(registry.require(
                 JobAnalysisWorkflow.ProviderRequirementsOutput.class,
-                "job-analysis-requirements-source-output-v5"));
+                "job-analysis-requirements-source-output-v6"));
         JsonNode eligibility = schema(registry.require(
                 JobAnalysisWorkflow.ProviderEligibilityOutput.class,
                 "job-analysis-eligibility-output-v3"));
@@ -40,12 +40,11 @@ class JobAnalysisStrictStructuredOutputContractTest {
         JsonNode requirement = resolve(
                 requirements,
                 requirements.path("properties").path("requirements").path("items"));
-        JsonNode sourceLocation = requirement.path("properties").path("sourceLocation");
-        JsonNode sourceSection = requirement.path("properties").path("sourceSection");
         assertThat(requirement.path("required").toString())
-                .contains("sourceSection", "sourceText", "sourceLocation", "sourceOrdinal");
-        assertThat(sourceLocation.path("type").toString()).contains("string", "null");
-        assertThat(sourceSection.path("type").toString()).contains("string", "null");
+                .contains("sourceBlockId", "sourceText", "sourceOrdinal")
+                .doesNotContain("sourceSection", "sourceLocation");
+        assertThat(requirement.path("properties").propertyNames())
+                .containsExactlyInAnyOrder("sourceBlockId", "sourceText", "sourceOrdinal");
         assertThat(requirement.path("properties").path("sourceText").path("type").asText())
                 .isEqualTo("string");
         assertThat(requirement.path("properties").propertyNames())

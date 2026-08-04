@@ -84,7 +84,7 @@ class JobRequirementNormalizationPolicyTest {
     @Test
     void unclassifiedSourceCannotBecomeAScoringCriterion() {
         var normalized = normalize(List.of(
-                new ProviderSourceRequirement(null, "조직과 잘 어울리는 분", null, 0)));
+                source(null, "조직과 잘 어울리는 분", 0)));
 
         assertThat(normalized).isEmpty();
     }
@@ -123,20 +123,19 @@ class JobRequirementNormalizationPolicyTest {
                         .isEqualTo("어학 우수자\n디지털 프로젝트 경험자"));
     }
 
-    private ProviderSourceRequirement source(String section, String text, int ordinal) {
-        return new ProviderSourceRequirement(section, text, section, ordinal);
+    private SourceFixture source(String section, String text, int ordinal) {
+        RequirementSection requirementSection = section(section);
+        String sourceBlockId = JobPostingSectionPolicy.sourceBlockId(requirementSection, text);
+        return new SourceFixture(
+                new ProviderSourceRequirement(sourceBlockId, text, ordinal),
+                new JobSourceBlock(sourceBlockId, requirementSection, text, ordinal));
     }
 
     private List<JobAnalysisWorkflow.RequirementCandidate> normalize(
-            List<ProviderSourceRequirement> sources) {
-        List<JobSourceBlock> blocks = sources.stream()
-                .map(source -> new JobSourceBlock(
-                        source.sourceBlockId(),
-                        section(source.sourceSection()),
-                        source.sourceText(),
-                        source.sourceOrdinal()))
-                .toList();
-        return policy.normalize(sources, blocks);
+            List<SourceFixture> sources) {
+        return policy.normalize(
+                sources.stream().map(SourceFixture::source).toList(),
+                sources.stream().map(SourceFixture::block).toList());
     }
 
     private RequirementSection section(String section) {
@@ -151,4 +150,8 @@ class JobRequirementNormalizationPolicyTest {
         }
         return RequirementSection.OTHER;
     }
+
+    private record SourceFixture(
+            ProviderSourceRequirement source,
+            JobSourceBlock block) {}
 }
