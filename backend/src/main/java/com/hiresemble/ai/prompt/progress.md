@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-04] Session Summary (Eligibility 전용 output 정책 복구)
+
+- What was done:
+  - `ASSESS_ELIGIBILITY_MAX_OUTPUT_TOKENS`를 단계 전용 상수로 분리하고 8,000으로 설정했다.
+- Key decisions:
+  - 실제 실패는 prompt 의미나 schema 오류가 아니라 2,048 token 상한의 LENGTH 종료였으므로 prompt version은 올리지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow contract test가 EXTRACT 4,096과 ASSESS 8,000의 단계별 정책을 고정하고 기존 MATCH 6,144 정책을 유지한다.
+- Next steps:
+  - 실제 Provider 수직 검증은 인증 가능한 로컬 세션에서 별도로 수행한다.
+
 ## [2026-08-03] Session Summary (Job Analysis 단계별 prompt·token identity)
 
 - What was done:

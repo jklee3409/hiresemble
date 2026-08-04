@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-Signup·login password의 UTF-8 byte 길이 Bean Validation 경계를 검증한다.
+Signup password의 문자 조합·문자 수와 signup·login UTF-8 byte 길이 Bean Validation 경계를 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`Utf8ByteLengthValidatorTest.java`](Utf8ByteLengthValidatorTest.java): 다중 byte 문자열의 최소·최대 경계
+- [`Utf8ByteLengthValidatorTest.java`](Utf8ByteLengthValidatorTest.java): signup 조합·문자 수와 다중 byte 최대 경계, login byte 경계
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

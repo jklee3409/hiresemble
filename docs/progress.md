@@ -4,6 +4,45 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (회원가입 표시 문구·동의 상세 계약)
+
+- What was done:
+  - 페이지 명세의 회원가입 표시 계약을 간결한 비밀번호 세 문장과 전문 용어가 없는 동의 상세로 갱신했다.
+- Key decisions:
+  - 검증·보안 내부 계약은 유지하고 사용자 화면에는 행동과 결과를 중심으로 안내하도록 구분했다.
+- Issues encountered:
+  - 화면 자동화 완주는 locator 중복과 재검증 상한으로 `NOT_VERIFIED`이다.
+- Validation:
+  - 문서를 구현·Vitest 20건·Frontend 전체 67 files/279 tests·build에 대조했다.
+- Next steps:
+  - 다음 Chromium 검증 회차에 페이지 계약의 desktop/mobile 완주를 확인한다.
+
+## [2026-08-04] Session Summary (가입·온보딩·공고 마감 입력 계약)
+
+- What was done:
+  - 기능·API·페이지 명세에 새 비밀번호 조합, blur 오류 표시, 온보딩 지원 자격과 30분 단위 공고 마감 입력을 반영했다.
+- Key decisions:
+  - eligibility와 Job의 기존 공개 API·DB 계약은 유지하고 첫 입력 화면과 변환 UX만 구체화했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend·Frontend 구현, OpenAPI 계약 테스트와 전체 module check 결과에 문서를 대조했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 검증·동의 상세 계약)
+
+- What was done:
+  - 기능·페이지 명세를 실제 UTF-8 비밀번호 규칙과 이용약관·개인정보·AI 처리 상세 Modal 계약에 맞췄다.
+- Key decisions:
+  - 기존 API·DB 동의 timestamp와 10..72 byte 계약은 유지하고 화면 설명만 실제 구현 범위로 구체화했다.
+- Issues encountered:
+  - 운영 주체·문의처·국외 이전 계약처럼 저장소에서 확정할 수 없는 법적 고지 정보는 제품 문구로 추측하지 않았다.
+- Validation:
+  - 공식 개인정보 동의 고지 항목과 OpenAI API 데이터 제어 문서를 확인하고 Frontend 구현·회귀에 대조했다.
+- Next steps:
+  - 운영 배포 전 확정된 사업자와 Provider 계약 정보로 개인정보 처리방침을 법률 검토한다.
+
 ## [2026-08-02] Session Summary (공고 분석·문서 소재 한국어 표시 계약)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-04] Session Summary (ASSESS_ELIGIBILITY truncation 방지)
+
+- What was done:
+  - eligibility `ChatRequest`가 전용 8,000 output token 상한과 low reasoning/verbosity를 명시하도록 수정했다.
+- Key decisions:
+  - 추출·정규화·matching 비즈니스 로직과 retry 정책은 건드리지 않고, 회귀를 만든 요청 용량 정책만 수정했다.
+- Issues encountered:
+  - 최근 실제 Run은 18개 requirement 입력에서 출력이 정확히 2,048 token에 도달해 Provider LENGTH로 종료됐으며 gateway가 이를 안전한 non-retryable truncation으로 정규화했다.
+- Validation:
+  - 18개 requirement를 사용하는 Fake 8단계 workflow가 완료되고 ASSESS 요청의 8,000/low/low 설정을 확인했다.
+- Next steps:
+  - 실제 Provider에서 같은 공고를 재실행해 truncation이 재발하지 않는지 확인한다.
+
 ## [2026-08-03] Session Summary (Job requirement source v4·단일 정규화 정책)
 
 - What was done:

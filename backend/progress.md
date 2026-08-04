@@ -5,7 +5,36 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V18 migration이 적용됐고 V17은 전역 취업 준비 가이드 게시물, V18은 미수정 초기 콘텐츠의 장문 version 2를 소유한다.
-- 최신 Backend 전체 `check`는 78 suites/535 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- 최신 완료된 Backend 전체 `check`는 78 suites/536 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-04] Session Summary (회원가입 비밀번호 조합 서버 검증)
+
+- What was done:
+  - 가입 비밀번호를 전체 10자 이상, 문자·숫자·특수문자 각 1개 이상, UTF-8 72바이트 이하로 검증하는 Bean Validation 정책을 추가했다.
+  - Signup OpenAPI 설명과 통합·단위 경계 테스트를 새 정책에 맞췄다.
+- Key decisions:
+  - 문자 수는 Unicode code point로 계산하고 Unicode punctuation·symbol을 특수문자로 인정한다. login의 기존 1..72바이트 계약은 유지한다.
+- Issues encountered:
+  - 별도 공고 분석 집중 테스트가 공유 test result를 덮어쓴 첫 전체 실행은 결과를 판정하지 않고, 다른 Gradle 테스트 종료 후 전체 `check`를 단독 재실행했다.
+- Validation:
+  - Auth·OpenAPI·validation 집중 테스트와 Backend 전체 `check` 78 suites/536 tests가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (Job Analysis eligibility 출력 truncation 회귀 수정)
+
+- What was done:
+  - 최근 실제 Job Analysis 실패 메타데이터에서 `ASSESS_ELIGIBILITY`가 정확히 2,048 output token에서 `AI_CHAT_OUTPUT_TRUNCATED`로 종료된 사실을 확인하고, 해당 단계 전용 상한을 8,000으로 복구했다.
+  - eligibility 요청에 `reasoningEffort=low`, `verbosity=low`를 명시해 출력 계약과 무관한 토큰 소비를 억제했다.
+- Key decisions:
+  - prompt instruction/schema와 공개 API·DB 계약은 바뀌지 않았으므로 prompt version, workflow version, migration은 변경하지 않았다.
+  - 실제 계정 세션이나 인증 정보를 임의 생성·변경하지 않았으며, 실제 Provider 수직 검증은 활성 인증 세션 부재와 브라우저 런타임 연결 실패 때문에 실행하지 않았다.
+- Issues encountered:
+  - 전체 `check`는 첫 실행에서 Gradle test result의 `in-progress-results-generic.bin` 누락, 규칙상 한 번 재검증한 `cleanTest check`에서는 result stream `EOFException`으로 종료됐다. 두 실행 모두 assertion 실패는 보고되지 않았지만 전체 성공으로 간주하지 않는다.
+- Validation:
+  - `JobAnalysisWorkflowTest` 23건과 `JobAnalysisWorkflowContractTest` 5건이 통과했다. 18개 requirement를 전달하는 회귀 fixture에서 eligibility 전용 8,000 상한과 low/low 정책을 검증했다.
+- Next steps:
+  - 사용자가 로컬 앱에 다시 로그인한 뒤 동일 공고를 강제 재분석하여 실제 Provider 8단계 완료 여부와 eligibility 사용량을 확인해야 한다.
 
 ## [2026-08-03] Session Summary (공고 요구사항 canonical 정규화와 bounded retry 복구)
 

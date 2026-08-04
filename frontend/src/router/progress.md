@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-04] Session Summary (온보딩 eligibility route fixture 보강)
+
+- What was done:
+  - 보호 route shell 테스트의 Onboarding mock에 eligibility 조회 응답을 추가했다.
+- Key decisions:
+  - route 정책은 바꾸지 않고 화면의 실제 초기 조회 계약만 fixture에 반영했다.
+- Issues encountered:
+  - 전체 check에서 누락 mock을 재현한 뒤 단독 router test로 먼저 확인했다.
+- Validation:
+  - Router Vitest 7건과 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard route fixture 계약 갱신)
 
 - What was done:

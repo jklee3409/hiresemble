@@ -15,6 +15,48 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (회원가입 안내 문구·동의 상세 레이아웃 개선)
+
+- What was done:
+  - 이메일 형식 보조 문구를 제거하고 비밀번호 안내를 세 개의 사용자 문장으로 정리했다.
+  - 동의 상세에서 전문 용어를 제거하고 핵심 요약·번호 카드·고정 확인 영역의 desktop dialog/mobile bottom sheet로 개편했다.
+- Key decisions:
+  - 서버의 실제 비밀번호 검증은 유지하고 기술 단위는 화면에 노출하지 않는다.
+- Issues encountered:
+  - 인앱 Browser runtime이 비어 있어 공식 Toss·Material·Apple 자료 조사와 저장소 Chromium으로 대체했다. Chromium 2회는 동작이 아닌 중복 문구 locator strict 오류로 중단되었고 재검증 상한에 따라 보정 후 세 번째 실행은 하지 않았다.
+- Validation:
+  - 집중 Vitest 20건과 Frontend 전체 `corepack pnpm check` 67 files/279 tests·production build가 통과했다. 수정된 Chromium 시나리오의 최종 완주는 `NOT_VERIFIED`이다.
+- Next steps:
+  - 다음 검증 회차에서 정확한 locator로 회원가입 desktop/mobile Chromium 1건을 완주한다.
+
+## [2026-08-04] Session Summary (회원가입·첫 지원 정보·공고 마감 UX 보강)
+
+- What was done:
+  - 회원가입 이메일·비밀번호 blur 검증과 서버 password 정책, 온보딩 지원 자격 입력, 공고 등록 30분 단위 마감 선택을 구현했다.
+  - 기능·API·페이지 계약과 Backend·Frontend·E2E 추적 문서를 실제 동작에 맞췄다.
+- Key decisions:
+  - password는 Unicode 10자 이상과 문자·숫자·특수문자 조합 및 BCrypt 72-byte 상한을 함께 적용한다. eligibility·Job 공개 API와 DB는 유지한다.
+- Issues encountered:
+  - 첫 Frontend 전체 check는 신규 eligibility mock 누락 1건에서 실패했고 보완 후 성공했다. 병행된 별도 공고 분석 변경과 Gradle 결과는 건드리지 않고 전체 Backend check를 단독 재실행했다.
+- Validation:
+  - Backend 78 suites/536 tests, Frontend 67 files/279 tests·production build, Chromium 2/2와 `git diff --check`가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 검증 안내·필수 동의 상세 Modal)
+
+- What was done:
+  - 회원가입 이메일·비밀번호 client 검증을 실제 API 계약으로 안내하고 이용약관·개인정보와 AI 처리의 필수 동의 상세 Modal을 구현했다.
+  - 기능·페이지 명세를 UTF-8 비밀번호 경계, 개인정보 수집·이용과 OpenAI API 처리 안내에 맞춰 동기화했다.
+- Key decisions:
+  - Backend의 UTF-8 10..72바이트 계약을 유지하고 숫자·특수문자 필수 조합을 새로 만들지 않았다. 상세 확인은 checkbox를 자동 선택하지 않는다.
+- Issues encountered:
+  - 인앱 Browser runtime에는 사용 가능한 browser가 없어 직접 screenshot 검수는 수행하지 못했고 저장소 Playwright Chromium 회귀로 대체했다.
+- Validation:
+  - Frontend 집중 Vitest 18건, 회원가입 Chromium 1건과 전체 `corepack pnpm check` 67 files/276 tests·production build가 통과했다.
+- Next steps:
+  - 운영 전 개인정보 처리방침의 사업자·문의처·국외 이전 세부는 실제 운영 주체와 계약 조건으로 법률 검토한다.
+
 ## [2026-08-03] Session Summary (Job Analysis source 정규화·재시도·deadline 경계 재설계)
 
 - What was done:

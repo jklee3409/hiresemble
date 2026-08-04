@@ -4,6 +4,48 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (회원가입 사용자 문구·동의 상세 레이아웃)
+
+- What was done:
+  - `SignupPage`에서 이메일 형식 보조 문구를 제거하고 비밀번호 안내를 요청된 세 문장과 두 개의 충족 표시로 간소화했다.
+  - 서비스·AI 동의 상세를 한눈에 보기, 번호 상세 카드, 강조 안내, 고정 footer 구조로 재설계했다.
+- Key decisions:
+  - desktop은 중앙 dialog, mobile은 bottom sheet를 유지하되 Modal 전체 대신 본문만 scroll하도록 했다. 상세 확인은 checkbox를 자동 선택하지 않는다.
+- Issues encountered:
+  - 인앱 Browser가 없어 저장소 Chromium 회귀로 대체했고, 중복 문구 locator 두 건을 보정했으나 재검증 상한 때문에 보정 후 완주는 확인하지 못했다.
+- Validation:
+  - `authFlow.test.ts` 포함 집중 Vitest 20건과 Frontend 전체 check·build가 통과했다. Chromium 최종 완주는 `NOT_VERIFIED`.
+- Next steps:
+  - 수정된 공개 인증 shell Chromium 회귀를 다음 회차에 확인한다.
+
+## [2026-08-04] Session Summary (가입·온보딩·공고 등록 입력 UX 보강)
+
+- What was done:
+  - Signup field 이탈 검증과 동적 password checklist, Onboarding 지원 자격 fieldset, JobNew 날짜·오전/오후·30분 시각 control을 추가했다.
+  - 온보딩 첫 저장에서 기본 프로필과 지원 자격을 각각 현재 version으로 저장하고 eligibility conflict 시 최신 값을 다시 불러온다.
+- Key decisions:
+  - 지원 자격의 상세 사유는 수집하지 않고 미선택 값을 허용하며, 마감 기본값은 오후 11:30으로 두되 날짜가 없으면 `null`을 전송한다.
+- Issues encountered:
+  - 신규 eligibility query 때문에 전체 test의 기존 router mock 1건을 보완했다.
+- Validation:
+  - Page 집중 테스트, Chromium desktop/mobile 회귀와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 비밀번호 안내·동의 상세 Modal)
+
+- What was done:
+  - `SignupPage`에 실제 비밀번호 byte 수 안내와 이용약관·개인정보 및 AI 처리 상세 Modal을 추가했다.
+  - Modal에 수집 항목·목적·보유 기간·거부 영향, AI 처리 대상·masking·외부 API 보관 가능성·사용자 검토 책임을 사용자 문장으로 구성했다.
+- Key decisions:
+  - Modal은 checkbox를 자동 선택하지 않고 ESC·배경·닫기·focus trap·trigger focus 복귀·body scroll lock과 mobile sheet를 지원한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `authFlow.test.ts` 포함 집중 Vitest와 전체 Frontend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (AI page 활성 실행 복구·단일 재분석 CTA)
 
 - What was done:

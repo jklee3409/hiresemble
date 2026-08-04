@@ -2,17 +2,19 @@
 
 ## 디렉터리 목적
 
-Java 문자열 길이와 다른 UTF-8 byte 기반 credential 상한을 Bean Validation으로 제공한다.
+회원가입 비밀번호 조합과 Java 문자열 길이와 다른 UTF-8 byte 기반 credential 상한을 Bean Validation으로 제공한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`Utf8ByteLength.java`](Utf8ByteLength.java): record component용 validation annotation
 - [`Utf8ByteLengthValidator.java`](Utf8ByteLengthValidator.java): UTF-8 byte 수 경계 검사
+- [`PasswordPolicy.java`](PasswordPolicy.java): 회원가입 비밀번호 정책 validation annotation
+- [`PasswordPolicyValidator.java`](PasswordPolicyValidator.java): 10자 이상과 문자·숫자·특수문자 조합 검사
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- signup과 login password가 BCrypt 72-byte 계약을 넘지 않도록 Controller 진입에서 검증한다.
+- signup password의 필수 조합을 검증하고 signup과 login password가 BCrypt 72-byte 계약을 넘지 않도록 Controller 진입에서 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

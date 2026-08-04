@@ -6,6 +6,47 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-04] Session Summary (가입 문구·동의 Modal 표시 계약)
+
+- What was done:
+  - `page.md`에 이메일 보조 안내 비표시, 비밀번호 세 문장, 동의 상세의 사용자 용어와 새 레이아웃 계약을 반영했다.
+- Key decisions:
+  - 화면에서는 비밀번호 저장 방식과 AI 세부 처리의 전문 명칭을 노출하지 않고, `안전하게 저장해요`와 `OpenAI 기반으로 처리해요`처럼 쉽게 설명한다.
+- Issues encountered:
+  - 수정된 E2E의 최종 완주는 재검증 상한으로 `NOT_VERIFIED`이다.
+- Validation:
+  - 페이지 명세를 Vue 구현·component test·Frontend 전체 check 결과에 대조했다.
+- Next steps:
+  - 다음 검증 회차에 desktop/mobile Chromium 완주를 확인한다.
+
+## [2026-08-04] Session Summary (credential·온보딩·마감 선택 계약 갱신)
+
+- What was done:
+  - Signup password를 전체 10자 이상·문자/숫자/특수문자 각 1개 이상·UTF-8 72바이트 이하로 변경했다.
+  - Page 계약에 blur 검증, 온보딩 eligibility GET/PUT과 날짜·오전/오후·30분 단위 공고 마감 입력을 추가했다.
+- Key decisions:
+  - Profile eligibility DTO와 Job `deadlineAt:Instant?` 계약은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth/OpenAPI 통합 테스트, Frontend component·Chromium 회귀와 양쪽 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 비밀번호·동의 상세 화면 계약)
+
+- What was done:
+  - `functional.md`의 비밀번호 규칙을 API와 같은 UTF-8 10..72바이트로 정합화했다.
+  - `page.md`에 이메일 형식, 비밀번호 안내와 이용약관·개인정보·AI 처리 상세 Modal 내용·접근성 계약을 추가했다.
+- Key decisions:
+  - 숫자·특수문자 조합은 필수가 아니며 상세 확인은 동의 checkbox 상태를 변경하지 않는다.
+- Issues encountered:
+  - 운영 법인·문의처·국외 이전 세부는 현재 저장소 계약에 없어 명세에 임의 확정하지 않았다.
+- Validation:
+  - API·Backend DTO·Frontend schema와 OpenAI 공식 API 데이터 정책을 교차 확인하고 Frontend 전체 check를 통과했다.
+- Next steps:
+  - 운영 정보 확정 후 법률 검토된 개인정보 처리방침을 별도 계약으로 추가한다.
+
 ## [2026-08-02] Session Summary (Dashboard 중앙 열 정렬 계약)
 
 - What was done:

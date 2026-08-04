@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-04] Session Summary (Eligibility production-size 회귀 테스트)
+
+- What was done:
+  - 실제 실패와 같은 18개 source requirement를 사용하는 workflow 회귀 테스트를 추가하고 eligibility 요청 정책 assertion을 갱신했다.
+- Key decisions:
+  - Fake가 token 절단을 흉내 내지 못하는 한계를 보완하기 위해 실제 실패 메타데이터의 경계값과 요청에 전달된 max token/reasoning/verbosity 계약을 함께 검증한다.
+- Issues encountered:
+  - 전체 `check`는 Gradle test result binary 누락 및 재검증의 EOF로 완료되지 않았다.
+- Validation:
+  - `JobAnalysisWorkflowTest` 23건, `JobAnalysisWorkflowContractTest` 5건이 모두 통과했다.
+- Next steps:
+  - 로컬 인증 세션 확보 후 실제 Provider 수직 검증을 수행한다.
+
 ## [2026-08-03] Session Summary (복합 공고 source normalization 회귀)
 
 - What was done:

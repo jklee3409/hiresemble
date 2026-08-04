@@ -15,6 +15,46 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-04] Session Summary (회원가입 용어·Modal 구조 회귀)
+
+- What was done:
+  - `ui-shell.spec.ts`에 이메일 보조 문구 비노출, 비밀번호 세 문장, 동의 상세의 사용자 용어·본문 scroll 구조 회귀를 추가했다.
+- Key decisions:
+  - 노출 문구는 role·dialog 범위에서 검증하고 없어야 할 전문 용어도 명시적으로 0건임을 확인하도록 했다.
+- Issues encountered:
+  - 첫 실행은 `안전하게 저장해요`, 두 번째는 `24시간 안에 삭제해요`가 각각 두 요소와 일치해 strict locator 오류로 중단됐다. 두 locator를 정확히 수정했지만 재검증 상한에 따라 세 번째 실행은 하지 않았다.
+- Validation:
+  - 실패 두 회 모두 화면 snapshot과 목표 문구가 존재했고 제품 오류는 아닌 locator 오류였다. 수정 후 시나리오 완주는 `NOT_VERIFIED`.
+- Next steps:
+  - 다음 검증 회차에 공개 인증 shell Chromium 1건을 완주한다.
+
+## [2026-08-04] Session Summary (가입 blur·온보딩 자격·마감 시각 반응형 회귀)
+
+- What was done:
+  - Signup의 blur red 오류와 수정 즉시 해제, Onboarding 지원 자격 4개 입력, JobNew의 24개 30분 단위 시각 option을 1440·390px에서 검증했다.
+  - P5 actual helper를 새 마감 control과 현재 직접 입력 summary 문구에 맞췄다.
+- Key decisions:
+  - actual scheduler fixture의 시각은 선택 가능한 직전 30분 단위로 내리고 API·scheduler 의미는 유지한다.
+- Issues encountered:
+  - 인앱 Browser runtime이 비어 있어 저장소 Playwright Chromium으로 검증했다.
+- Validation:
+  - `ui-shell.spec.ts` 집중 Chromium 2/2와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 동의 Modal 반응형 회귀)
+
+- What was done:
+  - 1440·390px 인증 shell 회귀에 실제 비밀번호 안내, 두 상세 Modal의 핵심 내용, ESC·확인 닫기와 trigger focus 복귀를 추가했다.
+- Key decisions:
+  - role·accessible name 기반 locator로 UI 구현 세부 결합을 줄였다.
+- Issues encountered:
+  - 인앱 Browser runtime은 사용 가능한 browser를 제공하지 않아 별도 시각 screenshot은 만들지 못했다.
+- Validation:
+  - `corepack pnpm exec playwright test e2e/ui-shell.spec.ts --project=chromium --grep "public authentication shell"` 1/1 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Dashboard 중앙 정렬 geometry 회귀)
 
 - What was done:

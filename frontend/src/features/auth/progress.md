@@ -2,7 +2,46 @@
 
 ## Overview
 
-Signup·login과 프로필 닉네임 변경의 client 입력 schema, Backend UTF-8 byte·표시 이름 계약을 관리한다.
+Signup·login과 프로필 닉네임 변경의 client 입력 schema, Backend 비밀번호 조합·UTF-8 byte·표시 이름 계약을 관리한다.
+
+## [2026-08-04] Session Summary (비밀번호 기술 용어 비노출)
+
+- What was done:
+  - Signup 길이 부족 오류를 요청된 10자 안내로 맞춰고 저장 경계 초과 오류는 기술 단위 없이 짧게 입력해 달라는 문장으로 바꾸었다.
+- Key decisions:
+  - `TextEncoder`와 72-byte client/server 경계는 검증 계약으로 유지하고 UI 안내에서만 기술 표현을 숨긴다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth 집중 Vitest와 Frontend 전체 67 files/279 tests·build가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 credential blur·조합 검증)
+
+- What was done:
+  - 이메일·비밀번호·비밀번호 확인의 독립 field 검증과 10자·문자·숫자·특수문자·72바이트 정책을 추가했다.
+- Key decisions:
+  - 최초 오류는 blur 시 표시하고, 오류가 보인 field만 input 중 재검증해 유효해지면 즉시 해제한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth schema·flow 집중 테스트와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (비밀번호 실제 byte 규칙 안내)
+
+- What was done:
+  - 가입 비밀번호의 짧음·김 오류를 실제 UTF-8 10..72바이트 경계를 포함한 문구로 바꾸고 경계 회귀를 갱신했다.
+- Key decisions:
+  - 서버가 강제하지 않는 숫자·특수문자 조합은 Frontend도 필수화하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Auth validation·flow 집중 Vitest 18건과 전체 Frontend check 통과.
+- Next steps:
+  - Backend credential 계약이 바뀌면 안내·schema·경계 test를 함께 갱신한다.
 
 ## [2026-07-31] Session Summary (프로필 닉네임 validation 재사용)
 

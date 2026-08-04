@@ -4,6 +4,19 @@
 
 P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
 
+## [2026-08-04] Session Summary (Signup password 서버·OpenAPI 회귀)
+
+- What was done:
+  - 가입의 10자·문자·숫자·특수문자·UTF-8 72바이트 경계와 password 비노출, 생성 OpenAPI 설명을 검증했다.
+- Key decisions:
+  - login byte 경계와 공개 path·operation 기준선은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - AuthIntegration·OpenApiContract 집중 테스트와 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Profile eligibility OpenAPI 계약)
 
 - What was done:

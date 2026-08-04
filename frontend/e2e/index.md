@@ -11,7 +11,7 @@
 | [`.gitkeep`](.gitkeep)                                                         | 초기 디렉터리 추적용 placeholder로 보존                                                                                      |
 | [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                                                        |
 | [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                                                            |
-| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px Dashboard overflow·focus·캘린더·가이드 dialog, profile와 shell fixture                         |
+| [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px Dashboard overflow·focus·캘린더·가이드 dialog, 회원가입 동의 Modal, profile와 shell fixture    |
 | [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                                             |
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                                                    |
 | [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                                              |

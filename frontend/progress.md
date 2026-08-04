@@ -5,7 +5,47 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/275 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/279 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-04] Session Summary (회원가입 안내 용어·동의 Modal 개선)
+
+- What was done:
+  - Signup의 이메일 보조 안내를 제거하고 비밀번호 안내·오류에서 기술 용어를 숨겼다.
+  - 필수 동의 Modal을 요약 카드, 쉽은 상세 문장, 독립 scroll 본문과 고정 확인 영역으로 개편했다.
+- Key decisions:
+  - 실제 client/server credential 제약은 유지하고, 동의 상세는 전문 명칭을 사용하지 않는다.
+- Issues encountered:
+  - 집중 Chromium 두 번 모두 중복 텍스트 locator strict 오류로 중단됐고, 두 locator를 정확한 문장으로 수정했으나 재검증 상한에 따라 세 번째는 실행하지 않았다.
+- Validation:
+  - 집중 Vitest 20/20과 전체 `corepack pnpm check` 67 files/279 tests·build 통과. 수정 후 전체 Chromium 완주는 `NOT_VERIFIED`.
+- Next steps:
+  - 다음 회차에 `public authentication shell` Chromium 시나리오를 재실행한다.
+
+## [2026-08-04] Session Summary (가입 검증·온보딩 지원 자격·마감 선택 UX)
+
+- What was done:
+  - 회원가입 credential blur 검증과 새 비밀번호 조합 안내, 온보딩 첫 단계의 지원 자격 입력, 공고 등록의 날짜·오전/오후·30분 단위 마감 선택을 구현했다.
+- Key decisions:
+  - 기존 profile eligibility API와 Job `Instant` API 계약을 재사용하고 공개 DTO는 변경하지 않았다.
+- Issues encountered:
+  - 첫 전체 check는 온보딩의 신규 eligibility 조회를 누락한 기존 router mock 1건에서 실패했으며 mock 보완 후 재검증했다.
+- Validation:
+  - 집중 Vitest 30건, Chromium 2건과 전체 `corepack pnpm check` 67 files/279 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (회원가입 입력 규칙·동의 상세 UX)
+
+- What was done:
+  - 회원가입에 이메일 형식 예시, 실제 비밀번호 byte 규칙·현재 길이 상태와 두 필수 동의의 사용자 친화적 상세 Modal을 추가했다.
+- Key decisions:
+  - 숫자·특수문자 강제 없이 Backend 10..72 UTF-8 byte 계약을 그대로 사용하고, 동의 상세 확인과 checkbox 선택은 분리했다.
+- Issues encountered:
+  - 인앱 Browser runtime이 비어 있어 저장소의 Playwright Chromium으로 반응형·상호작용을 검증했다.
+- Validation:
+  - 집중 Vitest 18건, 회원가입 Chromium 1건, 전체 `corepack pnpm check` 67 files/276 tests·production build 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (활성 AI 작업 route 복구와 중복 실행 차단)
 
