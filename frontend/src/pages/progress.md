@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (공고 분석 최신 Run 표시 우선순위 수정)
+
+- What was done:
+  - `JobAnalysisPage`가 최초 자동 분석 Run보다 `queuedAt,desc`로 조회한 최신 `JOB_ANALYSIS` Run을 우선해 상태와 상세 link를 표시하도록 수정했다.
+  - 최신 성공 Run과 과거 실패 자동 Run이 함께 있는 회귀 fixture를 추가했다.
+- Key decisions:
+  - 방금 접수한 local Run, 서버 최신 Run, 최초 자동 Run 순서만 사용하며 별도 상태 복제나 추가 API를 만들지 않는다.
+- Issues encountered:
+  - 기존 ID 우선순위가 최초 자동 Run을 서버 최신 Run보다 먼저 선택해 성공 결과와 과거 실패 카드가 동시에 노출됐다.
+- Validation:
+  - Job Analysis 집중 Vitest 9건과 Frontend 전체 check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 실패 카드 재실행 버튼 보완)
 
 - What was done:

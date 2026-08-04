@@ -240,6 +240,40 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).not.toContain('필요할 때만')
   })
 
+  it('shows the latest successful analysis run instead of the older failed automatic run', async () => {
+    const latestRunId = '50000000-0000-4000-8000-000000000099'
+    const latest = jobAnalysisDetailFixture({ agentRunId: latestRunId })
+    vi.mocked(jobApi.getLatestJobAnalysis).mockResolvedValue(latest)
+    vi.mocked(jobApi.listJobAnalyses).mockResolvedValue(page([latest]))
+    vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(
+      page([
+        agentRunSummary('SUCCEEDED', {
+          id: latestRunId,
+          workflowType: 'JOB_ANALYSIS',
+          resourceType: 'JOB',
+          resourceId: JOB_ID,
+          retryable: false,
+        }),
+      ]),
+    )
+    vi.mocked(agentRunApi.getAgentRun).mockImplementation(async (runId) =>
+      runId === latestRunId
+        ? analysisRun('SUCCEEDED', { id: latestRunId, progressPercent: 100 })
+        : analysisRun('FAILED', {
+            retryable: false,
+            safeError: { code: 'INTERNAL_FAILURE', message: '이전 실패' },
+          }),
+    )
+    const { wrapper } = await mountPage()
+
+    expect(agentRunApi.getAgentRun).toHaveBeenLastCalledWith(latestRunId)
+    expect(wrapper.text()).not.toContain('공고 분석을 완료하지 못했어요.')
+    expect(wrapper.find('.analysis-run').exists()).toBe(false)
+    expect(wrapper.get('.analysis-result__run-link').attributes('href')).toBe(
+      `/agent-runs/${latestRunId}`,
+    )
+  })
+
   it('renders eligibility separately from a high score, all evidence sections, OUTDATED reasons and history', async () => {
     const base = jobAnalysisDetailFixture()
     const latest = jobAnalysisDetailFixture({

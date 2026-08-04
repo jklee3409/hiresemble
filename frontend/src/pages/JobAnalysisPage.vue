@@ -97,7 +97,7 @@ const retryMutation = useRetryAgentRunMutation(userId)
 const recoveredRunId = computed(() => latestAnalysisRun.data.value?.items[0]?.id ?? '')
 const automaticRunId = computed(() => job.data.value?.automaticAnalysis.agentRunId ?? '')
 const currentRunId = computed(
-  () => acceptedRunId.value || automaticRunId.value || recoveredRunId.value,
+  () => acceptedRunId.value || recoveredRunId.value || automaticRunId.value,
 )
 const currentRun = useAgentRunDetailQuery(userId, currentRunId)
 
