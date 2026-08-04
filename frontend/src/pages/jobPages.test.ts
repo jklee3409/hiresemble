@@ -73,6 +73,35 @@ describe('P5 Job pages', () => {
     expect(router.currentRoute.value.fullPath).toBe(`/jobs/${JOB_ID}/overview?created=manual`)
   })
 
+  it('builds the deadline from a date, AM/PM, and a 30-minute time choice', async () => {
+    vi.mocked(jobApi.createJob).mockResolvedValue({
+      httpStatus: 202,
+      job: {
+        jobId: JOB_ID,
+        status: 'IN_PROGRESS',
+        extractionStatus: 'QUEUED',
+        agentRunId: JOB_RUN_ID,
+      },
+    })
+    const { wrapper } = await mountNew()
+
+    expect(wrapper.find('#job-deadline').exists()).toBe(false)
+    expect(wrapper.get('#job-deadline-time').findAll('option')).toHaveLength(24)
+    await wrapper.get('#job-source-url').setValue('https://jobs.example.com/openings/deadline')
+    await wrapper.get('#job-deadline-date').setValue('2026-08-31')
+    await wrapper.get('#job-deadline-period').setValue('PM')
+    await wrapper.get('#job-deadline-time').setValue('11:30')
+    await wrapper.get('#job-create-form').trigger('submit')
+    await flushPromises()
+
+    expect(jobApi.createJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deadlineAt: new Date('2026-08-31T23:30').toISOString(),
+      }),
+      'job-create:key-1234',
+    )
+  })
+
   it('retains one create idempotency key across failure/retry and suppresses double submit', async () => {
     const pending = deferred<Awaited<ReturnType<typeof jobApi.createJob>>>()
     vi.mocked(jobApi.createJob)

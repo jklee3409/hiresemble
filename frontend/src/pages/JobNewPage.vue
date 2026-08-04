@@ -16,6 +16,15 @@ const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const createMutation = useCreateJobMutation(userId)
 const form = reactive<JobCreateForm>(emptyForm())
+const deadline = reactive({ date: '', period: 'PM' as 'AM' | 'PM', time: '11:30' })
+const deadlineTimes = [
+  '12:00',
+  '12:30',
+  ...Array.from({ length: 11 }, (_, index) => {
+    const hour = String(index + 1).padStart(2, '0')
+    return [`${hour}:00`, `${hour}:30`]
+  }).flat(),
+] as const
 const fieldErrors = ref<Record<string, string>>({})
 const actionError = ref('')
 let idempotencyKey = ''
@@ -24,6 +33,7 @@ let submitting = false
 async function submit(): Promise<void> {
   if (submitting) return
   actionError.value = ''
+  form.deadlineAt = deadlineToLocalDateTime()
   const validation = validateJobCreateForm(form)
   fieldErrors.value = validation.fieldErrors
   if (validation.data === null) {
@@ -65,9 +75,19 @@ async function submit(): Promise<void> {
 
 function reset(): void {
   Object.assign(form, emptyForm())
+  Object.assign(deadline, { date: '', period: 'PM', time: '11:30' })
   fieldErrors.value = {}
   actionError.value = ''
   idempotencyKey = ''
+}
+
+function deadlineToLocalDateTime(): string {
+  if (deadline.date === '') return ''
+  const [hourText, minute] = deadline.time.split(':')
+  const hour12 = Number(hourText)
+  if (minute === undefined || hour12 < 1 || hour12 > 12) return 'invalid'
+  const hour24 = (hour12 % 12) + (deadline.period === 'PM' ? 12 : 0)
+  return `${deadline.date}T${String(hour24).padStart(2, '0')}:${minute}`
 }
 
 function emptyForm(): JobCreateForm {
@@ -167,19 +187,68 @@ function emptyForm(): JobCreateForm {
               {{ fieldErrors.positionName }}
             </span>
           </label>
-          <label class="field">
-            <span class="field__label">마감 일시 <span class="field__optional">(선택)</span></span>
-            <input
-              id="job-deadline"
-              v-model="form.deadlineAt"
-              type="datetime-local"
-              class="control"
-              :aria-invalid="Boolean(fieldErrors.deadlineAt)"
-            />
-            <span v-if="fieldErrors.deadlineAt" class="inline-error" role="alert">
+          <div class="field job-deadline-field">
+            <span id="job-deadline-label" class="field__label">
+              마감 일시 <span class="field__optional">(선택)</span>
+            </span>
+            <div class="job-deadline-controls" role="group" aria-labelledby="job-deadline-label">
+              <input
+                id="job-deadline-date"
+                v-model="deadline.date"
+                type="date"
+                class="control"
+                aria-label="마감 날짜"
+                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+                :aria-describedby="
+                  fieldErrors.deadlineAt
+                    ? 'job-deadline-help job-deadline-error'
+                    : 'job-deadline-help'
+                "
+              />
+              <select
+                id="job-deadline-period"
+                v-model="deadline.period"
+                class="control"
+                aria-label="마감 오전 또는 오후"
+                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+                :aria-describedby="
+                  fieldErrors.deadlineAt
+                    ? 'job-deadline-help job-deadline-error'
+                    : 'job-deadline-help'
+                "
+              >
+                <option value="AM">오전</option>
+                <option value="PM">오후</option>
+              </select>
+              <select
+                id="job-deadline-time"
+                v-model="deadline.time"
+                class="control"
+                aria-label="마감 시간"
+                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+                :aria-describedby="
+                  fieldErrors.deadlineAt
+                    ? 'job-deadline-help job-deadline-error'
+                    : 'job-deadline-help'
+                "
+              >
+                <option v-for="time in deadlineTimes" :key="time" :value="time">
+                  {{ time }}
+                </option>
+              </select>
+            </div>
+            <span id="job-deadline-help" class="field__help">
+              시간은 30분 단위로 선택할 수 있어요.
+            </span>
+            <span
+              v-if="fieldErrors.deadlineAt"
+              id="job-deadline-error"
+              class="inline-error"
+              role="alert"
+            >
               {{ fieldErrors.deadlineAt }}
             </span>
-          </label>
+          </div>
         </div>
       </section>
 
@@ -322,6 +391,16 @@ function emptyForm(): JobCreateForm {
   gap: var(--space-4);
 }
 
+.job-deadline-controls {
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 1fr) minmax(5.5rem, 0.45fr) minmax(6rem, 0.55fr);
+  gap: 0.5rem;
+}
+
+.job-deadline-field {
+  grid-column: 1 / -1;
+}
+
 .job-create-form__description {
   min-height: 17rem;
   line-height: 1.7;
@@ -337,6 +416,14 @@ function emptyForm(): JobCreateForm {
 @media (max-width: 40rem) {
   .job-create-grid {
     grid-template-columns: 1fr;
+  }
+
+  .job-deadline-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .job-deadline-controls > :first-child {
+    grid-column: 1 / -1;
   }
 }
 </style>

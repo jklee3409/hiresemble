@@ -242,11 +242,18 @@ async function createJob(page: Page, input: CreateInput): Promise<CreatedJob> {
   await page.goto('/jobs/new')
   await page.locator('#job-source-url').fill(input.sourceUrl)
   if (input.descriptionText !== undefined) {
-    await page.getByText('직접 입력해서 등록', { exact: true }).click()
+    await page.getByText('공고 본문 직접 입력', { exact: true }).click()
     await page.locator('#job-description').fill(input.descriptionText)
   }
   if (input.deadlineAt !== undefined) {
-    await page.locator('#job-deadline').fill(input.deadlineAt)
+    const [date, time] = input.deadlineAt.split('T')
+    if (date === undefined || time === undefined) throw new Error('invalid deadline fixture')
+    const [hourText, minute] = time.split(':')
+    const hour24 = Number(hourText)
+    const hour12 = String(hour24 % 12 || 12).padStart(2, '0')
+    await page.locator('#job-deadline-date').fill(date)
+    await page.locator('#job-deadline-period').selectOption(hour24 >= 12 ? 'PM' : 'AM')
+    await page.locator('#job-deadline-time').selectOption(`${hour12}:${minute}`)
   }
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -339,7 +346,9 @@ function manualDescription(): string {
 }
 
 function localDateTimeInput(value: Date): string {
-  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000)
+  const rounded = new Date(value)
+  rounded.setMinutes(rounded.getMinutes() < 30 ? 0 : 30, 0, 0)
+  const local = new Date(rounded.getTime() - rounded.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 16)
 }
 
