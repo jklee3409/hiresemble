@@ -6,6 +6,32 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-04] Session Summary (Landing·공고 분석 interaction 계약 보강)
+
+- What was done:
+  - `page.md`에 Landing의 decorative motion과 reduced-motion 대체, criterion 5개 pagination·filter reset, disclosure 44px target·open indicator·keyboard focus 계약을 추가했다.
+- Key decisions:
+  - 390px에서도 적합도를 먼저 보이는 2열 판단 요약을 유지하고 API·DB·점수 계산 계약은 변경하지 않는다.
+- Issues encountered:
+  - 인앱 browser 연결 부재는 Playwright CLI 실제 Chromium fallback으로 보완했다.
+- Validation:
+  - Vue 구현과 집중 Vitest 20건, 실제 Chromium 1440·390px·pagination·2열 geometry, Frontend 전체 67 files/282 tests·build에 명세를 대조했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 제품 화면 위계 계약)
+
+- What was done:
+  - `page.md`의 Analysis Tab을 단일 report surface, 결과 유무별 primary action, compact row와 desktop/mobile 정보 밀도 계약으로 보강했다.
+- Key decisions:
+  - `AI 핵심 요약`은 사용자 관점의 `핵심 요약`으로 바꾸고, 강점·보완점은 넓은 의미 색상 배경과 번호 원형 없이 구분선 목록으로 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Vue 구조·component test와 명세를 대조했고 Frontend 전체 check가 통과했다.
+- Next steps:
+  - 변경 후 Chromium visual 확인 결과가 나오면 반응형 밀도 계약과 다시 대조한다.
+
 ## [2026-08-04] Session Summary (공고 분석 결과 UI 표시 계약)
 
 - What was done:

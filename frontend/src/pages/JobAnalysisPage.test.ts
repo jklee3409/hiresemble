@@ -312,7 +312,8 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).toContain('85점')
     expect(wrapper.text()).not.toMatch(/\d+\.\d+\s*(?:\/\s*\d+\.\d+)?점/)
     expect(wrapper.get('abbr').attributes('title')).toContain('합격 가능성')
-    expect(wrapper.text()).toContain('AI 핵심 요약')
+    expect(wrapper.text()).toContain('핵심 요약')
+    expect(wrapper.text()).not.toContain('AI 핵심 요약')
     expect(wrapper.text()).toContain(
       '필수 경력 기간은 부족하지만 핵심 기술 경험은 높은 일치를 보여요.',
     )
@@ -344,6 +345,12 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).not.toContain('균형형')
     expect(wrapper.text()).not.toContain('경제형')
 
+    const result = wrapper.get('.analysis-result')
+    expect(result.findAll('.section-surface')).toHaveLength(0)
+    expect(result.findAll('.button--primary')).toHaveLength(1)
+    expect(result.get('.analysis-result__next nav').text()).toContain('내 정보 보완')
+    expect(result.findAll('.analysis-insight li > span')).toHaveLength(0)
+
     const olderButton = wrapper.findAll('.analysis-history__list button')[1]
     await olderButton?.trigger('click')
     expect(wrapper.get('.analysis-history__selection').text()).toContain('45점')
@@ -369,6 +376,40 @@ describe('P6 Job analysis page', () => {
       expect.objectContaining({ qualityMode: 'BALANCED', forceReanalyze: true, jobVersion: 2 }),
       'job-analysis:key-1234',
     )
+  })
+
+  it('paginates criterion results by five and resets the page when the status filter changes', async () => {
+    const base = jobAnalysisDetailFixture()
+    const criteria = Array.from({ length: 7 }, (_, index) => ({
+      ...base.scoreBreakdown[index % base.scoreBreakdown.length]!,
+      criterion: `확인 조건 ${index + 1}`,
+    }))
+    const latest = jobAnalysisDetailFixture({ scoreBreakdown: criteria })
+    vi.mocked(jobApi.getLatestJobAnalysis).mockResolvedValue(latest)
+    vi.mocked(jobApi.listJobAnalyses).mockResolvedValue(page([latest]))
+    vi.mocked(agentRunApi.getAgentRun).mockResolvedValue(
+      analysisRun('SUCCEEDED', { progressPercent: 100 }),
+    )
+
+    const { wrapper } = await mountPage()
+
+    expect(wrapper.findAll('.analysis-criterion')).toHaveLength(5)
+    expect(wrapper.text()).toContain('총 7개 중 1–5')
+    expect(wrapper.text()).not.toContain('확인 조건 6')
+
+    const pagination = wrapper.get('nav[aria-label="조건별 확인 결과 페이지"]')
+    await pagination.findAll('button')[1]?.trigger('click')
+    expect(wrapper.findAll('.analysis-criterion')).toHaveLength(2)
+    expect(wrapper.text()).toContain('총 7개 중 6–7')
+    expect(wrapper.text()).toContain('확인 조건 6')
+
+    const matchedFilter = wrapper
+      .findAll('.analysis-breakdown__filters button')
+      .find((button) => button.text().includes('일치'))
+    await matchedFilter?.trigger('click')
+    expect(wrapper.findAll('.analysis-criterion')).toHaveLength(3)
+    expect(wrapper.text()).toContain('총 3개 중 1–3')
+    expect(wrapper.find('nav[aria-label="조건별 확인 결과 페이지"]').exists()).toBe(false)
   })
 
   it('retains an OUTDATED result when historical evidence is now rejected or source-deleted', async () => {

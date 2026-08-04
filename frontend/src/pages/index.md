@@ -6,8 +6,8 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`LandingPage.vue`](LandingPage.vue): 전체 폭 Hero heading, 점진적 section reveal, 서비스 가치·5단계 이용 흐름·AI 활용 원칙과 login/signup CTA를 제공하는 공개 진입점
-- [`LandingProductDemo.vue`](LandingProductDemo.vue): 경험 준비→공고 등록→자동 분석→결과→다음 준비를 시간 기반으로 순환하고 viewport·문서 visibility·reduced motion에 따라 재생 상태를 관리하는 DOM 제품 데모
+- [`LandingPage.vue`](LandingPage.vue): 전체 폭 Hero heading, orbit·지원 흐름 motion band, 점진적 section reveal, 서비스 가치·5단계 이용 흐름·AI 활용 원칙과 login/signup CTA를 제공하는 공개 진입점
+- [`LandingProductDemo.vue`](LandingProductDemo.vue): 경험 준비→공고 등록→자동 분석→결과→다음 준비를 시간 기반 progress와 함께 순환하고 viewport·문서 visibility·reduced motion에 따라 재생 상태를 관리하는 DOM 제품 데모
 - [`SignupPage.vue`](SignupPage.vue): 이메일·비밀번호 blur 검증과 조합 안내, 이용약관·개인정보·AI 처리 상세 Modal, 가입 Form과 onboarding 이동
 - [`LoginPage.vue`](LoginPage.vue): 로그인 Form과 안전한 returnTo
 - [`OnboardingPage.vue`](OnboardingPage.vue): 기본 프로필·지원 자격 자기신고·학력 단계와 서버 계산 최종 학력·희망 조건·문서 이동/추후 입력 P2 흐름
@@ -26,7 +26,7 @@
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·날짜/오전·오후/30분 단위 마감 시각과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 자동 준비 journey, 읽기 전용 document view와 분리된 편집·추출·retry·delete·version conflict
-- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, 결과 summary·다음 행동, 보조 재분석·Eligibility/fit score·criterion/evidence·OUTDATED·이력
+- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, 적합도 ring·커버리지·요건 분포 chart, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
 - [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 문항·TipTap·evidence·AI·version·verification·finalize canonical editor

@@ -15,6 +15,33 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (서비스 소개 Landing·공고 분석 결과 UI 전면 개선)
+
+- What was done:
+  - 공개 Landing에 경험→공고 분석→다음 준비 흐름을 보여주는 orbit·signal·flow band와 demo 진행 효과를 추가하고, 공고 분석 결과를 점수 ring·coverage·상태 분포·category 막대·구분된 근거 section으로 재구성했다.
+  - 조건별 결과를 filter별 5개 pagination으로 제공하고 disclosure trigger, keyboard focus, 390px 2열 판단 요약과 회귀 테스트를 보강했다.
+- Key decisions:
+  - 서비스 blue token과 의미 색상만 사용하고 확인되지 않은 통계나 무거운 loader는 추가하지 않는다. 결과 화면 primary action은 `자기소개서 준비하기` 하나로 유지한다.
+- Issues encountered:
+  - 인앱 Browser에 연결된 browser가 0개여서 Playwright CLI 실제 Chromium으로 fallback했다. 세 외부 reference의 scroll 장면과 반복 animation을 확인했고 로컬 변경 화면도 실제 Chromium으로 검증했다.
+- Validation:
+  - 집중 Vitest 3 files/20 tests, type check, Landing·Job Analysis Chromium 8/8, visual fixture 1/1, Frontend 전체 `corepack pnpm check` 67 files/282 tests·production build와 최종 Job Analysis Chromium 1/1이 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 결과 B2C 제품 화면 재설계)
+
+- What was done:
+  - 공고 분석 결과를 지원 판단과 단일 다음 행동이 우선되는 report 구조로 재설계하고 페이지·설계 계약과 회귀 테스트를 동기화했다.
+- Key decisions:
+  - 결과가 있으면 `자기소개서 준비하기`만 primary action으로 두고 재분석과 편집 행동은 낮춘다. 반복 카드·파스텔 색면·번호 원형 대신 한 개의 report surface, 구분선, compact row와 접힌 상세를 사용한다.
+- Issues encountered:
+  - 인앱 Browser에 연결 가능한 browser가 없어 변경 후 desktop/mobile 실화면 확인은 수행하지 못했다. 기존 안전 fixture의 변경 전 1440·390px 캡처로 문제를 재확인했다.
+- Validation:
+  - 집중 Vitest 2 files/18 tests와 type check, Frontend 전체 `corepack pnpm check` 67 files/281 tests·production build가 통과했다. 갱신한 Chromium fixture spec은 미실행이다.
+- Next steps:
+  - Browser가 가능할 때 `job-analysis.spec.ts`를 1440·390px에서 실행해 최종 정보 밀도와 가로 overflow를 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 결과 UI 정보 구조 개선)
 
 - What was done:

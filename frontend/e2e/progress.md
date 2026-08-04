@@ -15,6 +15,33 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-04] Session Summary (Landing motion·조건 결과 pagination 회귀)
+
+- What was done:
+  - Landing의 desktop·390·320px, reduced-motion과 공고 분석 결과의 6개 criterion 5/1 paging을 fixture로 검증하도록 회귀를 확장했다.
+  - 390px 판단 board의 계산된 grid 열 수와 score·facts 실제 위치를 검사해 모바일 2열 계약을 고정했다.
+- Key decisions:
+  - 외부 API 없이 route fixture만 사용하고 표시 여부뿐 아니라 실제 geometry와 가로 overflow를 함께 검증한다.
+- Issues encountered:
+  - 인앱 browser 연결은 없었으나 외부 reference와 로컬 Vite 화면 모두 Playwright CLI·test의 실제 Chromium으로 확인했다.
+- Validation:
+  - Landing·Job Analysis Chromium 8/8, visual fixture 1/1과 수정 후 Job Analysis Chromium 1/1 통과.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 제품 위계 회귀 갱신)
+
+- What was done:
+  - `job-analysis.spec.ts`를 새 결과 heading과 `핵심 요약` 문구에 맞추고 결과 화면의 primary action이 하나인지 확인하도록 갱신했다.
+- Key decisions:
+  - route tab과 결과 heading을 구분하고 기능 상태보다 사용자 판단 heading을 시나리오의 화면 진입 근거로 사용한다.
+- Issues encountered:
+  - 인앱 Browser에 연결 가능한 browser가 없어 Chromium 시나리오는 실행하지 못했다.
+- Validation:
+  - TypeScript·ESLint·Prettier를 포함한 Frontend 전체 check는 통과했다. Playwright 실행은 `NOT_VERIFIED`다.
+- Next steps:
+  - Browser 연결 후 `corepack pnpm exec playwright test e2e/job-analysis.spec.ts --project=chromium`을 실행한다.
+
 ## [2026-08-04] Session Summary (공고 분석 결과 반응형 UI 회귀)
 
 - What was done:

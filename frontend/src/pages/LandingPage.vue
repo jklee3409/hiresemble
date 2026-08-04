@@ -133,6 +133,12 @@ const aiPrinciples = [
 
     <main id="landing-content">
       <section class="landing-hero" aria-labelledby="landing-heading">
+        <div class="landing-hero__orbit" aria-hidden="true">
+          <span class="landing-hero__orbit-line" />
+          <span class="landing-hero__orbit-chip landing-hero__orbit-chip--one">경험 확인</span>
+          <span class="landing-hero__orbit-chip landing-hero__orbit-chip--two">공고 분석</span>
+          <span class="landing-hero__orbit-chip landing-hero__orbit-chip--three">다음 준비</span>
+        </div>
         <div class="landing-shell landing-hero__inner" :class="{ 'is-revealed': heroRevealed }">
           <div class="landing-hero__heading">
             <p class="landing-eyebrow" data-hero-reveal style="--reveal-order: 0">
@@ -159,14 +165,47 @@ const aiPrinciples = [
                   로그인
                 </RouterLink>
               </div>
-              <p class="landing-hero__note" data-hero-reveal style="--reveal-order: 5">
+              <dl class="landing-hero__signals" data-hero-reveal style="--reveal-order: 5">
+                <div>
+                  <dt><AppIcon name="check" /></dt>
+                  <dd>확인한 경험 중심</dd>
+                </div>
+                <div>
+                  <dt><AppIcon name="sparkle" /></dt>
+                  <dd>공고 맞춤 분석</dd>
+                </div>
+                <div>
+                  <dt><AppIcon name="arrow-right" /></dt>
+                  <dd>다음 준비 연결</dd>
+                </div>
+              </dl>
+              <p class="landing-hero__note" data-hero-reveal style="--reveal-order: 6">
                 AI가 지원을 대신하지 않아요. 확인한 경험을 바탕으로 다음 준비를 이어갈 수 있게
                 도와요.
               </p>
             </div>
 
-            <LandingProductDemo data-hero-reveal style="--reveal-order: 6" />
+            <LandingProductDemo data-hero-reveal style="--reveal-order: 7" />
           </div>
+        </div>
+      </section>
+
+      <section class="landing-flow-band" aria-label="Hiresemble 지원 준비 흐름">
+        <div class="landing-flow-band__track">
+          <ul>
+            <li v-for="step in PRODUCT_JOURNEY_STEPS" :key="`flow-${step.number}`">
+              <AppIcon :name="step.icon" />
+              <span>{{ step.title }}</span>
+              <i aria-hidden="true">·</i>
+            </li>
+          </ul>
+          <ul aria-hidden="true">
+            <li v-for="step in PRODUCT_JOURNEY_STEPS" :key="`flow-copy-${step.number}`">
+              <AppIcon :name="step.icon" />
+              <span>{{ step.title }}</span>
+              <i>·</i>
+            </li>
+          </ul>
         </div>
       </section>
 
@@ -952,6 +991,409 @@ const aiPrinciples = [
     opacity: 1;
     animation: none;
     transform: none;
+  }
+}
+
+/* Reference-inspired kinetic polish, constrained to the Hiresemble Blue system. */
+.landing-hero {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 14%, rgb(164 179 255 / 48%), transparent 25rem),
+    radial-gradient(circle at 10% 88%, rgb(197 231 255 / 44%), transparent 24rem),
+    linear-gradient(160deg, #f7f8ff 0%, var(--hs-blue-50) 45%, #ffffff 88%);
+}
+
+.landing-hero::before {
+  z-index: 0;
+  background-image:
+    linear-gradient(rgb(49 87 255 / 5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(49 87 255 / 4%) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.landing-hero::after {
+  position: absolute;
+  z-index: 0;
+  right: -9rem;
+  bottom: -15rem;
+  width: 38rem;
+  height: 38rem;
+  border: 1px solid rgb(49 87 255 / 9%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5rem rgb(49 87 255 / 3%),
+    0 0 0 10rem rgb(49 87 255 / 2%);
+  content: '';
+}
+
+.landing-hero__orbit {
+  position: absolute;
+  z-index: 0;
+  top: 6rem;
+  right: max(-5rem, calc((100vw - 73.75rem) / 2 - 8rem));
+  width: 29rem;
+  height: 29rem;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.landing-hero__inner {
+  z-index: 1;
+}
+
+.landing-hero__orbit-line {
+  position: absolute;
+  inset: 2rem;
+  border: 1px dashed rgb(49 87 255 / 20%);
+  border-radius: 50%;
+  animation: landing-orbit-spin 28s linear infinite;
+}
+
+.landing-hero__orbit-chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgb(202 211 255 / 86%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 10px 30px rgb(32 57 189 / 10%);
+  padding: 0.45rem 0.75rem;
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 760;
+  backdrop-filter: blur(10px);
+  animation: landing-orbit-float 5s ease-in-out infinite;
+}
+
+.landing-hero__orbit-chip--one {
+  top: 1rem;
+  left: 9rem;
+}
+
+.landing-hero__orbit-chip--two {
+  top: 13rem;
+  right: 0;
+  animation-delay: -1.8s;
+}
+
+.landing-hero__orbit-chip--three {
+  bottom: 1rem;
+  left: 3rem;
+  animation-delay: -3.4s;
+}
+
+@keyframes landing-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes landing-orbit-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.landing-hero h1 span:last-child {
+  display: inline-block;
+  position: relative;
+  color: var(--color-brand-strong);
+}
+
+.landing-hero h1 span:last-child::after {
+  position: absolute;
+  z-index: -1;
+  right: -0.05em;
+  bottom: 0.04em;
+  left: -0.05em;
+  height: 0.16em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--hs-blue-200), rgb(116 138 255 / 30%));
+  content: '';
+  transform: rotate(-1deg);
+}
+
+.landing-hero__signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-5) 0 0;
+}
+
+.landing-hero__signals > div {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid rgb(202 211 255 / 88%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 76%);
+  padding: 0.4rem 0.7rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.landing-hero__signals dt {
+  display: grid;
+  color: var(--color-brand);
+}
+
+.landing-hero__signals dt .icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.landing-hero__signals dd {
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.landing-flow-band {
+  overflow: hidden;
+  border-block: 1px solid rgb(255 255 255 / 11%);
+  background: #11182d;
+  color: white;
+}
+
+.landing-flow-band__track {
+  display: flex;
+  width: max-content;
+  gap: var(--space-8);
+  padding-block: var(--space-4);
+  animation: landing-flow-marquee 34s linear infinite;
+}
+
+.landing-flow-band ul {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-flow-band li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: #dfe5f5;
+  font-size: var(--font-size-sm);
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.landing-flow-band li .icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--hs-blue-300);
+}
+
+.landing-flow-band li i {
+  margin-left: var(--space-5);
+  color: var(--hs-blue-400);
+  font-size: 1.2rem;
+  font-style: normal;
+}
+
+@keyframes landing-flow-marquee {
+  to {
+    transform: translateX(calc(-50% - var(--space-4)));
+  }
+}
+
+.problem-list article,
+.journey-list article,
+.value-grid article {
+  transition:
+    background var(--motion-base),
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.problem-list article:hover {
+  background: linear-gradient(145deg, var(--color-brand-soft), white);
+  transform: translateY(-4px);
+}
+
+.problem-list .icon,
+.value-grid > article > .icon {
+  box-sizing: content-box;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-soft);
+  padding: var(--space-3);
+}
+
+.journey-list > li {
+  overflow: hidden;
+}
+
+.journey-list > li:hover article {
+  padding-inline: var(--space-4);
+  background: rgb(255 255 255 / 72%);
+  transform: translateX(4px);
+}
+
+.journey-list__preview {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--hs-blue-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+
+.value-grid article {
+  min-height: 19rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-brand);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(202 211 255 / 45%), transparent 9rem),
+    var(--color-surface);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-xs);
+}
+
+.value-grid article:hover {
+  border-color: var(--color-brand-border);
+  box-shadow: 0 20px 42px rgb(32 57 189 / 10%);
+  transform: translateY(-5px);
+}
+
+.value-grid__number {
+  top: var(--space-5);
+  right: var(--space-5);
+  color: rgb(49 87 255 / 18%);
+  font-size: 3.75rem;
+  line-height: 1;
+}
+
+.landing-final-cta {
+  background: linear-gradient(180deg, white, var(--color-canvas));
+}
+
+.landing-final-cta__inner {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 92% 12%, rgb(164 179 255 / 38%), transparent 18rem),
+    linear-gradient(145deg, #17224d, var(--hs-blue-700));
+  box-shadow: 0 30px 70px rgb(32 57 189 / 20%);
+  padding: clamp(var(--space-7), 6vw, var(--space-10));
+  color: white;
+}
+
+.landing-final-cta__inner::after {
+  position: absolute;
+  right: -7rem;
+  bottom: -9rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3rem rgb(255 255 255 / 4%),
+    0 0 0 6rem rgb(255 255 255 / 2%);
+  content: '';
+  pointer-events: none;
+}
+
+.landing-final-cta .landing-eyebrow {
+  color: var(--hs-blue-300);
+}
+
+.landing-final-cta h2 {
+  color: white;
+}
+
+.landing-final-cta__actions {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-final-cta .button--primary {
+  border-color: white;
+  background: white;
+  color: var(--color-brand-strong);
+}
+
+.landing-final-cta .button--primary:hover {
+  background: var(--hs-blue-50);
+}
+
+.landing-final-cta .landing-account-link {
+  color: rgb(255 255 255 / 78%);
+}
+
+.landing-final-cta .landing-account-link:hover {
+  color: white;
+}
+
+@media (max-width: 62rem) {
+  .landing-hero__orbit {
+    top: 28rem;
+    right: -9rem;
+  }
+
+  .value-grid article {
+    min-height: 17rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .landing-hero__orbit {
+    display: none;
+  }
+
+  .landing-flow-band__track,
+  .landing-flow-band ul {
+    gap: var(--space-6);
+  }
+
+  .landing-flow-band__track {
+    animation-duration: 25s;
+  }
+
+  .value-grid article {
+    min-height: 0;
+  }
+
+  .landing-final-cta__inner {
+    margin-inline: -0.25rem;
+  }
+}
+
+@media (max-width: 27rem) {
+  .landing-hero__signals {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero__signals > div {
+    width: max-content;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero__orbit-line,
+  .landing-hero__orbit-chip,
+  .landing-flow-band__track {
+    animation: none;
+  }
+
+  .problem-list article,
+  .journey-list article,
+  .value-grid article {
+    transition: none;
   }
 }
 </style>

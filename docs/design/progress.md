@@ -4,6 +4,32 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-04] Session Summary (외부 reference 기반 Landing·분석 결과 visual 방향)
+
+- What was done:
+  - UI/UX 재설계 메모에 Codle의 큰 value hero·long-form rhythm, Pure Global의 dark transition·bold CTA, FLEX Study의 immersive glow·path 분기에서 선택한 방향과 Hiresemble 적용 원칙을 기록했다.
+- Key decisions:
+  - blocking loader·검증되지 않은 통계·무거운 3D asset은 제외하고 blue token, 작은 motion, 실제 데이터 chart와 명확한 report hierarchy로 번역한다.
+- Issues encountered:
+  - 인앱 Browser가 0개여서 Playwright CLI 실제 Chromium fallback을 사용했고 확인한 scroll 장면과 3/5초 반복 animation을 설계 메모에 기록했다.
+- Validation:
+  - 세 reference의 실제 Chromium snapshot·full-page/scroll capture·animation 상태, page 명세, Vue 구현과 로컬 desktop/mobile 캡처를 대조했다.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 결과 화면 재감사)
+
+- What was done:
+  - UI/UX 재설계 메모에 공고 분석 화면의 사용자 목적, 우선 정보, primary action, 기존 카드·색면 문제, 통합 대상과 반응형 밀도 결정을 기록했다.
+- Key decisions:
+  - 분석 화면을 통계 dashboard가 아니라 지원 판단 report로 보고 결과 요약부터 조건 근거까지 한 흐름으로 연결한다.
+- Issues encountered:
+  - 변경 후 Browser visual 검증은 unavailable로 미실행이다.
+- Validation:
+  - 활성 page 명세와 Vue 구조를 대조하고 Frontend 전체 check를 통과했다.
+- Next steps:
+  - 후속 visual 회귀에서 report section 간격과 mobile 밀도를 확인한다.
+
 ## [2026-08-03] Session Summary (Job Analysis source normalization·retry 설계 동기화)
 
 - What was done:

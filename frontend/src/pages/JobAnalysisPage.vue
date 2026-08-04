@@ -36,6 +36,7 @@ import type { JobAnalysisListParams } from '@/shared/api/jobApi'
 import { getProfile } from '@/shared/api/profileApi'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -46,6 +47,7 @@ const REMOVED_SUMMARY_SENTENCE =
   /확인 가능한 근거 유형만 반영했으며,\s*일부 요건은 추가 확인이 필요합니다\.?/g
 const ACTIVE_RUN_STATUSES: AgentRunStatus[] = ['QUEUED', 'RUNNING', 'WAITING_USER']
 const TERMINAL_FAILURE_STATUSES: AgentRunStatus[] = ['FAILED', 'CANCELLED', 'INTERRUPTED']
+const CRITERION_PAGE_SIZE = 5
 type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 const ELIGIBILITY_TONES = {
   ELIGIBLE: 'success',
@@ -79,6 +81,7 @@ const actionError = ref<ApiClientError | null>(null)
 const historyPage = ref(0)
 const selectedHistoryId = ref<string | null>(null)
 const criterionFilter = ref<MatchLevel | 'ALL'>('ALL')
+const criterionPage = ref(0)
 const connectionState = ref<AgentRunConnectionState>('connecting')
 
 const job = useJobDetailQuery(userId, jobId)
@@ -143,6 +146,10 @@ watch(
 
 watch(historyPage, () => {
   selectedHistoryId.value = null
+})
+
+watch(criterionFilter, () => {
+  criterionPage.value = 0
 })
 
 onBeforeUnmount(() => stream?.close())
@@ -247,6 +254,25 @@ const filteredCriteria = computed(() => {
     ? criteria
     : criteria.filter((criterion) => criterion.matchLevel === criterionFilter.value)
 })
+const criterionTotalPages = computed(() =>
+  Math.ceil(filteredCriteria.value.length / CRITERION_PAGE_SIZE),
+)
+const paginatedCriteria = computed(() => {
+  const start = criterionPage.value * CRITERION_PAGE_SIZE
+  return filteredCriteria.value.slice(start, start + CRITERION_PAGE_SIZE)
+})
+const criterionRangeLabel = computed(() => {
+  const total = filteredCriteria.value.length
+  if (total === 0) return '0개 조건'
+  const start = criterionPage.value * CRITERION_PAGE_SIZE + 1
+  const end = Math.min(start + CRITERION_PAGE_SIZE - 1, total)
+  return `총 ${total}개 중 ${start}–${end}`
+})
+
+watch(criterionTotalPages, (totalPages) => {
+  criterionPage.value = Math.min(criterionPage.value, Math.max(totalPages - 1, 0))
+})
+
 const displayedAnalysisSummary = computed(() =>
   (latestAnalysis.data.value?.analysisSummary ?? '')
     .replace(REMOVED_SUMMARY_SENTENCE, '')
@@ -275,6 +301,22 @@ const categoryOverview = computed(() => {
 })
 const formatCoverage = (value: number | null) =>
   value === null ? '기록 없음' : `${roundToFive(value)}%`
+const fitScoreProgress = computed(() =>
+  Math.min(100, Math.max(0, latestAnalysis.data.value?.fitScore ?? 0)),
+)
+const coverageProgress = computed(() =>
+  Math.min(100, Math.max(0, latestAnalysis.data.value?.analysisCoverage ?? 0)),
+)
+const matchDistributionLabel = computed(() =>
+  matchOverview.value.map((item) => `${MATCH_LEVEL_LABELS[item.level]} ${item.count}개`).join(', '),
+)
+const matchDistribution = computed(() => {
+  const total = latestAnalysis.data.value?.scoreBreakdown.length ?? 0
+  return matchOverview.value.map((item) => ({
+    ...item,
+    percentage: total > 0 ? (item.count / total) * 100 : 0,
+  }))
+})
 const connectionLabel = computed(() => {
   if (!runIsActive.value) return '진행 상황 확인 완료'
   return {
@@ -391,19 +433,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
     </StatePanel>
 
     <template v-else-if="job.data.value">
-      <header class="analysis-context-header">
-        <div>
-          <h2>공고 분석</h2>
-          <p>공고에서 찾은 조건을 내가 확인한 경험과 비교했어요.</p>
-        </div>
-        <RouterLink
-          class="button button--secondary"
-          :to="{ name: 'job-overview', params: { jobId } }"
-        >
-          공고 본문 보기
-        </RouterLink>
-      </header>
-
       <JobPreparationJourney
         v-if="!latestAnalysis.data.value"
         class="job-analysis__journey"
@@ -552,7 +581,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
             </div>
             <button
               type="button"
-              class="button button--primary"
+              class="button"
+              :class="latestAnalysis.data.value ? 'button--secondary' : 'button--primary'"
               :disabled="submissionPending || !hasUsableDescription"
               @click="restartFailedAnalysis"
             >
@@ -569,44 +599,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
             작업 자세히 보기
           </RouterLink>
         </template>
-      </section>
-
-      <section
-        v-if="showAnalysisCommand"
-        class="analysis-command section-surface"
-        aria-labelledby="analysis-command-heading"
-      >
-        <div>
-          <p class="section-kicker">필요할 때만</p>
-          <h3 id="analysis-command-heading" class="section-title">
-            {{ latestAnalysis.data.value ? '최신 정보로 다시 분석' : '분석 다시 시도' }}
-          </h3>
-          <p class="analysis-command__description">
-            현재 공고 내용과 내가 확인한 경험을 기준으로 새 결과를 만들어요.
-          </p>
-        </div>
-        <button
-          type="button"
-          class="button button--primary"
-          :disabled="commandUnavailable"
-          @click="requestAnalysis(Boolean(latestAnalysis.data.value))"
-        >
-          {{
-            submissionPending
-              ? '분석 진행 중…'
-              : latestAnalysisRun.isLoading.value
-                ? 'AI 작업 확인 중…'
-                : latestAnalysisRun.isError.value
-                  ? 'AI 작업 확인 필요'
-                  : runStateUnresolved
-                    ? 'AI 작업 확인 중…'
-                    : latestAnalysis.isLoading.value
-                      ? '결과 확인 중…'
-                      : latestAnalysis.data.value
-                        ? '최신 정보로 다시 분석'
-                        : '분석 다시 시도'
-          }}
-        </button>
       </section>
 
       <StatePanel
@@ -651,7 +643,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
       <article
         v-else-if="latestAnalysis.data.value"
-        class="analysis-result"
+        class="analysis-result section-surface"
         aria-labelledby="analysis-result-heading"
       >
         <section
@@ -673,9 +665,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </div>
         </section>
 
-        <section class="analysis-result__hero section-surface">
+        <section class="analysis-result__hero">
           <div class="analysis-result__heading">
             <div>
+              <p class="section-kicker">지원 판단</p>
               <h2 id="analysis-result-heading">공고와 잘 맞는 강점을 분석했어요.</h2>
               <p>{{ formatAnalysisInstant(latestAnalysis.data.value.createdAt) }}</p>
             </div>
@@ -689,76 +682,130 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               분석 과정 보기
             </RouterLink>
           </div>
-          <div class="analysis-result__metrics">
-            <div class="analysis-metric">
-              <span>지원 가능 여부</span>
-              <StatusBadge
-                :label="ELIGIBILITY_LABELS[latestAnalysis.data.value.eligibility]"
-                :tone="eligibilityTone(latestAnalysis.data.value.eligibility)"
-              />
+          <div class="analysis-result__decision">
+            <div class="analysis-decision-board">
+              <figure
+                class="analysis-score-chart"
+                :aria-label="`적합도 ${formatFitScore(latestAnalysis.data.value.fitScore)}`"
+              >
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="analysis-score-chart__track" cx="60" cy="60" r="49" />
+                  <circle
+                    class="analysis-score-chart__value"
+                    cx="60"
+                    cy="60"
+                    r="49"
+                    pathLength="100"
+                    :stroke-dasharray="`${fitScoreProgress} 100`"
+                  />
+                </svg>
+                <figcaption>
+                  <span>적합도 <abbr :title="SCORE_DISCLAIMER">안내</abbr></span>
+                  <strong>{{ formatFitScore(latestAnalysis.data.value.fitScore) }}</strong>
+                </figcaption>
+              </figure>
+
+              <dl class="analysis-decision-facts" aria-label="지원 판단 요약">
+                <div>
+                  <span class="analysis-decision-facts__icon" aria-hidden="true">
+                    <AppIcon name="check" />
+                  </span>
+                  <div>
+                    <dt>지원 가능 여부</dt>
+                    <dd>
+                      <StatusBadge
+                        :label="ELIGIBILITY_LABELS[latestAnalysis.data.value.eligibility]"
+                        :tone="eligibilityTone(latestAnalysis.data.value.eligibility)"
+                      />
+                    </dd>
+                  </div>
+                </div>
+                <div>
+                  <span class="analysis-decision-facts__icon" aria-hidden="true">
+                    <AppIcon name="filter" />
+                  </span>
+                  <div>
+                    <dt>확인한 요건</dt>
+                    <dd>{{ formatCoverage(latestAnalysis.data.value.analysisCoverage) }}</dd>
+                    <span class="analysis-coverage-bar" aria-hidden="true">
+                      <i :style="{ width: `${coverageProgress}%` }" />
+                    </span>
+                  </div>
+                </div>
+              </dl>
             </div>
-            <div class="analysis-metric analysis-metric--score">
-              <span>적합도 <abbr :title="SCORE_DISCLAIMER">안내</abbr></span>
-              <strong>{{ formatFitScore(latestAnalysis.data.value.fitScore) }}</strong>
-              <p>공고 조건과 내 정보의 일치도예요.</p>
-            </div>
-            <div class="analysis-metric analysis-metric--coverage">
-              <span>확인한 요건</span>
-              <strong>{{ formatCoverage(latestAnalysis.data.value.analysisCoverage) }}</strong>
-              <p>등록한 정보로 확인할 수 있었던 요건 비율이에요.</p>
-            </div>
-            <div class="analysis-metric">
-              <span>잘 맞는 경험</span>
-              <strong>{{ latestAnalysis.data.value.strengths.length }}개</strong>
-            </div>
-            <div class="analysis-metric">
-              <span>보완하면 좋은 점</span>
-              <strong>{{ latestAnalysis.data.value.gaps.length }}개</strong>
-            </div>
+            <aside class="analysis-result__next" aria-label="분석 다음 단계">
+              <span class="analysis-result__next-icon" aria-hidden="true">
+                <AppIcon name="sparkle" />
+              </span>
+              <div>
+                <span>추천하는 다음 단계</span>
+                <strong>강점을 자기소개서 소재로 이어가세요.</strong>
+              </div>
+              <RouterLink
+                class="button button--primary"
+                :to="{ name: 'job-cover-letter', params: { jobId } }"
+              >
+                자기소개서 준비하기
+                <AppIcon name="arrow-right" />
+              </RouterLink>
+              <nav aria-label="분석 보조 행동">
+                <RouterLink :to="{ name: 'profile-basic' }">내 정보 보완</RouterLink>
+                <RouterLink :to="{ name: 'job-overview', params: { jobId } }">
+                  공고 내용 수정
+                </RouterLink>
+                <RouterLink
+                  v-if="job.data.value.latestQuestionSetId"
+                  :to="{ name: 'job-interview', params: { jobId } }"
+                >
+                  면접 준비 보기
+                </RouterLink>
+              </nav>
+            </aside>
           </div>
-          <div class="analysis-result__next" aria-label="분석 다음 단계">
-            <RouterLink
-              class="button button--primary"
-              :to="{ name: 'job-cover-letter', params: { jobId } }"
-            >
-              자기소개서 준비하기
-            </RouterLink>
-            <RouterLink class="button button--secondary" :to="{ name: 'profile-basic' }">
-              내 정보 보완하기
-            </RouterLink>
-            <RouterLink
-              class="button button--ghost"
-              :to="{ name: 'job-overview', params: { jobId } }"
-            >
-              공고 내용 수정
-            </RouterLink>
-            <RouterLink
-              v-if="job.data.value.latestQuestionSetId"
-              class="button button--ghost"
-              :to="{ name: 'job-interview', params: { jobId } }"
-            >
-              면접 준비 보기
-            </RouterLink>
-          </div>
+          <p class="analysis-result__disclaimer">{{ SCORE_DISCLAIMER }}</p>
+          <p class="analysis-result__signal-counts">
+            잘 맞는 경험 {{ latestAnalysis.data.value.strengths.length }}개 · 보완 포인트
+            {{ latestAnalysis.data.value.gaps.length }}개
+          </p>
         </section>
 
-        <section class="analysis-overview section-surface" aria-labelledby="match-overview-heading">
+        <section class="analysis-overview" aria-labelledby="match-overview-heading">
           <div class="analysis-overview__heading">
-            <div>
-              <p class="section-kicker">매칭 요약</p>
+            <span class="analysis-section-icon" aria-hidden="true"><AppIcon name="runs" /></span>
+            <div class="analysis-section-heading__copy">
               <h3 id="match-overview-heading" class="section-title">요건 매칭 현황</h3>
+              <p>등록한 정보와 공고 조건을 비교한 결과예요.</p>
             </div>
-            <p>등록한 정보와 공고 조건을 비교한 결과예요.</p>
           </div>
-          <div class="analysis-overview__statuses">
-            <article v-for="item in matchOverview" :key="item.level">
-              <StatusBadge :label="MATCH_LEVEL_LABELS[item.level]" :tone="matchTone(item.level)" />
-              <strong>{{ item.count }}</strong>
-              <span>개 요건</span>
-            </article>
+          <div
+            class="analysis-overview__distribution"
+            role="img"
+            :aria-label="`요건 분포: ${matchDistributionLabel}`"
+          >
+            <span
+              v-for="item in matchDistribution"
+              :key="item.level"
+              :data-match-level="item.level"
+              :style="{ width: `${item.percentage}%` }"
+            />
           </div>
-          <div class="analysis-overview__categories">
-            <article v-for="item in categoryOverview" :key="item.category">
+          <dl class="analysis-overview__statuses">
+            <div v-for="item in matchOverview" :key="item.level">
+              <dt>
+                <StatusBadge
+                  :label="MATCH_LEVEL_LABELS[item.level]"
+                  :tone="matchTone(item.level)"
+                />
+              </dt>
+              <dd>
+                <strong>{{ item.count }}</strong
+                >개
+              </dd>
+            </div>
+          </dl>
+          <ul class="analysis-overview__categories">
+            <li v-for="item in categoryOverview" :key="item.category">
               <div>
                 <strong>{{ item.label }}</strong>
                 <span>{{ item.count }}개 기준</span>
@@ -770,23 +817,20 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 {{ formatScore(item.score) }} / {{ formatScore(item.weight) }}점
               </small>
               <small v-else>판정 가능한 근거가 아직 없어요.</small>
-            </article>
-          </div>
+            </li>
+          </ul>
         </section>
 
-        <section
-          class="analysis-requirements section-surface"
-          aria-labelledby="job-summary-heading"
-        >
+        <section class="analysis-requirements" aria-labelledby="job-summary-heading">
           <div class="analysis-section-heading">
-            <div>
-              <p class="section-kicker">공고 핵심 정리</p>
-              <h3 id="job-summary-heading" class="section-title">먼저 중요한 내용만 확인하세요</h3>
+            <span class="analysis-section-icon" aria-hidden="true"><AppIcon name="jobs" /></span>
+            <div class="analysis-section-heading__copy">
+              <h3 id="job-summary-heading" class="section-title">공고 핵심</h3>
+              <p>원문에서 추출한 세부 내용은 항목별로 펼쳐볼 수 있어요.</p>
             </div>
-            <p>원문에서 추출한 세부 내용은 항목별로 펼쳐볼 수 있어요.</p>
           </div>
           <div v-if="displayedAnalysisSummary" class="analysis-requirements__summary">
-            <span>AI 핵심 요약</span>
+            <span>핵심 요약</span>
             <p>{{ displayedAnalysisSummary }}</p>
           </div>
           <div class="analysis-requirements__details">
@@ -876,61 +920,60 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </div>
         </section>
 
-        <section
-          class="analysis-insights section-surface"
-          aria-labelledby="analysis-insights-heading"
-        >
+        <section class="analysis-insights" aria-labelledby="analysis-insights-heading">
           <div class="analysis-section-heading">
-            <div>
-              <p class="section-kicker">지원 전략</p>
+            <span class="analysis-section-icon" aria-hidden="true">
+              <AppIcon name="sparkle" />
+            </span>
+            <div class="analysis-section-heading__copy">
               <h3 id="analysis-insights-heading" class="section-title">강점과 보완 포인트</h3>
+              <p>자기소개서에서 강조할 내용과 보완할 정보를 나눠봤어요.</p>
             </div>
-            <p>자기소개서에서 강조할 내용과 보완할 정보를 나눠봤어요.</p>
           </div>
           <div class="analysis-insights__grid">
             <article class="analysis-insight analysis-insight--strength">
               <div class="analysis-insight__heading">
-                <span aria-hidden="true">✓</span>
                 <div>
-                  <small>잘 맞는 부분</small>
                   <h4>내 강점</h4>
+                  <small>자기소개서에서 먼저 강조하세요.</small>
                 </div>
-                <strong>{{ latestAnalysis.data.value.strengths.length }}</strong>
+                <strong>{{ latestAnalysis.data.value.strengths.length }}개</strong>
               </div>
-              <ol v-if="latestAnalysis.data.value.strengths.length">
-                <li
-                  v-for="(strength, index) in latestAnalysis.data.value.strengths"
-                  :key="strength"
-                >
-                  <span>{{ index + 1 }}</span>
+              <ul v-if="latestAnalysis.data.value.strengths.length">
+                <li v-for="strength in latestAnalysis.data.value.strengths" :key="strength">
                   <p>{{ strength }}</p>
                 </li>
-              </ol>
+              </ul>
               <p v-else class="analysis-empty-copy">확인한 경험에서 찾은 강점이 아직 없어요.</p>
             </article>
             <article class="analysis-insight analysis-insight--gap">
               <div class="analysis-insight__heading">
-                <span aria-hidden="true">↑</span>
                 <div>
-                  <small>준비하면 좋은 부분</small>
                   <h4>보완 포인트</h4>
+                  <small>지원 전에 확인하거나 경험을 보강하세요.</small>
                 </div>
-                <strong>{{ latestAnalysis.data.value.gaps.length }}</strong>
+                <strong>{{ latestAnalysis.data.value.gaps.length }}개</strong>
               </div>
-              <ol v-if="latestAnalysis.data.value.gaps.length">
-                <li v-for="(gap, index) in latestAnalysis.data.value.gaps" :key="gap">
-                  <span>{{ index + 1 }}</span>
+              <ul v-if="latestAnalysis.data.value.gaps.length">
+                <li v-for="gap in latestAnalysis.data.value.gaps" :key="gap">
                   <p>{{ gap }}</p>
                 </li>
-              </ol>
+              </ul>
               <p v-else class="analysis-empty-copy">현재 확인된 보완 포인트가 없어요.</p>
             </article>
           </div>
         </section>
 
-        <section class="analysis-evidence section-surface">
-          <p class="section-kicker">내 경험 연결</p>
-          <h3 class="section-title">점수에 활용한 경험</h3>
+        <section class="analysis-evidence">
+          <div class="analysis-section-heading">
+            <span class="analysis-section-icon" aria-hidden="true">
+              <AppIcon name="documents" />
+            </span>
+            <div class="analysis-section-heading__copy">
+              <h3 class="section-title">점수에 활용한 경험</h3>
+              <p>분석에 실제로 연결된 내 경험을 확인하세요.</p>
+            </div>
+          </div>
           <p
             v-if="hasEvidenceWithChangedState"
             class="analysis-evidence__notice alert alert--warning"
@@ -939,11 +982,11 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
             이 결과에 사용한 경험 중 현재 상태가 달라진 항목이 있어요. 저장된 결과와 점수는 그대로
             두고, 다시 분석할 때는 지금 확인된 경험만 사용해요.
           </p>
-          <div
+          <ul
             v-if="latestAnalysis.data.value.matchedEvidenceRefs.length"
-            class="analysis-evidence__grid"
+            class="analysis-evidence__list"
           >
-            <article
+            <li
               v-for="evidence in latestAnalysis.data.value.matchedEvidenceRefs"
               :key="evidence.id"
               class="analysis-evidence__item"
@@ -951,8 +994,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 'analysis-evidence__item--changed': !isCurrentlyVerifiedEvidence(evidence),
               }"
             >
-              <strong>{{ evidence.title }}</strong>
-              <span>{{ evidence.evidenceCategory }}</span>
+              <div>
+                <strong>{{ evidence.title }}</strong>
+                <span>{{ evidence.evidenceCategory }}</span>
+              </div>
               <small
                 :class="{
                   'analysis-evidence__state--changed': !isCurrentlyVerifiedEvidence(evidence),
@@ -960,18 +1005,21 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               >
                 {{ evidenceCurrentStateLabel(evidence) }}
               </small>
-            </article>
-          </div>
+            </li>
+          </ul>
           <p v-else class="analysis-empty-copy">점수에 연결된 확인한 경험이 없어요.</p>
         </section>
 
-        <section class="analysis-breakdown section-surface">
+        <section class="analysis-breakdown">
           <div class="analysis-section-heading analysis-breakdown__heading">
-            <div>
-              <p class="section-kicker">세부 매칭</p>
+            <span class="analysis-section-icon" aria-hidden="true">
+              <AppIcon name="filter" />
+            </span>
+            <div class="analysis-section-heading__copy">
               <h3 class="section-title">조건별 확인 결과</h3>
+              <p>상태를 선택하면 필요한 조건만 모아볼 수 있어요.</p>
             </div>
-            <p>상태를 선택하면 필요한 조건만 모아볼 수 있어요.</p>
+            <span class="analysis-breakdown__range">{{ criterionRangeLabel }}</span>
           </div>
           <div class="analysis-breakdown__filters" aria-label="조건별 확인 결과 필터">
             <button
@@ -997,7 +1045,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </div>
           <div class="analysis-breakdown__list">
             <article
-              v-for="criterion in filteredCriteria"
+              v-for="criterion in paginatedCriteria"
               :key="`${criterion.category}/${criterion.criterion}`"
               class="analysis-criterion"
               :data-match-level="criterion.matchLevel"
@@ -1038,17 +1086,24 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               이 상태에 해당하는 조건이 없어요.
             </p>
           </div>
+          <PaginationNav
+            v-if="criterionTotalPages > 1"
+            class="analysis-breakdown__pagination"
+            :page="criterionPage"
+            :total-pages="criterionTotalPages"
+            label="조건별 확인 결과 페이지"
+            @change="criterionPage = $event"
+          />
         </section>
       </article>
 
       <details
         v-if="history.data.value?.items.length"
-        class="analysis-history section-surface"
+        class="analysis-history"
         aria-labelledby="analysis-history-heading"
       >
         <summary class="analysis-history__summary">
           <div>
-            <p class="section-kicker">이전 결과</p>
             <h3 id="analysis-history-heading" class="section-title">분석 결과 기록</h3>
             <p>공고나 내 정보가 바뀌기 전 결과도 다시 확인할 수 있어요.</p>
           </div>
@@ -1081,7 +1136,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </ol>
           <article v-if="selectedHistory" class="analysis-history__selection">
             <div>
-              <p class="section-kicker">선택한 결과</p>
               <h4>
                 {{
                   latestAnalysis.data.value?.id === selectedHistory.id
@@ -1147,6 +1201,44 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
       >
         과거 분석 이력을 불러오지 못했어요. 최신 결과는 그대로 확인할 수 있어요.
       </p>
+
+      <section
+        v-if="showAnalysisCommand"
+        class="analysis-command"
+        aria-labelledby="analysis-command-heading"
+      >
+        <div>
+          <h3 id="analysis-command-heading" class="section-title">
+            {{ latestAnalysis.data.value ? '최신 정보로 다시 분석' : '분석 다시 시도' }}
+          </h3>
+          <p class="analysis-command__description">
+            현재 공고 내용과 내가 확인한 경험을 기준으로 새 결과를 만들어요.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="button"
+          :class="latestAnalysis.data.value ? 'button--secondary' : 'button--primary'"
+          :disabled="commandUnavailable"
+          @click="requestAnalysis(Boolean(latestAnalysis.data.value))"
+        >
+          {{
+            submissionPending
+              ? '분석 진행 중…'
+              : latestAnalysisRun.isLoading.value
+                ? 'AI 작업 확인 중…'
+                : latestAnalysisRun.isError.value
+                  ? 'AI 작업 확인 필요'
+                  : runStateUnresolved
+                    ? 'AI 작업 확인 중…'
+                    : latestAnalysis.isLoading.value
+                      ? '결과 확인 중…'
+                      : latestAnalysis.data.value
+                        ? '최신 정보로 다시 분석'
+                        : '분석 다시 시도'
+          }}
+        </button>
+      </section>
     </template>
   </section>
 </template>
@@ -2139,6 +2231,1522 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   .analysis-run__failure .button {
     width: 100%;
     justify-self: stretch;
+  }
+}
+
+.analysis-result {
+  display: block;
+  overflow: hidden;
+  margin-top: var(--space-6);
+  background: var(--color-surface);
+}
+
+.analysis-result > section:not(.analysis-outdated) {
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.analysis-result > section + section:not(.analysis-outdated) {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-result > .analysis-outdated {
+  margin: var(--space-5);
+}
+
+.analysis-result__decision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 15rem);
+  gap: var(--space-7);
+  margin-top: var(--space-6);
+}
+
+.analysis-result__metrics {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 0;
+  margin: 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.analysis-metric,
+.analysis-metric--score {
+  display: block;
+  min-height: 0;
+  grid-column: auto;
+  padding: var(--space-4);
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-metric + .analysis-metric {
+  border-left: 1px solid var(--color-border);
+}
+
+.analysis-metric dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.analysis-metric dd {
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-metric--score dd {
+  color: var(--color-brand-strong);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.analysis-metric abbr {
+  margin-left: var(--space-1);
+  color: var(--color-brand-strong);
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
+.analysis-result__next {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  margin: 0;
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-6);
+}
+
+.analysis-result__next > span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.analysis-result__next > .button {
+  width: 100%;
+}
+
+.analysis-result__next nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.analysis-result__next nav a {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.2em;
+}
+
+.analysis-result__next nav a:hover {
+  color: var(--color-brand-strong);
+  text-decoration-color: currentColor;
+}
+
+.analysis-result__disclaimer,
+.analysis-result__signal-counts {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+.analysis-result__disclaimer {
+  margin-top: var(--space-3);
+}
+
+.analysis-result__signal-counts {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-weight: 650;
+}
+
+.analysis-overview__statuses {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-top: var(--space-5);
+  border-block: 1px solid var(--color-border);
+}
+
+.analysis-overview__statuses > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: transparent;
+}
+
+.analysis-overview__statuses > div + div {
+  border-left: 1px solid var(--color-border);
+}
+
+.analysis-overview__statuses dd {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.analysis-overview__statuses dd strong {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-overview__categories {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin-top: var(--space-4);
+}
+
+.analysis-overview__categories li {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(8rem, 1.2fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-overview__categories li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-overview__categories li > div:first-child {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.analysis-overview__categories li > small {
+  min-width: 5rem;
+  text-align: right;
+}
+
+.analysis-requirements__summary {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-2) 0 var(--space-2) var(--space-4);
+}
+
+.analysis-requirements__summary span {
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-brand-strong);
+  padding: 0;
+}
+
+.analysis-requirement-group__count {
+  min-width: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.analysis-requirement-group li,
+.analysis-requirement-group li:nth-child(odd) {
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-requirement-group li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-insights__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin-top: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis-insight,
+.analysis-insight--strength,
+.analysis-insight--gap {
+  min-width: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-4) 0;
+}
+
+.analysis-insight--strength {
+  border-top: 2px solid var(--color-success);
+  padding-right: var(--space-5);
+}
+
+.analysis-insight--gap {
+  border-top: 2px solid var(--color-warning);
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-5);
+}
+
+.analysis-insight__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.analysis-insight__heading small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted) !important;
+  font-weight: 550;
+}
+
+.analysis-insight__heading > strong {
+  font-size: var(--font-size-sm);
+}
+
+.analysis-insight ul {
+  display: grid;
+  gap: 0;
+  margin-top: var(--space-3);
+  padding-left: var(--space-5);
+  list-style: disc;
+}
+
+.analysis-insight li {
+  display: list-item;
+  padding: var(--space-3) 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-insight li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-evidence__list {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-evidence__item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-evidence__item > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.analysis-evidence__item--changed {
+  border-left: 3px solid var(--color-warning);
+  background: transparent;
+  padding-left: var(--space-3);
+}
+
+.analysis-breakdown__filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-4);
+  overflow-x: auto;
+  margin-top: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis-breakdown__filters button {
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.55rem 0;
+}
+
+.analysis-breakdown__filters button:hover {
+  border-bottom-color: var(--color-brand-border);
+  background: transparent;
+}
+
+.analysis-breakdown__filters button span,
+.analysis-breakdown__filter--active span {
+  min-width: 0;
+  height: auto;
+  border-radius: 0;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.analysis-breakdown__filter--active {
+  border-color: transparent transparent var(--color-brand) !important;
+  background: transparent !important;
+  color: var(--color-brand-strong) !important;
+}
+
+.analysis-breakdown__list {
+  display: grid;
+  gap: 0;
+  margin-top: 0;
+}
+
+.analysis-criterion,
+.analysis-criterion[data-match-level='MATCHED'],
+.analysis-criterion[data-match-level='PARTIAL'],
+.analysis-criterion[data-match-level='MISSING'] {
+  padding: var(--space-4) 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-breakdown__empty {
+  padding: var(--space-5) 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.analysis-criterion__evidence {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.analysis-criterion__evidence li,
+.analysis-criterion__evidence-item--changed {
+  display: grid;
+  gap: 0.125rem;
+  border-left: 2px solid var(--color-brand-border);
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--color-text-secondary) !important;
+  padding: var(--space-1) 0 var(--space-1) var(--space-3);
+}
+
+.analysis-criterion__evidence-item--changed {
+  border-left-color: var(--color-warning);
+  color: var(--color-warning-strong) !important;
+}
+
+.analysis-history {
+  margin-top: var(--space-6);
+  border-block: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.analysis-history__summary {
+  padding: var(--space-4) 0;
+}
+
+.analysis-history__layout {
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-4) 0;
+}
+
+.analysis-history__list {
+  gap: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-history__list button {
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.analysis-history__list button:hover,
+.analysis-history__button--selected {
+  border-color: var(--color-border) !important;
+  border-left: 3px solid var(--color-brand) !important;
+  background: var(--color-brand-soft) !important;
+}
+
+.analysis-history__selection {
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-4);
+}
+
+.analysis-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+@media (max-width: 64rem) {
+  .analysis-result__decision {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .analysis-result__next {
+    width: auto;
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+    padding-top: var(--space-4);
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .analysis-result {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .analysis-result > section:not(.analysis-outdated) {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .analysis-result > .analysis-outdated {
+    margin: var(--space-4);
+  }
+
+  .analysis-result__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .analysis-result__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-metric--score {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .analysis-metric:nth-child(2) {
+    border-left: 0;
+  }
+
+  .analysis-result__next nav {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .analysis-overview__statuses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-overview__statuses > div:nth-child(3) {
+    border-left: 0;
+  }
+
+  .analysis-overview__statuses > div:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .analysis-overview__categories li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .analysis-overview__bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .analysis-overview__categories li > small {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .analysis-section-heading > p,
+  .analysis-overview__heading > p {
+    display: none;
+  }
+
+  .analysis-requirements__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-insights__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-insight--strength {
+    padding-right: 0;
+  }
+
+  .analysis-insight--gap {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .analysis-evidence__item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .analysis-history__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-history__selection {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+    padding-inline: 0;
+  }
+
+  .analysis-command {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-command > .button {
+    width: 100%;
+  }
+}
+
+/* Product report polish: charts, disclosure controls and criterion pagination */
+.analysis-result {
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 18px 55px rgb(32 57 189 / 9%);
+}
+
+.analysis-result > section:not(.analysis-outdated) {
+  padding: clamp(var(--space-6), 3.2vw, var(--space-8));
+}
+
+.analysis-result__hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 10%, rgb(164 179 255 / 26%), transparent 18rem),
+    linear-gradient(145deg, #ffffff 0%, #f8f9ff 58%, #f1f4ff 100%);
+}
+
+.analysis-result__hero::before {
+  position: absolute;
+  top: -7rem;
+  right: -5rem;
+  width: 18rem;
+  height: 18rem;
+  border: 1px solid rgb(49 87 255 / 10%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2.75rem rgb(49 87 255 / 3%),
+    0 0 0 5.5rem rgb(49 87 255 / 2%);
+  content: '';
+  pointer-events: none;
+}
+
+.analysis-result__heading,
+.analysis-result__decision,
+.analysis-result__disclaimer,
+.analysis-result__signal-counts {
+  position: relative;
+}
+
+.analysis-result__heading h2 {
+  max-width: 38rem;
+  font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  word-break: keep-all;
+}
+
+.analysis-result__heading > div > p:last-child {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.analysis-result__run-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 76%);
+  padding: 0.5rem 0.85rem;
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    transform var(--motion-fast);
+}
+
+.analysis-result__run-link:hover {
+  border-color: var(--color-brand);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.analysis-result__decision {
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
+  align-items: stretch;
+  gap: var(--space-5);
+}
+
+.analysis-decision-board {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(var(--space-4), 3vw, var(--space-7));
+  border: 1px solid rgb(202 211 255 / 82%);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 88%);
+  box-shadow: var(--shadow-xs);
+  padding: clamp(var(--space-4), 2vw, var(--space-6));
+}
+
+.analysis-score-chart {
+  position: relative;
+  display: grid;
+  width: 9rem;
+  height: 9rem;
+  place-items: center;
+  margin: 0;
+}
+
+.analysis-score-chart svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.analysis-score-chart circle {
+  fill: none;
+  stroke-width: 10;
+}
+
+.analysis-score-chart__track {
+  stroke: var(--hs-blue-100);
+}
+
+.analysis-score-chart__value {
+  stroke: var(--color-brand);
+  stroke-linecap: round;
+  animation: analysis-ring-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.analysis-score-chart figcaption {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.analysis-score-chart figcaption span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 720;
+}
+
+.analysis-score-chart figcaption strong {
+  margin-top: 0.1rem;
+  color: var(--color-brand-strong);
+  font-size: 1.9rem;
+  font-weight: 840;
+  letter-spacing: -0.045em;
+}
+
+.analysis-score-chart abbr {
+  margin-left: 0.15rem;
+  color: var(--color-brand-strong);
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
+@keyframes analysis-ring-reveal {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.analysis-decision-facts {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+  margin: 0;
+}
+
+.analysis-decision-facts > div {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.analysis-decision-facts > div + div {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-decision-facts__icon,
+.analysis-section-icon,
+.analysis-result__next-icon {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
+.analysis-decision-facts__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.analysis-decision-facts__icon .icon,
+.analysis-section-icon .icon,
+.analysis-result__next-icon .icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.analysis-decision-facts dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.analysis-decision-facts dd {
+  margin-top: 0.15rem;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+}
+
+.analysis-coverage-bar {
+  display: block;
+  height: 0.35rem;
+  overflow: hidden;
+  margin-top: var(--space-2);
+  border-radius: 999px;
+  background: var(--hs-blue-100);
+}
+
+.analysis-coverage-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hs-blue-400), var(--color-brand));
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.analysis-result__next {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-content: center;
+  gap: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--hs-blue-700), var(--color-brand));
+  box-shadow: 0 14px 34px rgb(32 57 189 / 22%);
+  padding: var(--space-5);
+  color: white;
+}
+
+.analysis-result__next-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgb(255 255 255 / 15%);
+  color: white;
+}
+
+.analysis-result__next > div {
+  min-width: 0;
+}
+
+.analysis-result__next > div span,
+.analysis-result__next > div strong {
+  display: block;
+}
+
+.analysis-result__next > div span {
+  color: rgb(255 255 255 / 72%);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.analysis-result__next > div strong {
+  margin-top: 0.15rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.analysis-result__next > .button {
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  border-color: white;
+  background: white;
+  color: var(--color-brand-strong);
+  box-shadow: none;
+}
+
+.analysis-result__next > .button:hover {
+  border-color: white;
+  background: var(--hs-blue-50);
+}
+
+.analysis-result__next > .button .icon {
+  width: 1rem;
+}
+
+.analysis-result__next nav {
+  grid-column: 1 / -1;
+}
+
+.analysis-result__next nav a {
+  color: rgb(255 255 255 / 80%);
+  text-decoration-color: rgb(255 255 255 / 35%);
+}
+
+.analysis-result__next nav a:hover {
+  color: white;
+  text-decoration-color: white;
+}
+
+.analysis-result__signal-counts {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
+  padding: 0.3rem 0.65rem;
+}
+
+.analysis-overview__heading,
+.analysis-section-heading {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.analysis-section-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.analysis-section-heading__copy {
+  min-width: 0;
+}
+
+.analysis-section-heading__copy > p,
+.analysis-overview__heading .analysis-section-heading__copy > p {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.analysis-overview__distribution {
+  display: flex;
+  height: 0.65rem;
+  overflow: hidden;
+  gap: 0.15rem;
+  margin-top: var(--space-6);
+  border-radius: 999px;
+  background: var(--color-neutral-soft);
+}
+
+.analysis-overview__distribution span {
+  min-width: 0;
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.analysis-overview__distribution span[data-match-level='MATCHED'] {
+  background: var(--color-success);
+}
+
+.analysis-overview__distribution span[data-match-level='PARTIAL'] {
+  background: #d79a24;
+}
+
+.analysis-overview__distribution span[data-match-level='MISSING'] {
+  background: var(--color-danger);
+}
+
+.analysis-overview__distribution span[data-match-level='UNKNOWN'] {
+  background: var(--color-border-strong);
+}
+
+.analysis-overview__statuses {
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  border: 0;
+}
+
+.analysis-overview__statuses > div {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.analysis-overview__categories {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-overview__bar {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hs-blue-100);
+}
+
+.analysis-overview__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hs-blue-300), var(--color-brand));
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.analysis-requirements__summary {
+  border: 1px solid var(--color-brand-border);
+  border-left: 4px solid var(--color-brand);
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--color-brand-soft), white 72%);
+  padding: var(--space-4) var(--space-5);
+}
+
+.analysis-requirements__details {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.analysis-requirement-group,
+.analysis-criterion__detail {
+  overflow: clip;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    background var(--motion-base);
+}
+
+.analysis-requirement-group:hover,
+.analysis-requirement-group[open],
+.analysis-criterion__detail:hover,
+.analysis-criterion__detail[open] {
+  border-color: var(--color-brand-border);
+  box-shadow: 0 8px 24px rgb(32 57 189 / 7%);
+}
+
+.analysis-requirement-group summary,
+.analysis-criterion__detail summary,
+.analysis-history__summary {
+  list-style: none;
+}
+
+.analysis-requirement-group summary::-webkit-details-marker,
+.analysis-criterion__detail summary::-webkit-details-marker,
+.analysis-history__summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-requirement-group summary:focus-visible,
+.analysis-criterion__detail summary:focus-visible,
+.analysis-history__summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+  box-shadow: var(--focus-ring);
+}
+
+.analysis-requirement-group summary {
+  display: grid;
+  min-height: 4.75rem;
+  grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.analysis-requirement-group summary::after,
+.analysis-criterion__detail summary::after,
+.analysis-history__summary::after {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  content: '⌄';
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    background var(--motion-fast),
+    transform var(--motion-base);
+}
+
+.analysis-requirement-group[open] summary,
+.analysis-criterion__detail[open] summary {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-brand-soft);
+}
+
+.analysis-requirement-group[open] summary::after,
+.analysis-criterion__detail[open] summary::after,
+.analysis-history[open] > .analysis-history__summary::after {
+  background: var(--color-brand);
+  color: white;
+  transform: rotate(180deg);
+}
+
+.analysis-requirement-group summary > div > span {
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 760;
+}
+
+.analysis-requirement-group summary > div > strong {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.15rem;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.analysis-requirement-group[open] summary > div > strong {
+  -webkit-line-clamp: 2;
+}
+
+.analysis-requirement-group__count {
+  border-radius: 999px;
+  background: var(--color-neutral-soft);
+  padding: 0.3rem 0.55rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 720;
+}
+
+.analysis-requirement-group > ul,
+.analysis-requirement-group > .analysis-empty-copy {
+  margin: 0;
+  padding: var(--space-2) var(--space-5) var(--space-4);
+}
+
+.analysis-insights__grid {
+  gap: var(--space-4);
+  border: 0;
+}
+
+.analysis-insight,
+.analysis-insight--strength,
+.analysis-insight--gap {
+  border: 1px solid var(--color-border);
+  border-top-width: 3px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  padding: var(--space-5);
+}
+
+.analysis-insight--strength {
+  border-top-color: var(--color-success);
+}
+
+.analysis-insight--gap {
+  border-top-color: #d79a24;
+  border-left: 1px solid var(--color-border);
+}
+
+.analysis-insight li {
+  padding-inline: 0;
+}
+
+.analysis-evidence__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  border: 0;
+}
+
+.analysis-evidence__item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-4);
+}
+
+.analysis-evidence__item--changed {
+  border-color: var(--color-warning-border);
+  border-left-width: 3px;
+  background: var(--color-warning-soft);
+}
+
+.analysis-breakdown__range {
+  border-radius: 999px;
+  background: var(--color-neutral-soft);
+  padding: 0.4rem 0.7rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.analysis-breakdown__filters {
+  gap: var(--space-2);
+  border: 0;
+  padding-block: var(--space-1);
+  scrollbar-width: none;
+}
+
+.analysis-breakdown__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.analysis-breakdown__filters button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: white;
+  padding: 0.55rem 0.8rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    color var(--motion-fast),
+    transform var(--motion-fast);
+}
+
+.analysis-breakdown__filters button:hover {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+  transform: translateY(-1px);
+}
+
+.analysis-breakdown__filters button span {
+  min-width: 1.45rem;
+  border-radius: 999px;
+  background: var(--color-neutral-soft) !important;
+  padding: 0.15rem 0.4rem;
+  color: var(--color-text-muted) !important;
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.analysis-breakdown__filter--active {
+  border-color: var(--color-brand) !important;
+  background: var(--color-brand) !important;
+  color: white !important;
+}
+
+.analysis-breakdown__filter--active span {
+  background: rgb(255 255 255 / 20%) !important;
+  color: white !important;
+}
+
+.analysis-breakdown__list {
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.analysis-criterion,
+.analysis-criterion[data-match-level='MATCHED'],
+.analysis-criterion[data-match-level='PARTIAL'],
+.analysis-criterion[data-match-level='MISSING'],
+.analysis-criterion[data-match-level='UNKNOWN'] {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.analysis-criterion::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.25rem;
+  background: var(--color-border-strong);
+  content: '';
+}
+
+.analysis-criterion[data-match-level='MATCHED']::before {
+  background: var(--color-success);
+}
+
+.analysis-criterion[data-match-level='PARTIAL']::before {
+  background: #d79a24;
+}
+
+.analysis-criterion[data-match-level='MISSING']::before {
+  background: var(--color-danger);
+}
+
+.analysis-criterion:hover {
+  border-color: var(--color-brand-border);
+  box-shadow: 0 12px 28px rgb(32 57 189 / 8%);
+  transform: translateY(-1px);
+}
+
+.analysis-criterion__detail {
+  margin-top: var(--space-4);
+  background: var(--color-surface-subtle);
+}
+
+.analysis-criterion__detail summary {
+  display: grid;
+  min-height: 3.25rem;
+  grid-template-columns: minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  color: var(--color-brand-strong);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 730;
+}
+
+.analysis-criterion__detail > p,
+.analysis-criterion__detail > ul {
+  margin-inline: var(--space-4);
+}
+
+.analysis-breakdown__pagination {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.analysis-history {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.analysis-history__summary {
+  display: grid;
+  min-height: 5rem;
+  grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+}
+
+.analysis-history__summary > span {
+  border-radius: 999px;
+  background: var(--color-neutral-soft);
+  padding: 0.3rem 0.6rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 720;
+}
+
+.analysis-history[open] > .analysis-history__summary {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.analysis-history__layout {
+  border: 0;
+  padding: var(--space-5);
+}
+
+.analysis-command {
+  border: 1px dashed var(--color-brand-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-soft);
+  padding: var(--space-5);
+}
+
+@media (max-width: 64rem) {
+  .analysis-result__decision {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-result__next {
+    grid-template-columns: 2.5rem minmax(0, 1fr) minmax(12rem, 0.65fr);
+  }
+
+  .analysis-result__next > .button {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .analysis-result__next nav {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 48rem) {
+  .analysis-result__decision {
+    gap: var(--space-4);
+  }
+
+  .analysis-result__next {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+
+  .analysis-result__next > .button,
+  .analysis-result__next nav {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .analysis-overview__statuses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-evidence__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .analysis-result {
+    border-right: 1px solid var(--color-brand-border);
+    border-left: 1px solid var(--color-brand-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .analysis-result > section:not(.analysis-outdated) {
+    padding: var(--space-5);
+  }
+
+  .analysis-decision-board {
+    grid-template-columns: 7.75rem minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .analysis-score-chart {
+    width: 7.25rem;
+    height: 7.25rem;
+  }
+
+  .analysis-score-chart figcaption strong {
+    font-size: 1.55rem;
+  }
+
+  .analysis-decision-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .analysis-decision-facts__icon {
+    display: none;
+  }
+
+  .analysis-overview__heading,
+  .analysis-section-heading {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+
+  .analysis-section-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .analysis-breakdown__range {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .analysis-requirement-group summary {
+    grid-template-columns: minmax(0, 1fr) 2.25rem;
+    padding-inline: var(--space-4);
+  }
+
+  .analysis-requirement-group__count {
+    display: none;
+  }
+
+  .analysis-insight,
+  .analysis-insight--strength,
+  .analysis-insight--gap,
+  .analysis-criterion,
+  .analysis-criterion[data-match-level='MATCHED'],
+  .analysis-criterion[data-match-level='PARTIAL'],
+  .analysis-criterion[data-match-level='MISSING'],
+  .analysis-criterion[data-match-level='UNKNOWN'] {
+    padding: var(--space-4);
+  }
+
+  .analysis-history__summary {
+    grid-template-columns: minmax(0, 1fr) 2.25rem;
+  }
+
+  .analysis-history__summary > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-score-chart__value {
+    animation: none;
+  }
+
+  .analysis-coverage-bar i,
+  .analysis-overview__distribution span,
+  .analysis-overview__bar span,
+  .analysis-requirement-group summary::after,
+  .analysis-criterion__detail summary::after,
+  .analysis-history__summary::after {
+    transition: none;
   }
 }
 </style>

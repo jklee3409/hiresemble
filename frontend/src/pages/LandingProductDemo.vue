@@ -256,11 +256,22 @@ onBeforeUnmount(() => {
 }
 
 .landing-demo__chrome {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--hs-blue-200);
   border-radius: clamp(1rem, 2vw, var(--radius-lg));
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 30px 80px rgb(32 57 189 / 16%);
+  transform: perspective(70rem) rotateX(0.8deg) rotateY(-1deg);
+  transform-origin: center;
+  transition:
+    box-shadow 300ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-demo__chrome:hover {
+  box-shadow: 0 38px 90px rgb(32 57 189 / 21%);
+  transform: perspective(70rem) translateY(-4px) rotateX(0) rotateY(0);
 }
 
 .landing-demo__topbar {
@@ -334,12 +345,28 @@ onBeforeUnmount(() => {
   top: -6rem;
   right: -4rem;
   background: #bcc8ff;
+  animation: demo-glow-drift-one 7s ease-in-out infinite;
 }
 
 .landing-demo__glow--two {
   bottom: -8rem;
   left: -2rem;
   background: #c5e7ff;
+  animation: demo-glow-drift-two 8s ease-in-out infinite;
+}
+
+@keyframes demo-glow-drift-one {
+  50% {
+    opacity: 0.52;
+    transform: translate(-1rem, 1.5rem) scale(1.08);
+  }
+}
+
+@keyframes demo-glow-drift-two {
+  50% {
+    opacity: 0.5;
+    transform: translate(1.5rem, -1rem) scale(1.1);
+  }
 }
 
 .landing-demo__scene {
@@ -718,6 +745,7 @@ onBeforeUnmount(() => {
 }
 
 .landing-demo__progress li span {
+  position: relative;
   display: block;
   height: 0.25rem;
   overflow: hidden;
@@ -727,7 +755,26 @@ onBeforeUnmount(() => {
 }
 
 .landing-demo__progress li.is-active span {
+  background: var(--hs-blue-100);
+}
+
+.landing-demo__progress li.is-active span::after {
+  position: absolute;
+  inset: 0;
   background: var(--color-brand);
+  content: '';
+  transform-origin: left;
+  animation: demo-progress-fill 2400ms linear both;
+}
+
+@keyframes demo-progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .demo-scene-enter-active {
@@ -757,6 +804,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 40rem) {
+  .landing-demo__chrome,
+  .landing-demo__chrome:hover {
+    transform: none;
+  }
+
   .landing-demo__canvas {
     min-height: 28rem;
     padding: var(--space-4);
@@ -845,6 +897,17 @@ onBeforeUnmount(() => {
 
   .landing-demo__glow {
     filter: blur(20px);
+    animation: none;
+  }
+
+  .landing-demo__chrome,
+  .landing-demo__chrome:hover {
+    transform: none;
+    transition: none;
+  }
+
+  .landing-demo__progress li.is-active span::after {
+    animation: none;
   }
 }
 </style>

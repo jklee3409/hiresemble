@@ -5,7 +5,35 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/281 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/282 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-04] Session Summary (Landing motion·공고 분석 visual report 완성)
+
+- What was done:
+  - `LandingPage`와 `LandingProductDemo`에 hero orbit, signal chip, journey flow band, scene progress와 responsive/reduced-motion 처리를 추가했다.
+  - `JobAnalysisPage`에 score ring, coverage·match distribution·category chart, section icon과 disclosure button을 적용하고 조건별 결과를 5개씩 paging하도록 구현했다.
+- Key decisions:
+  - 기존 API·`BALANCED` 재분석·`jobVersion` 계약은 유지하고 presentation과 client-side paging만 바꾼다. 모바일 판단 board는 390px에서도 적합도 우선 2열을 유지한다.
+- Issues encountered:
+  - 인앱 browser는 연결되지 않았지만 Playwright CLI 실제 Chromium fallback으로 외부 reference의 scroll 장면과 3/5초 ambient·light-flow animation을 확인했다.
+- Validation:
+  - 집중 Vitest 20건, `vue-tsc`, Landing·Job Analysis Chromium 8/8, visual fixture 1/1, 전체 check 67 files/282 tests·build와 모바일 geometry를 포함한 최종 Job Analysis Chromium 1/1 통과.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 단일 리포트·행동 위계 재설계)
+
+- What was done:
+  - `JobAnalysisPage`의 재분석 선노출과 반복 metric·status·insight·evidence·criterion card를 제거하고 지원 판단→다음 행동→근거 순서의 단일 report 화면으로 재구성했다.
+  - `JobPreparationJourney`의 넓은 brand soft 배경과 번호 원형을 구분선 기반 진행 행과 상태 marker로 교체하고 component·E2E 계약을 갱신했다.
+- Key decisions:
+  - 최신 결과에서는 자기소개서 준비만 primary로 유지하고 재분석·프로필 보완·공고 수정·면접 준비는 secondary text/action으로 낮춘다. Mobile은 판단 정보를 2열로 압축하고 filter를 가로 scroll한다.
+- Issues encountered:
+  - 인앱 Browser가 unavailable이어서 변경 후 visual 확인과 Chromium 실행은 하지 못했다.
+- Validation:
+  - 집중 Vitest 18건, 별도 type check와 전체 `corepack pnpm check`의 lint·format·type check·67 files/281 tests·production build가 통과했다.
+- Next steps:
+  - Browser 연결이 가능할 때 updated fixture의 desktop/mobile 시각·overflow 회귀를 실행한다.
 
 ## [2026-08-04] Session Summary (공고 분석 결과 전문 UI 개선)
 

@@ -4,6 +4,34 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (Landing·공고 분석 결과 presentation 완성)
+
+- What was done:
+  - Landing hero에 떠 있는 product signal과 journey flow를 추가하고 demo scene 전환에 진행 상태·depth 효과를 연결했다.
+  - 공고 분석 결과에 시각적 판단 요약, 구분된 section, 5개 단위 criterion pagination, 회전 indicator disclosure와 visible keyboard focus를 적용했다.
+- Key decisions:
+  - chart는 API 원값을 바꾸지 않는 SVG/CSS presentation으로 만들고 service blue와 의미 색상 token을 사용한다. filter 변경 시 첫 페이지로 돌아가며 데이터 축소 시 유효한 마지막 페이지로 보정한다.
+- Issues encountered:
+  - 인앱 browser 부재는 Playwright CLI 실제 Chromium fallback으로 보완했고 외부 reference의 scroll 장면과 반복 animation timing을 확인했다.
+- Validation:
+  - page 집중 Vitest 20건, type check, 실제 Chromium 1440·390px와 reduced-motion·overflow·pagination·2열 geometry 검증 통과.
+- Next steps:
+  - None.
+
+## [2026-08-04] Session Summary (공고 분석 결과 판단·다음 행동 중심 재구성)
+
+- What was done:
+  - `JobAnalysisPage`의 중복 제목과 상단 재분석 card를 제거하고 결과 hero에 적합도·지원 가능 여부·커버리지와 자기소개서 primary CTA를 통합했다.
+  - 요건 분포·category 점수·공고 핵심·강점/보완·활용 경험·조건 근거를 하나의 report 안의 compact row와 구분선 목록으로 바꿨다.
+- Key decisions:
+  - 성공·주의색은 강점/보완의 작은 상단선과 실제 상태 badge에만 사용한다. Mobile은 결과 요약 2열, 상태 filter horizontal scroll과 접힌 상세로 desktop과 다른 밀도를 사용한다.
+- Issues encountered:
+  - 변경 후 Browser visual 검증은 browser unavailable로 미실행이다.
+- Validation:
+  - `JobAnalysisPage.test.ts`와 `jobPages.test.ts` 18건, type check, Frontend 전체 check·281 tests·build가 통과했다.
+- Next steps:
+  - 390px에서 긴 criterion·secondary link wrapping과 full-page 높이를 시각 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 결과 요약·필터·인사이트 UI)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-04] Session Summary (자동 분석 journey 장식 축소)
+
+- What was done:
+  - `JobPreparationJourney`의 넓은 brand soft 배경과 1~4 번호 원형을 제거하고 상하 구분선과 작은 상태 marker 중심의 진행 표시로 바꿨다.
+- Key decisions:
+  - 단계 의미와 문구, desktop 4단계·중간 2단계·mobile 1단계 반응형 계약은 유지하고 상태만 색과 marker로 보조한다.
+- Issues encountered:
+  - 변경 후 실제 Browser geometry는 확인하지 못했다.
+- Validation:
+  - 관련 page Vitest와 Frontend 전체 check·build가 통과했다.
+- Next steps:
+  - Browser가 가능할 때 단계 간격과 mobile 세로 밀도를 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 점수 표시 반올림)
 
 - What was done:

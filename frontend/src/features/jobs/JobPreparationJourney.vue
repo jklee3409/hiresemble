@@ -57,9 +57,9 @@ const automaticFailure = computed(() => {
       <span>공고 저장 후 자동으로 진행돼요</span>
     </div>
     <ol class="job-journey__steps">
-      <li v-for="(step, index) in steps" :key="step.label" :data-state="step.state">
+      <li v-for="step in steps" :key="step.label" :data-state="step.state">
         <span class="job-journey__marker" aria-hidden="true">{{
-          step.state === 'done' ? '✓' : index + 1
+          step.state === 'done' ? '✓' : ''
         }}</span>
         <span>{{ step.label }}</span>
       </li>
@@ -73,9 +73,8 @@ const automaticFailure = computed(() => {
 
 <style scoped>
 .job-journey {
-  padding: var(--space-5) var(--space-6);
-  border-radius: var(--radius-lg);
-  background: var(--color-brand-soft);
+  border-block: 1px solid var(--color-border);
+  padding: var(--space-5) 0;
 }
 
 .job-journey__heading {
@@ -119,14 +118,14 @@ const automaticFailure = computed(() => {
 
 .job-journey__marker {
   display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 0.75rem;
+  height: 0.75rem;
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid var(--color-border-strong);
   border-radius: 50%;
-  background: var(--color-surface);
-  font-size: var(--font-size-xs);
+  background: var(--color-surface-subtle);
+  font-size: 0.625rem;
   font-weight: 800;
 }
 
@@ -140,6 +139,15 @@ const automaticFailure = computed(() => {
   border-color: var(--color-brand);
   background: var(--color-brand);
   color: white;
+}
+
+.job-journey__steps li[data-state='active'] .job-journey__marker {
+  box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+.job-journey__steps li[data-state='done'] .job-journey__marker {
+  width: 1rem;
+  height: 1rem;
 }
 
 .job-journey__steps li[data-state='done'] {

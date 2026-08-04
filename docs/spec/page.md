@@ -101,6 +101,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 - 서비스 가치, 해결하려는 문제, 내 정보→자료→공고 자동 분석→자기소개서→면접의 5단계, 사용자 중심 가치와 AI 활용 원칙을 설명한다.
 - 주요 action은 `/signup`과 `/login`만 제공하며 보호 route로 직접 연결하지 않는다.
 - semantic `header`, `main`, `section`, `footer`, skip link와 section anchor를 제공한다.
+- Hero 제품 데모와 지원 흐름 band는 viewport·문서 visibility에서만 자동 재생하고 `prefers-reduced-motion`에서는 전환·marquee·장식 motion을 중단한다.
 - 로그인 사용자의 `/`는 인증 bootstrap 완료 뒤 component를 mount하기 전에 `/dashboard`로 replace한다.
 
 ## 2.2 PublicLayout
@@ -512,6 +513,7 @@ API:
 - 최초 자동 분석 진행 단계와 안전한 실패·본문 보완 CTA
 - 최초 화면에서는 품질 dropdown과 큰 수동 실행 card를 노출하지 않음
 - 결과가 있거나 자동 접수가 차단된 때만 `최신 정보로 다시 분석`을 제공하며 프론트 요청은 `BALANCED`로 고정한다. `BALANCED`·`ECONOMY` 선택 문구와 재분석 옵션은 노출하지 않는다.
+- 결과가 있으면 `자기소개서 준비하기`만 primary action으로 표시하고 재분석·프로필 보완·공고 수정·면접 준비는 낮은 우선순위의 보조 행동으로 제공한다. 결과가 없거나 실패한 상태에서는 분석 재실행을 primary action으로 사용한다.
 - 최근 분석 Run이 `FAILED|CANCELLED|INTERRUPTED`이면 실패 카드 안에 단일 `공고 분석 재실행` CTA를 제공한다. 서버가 범용 retry를 허용하면 기존 lineage retry를 사용하고, `retryable=false`이면 현재 공고 version으로 `forceReanalyze=true`인 새 `BALANCED` 분석을 요청한다.
 - 진행 여정 문구는 한 줄로 유지하고 Desktop의 네 단계는 각 문구 폭과 무관하게 단계 블록 사이 여백을 균일하게 배분한다. structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
@@ -524,9 +526,11 @@ API:
 - 매칭 근거
 - 분석 결과 기록
 
-결과 상단에는 `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수와 category별 획득/배점 막대를 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 AI 핵심 요약으로 먼저 표시하고 원문 bullet·개수 badge는 기본 접힘 상태의 항목별 상세로 제공한다.
+결과는 하나의 report surface 안에서 지원 판단, 요건 매칭, 공고 핵심, 강점·보완점, 활용 경험과 조건별 근거를 구분선 기반으로 연결한다. 결과 상단에는 `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수와 category별 획득/배점 막대를 compact row로 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 `핵심 요약`으로 먼저 표시하고 원문 bullet·항목 수는 기본 접힘 상태의 상세로 제공한다.
 
-강점과 부족한 점은 같은 형태의 bullet 나열이 아니라 `내 강점`과 `보완 포인트`를 의미 색상·번호 행으로 구분한다. 기준별 점수는 전체와 `MATCHED|PARTIAL|MISSING|UNKNOWN` filter를 제공하고 criterion 설명과 연결 근거는 `판단한 이유와 연결 경험`으로 기본 접힘 상태를 유지한다. 분석 이력은 숫자 version을 주 제목으로 노출하지 않고 `현재 결과`와 분석 시각을 사용하며, 전체 기록 card도 기본 접힘 상태로 제공한다.
+강점과 부족한 점은 넓은 의미 색상 배경이나 번호 원형을 사용하지 않고 `내 강점`과 `보완 포인트`의 구분선 목록으로 나눈다. 성공·주의 색상은 각 영역의 작은 상단선과 상태 text처럼 실제 의미가 있는 위치에만 쓴다. 기준별 점수는 전체와 `MATCHED|PARTIAL|MISSING|UNKNOWN` filter를 제공하고 한 페이지에 5개씩 표시한다. filter를 바꾸면 첫 페이지로 돌아가며 criterion 설명과 연결 근거는 `판단한 이유와 연결 경험`으로 기본 접힘 상태를 유지한다. 공고 핵심·criterion·분석 이력의 disclosure trigger는 44px 이상 target, visible label과 open 상태 회전 indicator를 제공한다. 분석 이력은 숫자 version을 주 제목으로 노출하지 않고 `현재 결과`와 분석 시각을 사용하며 전체 기록은 기본 접힘 상태로 제공한다.
+
+Desktop은 지원 판단 3개 항목과 다음 행동을 나란히 배치하고 상태·category 정보를 행 단위로 밀도 있게 표시한다. Mobile은 적합도를 먼저 보이는 2열 판단 요약, 가로 scroll 가능한 상태 filter와 접힌 상세를 사용하며 섹션 보조 설명 일부를 생략한다. Desktop의 모든 영역을 동일한 카드로 세로 적층하지 않는다.
 
 주요 업무·필수 지원 자격·우대 사항의 출처가 과거 저장 결과에서 JSONPath·내부 객체 경로로 전달되면 원문을 노출하지 않고 `공고 본문`으로 표시한다. 새 분석 결과는 한국어 구역명 또는 출처 없음으로 제공한다.
 

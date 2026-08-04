@@ -16,7 +16,9 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto(`/jobs/${JOB_ID}/analysis`)
 
-  await expect(page.getByRole('heading', { name: '공고 분석', exact: true }).last()).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '공고와 잘 맞는 강점을 분석했어요.', exact: true }),
+  ).toBeVisible()
   const jobTitle = page.getByRole('heading', { level: 1, name: LONG_JOB_TITLE })
   await expect(jobTitle).toHaveClass(/job-resource-title--overflowing/)
   expect(
@@ -42,7 +44,8 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('결제 API 개선 프로젝트', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('AI 핵심 요약', { exact: true })).toBeVisible()
+  await expect(page.getByText('핵심 요약', { exact: true })).toBeVisible()
+  await expect(page.getByText('AI 핵심 요약', { exact: true })).toHaveCount(0)
   await expect(
     page.getByText('확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.'),
   ).toHaveCount(0)
@@ -51,6 +54,14 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(requirementGroups.first()).not.toHaveAttribute('open', '')
   await requirementGroups.first().locator('summary').click()
   await expect(page.getByText('Spring 기반 백엔드 API 개발', { exact: true }).last()).toBeVisible()
+  const criterionPagination = page.getByRole('navigation', {
+    name: '조건별 확인 결과 페이지',
+  })
+  await expect(page.locator('.analysis-criterion')).toHaveCount(5)
+  await expect(criterionPagination).toContainText('1 / 2 페이지')
+  await criterionPagination.getByRole('button', { name: '다음' }).click()
+  await expect(page.locator('.analysis-criterion')).toHaveCount(1)
+  await expect(page.getByText('영어 기술 문서 독해', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '분석 결과 기록' })).toBeVisible()
   await page.getByRole('heading', { name: '분석 결과 기록' }).click()
   await expect(page.getByText('현재 분석 결과', { exact: true })).toBeVisible()
@@ -58,6 +69,7 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(page.getByText('경제형', { exact: true })).toHaveCount(0)
   await expect(page.getByText('재분석 옵션', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: '자기소개서 준비하기', exact: true })).toBeVisible()
+  await expect(page.locator('.job-analysis .button--primary')).toHaveCount(1)
   await expect(
     page.locator('.analysis-result__next').getByRole('link', { name: '면접 준비하기' }),
   ).toHaveCount(0)
@@ -85,6 +97,17 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/jobs/${JOB_ID}/analysis`)
   await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
+  const mobileDecisionLayout = await page.locator('.analysis-decision-board').evaluate((board) => {
+    const score = board.querySelector('.analysis-score-chart')?.getBoundingClientRect()
+    const facts = board.querySelector('.analysis-decision-facts')?.getBoundingClientRect()
+    return {
+      columnCount: getComputedStyle(board).gridTemplateColumns.split(' ').filter(Boolean).length,
+      scoreRight: score?.right ?? 0,
+      factsLeft: facts?.left ?? 0,
+    }
+  })
+  expect(mobileDecisionLayout.columnCount).toBe(2)
+  expect(mobileDecisionLayout.scoreRight).toBeLessThanOrEqual(mobileDecisionLayout.factsLeft)
   await expect(page.getByRole('heading', { name: '강점과 보완 포인트' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
@@ -267,6 +290,51 @@ function analysisDetail() {
         score: 20,
         evidenceRefs: [evidence],
         explanation: '승인된 경력에서 Java 서비스 개발 경험을 일부 확인했어요.',
+      },
+      {
+        category: 'CORE_RESPONSIBILITY_OR_SKILL',
+        criterion: 'Spring 기반 API 설계',
+        weight: 20,
+        matchLevel: 'MATCHED',
+        score: 20,
+        evidenceRefs: [evidence],
+        explanation: '프로젝트에서 Spring 기반 API를 설계하고 운영한 경험이 확인돼요.',
+      },
+      {
+        category: 'CORE_RESPONSIBILITY_OR_SKILL',
+        criterion: '대용량 트래픽 대응',
+        weight: 10,
+        matchLevel: 'PARTIAL',
+        score: 5,
+        evidenceRefs: [evidence],
+        explanation: '성능 개선 경험은 있지만 공고 수준의 트래픽 규모는 추가 확인이 필요해요.',
+      },
+      {
+        category: 'PREFERRED_QUALIFICATION',
+        criterion: '클라우드 운영 경험',
+        weight: 10,
+        matchLevel: 'MATCHED',
+        score: 10,
+        evidenceRefs: [evidence],
+        explanation: '클라우드 환경에서 서비스를 운영한 경험이 확인돼요.',
+      },
+      {
+        category: 'RELATED_EXPERIENCE_OR_DOMAIN',
+        criterion: '결제 도메인 경험',
+        weight: 10,
+        matchLevel: 'MATCHED',
+        score: 10,
+        evidenceRefs: [evidence],
+        explanation: '결제 API 개선 프로젝트 경험이 직접 연결돼요.',
+      },
+      {
+        category: 'EDUCATION_CERTIFICATION_LANGUAGE',
+        criterion: '영어 기술 문서 독해',
+        weight: 10,
+        matchLevel: 'UNKNOWN',
+        score: 0,
+        evidenceRefs: [],
+        explanation: '등록된 정보만으로는 영어 기술 문서 독해 수준을 확인하기 어려워요.',
       },
     ],
     requiredQualifications: [

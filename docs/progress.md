@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (Landing motion·공고 분석 화면 계약 동기화)
+
+- What was done:
+  - page 명세에 Landing motion·reduced-motion, 조건별 5개 pagination, disclosure target과 모바일 2열 판단 요약 계약을 반영하고 UI/UX 재설계 메모에 reference 방향과 검증 한계를 기록했다.
+- Key decisions:
+  - 외부 reference의 구조와 실제 반복 motion을 확인하되 그대로 복제하지 않고 Hiresemble의 지원 준비 흐름을 설명하는 효과로 번역한다.
+- Issues encountered:
+  - 인앱 Browser가 사용 가능한 browser를 반환하지 않아 Playwright CLI 실제 Chromium fallback으로 reference 세 곳을 검증했다.
+- Validation:
+  - 명세를 Vue 구현, 집중 20 tests, 실제 Chromium pagination·responsive geometry와 Frontend 전체 282 tests·build 결과에 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 결과 표시 계약 개선)
 
 - What was done:
