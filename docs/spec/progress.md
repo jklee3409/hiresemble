@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-04] Session Summary (공고 분석 compact decision flow 계약)
+
+- What was done:
+  - `page.md`에 공고 제목 두 줄 clamp, OUTDATED bordered disclosure, 단일 판단 surface와 이후 flat section, desktop/mobile metric·CTA 우선순위를 반영했다.
+- Key decisions:
+  - API·DB·점수 계산은 변경하지 않고 화면 정보 계층과 반응형 표시 계약만 갱신한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Vue 구현과 component/E2E 계약을 대조했고 Frontend 전체 check와 1440·390px Chromium 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Landing·공고 분석 interaction 계약 보강)
 
 - What was done:

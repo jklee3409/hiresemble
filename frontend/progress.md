@@ -7,6 +7,20 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/282 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-04] Session Summary (공고 분석 compact decision flow 구현)
+
+- What was done:
+  - `JobAnalysisPage`의 원형 점수·장식 icon·거대한 report surface를 제거하고 판단 문구, 세 metric row, 단일 primary CTA와 flat evidence section으로 재구성했다.
+  - `JobDetailLayout`의 긴 제목을 hover slide 대신 최대 두 줄 clamp로 바꾸고 mobile에서 보조 metadata와 여백을 줄여 핵심 판단을 앞당겼다.
+- Key decisions:
+  - 분석 실행·OUTDATED reason·history·criterion pagination과 API 계약은 유지한다. 다시 분석·프로필·공고 수정·분석 과정은 text/disclosure 기반 secondary action으로 둔다.
+- Issues encountered:
+  - 첫 mobile E2E에서 metric 영역 하단이 955.8px이었고 header/body/hero spacing을 조정한 뒤 844px 안으로 들어왔다.
+- Validation:
+  - 집중 Vitest 11건, type check, Playwright Job Analysis·visual fixture 2/2, 전체 check 67 files/282 tests와 production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Landing motion·공고 분석 visual report 완성)
 
 - What was done:

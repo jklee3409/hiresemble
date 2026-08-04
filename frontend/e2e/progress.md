@@ -15,6 +15,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-04] Session Summary (공고 분석 compact flow 반응형 회귀)
+
+- What was done:
+  - 긴 공고 제목의 두 줄 clamp, OUTDATED disclosure, 동적 판단 heading, 단일 primary CTA와 세 metric row를 fixture로 고정했다.
+  - 390px에서 CTA와 metric 영역이 844px 첫 viewport 안에 있고 문서 가로 overflow가 없는지 geometry assertion을 추가했다.
+- Key decisions:
+  - 실제 사용자 데이터나 Backend 없이 안전한 고정 fixture로 desktop/mobile 화면 구조를 검증한다.
+- Issues encountered:
+  - 첫 실행은 마지막 metric bottom 955.8px로 실패했고 제품 spacing 수정 후 재실행에서 통과했다.
+- Validation:
+  - `job-analysis.spec.ts`와 `ui-redesign.visual.spec.ts` Chromium 2/2 통과, 1440·390px full-page capture 확인.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Landing motion·조건 결과 pagination 회귀)
 
 - What was done:

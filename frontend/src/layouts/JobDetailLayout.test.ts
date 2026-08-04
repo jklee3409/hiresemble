@@ -54,9 +54,9 @@ describe('JobDetailLayout', () => {
 
     expect(wrapper.get('h1').text()).toBe('백엔드 엔지니어')
     expect(wrapper.get('h1').classes()).toContain('job-resource-title')
-    expect(wrapper.get('h1').attributes('tabindex')).toBe('0')
+    expect(wrapper.get('h1').attributes('tabindex')).toBeUndefined()
     expect(wrapper.get('h1').attributes('title')).toBe('백엔드 엔지니어')
-    expect(wrapper.get('h1 span').text()).toBe('백엔드 엔지니어')
+    expect(wrapper.find('h1 span').exists()).toBe(false)
 
     const tabs = wrapper.get('nav[aria-label="공고 상세 탭"]')
     expect(tabs.findAll('a').map((link) => link.text())).toEqual([

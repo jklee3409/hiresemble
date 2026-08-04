@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (공고 분석 판단·근거 정보 밀도 보정)
+
+- What was done:
+  - 최신 결과를 동적 판단 heading, 실제 summary, 적합도·지원 가능성·커버리지 행과 자기소개서 CTA로 압축하고 OUTDATED reason을 기본 접힘 disclosure로 변경했다.
+  - 하위 요건·공고 핵심·강점/보완·근거·criterion·history를 반복 카드 대신 section divider와 compact row로 표시했다.
+- Key decisions:
+  - 점수와 분석 데이터는 변환하지 않고 기존 5점 단위 표시만 유지한다. 결과가 있을 때 재분석은 상단 보조 action으로 제공하며 하단 중복 command는 제거한다.
+- Issues encountered:
+  - 초기 mobile geometry에서 마지막 metric이 첫 viewport 밖이었고 mobile 전용 spacing 보정으로 해결했다.
+- Validation:
+  - `JobAnalysisPage.test.ts` 포함 집중 Vitest와 전체 unit 282건, desktop/mobile Chromium·visual capture, type/lint/format/build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Landing·공고 분석 결과 presentation 완성)
 
 - What was done:

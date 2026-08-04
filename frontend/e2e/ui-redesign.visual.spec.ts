@@ -40,6 +40,7 @@ const analysisSummary = {
   analysisVersion: 1,
   eligibility: 'ELIGIBLE',
   fitScore: 82,
+  analysisCoverage: 85,
   analysisOutdated: false,
   outdatedReasons: [],
   createdAt: updated,

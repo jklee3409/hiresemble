@@ -26,7 +26,7 @@
 - [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·날짜/오전·오후/30분 단위 마감 시각과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 자동 준비 journey, 읽기 전용 document view와 분리된 편집·추출·retry·delete·version conflict
-- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, 적합도 ring·커버리지·요건 분포 chart, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED·이력
+- [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, compact 판단 지표·커버리지·요건 분포, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED disclosure·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
 - [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 문항·TipTap·evidence·AI·version·verification·finalize canonical editor

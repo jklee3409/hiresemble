@@ -489,7 +489,7 @@ API:
 ### Overview Tab
 
 - 공통 resource header의 회사·직무·상태·마감·원본 URL
-- 긴 공고 제목은 header의 넓어진 한 줄 영역에서 `1.4–2.2rem` 크기로 표시하고 overflow가 있을 때 hover·keyboard focus·직접 가로 scroll로 내용을 확인한다. `prefers-reduced-motion`에서는 자동 이동을 사용하지 않는다.
+- 긴 공고 제목은 header의 넓은 영역에서 `1.4–2.2rem` 크기와 최대 두 줄 말줄임으로 표시한다. 제목 전체는 native `title`로 보조하고 mobile에서도 문서 가로 폭을 늘리지 않는다.
 - 회사·직무·근무 형태·위치·마감·본문 출처·최신 분석 상태 요약
 - plain text 원문을 heading, 문단, 순서·비순서 목록, 안전한 link node로만 변환하는 읽기 전용 document view
 - 긴 본문은 페이지 흐름에서 읽고 `전체 보기/접기`를 제공하며 작은 내부 scroll box나 `v-html`을 사용하지 않음
@@ -518,7 +518,7 @@ API:
 - 진행 여정 문구는 한 줄로 유지하고 Desktop의 네 단계는 각 문구 폭과 무관하게 단계 블록 사이 여백을 균일하게 배분한다. structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
 - 적합도·분석 커버리지·강점 수·보완점 수 요약과 점수 tooltip 안내
-- 최신 결과 hero 제목은 저장된 분석 버전과 별개로 `공고와 잘 맞는 강점을 분석했어요.`를 표시
+- 최신 결과 제목은 저장된 분석 버전을 노출하지 않고 적합도와 지원 가능 여부에 맞춘 간결한 판단 문구를 표시한다.
 - 주요 업무
 - 필수·우대
 - 강점
@@ -526,15 +526,15 @@ API:
 - 매칭 근거
 - 분석 결과 기록
 
-결과는 하나의 report surface 안에서 지원 판단, 요건 매칭, 공고 핵심, 강점·보완점, 활용 경험과 조건별 근거를 구분선 기반으로 연결한다. 결과 상단에는 `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수와 category별 획득/배점 막대를 compact row로 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 `핵심 요약`으로 먼저 표시하고 원문 bullet·항목 수는 기본 접힘 상태의 상세로 제공한다.
+결과 상단은 한 개의 절제된 판단 surface로 구성하고, 적합도·지원 가능성·분석 커버리지를 행 단위로 정렬하며 해석 문장과 `자기소개서 준비하기`를 함께 노출한다. 이후 요건 매칭, 공고 핵심, 강점·보완점, 활용 경험과 조건별 근거는 큰 report container 없이 canvas 위에서 구분선과 여백으로 연결한다. `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수와 category별 획득/배점 막대는 compact row로 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 `핵심 요약`으로 먼저 표시하고 원문 bullet·항목 수는 기본 접힘 상태의 상세로 제공한다.
 
 강점과 부족한 점은 넓은 의미 색상 배경이나 번호 원형을 사용하지 않고 `내 강점`과 `보완 포인트`의 구분선 목록으로 나눈다. 성공·주의 색상은 각 영역의 작은 상단선과 상태 text처럼 실제 의미가 있는 위치에만 쓴다. 기준별 점수는 전체와 `MATCHED|PARTIAL|MISSING|UNKNOWN` filter를 제공하고 한 페이지에 5개씩 표시한다. filter를 바꾸면 첫 페이지로 돌아가며 criterion 설명과 연결 근거는 `판단한 이유와 연결 경험`으로 기본 접힘 상태를 유지한다. 공고 핵심·criterion·분석 이력의 disclosure trigger는 44px 이상 target, visible label과 open 상태 회전 indicator를 제공한다. 분석 이력은 숫자 version을 주 제목으로 노출하지 않고 `현재 결과`와 분석 시각을 사용하며 전체 기록은 기본 접힘 상태로 제공한다.
 
-Desktop은 지원 판단 3개 항목과 다음 행동을 나란히 배치하고 상태·category 정보를 행 단위로 밀도 있게 표시한다. Mobile은 적합도를 먼저 보이는 2열 판단 요약, 가로 scroll 가능한 상태 filter와 접힌 상세를 사용하며 섹션 보조 설명 일부를 생략한다. Desktop의 모든 영역을 동일한 카드로 세로 적층하지 않는다.
+Desktop은 해석·다음 행동과 세 개의 판단 지표를 나란히 배치하고 상태·category 정보를 행 단위로 밀도 있게 표시한다. Mobile은 해석·단일 primary action·세 개의 compact metric row를 우선하고, 가로 scroll 가능한 상태 filter와 접힌 상세를 사용하며 섹션 보조 설명 일부를 생략한다. Desktop의 모든 영역을 동일한 카드로 세로 적층하지 않는다.
 
 주요 업무·필수 지원 자격·우대 사항의 출처가 과거 저장 결과에서 JSONPath·내부 객체 경로로 전달되면 원문을 노출하지 않고 `공고 본문`으로 표시한다. 새 분석 결과는 한국어 구역명 또는 출처 없음으로 제공한다.
 
-`analysisOutdated=true`이면 기존 분석을 유지하고 노란 `OUTDATED` badge, reason과 재분석 CTA를 표시한다. downstream 기능을 일괄 차단하지 않는다. `Eligibility`와 `fitScore`는 서로 다른 영역으로 표시하고 `INELIGIBLE` 점수도 그대로 표시한다.
+`analysisOutdated=true`이면 기존 분석을 유지하고 상단의 얇은 bordered disclosure에 변경 항목 수를 표시한다. reason은 기본 접힘 상태에서 사용자가 펼쳐 확인하며 재분석은 낮은 우선순위의 보조 행동으로 제공한다. 넓은 노란 배경이나 별도 `OUTDATED` badge로 판단 영역을 밀어내지 않고 downstream 기능도 일괄 차단하지 않는다. `Eligibility`와 `fitScore`는 서로 다른 행으로 표시하고 `INELIGIBLE` 점수도 그대로 표시한다.
 
 resource header 아래 상세 tab은 상단 header를 피한 sticky navigation layer로 표시하고 tab과 본문 사이에 공통 `layout-tabs-body-gap`을 둔다. active tab은 굵기·brand soft background·하단 indicator를 함께 사용하며 hover/focus에서도 유지한다. 모바일은 tab을 가로 scroll한다.
 

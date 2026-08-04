@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 import {
@@ -18,10 +18,6 @@ const authStore = useAuthStore()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
 const job = useJobDetailQuery(userId, jobId)
-const titleElement = ref<HTMLElement | null>(null)
-const titleOverflow = ref(0)
-let titleResizeObserver: ResizeObserver | null = null
-const titleStyle = computed(() => ({ '--job-title-shift': `${titleOverflow.value}px` }))
 const activeTab = computed(() => {
   if (route.name === 'job-analysis') return 'analysis'
   if (route.name === 'job-cover-letter') return 'cover-letter'
@@ -41,31 +37,6 @@ const analysisLabel = computed(() => {
     SUPERSEDED: '최신 내용 확인 중',
   }[value.automaticAnalysis.state]
 })
-
-function measureTitleOverflow(): void {
-  const element = titleElement.value
-  titleOverflow.value =
-    element === null ? 0 : Math.max(0, element.scrollWidth - element.clientWidth)
-}
-
-onMounted(() => {
-  if (typeof ResizeObserver !== 'undefined') {
-    titleResizeObserver = new ResizeObserver(measureTitleOverflow)
-    if (titleElement.value !== null) titleResizeObserver.observe(titleElement.value)
-  }
-  void nextTick(measureTitleOverflow)
-})
-
-watch(
-  () => job.data.value,
-  async () => {
-    await nextTick()
-    if (titleElement.value !== null) titleResizeObserver?.observe(titleElement.value)
-    measureTitleOverflow()
-  },
-)
-
-onBeforeUnmount(() => titleResizeObserver?.disconnect())
 </script>
 
 <template>
@@ -77,15 +48,8 @@ onBeforeUnmount(() => titleResizeObserver?.disconnect())
     <header v-if="job.data.value" class="job-resource-header">
       <div class="job-resource-header__main">
         <p>{{ jobCompanyLabel(job.data.value.companyName) }}</p>
-        <h1
-          ref="titleElement"
-          class="job-resource-title"
-          :class="{ 'job-resource-title--overflowing': titleOverflow > 0 }"
-          :style="titleStyle"
-          :title="jobDisplayTitle(job.data.value)"
-          tabindex="0"
-        >
-          <span>{{ jobDisplayTitle(job.data.value) }}</span>
+        <h1 class="job-resource-title" :title="jobDisplayTitle(job.data.value)">
+          {{ jobDisplayTitle(job.data.value) }}
         </h1>
         <div class="job-resource-header__meta">
           <span v-if="job.data.value.positionName">{{ job.data.value.positionName }}</span>
@@ -189,33 +153,18 @@ onBeforeUnmount(() => titleResizeObserver?.disconnect())
 }
 
 .job-resource-header h1 {
+  display: -webkit-box;
   width: 100%;
   max-width: 58rem;
   margin-top: var(--space-2);
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   font-size: clamp(1.4rem, 2.8vw, 2.2rem);
   font-weight: 790;
   letter-spacing: -0.035em;
   line-height: 1.17;
-  overflow-wrap: normal;
-  scrollbar-width: none;
-  white-space: nowrap;
-}
-
-.job-resource-header h1::-webkit-scrollbar {
-  display: none;
-}
-
-.job-resource-title > span {
-  display: inline-block;
-  transform: translateX(0);
-  transition: transform 4s ease-in-out 180ms;
-}
-
-.job-resource-title--overflowing:hover > span,
-.job-resource-title--overflowing:focus-visible > span {
-  transform: translateX(calc(var(--job-title-shift) * -1));
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .job-resource-header__meta,
@@ -316,18 +265,37 @@ onBeforeUnmount(() => titleResizeObserver?.disconnect())
   .job-resource-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-2);
+    padding-block: var(--space-3) var(--space-4);
   }
 
   .job-resource-header__aside {
     width: 100%;
-    justify-items: start;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
   }
 
   .job-resource-header__main,
   .job-resource-header h1 {
     width: 100%;
     max-width: 100%;
+  }
+
+  .job-resource-header h1 {
+    font-size: clamp(1.35rem, 6.2vw, 1.65rem);
+    line-height: 1.28;
+  }
+
+  .job-resource-header__meta {
+    margin-top: var(--space-2);
+    font-size: 0.8125rem;
+  }
+
+  .job-resource-header__source {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
   }
 
   .job-detail-tabs {
@@ -339,20 +307,17 @@ onBeforeUnmount(() => titleResizeObserver?.disconnect())
   .job-detail-tab {
     padding-inline: var(--space-3);
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .job-resource-title > span {
-    transition: none;
-  }
-
-  .job-resource-title--overflowing:hover > span,
-  .job-resource-title--overflowing:focus-visible > span {
-    transform: none;
+  .job-detail-body {
+    padding-top: var(--space-4);
   }
 }
 
 @media (max-width: 35rem) {
+  .job-resource-header__meta {
+    display: none;
+  }
+
   .job-detail-tabs {
     margin-inline: calc(var(--space-3) * -1);
     padding-inline: var(--space-3);

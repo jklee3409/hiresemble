@@ -305,7 +305,7 @@ describe('P6 Job analysis page', () => {
 
     expect(wrapper.text()).toContain('필수 조건 미충족')
     expect(wrapper.get('.analysis-result__hero').text()).toContain(
-      '공고와 잘 맞는 강점을 분석했어요.',
+      '적합도 85점, 필수 조건 중 추가 확인이 필요해요.',
     )
     expect(wrapper.get('.analysis-result__hero').text()).not.toContain('최신 분석')
     expect(wrapper.get('.analysis-result__hero').text()).not.toContain('분석 버전 2')
@@ -331,7 +331,10 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).toContain('필수 경력 기간은 추가 확인이 필요해요')
     expect(wrapper.text()).toContain('결제 API 개선 프로젝트')
     expect(wrapper.text()).toContain('20 / 40점')
-    expect(wrapper.get('.status-badge--warning').text()).toBe('OUTDATED')
+    expect(wrapper.get('.analysis-outdated').attributes('open')).toBeUndefined()
+    expect(wrapper.get('.analysis-outdated summary').text()).toContain(
+      '분석 이후 정보가 변경됐어요.',
+    )
     expect(wrapper.text()).toContain('공고 내용이 변경됨')
     expect(wrapper.text()).toContain('프로필 정보가 변경됨')
     expect(wrapper.text()).toContain('확인한 경험이 변경됨')
@@ -348,7 +351,9 @@ describe('P6 Job analysis page', () => {
     const result = wrapper.get('.analysis-result')
     expect(result.findAll('.section-surface')).toHaveLength(0)
     expect(result.findAll('.button--primary')).toHaveLength(1)
-    expect(result.get('.analysis-result__next nav').text()).toContain('내 정보 보완')
+    expect(result.get('.analysis-result__actions nav').text()).toContain('내 정보 보완')
+    expect(result.find('.analysis-score-chart').exists()).toBe(false)
+    expect(result.findAll('.analysis-result__metrics > div')).toHaveLength(3)
     expect(result.findAll('.analysis-insight li > span')).toHaveLength(0)
 
     const olderButton = wrapper.findAll('.analysis-history__list button')[1]
@@ -366,7 +371,7 @@ describe('P6 Job analysis page', () => {
 
     const reanalyzeButtons = wrapper
       .findAll('button')
-      .filter((button) => button.text() === '최신 정보로 다시 분석')
+      .filter((button) => button.text() === '다시 분석하기')
     expect(reanalyzeButtons).toHaveLength(1)
     const reanalyze = reanalyzeButtons[0]
     await reanalyze?.trigger('click')
@@ -453,7 +458,7 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).toContain('현재는 원본이 삭제된 과거 근거')
     expect(wrapper.text()).toContain('현재 상태: 원본 삭제됨 · 재분석 근거에서 제외')
     expect(wrapper.text()).toContain('Spring API 개발 경험이 요구사항과 일치해요')
-    expect(wrapper.get('.status-badge--warning').text()).toBe('OUTDATED')
+    expect(wrapper.get('.analysis-outdated').attributes('open')).toBeUndefined()
   })
 
   it('blocks an unusable Job body and handles owner-hidden 404 without exposing analysis controls', async () => {

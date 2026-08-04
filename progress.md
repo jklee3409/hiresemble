@@ -15,6 +15,21 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (SuperDesign 기반 공고 분석 판단 흐름 구현)
+
+- What was done:
+  - 기존 화면을 SuperDesign에서 재현한 뒤 절제형·B2C형·데이터형 세 방향을 비교하고, 승인된 B2C형의 상단 밀도 보정안을 Vue 화면과 공고 상세 header에 구현했다.
+  - 결과 화면을 변경 안내 disclosure, compact 판단 surface, 단일 자기소개서 CTA, 구분선 기반 근거 흐름으로 정리하고 SuperDesign 저장소 context와 임시 파일 ignore 규칙을 구성했다.
+- Key decisions:
+  - SuperDesign이 만든 임의 콘텐츠는 복사하지 않고 기존 API·상태·점수·이력 데이터를 유지한다. 모바일은 기존 AppLayout navigation을 유지하면서 공고 제목을 두 줄로 제한하고 판단·CTA·세 지표를 첫 화면에 우선한다.
+- Issues encountered:
+  - 첫 390px 회귀에서 세 번째 지표가 첫 viewport 아래로 내려갔으나 공고 header와 판단 surface 간격만 축소해 재검증에서 해결했다.
+  - 최종 `format:check`를 처음 저장소 루트에서 실행해 package manifest 오류가 났고, `frontend/`에서 다시 실행해 통과했다.
+- Validation:
+  - Frontend 집중 Vitest 2 files/11 tests, type check, Job Analysis Chromium desktop/mobile와 전체 visual fixture 2/2, 전체 `pnpm check` 67 files/282 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (서비스 소개 Landing·공고 분석 결과 UI 전면 개선)
 
 - What was done:

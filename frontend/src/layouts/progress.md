@@ -4,6 +4,20 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-04] Session Summary (공고 resource header 두 줄 clamp·mobile 밀도 보정)
+
+- What was done:
+  - 긴 공고 제목의 ResizeObserver·hover slide·내부 가로 scroll을 제거하고 최대 두 줄 clamp와 native title 안내로 단순화했다.
+  - mobile header의 metadata·status·source 배치를 압축하고 35rem 이하에서 보조 metadata를 생략해 분석 판단을 첫 viewport에 우선했다.
+- Key decisions:
+  - desktop navigation과 mobile bottom navigation, sticky Job tab 동작은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `JobDetailLayout.test.ts`, Job Analysis 1440/390px geometry·horizontal overflow와 전체 Frontend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공고 resource title 80% 축소)
 
 - What was done:

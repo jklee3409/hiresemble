@@ -17,18 +17,23 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.goto(`/jobs/${JOB_ID}/analysis`)
 
   await expect(
-    page.getByRole('heading', { name: '공고와 잘 맞는 강점을 분석했어요.', exact: true }),
+    page.getByRole('heading', {
+      name: '적합도 85점, 필수 조건 중 추가 확인이 필요해요.',
+      exact: true,
+    }),
   ).toBeVisible()
   const jobTitle = page.getByRole('heading', { level: 1, name: LONG_JOB_TITLE })
-  await expect(jobTitle).toHaveClass(/job-resource-title--overflowing/)
   expect(
     await jobTitle.evaluate((element) => ({
       clientWidth: element.clientWidth,
       scrollWidth: element.scrollWidth,
+      lineClamp: getComputedStyle(element).webkitLineClamp,
       whiteSpace: getComputedStyle(element).whiteSpace,
     })),
-  ).toEqual(expect.objectContaining({ whiteSpace: 'nowrap' }))
-  expect(await jobTitle.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
+  ).toEqual(expect.objectContaining({ lineClamp: '2', whiteSpace: 'normal' }))
+  expect(await jobTitle.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
+    await jobTitle.evaluate((element) => element.clientWidth),
+  )
   expect(
     await jobTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
   ).toBeCloseTo(35.2, 1)
@@ -40,6 +45,9 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('85%', { exact: true }).first()).toBeVisible()
   await expect(page.locator('abbr[title*="합격 가능성"]')).toBeVisible()
+  const outdatedDisclosure = page.locator('.analysis-outdated')
+  await expect(outdatedDisclosure).not.toHaveAttribute('open', '')
+  await outdatedDisclosure.locator('summary').click()
   await expect(page.getByText('공고 내용이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
@@ -71,7 +79,7 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await expect(page.getByRole('link', { name: '자기소개서 준비하기', exact: true })).toBeVisible()
   await expect(page.locator('.job-analysis .button--primary')).toHaveCount(1)
   await expect(
-    page.locator('.analysis-result__next').getByRole('link', { name: '면접 준비하기' }),
+    page.locator('.analysis-result__actions').getByRole('link', { name: '면접 준비하기' }),
   ).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
@@ -97,17 +105,18 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/jobs/${JOB_ID}/analysis`)
   await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
-  const mobileDecisionLayout = await page.locator('.analysis-decision-board').evaluate((board) => {
-    const score = board.querySelector('.analysis-score-chart')?.getBoundingClientRect()
-    const facts = board.querySelector('.analysis-decision-facts')?.getBoundingClientRect()
+  const mobileDecisionLayout = await page.locator('.analysis-result__hero').evaluate((hero) => {
+    const metrics = hero.querySelector('.analysis-result__metrics')?.getBoundingClientRect()
+    const action = hero.querySelector('.button--primary')?.getBoundingClientRect()
     return {
-      columnCount: getComputedStyle(board).gridTemplateColumns.split(' ').filter(Boolean).length,
-      scoreRight: score?.right ?? 0,
-      factsLeft: facts?.left ?? 0,
+      actionBottom: action?.bottom ?? 0,
+      metricBottom: metrics?.bottom ?? 0,
+      metricRows: hero.querySelectorAll('.analysis-result__metrics > div').length,
     }
   })
-  expect(mobileDecisionLayout.columnCount).toBe(2)
-  expect(mobileDecisionLayout.scoreRight).toBeLessThanOrEqual(mobileDecisionLayout.factsLeft)
+  expect(mobileDecisionLayout.metricRows).toBe(3)
+  expect(mobileDecisionLayout.actionBottom).toBeLessThanOrEqual(844)
+  expect(mobileDecisionLayout.metricBottom).toBeLessThanOrEqual(844)
   await expect(page.getByRole('heading', { name: '강점과 보완 포인트' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
