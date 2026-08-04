@@ -56,3 +56,4 @@ Desktop.ini
 infra/data/
 docker-data/
 .codex-real-provider-call-summary.json
+.superdesign/tmp/
