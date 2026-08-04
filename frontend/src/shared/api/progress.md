@@ -4,6 +4,19 @@
 
 Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-04] Session Summary (Job Analysis coverage client 계약)
+
+- What was done:
+  - Job Analysis summary/detail Zod 계약에 nullable `analysisCoverage`를 추가했다.
+- Key decisions:
+  - 이전 fixture·과거 응답은 parse 시 null default로 안전하게 수용한다.
+- Issues encountered:
+  - Zod default output type 때문에 공통 fixture에 명시적 coverage 기본값이 필요했다.
+- Validation:
+  - vue-tsc, API contract tests와 전체 Frontend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (Profile eligibility typed client)
 
 - What was done:

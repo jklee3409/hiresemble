@@ -7,6 +7,19 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/281 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-04] Session Summary (공고 분석 커버리지·시각 요약 UI)
+
+- What was done:
+  - 공고 분석에 커버리지 metric, match 상태별 개수, category별 점수 막대, 원문 항목 count badge와 접이식 판정 근거를 추가했다.
+- Key decisions:
+  - `UNKNOWN`을 불일치로 보이지 않게 커버리지 안내와 분리하고 과거 rubric의 null coverage는 `이전 분석`으로 표시한다.
+- Issues encountered:
+  - 기존 결과 화면은 장문 section이 순차 나열되어 전체 분포와 근거 부족을 빠르게 파악하기 어려웠다.
+- Validation:
+  - `corepack pnpm check`: 67 files/281 tests, type check, lint, format, production build 통과.
+- Next steps:
+  - 실제 데이터에서 긴 criterion과 모바일 접힘 사용성을 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 최신 실행 상태 정합화)
 
 - What was done:

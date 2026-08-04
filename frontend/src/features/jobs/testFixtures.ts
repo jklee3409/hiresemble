@@ -70,6 +70,7 @@ export function jobAnalysisSummaryFixture(
     analysisVersion: 2,
     eligibility: 'INELIGIBLE',
     fitScore: 82.5,
+    analysisCoverage: 100,
     analysisOutdated: false,
     outdatedReasons: [],
     createdAt: JOB_NOW,

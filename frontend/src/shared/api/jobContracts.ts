@@ -146,6 +146,7 @@ const jobAnalysisSummaryFields = {
   analysisVersion: z.number().int().min(1),
   eligibility: z.enum(ELIGIBILITIES),
   fitScore: scoreSchema.nullable(),
+  analysisCoverage: scoreSchema.nullable().optional().default(null),
   analysisOutdated: z.boolean(),
   outdatedReasons: outdatedReasonsSchema,
   createdAt: instantSchema,

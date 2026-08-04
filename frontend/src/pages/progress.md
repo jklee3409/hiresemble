@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (공고 분석 시각 요약·접이식 근거)
+
+- What was done:
+  - `JobAnalysisPage`에 coverage metric, match count cards, category progress bars, source item count와 접이식 판정 근거를 추가했다.
+- Key decisions:
+  - 요건 원문은 세 section card로 유지하고 세부 설명은 필요할 때 펼쳐 읽게 한다.
+- Issues encountered:
+  - 긴 criterion 설명이 항상 펼쳐져 핵심 분포보다 텍스트가 먼저 보였다.
+- Validation:
+  - Frontend 전체 67 files/281 tests·production build와 최종 Job Analysis 9 tests/type check 통과.
+- Next steps:
+  - 실제 장문 공고의 모바일 레이아웃을 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 최신 Run 표시 우선순위 수정)
 
 - What was done:

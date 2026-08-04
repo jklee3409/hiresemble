@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-04] Session Summary (Job Analysis coverage fixture)
+
+- What was done:
+  - 공통 Job Analysis fixture가 v2 coverage 값을 포함하도록 갱신됐다.
+- Key decisions:
+  - 새 분석 fixture는 coverage 100, 과거 계약은 shared schema의 null default로 표현한다.
+- Issues encountered:
+  - 새 required output type과 기존 fixture 반환 type 사이 optional mismatch가 발생했다.
+- Validation:
+  - Job Analysis page tests를 포함한 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 실패 재실행 안내 정정)
 
 - What was done:

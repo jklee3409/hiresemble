@@ -31,7 +31,7 @@ import {
 } from '@/features/jobs/queries'
 import type { AgentRunStatus } from '@/shared/api/agentRunContracts'
 import { normalizeApiError, type ApiClientError } from '@/shared/api/errors'
-import type { Eligibility, MatchLevel } from '@/shared/api/jobContracts'
+import type { Eligibility, FitCriterionCategory, MatchLevel } from '@/shared/api/jobContracts'
 import type { JobAnalysisListParams } from '@/shared/api/jobApi'
 import { getProfile } from '@/shared/api/profileApi'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
@@ -231,6 +231,33 @@ const hasEvidenceWithChangedState = computed(() => {
     ...analysis.scoreBreakdown.flatMap((criterion) => criterion.evidenceRefs),
   ].some((evidence) => !isCurrentlyVerifiedEvidence(evidence))
 })
+const matchOverview = computed(() => {
+  const criteria = latestAnalysis.data.value?.scoreBreakdown ?? []
+  return (['MATCHED', 'PARTIAL', 'MISSING', 'UNKNOWN'] as const).map((level) => ({
+    level,
+    count: criteria.filter((criterion) => criterion.matchLevel === level).length,
+  }))
+})
+const categoryOverview = computed(() => {
+  const criteria = latestAnalysis.data.value?.scoreBreakdown ?? []
+  return Object.entries(FIT_CRITERION_CATEGORY_LABELS)
+    .map(([category, label]) => {
+      const items = criteria.filter((criterion) => criterion.category === category)
+      const score = items.reduce((sum, criterion) => sum + criterion.score, 0)
+      const weight = items.reduce((sum, criterion) => sum + criterion.weight, 0)
+      return {
+        category: category as FitCriterionCategory,
+        label,
+        count: items.length,
+        score,
+        weight,
+        percentage: weight > 0 ? Math.round((score / weight) * 100) : null,
+      }
+    })
+    .filter((item) => item.count > 0)
+})
+const formatCoverage = (value: number | null) =>
+  value === null ? '이전 분석' : `${Math.round(value)}%`
 const connectionLabel = computed(() => {
   if (!runIsActive.value) return '진행 상황 확인 완료'
   return {
@@ -658,6 +685,11 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <strong>{{ formatFitScore(latestAnalysis.data.value.fitScore) }}</strong>
               <p>공고 조건과 내 정보의 일치도예요.</p>
             </div>
+            <div class="analysis-metric analysis-metric--coverage">
+              <span>분석 커버리지</span>
+              <strong>{{ formatCoverage(latestAnalysis.data.value.analysisCoverage) }}</strong>
+              <p>등록한 정보로 판정할 수 있었던 요건 비율이에요.</p>
+            </div>
             <div class="analysis-metric">
               <span>잘 맞는 경험</span>
               <strong>{{ latestAnalysis.data.value.strengths.length }}개</strong>
@@ -696,10 +728,44 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </div>
         </section>
 
+        <section class="analysis-overview section-surface" aria-labelledby="match-overview-heading">
+          <div class="analysis-overview__heading">
+            <div>
+              <p class="section-kicker">한눈에 보기</p>
+              <h3 id="match-overview-heading" class="section-title">요건 매칭 현황</h3>
+            </div>
+            <p>확인 불가는 점수에서 제외하고 커버리지에만 반영해요.</p>
+          </div>
+          <div class="analysis-overview__statuses">
+            <article v-for="item in matchOverview" :key="item.level">
+              <StatusBadge :label="MATCH_LEVEL_LABELS[item.level]" :tone="matchTone(item.level)" />
+              <strong>{{ item.count }}</strong>
+              <span>개 요건</span>
+            </article>
+          </div>
+          <div class="analysis-overview__categories">
+            <article v-for="item in categoryOverview" :key="item.category">
+              <div>
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.count }}개 기준</span>
+              </div>
+              <div class="analysis-overview__bar" aria-hidden="true">
+                <span :style="{ width: `${item.percentage ?? 0}%` }"></span>
+              </div>
+              <small v-if="item.percentage !== null">
+                {{ item.score.toFixed(2) }} / {{ item.weight.toFixed(2) }}점
+              </small>
+              <small v-else>판정 가능한 근거가 아직 없어요.</small>
+            </article>
+          </div>
+        </section>
+
         <div class="analysis-result__requirements">
           <section class="analysis-list-section section-surface">
             <p class="section-kicker">업무</p>
-            <h3 class="section-title">주요 업무</h3>
+            <h3 class="section-title">
+              주요 업무 <span>{{ latestAnalysis.data.value.responsibilities.length }}</span>
+            </h3>
             <ul v-if="latestAnalysis.data.value.responsibilities.length">
               <li
                 v-for="item in latestAnalysis.data.value.responsibilities"
@@ -715,7 +781,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </section>
           <section class="analysis-list-section section-surface">
             <p class="section-kicker">조건</p>
-            <h3 class="section-title">필수 지원 자격</h3>
+            <h3 class="section-title">
+              필수 지원 자격
+              <span>{{ latestAnalysis.data.value.requiredQualifications.length }}</span>
+            </h3>
             <ul v-if="latestAnalysis.data.value.requiredQualifications.length">
               <li
                 v-for="item in latestAnalysis.data.value.requiredQualifications"
@@ -731,7 +800,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           </section>
           <section class="analysis-list-section section-surface">
             <p class="section-kicker">우대</p>
-            <h3 class="section-title">우대 사항</h3>
+            <h3 class="section-title">
+              우대 사항 <span>{{ latestAnalysis.data.value.preferredQualifications.length }}</span>
+            </h3>
             <ul v-if="latestAnalysis.data.value.preferredQualifications.length">
               <li
                 v-for="item in latestAnalysis.data.value.preferredQualifications"
@@ -828,20 +899,24 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <p class="analysis-criterion__score">
                 {{ criterion.score.toFixed(2) }} / {{ criterion.weight.toFixed(2) }}점
               </p>
-              <p>{{ criterion.explanation }}</p>
-              <ul v-if="criterion.evidenceRefs.length" class="analysis-criterion__evidence">
-                <li
-                  v-for="reference in criterion.evidenceRefs"
-                  :key="reference.id"
-                  :class="{
-                    'analysis-criterion__evidence-item--changed':
-                      !isCurrentlyVerifiedEvidence(reference),
-                  }"
-                >
-                  <span>{{ reference.title }}</span>
-                  <small>{{ evidenceCurrentStateLabel(reference) }}</small>
-                </li>
-              </ul>
+              <details class="analysis-criterion__detail">
+                <summary>판정 근거 보기</summary>
+                <p>{{ criterion.explanation }}</p>
+                <ul v-if="criterion.evidenceRefs.length" class="analysis-criterion__evidence">
+                  <li
+                    v-for="reference in criterion.evidenceRefs"
+                    :key="reference.id"
+                    :class="{
+                      'analysis-criterion__evidence-item--changed':
+                        !isCurrentlyVerifiedEvidence(reference),
+                    }"
+                  >
+                    <span>{{ reference.title }}</span>
+                    <small>{{ evidenceCurrentStateLabel(reference) }}</small>
+                  </li>
+                </ul>
+                <p v-else class="analysis-empty-copy">연결된 경험 근거가 없어요.</p>
+              </details>
             </article>
           </div>
         </section>
@@ -890,6 +965,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <div>
                 <dt>적합도 점수</dt>
                 <dd>{{ formatFitScore(selectedHistory.fitScore) }}</dd>
+              </div>
+              <div>
+                <dt>분석 커버리지</dt>
+                <dd>{{ formatCoverage(selectedHistory.analysisCoverage) }}</dd>
               </div>
               <div>
                 <dt>분석 시각</dt>
@@ -1109,7 +1188,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-result__metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-6);
 }
@@ -1151,6 +1230,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 }
 
 .analysis-metric--score p,
+.analysis-metric--coverage p,
 .analysis-result__summary,
 .analysis-empty-copy,
 .analysis-criterion > p,
@@ -1171,6 +1251,85 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-5);
+}
+
+.analysis-overview__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.analysis-overview__heading > p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.analysis-overview__statuses {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.analysis-overview__statuses article {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.analysis-overview__statuses strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-overview__statuses article > span:last-child {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.analysis-overview__categories {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.analysis-overview__categories article,
+.analysis-overview__categories article > div:first-child {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.analysis-overview__categories article > div:first-child {
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+}
+
+.analysis-overview__categories span,
+.analysis-overview__categories small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.analysis-overview__bar {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.analysis-overview__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-brand-strong);
 }
 
 .analysis-result__requirements {
@@ -1203,6 +1362,19 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   display: block;
   margin-top: var(--space-1);
   color: var(--color-text-muted);
+}
+
+.analysis-result__requirements .section-title span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  margin-left: var(--space-1);
+  padding: 0.125rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
 }
 
 .analysis-empty-copy {
@@ -1282,6 +1454,26 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   color: var(--color-brand-strong) !important;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
+}
+
+.analysis-criterion__detail {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.analysis-criterion__detail summary {
+  color: var(--color-brand-strong);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.analysis-criterion__detail > p {
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
 }
 
 .analysis-criterion__evidence {
@@ -1416,6 +1608,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
     align-items: flex-start;
   }
 
+  .analysis-overview__statuses,
+  .analysis-overview__categories,
   .analysis-result__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1435,12 +1629,19 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
   .analysis-result__metrics,
   .analysis-result__comparison,
+  .analysis-overview__statuses,
+  .analysis-overview__categories,
   .analysis-history__layout,
   .analysis-history__selection dl {
     grid-template-columns: 1fr;
   }
 
   .analysis-context-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analysis-overview__heading {
     align-items: stretch;
     flex-direction: column;
   }
