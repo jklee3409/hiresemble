@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (공고 분석 source block·criterion RAG·coverage v2 개선)
+
+- What was done:
+  - 공고 구역과 원문 bullet을 서버가 소유하도록 바꾸고 criterion별 hybrid evidence 검색, `UNKNOWN` 제외 점수와 분석 커버리지, 가독성 중심 결과 화면을 수직으로 구현했다.
+- Key decisions:
+  - 화면용 원문 bullet과 점수용 atomic criterion을 분리하고 이전 분석은 rubric v1 이력으로 보존한다.
+- Issues encountered:
+  - 기존 전체-query 검색과 `UNKNOWN=0`이 근거 누락을 실제 불일치처럼 점수에 반영했고 역할 소개도 criterion 후보가 될 수 있었다.
+- Validation:
+  - Backend 전체 79 suites/538 tests와 최종 집중 회귀, Frontend 전체 67 files/281 tests·production build 및 최종 page 9 tests/type check가 통과했다.
+- Next steps:
+  - 실제 플래티어 공고를 새 rubric으로 재분석해 Provider source-block 선택과 사용자 evidence 매칭 분포를 관찰한다.
+
 ## [2026-08-04] Session Summary (공고 분석 최신 Run 표시 오류 수정)
 
 - What was done:

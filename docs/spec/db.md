@@ -222,7 +222,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 ### 5.6 `job_analyses`와 rubric
 
-`job_analyses`: `id,user_id,job_posting_id,analysis_version`, 내부 job/profile/evidence hash, `eligibility`, `fit_score numeric(5,2) NULL CHECK 0..100`, `analysis_summary varchar(10000) NULL`, `rubric_version`, `agent_run_id`, `created_at`; unique `(user_id,job_posting_id,analysis_version)`.
+`job_analyses`: `id,user_id,job_posting_id,analysis_version`, 내부 job/profile/evidence hash, `eligibility`, `fit_score numeric(5,2) NULL CHECK 0..100`, `analysis_coverage numeric(5,2) NULL CHECK 0..100`, `analysis_summary varchar(10000) NULL`, `rubric_version`, `agent_run_id`, `created_at`; unique `(user_id,job_posting_id,analysis_version)`. `analysis_coverage`의 `NULL`은 이전 rubric 결과, `fit_score NULL + analysis_coverage=0.00`은 모든 criterion이 `UNKNOWN`인 v2 결과다.
 
 `job_analysis_score_criteria`: `id,user_id,job_analysis_id,category,criterion varchar(2000)`, `weight numeric(5,2) CHECK 0..100`, `match_level`, `score numeric(5,2) CHECK 0..weight`, `explanation varchar(2000)`, `source_location varchar(500) NULL`.
 
@@ -230,7 +230,7 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 `job_analysis_structured_fact_links`: `id,user_id,job_analysis_id,score_criterion_id NULL,source_entity_id,source_entity_version,fact_type,fact_hash,usage_type,created_at`. `PRIMARY_EDUCATION`, `EXPECTED_GRADUATION_DATE`, `WORK_AVAILABLE_DATE`, `MILITARY_STATUS`, `OVERSEAS_TRAVEL_ELIGIBILITY`, `EMPLOYMENT_DISQUALIFICATION_STATUS` provenance만 저장한다. 기존 evidence link 의미를 확장하지 않으며 analysis seal 이후 immutable이다.
 
-가중치는 40/30/15/10/5이며 `Eligibility`와 점수는 별도다. 성공한 analysis는 criterion을 최소 1개 가지며 criterion을 추출하지 못하면 analysis row 없이 run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. stale 여부·reason은 저장 enum이 아니라 current hash 비교 projection이다.
+가중치는 40/30/15/10/5이며 `Eligibility`와 점수는 별도다. v2에서 `UNKNOWN` criterion은 weight·score 0이고 점수 분모에서 제외되며, 전체 공고 criterion 기준 판정 비율은 `analysis_coverage`에 저장한다. 성공한 analysis는 criterion을 최소 1개 가지며 criterion을 추출하지 못하면 analysis row 없이 run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. stale 여부·reason은 저장 enum이 아니라 current hash 비교 projection이다.
 
 ## 6. 자기소개서
 

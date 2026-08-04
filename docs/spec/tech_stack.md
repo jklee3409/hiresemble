@@ -330,7 +330,7 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 
 공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 결과다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않고 Agent Run의 `highestModelTierUsed`만 표시한다.
 
-`ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다.
+`ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다. Job Analysis는 criterion query를 embedding batch로 보내고 criterion별 hybrid retrieval을 수행하며, merged candidate에 허용 criterion index를 보존해 match 단계의 evidence 사용 범위를 검증한다.
 
 | 공개 모드      | 내부 정책                                                                                          |
 | -------------- | -------------------------------------------------------------------------------------------------- |

@@ -515,7 +515,7 @@ API:
 - 최근 분석 Run이 `FAILED|CANCELLED|INTERRUPTED`이면 실패 카드 안에 단일 `공고 분석 재실행` CTA를 제공한다. 서버가 범용 retry를 허용하면 기존 lineage retry를 사용하고, `retryable=false`이면 현재 공고 version으로 `forceReanalyze=true`인 새 `BALANCED` 분석을 요청한다.
 - 진행 여정 문구는 한 줄로 유지하고 Desktop의 네 단계는 각 문구 폭과 무관하게 단계 블록 사이 여백을 균일하게 배분한다. structured output·timeout·Provider·데이터 부족 safe code는 내부 용어 대신 보존되는 데이터와 다음 행동을 설명하는 사용자 문구로 변환한다.
 - 지원 가능 여부
-- 적합도·강점 수·보완점 수 요약과 점수 tooltip 안내
+- 적합도·분석 커버리지·강점 수·보완점 수 요약과 점수 tooltip 안내
 - 최신 결과 hero 제목은 저장된 분석 버전과 별개로 `공고와 잘 맞는 강점을 분석했어요.`를 표시
 - 주요 업무
 - 필수·우대
@@ -523,6 +523,8 @@ API:
 - 부족한 점
 - 매칭 근거
 - 분석 버전
+
+결과 상단에는 `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수와 category별 획득/배점 막대를 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 주요 업무·필수·우대는 원문 bullet 단위와 개수 badge로 표시하고 criterion 설명과 연결 근거는 기본 접힘 상태로 제공한다.
 
 주요 업무·필수 지원 자격·우대 사항의 출처가 과거 저장 결과에서 JSONPath·내부 객체 경로로 전달되면 원문을 노출하지 않고 `공고 본문`으로 표시한다. 새 분석 결과는 한국어 구역명 또는 출처 없음으로 제공한다.
 

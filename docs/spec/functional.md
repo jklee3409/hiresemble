@@ -373,11 +373,13 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - 관련 사용자 근거
 - 직무 적합도 점수와 근거
 
-`Eligibility`와 `fitScore`는 별도로 계산하고 표시한다. `INELIGIBLE`이어도 점수를 0으로 만들거나 상한을 두지 않으며 합격 기준점이나 합격 확률을 제공하지 않는다.
+`Eligibility`와 `fitScore`는 별도로 계산하고 표시한다. `INELIGIBLE`이어도 점수를 0으로 만들거나 상한을 두지 않으며 합격 기준점이나 합격 확률을 제공하지 않는다. `analysisCoverage`는 공고 전체 criterion 가중치 중 등록된 정보로 `MATCHED|PARTIAL|MISSING`까지 판정한 비율이며 적합도와 별도로 표시한다.
 
 주요 업무·지원 자격·우대 사항의 설명, 지원 가능 여부 근거, criterion 설명·미충족 사유, 강점·부족한 점과 분석 요약은 자연스러운 한국어로 제공한다. 공고가 다른 언어로 작성됐어도 고유명사·제품명·기술 용어는 보존하면서 설명을 한국어로 옮긴다. criterion 출처는 `null` 또는 `주요 업무`, `지원 자격`, `우대 사항` 같은 짧은 한국어 구역명이어야 하며 JSONPath·객체 경로·내부 필드명을 저장 결과에 노출하지 않는다.
 
-승인 근거 검색의 embedding 요청은 Chat `ModelTier` route를 재사용하지 않고 활성 immutable embedding policy의 provider·product·dimension·version·generation을 하나의 typed route로 사용한다. 이 route identity는 retrieval step hash에 포함하며 Provider 호출 전 가격 catalog와 일치해야 한다.
+서버는 모델 호출 전에 공고 본문을 stable source block으로 나누고 각 block의 section을 `RESPONSIBILITY|REQUIRED_QUALIFICATION|PREFERRED_QUALIFICATION|ROLE_SUMMARY|OTHER`로 확정한다. 모델은 scorable section의 block ID와 원문만 선택하며 section·source text를 소유하지 않는다. `ROLE_SUMMARY|OTHER`는 criterion에서 제외한다. 화면용 주요 업무·필수·우대 목록은 원문 block 단위를 보존하고, 점수용 criterion만 서버 정책으로 독립 조건까지 원자화한다.
+
+승인 근거 검색의 embedding 요청은 Chat `ModelTier` route를 재사용하지 않고 활성 immutable embedding policy의 provider·product·dimension·version·generation을 하나의 typed route로 사용한다. 이 route identity는 retrieval step hash에 포함하며 Provider 호출 전 가격 catalog와 일치해야 한다. 모든 criterion query를 한 batch로 embedding하되 검색은 criterion별 hybrid semantic·lexical 검색으로 수행하고, 각 후보에는 허용 criterion index를 기록한다. 한 criterion에서 검색된 evidence를 다른 criterion의 근거로 전용하지 않는다.
 
 적합도 점수는 0.00~100.00이고 다음 가중치를 사용한다.
 
@@ -389,7 +391,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 | 관련 경험·도메인 |     10 |
 | 학력·자격·어학   |      5 |
 
-각 criterion은 `MATCHED=1.0`, `PARTIAL=0.5`, `MISSING|UNKNOWN=0`으로 계산하고, 공고에 없는 category 가중치는 존재 category에 비례 재배분한다. 점수 근거는 구조화 프로필과 `VERIFIED` evidence만 사용한다. 추출 가능한 criterion이 하나도 없으면 분석 결과 row를 만들지 않고 Agent Run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. rubric version과 criterion별 공고 source·승인 evidence를 저장한다. 화면에는 다음 문구를 표시한다.
+각 criterion은 `MATCHED=1.0`, `PARTIAL=0.5`, `MISSING=0`으로 계산한다. `UNKNOWN`은 불일치가 아니므로 점수 분모와 category 재배분에서 제외하고 weight·score를 0으로 저장하며 `analysisCoverage`만 낮춘다. 판정 가능한 criterion이 하나도 없으면 `fitScore=null`, `analysisCoverage=0.00`으로 저장한다. 공고에 없는 category와 판정 불가능한 category의 가중치는 판정 가능한 category에 비례 재배분한다. 점수 근거는 구조화 프로필과 `VERIFIED` evidence만 사용한다. 추출 가능한 criterion이 하나도 없으면 분석 결과 row를 만들지 않고 Agent Run을 `INSUFFICIENT_JOB_DATA`로 실패시킨다. rubric version과 criterion별 공고 source·승인 evidence를 저장한다. 화면에는 다음 문구를 표시한다.
 
 공고 section, 점수 category, 필요한 support type은 서로 다른 값이다. 우대 사항에 있는 학력·자격증·어학 조건도 `EDUCATION_CERTIFICATION_LANGUAGE` category를 사용한다. 학력은 구조화된 최종 학력 fact, 자격증은 `CERTIFICATION`, 어학은 `LANGUAGE_SCORE`, 병역·해외여행·결격 제한은 해당 자기신고 fact만 positive 근거가 될 수 있다. 일반 경력·프로젝트 근거로 자격증·학력·어학 보유를 충족시키지 않는다. 구조화 fact와 `VERIFIED` evidence는 별도 typed provenance로 저장한다.
 
