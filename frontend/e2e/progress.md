@@ -15,6 +15,19 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-04] Session Summary (공고 분석 결과 반응형 UI 회귀)
+
+- What was done:
+  - `job-analysis.spec.ts`를 5점 단위 표시, AI 요약, 접힌 공고 상세·결과 기록과 새 사용자 문구에 맞췄다.
+- Key decisions:
+  - 1440·390px에서 의미 기반 locator와 실제 details open 상태, 가로 overflow를 함께 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Chromium 1/1과 `ui-redesign.visual.spec.ts` 1/1 통과, desktop/mobile full-page 캡처 확인.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (회원가입 용어·Modal 구조 회귀)
 
 - What was done:

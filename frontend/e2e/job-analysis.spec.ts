@@ -35,13 +35,25 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
     'page',
   )
   await expect(page.getByText('필수 조건 미충족', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('82.50점', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('85%', { exact: true }).first()).toBeVisible()
   await expect(page.locator('abbr[title*="합격 가능성"]')).toBeVisible()
   await expect(page.getByText('공고 내용이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('프로필 정보가 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('확인한 경험이 변경됨', { exact: true })).toBeVisible()
   await expect(page.getByText('결제 API 개선 프로젝트', { exact: true }).first()).toBeVisible()
-  await expect(page.getByRole('heading', { name: '과거 분석 이력' })).toBeVisible()
+  await expect(page.getByText('AI 핵심 요약', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.'),
+  ).toHaveCount(0)
+  const requirementGroups = page.locator('.analysis-requirement-group')
+  await expect(requirementGroups).toHaveCount(3)
+  await expect(requirementGroups.first()).not.toHaveAttribute('open', '')
+  await requirementGroups.first().locator('summary').click()
+  await expect(page.getByText('Spring 기반 백엔드 API 개발', { exact: true }).last()).toBeVisible()
+  await expect(page.getByRole('heading', { name: '분석 결과 기록' })).toBeVisible()
+  await page.getByRole('heading', { name: '분석 결과 기록' }).click()
+  await expect(page.getByText('현재 분석 결과', { exact: true })).toBeVisible()
   await expect(page.getByText('균형형', { exact: true })).toHaveCount(0)
   await expect(page.getByText('경제형', { exact: true })).toHaveCount(0)
   await expect(page.getByText('재분석 옵션', { exact: true })).toHaveCount(0)
@@ -72,7 +84,8 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/jobs/${JOB_ID}/analysis`)
-  await expect(page.getByText('82.50점', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: '강점과 보완 포인트' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
 
@@ -226,6 +239,7 @@ function analysisSummary() {
     analysisVersion: 2,
     eligibility: 'INELIGIBLE',
     fitScore: 82.5,
+    analysisCoverage: 86.67,
     analysisOutdated: true,
     outdatedReasons: ['JOB_CONTENT_CHANGED', 'PROFILE_CHANGED', 'EVIDENCE_CHANGED'],
     createdAt: NOW,
@@ -282,7 +296,8 @@ function analysisDetail() {
     strengths: ['Spring API 개발 경험이 요구사항과 일치해요.'],
     gaps: ['필수 경력 기간은 추가 확인이 필요해요.'],
     matchedEvidenceRefs: [evidence],
-    analysisSummary: '필수 경력은 부족하지만 핵심 기술 경험은 높은 일치를 보여요.',
+    analysisSummary:
+      '필수 경력은 부족하지만 핵심 기술 경험은 높은 일치를 보여요. 확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.',
   }
 }
 

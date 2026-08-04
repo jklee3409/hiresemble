@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-04] Session Summary (공고 분석 점수 표시 반올림)
+
+- What was done:
+  - 적합도 표시 helper를 소수점 두 자리에서 가장 가까운 5점 단위 정수로 변경했다.
+- Key decisions:
+  - 점수 계산과 API 원값은 유지하고 사용자 presentation만 단순화한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job Analysis 집중 Vitest와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job Analysis coverage fixture)
 
 - What was done:

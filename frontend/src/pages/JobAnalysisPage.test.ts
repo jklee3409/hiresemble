@@ -279,6 +279,8 @@ describe('P6 Job analysis page', () => {
     const latest = jobAnalysisDetailFixture({
       eligibility: 'INELIGIBLE',
       fitScore: 82.5,
+      analysisSummary:
+        '필수 경력 기간은 부족하지만 핵심 기술 경험은 높은 일치를 보여요. 확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.',
       analysisOutdated: true,
       outdatedReasons: ['JOB_CONTENT_CHANGED', 'PROFILE_CHANGED', 'EVIDENCE_CHANGED'],
       responsibilities: base.responsibilities.map((item) => ({
@@ -307,8 +309,19 @@ describe('P6 Job analysis page', () => {
     )
     expect(wrapper.get('.analysis-result__hero').text()).not.toContain('최신 분석')
     expect(wrapper.get('.analysis-result__hero').text()).not.toContain('분석 버전 2')
-    expect(wrapper.text()).toContain('82.50점')
+    expect(wrapper.text()).toContain('85점')
+    expect(wrapper.text()).not.toMatch(/\d+\.\d+\s*(?:\/\s*\d+\.\d+)?점/)
     expect(wrapper.get('abbr').attributes('title')).toContain('합격 가능성')
+    expect(wrapper.text()).toContain('AI 핵심 요약')
+    expect(wrapper.text()).toContain(
+      '필수 경력 기간은 부족하지만 핵심 기술 경험은 높은 일치를 보여요.',
+    )
+    expect(wrapper.text()).not.toContain(
+      '확인 가능한 근거 유형만 반영했으며, 일부 요건은 추가 확인이 필요합니다.',
+    )
+    expect(
+      wrapper.findAll('.analysis-requirement-group').every((item) => !item.attributes('open')),
+    ).toBe(true)
     expect(wrapper.text()).toContain('Java 개발 경력 3년 이상')
     expect(wrapper.text()).toContain('대규모 트래픽 경험')
     expect(wrapper.text()).toContain('공고 본문')
@@ -316,23 +329,33 @@ describe('P6 Job analysis page', () => {
     expect(wrapper.text()).toContain('Spring API 개발 경험이 요구사항과 일치해요')
     expect(wrapper.text()).toContain('필수 경력 기간은 추가 확인이 필요해요')
     expect(wrapper.text()).toContain('결제 API 개선 프로젝트')
-    expect(wrapper.text()).toContain('20.00 / 40.00점')
+    expect(wrapper.text()).toContain('20 / 40점')
     expect(wrapper.get('.status-badge--warning').text()).toBe('OUTDATED')
     expect(wrapper.text()).toContain('공고 내용이 변경됨')
     expect(wrapper.text()).toContain('프로필 정보가 변경됨')
     expect(wrapper.text()).toContain('확인한 경험이 변경됨')
     expect(wrapper.text()).toContain('아래 기존 결과는 그대로 유지돼요')
-    expect(wrapper.text()).toContain('과거 분석 이력')
+    expect(wrapper.text()).toContain('분석 결과 기록')
+    expect(wrapper.text()).not.toContain('분석 버전')
+    expect(wrapper.text()).not.toContain('결정론적 점수')
+    expect(wrapper.text()).not.toContain('판정 근거 보기')
+    expect(wrapper.text()).not.toContain('읽기 전용 요약')
     expect(wrapper.text()).not.toContain('재분석 옵션')
     expect(wrapper.text()).not.toContain('균형형')
     expect(wrapper.text()).not.toContain('경제형')
 
-    const olderButton = wrapper
-      .findAll('.analysis-history__list button')
-      .find((button) => button.text().includes('버전 1'))
+    const olderButton = wrapper.findAll('.analysis-history__list button')[1]
     await olderButton?.trigger('click')
-    expect(wrapper.get('.analysis-history__selection').text()).toContain('45.00점')
-    expect(wrapper.get('.analysis-history__selection').text()).toContain('과거')
+    expect(wrapper.get('.analysis-history__selection').text()).toContain('45점')
+    expect(wrapper.get('.analysis-history__selection').text()).toContain('이전에 저장된 결과')
+
+    const partialFilter = wrapper
+      .findAll('.analysis-breakdown__filters button')
+      .find((button) => button.text().includes('일부 일치'))
+    await partialFilter?.trigger('click')
+    expect(wrapper.findAll('.analysis-criterion')).toHaveLength(1)
+    expect(wrapper.get('.analysis-criterion').text()).toContain('Java 개발 경력 3년')
+    expect(wrapper.get('.analysis-criterion').text()).not.toContain('Spring 기반 API 개발')
 
     const reanalyzeButtons = wrapper
       .findAll('button')
@@ -380,10 +403,10 @@ describe('P6 Job analysis page', () => {
 
     const { wrapper } = await mountPage()
 
-    expect(wrapper.text()).toContain('82.50점')
-    expect(wrapper.text()).toContain('분석 버전 2')
+    expect(wrapper.text()).toContain('85점')
+    expect(wrapper.text()).not.toContain('분석 버전')
     expect(wrapper.text()).toContain('확인한 경험이 변경됨')
-    expect(wrapper.text()).toContain('저장된 과거 분석과 당시 점수는 변경하지 않아요')
+    expect(wrapper.text()).toContain('저장된 결과와 점수는 그대로 두고')
     expect(wrapper.text()).toContain('현재는 승인 거절된 과거 근거')
     expect(wrapper.text()).toContain('현재 상태: 승인 거절됨 · 재분석 근거에서 제외')
     expect(wrapper.text()).toContain('현재는 원본이 삭제된 과거 근거')

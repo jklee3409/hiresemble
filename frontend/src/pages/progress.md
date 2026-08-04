@@ -4,6 +4,21 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-04] Session Summary (공고 분석 결과 요약·필터·인사이트 UI)
+
+- What was done:
+  - `JobAnalysisPage`의 매칭 보드에 padding을 보강하고 공고 추출 목록을 AI 핵심 요약과 세 개의 접힌 상세로 바꿨다.
+  - 강점·보완점은 번호형 insight panel로, 기준 결과는 상태 filter와 친화적 상세 문구로, 이력은 날짜 중심의 접힌 card로 재구성했다.
+- Key decisions:
+  - 저장된 `analysisSummary`의 제거 요청 문장은 presentation에서 숨기고 나머지 AI 요약은 보존한다.
+  - 숫자 version은 사용자 주 제목에서 제외하고 현재 결과·분석 시각으로 식별한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Vitest 9/9, Frontend 전체 check와 Chromium desktop/mobile 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 시각 요약·접이식 근거)
 
 - What was done:

@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-04] Session Summary (공고 분석 결과 UI 표시 계약)
+
+- What was done:
+  - `page.md`에 5점 단위 표시 반올림, AI 핵심 요약·접힌 원문 상세, 상태 filter와 사용자 친화적 결과 기록 계약을 추가했다.
+- Key decisions:
+  - API decimal과 분석 version은 보존하되 화면에서는 정수 점수와 현재 결과·분석 시각을 우선한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Vue 구현, 집중 Vitest, Chromium desktop/mobile와 page 명세를 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 source·retrieval·coverage v2 계약)
 
 - What was done:

@@ -42,6 +42,8 @@ import { useAuthStore } from '@/stores/auth'
 
 const SCORE_DISCLAIMER =
   '적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.'
+const REMOVED_SUMMARY_SENTENCE =
+  /확인 가능한 근거 유형만 반영했으며,\s*일부 요건은 추가 확인이 필요합니다\.?/g
 const ACTIVE_RUN_STATUSES: AgentRunStatus[] = ['QUEUED', 'RUNNING', 'WAITING_USER']
 const TERMINAL_FAILURE_STATUSES: AgentRunStatus[] = ['FAILED', 'CANCELLED', 'INTERRUPTED']
 type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
@@ -76,6 +78,7 @@ const acceptedRunId = ref('')
 const actionError = ref<ApiClientError | null>(null)
 const historyPage = ref(0)
 const selectedHistoryId = ref<string | null>(null)
+const criterionFilter = ref<MatchLevel | 'ALL'>('ALL')
 const connectionState = ref<AgentRunConnectionState>('connecting')
 
 const job = useJobDetailQuery(userId, jobId)
@@ -238,6 +241,20 @@ const matchOverview = computed(() => {
     count: criteria.filter((criterion) => criterion.matchLevel === level).length,
   }))
 })
+const filteredCriteria = computed(() => {
+  const criteria = latestAnalysis.data.value?.scoreBreakdown ?? []
+  return criterionFilter.value === 'ALL'
+    ? criteria
+    : criteria.filter((criterion) => criterion.matchLevel === criterionFilter.value)
+})
+const displayedAnalysisSummary = computed(() =>
+  (latestAnalysis.data.value?.analysisSummary ?? '')
+    .replace(REMOVED_SUMMARY_SENTENCE, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim(),
+)
+const roundToFive = (value: number) => Math.round(value / 5) * 5
+const formatScore = (value: number) => String(roundToFive(value))
 const categoryOverview = computed(() => {
   const criteria = latestAnalysis.data.value?.scoreBreakdown ?? []
   return Object.entries(FIT_CRITERION_CATEGORY_LABELS)
@@ -251,13 +268,13 @@ const categoryOverview = computed(() => {
         count: items.length,
         score,
         weight,
-        percentage: weight > 0 ? Math.round((score / weight) * 100) : null,
+        percentage: weight > 0 ? roundToFive((score / weight) * 100) : null,
       }
     })
     .filter((item) => item.count > 0)
 })
 const formatCoverage = (value: number | null) =>
-  value === null ? '이전 분석' : `${Math.round(value)}%`
+  value === null ? '기록 없음' : `${roundToFive(value)}%`
 const connectionLabel = computed(() => {
   if (!runIsActive.value) return '진행 상황 확인 완료'
   return {
@@ -597,7 +614,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         class="job-analysis__state"
         kind="loading"
         title="최근 분석 결과를 확인하는 중…"
-        description="공고에 저장된 최신 분석 버전을 불러오고 있어요."
+        description="공고에 저장된 가장 최근 결과를 불러오고 있어요."
       />
       <StatePanel
         v-else-if="latestAnalysisFailed"
@@ -669,7 +686,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 params: { agentRunId: latestAnalysis.data.value.agentRunId },
               }"
             >
-              AI 작업 상세
+              분석 과정 보기
             </RouterLink>
           </div>
           <div class="analysis-result__metrics">
@@ -686,9 +703,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <p>공고 조건과 내 정보의 일치도예요.</p>
             </div>
             <div class="analysis-metric analysis-metric--coverage">
-              <span>분석 커버리지</span>
+              <span>확인한 요건</span>
               <strong>{{ formatCoverage(latestAnalysis.data.value.analysisCoverage) }}</strong>
-              <p>등록한 정보로 판정할 수 있었던 요건 비율이에요.</p>
+              <p>등록한 정보로 확인할 수 있었던 요건 비율이에요.</p>
             </div>
             <div class="analysis-metric">
               <span>잘 맞는 경험</span>
@@ -699,9 +716,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
               <strong>{{ latestAnalysis.data.value.gaps.length }}개</strong>
             </div>
           </div>
-          <p v-if="latestAnalysis.data.value.analysisSummary" class="analysis-result__summary">
-            {{ latestAnalysis.data.value.analysisSummary }}
-          </p>
           <div class="analysis-result__next" aria-label="분석 다음 단계">
             <RouterLink
               class="button button--primary"
@@ -731,10 +745,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         <section class="analysis-overview section-surface" aria-labelledby="match-overview-heading">
           <div class="analysis-overview__heading">
             <div>
-              <p class="section-kicker">한눈에 보기</p>
+              <p class="section-kicker">매칭 요약</p>
               <h3 id="match-overview-heading" class="section-title">요건 매칭 현황</h3>
             </div>
-            <p>확인 불가는 점수에서 제외하고 커버리지에만 반영해요.</p>
+            <p>등록한 정보와 공고 조건을 비교한 결과예요.</p>
           </div>
           <div class="analysis-overview__statuses">
             <article v-for="item in matchOverview" :key="item.level">
@@ -753,103 +767,177 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 <span :style="{ width: `${item.percentage ?? 0}%` }"></span>
               </div>
               <small v-if="item.percentage !== null">
-                {{ item.score.toFixed(2) }} / {{ item.weight.toFixed(2) }}점
+                {{ formatScore(item.score) }} / {{ formatScore(item.weight) }}점
               </small>
               <small v-else>판정 가능한 근거가 아직 없어요.</small>
             </article>
           </div>
         </section>
 
-        <div class="analysis-result__requirements">
-          <section class="analysis-list-section section-surface">
-            <p class="section-kicker">업무</p>
-            <h3 class="section-title">
-              주요 업무 <span>{{ latestAnalysis.data.value.responsibilities.length }}</span>
-            </h3>
-            <ul v-if="latestAnalysis.data.value.responsibilities.length">
-              <li
-                v-for="item in latestAnalysis.data.value.responsibilities"
-                :key="`${item.category}/${item.text}`"
-              >
-                <span>{{ item.text }}</span>
-                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
-                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
-                </small>
-              </li>
-            </ul>
-            <p v-else class="analysis-empty-copy">확인된 주요 업무가 없어요.</p>
-          </section>
-          <section class="analysis-list-section section-surface">
-            <p class="section-kicker">조건</p>
-            <h3 class="section-title">
-              필수 지원 자격
-              <span>{{ latestAnalysis.data.value.requiredQualifications.length }}</span>
-            </h3>
-            <ul v-if="latestAnalysis.data.value.requiredQualifications.length">
-              <li
-                v-for="item in latestAnalysis.data.value.requiredQualifications"
-                :key="`${item.category}/${item.text}`"
-              >
-                <span>{{ item.text }}</span>
-                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
-                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
-                </small>
-              </li>
-            </ul>
-            <p v-else class="analysis-empty-copy">확인된 필수 지원 자격이 없어요.</p>
-          </section>
-          <section class="analysis-list-section section-surface">
-            <p class="section-kicker">우대</p>
-            <h3 class="section-title">
-              우대 사항 <span>{{ latestAnalysis.data.value.preferredQualifications.length }}</span>
-            </h3>
-            <ul v-if="latestAnalysis.data.value.preferredQualifications.length">
-              <li
-                v-for="item in latestAnalysis.data.value.preferredQualifications"
-                :key="`${item.category}/${item.text}`"
-              >
-                <span>{{ item.text }}</span>
-                <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
-                  {{ formatRequirementSourceLocation(item.sourceLocation) }}
-                </small>
-              </li>
-            </ul>
-            <p v-else class="analysis-empty-copy">확인된 우대 사항이 없어요.</p>
-          </section>
-        </div>
+        <section
+          class="analysis-requirements section-surface"
+          aria-labelledby="job-summary-heading"
+        >
+          <div class="analysis-section-heading">
+            <div>
+              <p class="section-kicker">공고 핵심 정리</p>
+              <h3 id="job-summary-heading" class="section-title">먼저 중요한 내용만 확인하세요</h3>
+            </div>
+            <p>원문에서 추출한 세부 내용은 항목별로 펼쳐볼 수 있어요.</p>
+          </div>
+          <div v-if="displayedAnalysisSummary" class="analysis-requirements__summary">
+            <span>AI 핵심 요약</span>
+            <p>{{ displayedAnalysisSummary }}</p>
+          </div>
+          <div class="analysis-requirements__details">
+            <details class="analysis-requirement-group">
+              <summary>
+                <div>
+                  <span>주요 업무</span>
+                  <strong>
+                    {{
+                      latestAnalysis.data.value.responsibilities[0]?.text ?? '확인된 내용이 없어요.'
+                    }}
+                  </strong>
+                </div>
+                <span class="analysis-requirement-group__count">
+                  {{ latestAnalysis.data.value.responsibilities.length }}개
+                </span>
+              </summary>
+              <ul v-if="latestAnalysis.data.value.responsibilities.length">
+                <li
+                  v-for="item in latestAnalysis.data.value.responsibilities"
+                  :key="`${item.category}/${item.text}`"
+                >
+                  <span>{{ item.text }}</span>
+                  <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                    {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                  </small>
+                </li>
+              </ul>
+              <p v-else class="analysis-empty-copy">확인된 주요 업무가 없어요.</p>
+            </details>
+            <details class="analysis-requirement-group">
+              <summary>
+                <div>
+                  <span>필수 지원 자격</span>
+                  <strong>
+                    {{
+                      latestAnalysis.data.value.requiredQualifications[0]?.text ??
+                      '확인된 내용이 없어요.'
+                    }}
+                  </strong>
+                </div>
+                <span class="analysis-requirement-group__count">
+                  {{ latestAnalysis.data.value.requiredQualifications.length }}개
+                </span>
+              </summary>
+              <ul v-if="latestAnalysis.data.value.requiredQualifications.length">
+                <li
+                  v-for="item in latestAnalysis.data.value.requiredQualifications"
+                  :key="`${item.category}/${item.text}`"
+                >
+                  <span>{{ item.text }}</span>
+                  <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                    {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                  </small>
+                </li>
+              </ul>
+              <p v-else class="analysis-empty-copy">확인된 필수 지원 자격이 없어요.</p>
+            </details>
+            <details class="analysis-requirement-group">
+              <summary>
+                <div>
+                  <span>우대 사항</span>
+                  <strong>
+                    {{
+                      latestAnalysis.data.value.preferredQualifications[0]?.text ??
+                      '확인된 내용이 없어요.'
+                    }}
+                  </strong>
+                </div>
+                <span class="analysis-requirement-group__count">
+                  {{ latestAnalysis.data.value.preferredQualifications.length }}개
+                </span>
+              </summary>
+              <ul v-if="latestAnalysis.data.value.preferredQualifications.length">
+                <li
+                  v-for="item in latestAnalysis.data.value.preferredQualifications"
+                  :key="`${item.category}/${item.text}`"
+                >
+                  <span>{{ item.text }}</span>
+                  <small v-if="formatRequirementSourceLocation(item.sourceLocation)">
+                    {{ formatRequirementSourceLocation(item.sourceLocation) }}
+                  </small>
+                </li>
+              </ul>
+              <p v-else class="analysis-empty-copy">확인된 우대 사항이 없어요.</p>
+            </details>
+          </div>
+        </section>
 
-        <div class="analysis-result__comparison">
-          <section class="analysis-list-section section-surface">
-            <p class="section-kicker">일치</p>
-            <h3 class="section-title">강점</h3>
-            <ul v-if="latestAnalysis.data.value.strengths.length">
-              <li v-for="strength in latestAnalysis.data.value.strengths" :key="strength">
-                {{ strength }}
-              </li>
-            </ul>
-            <p v-else class="analysis-empty-copy">확인한 경험에서 찾은 강점이 아직 없어요.</p>
-          </section>
-          <section class="analysis-list-section section-surface">
-            <p class="section-kicker">보완</p>
-            <h3 class="section-title">부족한 점</h3>
-            <ul v-if="latestAnalysis.data.value.gaps.length">
-              <li v-for="gap in latestAnalysis.data.value.gaps" :key="gap">{{ gap }}</li>
-            </ul>
-            <p v-else class="analysis-empty-copy">현재 확인된 부족한 점이 없어요.</p>
-          </section>
-        </div>
+        <section
+          class="analysis-insights section-surface"
+          aria-labelledby="analysis-insights-heading"
+        >
+          <div class="analysis-section-heading">
+            <div>
+              <p class="section-kicker">지원 전략</p>
+              <h3 id="analysis-insights-heading" class="section-title">강점과 보완 포인트</h3>
+            </div>
+            <p>자기소개서에서 강조할 내용과 보완할 정보를 나눠봤어요.</p>
+          </div>
+          <div class="analysis-insights__grid">
+            <article class="analysis-insight analysis-insight--strength">
+              <div class="analysis-insight__heading">
+                <span aria-hidden="true">✓</span>
+                <div>
+                  <small>잘 맞는 부분</small>
+                  <h4>내 강점</h4>
+                </div>
+                <strong>{{ latestAnalysis.data.value.strengths.length }}</strong>
+              </div>
+              <ol v-if="latestAnalysis.data.value.strengths.length">
+                <li
+                  v-for="(strength, index) in latestAnalysis.data.value.strengths"
+                  :key="strength"
+                >
+                  <span>{{ index + 1 }}</span>
+                  <p>{{ strength }}</p>
+                </li>
+              </ol>
+              <p v-else class="analysis-empty-copy">확인한 경험에서 찾은 강점이 아직 없어요.</p>
+            </article>
+            <article class="analysis-insight analysis-insight--gap">
+              <div class="analysis-insight__heading">
+                <span aria-hidden="true">↑</span>
+                <div>
+                  <small>준비하면 좋은 부분</small>
+                  <h4>보완 포인트</h4>
+                </div>
+                <strong>{{ latestAnalysis.data.value.gaps.length }}</strong>
+              </div>
+              <ol v-if="latestAnalysis.data.value.gaps.length">
+                <li v-for="(gap, index) in latestAnalysis.data.value.gaps" :key="gap">
+                  <span>{{ index + 1 }}</span>
+                  <p>{{ gap }}</p>
+                </li>
+              </ol>
+              <p v-else class="analysis-empty-copy">현재 확인된 보완 포인트가 없어요.</p>
+            </article>
+          </div>
+        </section>
 
         <section class="analysis-evidence section-surface">
-          <p class="section-kicker">분석 당시 근거</p>
-          <h3 class="section-title">분석에 참고한 경험</h3>
+          <p class="section-kicker">내 경험 연결</p>
+          <h3 class="section-title">점수에 활용한 경험</h3>
           <p
             v-if="hasEvidenceWithChangedState"
             class="analysis-evidence__notice alert alert--warning"
             role="status"
           >
-            일부 분석 당시 근거의 현재 승인 상태가 변경됐어요. 아래 표시는 현재 상태 안내이며,
-            저장된 과거 분석과 당시 점수는 변경하지 않아요. 재분석할 때는 현재 확인한 경험만
-            사용해요.
+            이 결과에 사용한 경험 중 현재 상태가 달라진 항목이 있어요. 저장된 결과와 점수는 그대로
+            두고, 다시 분석할 때는 지금 확인된 경험만 사용해요.
           </p>
           <div
             v-if="latestAnalysis.data.value.matchedEvidenceRefs.length"
@@ -878,13 +966,41 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
         </section>
 
         <section class="analysis-breakdown section-surface">
-          <p class="section-kicker">결정론적 점수</p>
-          <h3 class="section-title">기준별 점수</h3>
+          <div class="analysis-section-heading analysis-breakdown__heading">
+            <div>
+              <p class="section-kicker">세부 매칭</p>
+              <h3 class="section-title">조건별 확인 결과</h3>
+            </div>
+            <p>상태를 선택하면 필요한 조건만 모아볼 수 있어요.</p>
+          </div>
+          <div class="analysis-breakdown__filters" aria-label="조건별 확인 결과 필터">
+            <button
+              type="button"
+              :class="{ 'analysis-breakdown__filter--active': criterionFilter === 'ALL' }"
+              :aria-pressed="criterionFilter === 'ALL'"
+              @click="criterionFilter = 'ALL'"
+            >
+              전체
+              <span>{{ latestAnalysis.data.value.scoreBreakdown.length }}</span>
+            </button>
+            <button
+              v-for="item in matchOverview"
+              :key="item.level"
+              type="button"
+              :class="{ 'analysis-breakdown__filter--active': criterionFilter === item.level }"
+              :aria-pressed="criterionFilter === item.level"
+              @click="criterionFilter = item.level"
+            >
+              {{ MATCH_LEVEL_LABELS[item.level] }}
+              <span>{{ item.count }}</span>
+            </button>
+          </div>
           <div class="analysis-breakdown__list">
             <article
-              v-for="criterion in latestAnalysis.data.value.scoreBreakdown"
+              v-for="criterion in filteredCriteria"
               :key="`${criterion.category}/${criterion.criterion}`"
               class="analysis-criterion"
+              :data-match-level="criterion.matchLevel"
             >
               <div class="analysis-criterion__header">
                 <div>
@@ -897,10 +1013,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 />
               </div>
               <p class="analysis-criterion__score">
-                {{ criterion.score.toFixed(2) }} / {{ criterion.weight.toFixed(2) }}점
+                {{ formatScore(criterion.score) }} / {{ formatScore(criterion.weight) }}점
               </p>
               <details class="analysis-criterion__detail">
-                <summary>판정 근거 보기</summary>
+                <summary>판단한 이유와 연결 경험</summary>
                 <p>{{ criterion.explanation }}</p>
                 <ul v-if="criterion.evidenceRefs.length" class="analysis-criterion__evidence">
                   <li
@@ -918,22 +1034,26 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 <p v-else class="analysis-empty-copy">연결된 경험 근거가 없어요.</p>
               </details>
             </article>
+            <p v-if="!filteredCriteria.length" class="analysis-breakdown__empty">
+              이 상태에 해당하는 조건이 없어요.
+            </p>
           </div>
         </section>
       </article>
 
-      <section
+      <details
         v-if="history.data.value?.items.length"
         class="analysis-history section-surface"
         aria-labelledby="analysis-history-heading"
       >
-        <div class="analysis-history__header">
+        <summary class="analysis-history__summary">
           <div>
-            <p class="section-kicker">버전 기록</p>
-            <h3 id="analysis-history-heading" class="section-title">과거 분석 이력</h3>
+            <p class="section-kicker">이전 결과</p>
+            <h3 id="analysis-history-heading" class="section-title">분석 결과 기록</h3>
+            <p>공고나 내 정보가 바뀌기 전 결과도 다시 확인할 수 있어요.</p>
           </div>
-          <span>{{ history.data.value.totalElements }}개 버전</span>
-        </div>
+          <span>총 {{ history.data.value.totalElements }}개</span>
+        </summary>
         <div class="analysis-history__layout">
           <ol class="analysis-history__list">
             <li v-for="item in history.data.value.items" :key="item.id">
@@ -945,17 +1065,30 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 :aria-pressed="selectedHistory?.id === item.id"
                 @click="selectedHistoryId = item.id"
               >
-                <span>버전 {{ item.analysisVersion }}</span>
+                <span>
+                  {{
+                    latestAnalysis.data.value?.id === item.id
+                      ? '현재 결과'
+                      : formatAnalysisInstant(item.createdAt)
+                  }}
+                </span>
                 <small>
-                  {{ latestAnalysis.data.value?.id === item.id ? '현재 최신' : '과거 결과' }}
+                  {{ formatFitScore(item.fitScore) }} ·
+                  {{ ELIGIBILITY_LABELS[item.eligibility] }}
                 </small>
               </button>
             </li>
           </ol>
           <article v-if="selectedHistory" class="analysis-history__selection">
             <div>
-              <p class="section-kicker">읽기 전용 요약</p>
-              <h4>분석 버전 {{ selectedHistory.analysisVersion }}</h4>
+              <p class="section-kicker">선택한 결과</p>
+              <h4>
+                {{
+                  latestAnalysis.data.value?.id === selectedHistory.id
+                    ? '현재 분석 결과'
+                    : formatAnalysisInstant(selectedHistory.createdAt)
+                }}
+              </h4>
             </div>
             <dl>
               <div>
@@ -975,9 +1108,13 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 <dd>{{ formatAnalysisInstant(selectedHistory.createdAt) }}</dd>
               </div>
               <div>
-                <dt>최신 여부</dt>
+                <dt>결과 상태</dt>
                 <dd>
-                  {{ latestAnalysis.data.value?.id === selectedHistory.id ? '현재 최신' : '과거' }}
+                  {{
+                    latestAnalysis.data.value?.id === selectedHistory.id
+                      ? '현재 사용 중인 결과'
+                      : '이전에 저장된 결과'
+                  }}
                 </dd>
               </div>
             </dl>
@@ -988,7 +1125,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
                 params: { agentRunId: selectedHistory.agentRunId },
               }"
             >
-              관련 AI 작업 상세
+              이 결과가 만들어진 과정 보기
             </RouterLink>
           </article>
         </div>
@@ -999,7 +1136,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
           label="공고 분석 이력 페이지"
           @change="historyPage = $event"
         />
-      </section>
+      </details>
       <p v-else-if="history.isLoading.value" class="analysis-history-state" role="status">
         과거 분석 이력을 불러오는 중이에요.
       </p>
@@ -1077,7 +1214,9 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 .analysis-run,
 .analysis-command,
 .analysis-result__hero,
-.analysis-list-section,
+.analysis-overview,
+.analysis-requirements,
+.analysis-insights,
 .analysis-evidence,
 .analysis-breakdown,
 .analysis-history {
@@ -1086,7 +1225,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-run__header,
 .analysis-result__heading,
-.analysis-history__header,
 .analysis-criterion__header {
   display: flex;
   align-items: flex-start;
@@ -1188,8 +1326,8 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-result__metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-3);
   margin-top: var(--space-6);
 }
 
@@ -1197,11 +1335,18 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   display: grid;
   align-content: start;
   justify-items: start;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  grid-column: span 2;
+  gap: var(--space-2);
+  min-height: 8.5rem;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface-subtle);
+}
+
+.analysis-metric--score {
+  grid-column: span 4;
+  background: var(--color-brand-soft);
 }
 
 .analysis-metric > span {
@@ -1212,7 +1357,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 
 .analysis-metric--score strong {
   color: var(--color-brand-strong);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: clamp(2rem, 4vw, 2.75rem);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1238,12 +1383,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: 1.7;
-}
-
-.analysis-result__summary {
-  margin-top: var(--space-5);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-border);
 }
 
 .analysis-result__next {
@@ -1307,6 +1446,12 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   gap: var(--space-2);
 }
 
+.analysis-overview__categories article {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
 .analysis-overview__categories article > div:first-child {
   grid-template-columns: 1fr auto;
   align-items: baseline;
@@ -1332,49 +1477,260 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   background: var(--color-brand-strong);
 }
 
-.analysis-result__requirements {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
+.analysis-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-5);
 }
 
-.analysis-result__comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+.analysis-section-heading > p {
+  max-width: 30rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: right;
 }
 
-.analysis-list-section ul {
+.analysis-requirements__summary {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-soft);
+}
+
+.analysis-requirements__summary span {
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-brand-strong);
+  padding: 0.35rem 0.65rem;
+  font-size: var(--font-size-xs);
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.analysis-requirements__summary p {
+  color: var(--color-text-secondary);
+  font-weight: 620;
+  line-height: 1.75;
+}
+
+.analysis-requirements__details {
+  display: grid;
+  gap: var(--space-2);
   margin-top: var(--space-4);
-  padding-left: var(--space-5);
-  list-style: disc;
 }
 
-.analysis-list-section li {
+.analysis-requirement-group {
+  border-top: 1px solid var(--color-border);
+}
+
+.analysis-requirement-group:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis-requirement-group summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 5.25rem;
+  padding: var(--space-4) var(--space-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.analysis-requirement-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-requirement-group summary::after {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin-bottom: 0.1rem;
+  color: var(--color-text-muted);
+  content: '⌄';
+  font-size: 1.25rem;
+  transition: transform 160ms ease;
+}
+
+.analysis-requirement-group[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.analysis-requirement-group summary > div {
+  min-width: 0;
+}
+
+.analysis-requirement-group summary > div > span {
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-xs);
+  font-weight: 760;
+}
+
+.analysis-requirement-group summary strong {
+  display: block;
+  margin-top: var(--space-1);
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 620;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-requirement-group__count {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 2.75rem;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  padding: 0.3rem 0.55rem;
+  font-size: var(--font-size-xs);
+  font-weight: 730;
+  text-align: center;
+}
+
+.analysis-requirement-group ul {
+  display: grid;
+  gap: 0;
+  margin: 0 var(--space-2) var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-requirement-group li {
+  position: relative;
+  padding: var(--space-3) var(--space-3) var(--space-3) 2.25rem;
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
 
-.analysis-list-section li small {
+.analysis-requirement-group li::before {
+  position: absolute;
+  top: 1.1rem;
+  left: var(--space-3);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-brand);
+  content: '';
+}
+
+.analysis-requirement-group li:nth-child(odd) {
+  background: var(--color-surface-subtle);
+}
+
+.analysis-requirement-group li small {
   display: block;
   margin-top: var(--space-1);
   color: var(--color-text-muted);
 }
 
-.analysis-result__requirements .section-title span {
-  display: inline-grid;
+.analysis-insights__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.analysis-insight {
+  min-width: 0;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+}
+
+.analysis-insight--strength {
+  background: var(--color-success-soft);
+}
+
+.analysis-insight--gap {
+  background: var(--color-warning-soft);
+}
+
+.analysis-insight__heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.analysis-insight__heading > span {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
   place-items: center;
-  min-width: 1.75rem;
-  margin-left: var(--space-1);
-  padding: 0.125rem 0.45rem;
-  border-radius: 999px;
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 72%);
+  font-size: 1.1rem;
+  font-weight: 850;
+}
+
+.analysis-insight--strength .analysis-insight__heading > span,
+.analysis-insight--strength .analysis-insight__heading small {
+  color: var(--color-success-strong);
+}
+
+.analysis-insight--gap .analysis-insight__heading > span,
+.analysis-insight--gap .analysis-insight__heading small {
+  color: var(--color-warning-strong);
+}
+
+.analysis-insight__heading small {
   font-size: var(--font-size-xs);
-  vertical-align: middle;
+  font-weight: 720;
+}
+
+.analysis-insight__heading h4 {
+  margin-top: 0.1rem;
+  font-size: 1.125rem;
+  font-weight: 780;
+}
+
+.analysis-insight__heading > strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-insight ol {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.analysis-insight li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 68%);
+}
+
+.analysis-insight li > span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 760;
+}
+
+.analysis-insight li p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 .analysis-empty-copy {
@@ -1424,6 +1780,55 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   font-weight: 700;
 }
 
+.analysis-breakdown__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.analysis-breakdown__filters button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 0.55rem 0.9rem;
+  font-size: var(--font-size-sm);
+  font-weight: 680;
+}
+
+.analysis-breakdown__filters button:hover {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+}
+
+.analysis-breakdown__filters button span {
+  display: grid;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-breakdown__filter--active {
+  border-color: var(--color-brand) !important;
+  background: var(--color-brand) !important;
+  color: #fff !important;
+}
+
+.analysis-breakdown__filter--active span {
+  background: rgb(255 255 255 / 18%) !important;
+  color: #fff !important;
+}
+
 .analysis-breakdown__list {
   display: grid;
   gap: var(--space-3);
@@ -1433,8 +1838,29 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 .analysis-criterion {
   padding: var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-left: 0.25rem solid var(--color-border-strong);
+  border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
+}
+
+.analysis-criterion[data-match-level='MATCHED'] {
+  border-left-color: var(--color-success);
+}
+
+.analysis-criterion[data-match-level='PARTIAL'] {
+  border-left-color: var(--color-warning);
+}
+
+.analysis-criterion[data-match-level='MISSING'] {
+  border-left-color: var(--color-danger);
+}
+
+.analysis-breakdown__empty {
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .analysis-criterion__header span {
@@ -1504,9 +1930,41 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   color: var(--color-warning-strong) !important;
 }
 
-.analysis-history__header > span {
+.analysis-history__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  cursor: pointer;
+  list-style: none;
+}
+
+.analysis-history__summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-history__summary::after {
+  color: var(--color-text-muted);
+  content: '⌄';
+  font-size: 1.4rem;
+  transition: transform 160ms ease;
+}
+
+.analysis-history[open] .analysis-history__summary::after {
+  transform: rotate(180deg);
+}
+
+.analysis-history__summary > div > p:last-child {
+  margin-top: var(--space-1);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+.analysis-history__summary > span {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
 }
 
 .analysis-history__layout {
@@ -1527,12 +1985,10 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 }
 
 .analysis-history__list button {
-  display: flex;
+  display: grid;
   width: 100%;
   min-height: 2.75rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -1549,6 +2005,7 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 }
 
 .analysis-history__list small {
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }
 
@@ -1595,7 +2052,6 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
 }
 
 @media (max-width: 64rem) {
-  .analysis-result__requirements,
   .analysis-evidence__grid {
     grid-template-columns: 1fr;
   }
@@ -1609,9 +2065,17 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   }
 
   .analysis-overview__statuses,
-  .analysis-overview__categories,
-  .analysis-result__metrics {
+  .analysis-overview__categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-result__metrics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .analysis-metric,
+  .analysis-metric--score {
+    grid-column: span 2;
   }
 }
 
@@ -1621,19 +2085,42 @@ function matchTone(value: MatchLevel): 'neutral' | 'info' | 'success' | 'warning
   .analysis-run__failure,
   .analysis-run__waiting,
   .analysis-result__heading,
-  .analysis-history__header,
+  .analysis-section-heading,
+  .analysis-history__summary,
   .analysis-criterion__header {
     align-items: stretch;
     flex-direction: column;
   }
 
   .analysis-result__metrics,
-  .analysis-result__comparison,
+  .analysis-insights__grid,
   .analysis-overview__statuses,
   .analysis-overview__categories,
   .analysis-history__layout,
   .analysis-history__selection dl {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-metric,
+  .analysis-metric--score {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .analysis-section-heading > p {
+    text-align: left;
+  }
+
+  .analysis-requirements__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-requirement-group summary strong {
+    white-space: normal;
+  }
+
+  .analysis-history__summary > span {
+    margin-left: 0;
   }
 
   .analysis-context-header {

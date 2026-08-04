@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (공고 분석 결과 표시 계약 개선)
+
+- What was done:
+  - 페이지 명세에 점수 반올림, 요약 우선 상세 공개, 강점·보완 insight, 조건 filter와 날짜 중심 분석 기록을 반영했다.
+- Key decisions:
+  - 공개 API·점수 계산 계약은 변경하지 않고 사용자 화면의 정보 구조만 구체화한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 구현·component test·Chromium desktop/mobile와 Frontend 전체 check 결과에 문서를 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (회원가입 표시 문구·동의 상세 계약)
 
 - What was done:

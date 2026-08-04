@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-04] Session Summary (공고 분석 결과 UI 정보 구조 개선)
+
+- What was done:
+  - 공고 분석 결과를 요약 우선·접힌 상세·상태 filter 구조로 재구성하고 점수 표시와 사용자 문구를 정리했다.
+- Key decisions:
+  - API·분석 원값은 유지하고 화면에서만 소수점 없는 5점 단위 반올림을 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 67 files/281 tests·production build, Job Analysis Chromium desktop/mobile와 전체 화면 시각 캡처가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 source block·criterion RAG·coverage v2 개선)
 
 - What was done:

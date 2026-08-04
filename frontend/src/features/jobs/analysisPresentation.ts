@@ -106,7 +106,7 @@ export function formatAnalysisInstant(value: string): string {
 }
 
 export function formatFitScore(value: number | null): string {
-  return value === null ? '산정하지 못함' : `${value.toFixed(2)}점`
+  return value === null ? '산정하지 못함' : `${Math.round(value / 5) * 5}점`
 }
 
 export function formatRequirementSourceLocation(value: string | null): string | null {
