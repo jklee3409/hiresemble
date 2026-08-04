@@ -7,7 +7,12 @@ import { createMemoryHistory } from 'vue-router'
 import App from '@/App.vue'
 import * as agentRunApi from '@/shared/api/agentRunApi'
 import * as authApi from '@/shared/api/authApi'
-import type { AuthSessionDto, ErrorResponseDto, ProfileDto } from '@/shared/api/contracts'
+import type {
+  AuthSessionDto,
+  ErrorResponseDto,
+  ProfileDto,
+  ProfileEligibilityDto,
+} from '@/shared/api/contracts'
 import * as dashboardApi from '@/shared/api/dashboardApi'
 import type { DashboardDto } from '@/shared/api/dashboardContracts'
 import * as documentApi from '@/shared/api/documentApi'
@@ -29,6 +34,8 @@ vi.mock('@/shared/api/authApi', () => ({
 vi.mock('@/shared/api/profileApi', () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
+  getProfileEligibility: vi.fn(),
+  updateProfileEligibility: vi.fn(),
   listEducations: vi.fn(),
   createEducation: vi.fn(),
 }))
@@ -55,6 +62,7 @@ describe('authentication route policy', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.mocked(profileApi.getProfile).mockResolvedValue(emptyProfile())
+    vi.mocked(profileApi.getProfileEligibility).mockResolvedValue(emptyEligibility())
     vi.mocked(profileApi.listEducations).mockResolvedValue(emptyPage())
     vi.mocked(documentApi.listDocuments).mockResolvedValue(emptyPage())
     vi.mocked(jobApi.listJobs).mockResolvedValue(emptyPage())
@@ -288,6 +296,19 @@ function session(id: string): AuthSessionDto {
   return {
     user: { id, email: `${id}@example.com`, displayName: id },
     csrf: { headerName: 'X-CSRF-TOKEN', parameterName: '_csrf', token: `csrf-${id}` },
+  }
+}
+
+function emptyEligibility(): ProfileEligibilityDto {
+  return {
+    id: 'eligibility-id',
+    workAvailableDate: null,
+    militaryStatus: 'UNSPECIFIED',
+    overseasTravelEligibility: 'UNSPECIFIED',
+    employmentDisqualificationStatus: 'UNSPECIFIED',
+    version: 0,
+    createdAt: '2026-08-04T00:00:00Z',
+    updatedAt: '2026-08-04T00:00:00Z',
   }
 }
 

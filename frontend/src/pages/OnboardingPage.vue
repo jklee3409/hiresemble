@@ -23,7 +23,13 @@ import {
   validateEducationForm,
   validateProfileForm,
 } from '@/features/profile/schemas'
-import type { EducationCreateRequest, ProfileDto, ProfileWrite } from '@/shared/api/contracts'
+import type {
+  EducationCreateRequest,
+  ProfileDto,
+  ProfileEligibilityDto,
+  ProfileEligibilityWrite,
+  ProfileWrite,
+} from '@/shared/api/contracts'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import { useAuthStore } from '@/stores/auth'
@@ -54,12 +60,19 @@ const educationForm = reactive<EducationFormValues>({
   gpaScale: '',
   description: '',
 })
+const eligibilityForm = reactive<ProfileEligibilityWrite>({
+  workAvailableDate: null,
+  militaryStatus: 'UNSPECIFIED',
+  overseasTravelEligibility: 'UNSPECIFIED',
+  employmentDisqualificationStatus: 'UNSPECIFIED',
+  version: 0,
+})
 const fieldErrors = ref<Record<string, string>>({})
 const generalError = ref('')
 const message = ref('')
 const profileConflict = ref<{ draft: Record<string, unknown>; latest: ProfileDto } | null>(null)
 const steps = [
-  { number: 1, label: '기본 정보', description: '이름과 소개' },
+  { number: 1, label: '기본 정보', description: '이름·지원 자격' },
   { number: 2, label: '최종 학력', description: '가장 높은 교육 단계' },
   { number: 3, label: '희망 조건', description: '관심 있는 분야' },
   { number: 4, label: '자료 등록', description: '이력서·포트폴리오' },
@@ -77,11 +90,23 @@ const educationQuery = useQuery({
   queryFn: () => profileApi.listEducations({ page: 0, size: 20, sort: 'createdAt,desc' }),
   enabled: computed(() => userId.value !== ''),
 })
+const eligibilityQuery = useQuery({
+  queryKey: computed(() => profileQueryKeys.eligibility(userId.value)),
+  queryFn: profileApi.getProfileEligibility,
+  enabled: computed(() => userId.value !== ''),
+})
 
 watch(
   () => profileQuery.data.value,
   (profile) => {
     if (profile !== undefined && profileConflict.value === null) loadProfile(profile)
+  },
+  { immediate: true },
+)
+watch(
+  () => eligibilityQuery.data.value,
+  (eligibility) => {
+    if (eligibility !== undefined) loadEligibility(eligibility)
   },
   { immediate: true },
 )
@@ -92,22 +117,36 @@ const profileMutation = useMutation({
 const educationMutation = useMutation({
   mutationFn: (request: EducationCreateRequest) => profileApi.createEducation(request),
 })
-const isLoading = computed(() => profileQuery.isPending.value || educationQuery.isPending.value)
-const hasLoadError = computed(() => profileQuery.isError.value || educationQuery.isError.value)
+const eligibilityMutation = useMutation({
+  mutationFn: (request: ProfileEligibilityWrite) => profileApi.updateProfileEligibility(request),
+})
+const isLoading = computed(
+  () =>
+    profileQuery.isPending.value ||
+    educationQuery.isPending.value ||
+    eligibilityQuery.isPending.value,
+)
+const hasLoadError = computed(
+  () =>
+    profileQuery.isError.value || educationQuery.isError.value || eligibilityQuery.isError.value,
+)
+const isBasicSaving = computed(
+  () => profileMutation.isPending.value || eligibilityMutation.isPending.value,
+)
 const completionPercent = computed(() => {
   const missing = profileQuery.data.value?.missingCompletionItems.length ?? 5
   return (5 - missing) * 20
 })
 
 async function saveBasic(): Promise<void> {
-  await saveProfile(2)
+  await saveProfile(2, true)
 }
 
 async function saveDesired(): Promise<void> {
   await saveProfile(4)
 }
 
-async function saveProfile(nextStep: number): Promise<void> {
+async function saveProfile(nextStep: number, saveEligibility = false): Promise<void> {
   fieldErrors.value = {}
   generalError.value = ''
   message.value = ''
@@ -122,6 +161,25 @@ async function saveProfile(nextStep: number): Promise<void> {
     const saved = await profileMutation.mutateAsync(validation.data)
     queryClient.setQueryData(profileQueryKeys.profile(userId.value), saved)
     loadProfile(saved)
+    if (saveEligibility) {
+      try {
+        const savedEligibility = await eligibilityMutation.mutateAsync({ ...eligibilityForm })
+        queryClient.setQueryData(profileQueryKeys.eligibility(userId.value), savedEligibility)
+        loadEligibility(savedEligibility)
+      } catch (error) {
+        const apiError = normalizeApiError(error)
+        if (isVersionConflict(apiError)) {
+          const latest = await profileApi.getProfileEligibility()
+          queryClient.setQueryData(profileQueryKeys.eligibility(userId.value), latest)
+          loadEligibility(latest)
+          generalError.value =
+            '지원 자격 정보가 다른 곳에서 먼저 변경되어 최신 값을 불러왔어요. 다시 확인해 주세요.'
+          return
+        }
+        generalError.value = apiError.message
+        return
+      }
+    }
     step.value = nextStep
   } catch (error) {
     const apiError = normalizeApiError(error)
@@ -174,6 +232,16 @@ function loadProfile(profile: ProfileDto): void {
   })
 }
 
+function loadEligibility(eligibility: ProfileEligibilityDto): void {
+  Object.assign(eligibilityForm, {
+    workAvailableDate: eligibility.workAvailableDate,
+    militaryStatus: eligibility.militaryStatus,
+    overseasTravelEligibility: eligibility.overseasTravelEligibility,
+    employmentDisqualificationStatus: eligibility.employmentDisqualificationStatus,
+    version: eligibility.version,
+  })
+}
+
 function cancelConflict(): void {
   const latest = profileConflict.value?.latest
   profileConflict.value = null
@@ -197,7 +265,7 @@ function complete(): void {
 }
 
 async function retryLoad(): Promise<void> {
-  await Promise.all([profileQuery.refetch(), educationQuery.refetch()])
+  await Promise.all([profileQuery.refetch(), educationQuery.refetch(), eligibilityQuery.refetch()])
 }
 </script>
 
@@ -327,14 +395,71 @@ async function retryLoad(): Promise<void> {
           type="date"
         />
       </div>
+      <fieldset class="onboarding-eligibility">
+        <legend>지원 자격 확인 정보</legend>
+        <p class="onboarding-eligibility__description">
+          공고의 필수 조건을 더 정확히 확인하는 데 사용해요. 자세한 사유는 받지 않으며, 실제 지원
+          단계에서 회사가 다시 확인할 수 있어요.
+        </p>
+        <div class="onboarding-form-grid">
+          <div class="field">
+            <label class="field-label" for="onboarding-workAvailableDate">근무 가능일</label>
+            <input
+              id="onboarding-workAvailableDate"
+              v-model="eligibilityForm.workAvailableDate"
+              class="control"
+              type="date"
+            />
+          </div>
+          <div class="field">
+            <label class="field-label" for="onboarding-militaryStatus">병역 상태</label>
+            <select
+              id="onboarding-militaryStatus"
+              v-model="eligibilityForm.militaryStatus"
+              class="control"
+            >
+              <option value="UNSPECIFIED">선택하지 않음</option>
+              <option value="COMPLETED">이행</option>
+              <option value="EXEMPT">면제</option>
+              <option value="NOT_APPLICABLE">해당 없음</option>
+              <option value="NOT_COMPLETED">미이행</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="onboarding-overseasTravelEligibility">
+              해외여행 가능 여부
+            </label>
+            <select
+              id="onboarding-overseasTravelEligibility"
+              v-model="eligibilityForm.overseasTravelEligibility"
+              class="control"
+            >
+              <option value="UNSPECIFIED">선택하지 않음</option>
+              <option value="ELIGIBLE">가능</option>
+              <option value="RESTRICTED">제한 있음</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="onboarding-employmentDisqualificationStatus">
+              채용 결격 사유 여부
+            </label>
+            <select
+              id="onboarding-employmentDisqualificationStatus"
+              v-model="eligibilityForm.employmentDisqualificationStatus"
+              class="control"
+            >
+              <option value="UNSPECIFIED">선택하지 않음</option>
+              <option value="NONE_DECLARED">없음</option>
+              <option value="HAS_RESTRICTION">제한 있음</option>
+            </select>
+          </div>
+        </div>
+        <p class="field-help">선택하지 않은 항목은 공고 분석에서 ‘알 수 없음’으로 처리해요.</p>
+      </fieldset>
       <div class="onboarding-actions">
         <button type="button" class="button button--ghost" @click="later">추후 입력</button>
-        <button
-          type="submit"
-          class="button button--primary"
-          :disabled="profileMutation.isPending.value"
-        >
-          {{ profileMutation.isPending.value ? '저장 중…' : '저장하고 다음' }}
+        <button type="submit" class="button button--primary" :disabled="isBasicSaving">
+          {{ isBasicSaving ? '저장 중…' : '저장하고 다음' }}
           <AppIcon name="arrow-right" />
         </button>
       </div>
@@ -666,6 +791,30 @@ async function retryLoad(): Promise<void> {
 
 .onboarding-date-field {
   max-width: 18rem;
+}
+
+.onboarding-eligibility {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: 1rem;
+}
+
+.onboarding-eligibility legend {
+  padding-inline: 0.25rem;
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  font-weight: 750;
+}
+
+.onboarding-eligibility__description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.65;
 }
 
 .onboarding-actions {

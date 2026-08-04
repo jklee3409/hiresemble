@@ -5,13 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import OnboardingPage from './OnboardingPage.vue'
-import type { ProfileDto } from '@/shared/api/contracts'
+import type { ProfileDto, ProfileEligibilityDto } from '@/shared/api/contracts'
 import * as profileApi from '@/shared/api/profileApi'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/shared/api/profileApi', () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
+  getProfileEligibility: vi.fn(),
+  updateProfileEligibility: vi.fn(),
   listEducations: vi.fn(),
   createEducation: vi.fn(),
 }))
@@ -32,6 +34,15 @@ describe('P2 onboarding', () => {
       version: 2,
     }
     vi.mocked(profileApi.getProfile).mockResolvedValue(initial)
+    vi.mocked(profileApi.getProfileEligibility).mockResolvedValue(eligibility())
+    vi.mocked(profileApi.updateProfileEligibility).mockResolvedValue({
+      ...eligibility(),
+      workAvailableDate: '2026-09-01',
+      militaryStatus: 'COMPLETED',
+      overseasTravelEligibility: 'ELIGIBLE',
+      employmentDisqualificationStatus: 'NONE_DECLARED',
+      version: 1,
+    })
     vi.mocked(profileApi.listEducations).mockResolvedValue({
       items: [],
       page: 0,
@@ -84,12 +95,23 @@ describe('P2 onboarding', () => {
     await flushPromises()
 
     await wrapper.get('#onboarding-legalName').setValue('Onboarding User')
+    await wrapper.get('#onboarding-workAvailableDate').setValue('2026-09-01')
+    await wrapper.get('#onboarding-militaryStatus').setValue('COMPLETED')
+    await wrapper.get('#onboarding-overseasTravelEligibility').setValue('ELIGIBLE')
+    await wrapper.get('#onboarding-employmentDisqualificationStatus').setValue('NONE_DECLARED')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.updateProfile).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ legalName: 'Onboarding User', version: 0 }),
     )
+    expect(profileApi.updateProfileEligibility).toHaveBeenCalledWith({
+      workAvailableDate: '2026-09-01',
+      militaryStatus: 'COMPLETED',
+      overseasTravelEligibility: 'ELIGIBLE',
+      employmentDisqualificationStatus: 'NONE_DECLARED',
+      version: 0,
+    })
 
     await wrapper.get('#onboarding-schoolName').setValue('School')
     await wrapper.get('form').trigger('submit')
@@ -158,6 +180,19 @@ function profile(version: number, completed: boolean): ProfileDto {
       'PRIMARY_EDUCATION',
     ],
     version,
+    createdAt: '2026-07-19T00:00:00Z',
+    updatedAt: '2026-07-19T00:00:00Z',
+  }
+}
+
+function eligibility(): ProfileEligibilityDto {
+  return {
+    id: 'eligibility-id',
+    workAvailableDate: null,
+    militaryStatus: 'UNSPECIFIED',
+    overseasTravelEligibility: 'UNSPECIFIED',
+    employmentDisqualificationStatus: 'UNSPECIFIED',
+    version: 0,
     createdAt: '2026-07-19T00:00:00Z',
     updatedAt: '2026-07-19T00:00:00Z',
   }
