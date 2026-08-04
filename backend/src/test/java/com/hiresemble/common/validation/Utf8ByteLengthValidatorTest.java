@@ -12,11 +12,26 @@ class Utf8ByteLengthValidatorTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
-    void signupUsesUtf8BytesAtBothBoundaries() {
-        assertThat(validator.validate(signup("가가가"))).extracting("propertyPath").hasToString("[password]");
-        assertThat(validator.validate(signup("가가가a"))).isEmpty();
-        assertThat(validator.validate(signup("가".repeat(24)))).isEmpty();
-        assertThat(validator.validate(signup("가".repeat(24) + "a")))
+    void signupRequiresTenCharactersAndLetterNumberSpecialCompositionWithinSeventyTwoBytes() {
+        assertThat(validator.validate(signup("Abcdef1!x")))
+                .extracting("propertyPath")
+                .hasToString("[password]");
+        assertThat(validator.validate(signup("Abcdefg1!x"))).isEmpty();
+        assertThat(validator.validate(signup("가".repeat(23) + "A1!"))).isEmpty();
+        assertThat(validator.validate(signup("가".repeat(23) + "A1!a")))
+                .extracting("propertyPath")
+                .hasToString("[password]");
+
+        assertThat(validator.validate(signup("abcdefghij")))
+                .extracting("propertyPath")
+                .hasToString("[password]");
+        assertThat(validator.validate(signup("abcdefgh1j")))
+                .extracting("propertyPath")
+                .hasToString("[password]");
+        assertThat(validator.validate(signup("12345678!0")))
+                .extracting("propertyPath")
+                .hasToString("[password]");
+        assertThat(validator.validate(signup("abcdefg1\u0000x")))
                 .extracting("propertyPath")
                 .hasToString("[password]");
     }

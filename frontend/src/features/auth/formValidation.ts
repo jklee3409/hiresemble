@@ -23,6 +23,16 @@ export interface ValidationResult<T> {
   fieldErrors: Record<string, string>
 }
 
+export type SignupCredentialField = 'email' | 'password' | 'passwordConfirm'
+
+export interface SignupPasswordChecks {
+  characterCount: number
+  byteLength: number
+  letter: boolean
+  number: boolean
+  specialCharacter: boolean
+}
+
 const emailSchema = z
   .string()
   .trim()
@@ -33,16 +43,21 @@ const emailSchema = z
   .refine((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email), '이메일 형식을 확인해 주세요.')
 
 const signupPasswordSchema = z.string().superRefine((password, context) => {
-  const bytes = utf8ByteLength(password)
-  if (bytes < 10) {
+  const checks = signupPasswordChecks(password)
+  if (checks.characterCount < 10) {
     context.addIssue({
       code: 'custom',
-      message: '비밀번호를 조금 더 길게 입력해 주세요.',
+      message: '비밀번호는 10자 이상 입력해주세요.',
     })
-  } else if (bytes > 72) {
+  } else if (checks.byteLength > 72) {
     context.addIssue({
       code: 'custom',
-      message: '비밀번호가 너무 깁니다. 조금 짧게 입력해 주세요.',
+      message: '비밀번호가 너무 길어요. 조금 짧게 입력해 주세요.',
+    })
+  } else if (!checks.letter || !checks.number || !checks.specialCharacter) {
+    context.addIssue({
+      code: 'custom',
+      message: '비밀번호에 문자, 숫자, 특수문자를 각각 1개 이상 포함해 주세요.',
     })
   }
 })
@@ -99,6 +114,19 @@ export function validateSignupForm(values: SignupFormValues): ValidationResult<S
   return validate(signupSchema, values)
 }
 
+export function validateSignupCredentialField(
+  field: SignupCredentialField,
+  values: SignupFormValues,
+): string | undefined {
+  if (field === 'passwordConfirm') {
+    return values.password === values.passwordConfirm ? undefined : '입력한 비밀번호가 서로 달라요.'
+  }
+
+  const schema = field === 'email' ? emailSchema : signupPasswordSchema
+  const result = schema.safeParse(values[field])
+  return result.success ? undefined : result.error.issues[0]?.message
+}
+
 export function validateLoginForm(values: LoginFormValues): ValidationResult<LoginFormValues> {
   return validate(loginSchema, values)
 }
@@ -111,6 +139,18 @@ export function validateDisplayNameForm(
 
 export function utf8ByteLength(value: string): number {
   return new TextEncoder().encode(value).byteLength
+}
+
+export function signupPasswordChecks(value: string): SignupPasswordChecks {
+  const characterCount = Array.from(value).length
+  const byteLength = utf8ByteLength(value)
+  return {
+    characterCount,
+    byteLength,
+    letter: /\p{L}/u.test(value),
+    number: /\p{N}/u.test(value),
+    specialCharacter: /[\p{P}\p{S}]/u.test(value),
+  }
 }
 
 function validate<T>(schema: z.ZodType<T>, value: unknown): ValidationResult<T> {

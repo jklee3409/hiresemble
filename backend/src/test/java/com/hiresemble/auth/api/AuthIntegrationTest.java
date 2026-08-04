@@ -19,6 +19,7 @@ import com.hiresemble.common.exception.GlobalExceptionHandler;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -291,19 +292,29 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void signupAndLoginValidateUtf8ByteBoundariesWithoutExposingPasswords() throws Exception {
+    void signupEnforcesPasswordPolicyAndLoginKeepsUtf8ByteBoundaryWithoutExposingPasswords()
+            throws Exception {
         CsrfSession tooShortSession = csrfSession();
-        String nineBytes = "가가가";
-        MvcResult tooShort = signup(tooShortSession, "short@example.com", nineBytes, "Short", 400);
-        assertThat(tooShort.getResponse().getContentAsString()).doesNotContain(nineBytes);
+        String nineCharacters = "Abcdef1!x";
+        MvcResult tooShort =
+                signup(tooShortSession, "short@example.com", nineCharacters, "Short", 400);
+        assertThat(tooShort.getResponse().getContentAsString()).doesNotContain(nineCharacters);
         assertThat(json(tooShort).at("/fieldErrors/0/field").asText()).isEqualTo("password");
 
-        signup(csrfSession(), "ten@example.com", "가가가a", "Ten", 201);
-        String seventyTwoBytes = "가".repeat(24);
+        signup(csrfSession(), "ten@example.com", "Abcdefg1!x", "Ten", 201);
+        for (String invalidPassword : List.of(
+                "abcdefghij", "abcdefgh1j", "12345678!0", "abcdefg1 x")) {
+            MvcResult invalid = signup(
+                    csrfSession(), UUID.randomUUID() + "@example.com", invalidPassword, "Invalid", 400);
+            assertThat(invalid.getResponse().getContentAsString()).doesNotContain(invalidPassword);
+            assertThat(json(invalid).at("/fieldErrors/0/field").asText()).isEqualTo("password");
+        }
+
+        String seventyTwoBytes = "가".repeat(23) + "A1!";
         signup(csrfSession(), "seventy-two@example.com", seventyTwoBytes, "Seventy Two", 201);
         login(csrfSession(), "seventy-two@example.com", seventyTwoBytes, 200);
 
-        String seventyThreeBytes = "가".repeat(24) + "a";
+        String seventyThreeBytes = seventyTwoBytes + "a";
         MvcResult tooLong = signup(
                 csrfSession(), "long@example.com", seventyThreeBytes, "Long", 400);
         assertThat(tooLong.getResponse().getContentAsString()).doesNotContain(seventyThreeBytes);

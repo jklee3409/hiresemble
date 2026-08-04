@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateDisplayNameForm, validateLoginForm, validateSignupForm } from './formValidation'
+import {
+  validateDisplayNameForm,
+  validateLoginForm,
+  validateSignupCredentialField,
+  validateSignupForm,
+} from './formValidation'
 
 describe('auth form validation', () => {
-  it('matches the signup UTF-8 password byte boundaries', () => {
-    expect(signup('가가가').fieldErrors.password).toBeDefined()
-    expect(signup('가가가a').fieldErrors.password).toBeUndefined()
-    expect(signup('가'.repeat(24)).fieldErrors.password).toBeUndefined()
-    expect(signup(`${'가'.repeat(24)}a`).fieldErrors.password).toBeDefined()
+  it('requires ten characters and a letter, number, and special character within 72 bytes', () => {
+    expect(signup('Abcdef1!x').fieldErrors.password).toBeDefined()
+    expect(signup('Abcdefg1!x').fieldErrors.password).toBeUndefined()
+    expect(signup(`${'가'.repeat(23)}A1!`).fieldErrors.password).toBeUndefined()
+    expect(signup(`${'가'.repeat(23)}A1!a`).fieldErrors.password).toBeDefined()
+    expect(signup('abcdefghij').fieldErrors.password).toBeDefined()
+    expect(signup('abcdefgh1j').fieldErrors.password).toBeDefined()
+    expect(signup('12345678!0').fieldErrors.password).toBeDefined()
+    expect(signup('abcdefg1\u0000x').fieldErrors.password).toBeDefined()
   })
 
   it('matches the login 1..72 UTF-8 byte contract', () => {
@@ -67,15 +76,34 @@ describe('auth form validation', () => {
     })
   })
 
-  it('uses natural visible copy while preserving byte-based boundaries internally', () => {
-    expect(signup('가가가').fieldErrors.password).toBe('비밀번호를 조금 더 길게 입력해 주세요.')
-    expect(signup(`${'가'.repeat(24)}a`).fieldErrors.password).toBe(
-      '비밀번호가 너무 깁니다. 조금 짧게 입력해 주세요.',
+  it('shows the actual signup policy in validation messages', () => {
+    expect(signup('Abcdef1!x').fieldErrors.password).toBe('비밀번호는 10자 이상 입력해주세요.')
+    expect(signup(`${'가'.repeat(23)}A1!a`).fieldErrors.password).toBe(
+      '비밀번호가 너무 길어요. 조금 짧게 입력해 주세요.',
+    )
+    expect(signup('abcdefghij').fieldErrors.password).toBe(
+      '비밀번호에 문자, 숫자, 특수문자를 각각 1개 이상 포함해 주세요.',
     )
     expect(validateLoginForm({ email: '', password: 'password' }).fieldErrors.email).toBe(
       '이메일을 입력해 주세요.',
     )
-    expect(signup('가가가').fieldErrors.password).not.toContain('바이트')
+  })
+
+  it('validates signup credentials independently for blur feedback', () => {
+    const values = {
+      email: 'user@invalid',
+      password: 'abcdefghij',
+      passwordConfirm: 'different',
+      displayName: '',
+      termsAgreed: false,
+      aiConsent: false,
+    }
+
+    expect(validateSignupCredentialField('email', values)).toBe('이메일 형식을 확인해 주세요.')
+    expect(validateSignupCredentialField('password', values)).toContain('문자, 숫자, 특수문자')
+    expect(validateSignupCredentialField('passwordConfirm', values)).toBe(
+      '입력한 비밀번호가 서로 달라요.',
+    )
   })
 
   it('shares the trimmed nickname contract with account updates', () => {

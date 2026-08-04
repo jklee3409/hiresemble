@@ -1,5 +1,6 @@
 package com.hiresemble.auth.api.dto;
 
+import com.hiresemble.common.validation.PasswordPolicy;
 import com.hiresemble.common.validation.Utf8ByteLength;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
@@ -20,12 +21,13 @@ public record SignupRequest(
                 @Size(min = 3, max = 320)
                 String email,
         @Schema(
-                        description = "10 to 72 UTF-8 bytes; character count can differ from byte count",
+                        description = "At least 10 characters with a letter, number, and special character; at most 72 UTF-8 bytes",
                         format = "password",
                         example = "ExampleOnly-123",
                         accessMode = Schema.AccessMode.WRITE_ONLY)
                 @NotNull
-                @Utf8ByteLength(min = 10, max = 72)
+                @PasswordPolicy
+                @Utf8ByteLength(min = 1, max = 72)
                 String password,
         @Schema(description = "Trimmed display name", example = "Sample Candidate")
                 @NotBlank

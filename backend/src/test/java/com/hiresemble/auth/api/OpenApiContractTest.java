@@ -756,7 +756,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         JsonNode loginPassword = schemas.at("/LoginRequest/properties/password");
         assertThat(signupPassword.get("format").asText()).isEqualTo("password");
         assertThat(signupPassword.get("writeOnly").asBoolean()).isTrue();
-        assertThat(signupPassword.get("description").asText()).contains("10 to 72 UTF-8 bytes");
+        assertThat(signupPassword.get("description").asText())
+                .contains("At least 10 characters")
+                .contains("letter, number, and special character")
+                .contains("72 UTF-8 bytes");
         assertThat(signupPassword.get("example").asText()).isEqualTo("ExampleOnly-123");
         assertThat(loginPassword.get("format").asText()).isEqualTo("password");
         assertThat(loginPassword.get("writeOnly").asBoolean()).isTrue();
