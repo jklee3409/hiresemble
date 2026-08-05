@@ -73,8 +73,10 @@ const automaticFailure = computed(() => {
 
 <style scoped>
 .job-journey {
-  border-block: 1px solid var(--color-border);
-  padding: var(--space-5) 0;
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  padding: var(--space-6) clamp(var(--space-5), 3vw, var(--space-7));
+  box-shadow: var(--shadow-panel);
 }
 
 .job-journey__heading {
@@ -141,8 +143,41 @@ const automaticFailure = computed(() => {
   color: white;
 }
 
+/*
+ * 진행 중인 단계 하나만 반복 모션을 갖는다.
+ * 정보 접근을 지연시키지 않고 "지금 이 단계"만 전달한다.
+ */
 .job-journey__steps li[data-state='active'] .job-journey__marker {
+  position: relative;
+  background: var(--color-brand-soft);
   box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+.job-journey__steps li[data-state='active'] .job-journey__marker::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--color-brand);
+  border-radius: 50%;
+  animation: job-journey-pulse 1.6s ease-out infinite;
+}
+
+@keyframes job-journey-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job-journey__steps li[data-state='active'] .job-journey__marker::after {
+    animation: none;
+  }
 }
 
 .job-journey__steps li[data-state='done'] .job-journey__marker {

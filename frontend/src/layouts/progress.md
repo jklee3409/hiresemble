@@ -4,6 +4,33 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-05] Session Summary (공고 상세 모바일 tab 문구 축약)
+
+- What was done:
+  - 35rem 이하에서 `면접 준비` tab의 시각 문구를 `면접`으로 축약하고 기존 접근성 이름과 route 계약은 유지했다.
+- Key decisions:
+  - DOM text와 accessible name은 유지하고 CSS generated content로 작은 화면의 표시만 줄인다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend check와 Job Analysis·visual fixture Chromium 회귀 통과.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (공고 상세 tab·제목 위계 보정)
+
+- What was done:
+  - `JobDetailLayout.vue`에서 활성 tab의 채움 배경을 제거하고 밑줄과 brand 색만 남겼다. 공고명 `h1` 상한을 2.2rem에서 1.875rem으로 낮췄다.
+- Key decisions:
+  - tab이 button처럼 보이지 않도록 선택 상태는 밑줄로만 표시한다.
+  - 분석 화면의 적합도 hero 숫자(52px)와 공고명이 경쟁하지 않도록 `h1`을 30px 상한으로 둔다. route, `aria-current`, sticky 동작은 변경하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check .`, `vite build` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 resource header 두 줄 clamp·mobile 밀도 보정)
 
 - What was done:

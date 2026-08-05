@@ -36,7 +36,7 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   )
   expect(
     await jobTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
-  ).toBeCloseTo(35.2, 1)
+  ).toBeCloseTo(30, 1)
   await expect(page.getByRole('link', { name: '공고 분석', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
@@ -106,17 +106,18 @@ test('Job analysis stays owner-scoped, accessible and overflow-free at desktop a
   await page.goto(`/jobs/${JOB_ID}/analysis`)
   await expect(page.getByText('85점', { exact: true }).first()).toBeVisible()
   const mobileDecisionLayout = await page.locator('.analysis-result__hero').evaluate((hero) => {
-    const metrics = hero.querySelector('.analysis-result__metrics')?.getBoundingClientRect()
     const action = hero.querySelector('.button--primary')?.getBoundingClientRect()
+    const gauge = hero.querySelector('.analysis-gauge')?.getBoundingClientRect()
     return {
       actionBottom: action?.bottom ?? 0,
-      metricBottom: metrics?.bottom ?? 0,
-      metricRows: hero.querySelectorAll('.analysis-result__metrics > div').length,
+      gaugeWidth: gauge?.width ?? 0,
     }
   })
-  expect(mobileDecisionLayout.metricRows).toBe(3)
+  await expect(page.locator('.analysis-result__mobile-meta')).toBeVisible()
+  await expect(page.locator('.analysis-result__metrics > div:visible')).toHaveCount(1)
+  await expect(page.locator('.analysis-gauge__coverage')).toBeHidden()
+  expect(mobileDecisionLayout.gaugeWidth).toBeCloseTo(104, 1)
   expect(mobileDecisionLayout.actionBottom).toBeLessThanOrEqual(844)
-  expect(mobileDecisionLayout.metricBottom).toBeLessThanOrEqual(844)
   await expect(page.getByRole('heading', { name: '강점과 보완 포인트' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })

@@ -23,6 +23,20 @@ type AppIconName =
   | 'alert'
   | 'inbox'
   | 'filter'
+  | 'target'
+  | 'half'
+  | 'cross'
+  | 'question'
+  | 'shield'
+  | 'spark'
+  | 'lift'
+  | 'evidence'
+  | 'chart'
+  | 'history'
+  | 'refresh'
+  | 'scale'
+  | 'flow'
+  | 'info'
 
 defineProps<{
   name: AppIconName
@@ -122,6 +136,73 @@ defineProps<{
     </template>
     <template v-else-if="name === 'inbox'">
       <path d="M4 5h16v14H4zM4 14h5l1.5 2h3L15 14h5" />
+    </template>
+    <template v-else-if="name === 'target'">
+      <circle cx="12" cy="12" r="8.2" />
+      <circle cx="12" cy="12" r="4.2" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      <path d="M12 1.6v2.4M12 20v2.4M1.6 12h2.4M20 12h2.4" />
+    </template>
+    <template v-else-if="name === 'half'">
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none" />
+    </template>
+    <template v-else-if="name === 'cross'">
+      <path d="M6.4 6.4l11.2 11.2M17.6 6.4L6.4 17.6" stroke-width="2.1" />
+    </template>
+    <template v-else-if="name === 'question'">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.9 8.9a3.2 3.2 0 1 1 4.3 3.02c-.75.3-1.2 1-1.2 1.8v.68" />
+      <circle cx="12" cy="18.1" r="1.15" fill="currentColor" stroke="none" />
+    </template>
+    <template v-else-if="name === 'shield'">
+      <path d="M12 2.8 19.2 5.7v5.6c0 4.5-3 8.1-7.2 9.9-4.2-1.8-7.2-5.4-7.2-9.9V5.7z" />
+      <path d="m8.9 11.9 2.2 2.2 4-4.4" />
+    </template>
+    <template v-else-if="name === 'spark'">
+      <path d="M12 2.8l2.05 5.5 5.5 2.05-5.5 2.05L12 17.9l-2.05-5.5-5.5-2.05 5.5-2.05z" />
+      <path d="M18.4 16.6l.85 2.15 2.15.85-2.15.85-.85 2.15-.85-2.15-2.15-.85 2.15-.85z" />
+    </template>
+    <template v-else-if="name === 'lift'">
+      <path d="M12 20.4V6.2" />
+      <path d="M6.6 11.6 12 6.2l5.4 5.4" />
+      <path d="M4.4 3.4h15.2" />
+    </template>
+    <template v-else-if="name === 'evidence'">
+      <rect x="3.4" y="6.4" width="17.2" height="14.2" rx="2" />
+      <path d="M8.4 6.4V4.6a1.7 1.7 0 0 1 1.7-1.7h3.8a1.7 1.7 0 0 1 1.7 1.7v1.8" />
+      <path d="m9.6 13.4 1.8 1.8 3.4-3.6" />
+    </template>
+    <template v-else-if="name === 'chart'">
+      <path d="M4.2 20.2h15.6" />
+      <path d="M7.4 20.2v-6.4M12 20.2V7.4M16.6 20.2v-9.4" />
+    </template>
+    <template v-else-if="name === 'history'">
+      <path d="M3.6 12a8.4 8.4 0 1 0 2.5-6" />
+      <path d="M3.4 3.8v4.4h4.4" />
+      <path d="M12 7.8V12l3 1.8" />
+    </template>
+    <template v-else-if="name === 'refresh'">
+      <path d="M20.2 11.2a8.2 8.2 0 0 0-14.3-4.4L3.8 8.9" />
+      <path d="M3.8 4.4v4.5h4.5" />
+      <path d="M3.8 12.8a8.2 8.2 0 0 0 14.3 4.4l2.1-2.1" />
+      <path d="M20.2 19.6v-4.5h-4.5" />
+    </template>
+    <template v-else-if="name === 'scale'">
+      <path d="M12 4v16M6.4 20.4h11.2M4 9.6h16" />
+      <path d="M4 9.6 1.8 15a3.2 3.2 0 0 0 4.4 0zM20 9.6 17.8 15a3.2 3.2 0 0 0 4.4 0z" />
+      <circle cx="12" cy="4" r="1.4" fill="currentColor" stroke="none" />
+    </template>
+    <template v-else-if="name === 'flow'">
+      <rect x="2.8" y="9.4" width="5.4" height="5.2" rx="1.4" />
+      <rect x="15.8" y="3.4" width="5.4" height="5.2" rx="1.4" />
+      <rect x="15.8" y="15.4" width="5.4" height="5.2" rx="1.4" />
+      <path d="M8.2 12h3.4V6h4.2M11.6 12v6h4.2" />
+    </template>
+    <template v-else-if="name === 'info'">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11.2v5.2" />
+      <circle cx="12" cy="7.9" r="1.05" fill="currentColor" stroke="none" />
     </template>
     <template v-else>
       <path d="M4 6h16M7 12h10M10 18h4" />

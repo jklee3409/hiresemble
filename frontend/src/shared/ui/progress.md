@@ -5,6 +5,20 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-05] Session Summary (공고 분석용 자체 제작 icon 15종 추가)
+
+- What was done:
+  - `AppIcon.vue`에 `target`, `half`, `cross`, `question`, `shield`, `spark`, `lift`, `evidence`, `chart`, `history`, `refresh`, `scale`, `flow`, `info`를 추가했다. 모두 24×24 grid, stroke-width 1.8, `currentColor` 기준이다.
+- Key decisions:
+  - 외부 icon library를 추가하지 않고 기존 `AppIcon` 단일 진입점을 유지한다.
+  - match level 4종(`check`/`half`/`cross`/`question`)은 색을 제거해도 모양만으로 구분되도록 그렸다. 색 단독 인코딩을 피하기 위한 필수 조건이다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `vite build` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (두 번째 Hiresemble 로고 자산 적용)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-05] Session Summary (자동 분석 journey surface·진행 단계 모션)
+
+- What was done:
+  - `JobPreparationJourney.vue`를 상하 border 대신 `--radius-panel` surface로 바꾸고, 진행 중 단계 marker에만 1.6s pulse ring을 추가했다.
+- Key decisions:
+  - 반복 모션은 "지금 이 단계"를 알리는 active marker 하나로 제한한다. `prefers-reduced-motion: reduce`에서 모션을 끄되 단계 상태 표시는 그대로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check .`, `vite build` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (자동 분석 journey 장식 축소)
 
 - What was done:

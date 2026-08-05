@@ -4,6 +4,53 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-05] Session Summary (공고 분석 디자인 가이드 우선 계약 확정)
+
+- What was done:
+  - 사용자가 `.superdesign/` 저장소 context 삭제 의도와 `job-analysis-page-design-guide.html` 우선 적용을 확인했다.
+  - 모바일 104px 단일 gauge, 커버리지 meta, 요약 tile 제거와 primary CTA 우선순위를 실제 Vue·명세·E2E에 반영했다.
+- Key decisions:
+  - 활성 페이지 명세와 가이드가 충돌한 모바일 판단 영역은 사용자 승인에 따라 가이드 계약으로 명세를 갱신했다.
+- Issues encountered:
+  - 기존 E2E가 과거 제목 크기와 세 metric의 844px 배치를 고정하고 있어 새 responsive 계약과 충돌했다.
+- Validation:
+  - Frontend check 67 files/282 tests·production build와 Job Analysis·visual fixture Chromium 2/2가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (공고 분석 디자인 가이드 구현 반영)
+
+- What was done:
+  - 가이드를 `frontend/`에 적용했다. 변경 파일은 `src/styles/main.css`, `src/shared/ui/AppIcon.vue`, `src/pages/JobAnalysisPage.vue`, `src/features/jobs/JobPreparationJourney.vue`, `src/layouts/JobDetailLayout.vue`다.
+  - 가이드 12장의 `.superdesign/design-system.md` 갱신 지시를 조건부 문구로 바꿨다. 해당 파일이 저장소에서 삭제 staged 상태이기 때문이며, 예외 근거는 이 문서와 가이드에 남긴다.
+- Key decisions:
+  - 가이드의 `.hs-*` class 이름은 예시로 취급하고 실제 구현에서는 기존 `analysis-*` 이름을 유지했다. 화면 계약과 테스트 단언을 보존하는 최소 변경 원칙에 따른 결정이다.
+- Issues encountered:
+  - 이번 세션 중 `.superdesign/` 7개 파일이 작업 트리에서 사라지고 삭제가 index에 staged됐다. 이 작업에서 수행한 변경이 아니며 되돌리지 않았다.
+- Validation:
+  - frontend lint·format·typecheck·build 통과. `vitest`는 Node 버전 제약으로 미실행이다. 상세는 `frontend/src/pages/progress.md`에 있다.
+- Next steps:
+  - `.superdesign/` 삭제 의도를 확인하고, 유지한다면 gradient 예외 두 건을 그 문서에도 반영한다.
+
+## [2026-08-05] Session Summary (공고 분석 페이지 디자인 개편 가이드 작성)
+
+- What was done:
+  - `job-analysis-page-design-guide.html`을 신규 작성했다. 12개 장으로 현재 화면 감사, 토스 레퍼런스 실측·번역, 추가 토큰 8개와 차트 팔레트 6개, 자체 제작 SVG 아이콘 18종, `JobAnalysisDetailDto` 필드별 UI 매핑, 자동 분석 상태 전이 다이어그램과 렌더 분기 우선순위, 동작하는 데스크톱·모바일 시안, 차트 4종 규격, 모션·접근성 규칙, 구현 체크리스트를 담았다.
+  - 결과 화면을 카드 8개 적층에서 단일 리포트 패널로 재구성하고, 적합도 2중 링 게이지·요건 100% 누적 막대·카테고리 가로 막대·이력 추이 라인 4개 차트를 규격화했다.
+- Key decisions:
+  - 기존 `main.css` 토큰은 수정·삭제하지 않고 additive 8개만 추가한다. 결과 화면 primary CTA는 `자기소개서 준비하기` 하나로 고정하고 재분석은 quiet 버튼으로 낮춘다.
+  - 차트 마크 색은 기존 semantic 토큰을 재사용하지 않고 별도 `--chart-*` 4색을 정의했다. 텍스트·아이콘에는 기존 semantic 토큰을 계속 쓴다.
+  - `.superdesign/design-system.md`의 gradient 금지에 대해 결정 히어로 배경 blob과 추이 차트 면 채움 두 곳만 예외로 명시했다. 사용자 지정 레퍼런스 반영이 근거이며, 구현 시 design-system.md에 예외를 함께 기록한다.
+- Issues encountered:
+  - 기존 semantic 조합 `#147253/#8a5a08/#b4232d/#667085`은 색각 검증에서 적–주황 쌍 deutan ΔE 1.7로 실패했다. 차트 마크로 사용할 수 없어 별도 팔레트를 산출했다.
+  - 채택 팔레트 `#12855f/#a16207/#a01b3c/#8792a6`은 일반 시각 ΔE 16.2·surface 대비 3:1 통과이나 CVD 최악 쌍 ΔE 7.9로 WARN 구간이다. 아이콘·한글 라벨·2px 간격·텍스처 4중 2차 인코딩을 필수 조건으로 문서에 고정했다.
+- Validation:
+  - OKLab 6검사 팔레트 검증 스크립트를 `--pairs all`, light, surface `#ffffff`로 실행해 기존 조합의 FAIL과 채택 조합의 결과를 확인했다.
+  - 브라우저에서 문서를 렌더해 12개 장, 아이콘 참조 104건 전부 해석됨(끊긴 참조 0), 좁은 폭에서 body 가로 스크롤 없음을 확인했다. 데스크톱 grid는 media query 강제 override로 렌더 확인했다.
+  - 프론트엔드 코드 변경이 없으므로 `corepack pnpm check`는 실행하지 않았다.
+- Next steps:
+  - 구현 시 12장 순서대로 진행하고 `frontend/` 하위 `progress.md`와 `.superdesign/design-system.md` 예외 기록을 같은 작업에서 갱신한다.
+
 ## [2026-08-04] Session Summary (외부 reference 기반 Landing·분석 결과 visual 방향)
 
 - What was done:

@@ -158,7 +158,8 @@ const analysisLabel = computed(() => {
   max-width: 58rem;
   margin-top: var(--space-2);
   overflow: hidden;
-  font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+  /* 분석 화면의 적합도 히어로 숫자와 경쟁하지 않도록 30px를 상한으로 둔다. */
+  font-size: clamp(1.4rem, 2.8vw, 1.875rem);
   font-weight: 790;
   letter-spacing: -0.035em;
   line-height: 1.17;
@@ -238,22 +239,20 @@ const analysisLabel = computed(() => {
 }
 
 .job-detail-tab:hover {
-  background: var(--color-surface-subtle);
   color: var(--color-brand-strong);
 }
 
+/* 선택 상태는 채움면이 아니라 밑줄과 색으로만 표시해 탭이 버튼처럼 보이지 않게 한다. */
 .job-detail-tab--active {
   border-bottom-color: var(--color-brand);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
+  color: var(--color-brand);
   font-weight: 780;
 }
 
 .job-detail-tab--active:hover,
 .job-detail-tab--active:focus-visible {
   border-bottom-color: var(--color-brand);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
+  color: var(--color-brand);
 }
 
 .job-detail-body {
@@ -321,6 +320,15 @@ const analysisLabel = computed(() => {
   .job-detail-tabs {
     margin-inline: calc(var(--space-3) * -1);
     padding-inline: var(--space-3);
+  }
+
+  .job-detail-tab:last-child {
+    font-size: 0;
+  }
+
+  .job-detail-tab:last-child::after {
+    content: '면접';
+    font-size: 0.875rem;
   }
 }
 </style>

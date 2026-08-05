@@ -15,6 +15,33 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (공고 분석 디자인 가이드 계약 확정과 회귀 완료)
+
+- What was done:
+  - 의도된 `.superdesign/` context 삭제를 확정하고 영구 HTML 디자인 가이드를 기준으로 공고 분석 desktop/mobile 표현 계약을 완성했다.
+- Key decisions:
+  - 사용자 승인에 따라 기존 모바일 세 metric row 명세보다 104px 단일 gauge·meta·첫 viewport CTA 가이드를 우선했다.
+- Issues encountered:
+  - 기존 E2E가 과거 35.2px 제목과 844px 세 metric 배치를 고정해 두 단계에서 실패했으며 새 계약으로 동기화했다.
+- Validation:
+  - Node 24 Frontend check 67 files/282 tests·production build, Job Analysis와 visual fixture Chromium 2/2 통과.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (공고 분석 페이지 디자인 가이드 작성과 적용)
+
+- What was done:
+  - `docs/design/job-analysis-page-design-guide.html`을 신규 작성하고 그 스펙을 `frontend/`의 공고 분석 화면에 적용했다.
+- Key decisions:
+  - 표현 계층만 변경하고 공개 API 계약, route, 상태 분기, 화면 문구는 유지했다. design token은 additive로만 확장했다.
+- Issues encountered:
+  - 실행 환경 Node 20과 저장소 요구 Node 24 불일치로 `corepack pnpm check`와 `vitest`를 실행하지 못했다.
+  - `.superdesign/` 7개 파일 삭제가 이번 세션 중 index에 staged됐으나 이 작업의 변경이 아니며 되돌리지 않았다.
+- Validation:
+  - frontend `vue-tsc`, `eslint`, `prettier --check`, `vite build` 통과. 단위·E2E 테스트는 미실행이다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 job-analysis E2E를 실행한다.
+
 ## [2026-08-04] Session Summary (SuperDesign 기반 공고 분석 판단 흐름 구현)
 
 - What was done:

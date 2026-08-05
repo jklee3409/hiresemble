@@ -6,6 +6,20 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-05] Session Summary (공고 분석 개편용 design token 추가)
+
+- What was done:
+  - `main.css` `:root`에 채움면 체계(`--color-fill`, `--color-fill-strong`, `--color-ink-title`), `--radius-pill`, `--radius-panel`, `--font-size-3xl`, `--font-size-hero`, `--shadow-panel`과 차트 전용 status 팔레트(`--chart-matched|partial|missing|unknown|brand|track|grid`)를 추가했다.
+- Key decisions:
+  - 기존 token은 값과 이름을 모두 유지하고 additive로만 확장해 다른 화면 회귀를 만들지 않는다.
+  - 차트 마크 채움에는 기존 semantic token을 재사용하지 않는다. 색각 검증에서 적-주황 쌍이 deutan ΔE 1.7로 실패했기 때문이며, 사유를 주석으로 남겼다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check .`, `vite build` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (B2C design token·수직 리듬 정비)
 
 - What was done:

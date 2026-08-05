@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (공고 분석 디자인 가이드 모바일 계약 반영)
+
+- What was done:
+  - `page.md`의 결과 surface, 공고 제목 크기, 데스크톱 2중 ring과 모바일 104px 단일 ring·meta·CTA 우선순위를 새 디자인 가이드에 맞췄다.
+- Key decisions:
+  - 모바일에서는 지원 가능성을 결정 문장에, 커버리지를 분석 시각과 같은 meta 행에 흡수하고 desktop 전용 요약 tile을 숨긴다.
+- Issues encountered:
+  - 기존 명세의 모바일 세 metric row 계약이 새 디자인 가이드의 요약 tile 삭제 지시와 충돌해 사용자 승인으로 새 가이드를 우선했다.
+- Validation:
+  - Vue 구현과 component test를 대조했고 Node 24 Frontend check 67 files/282 tests·production build, Job Analysis와 visual fixture Chromium 2/2가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 compact decision flow 계약)
 
 - What was done:

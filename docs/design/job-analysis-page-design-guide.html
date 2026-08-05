@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>공고 분석 페이지 디자인 가이드 · Hiresemble</title>
+<style>
+/* =========================================================================
+   0. TOKENS — frontend/src/styles/main.css 기존 토큰 + 이번 개편 추가분
+   ========================================================================= */
+:root {
+  /* --- 기존 토큰 (변경 없음) --- */
+  --hs-blue-50:#f1f4ff; --hs-blue-100:#e3e8ff; --hs-blue-200:#cad3ff; --hs-blue-300:#a4b3ff;
+  --hs-blue-400:#748aff; --hs-blue-500:#3157ff; --hs-blue-600:#2546e6; --hs-blue-700:#2039bd;
+  --hs-blue-800:#203398; --hs-blue-900:#202e78;
+  --color-canvas:#f7f8fc; --color-surface:#ffffff; --color-surface-subtle:#f9fafc;
+  --color-ink:#161a2b; --color-ink-soft:#344054; --color-muted:#667085; --color-muted-strong:#475467;
+  --color-border:#e7e9ee; --color-border-strong:#cbd1db;
+  --color-brand:var(--hs-blue-500); --color-brand-hover:var(--hs-blue-600); --color-brand-active:var(--hs-blue-700);
+  --color-brand-soft:var(--hs-blue-50); --color-brand-ink:var(--hs-blue-700); --color-brand-border:var(--hs-blue-200);
+  --color-success:#147253; --color-success-soft:#e5f6ee; --color-success-border:#b7dfcf;
+  --color-warning:#8a5a08; --color-warning-soft:#fff3d5; --color-warning-border:#e8ce88;
+  --color-danger:#b4232d;  --color-danger-soft:#fff0ef;  --color-danger-border:#efbfc2;
+  --color-info:#0e6b90;    --color-info-soft:#e5f4fa;
+  --color-neutral-soft:#f2f4f7;
+  --focus-ring:0 0 0 3px rgb(49 87 255 / 22%);
+  --space-1:.25rem; --space-2:.5rem; --space-3:.75rem; --space-4:1rem; --space-5:1.25rem;
+  --space-6:1.5rem; --space-7:2rem; --space-8:2.5rem; --space-9:3rem; --space-10:4rem;
+  --radius-sm:.5rem; --radius-md:.625rem; --radius-lg:1rem;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --motion-fast:140ms cubic-bezier(.2,0,0,1); --motion-base:200ms cubic-bezier(.2,0,0,1);
+  --content-width:73.75rem;
+
+  /* --- ★ 이번 개편에서 추가할 토큰 --- */
+  --color-fill:#f2f4f6;          /* Toss식 무테두리 채움면 (칩·요약 타일) */
+  --color-fill-strong:#e8ebf0;   /* 채움면 위 트랙·구분 */
+  --color-ink-title:#0f1420;     /* 리포트 대제목 전용 최고 명도 대비 */
+  --radius-pill:999px;
+  --radius-panel:1.25rem;        /* 20px — 리포트 패널 */
+  --font-size-3xl:2.5rem;        /* 40px 리포트 타이틀 */
+  --font-size-hero:3.25rem;      /* 52px 적합도 히어로 숫자 */
+  --shadow-panel:0 1px 2px rgb(17 24 45/4%), 0 12px 32px rgb(22 26 43/6%);
+
+  /* --- ★ 차트 전용 status 팔레트 (마크 채움. 텍스트에는 위 semantic 사용) --- */
+  --chart-matched:#12855f;
+  --chart-partial:#a16207;
+  --chart-missing:#a01b3c;
+  --chart-unknown:#8792a6;
+  --chart-brand:#3157ff;
+  --chart-track:#e8ebf0;
+  --chart-grid:#eef0f4;
+}
+
+/* =========================================================================
+   1. 가이드 문서 크롬 (이 HTML 문서 자체의 스타일 — 제품 코드 아님)
+   ========================================================================= */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--color-canvas); color:var(--color-ink);
+  font-family:var(--font-sans); line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.doc{max-width:78rem;margin:0 auto;padding:var(--space-9) var(--space-6) var(--space-10)}
+.doc-hero{
+  position:relative;overflow:hidden;background:var(--color-surface);
+  border-radius:var(--radius-panel);padding:var(--space-9) var(--space-8);
+  box-shadow:var(--shadow-panel);margin-bottom:var(--space-8);
+}
+.doc-hero::before{
+  content:'';position:absolute;inset:-40% -10% auto auto;width:34rem;height:34rem;
+  background:radial-gradient(closest-side, rgb(49 87 255/.16), rgb(116 138 255/.06) 55%, transparent 72%);
+  pointer-events:none;
+}
+.doc-hero__kicker{font-size:.8125rem;font-weight:800;letter-spacing:.06em;color:var(--color-brand);text-transform:uppercase}
+.doc-hero h1{position:relative;margin:var(--space-3) 0 0;font-size:clamp(1.9rem,4vw,2.75rem);line-height:1.25;font-weight:800;letter-spacing:-.02em;color:var(--color-ink-title)}
+.doc-hero p{position:relative;margin:var(--space-4) 0 0;max-width:46rem;font-size:1.0625rem;color:var(--color-ink-soft)}
+.doc-meta{position:relative;display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-6)}
+.doc-meta span{background:var(--color-fill);border-radius:var(--radius-pill);padding:.375rem .875rem;font-size:.8125rem;font-weight:600;color:var(--color-muted-strong)}
+
+.doc-nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:var(--space-2);margin-bottom:var(--space-9)}
+.doc-nav a{display:flex;gap:.625rem;align-items:baseline;text-decoration:none;background:var(--color-surface);border-radius:var(--radius-md);padding:.75rem 1rem;color:var(--color-ink-soft);font-size:.9375rem;font-weight:600;transition:transform var(--motion-fast),box-shadow var(--motion-fast)}
+.doc-nav a:hover{transform:translateY(-2px);box-shadow:var(--shadow-panel);color:var(--color-brand)}
+.doc-nav a b{color:var(--color-brand);font-variant-numeric:tabular-nums}
+
+.chapter{margin-top:var(--space-10);scroll-margin-top:var(--space-6)}
+.chapter__no{font-size:.8125rem;font-weight:800;letter-spacing:.08em;color:var(--color-brand)}
+.chapter > h2{margin:var(--space-2) 0 0;font-size:clamp(1.4rem,2.6vw,1.9rem);font-weight:800;letter-spacing:-.015em;color:var(--color-ink-title)}
+.chapter > .lede{margin:var(--space-3) 0 0;max-width:52rem;color:var(--color-ink-soft)}
+.panel{background:var(--color-surface);border-radius:var(--radius-panel);padding:var(--space-7);margin-top:var(--space-6);box-shadow:var(--shadow-panel)}
+.panel h3{margin:0 0 var(--space-2);font-size:1.125rem;font-weight:750}
+.panel h3 + p{margin:0 0 var(--space-5);color:var(--color-muted-strong);font-size:.9375rem}
+.stack{display:grid;gap:var(--space-6)}
+
+table.spec{width:100%;border-collapse:collapse;font-size:.875rem}
+table.spec th,table.spec td{text-align:left;padding:.75rem .75rem;border-bottom:1px solid var(--color-border);vertical-align:top}
+table.spec thead th{background:var(--color-fill);font-size:.75rem;font-weight:800;color:var(--color-muted-strong);letter-spacing:.02em;border-bottom:none}
+table.spec thead th:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm)}
+table.spec thead th:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+table.spec code{background:var(--color-brand-soft);color:var(--color-brand-ink);border-radius:4px;padding:.0625rem .3125rem;font-size:.8125rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tablewrap{overflow-x:auto}
+
+.note{display:flex;gap:.75rem;border-radius:var(--radius-md);padding:.875rem 1rem;font-size:.875rem;line-height:1.6}
+.note--do{background:var(--color-success-soft);color:#0d5b41}
+.note--dont{background:var(--color-danger-soft);color:#8d1922}
+.note--info{background:var(--color-brand-soft);color:var(--color-brand-ink)}
+.note b{font-weight:800}
+
+.frame{background:var(--color-canvas);border-radius:var(--radius-panel);padding:var(--space-6);margin-top:var(--space-5);overflow:hidden}
+.frame__label{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:var(--space-4);font-size:.75rem;font-weight:800;letter-spacing:.06em;color:var(--color-muted)}
+.frame__label em{font-style:normal;background:var(--color-surface);border-radius:var(--radius-pill);padding:.25rem .625rem;color:var(--color-ink-soft)}
+
+/* =========================================================================
+   2. PRODUCT STYLES — 아래 .hs-* 규칙이 실제 구현 대상 스펙이다.
+      JobAnalysisPage.vue / JobDetailLayout.vue 로 그대로 이식한다.
+   ========================================================================= */
+
+/* --- 2.1 공통 프리미티브 --- */
+.hs-chip{display:inline-flex;align-items:center;gap:.3125rem;background:var(--color-fill);border-radius:var(--radius-pill);padding:.25rem .625rem;font-size:.75rem;font-weight:700;color:var(--color-muted-strong);white-space:nowrap}
+.hs-chip svg{width:.875rem;height:.875rem}
+.hs-chip[data-status=MATCHED]{background:var(--color-success-soft);color:var(--color-success)}
+.hs-chip[data-status=PARTIAL]{background:var(--color-warning-soft);color:var(--color-warning)}
+.hs-chip[data-status=MISSING]{background:var(--color-danger-soft);color:var(--color-danger)}
+.hs-chip[data-status=UNKNOWN]{background:var(--color-fill);color:var(--color-muted-strong)}
+.hs-chip--brand{background:var(--color-brand-soft);color:var(--color-brand-ink)}
+
+.hs-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4375rem;min-height:2.75rem;padding:0 1.125rem;border:0;border-radius:var(--radius-md);font-size:.9375rem;font-weight:700;text-decoration:none;cursor:pointer;transition:background var(--motion-fast),transform var(--motion-fast)}
+.hs-btn:active{transform:translateY(1px)}
+.hs-btn svg{width:1.125rem;height:1.125rem}
+.hs-btn--primary{background:var(--color-brand);color:#fff}
+.hs-btn--primary:hover{background:var(--color-brand-hover)}
+.hs-btn--quiet{background:var(--color-fill);color:var(--color-ink-soft)}
+.hs-btn--quiet:hover{background:var(--color-fill-strong)}
+.hs-btn--lg{min-height:3.25rem;padding:0 1.5rem;font-size:1rem}
+.hs-linkbtn{background:none;border:0;padding:0;font:inherit;font-size:.875rem;font-weight:700;color:var(--color-brand-ink);cursor:pointer;text-decoration:underline;text-underline-offset:.18em}
+
+/* --- 2.2 공고 리소스 헤더 + 탭 (JobDetailLayout) --- */
+.hs-shell{max-width:var(--content-width);margin:0 auto}
+.hs-back{display:inline-flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:700;color:var(--color-muted-strong);text-decoration:none}
+.hs-back svg{width:1rem;height:1rem}
+.hs-jobhead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-top:var(--space-4)}
+.hs-jobhead__company{font-size:.9375rem;font-weight:700;color:var(--color-muted-strong);margin:0}
+.hs-jobhead h1{margin:.375rem 0 0;font-size:clamp(1.5rem,3vw,1.9rem);font-weight:800;letter-spacing:-.02em;color:var(--color-ink-title)}
+.hs-jobhead__meta{display:flex;flex-wrap:wrap;gap:.375rem .75rem;margin-top:.625rem;font-size:.875rem;color:var(--color-muted)}
+.hs-jobhead__meta span{display:inline-flex;align-items:center;gap:.3125rem}
+.hs-jobhead__aside{display:flex;flex-direction:column;align-items:flex-end;gap:.625rem}
+.hs-jobhead__badges{display:flex;gap:.375rem}
+.hs-tabs{display:flex;gap:.25rem;margin-top:var(--space-6);border-bottom:1px solid var(--color-border)}
+.hs-tab{position:relative;padding:.875rem 1rem;font-size:.9375rem;font-weight:700;color:var(--color-muted);text-decoration:none;white-space:nowrap}
+.hs-tab[aria-current=page]{color:var(--color-brand)}
+.hs-tab[aria-current=page]::after{content:'';position:absolute;left:.5rem;right:.5rem;bottom:-1px;height:2px;border-radius:2px;background:var(--color-brand)}
+
+/* --- 2.3 리포트 패널: 분석 결과 전체를 감싸는 단일 surface --- */
+.hs-report{background:var(--color-surface);border-radius:var(--radius-panel);box-shadow:var(--shadow-panel);margin-top:var(--space-7);overflow:hidden}
+.hs-report__block{padding:var(--space-8)}
+.hs-report__block + .hs-report__block{border-top:1px solid var(--color-border)}
+.hs-secthead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.75rem;margin-bottom:var(--space-6)}
+.hs-secthead h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.1875rem;font-weight:780;letter-spacing:-.01em}
+.hs-secthead h3 svg{width:1.25rem;height:1.25rem;color:var(--color-brand)}
+.hs-secthead__aside{font-size:.8125rem;color:var(--color-muted);font-weight:600}
+
+/* --- 2.4 결정 히어로 --- */
+.hs-decision{position:relative;overflow:hidden}
+.hs-decision::before{
+  content:'';position:absolute;inset:-55% -18% auto auto;width:30rem;height:30rem;pointer-events:none;
+  background:radial-gradient(closest-side,rgb(49 87 255/.13),rgb(116 138 255/.05) 55%,transparent 72%);
+}
+.hs-decision__grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-8);align-items:center}
+.hs-decision__kicker{display:flex;align-items:center;gap:.5rem;margin:0;font-size:.8125rem;font-weight:800;letter-spacing:.04em;color:var(--color-brand)}
+.hs-decision h2{margin:.625rem 0 0;font-size:clamp(1.5rem,3.2vw,2rem);line-height:1.35;font-weight:800;letter-spacing:-.02em;color:var(--color-ink-title)}
+.hs-decision__summary{margin:var(--space-4) 0 0;max-width:38rem;font-size:1rem;color:var(--color-ink-soft)}
+.hs-decision__actions{display:flex;flex-wrap:wrap;align-items:center;gap:.625rem;margin-top:var(--space-6)}
+.hs-decision__disclaimer{position:relative;display:flex;gap:.5rem;margin:var(--space-6) 0 0;padding-top:var(--space-5);border-top:1px solid var(--color-border);font-size:.8125rem;color:var(--color-muted)}
+.hs-decision__disclaimer svg{width:1rem;height:1rem;flex:0 0 auto;margin-top:.125rem}
+
+/* 게이지 */
+.hs-gauge{display:grid;justify-items:center;gap:var(--space-4);min-width:14rem}
+.hs-gauge__svg{width:13.5rem;height:13.5rem;display:block}
+.hs-gauge__arc{fill:none;stroke-linecap:round}
+.hs-gauge__track{stroke:var(--chart-track)}
+.hs-gauge__value{stroke:var(--chart-brand);animation:hs-arc 900ms cubic-bezier(.2,0,0,1) both}
+.hs-gauge__cover{stroke:var(--hs-blue-300);animation:hs-arc 900ms 120ms cubic-bezier(.2,0,0,1) both}
+.hs-gauge__num{font-size:var(--font-size-hero);font-weight:800;letter-spacing:-.03em;fill:var(--color-ink-title);font-variant-numeric:tabular-nums}
+.hs-gauge__unit{font-size:1.125rem;font-weight:750;fill:var(--color-muted)}
+.hs-gauge__cap{font-size:.8125rem;font-weight:700;fill:var(--color-muted)}
+.hs-gauge__legend{display:flex;gap:1rem;font-size:.75rem;color:var(--color-muted-strong)}
+.hs-gauge__legend span{display:inline-flex;align-items:center;gap:.375rem;font-weight:600}
+.hs-gauge__legend i{width:.625rem;height:.625rem;border-radius:var(--radius-pill);display:inline-block}
+@keyframes hs-arc{from{stroke-dashoffset:var(--arc-len)}}
+@media (prefers-reduced-motion:reduce){.hs-gauge__value,.hs-gauge__cover{animation:none}}
+
+/* --- 2.5 요약 타일 (Toss식 무테두리 채움면) --- */
+.hs-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:.75rem;margin-top:var(--space-6)}
+.hs-tile{background:var(--color-fill);border-radius:var(--radius-lg);padding:1rem 1.125rem}
+.hs-tile dt{display:flex;align-items:center;gap:.375rem;font-size:.8125rem;font-weight:700;color:var(--color-muted-strong)}
+.hs-tile dt svg{width:.9375rem;height:.9375rem}
+.hs-tile dd{margin:.5rem 0 0;font-size:1.375rem;font-weight:800;letter-spacing:-.02em;color:var(--color-ink-title);font-variant-numeric:tabular-nums}
+.hs-tile small{display:block;margin-top:.25rem;font-size:.75rem;font-weight:600;color:var(--color-muted)}
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     자체 제작 SVG 아이콘 스프라이트 — 외부 아이콘 라이브러리를 쓰지 않는다.
+     모두 24×24 그리드, stroke-width 1.8, currentColor.
+     ===================================================================== -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <g id="i-base" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></g>
+  </defs>
+  <symbol id="ic-target" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><path d="M12 1.6v2.4M12 20v2.4M1.6 12h2.4M20 12h2.4"/></g></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.6l4.6 4.6L19.5 6.8"/></g></symbol>
+  <symbol id="ic-half" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M6.4 6.4l11.2 11.2M17.6 6.4L6.4 17.6"/></g></symbol>
+  <symbol id="ic-question" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.9 8.9a3.2 3.2 0 1 1 4.3 3.02c-.75.3-1.2 1-1.2 1.8v.68"/><circle cx="12" cy="18.1" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="9"/></g></symbol>
+  <symbol id="ic-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l7.2 2.9v5.6c0 4.5-3 8.1-7.2 9.9-4.2-1.8-7.2-5.4-7.2-9.9V5.7z"/><path d="M8.9 11.9l2.2 2.2 4-4.4"/></g></symbol>
+  <symbol id="ic-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 2.9H6.6a1.7 1.7 0 0 0-1.7 1.7v14.8a1.7 1.7 0 0 0 1.7 1.7h10.8a1.7 1.7 0 0 0 1.7-1.7V8.3z"/><path d="M13.6 2.9v5.4h5.5"/><path d="M8.4 13.2h7.2M8.4 16.8h5"/></g></symbol>
+  <symbol id="ic-spark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l2.05 5.5 5.5 2.05-5.5 2.05L12 17.9l-2.05-5.5-5.5-2.05 5.5-2.05z"/><path d="M18.4 16.6l.85 2.15 2.15.85-2.15.85-.85 2.15-.85-2.15-2.15-.85 2.15-.85z"/></g></symbol>
+  <symbol id="ic-lift" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.4V6.2"/><path d="M6.6 11.6L12 6.2l5.4 5.4"/><path d="M4.4 3.4h15.2"/></g></symbol>
+  <symbol id="ic-evidence" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="6.4" width="17.2" height="14.2" rx="2"/><path d="M8.4 6.4V4.6a1.7 1.7 0 0 1 1.7-1.7h3.8a1.7 1.7 0 0 1 1.7 1.7v1.8"/><path d="M9.6 13.4l1.8 1.8 3.4-3.6"/></g></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 20.2h15.6"/><path d="M7.4 20.2v-6.4M12 20.2V7.4M16.6 20.2v-9.4"/></g></symbol>
+  <symbol id="ic-history" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 12a8.4 8.4 0 1 0 2.5-6"/><path d="M3.4 3.8v4.4h4.4"/><path d="M12 7.8V12l3 1.8"/></g></symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 11.2a8.2 8.2 0 0 0-14.3-4.4L3.8 8.9"/><path d="M3.8 4.4v4.5h4.5"/><path d="M3.8 12.8a8.2 8.2 0 0 0 14.3 4.4l2.1-2.1"/><path d="M20.2 19.6v-4.5h-4.5"/></g></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 12h14.2M13.2 6.4l5.6 5.6-5.6 5.6"/></g></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 12H5.2M10.8 17.6L5.2 12l5.6-5.6"/></g></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l9 15.6H3z"/><path d="M12 9.6v4.2"/><circle cx="12" cy="16.7" r="1.05" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11.2v5.2"/><circle cx="12" cy="7.9" r="1.05" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.8V12l3.4 2"/></g></symbol>
+  <symbol id="ic-flow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="9.4" width="5.4" height="5.2" rx="1.4"/><rect x="15.8" y="3.4" width="5.4" height="5.2" rx="1.4"/><rect x="15.8" y="15.4" width="5.4" height="5.2" rx="1.4"/><path d="M8.2 12h3.4v-6h4.2M11.6 12v6h4.2"/></g></symbol>
+  <symbol id="ic-scale" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6.4 20.4h11.2"/><path d="M4 9.6h16"/><path d="M4 9.6L1.8 15a3.2 3.2 0 0 0 4.4 0zM20 9.6L17.8 15a3.2 3.2 0 0 0 4.4 0z"/><circle cx="12" cy="4" r="1.4" fill="currentColor" stroke="none"/></g></symbol>
+</svg>
+
+<div class="doc">
+
+  <header class="doc-hero">
+    <p class="doc-hero__kicker">Hiresemble · Codex Design Guide</p>
+    <h1>공고 분석 결과 페이지<br />디자인 개편 가이드</h1>
+    <p>
+      <code>/jobs/:jobId/analysis</code> 화면을 “점수 대시보드”에서 <b>지원 여부를 판단하는 리포트</b>로 재설계한다.
+      이 문서는 시연용 목업이 아니라 실제 출시 기준이다. 모든 화면 요소는
+      <code>GET /jobs/{id}/analyses/latest</code> 응답에 존재하는 필드로만 구성했고,
+      계약에 없는 지표·기능·문구는 하나도 추가하지 않았다.
+    </p>
+    <div class="doc-meta">
+      <span>대상 route <code>/jobs/:jobId/analysis</code></span>
+      <span>대상 파일 JobAnalysisPage.vue · JobDetailLayout.vue</span>
+      <span>레퍼런스 tossinsight.im · toss.im</span>
+      <span>작성 2026-08-05</span>
+    </div>
+  </header>
+
+  <nav class="doc-nav" aria-label="목차">
+    <a href="#c1"><b>01</b> 문제 정의와 개편 목표</a>
+    <a href="#c2"><b>02</b> 레퍼런스 해석</a>
+    <a href="#c3"><b>03</b> 디자인 토큰</a>
+    <a href="#c4"><b>04</b> 자체 제작 아이콘</a>
+    <a href="#c5"><b>05</b> API ↔ UI 매핑</a>
+    <a href="#c6"><b>06</b> 상태 모델과 화면 분기</a>
+    <a href="#c7"><b>07</b> 데스크톱 시안 · 결과</a>
+    <a href="#c8"><b>08</b> 그 외 상태 시안</a>
+    <a href="#c9"><b>09</b> 모바일 시안</a>
+    <a href="#c10"><b>10</b> 차트 규격과 검증</a>
+    <a href="#c11"><b>11</b> 모션과 접근성</a>
+    <a href="#c12"><b>12</b> 구현 체크리스트</a>
+  </nav>
+
+  <!-- ============================ 01 ============================ -->
+  <section class="chapter" id="c1">
+    <p class="chapter__no">CHAPTER 01</p>
+    <h2>문제 정의와 개편 목표</h2>
+    <p class="lede">
+      사용자가 이 탭에 들어오는 이유는 점수를 구경하기 위해서가 아니다.
+      <b>지원할지 말지</b>를 정하고, 자기소개서에서 <b>무엇을 강조할지</b>를 고르기 위해서다.
+      현재 화면은 그 판단을 돕는 대신 같은 모양의 카드 8개를 세로로 쌓는다.
+    </p>
+
+    <div class="panel">
+      <h3>현재 화면의 구조적 문제</h3>
+      <p>frontend/src/pages/JobAnalysisPage.vue 감사 결과</p>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:22%">문제</th><th style="width:39%">현재 상태</th><th style="width:39%">개편 방향</th></tr></thead>
+          <tbody>
+            <tr><td><b>카드 반복</b></td><td>hero·overview·requirements·insights·evidence·breakdown·history가 모두 동일한 흰 카드 + 1px 테두리 + 동일 radius. 정보 중요도보다 컴포넌트 모양이 먼저 보인다.</td><td>결과 전체를 <b>단일 리포트 패널</b>로 통합하고 내부는 1px 구분선과 여백으로만 나눈다. 카드는 “판단”과 “행동”을 묶을 때만 쓴다.</td></tr>
+            <tr><td><b>수치의 서열 부재</b></td><td>적합도·지원 가능성·분석 커버리지가 <code>dl</code> 3칸에 같은 크기로 나열된다. 무엇이 결론인지 알 수 없다.</td><td>적합도를 <b>52px 히어로 숫자 + 원형 게이지</b>로 단 하나만 지배적으로 두고, 커버리지는 같은 게이지의 내부 링으로 종속시킨다.</td></tr>
+            <tr><td><b>분포가 숫자뿐</b></td><td>일치/일부 일치/확인되지 않음/판단 정보 부족이 개수 텍스트와 폭만 다른 무라벨 막대로 표시된다.</td><td>2px 간격 + 직접 라벨 + 상태 아이콘 + 텍스처를 가진 <b>100% 누적 막대</b>로 바꾼다. 색을 못 봐도 읽힌다.</td></tr>
+            <tr><td><b>카테고리 점수 미해석</b></td><td><code>analysis-overview__bar</code>가 퍼센트만 채운다. 어느 영역이 약한지 비교가 안 된다.</td><td>동일 기준선에 정렬된 <b>가로 막대 차트</b>로 5개 카테고리를 한 눈에 비교시킨다. 축은 하나만 쓴다.</td></tr>
+            <tr><td><b>이력이 목록</b></td><td>과거 분석이 버튼 리스트로만 제공되어 “좋아지고 있는지”를 알 수 없다.</td><td>analysisVersion 축의 <b>추이 라인 차트</b>를 넣는다. 마지막 점만 직접 라벨링한다.</td></tr>
+            <tr><td><b>CTA 경쟁</b></td><td>‘자기소개서 준비하기’ 옆에 재분석·프로필·공고수정 링크가 같은 줄에 있고, 하단에 재분석 카드가 또 있다.</td><td>결과가 있으면 primary는 <b>자기소개서 준비하기 하나</b>. 재분석은 리포트 헤더의 quiet 버튼으로 한 번만 노출한다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>개편 목표 — 첫 화면이 답해야 하는 4가지</h3>
+      <div class="stack" style="gap:.5rem">
+        <div class="note note--do"><b>1</b><span>지금 어떤 상태인가 — 분석 완료 / 진행 중 / 실패 / 정보 변경됨</span></div>
+        <div class="note note--do"><b>2</b><span>결론이 무엇인가 — 적합도 점수와 지원 가능 여부, 그리고 그 점수의 한계</span></div>
+        <div class="note note--do"><b>3</b><span>왜 그런가 — 어떤 요건이 일치했고 어디가 비었는가</span></div>
+        <div class="note note--do"><b>4</b><span>다음에 무엇을 하는가 — 단 하나의 primary action</span></div>
+        <div class="note note--dont"><b>금지</b><span>없는 지표 만들기(합격률·경쟁률·추천 공고), 회색조에서 읽히지 않는 색 단독 인코딩, 문장마다 카드 씌우기, primary CTA 두 개 이상.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 02 ============================ -->
+  <section class="chapter" id="c2">
+    <p class="chapter__no">CHAPTER 02</p>
+    <h2>레퍼런스 해석 — 토스에서 가져올 것과 가져오지 않을 것</h2>
+    <p class="lede">
+      tossinsight.im과 toss.im 안심보상 화면을 실측했다. 자산·문구·브랜드 색은 복제하지 않는다.
+      가져오는 것은 <b>정보를 다루는 방식</b>뿐이며, 색은 전부 Hiresemble 블루 <code>#3157ff</code> 체계로 번역한다.
+    </p>
+
+    <div class="panel">
+      <h3>실측값</h3>
+      <p>tossinsight.im · getComputedStyle 기준</p>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:20%">항목</th><th style="width:40%">토스 실측</th><th style="width:40%">Hiresemble 번역</th></tr></thead>
+          <tbody>
+            <tr><td>타이포 스케일</td><td>52 / 48 / 40 / 28 / 20 / 19 / 17 / 15 / 13px, weight 400·500·600·700</td><td>기존 12/14/16/18/24/32 역할 스케일 유지 + <code>--font-size-3xl 40px</code>, <code>--font-size-hero 52px</code>만 추가. 인증 화면이므로 52px는 <b>적합도 숫자 단 한 곳</b>에만 쓴다.</td></tr>
+            <tr><td>본문 행간</td><td>17px / 27.2px (1.6), 19px / 32.3px (1.7)</td><td>본문 1.65 유지. 서술형 문단은 reading-width 안에 둔다.</td></tr>
+            <tr><td>중성색 램프</td><td>#191F28 → #333D4B → #4E5968 → #6B7684 → #F2F4F6</td><td>기존 <code>#161a2b / #344054 / #475467 / #667085</code>를 그대로 쓰고, 채움면 <code>#F2F4F6</code>만 <code>--color-fill</code>로 신규 채택.</td></tr>
+            <tr><td><b>무테두리 채움면</b></td><td>카드에 border를 쓰지 않고 연한 회색 면으로만 구분. 아이콘 타일 그리드도 같은 방식.</td><td>★ 핵심 채택. 요약 타일·필터 칩·상태 칩에서 1px 테두리를 제거하고 <code>--color-fill</code> 면으로 대체. 테두리는 <b>리포트 내부 구분선</b>에만 남긴다.</td></tr>
+            <tr><td>라운드</td><td>control 12px, pill 999px, 패널 20–24px</td><td>control 10px(기존 유지), <code>--radius-pill</code>·<code>--radius-panel 20px</code> 추가.</td></tr>
+            <tr><td>히어로 배경</td><td>연회색 라운드 패널 위 파란 소프트 블롭</td><td>결정 히어로 우상단에 <b>단 한 곳</b> radial-gradient 적용(최대 alpha 0.13). 그 외 어떤 영역에도 그라디언트를 쓰지 않는다.</td></tr>
+            <tr><td>섹션 전환</td><td>흰 배경 ↔ #F2F4F6 배경 교차로 장면을 나눔</td><td>인증 화면에서는 배경 교차 대신 <b>단일 패널 + 구분선</b>. 랜딩 문법을 제품 안으로 들이지 않는다.</td></tr>
+            <tr><td>버튼</td><td>연회색 배경 + 진한 텍스트의 quiet 버튼이 기본, 컬러 버튼은 희소</td><td>★ 채택. 재분석·프로필 보완·공고 수정을 모두 <code>.hs-btn--quiet</code>로 낮추고 컬러 버튼은 primary 하나만 남긴다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--dont" style="margin-top:1.25rem"><b>가져오지 않음</b><span>Toss Product Sans 폰트, 토스 블루, 3D 아이소메트릭 일러스트, 랜딩형 대형 히어로 카피, 아이콘 타일 그리드 내비게이션, 스크롤 연출. 인증된 제품 화면은 랜딩이 아니다.</span></div>
+    </div>
+  </section>
+<style>
+/* =========================================================================
+   2.6~2.12 PRODUCT STYLES (이어서) — 차트·리스트·상태 화면
+   ========================================================================= */
+
+/* --- 2.6 요건 매칭: 100% 누적 막대 --- */
+.hs-dist{display:flex;gap:2px;height:2.5rem;margin-bottom:.875rem}
+.hs-dist__seg{position:relative;border-radius:4px;min-width:2px;transition:filter var(--motion-fast)}
+.hs-dist__seg[data-status=MATCHED]{background:var(--chart-matched)}
+.hs-dist__seg[data-status=PARTIAL]{background:var(--chart-partial)}
+.hs-dist__seg[data-status=MISSING]{background:var(--chart-missing)}
+.hs-dist__seg[data-status=UNKNOWN]{background:var(--chart-unknown)}
+/* 색 외 2차 인코딩: 상태별 텍스처 (CVD·흑백 인쇄 대응) */
+.hs-dist__seg[data-status=PARTIAL]{background-image:repeating-linear-gradient(45deg,rgb(255 255 255/.34) 0 3px,transparent 3px 7px)}
+.hs-dist__seg[data-status=MISSING]{background-image:repeating-linear-gradient(135deg,rgb(255 255 255/.30) 0 2px,transparent 2px 6px)}
+.hs-dist__seg[data-status=UNKNOWN]{background-image:radial-gradient(rgb(255 255 255/.55) 1.1px,transparent 1.2px);background-size:6px 6px}
+.hs-dist__seg span{position:absolute;inset:0;display:grid;place-items:center;font-size:.75rem;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.hs-distlegend{display:flex;flex-wrap:wrap;gap:.375rem}
+.hs-distlegend__item{display:inline-flex;align-items:center;gap:.4375rem;background:var(--color-fill);border-radius:var(--radius-pill);padding:.375rem .75rem;font-size:.8125rem;font-weight:700;color:var(--color-ink-soft)}
+.hs-distlegend__item b{font-variant-numeric:tabular-nums;color:var(--color-ink-title)}
+.hs-distlegend__dot{display:grid;place-items:center;width:1.125rem;height:1.125rem;border-radius:var(--radius-pill);color:#fff}
+.hs-distlegend__dot svg{width:.75rem;height:.75rem}
+.hs-distlegend__dot[data-status=MATCHED]{background:var(--chart-matched)}
+.hs-distlegend__dot[data-status=PARTIAL]{background:var(--chart-partial)}
+.hs-distlegend__dot[data-status=MISSING]{background:var(--chart-missing)}
+.hs-distlegend__dot[data-status=UNKNOWN]{background:var(--chart-unknown)}
+
+/* --- 2.7 카테고리 가로 막대 차트 --- */
+.hs-catchart{display:grid;gap:.875rem;margin-top:var(--space-7)}
+.hs-catchart__row{display:grid;grid-template-columns:9.5rem minmax(0,1fr) 5.5rem;align-items:center;gap:1rem}
+.hs-catchart__name{font-size:.875rem;font-weight:700;color:var(--color-ink-soft)}
+.hs-catchart__name small{display:block;font-size:.75rem;font-weight:600;color:var(--color-muted)}
+.hs-catchart__track{position:relative;height:.75rem;border-radius:var(--radius-pill);background:var(--chart-track)}
+.hs-catchart__fill{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--chart-brand);transform-origin:left;animation:hs-grow 700ms cubic-bezier(.2,0,0,1) both}
+.hs-catchart__val{text-align:right;font-size:.875rem;font-weight:800;color:var(--color-ink-title);font-variant-numeric:tabular-nums}
+.hs-catchart__val small{display:block;font-size:.75rem;font-weight:600;color:var(--color-muted)}
+@keyframes hs-grow{from{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){.hs-catchart__fill{animation:none}}
+
+/* --- 2.8 공고 핵심 disclosure --- */
+.hs-disc{border-top:1px solid var(--color-border)}
+.hs-disc:last-of-type{border-bottom:1px solid var(--color-border)}
+.hs-disc > summary{display:flex;align-items:center;gap:1rem;padding:1.125rem .25rem;cursor:pointer;list-style:none}
+.hs-disc > summary::-webkit-details-marker{display:none}
+.hs-disc__label{flex:0 0 7.5rem;font-size:.875rem;font-weight:750;color:var(--color-muted-strong)}
+.hs-disc__lead{flex:1;min-width:0;font-size:.9375rem;font-weight:600;color:var(--color-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs-disc__count{flex:0 0 auto;font-size:.8125rem;font-weight:800;color:var(--color-brand-ink);background:var(--color-brand-soft);border-radius:var(--radius-pill);padding:.1875rem .5625rem;font-variant-numeric:tabular-nums}
+.hs-disc__caret{flex:0 0 auto;width:1.125rem;height:1.125rem;color:var(--color-muted);transition:transform var(--motion-base)}
+.hs-disc[open] .hs-disc__caret{transform:rotate(90deg)}
+.hs-disc__body{padding:0 .25rem 1.25rem 8.5rem}
+.hs-disc__body li{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;padding:.5rem 0;font-size:.9375rem;color:var(--color-ink-soft);line-height:1.6}
+.hs-disc__body li + li{border-top:1px dashed var(--color-border)}
+.hs-disc__body li small{font-size:.75rem;color:var(--color-muted);background:var(--color-fill);border-radius:4px;padding:.0625rem .375rem}
+.hs-disc__body ul{margin:0;padding:0;list-style:none}
+
+/* --- 2.9 강점 / 보완 --- */
+.hs-insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));gap:.75rem}
+.hs-insight{background:var(--color-fill);border-radius:var(--radius-lg);padding:1.25rem 1.375rem}
+.hs-insight__head{display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem}
+.hs-insight__head svg{width:1.125rem;height:1.125rem}
+.hs-insight__head h4{margin:0;font-size:.9375rem;font-weight:800}
+.hs-insight__head b{margin-left:auto;font-size:.8125rem;font-weight:800;color:var(--color-muted-strong);font-variant-numeric:tabular-nums}
+.hs-insight--strength .hs-insight__head svg{color:var(--color-success)}
+.hs-insight--gap .hs-insight__head svg{color:var(--color-warning)}
+.hs-insight ul{margin:0;padding:0;list-style:none;display:grid;gap:.5rem}
+.hs-insight li{display:flex;gap:.625rem;background:var(--color-surface);border-radius:var(--radius-md);padding:.75rem .875rem;font-size:.875rem;line-height:1.6;color:var(--color-ink-soft)}
+.hs-insight li svg{width:1rem;height:1rem;flex:0 0 auto;margin-top:.1875rem}
+.hs-insight--strength li svg{color:var(--color-success)}
+.hs-insight--gap li svg{color:var(--color-warning)}
+
+/* --- 2.10 활용 경험 --- */
+.hs-evi{display:grid;gap:2px;background:var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+.hs-evi__row{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;background:var(--color-surface);padding:.9375rem 1.125rem}
+.hs-evi__icon{display:grid;place-items:center;width:2rem;height:2rem;flex:0 0 auto;border-radius:var(--radius-md);background:var(--color-brand-soft);color:var(--color-brand-ink)}
+.hs-evi__icon svg{width:1.0625rem;height:1.0625rem}
+.hs-evi__row[data-changed=true] .hs-evi__icon{background:var(--color-warning-soft);color:var(--color-warning)}
+.hs-evi__main{flex:1;min-width:12rem}
+.hs-evi__main strong{display:block;font-size:.9375rem;font-weight:700}
+.hs-evi__main span{font-size:.75rem;color:var(--color-muted)}
+.hs-evi__state{font-size:.75rem;font-weight:700;color:var(--color-muted-strong)}
+.hs-evi__row[data-changed=true] .hs-evi__state{color:var(--color-warning)}
+
+/* --- 2.11 조건별 확인 결과 --- */
+.hs-filters{display:flex;gap:.375rem;overflow-x:auto;padding-bottom:.25rem;margin-bottom:var(--space-5);scrollbar-width:none}
+.hs-filters::-webkit-scrollbar{display:none}
+.hs-filter{display:inline-flex;align-items:center;gap:.375rem;flex:0 0 auto;min-height:2.375rem;border:0;background:var(--color-fill);border-radius:var(--radius-pill);padding:0 .875rem;font-size:.8125rem;font-weight:700;color:var(--color-ink-soft);cursor:pointer;transition:background var(--motion-fast),color var(--motion-fast)}
+.hs-filter b{font-variant-numeric:tabular-nums;color:var(--color-muted)}
+.hs-filter[aria-pressed=true]{background:var(--color-ink-title);color:#fff}
+.hs-filter[aria-pressed=true] b{color:rgb(255 255 255/.7)}
+.hs-crit{border-top:1px solid var(--color-border)}
+.hs-crit:last-of-type{border-bottom:1px solid var(--color-border)}
+.hs-crit > summary{display:grid;grid-template-columns:auto minmax(0,1fr) 8.5rem auto;align-items:center;gap:1rem;padding:1.0625rem .25rem;cursor:pointer;list-style:none}
+.hs-crit > summary::-webkit-details-marker{display:none}
+.hs-crit__mark{display:grid;place-items:center;width:1.75rem;height:1.75rem;border-radius:var(--radius-pill);color:#fff}
+.hs-crit__mark svg{width:1rem;height:1rem}
+.hs-crit__mark[data-status=MATCHED]{background:var(--chart-matched)}
+.hs-crit__mark[data-status=PARTIAL]{background:var(--chart-partial)}
+.hs-crit__mark[data-status=MISSING]{background:var(--chart-missing)}
+.hs-crit__mark[data-status=UNKNOWN]{background:var(--chart-unknown)}
+.hs-crit__title{min-width:0}
+.hs-crit__title strong{display:block;font-size:.9375rem;font-weight:700;line-height:1.5}
+.hs-crit__title span{font-size:.75rem;font-weight:600;color:var(--color-muted)}
+.hs-crit__meter{display:grid;gap:.3125rem}
+.hs-crit__meter-track{position:relative;height:.375rem;border-radius:var(--radius-pill);background:var(--chart-track)}
+.hs-crit__meter-fill{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--chart-brand)}
+.hs-crit__meter-val{font-size:.75rem;font-weight:700;color:var(--color-muted-strong);font-variant-numeric:tabular-nums;text-align:right}
+.hs-crit__body{padding:0 .25rem 1.25rem 2.75rem}
+.hs-crit__why{margin:0 0 .875rem;font-size:.875rem;line-height:1.7;color:var(--color-ink-soft);max-width:52rem}
+.hs-crit__refs{display:flex;flex-wrap:wrap;gap:.375rem;margin:0;padding:0;list-style:none}
+.hs-crit__refs li{display:inline-flex;align-items:center;gap:.375rem;background:var(--color-fill);border-radius:var(--radius-pill);padding:.3125rem .6875rem;font-size:.75rem;font-weight:600;color:var(--color-ink-soft)}
+.hs-crit__refs li svg{width:.8125rem;height:.8125rem;color:var(--color-success)}
+.hs-crit__refs li[data-changed=true]{background:var(--color-warning-soft);color:var(--color-warning)}
+.hs-crit__refs li[data-changed=true] svg{color:var(--color-warning)}
+
+/* --- 2.12 이력 추이 --- */
+.hs-trend{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:var(--space-7);align-items:center}
+.hs-trend__svg{width:100%;height:auto;display:block;overflow:visible}
+.hs-trend__grid{stroke:var(--chart-grid);stroke-width:1}
+.hs-trend__line{fill:none;stroke:var(--chart-brand);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hs-trend__area{fill:url(#hs-trendfill)}
+.hs-trend__dot{fill:#fff;stroke:var(--chart-brand);stroke-width:2}
+.hs-trend__dot--last{fill:var(--chart-brand)}
+.hs-trend__lab{font-size:11px;font-weight:800;fill:var(--color-ink-title);font-variant-numeric:tabular-nums}
+.hs-trend__ax{font-size:10px;font-weight:600;fill:var(--color-muted)}
+.hs-trend__list{display:grid;gap:2px;background:var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+.hs-trend__item{display:flex;align-items:center;gap:.75rem;background:var(--color-surface);border:0;width:100%;text-align:left;padding:.8125rem 1rem;font:inherit;cursor:pointer}
+.hs-trend__item[aria-pressed=true]{background:var(--color-brand-soft)}
+.hs-trend__item strong{font-size:.875rem;font-weight:700}
+.hs-trend__item small{margin-left:auto;font-size:.8125rem;font-weight:700;color:var(--color-muted-strong);font-variant-numeric:tabular-nums}
+
+/* --- 2.13 진행 상태 (분석 중) --- */
+.hs-progress{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-7);align-items:center}
+.hs-ring{width:7.5rem;height:7.5rem;display:block}
+.hs-ring__track{fill:none;stroke:var(--chart-track);stroke-width:9}
+.hs-ring__val{fill:none;stroke:var(--chart-brand);stroke-width:9;stroke-linecap:round;transform:rotate(-90deg);transform-origin:center;animation:hs-arc 800ms cubic-bezier(.2,0,0,1) both}
+.hs-ring__num{font-size:22px;font-weight:800;fill:var(--color-ink-title);font-variant-numeric:tabular-nums}
+.hs-steps{display:grid;gap:.75rem;margin:0;padding:0;list-style:none}
+.hs-steps li{display:flex;align-items:center;gap:.625rem;font-size:.9375rem;color:var(--color-muted)}
+.hs-steps__mark{display:grid;place-items:center;width:1.25rem;height:1.25rem;flex:0 0 auto;border-radius:var(--radius-pill);background:var(--color-fill-strong);color:transparent}
+.hs-steps__mark svg{width:.75rem;height:.75rem}
+.hs-steps li[data-state=done]{color:var(--color-ink-soft)}
+.hs-steps li[data-state=done] .hs-steps__mark{background:var(--color-brand);color:#fff}
+.hs-steps li[data-state=active]{color:var(--color-brand-ink);font-weight:750}
+.hs-steps li[data-state=active] .hs-steps__mark{background:var(--color-brand-soft);color:var(--color-brand);position:relative}
+.hs-steps li[data-state=active] .hs-steps__mark::after{content:'';position:absolute;inset:0;border-radius:var(--radius-pill);border:2px solid var(--color-brand);animation:hs-pulse 1.6s ease-out infinite}
+@keyframes hs-pulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+@media (prefers-reduced-motion:reduce){.hs-steps__mark::after,.hs-ring__val{animation:none}}
+
+/* --- 2.14 알림 배너 --- */
+.hs-banner{display:flex;flex-wrap:wrap;align-items:center;gap:.875rem;border-radius:var(--radius-lg);padding:1rem 1.25rem}
+.hs-banner svg{width:1.25rem;height:1.25rem;flex:0 0 auto}
+.hs-banner__text{flex:1;min-width:14rem}
+.hs-banner__text strong{display:block;font-size:.9375rem;font-weight:750}
+.hs-banner__text p{margin:.1875rem 0 0;font-size:.875rem;line-height:1.6}
+.hs-banner--warn{background:var(--color-warning-soft);color:#704703}
+.hs-banner--danger{background:var(--color-danger-soft);color:#8d1922}
+.hs-banner--info{background:var(--color-brand-soft);color:var(--color-brand-ink)}
+
+/* --- 2.15 빈/실패 상태 --- */
+.hs-state{display:grid;justify-items:center;text-align:center;gap:.75rem;padding:var(--space-9) var(--space-6)}
+.hs-state__icon{display:grid;place-items:center;width:3.5rem;height:3.5rem;border-radius:var(--radius-lg);background:var(--color-fill);color:var(--color-muted-strong)}
+.hs-state__icon svg{width:1.75rem;height:1.75rem}
+.hs-state h3{margin:.25rem 0 0;font-size:1.125rem;font-weight:780}
+.hs-state p{margin:0;max-width:30rem;font-size:.9375rem;color:var(--color-muted-strong)}
+
+/* --- 2.16 반응형 --- */
+@media (max-width:60rem){
+  .hs-report__block{padding:var(--space-6)}
+  .hs-decision__grid{grid-template-columns:minmax(0,1fr);gap:var(--space-6)}
+  .hs-gauge{justify-self:start}
+  .hs-trend{grid-template-columns:minmax(0,1fr)}
+  .hs-progress{grid-template-columns:minmax(0,1fr);justify-items:start}
+  .hs-catchart__row{grid-template-columns:minmax(0,1fr) 5rem;row-gap:.375rem}
+  .hs-catchart__track{grid-column:1/-1;order:3}
+  .hs-disc__body{padding-left:.25rem}
+  .hs-disc > summary{flex-wrap:wrap}
+  .hs-disc__lead{flex-basis:100%;white-space:normal}
+  .hs-crit > summary{grid-template-columns:auto minmax(0,1fr) auto;row-gap:.5rem}
+  .hs-crit__meter{grid-column:2/-1}
+}
+
+/* 가이드 문서용 디바이스 프레임 */
+.device{width:23.4375rem;margin:0 auto;background:var(--color-surface);border-radius:1.75rem;overflow:hidden;box-shadow:0 24px 64px rgb(22 26 43/14%)}
+.device__bar{height:2rem;background:var(--color-surface);display:grid;place-items:center}
+.device__bar i{display:block;width:5rem;height:.375rem;border-radius:var(--radius-pill);background:var(--color-fill-strong)}
+.device__view{height:44rem;overflow-y:auto;background:var(--color-canvas)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.5rem}
+.sw{border-radius:var(--radius-md);overflow:hidden;background:var(--color-fill)}
+.sw__c{height:3.25rem}
+.sw__t{padding:.5rem .625rem;font-size:.6875rem;line-height:1.5}
+.sw__t b{display:block;font-size:.75rem;color:var(--color-ink)}
+.sw__t code{font-family:ui-monospace,Menlo,monospace;color:var(--color-muted)}
+.iconwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(7rem,1fr));gap:.5rem}
+.iconwall figure{margin:0;display:grid;justify-items:center;gap:.5rem;background:var(--color-fill);border-radius:var(--radius-md);padding:1rem .5rem}
+.iconwall svg{width:1.75rem;height:1.75rem;color:var(--color-ink-soft)}
+.iconwall figcaption{font-size:.6875rem;font-weight:700;color:var(--color-muted-strong);font-family:ui-monospace,Menlo,monospace}
+</style>
+
+  <!-- ============================ 03 ============================ -->
+  <section class="chapter" id="c3">
+    <p class="chapter__no">CHAPTER 03</p>
+    <h2>디자인 토큰</h2>
+    <p class="lede">
+      기존 <code>frontend/src/styles/main.css</code>의 토큰은 <b>하나도 변경하거나 삭제하지 않는다</b>.
+      아래 8개만 <code>:root</code>에 추가한다. 다른 페이지에 회귀를 만들지 않기 위한 additive 변경이다.
+    </p>
+
+    <div class="panel">
+      <h3>추가 토큰 8개</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:22%">토큰</th><th style="width:16%">값</th><th style="width:62%">용도와 제약</th></tr></thead>
+          <tbody>
+            <tr><td><code>--color-fill</code></td><td>#f2f4f6</td><td>테두리 없는 채움면. 요약 타일, 필터 칩, 강점·보완 컨테이너, quiet 버튼. <b>이 토큰을 쓰는 요소에는 border를 넣지 않는다.</b></td></tr>
+            <tr><td><code>--color-fill-strong</code></td><td>#e8ebf0</td><td>채움면 위 트랙(막대 배경), quiet 버튼 hover.</td></tr>
+            <tr><td><code>--color-ink-title</code></td><td>#0f1420</td><td>리포트 대제목·히어로 숫자 전용. 본문에는 쓰지 않는다.</td></tr>
+            <tr><td><code>--radius-pill</code></td><td>999px</td><td>칩·필터·게이지 레전드 점. 그 외 pill 컨테이너 금지.</td></tr>
+            <tr><td><code>--radius-panel</code></td><td>20px</td><td>리포트 패널 단 하나. 내부 블록에는 재적용하지 않는다.</td></tr>
+            <tr><td><code>--font-size-3xl</code></td><td>40px</td><td>예비. 현재 분석 화면에서는 미사용.</td></tr>
+            <tr><td><code>--font-size-hero</code></td><td>52px</td><td>적합도 게이지 중앙 숫자 <b>단 한 곳</b>.</td></tr>
+            <tr><td><code>--shadow-panel</code></td><td>2단 저강도</td><td>리포트 패널 1회. 내부 요소에 그림자 중첩 금지.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>차트 전용 status 팔레트</h3>
+      <p>마크(면) 채움 전용. 텍스트·아이콘에는 기존 semantic 토큰(<code>--color-success</code> 등)을 계속 쓴다.</p>
+      <div class="swatches">
+        <div class="sw"><div class="sw__c" style="background:#12855f"></div><div class="sw__t"><b>MATCHED 일치</b><code>--chart-matched #12855f</code></div></div>
+        <div class="sw"><div class="sw__c" style="background:#a16207;background-image:repeating-linear-gradient(45deg,rgb(255 255 255/.34) 0 3px,transparent 3px 7px)"></div><div class="sw__t"><b>PARTIAL 일부 일치</b><code>--chart-partial #a16207</code></div></div>
+        <div class="sw"><div class="sw__c" style="background:#a01b3c;background-image:repeating-linear-gradient(135deg,rgb(255 255 255/.3) 0 2px,transparent 2px 6px)"></div><div class="sw__t"><b>MISSING 확인되지 않음</b><code>--chart-missing #a01b3c</code></div></div>
+        <div class="sw"><div class="sw__c" style="background:#8792a6;background-image:radial-gradient(rgb(255 255 255/.55) 1.1px,transparent 1.2px);background-size:6px 6px"></div><div class="sw__t"><b>UNKNOWN 판단 정보 부족</b><code>--chart-unknown #8792a6</code></div></div>
+        <div class="sw"><div class="sw__c" style="background:#3157ff"></div><div class="sw__t"><b>점수 마크(단일 hue)</b><code>--chart-brand #3157ff</code></div></div>
+        <div class="sw"><div class="sw__c" style="background:#e8ebf0"></div><div class="sw__t"><b>트랙</b><code>--chart-track #e8ebf0</code></div></div>
+      </div>
+      <div class="note note--info" style="margin-top:1.25rem"><b>왜 semantic 토큰을 그대로 쓰지 않았나</b>
+        <span>기존 <code>#147253/#8a5a08/#b4232d</code> 조합은 색각 검증에서 적–주황 쌍이 deutan ΔE 1.7로 사실상 구분되지 않았다. 위 4색은 normal-vision ΔE 16.2로 통과하고 CVD ΔE 7.9(2차 인코딩 필수 구간)다. 검증 절차와 결과 전문은 10장에 있다.</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>타이포 서열 — 화면당 딱 한 번씩만</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:16%">역할</th><th style="width:16%">크기/굵기</th><th style="width:34%">적용처</th><th style="width:34%">제약</th></tr></thead>
+          <tbody>
+            <tr><td>히어로 숫자</td><td>52px / 800</td><td>적합도 게이지 중앙</td><td>페이지당 1회. 다른 수치에 재사용 금지.</td></tr>
+            <tr><td>결정 문장</td><td>24–32px / 800</td><td><code>decisionHeading</code></td><td>페이지당 1회. 공고명(h1)과 크기가 겹치지 않게 h1은 30px 상한.</td></tr>
+            <tr><td>섹션 제목</td><td>19px / 780</td><td>리포트 블록 h3</td><td>아이콘 20px 동반. kicker 반복 금지.</td></tr>
+            <tr><td>본문</td><td>15–16px / 400–600, LH 1.6–1.7</td><td>요약, 판단 이유</td><td>서술형은 52rem 폭 상한.</td></tr>
+            <tr><td>메타</td><td>12–13px / 600–700</td><td>출처, 시각, 상태</td><td><code>--color-muted</code> 이상 대비 유지.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 04 ============================ -->
+  <section class="chapter" id="c4">
+    <p class="chapter__no">CHAPTER 04</p>
+    <h2>자체 제작 아이콘 세트</h2>
+    <p class="lede">
+      외부 아이콘 라이브러리를 추가하지 않는다. 기존 <code>AppIcon.vue</code>에 아래 18개 <code>symbol</code>을 등록한다.
+      전부 24×24 그리드, <code>stroke-width 1.8</code>, <code>currentColor</code>, round cap/join으로 그렸다.
+      <b>의미 없는 장식 아이콘은 하나도 없다</b> — 상태 4종은 색을 지워도 모양만으로 구분된다.
+    </p>
+    <div class="panel">
+      <div class="iconwall">
+        <figure><svg><use href="#ic-target"/></svg><figcaption>target</figcaption></figure>
+        <figure><svg><use href="#ic-check"/></svg><figcaption>check</figcaption></figure>
+        <figure><svg><use href="#ic-half"/></svg><figcaption>half</figcaption></figure>
+        <figure><svg><use href="#ic-x"/></svg><figcaption>x</figcaption></figure>
+        <figure><svg><use href="#ic-question"/></svg><figcaption>question</figcaption></figure>
+        <figure><svg><use href="#ic-shield"/></svg><figcaption>shield</figcaption></figure>
+        <figure><svg><use href="#ic-doc"/></svg><figcaption>doc</figcaption></figure>
+        <figure><svg><use href="#ic-spark"/></svg><figcaption>spark</figcaption></figure>
+        <figure><svg><use href="#ic-lift"/></svg><figcaption>lift</figcaption></figure>
+        <figure><svg><use href="#ic-evidence"/></svg><figcaption>evidence</figcaption></figure>
+        <figure><svg><use href="#ic-chart"/></svg><figcaption>chart</figcaption></figure>
+        <figure><svg><use href="#ic-history"/></svg><figcaption>history</figcaption></figure>
+        <figure><svg><use href="#ic-refresh"/></svg><figcaption>refresh</figcaption></figure>
+        <figure><svg><use href="#ic-scale"/></svg><figcaption>scale</figcaption></figure>
+        <figure><svg><use href="#ic-flow"/></svg><figcaption>flow</figcaption></figure>
+        <figure><svg><use href="#ic-alert"/></svg><figcaption>alert</figcaption></figure>
+        <figure><svg><use href="#ic-info"/></svg><figcaption>info</figcaption></figure>
+        <figure><svg><use href="#ic-clock"/></svg><figcaption>clock</figcaption></figure>
+      </div>
+      <div class="note note--do" style="margin-top:1.25rem"><b>상태 4종 매핑</b>
+        <span><code>check</code>=MATCHED · <code>half</code>=PARTIAL(반원 채움) · <code>x</code>=MISSING · <code>question</code>=UNKNOWN. 상태 칩·레전드·조건 행 마커에서 항상 아이콘+한글 라벨을 함께 쓴다.</span></div>
+    </div>
+  </section>
+  <!-- ============================ 05 ============================ -->
+  <section class="chapter" id="c5">
+    <p class="chapter__no">CHAPTER 05</p>
+    <h2>API ↔ UI 매핑</h2>
+    <p class="lede">
+      화면에 그릴 수 있는 것은 아래 표의 좌측 필드가 전부다. 표에 없는 수치·라벨·기능을 UI에 만들면
+      계약 위반이다. 모든 필드는 <code>frontend/src/shared/api/jobContracts.ts</code>의 zod 스키마와
+      <code>docs/spec/api.md</code>에서 확인했다.
+    </p>
+
+    <div class="panel">
+      <h3>사용하는 엔드포인트</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:34%">엔드포인트</th><th style="width:26%">응답</th><th style="width:40%">화면에서의 역할</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET /jobs/{id}</code></td><td><code>JobDetailDto</code></td><td>공고 리소스 헤더, 본문 유무(<code>descriptionText</code>·<code>extractionStatus</code>), 자동 분석 상태(<code>automaticAnalysis</code>), 낙관적 잠금 <code>version</code></td></tr>
+            <tr><td><code>GET /jobs/{id}/analyses/latest</code></td><td><code>JobAnalysisDetailDto</code></td><td>리포트 본문 전체. 404 + <code>JOB_ANALYSIS_NOT_FOUND</code>은 “아직 결과 없음” 분기</td></tr>
+            <tr><td><code>GET /jobs/{id}/analyses</code></td><td><code>Page&lt;JobAnalysisSummaryDto&gt;</code></td><td>이력 추이 차트와 이력 목록. <code>sort=analysisVersion,desc</code></td></tr>
+            <tr><td><code>POST /jobs/{id}/analysis</code></td><td>202 <code>RunAcceptedDto</code></td><td>재분석. <code>qualityMode: 'BALANCED'</code>, <code>forceReanalyze</code>, <code>jobVersion</code> 고정 전송</td></tr>
+            <tr><td><code>GET /agent-runs/{id}</code> + SSE</td><td><code>AgentRunDetailDto</code></td><td>진행률 링, 진행 문구, <code>WAITING_USER</code> 안내, <code>safeError</code> 기반 실패 카피</td></tr>
+            <tr><td><code>GET /profile</code></td><td><code>ProfileDto</code></td><td><code>profileCompleted=false</code>일 때 보조 안내 배너</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3><code>JobAnalysisDetailDto</code> 필드별 배치</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:24%">필드</th><th style="width:12%">타입</th><th style="width:26%">배치</th><th style="width:38%">표현 규칙</th></tr></thead>
+          <tbody>
+            <tr><td><code>fitScore</code></td><td>0..100 · nullable</td><td>결정 히어로 게이지 중앙</td><td>5점 단위 반올림 후 <code>N점</code>. <b>null이면 게이지를 숨기고</b> “산정하지 못함”을 텍스트로 표시(0점으로 그리지 않는다).</td></tr>
+            <tr><td><code>eligibility</code></td><td>4-enum</td><td>결정 문장 + 상단 칩</td><td>ELIGIBLE/CONDITIONAL/INELIGIBLE/UNKNOWN → 기존 <code>ELIGIBILITY_LABELS</code> 그대로. 결정 문장 4종도 기존 <code>decisionHeading</code> 유지.</td></tr>
+            <tr><td><code>analysisCoverage</code></td><td>0..100 · nullable</td><td>게이지 내부 링 + 요약 타일</td><td>null은 이전 rubric 결과 → “기록 없음”. 링 자체를 렌더하지 않는다.</td></tr>
+            <tr><td><code>analysisSummary</code></td><td>string? ≤10000</td><td>결정 히어로 본문</td><td>기존 <code>REMOVED_SUMMARY_SENTENCE</code> 치환 유지. 52rem 폭 상한.</td></tr>
+            <tr><td><code>scoreBreakdown[]</code></td><td>≤100</td><td>분포 막대 · 카테고리 차트 · 조건 리스트</td><td>세 곳이 <b>같은 배열</b>에서 파생된다. 개수 합이 어긋나면 구현 오류다.</td></tr>
+            <tr><td>└ <code>matchLevel</code></td><td>4-enum</td><td>분포 세그먼트, 조건 마커</td><td>색 + 아이콘 + 한글 라벨 3중 인코딩 필수.</td></tr>
+            <tr><td>└ <code>score / weight</code></td><td>0..100</td><td>조건 미터, 카테고리 막대</td><td><code>score ≤ weight</code>가 스키마 보장. 미터 폭 = score/weight. 표기는 5점 단위 반올림.</td></tr>
+            <tr><td>└ <code>explanation</code></td><td>string ≤2000</td><td>조건 disclosure 본문</td><td>기본 접힘. 열었을 때만 렌더.</td></tr>
+            <tr><td>└ <code>evidenceRefs[]</code></td><td>≤100</td><td>조건 disclosure 하단 칩</td><td><code>verificationStatus!=='VERIFIED' || sourceDeleted</code>이면 warning 톤 + 현재 상태 문구.</td></tr>
+            <tr><td><code>responsibilities[]</code><br /><code>requiredQualifications[]</code><br /><code>preferredQualifications[]</code></td><td>≤100 각</td><td>공고 핵심 disclosure 3행</td><td>접힌 상태에서 첫 항목만 미리보기 + 개수 칩. <code>sourceLocation</code>은 <code>formatRequirementSourceLocation</code>으로 “공고 본문”까지만 노출.</td></tr>
+            <tr><td><code>strengths[] / gaps[]</code></td><td>≤20 각</td><td>강점·보완 2열</td><td>번호 원형 배지 제거. 아이콘 1종 + 문장.</td></tr>
+            <tr><td><code>matchedEvidenceRefs[]</code></td><td>≤100</td><td>활용 경험 리스트</td><td>하나라도 현재 미검증이면 상단에 warning 배너 1회.</td></tr>
+            <tr><td><code>analysisOutdated</code><br /><code>outdatedReasons[]</code></td><td>bool / ≤3</td><td>리포트 최상단 배너</td><td>기존 결과는 그대로 두고 “최신 정보로 다시 분석” 버튼만 제공.</td></tr>
+            <tr><td><code>analysisVersion</code></td><td>int ≥1</td><td>이력 추이 x축</td><td>정수 축. 날짜 축으로 바꾸지 않는다(간격 불균등).</td></tr>
+            <tr><td><code>agentRunId</code></td><td>UUID</td><td>“분석 과정 보기” 링크</td><td>secondary. 내부 step key·모델명·프롬프트는 절대 노출하지 않는다.</td></tr>
+            <tr><td><code>createdAt</code></td><td>Instant</td><td>리포트 헤더 메타</td><td><code>formatAnalysisInstant</code> 유지.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--dont" style="margin-top:1.25rem"><b>만들지 않는 것</b>
+        <span>합격 확률, 경쟁률, 예상 연봉, 유사 공고 추천, 지원자 평균 대비 백분위, 마감까지 D-day 카운트다운 애니메이션. 어느 것도 API에 없다.</span></div>
+    </div>
+  </section>
+
+  <!-- ============================ 06 ============================ -->
+  <section class="chapter" id="c6">
+    <p class="chapter__no">CHAPTER 06</p>
+    <h2>상태 모델과 화면 분기</h2>
+    <p class="lede">
+      공고를 저장하면 분석은 자동으로 이어진다. 사용자는 품질 모드를 고르지 않는다.
+      화면은 아래 6개 상태 중 하나를 렌더하며, <b>분기 우선순위가 곧 코드 순서</b>다.
+    </p>
+
+    <div class="panel">
+      <h3>자동 분석 파이프라인</h3>
+      <p><code>automaticAnalysis.state</code> 전이와 각 단계에서 사용자가 보는 화면</p>
+      <div class="frame" style="background:var(--color-surface);padding:var(--space-5) 0">
+        <svg viewBox="0 0 980 250" style="width:100%;height:auto;display:block" role="img" aria-label="자동 분석 상태 전이 다이어그램: WAITING_FOR_CONTENT 또는 NOT_REQUESTED에서 PENDING, CLAIMED, LAUNCHED를 거쳐 분석 결과 저장으로 이어지고, BLOCKED와 SUPERSEDED는 예외 종료 상태다.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0.6L9.4 5L0 9.4z" fill="#8792a6"/>
+            </marker>
+            <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0.6L9.4 5L0 9.4z" fill="#3157ff"/>
+            </marker>
+          </defs>
+          <g font-family="-apple-system,'Noto Sans KR',sans-serif">
+            <!-- happy path -->
+            <g>
+              <rect x="8" y="66" width="150" height="62" rx="12" fill="#f2f4f6"/>
+              <text x="83" y="90" text-anchor="middle" font-size="12" font-weight="800" fill="#475467">NOT_REQUESTED</text>
+              <text x="83" y="110" text-anchor="middle" font-size="11.5" fill="#667085">공고 저장 완료</text>
+            </g>
+            <path d="M162 97h34" stroke="#3157ff" stroke-width="2" marker-end="url(#arb)"/>
+            <g>
+              <rect x="200" y="66" width="150" height="62" rx="12" fill="#f1f4ff"/>
+              <text x="275" y="90" text-anchor="middle" font-size="12" font-weight="800" fill="#2039bd">PENDING</text>
+              <text x="275" y="110" text-anchor="middle" font-size="11.5" fill="#2546e6">자동 접수 대기</text>
+            </g>
+            <path d="M354 97h34" stroke="#3157ff" stroke-width="2" marker-end="url(#arb)"/>
+            <g>
+              <rect x="392" y="66" width="150" height="62" rx="12" fill="#f1f4ff"/>
+              <text x="467" y="90" text-anchor="middle" font-size="12" font-weight="800" fill="#2039bd">LAUNCHED</text>
+              <text x="467" y="110" text-anchor="middle" font-size="11.5" fill="#2546e6">AI 작업 실행 중</text>
+            </g>
+            <path d="M546 97h34" stroke="#3157ff" stroke-width="2" marker-end="url(#arb)"/>
+            <g>
+              <rect x="584" y="60" width="176" height="74" rx="12" fill="#3157ff"/>
+              <text x="672" y="88" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ffffff">분석 결과 저장</text>
+              <text x="672" y="109" text-anchor="middle" font-size="11.5" fill="#cad3ff">analysisVersion +1</text>
+            </g>
+            <path d="M764 97h34" stroke="#3157ff" stroke-width="2" marker-end="url(#arb)"/>
+            <g>
+              <rect x="802" y="66" width="170" height="62" rx="12" fill="#e5f6ee"/>
+              <text x="887" y="90" text-anchor="middle" font-size="12" font-weight="800" fill="#0d5b41">리포트 화면</text>
+              <text x="887" y="110" text-anchor="middle" font-size="11.5" fill="#147253">7장 시안</text>
+            </g>
+
+            <!-- upstream -->
+            <g>
+              <rect x="8" y="8" width="150" height="40" rx="12" fill="#fff3d5"/>
+              <text x="83" y="33" text-anchor="middle" font-size="11.5" font-weight="800" fill="#704703">WAITING_FOR_CONTENT</text>
+            </g>
+            <path d="M83 52v10" stroke="#8792a6" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#ar)"/>
+
+            <!-- exceptions -->
+            <g>
+              <rect x="200" y="176" width="150" height="58" rx="12" fill="#fff0ef"/>
+              <text x="275" y="199" text-anchor="middle" font-size="12" font-weight="800" fill="#8d1922">BLOCKED</text>
+              <text x="275" y="218" text-anchor="middle" font-size="11.5" fill="#b4232d">예산·전제조건 실패</text>
+            </g>
+            <path d="M275 132v40" stroke="#8792a6" stroke-width="1.6" marker-end="url(#ar)"/>
+            <g>
+              <rect x="392" y="176" width="150" height="58" rx="12" fill="#f2f4f6"/>
+              <text x="467" y="199" text-anchor="middle" font-size="12" font-weight="800" fill="#475467">SUPERSEDED</text>
+              <text x="467" y="218" text-anchor="middle" font-size="11.5" fill="#667085">공고 version 변경</text>
+            </g>
+            <path d="M467 132v40" stroke="#8792a6" stroke-width="1.6" marker-end="url(#ar)"/>
+            <g>
+              <rect x="584" y="176" width="176" height="58" rx="12" fill="#fff0ef"/>
+              <text x="672" y="199" text-anchor="middle" font-size="12" font-weight="800" fill="#8d1922">Run FAILED / CANCELLED</text>
+              <text x="672" y="218" text-anchor="middle" font-size="11.5" fill="#b4232d">safeError → 실패 화면</text>
+            </g>
+            <path d="M660 138l-6 32" stroke="#8792a6" stroke-width="1.6" marker-end="url(#ar)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note note--info" style="margin-top:1rem"><b>불변</b><span>실패·차단은 공고와 등록한 지원 정보를 롤백하지 않는다. 화면 문구도 항상 “저장한 정보는 그대로”를 유지한다. 진행 중 SSE 연결이 끊겨도 <b>실패로 표시하지 않는다</b>.</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>렌더 분기 우선순위</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:6%">#</th><th style="width:28%">조건</th><th style="width:30%">화면</th><th style="width:36%">primary action</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><code>job.isLoading</code></td><td>공고 로딩 StatePanel</td><td>없음</td></tr>
+            <tr><td>2</td><td><code>job.isError</code></td><td>공고 오류 StatePanel</td><td>관심 공고로 돌아가기</td></tr>
+            <tr><td>3</td><td>run이 FAILED/CANCELLED/INTERRUPTED</td><td><b>8-C 실패 화면</b></td><td><code>공고 분석 재실행</code> (결과가 없을 때만 primary)</td></tr>
+            <tr><td>4</td><td>run이 QUEUED/RUNNING/WAITING_USER</td><td><b>8-A 진행 화면</b></td><td>WAITING_USER면 <code>필요한 정보 입력</code>, 아니면 없음</td></tr>
+            <tr><td>5</td><td>latest 404 <code>JOB_ANALYSIS_NOT_FOUND</code></td><td><b>8-B 준비 중 / 본문 필요</b></td><td>본문 없으면 <code>공고 정보 확인</code></td></tr>
+            <tr><td>6</td><td>latest 200</td><td><b>7장 리포트</b> (+ outdated면 상단 배너)</td><td><code>자기소개서 준비하기</code> 하나</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--dont" style="margin-top:1.25rem"><b>동시 노출 금지</b>
+        <span>진행 중 화면과 리포트를 동시에 쌓지 않는다. 이전 결과가 있는 상태에서 재분석이 돌면 리포트를 유지하고 <b>상단에 얇은 진행 배너 한 줄</b>만 붙인다(전체 화면 교체 금지 — 사용자가 읽던 내용을 빼앗지 않는다).</span></div>
+    </div>
+  </section>
+  <!-- ============================ 07 ============================ -->
+  <section class="chapter" id="c7">
+    <p class="chapter__no">CHAPTER 07</p>
+    <h2>데스크톱 시안 · 분석 완료 상태</h2>
+    <p class="lede">
+      아래는 목업 이미지가 아니라 <b>동작하는 마크업</b>이다. disclosure를 열고 필터를 눌러 볼 수 있다.
+      샘플 데이터는 가상의 회사·공고이며, 모든 수치가 서로 정합한다
+      (배점 합 100 = 카테고리 합, 조건 9개 = 분포 합, 점수 70 = 조건 score 합).
+    </p>
+
+    <div class="frame">
+      <div class="frame__label"><span>DESKTOP · 1180px 콘텐츠 폭</span><em>/jobs/:jobId/analysis</em></div>
+      <div class="hs-shell">
+
+        <!-- ===== 공고 리소스 헤더 + 탭 (JobDetailLayout) ===== -->
+        <a class="hs-back" href="#c7"><svg><use href="#ic-arrow-left"/></svg>공고 목록</a>
+        <header class="hs-jobhead">
+          <div>
+            <p class="hs-jobhead__company">루미너스랩</p>
+            <h1>백엔드 엔지니어 (결제 플랫폼)</h1>
+            <div class="hs-jobhead__meta">
+              <span>서버 개발</span><span>서울 강남구</span><span>정규직</span>
+              <span><svg style="width:.875rem;height:.875rem"><use href="#ic-clock"/></svg>마감 2026. 8. 21.</span>
+            </div>
+          </div>
+          <div class="hs-jobhead__aside">
+            <div class="hs-jobhead__badges">
+              <span class="hs-chip hs-chip--brand">준비 중</span>
+              <span class="hs-chip" data-status="MATCHED"><svg><use href="#ic-check"/></svg>분석 완료</span>
+            </div>
+            <a class="hs-linkbtn" href="#c7">원본 공고 보기 ↗</a>
+          </div>
+        </header>
+        <nav class="hs-tabs" aria-label="공고 상세 탭">
+          <a class="hs-tab" href="#c7">공고 정보</a>
+          <a class="hs-tab" href="#c7" aria-current="page">공고 분석</a>
+          <a class="hs-tab" href="#c7">자기소개서</a>
+          <a class="hs-tab" href="#c7">면접 준비</a>
+        </nav>
+
+        <!-- ===== 리포트 패널 ===== -->
+        <article class="hs-report">
+
+          <!-- --- 07-1 결정 히어로 --- -->
+          <section class="hs-report__block hs-decision">
+            <div class="hs-decision__grid">
+              <div>
+                <p class="hs-decision__kicker"><svg style="width:1rem;height:1rem"><use href="#ic-scale"/></svg>지원 판단</p>
+                <h2>적합도 70점, 지원 전에 확인할 조건이 있어요.</h2>
+                <p class="hs-decision__summary">
+                  결제 도메인 API 설계와 Java·Spring 기반 백엔드 개발 경력은 필수 자격을 충족해요.
+                  다만 대용량 트래픽 운영 경험은 등록된 근거에서 확인되지 않았고, PG·카드사 연동 경험은
+                  판단할 정보가 부족해요.
+                </p>
+                <div class="hs-decision__actions">
+                  <a class="hs-btn hs-btn--primary hs-btn--lg" href="#c7">자기소개서 준비하기<svg><use href="#ic-arrow-right"/></svg></a>
+                  <button class="hs-btn hs-btn--quiet" type="button"><svg><use href="#ic-refresh"/></svg>최신 정보로 다시 분석</button>
+                  <a class="hs-linkbtn" href="#c7" style="margin-left:.25rem">분석 과정 보기</a>
+                </div>
+                <dl class="hs-tiles">
+                  <div class="hs-tile">
+                    <dt><svg><use href="#ic-scale"/></svg>지원 가능 여부</dt>
+                    <dd style="font-size:1.0625rem">조건 확인 후 지원 가능</dd>
+                    <small>필수 조건 3개 중 2개 충족</small>
+                  </div>
+                  <div class="hs-tile">
+                    <dt><svg><use href="#ic-shield"/></svg>분석 커버리지</dt>
+                    <dd>85%</dd>
+                    <small>공고 요건 중 판정 가능했던 비율</small>
+                  </div>
+                  <div class="hs-tile">
+                    <dt><svg><use href="#ic-history"/></svg>분석 시각</dt>
+                    <dd style="font-size:1.0625rem">2026. 8. 5. 오전 9:42</dd>
+                    <small>3번째 분석 결과</small>
+                  </div>
+                </dl>
+              </div>
+
+              <!-- 게이지: 외부 링 = fitScore, 내부 링 = analysisCoverage -->
+              <div class="hs-gauge">
+                <svg class="hs-gauge__svg" viewBox="0 0 200 200" role="img"
+                     aria-label="적합도 70점, 분석 커버리지 85퍼센트. 적합도는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도입니다.">
+                  <path class="hs-gauge__arc hs-gauge__track" d="M46.26 153.74A76 76 0 1 1 153.74 153.74" stroke-width="14"/>
+                  <path class="hs-gauge__arc hs-gauge__value" d="M46.26 153.74A76 76 0 1 1 153.74 153.74" stroke-width="14"
+                        style="--arc-len:358.14" stroke-dasharray="358.14" stroke-dashoffset="107.44"/>
+                  <path class="hs-gauge__arc hs-gauge__track" d="M56.16 143.84A62 62 0 1 1 143.84 143.84" stroke-width="6"/>
+                  <path class="hs-gauge__arc hs-gauge__cover" d="M56.16 143.84A62 62 0 1 1 143.84 143.84" stroke-width="6"
+                        style="--arc-len:292.17" stroke-dasharray="292.17" stroke-dashoffset="43.83"/>
+                  <text class="hs-gauge__cap" x="100" y="70" text-anchor="middle">적합도</text>
+                  <text x="100" y="118" text-anchor="middle">
+                    <tspan class="hs-gauge__num">70</tspan><tspan class="hs-gauge__unit" dx="2">점</tspan>
+                  </text>
+                  <text class="hs-gauge__cap" x="100" y="142" text-anchor="middle" style="fill:var(--hs-blue-700)">커버리지 85%</text>
+                </svg>
+                <div class="hs-gauge__legend">
+                  <span><i style="background:var(--chart-brand)"></i>적합도</span>
+                  <span><i style="background:var(--hs-blue-300)"></i>분석 커버리지</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="hs-decision__disclaimer">
+              <svg><use href="#ic-info"/></svg>
+              적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.
+            </p>
+          </section>
+
+          <!-- --- 07-2 요건 매칭 현황 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-chart"/></svg>요건 매칭 현황</h3>
+              <span class="hs-secthead__aside">총 9개 기준 · 배점 100점</span>
+            </div>
+
+            <!-- 100% 누적 막대: 2px 간격, 직접 라벨, 상태별 텍스처 -->
+            <div class="hs-dist" role="img" aria-label="요건 분포: 일치 4개, 일부 일치 3개, 확인되지 않음 1개, 판단 정보 부족 1개">
+              <div class="hs-dist__seg" data-status="MATCHED" style="width:44.4%"><span>4</span></div>
+              <div class="hs-dist__seg" data-status="PARTIAL" style="width:33.3%"><span>3</span></div>
+              <div class="hs-dist__seg" data-status="MISSING" style="width:11.1%"><span>1</span></div>
+              <div class="hs-dist__seg" data-status="UNKNOWN" style="width:11.1%"><span>1</span></div>
+            </div>
+            <div class="hs-distlegend">
+              <span class="hs-distlegend__item"><i class="hs-distlegend__dot" data-status="MATCHED"><svg><use href="#ic-check"/></svg></i>일치 <b>4개</b></span>
+              <span class="hs-distlegend__item"><i class="hs-distlegend__dot" data-status="PARTIAL"><svg><use href="#ic-half"/></svg></i>일부 일치 <b>3개</b></span>
+              <span class="hs-distlegend__item"><i class="hs-distlegend__dot" data-status="MISSING"><svg><use href="#ic-x"/></svg></i>확인되지 않음 <b>1개</b></span>
+              <span class="hs-distlegend__item"><i class="hs-distlegend__dot" data-status="UNKNOWN"><svg><use href="#ic-question"/></svg></i>판단 정보 부족 <b>1개</b></span>
+            </div>
+
+            <!-- 카테고리 가로 막대: 단일 hue, 단일 축 -->
+            <div class="hs-catchart" role="img" aria-label="카테고리별 충족도: 필수 지원 자격 30/40점, 핵심 업무·기술 22/30점, 우대 사항 8/15점, 관련 경험·도메인 7/10점, 학력·자격·어학 3/5점">
+              <div class="hs-catchart__row">
+                <div class="hs-catchart__name">필수 지원 자격<small>3개 기준</small></div>
+                <div class="hs-catchart__track"><div class="hs-catchart__fill" style="width:75%"></div></div>
+                <div class="hs-catchart__val">75%<small>30 / 40점</small></div>
+              </div>
+              <div class="hs-catchart__row">
+                <div class="hs-catchart__name">핵심 업무·기술<small>2개 기준</small></div>
+                <div class="hs-catchart__track"><div class="hs-catchart__fill" style="width:73.3%;animation-delay:60ms"></div></div>
+                <div class="hs-catchart__val">75%<small>22 / 30점</small></div>
+              </div>
+              <div class="hs-catchart__row">
+                <div class="hs-catchart__name">우대 사항<small>2개 기준</small></div>
+                <div class="hs-catchart__track"><div class="hs-catchart__fill" style="width:53.3%;animation-delay:120ms"></div></div>
+                <div class="hs-catchart__val">55%<small>8 / 15점</small></div>
+              </div>
+              <div class="hs-catchart__row">
+                <div class="hs-catchart__name">관련 경험·도메인<small>1개 기준</small></div>
+                <div class="hs-catchart__track"><div class="hs-catchart__fill" style="width:70%;animation-delay:180ms"></div></div>
+                <div class="hs-catchart__val">70%<small>7 / 10점</small></div>
+              </div>
+              <div class="hs-catchart__row">
+                <div class="hs-catchart__name">학력·자격·어학<small>1개 기준</small></div>
+                <div class="hs-catchart__track"><div class="hs-catchart__fill" style="width:60%;animation-delay:240ms"></div></div>
+                <div class="hs-catchart__val">60%<small>3 / 5점</small></div>
+              </div>
+            </div>
+            <p style="margin:1.25rem 0 0;font-size:.8125rem;color:var(--color-muted)">
+              막대 길이는 <b>반올림하지 않은</b> score/weight 비율을 쓰고, 옆의 퍼센트 라벨만 기존
+              <code>roundToFive</code> 계약에 맞춰 5% 단위로 표기한다. 길이와 라벨이 미세하게 어긋나 보이는 것은
+              의도된 동작이며, 막대가 사실을 왜곡하지 않게 하기 위한 규칙이다.
+            </p>
+          </section>
+
+          <!-- --- 07-3 공고 핵심 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-doc"/></svg>공고 핵심</h3>
+              <span class="hs-secthead__aside">공고 본문에서 확인된 항목만</span>
+            </div>
+            <details class="hs-disc">
+              <summary>
+                <span class="hs-disc__label">주요 업무</span>
+                <span class="hs-disc__lead">결제 요청·승인·정산 API 설계 및 개발</span>
+                <span class="hs-disc__count">5개</span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-disc__body"><ul>
+                <li><span>결제 요청·승인·정산 API 설계 및 개발</span><small>공고 본문</small></li>
+                <li><span>PG사·카드사 연동 인터페이스 개발 및 운영</span><small>공고 본문</small></li>
+                <li><span>결제 트랜잭션 정합성 보장 및 장애 대응</span><small>공고 본문</small></li>
+                <li><span>결제 데이터 기반 정산·리포팅 파이프라인 구축</span><small>공고 본문</small></li>
+                <li><span>서비스 성능 모니터링 및 개선</span><small>공고 본문</small></li>
+              </ul></div>
+            </details>
+            <details class="hs-disc" open>
+              <summary>
+                <span class="hs-disc__label">필수 지원 자격</span>
+                <span class="hs-disc__lead">Java 또는 Kotlin 기반 백엔드 개발 경력 3년 이상</span>
+                <span class="hs-disc__count">3개</span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-disc__body"><ul>
+                <li><span>Java 또는 Kotlin 기반 백엔드 서비스 개발 경력 3년 이상</span><small>공고 본문</small></li>
+                <li><span>관계형 데이터베이스 설계 및 쿼리 튜닝 경험</span><small>공고 본문</small></li>
+                <li><span>대용량 트래픽 환경에서의 서비스 운영 경험</span><small>공고 본문</small></li>
+              </ul></div>
+            </details>
+            <details class="hs-disc">
+              <summary>
+                <span class="hs-disc__label">우대 사항</span>
+                <span class="hs-disc__lead">MSA 환경에서의 서비스 개발 경험</span>
+                <span class="hs-disc__count">2개</span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-disc__body"><ul>
+                <li><span>MSA 환경에서의 서비스 개발 경험</span><small>공고 본문</small></li>
+                <li><span>PG·카드사 연동 프로젝트 경험</span><small>공고 본문</small></li>
+              </ul></div>
+            </details>
+          </section>
+          <!-- --- 07-4 강점과 보완 포인트 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-spark"/></svg>강점과 보완 포인트</h3>
+              <span class="hs-secthead__aside">자기소개서 작성 시 참고</span>
+            </div>
+            <div class="hs-insights">
+              <article class="hs-insight hs-insight--strength">
+                <div class="hs-insight__head"><svg><use href="#ic-spark"/></svg><h4>내 강점 — 먼저 강조하세요</h4><b>3</b></div>
+                <ul>
+                  <li><svg><use href="#ic-check"/></svg><span>커머스 백엔드 API를 4년 2개월 개발한 경력이 필수 자격의 경력 요건을 충족해요.</span></li>
+                  <li><svg><use href="#ic-check"/></svg><span>주문 처리 시스템 리팩터링 경험이 결제 트랜잭션 정합성 요구와 직접 연결돼요.</span></li>
+                  <li><svg><use href="#ic-check"/></svg><span>핀테크 정산 시스템 구축 경험이 금융 도메인 이해도를 뒷받침해요.</span></li>
+                </ul>
+              </article>
+              <article class="hs-insight hs-insight--gap">
+                <div class="hs-insight__head"><svg><use href="#ic-lift"/></svg><h4>보완 포인트 — 지원 전에 확인하세요</h4><b>3</b></div>
+                <ul>
+                  <li><svg><use href="#ic-lift"/></svg><span>대용량 트래픽 운영 경험이 등록된 근거에서 확인되지 않았어요. 처리량·장애 대응 사례를 추가해 보세요.</span></li>
+                  <li><svg><use href="#ic-lift"/></svg><span>PG·카드사 연동 경험은 판단할 정보가 없어요. 해당 경험이 있다면 프로필에 등록해 주세요.</span></li>
+                  <li><svg><use href="#ic-lift"/></svg><span>쿼리 튜닝은 일부만 확인됐어요. 구체적인 개선 수치가 있으면 근거가 강해져요.</span></li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <!-- --- 07-5 점수에 활용한 경험 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-evidence"/></svg>점수에 활용한 경험</h3>
+              <span class="hs-secthead__aside">4건</span>
+            </div>
+            <div class="hs-banner hs-banner--warn" role="status" style="margin-bottom:1rem">
+              <svg><use href="#ic-alert"/></svg>
+              <div class="hs-banner__text">
+                <strong>이 결과에 사용한 경험 중 현재 상태가 달라진 항목이 있어요.</strong>
+                <p>저장된 결과와 점수는 그대로 두고, 다시 분석할 때는 지금 확인된 경험만 사용해요.</p>
+              </div>
+            </div>
+            <div class="hs-evi">
+              <div class="hs-evi__row">
+                <span class="hs-evi__icon"><svg><use href="#ic-evidence"/></svg></span>
+                <div class="hs-evi__main"><strong>커머스 백엔드 API 개발 · 4년 2개월</strong><span>경력</span></div>
+                <span class="hs-evi__state">확인한 경험</span>
+              </div>
+              <div class="hs-evi__row">
+                <span class="hs-evi__icon"><svg><use href="#ic-evidence"/></svg></span>
+                <div class="hs-evi__main"><strong>일 200만 건 주문 처리 시스템 리팩터링</strong><span>문서 근거</span></div>
+                <span class="hs-evi__state">확인한 경험</span>
+              </div>
+              <div class="hs-evi__row">
+                <span class="hs-evi__icon"><svg><use href="#ic-evidence"/></svg></span>
+                <div class="hs-evi__main"><strong>정보처리기사</strong><span>자격증</span></div>
+                <span class="hs-evi__state">확인한 경험</span>
+              </div>
+              <div class="hs-evi__row" data-changed="true">
+                <span class="hs-evi__icon"><svg><use href="#ic-alert"/></svg></span>
+                <div class="hs-evi__main"><strong>핀테크 스타트업 정산 시스템 구축</strong><span>경력</span></div>
+                <span class="hs-evi__state">현재 상태: 검토 대기 · 재분석 근거에서 제외</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- --- 07-6 조건별 확인 결과 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-target"/></svg>조건별 확인 결과</h3>
+              <span class="hs-secthead__aside">총 9개 중 1–5</span>
+            </div>
+            <div class="hs-filters" role="group" aria-label="조건별 확인 결과 필터">
+              <button class="hs-filter" type="button" aria-pressed="true">전체 <b>9</b></button>
+              <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-success)"><use href="#ic-check"/></svg>일치 <b>4</b></button>
+              <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-warning)"><use href="#ic-half"/></svg>일부 일치 <b>3</b></button>
+              <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-danger)"><use href="#ic-x"/></svg>확인되지 않음 <b>1</b></button>
+              <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem"><use href="#ic-question"/></svg>판단 정보 부족 <b>1</b></button>
+            </div>
+
+            <details class="hs-crit" open>
+              <summary>
+                <span class="hs-crit__mark" data-status="MATCHED"><svg><use href="#ic-check"/></svg></span>
+                <span class="hs-crit__title"><strong>Java 또는 Kotlin 기반 백엔드 서비스 개발 경력 3년 이상</strong><span>필수 지원 자격 · 일치</span></span>
+                <span class="hs-crit__meter">
+                  <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:100%"></span></span>
+                  <span class="hs-crit__meter-val">15 / 15점</span>
+                </span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-crit__body">
+                <p class="hs-crit__why">등록된 경력 근거에서 Java·Spring 기반 백엔드 서비스 개발 4년 2개월이 확인됩니다. 공고가 요구하는 3년 이상 요건을 충족합니다.</p>
+                <ul class="hs-crit__refs">
+                  <li><svg><use href="#ic-check"/></svg>커머스 백엔드 API 개발 · 4년 2개월</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="hs-crit">
+              <summary>
+                <span class="hs-crit__mark" data-status="PARTIAL"><svg><use href="#ic-half"/></svg></span>
+                <span class="hs-crit__title"><strong>관계형 데이터베이스 설계 및 쿼리 튜닝 경험</strong><span>필수 지원 자격 · 일부 일치</span></span>
+                <span class="hs-crit__meter">
+                  <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:80%"></span></span>
+                  <span class="hs-crit__meter-val">12 / 15점</span>
+                </span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-crit__body">
+                <p class="hs-crit__why">스키마 설계 경험은 확인되지만 쿼리 튜닝에 대한 구체적인 개선 근거는 확인되지 않았습니다.</p>
+                <ul class="hs-crit__refs">
+                  <li><svg><use href="#ic-check"/></svg>일 200만 건 주문 처리 시스템 리팩터링</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="hs-crit">
+              <summary>
+                <span class="hs-crit__mark" data-status="MISSING"><svg><use href="#ic-x"/></svg></span>
+                <span class="hs-crit__title"><strong>대용량 트래픽 환경에서의 서비스 운영 경험</strong><span>필수 지원 자격 · 확인되지 않음</span></span>
+                <span class="hs-crit__meter">
+                  <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:30%"></span></span>
+                  <span class="hs-crit__meter-val">3 / 10점</span>
+                </span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-crit__body">
+                <p class="hs-crit__why">확인한 경험에서 트래픽 규모나 운영 지표를 판단할 근거를 찾지 못했습니다. 처리량, 장애 대응, 모니터링 사례를 등록하면 재분석에서 반영됩니다.</p>
+                <ul class="hs-crit__refs"><li style="background:transparent;color:var(--color-muted);padding-left:0">연결된 경험 근거가 없어요.</li></ul>
+              </div>
+            </details>
+
+            <details class="hs-crit">
+              <summary>
+                <span class="hs-crit__mark" data-status="MATCHED"><svg><use href="#ic-check"/></svg></span>
+                <span class="hs-crit__title"><strong>결제 도메인 API 설계 및 개발</strong><span>핵심 업무·기술 · 일치</span></span>
+                <span class="hs-crit__meter">
+                  <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:100%"></span></span>
+                  <span class="hs-crit__meter-val">15 / 15점</span>
+                </span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-crit__body">
+                <p class="hs-crit__why">정산 시스템 구축과 주문 처리 경험에서 결제 흐름 설계 근거가 확인됩니다.</p>
+                <ul class="hs-crit__refs">
+                  <li><svg><use href="#ic-check"/></svg>일 200만 건 주문 처리 시스템 리팩터링</li>
+                  <li data-changed="true"><svg><use href="#ic-alert"/></svg>핀테크 스타트업 정산 시스템 구축 · 검토 대기</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="hs-crit">
+              <summary>
+                <span class="hs-crit__mark" data-status="UNKNOWN"><svg><use href="#ic-question"/></svg></span>
+                <span class="hs-crit__title"><strong>PG·카드사 연동 프로젝트 경험</strong><span>우대 사항 · 판단 정보 부족</span></span>
+                <span class="hs-crit__meter">
+                  <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:0%"></span></span>
+                  <span class="hs-crit__meter-val">0 / 5점</span>
+                </span>
+                <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+              </summary>
+              <div class="hs-crit__body">
+                <p class="hs-crit__why">등록된 정보만으로는 이 조건의 충족 여부를 판단할 수 없습니다. 부족하다는 뜻이 아니라 <b>확인할 근거가 없다</b>는 뜻입니다.</p>
+                <ul class="hs-crit__refs"><li style="background:transparent;color:var(--color-muted);padding-left:0">연결된 경험 근거가 없어요.</li></ul>
+              </div>
+            </details>
+
+            <nav style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:1.25rem" aria-label="조건별 확인 결과 페이지">
+              <button class="hs-btn hs-btn--quiet" style="min-height:2.25rem;padding:0 .75rem" type="button" disabled>이전</button>
+              <span style="font-size:.8125rem;font-weight:700;color:var(--color-muted-strong)">1 / 2</span>
+              <button class="hs-btn hs-btn--quiet" style="min-height:2.25rem;padding:0 .75rem" type="button">다음</button>
+            </nav>
+          </section>
+
+          <!-- --- 07-7 분석 이력 --- -->
+          <section class="hs-report__block">
+            <div class="hs-secthead">
+              <h3><svg><use href="#ic-history"/></svg>분석 결과 기록</h3>
+              <span class="hs-secthead__aside">총 3개</span>
+            </div>
+            <div class="hs-trend">
+              <svg class="hs-trend__svg" viewBox="0 0 340 150" role="img"
+                   aria-label="적합도 추이: 1번째 분석 55점, 2번째 분석 65점, 3번째 분석 70점">
+                <defs>
+                  <linearGradient id="hs-trendfill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3157ff" stop-opacity=".14"/>
+                    <stop offset="100%" stop-color="#3157ff" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <g class="hs-trend__grid">
+                  <line x1="34" y1="20" x2="330" y2="20"/><line x1="34" y1="60" x2="330" y2="60"/>
+                  <line x1="34" y1="100" x2="330" y2="100"/>
+                </g>
+                <g class="hs-trend__ax" text-anchor="end">
+                  <text x="26" y="24">80</text><text x="26" y="64">60</text><text x="26" y="104">40</text>
+                </g>
+                <path class="hs-trend__area" d="M54 70L184 50L314 40V100H54Z"/>
+                <path class="hs-trend__line" d="M54 70L184 50L314 40"/>
+                <circle class="hs-trend__dot" cx="54" cy="70" r="5"/>
+                <circle class="hs-trend__dot" cx="184" cy="50" r="5"/>
+                <circle class="hs-trend__dot hs-trend__dot--last" cx="314" cy="40" r="6"/>
+                <text class="hs-trend__lab" x="314" y="26" text-anchor="end">70점</text>
+                <g class="hs-trend__ax" text-anchor="middle">
+                  <text x="54" y="122">1차</text><text x="184" y="122">2차</text><text x="314" y="122">3차</text>
+                  <text x="54" y="137" style="font-size:9px">7. 21.</text>
+                  <text x="184" y="137" style="font-size:9px">7. 30.</text>
+                  <text x="314" y="137" style="font-size:9px">8. 5.</text>
+                </g>
+              </svg>
+              <div class="hs-trend__list">
+                <button class="hs-trend__item" type="button" aria-pressed="true">
+                  <span class="hs-chip hs-chip--brand">현재 결과</span>
+                  <strong>2026. 8. 5.</strong><small>70점 · 조건 확인 후 지원 가능</small>
+                </button>
+                <button class="hs-trend__item" type="button" aria-pressed="false">
+                  <span class="hs-chip">2차</span>
+                  <strong>2026. 7. 30.</strong><small>65점 · 조건 확인 후 지원 가능</small>
+                </button>
+                <button class="hs-trend__item" type="button" aria-pressed="false">
+                  <span class="hs-chip">1차</span>
+                  <strong>2026. 7. 21.</strong><small>55점 · 판단 정보 부족</small>
+                </button>
+              </div>
+            </div>
+            <p style="margin:1.25rem 0 0;font-size:.8125rem;color:var(--color-muted)">
+              x축은 <code>analysisVersion</code> 정수 축이다. 분석 간격이 불균등하므로 날짜 축으로 바꾸지 않는다.
+              y축은 하나뿐이며, 커버리지처럼 단위가 다른 지표를 같은 그래프에 겹쳐 그리지 않는다.
+            </p>
+          </section>
+        </article>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>이 시안이 지키는 규칙</h3>
+      <div class="stack" style="gap:.5rem">
+        <div class="note note--do"><b>단일 패널</b><span>7개 블록이 하나의 <code>--radius-panel</code> surface 안에 있고, 내부 경계는 1px 구분선뿐이다. 그림자는 패널 1회만.</span></div>
+        <div class="note note--do"><b>단일 primary</b><span>파란 채움 버튼은 ‘자기소개서 준비하기’ 하나. 재분석은 <code>--color-fill</code> quiet 버튼, 나머지는 텍스트 링크.</span></div>
+        <div class="note note--do"><b>회색조 통과</b><span>상태 4종은 색·아이콘·한글 라벨·텍스처 4중 인코딩. 색을 전부 지워도 분포와 조건 상태가 읽힌다.</span></div>
+        <div class="note note--do"><b>계약 준수</b><span>화면의 모든 문자열이 <code>JobAnalysisDetailDto</code>·기존 LABELS 상수에서 나온다. 내부 step key, 모델명, 프롬프트, 원본 오류는 어디에도 없다.</span></div>
+      </div>
+    </div>
+  </section>
+  <!-- ============================ 08 ============================ -->
+  <section class="chapter" id="c8">
+    <p class="chapter__no">CHAPTER 08</p>
+    <h2>그 외 상태 시안</h2>
+    <p class="lede">
+      결과 화면만 잘 만들면 절반이다. 사용자가 실제로 가장 먼저 만나는 화면은 <b>분석 진행 중</b>이고,
+      가장 신뢰를 잃기 쉬운 화면은 <b>실패</b>다. 네 상태 모두 출시 기준으로 규정한다.
+    </p>
+
+    <!-- 8-A -->
+    <div class="frame">
+      <div class="frame__label"><span>8-A · 자동 분석 진행 중</span><em>run status = RUNNING</em></div>
+      <div class="hs-shell">
+        <article class="hs-report">
+          <section class="hs-report__block hs-decision">
+            <div class="hs-progress">
+              <svg class="hs-ring" viewBox="0 0 120 120" role="img" aria-label="공고 분석 진행률 45퍼센트">
+                <circle class="hs-ring__track" cx="60" cy="60" r="50"/>
+                <circle class="hs-ring__val" cx="60" cy="60" r="50"
+                        style="--arc-len:314.16" stroke-dasharray="314.16" stroke-dashoffset="172.79"/>
+                <text class="hs-ring__num" x="60" y="68" text-anchor="middle">45%</text>
+              </svg>
+              <div>
+                <p class="hs-decision__kicker"><svg style="width:1rem;height:1rem"><use href="#ic-flow"/></svg>진행 상태</p>
+                <h2 style="font-size:1.5rem">주요 업무와 지원 조건을 정리하고 있어요.</h2>
+                <ol class="hs-steps" style="margin-top:1.25rem">
+                  <li data-state="done"><span class="hs-steps__mark"><svg><use href="#ic-check"/></svg></span>공고 내용을 읽었어요</li>
+                  <li data-state="active"><span class="hs-steps__mark"></span>주요 업무와 지원 조건을 정리하고 있어요</li>
+                  <li data-state="pending"><span class="hs-steps__mark"></span>내 경험과 비교할 차례예요</li>
+                  <li data-state="pending"><span class="hs-steps__mark"></span>분석 결과를 준비하고 있어요</li>
+                </ol>
+                <p style="margin:1.25rem 0 0;font-size:.875rem;color:var(--color-muted)">
+                  실시간 진행 상황 연결됨. 연결이 잠시 끊겨도 분석 실패로 처리하지 않아요.
+                  이 페이지를 닫아도 작업은 계속됩니다.
+                </p>
+                <p style="margin:.75rem 0 0"><a class="hs-linkbtn" href="#c8">작업 자세히 보기</a></p>
+              </div>
+            </div>
+          </section>
+        </article>
+      </div>
+    </div>
+    <div class="note note--do" style="margin-top:1rem"><b>진행률 문구 규칙</b>
+      <span>진행률 숫자만 두지 않는다. <code>&lt;25%</code> “공고 내용을 읽고 있어요” · <code>&lt;60%</code> “주요 업무와 지원 조건을 정리하고 있어요” · <code>&lt;90%</code> “내 경험과 비교하고 있어요” · 그 이상 “분석 결과를 마무리하고 있어요”. 기존 <code>progressMessage</code> 계약 그대로다.</span></div>
+
+    <!-- 8-B -->
+    <div class="frame">
+      <div class="frame__label"><span>8-B · 아직 결과 없음</span><em>404 JOB_ANALYSIS_NOT_FOUND · state = WAITING_FOR_CONTENT</em></div>
+      <div class="hs-shell">
+        <article class="hs-report">
+          <section class="hs-report__block">
+            <div class="hs-state">
+              <span class="hs-state__icon"><svg><use href="#ic-doc"/></svg></span>
+              <h3>분석할 공고 본문이 필요해요.</h3>
+              <p>공고 내용을 불러오는 중이거나 직접 입력이 필요해요. 공고 정보 탭에서 본문을 확인해 주세요.</p>
+              <a class="hs-btn hs-btn--primary" href="#c8" style="margin-top:.75rem">공고 정보 확인<svg><use href="#ic-arrow-right"/></svg></a>
+            </div>
+          </section>
+        </article>
+      </div>
+    </div>
+
+    <!-- 8-C -->
+    <div class="frame">
+      <div class="frame__label"><span>8-C · 분석 실패</span><em>run status = FAILED · safeError</em></div>
+      <div class="hs-shell">
+        <article class="hs-report">
+          <section class="hs-report__block">
+            <div class="hs-banner hs-banner--danger" role="alert">
+              <svg><use href="#ic-alert"/></svg>
+              <div class="hs-banner__text">
+                <strong>AI 응답이 예상보다 오래 걸렸어요.</strong>
+                <p>분석 요청은 안전하게 종료됐고 저장한 공고 정보는 그대로입니다. 잠시 후 같은 입력으로 다시 시도해 주세요.</p>
+              </div>
+              <button class="hs-btn hs-btn--primary" type="button"><svg><use href="#ic-refresh"/></svg>공고 분석 재실행</button>
+            </div>
+            <p style="margin:1rem 0 0;font-size:.8125rem;color:var(--color-muted)">
+              실패 카피는 기존 <code>jobAnalysisFailureCopy()</code>가 <code>safeError.code</code>로 분기한 결과를 그대로 쓴다.
+              provider 원문 메시지·스택·모델명은 화면에 절대 노출하지 않는다.
+            </p>
+          </section>
+        </article>
+      </div>
+    </div>
+
+    <!-- 8-D -->
+    <div class="frame">
+      <div class="frame__label"><span>8-D · 결과는 있으나 정보가 변경됨</span><em>analysisOutdated = true</em></div>
+      <div class="hs-shell">
+        <article class="hs-report">
+          <section class="hs-report__block" style="padding-bottom:var(--space-6)">
+            <div class="hs-banner hs-banner--info" role="status">
+              <svg><use href="#ic-info"/></svg>
+              <div class="hs-banner__text">
+                <strong>분석 이후 정보가 변경됐어요 · 2개 변경</strong>
+                <p>공고 내용이 변경됨 · 확인한 경험이 변경됨 — 아래 기존 결과는 그대로 유지돼요.</p>
+              </div>
+              <button class="hs-btn hs-btn--quiet" type="button"><svg><use href="#ic-refresh"/></svg>최신 정보로 다시 분석</button>
+            </div>
+          </section>
+          <section class="hs-report__block hs-decision" style="padding-top:var(--space-6)">
+            <p class="hs-decision__kicker"><svg style="width:1rem;height:1rem"><use href="#ic-scale"/></svg>지원 판단 · 2026. 8. 5. 기준</p>
+            <h2 style="font-size:1.5rem">적합도 70점, 지원 전에 확인할 조건이 있어요.</h2>
+            <p class="hs-decision__summary" style="margin-top:.75rem">이하 리포트 본문은 7장과 동일하게 이어진다.</p>
+          </section>
+        </article>
+      </div>
+    </div>
+    <div class="note note--dont" style="margin-top:1rem"><b>하지 않을 것</b>
+      <span>outdated를 이유로 기존 결과를 흐리게 처리하거나 접어 버리지 않는다. 사용자는 여전히 그 결과를 근거로 자기소개서를 쓰고 있다. 배너 하나 + quiet 재분석 버튼이면 충분하다.</span></div>
+  </section>
+
+  <!-- ============================ 09 ============================ -->
+  <section class="chapter" id="c9">
+    <p class="chapter__no">CHAPTER 09</p>
+    <h2>모바일 시안 · 375px</h2>
+    <p class="lede">
+      데스크톱 패널을 세로로 쌓지 않는다. <b>순서를 다시 정한다</b> —
+      적합도와 결정 문장 → primary CTA → 요건 분포 → 나머지는 전부 접는다.
+      점수 산정 방식, 공고 원문 요건, 조건 상세는 하위 disclosure로 내린다.
+    </p>
+
+    <div class="frame">
+      <div class="frame__label"><span>MOBILE · 375 × 812</span><em>스크롤 가능</em></div>
+      <div class="device">
+        <div class="device__bar"><i></i></div>
+        <div class="device__view">
+          <div style="padding:1rem .875rem 3rem">
+            <a class="hs-back" href="#c9"><svg><use href="#ic-arrow-left"/></svg>공고 목록</a>
+            <p class="hs-jobhead__company" style="margin:.75rem 0 0">루미너스랩</p>
+            <h1 style="margin:.25rem 0 0;font-size:1.25rem;font-weight:800;letter-spacing:-.02em">백엔드 엔지니어 (결제 플랫폼)</h1>
+            <div class="hs-jobhead__badges" style="margin-top:.625rem">
+              <span class="hs-chip hs-chip--brand">준비 중</span>
+              <span class="hs-chip" data-status="MATCHED"><svg><use href="#ic-check"/></svg>분석 완료</span>
+            </div>
+            <nav class="hs-tabs" style="margin-top:1rem;overflow-x:auto" aria-label="공고 상세 탭">
+              <a class="hs-tab" href="#c9" style="padding:.75rem .625rem;font-size:.875rem">공고 정보</a>
+              <a class="hs-tab" href="#c9" aria-current="page" style="padding:.75rem .625rem;font-size:.875rem">공고 분석</a>
+              <a class="hs-tab" href="#c9" style="padding:.75rem .625rem;font-size:.875rem">자기소개서</a>
+              <a class="hs-tab" href="#c9" style="padding:.75rem .625rem;font-size:.875rem">면접</a>
+            </nav>
+
+            <article class="hs-report" style="margin-top:1rem">
+              <!-- 결정 -->
+              <section class="hs-report__block hs-decision" style="padding:1.25rem 1.125rem">
+                <div style="display:flex;align-items:center;gap:1rem">
+                  <svg viewBox="0 0 200 200" style="width:6.5rem;height:6.5rem;flex:0 0 auto" role="img"
+                       aria-label="적합도 70점, 분석 커버리지 85퍼센트">
+                    <path class="hs-gauge__arc hs-gauge__track" d="M46.26 153.74A76 76 0 1 1 153.74 153.74" stroke-width="16"/>
+                    <path class="hs-gauge__arc hs-gauge__value" d="M46.26 153.74A76 76 0 1 1 153.74 153.74" stroke-width="16"
+                          style="--arc-len:358.14" stroke-dasharray="358.14" stroke-dashoffset="107.44"/>
+                    <text x="100" y="118" text-anchor="middle">
+                      <tspan style="font-size:56px;font-weight:800;fill:var(--color-ink-title)">70</tspan><tspan style="font-size:22px;font-weight:750;fill:var(--color-muted)">점</tspan>
+                    </text>
+                  </svg>
+                  <div style="min-width:0">
+                    <p class="hs-decision__kicker" style="font-size:.75rem">지원 판단</p>
+                    <p style="margin:.375rem 0 0;font-size:1.0625rem;font-weight:800;line-height:1.45;letter-spacing:-.01em;color:var(--color-ink-title)">지원 전에 확인할 조건이 있어요.</p>
+                    <p style="margin:.375rem 0 0;font-size:.75rem;color:var(--color-muted)">커버리지 85% · 2026. 8. 5.</p>
+                  </div>
+                </div>
+                <a class="hs-btn hs-btn--primary hs-btn--lg" href="#c9" style="width:100%;margin-top:1.125rem">자기소개서 준비하기<svg><use href="#ic-arrow-right"/></svg></a>
+                <p style="margin:.875rem 0 0;font-size:.8125rem;line-height:1.65;color:var(--color-ink-soft)">
+                  결제 도메인 API 설계와 Java·Spring 백엔드 경력은 필수 자격을 충족해요. 대용량 트래픽 운영 경험은 확인되지 않았어요.
+                </p>
+                <details style="margin-top:.875rem">
+                  <summary style="font-size:.75rem;font-weight:700;color:var(--color-muted);cursor:pointer">점수는 어떻게 계산되나요?</summary>
+                  <p style="margin:.5rem 0 0;font-size:.75rem;line-height:1.6;color:var(--color-muted)">적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.</p>
+                </details>
+              </section>
+
+              <!-- 분포 -->
+              <section class="hs-report__block" style="padding:1.25rem 1.125rem">
+                <div class="hs-secthead" style="margin-bottom:1rem">
+                  <h3 style="font-size:1rem"><svg style="width:1.0625rem;height:1.0625rem"><use href="#ic-chart"/></svg>요건 매칭</h3>
+                  <span class="hs-secthead__aside">9개 기준</span>
+                </div>
+                <div class="hs-dist" style="height:2rem" role="img" aria-label="일치 4개, 일부 일치 3개, 확인되지 않음 1개, 판단 정보 부족 1개">
+                  <div class="hs-dist__seg" data-status="MATCHED" style="width:44.4%"><span>4</span></div>
+                  <div class="hs-dist__seg" data-status="PARTIAL" style="width:33.3%"><span>3</span></div>
+                  <div class="hs-dist__seg" data-status="MISSING" style="width:11.1%"><span>1</span></div>
+                  <div class="hs-dist__seg" data-status="UNKNOWN" style="width:11.1%"><span>1</span></div>
+                </div>
+                <!-- 모바일: 레전드를 라벨 행으로 전환 -->
+                <div style="display:grid;gap:2px;background:var(--color-border);border-radius:var(--radius-md);overflow:hidden;margin-top:.75rem">
+                  <div style="display:flex;align-items:center;gap:.5rem;background:#fff;padding:.5625rem .75rem;font-size:.8125rem">
+                    <i class="hs-distlegend__dot" data-status="MATCHED"><svg><use href="#ic-check"/></svg></i>일치<b style="margin-left:auto;font-variant-numeric:tabular-nums">4개</b></div>
+                  <div style="display:flex;align-items:center;gap:.5rem;background:#fff;padding:.5625rem .75rem;font-size:.8125rem">
+                    <i class="hs-distlegend__dot" data-status="PARTIAL"><svg><use href="#ic-half"/></svg></i>일부 일치<b style="margin-left:auto;font-variant-numeric:tabular-nums">3개</b></div>
+                  <div style="display:flex;align-items:center;gap:.5rem;background:#fff;padding:.5625rem .75rem;font-size:.8125rem">
+                    <i class="hs-distlegend__dot" data-status="MISSING"><svg><use href="#ic-x"/></svg></i>확인되지 않음<b style="margin-left:auto;font-variant-numeric:tabular-nums">1개</b></div>
+                  <div style="display:flex;align-items:center;gap:.5rem;background:#fff;padding:.5625rem .75rem;font-size:.8125rem">
+                    <i class="hs-distlegend__dot" data-status="UNKNOWN"><svg><use href="#ic-question"/></svg></i>판단 정보 부족<b style="margin-left:auto;font-variant-numeric:tabular-nums">1개</b></div>
+                </div>
+              </section>
+
+              <!-- 강점/보완 -->
+              <section class="hs-report__block" style="padding:1.25rem 1.125rem">
+                <div class="hs-secthead" style="margin-bottom:1rem">
+                  <h3 style="font-size:1rem"><svg style="width:1.0625rem;height:1.0625rem"><use href="#ic-spark"/></svg>강점과 보완</h3>
+                </div>
+                <div class="hs-insights" style="grid-template-columns:1fr">
+                  <article class="hs-insight hs-insight--strength" style="padding:1rem">
+                    <div class="hs-insight__head"><svg><use href="#ic-spark"/></svg><h4>내 강점</h4><b>3</b></div>
+                    <ul><li><svg><use href="#ic-check"/></svg><span>커머스 백엔드 API 4년 2개월 경력이 필수 경력 요건을 충족해요.</span></li></ul>
+                    <button class="hs-linkbtn" type="button" style="margin-top:.625rem">2개 더 보기</button>
+                  </article>
+                  <article class="hs-insight hs-insight--gap" style="padding:1rem">
+                    <div class="hs-insight__head"><svg><use href="#ic-lift"/></svg><h4>보완 포인트</h4><b>3</b></div>
+                    <ul><li><svg><use href="#ic-lift"/></svg><span>대용량 트래픽 운영 경험이 확인되지 않았어요.</span></li></ul>
+                    <button class="hs-linkbtn" type="button" style="margin-top:.625rem">2개 더 보기</button>
+                  </article>
+                </div>
+              </section>
+
+              <!-- 조건별 -->
+              <section class="hs-report__block" style="padding:1.25rem 1.125rem">
+                <div class="hs-secthead" style="margin-bottom:.875rem">
+                  <h3 style="font-size:1rem"><svg style="width:1.0625rem;height:1.0625rem"><use href="#ic-target"/></svg>조건별 확인 결과</h3>
+                </div>
+                <div class="hs-filters" role="group" aria-label="조건별 확인 결과 필터">
+                  <button class="hs-filter" type="button" aria-pressed="true">전체 <b>9</b></button>
+                  <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-success)"><use href="#ic-check"/></svg>일치 <b>4</b></button>
+                  <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-warning)"><use href="#ic-half"/></svg>일부 <b>3</b></button>
+                  <button class="hs-filter" type="button" aria-pressed="false"><svg style="width:.8125rem;height:.8125rem;color:var(--color-danger)"><use href="#ic-x"/></svg>미확인 <b>1</b></button>
+                </div>
+                <details class="hs-crit">
+                  <summary style="grid-template-columns:auto minmax(0,1fr) auto;row-gap:.5rem;padding:.875rem .125rem">
+                    <span class="hs-crit__mark" data-status="MATCHED"><svg><use href="#ic-check"/></svg></span>
+                    <span class="hs-crit__title"><strong style="font-size:.875rem">Java/Kotlin 백엔드 개발 경력 3년 이상</strong><span>필수 지원 자격 · 일치</span></span>
+                    <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+                    <span class="hs-crit__meter" style="grid-column:2/-1">
+                      <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:100%"></span></span>
+                      <span class="hs-crit__meter-val">15 / 15점</span>
+                    </span>
+                  </summary>
+                  <div class="hs-crit__body" style="padding:0 .125rem 1rem 2.75rem">
+                    <p class="hs-crit__why" style="font-size:.8125rem">등록된 경력 근거에서 Java·Spring 기반 개발 4년 2개월이 확인됩니다.</p>
+                  </div>
+                </details>
+                <details class="hs-crit">
+                  <summary style="grid-template-columns:auto minmax(0,1fr) auto;row-gap:.5rem;padding:.875rem .125rem">
+                    <span class="hs-crit__mark" data-status="MISSING"><svg><use href="#ic-x"/></svg></span>
+                    <span class="hs-crit__title"><strong style="font-size:.875rem">대용량 트래픽 환경 운영 경험</strong><span>필수 지원 자격 · 확인되지 않음</span></span>
+                    <svg class="hs-disc__caret"><use href="#ic-arrow-right"/></svg>
+                    <span class="hs-crit__meter" style="grid-column:2/-1">
+                      <span class="hs-crit__meter-track"><span class="hs-crit__meter-fill" style="width:30%"></span></span>
+                      <span class="hs-crit__meter-val">3 / 10점</span>
+                    </span>
+                  </summary>
+                  <div class="hs-crit__body" style="padding:0 .125rem 1rem 2.75rem">
+                    <p class="hs-crit__why" style="font-size:.8125rem">트래픽 규모나 운영 지표를 판단할 근거를 찾지 못했습니다.</p>
+                  </div>
+                </details>
+              </section>
+
+              <!-- 보조 행동 -->
+              <section class="hs-report__block" style="padding:1.25rem 1.125rem;display:grid;gap:.5rem">
+                <button class="hs-btn hs-btn--quiet" type="button" style="width:100%"><svg><use href="#ic-refresh"/></svg>최신 정보로 다시 분석</button>
+                <button class="hs-btn hs-btn--quiet" type="button" style="width:100%"><svg><use href="#ic-history"/></svg>분석 결과 기록 3개</button>
+              </section>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>모바일 재우선순위 규칙</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:26%">요소</th><th style="width:20%">데스크톱</th><th style="width:54%">모바일 처리</th></tr></thead>
+          <tbody>
+            <tr><td>적합도 게이지</td><td>216px 2중 링</td><td>104px 단일 링. 커버리지는 링 대신 메타 텍스트로 강등.</td></tr>
+            <tr><td>요약 타일 3개</td><td>가로 3열</td><td><b>삭제</b>. 지원 가능 여부는 결정 문장에, 커버리지·시각은 메타 한 줄에 흡수.</td></tr>
+            <tr><td>primary CTA</td><td>결정 문장 아래 인라인</td><td>전폭 버튼, 최소 높이 52px. 스크롤 없이 첫 화면에 보이게 한다.</td></tr>
+            <tr><td>카테고리 막대 차트</td><td>5행 정렬 비교</td><td><b>기본 접힘</b>. 좁은 폭에서 5개 비교는 판단에 기여하지 않는다.</td></tr>
+            <tr><td>분포 레전드</td><td>가로 칩 4개</td><td>라벨 행 4줄로 전환. 가로 스크롤은 필터에만 허용.</td></tr>
+            <tr><td>공고 핵심 / 활용 경험 / 이력</td><td>펼친 섹션</td><td>하단 quiet 버튼 또는 접힌 disclosure로 강등.</td></tr>
+            <tr><td>강점·보완</td><td>각 3개 전체</td><td>각 1개 + “N개 더 보기”.</td></tr>
+            <tr><td>탭 바</td><td>4개 고정</td><td>가로 스크롤 허용, “면접 준비”→“면접” 축약. 탭 높이 44px 이상.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--dont" style="margin-top:1.25rem"><b>320px 검증 필수</b>
+        <span>조건 제목·경험 제목은 2줄까지 자연 줄바꿈시키고, 미터는 <code>grid-column:2/-1</code>로 다음 줄에 내린다. 가로 스크롤이 <b>body에 절대 생기지 않아야</b> 한다.</span></div>
+    </div>
+  </section>
+  <!-- ============================ 10 ============================ -->
+  <section class="chapter" id="c10">
+    <p class="chapter__no">CHAPTER 10</p>
+    <h2>차트 규격과 색각 검증</h2>
+    <p class="lede">
+      이 화면의 차트는 장식이 아니라 판단 근거다. 눈대중으로 색을 고르지 않았고,
+      검증 스크립트를 실제로 돌려 통과·경고·실패를 확인한 뒤 팔레트를 확정했다.
+    </p>
+
+    <div class="panel">
+      <h3>차트 4종 규격</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:16%">차트</th><th style="width:16%">데이터의 역할</th><th style="width:34%">형태와 마크</th><th style="width:34%">규칙</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>적합도 게이지</b></td><td>단일 헤드라인 수치</td>
+              <td>270° 아크 2중 링(r=76 외부 = fitScore, r=62 내부 = coverage), stroke 14/6, round cap. 중앙 52px 히어로 숫자.</td>
+              <td>0–100 고정 스케일. <code>fitScore=null</code>이면 링을 그리지 않고 “산정하지 못함” 텍스트만. 커버리지가 null이면 내부 링 제거.</td>
+            </tr>
+            <tr>
+              <td><b>요건 분포</b></td><td>구성비 (status)</td>
+              <td>100% 누적 가로 막대, 높이 40px, 세그먼트 <b>2px 간격</b>, radius 4px, 세그먼트 안 직접 개수 라벨.</td>
+              <td>색 + 아이콘 + 한글 라벨 + 텍스처 4중 인코딩. 세그먼트가 2% 미만이면 라벨을 빼고 레전드에만 남긴다. 도넛/파이로 대체 금지.</td>
+            </tr>
+            <tr>
+              <td><b>카테고리 충족도</b></td><td>크기 비교</td>
+              <td>가로 막대, 트랙 높이 12px, 단일 hue <code>--chart-brand</code>, 기준선 좌측 고정, 막대 끝 radius 4px, 값 직접 라벨.</td>
+              <td>축은 하나(0–100%). 카테고리마다 색을 바꾸지 않는다 — 카테고리는 identity가 아니라 <b>같은 척도의 비교 대상</b>이다.</td>
+            </tr>
+            <tr>
+              <td><b>적합도 추이</b></td><td>시간에 따른 변화</td>
+              <td>라인 2px + 저강도 면 채움, 마커 r=5(마지막 r=6, 채움), 그리드 3선.</td>
+              <td>x축 = <code>analysisVersion</code> 정수. y축 하나. <b>마지막 점만</b> 직접 라벨. 이력 1건이면 차트를 렌더하지 않는다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>색각 검증 결과 (실행 기록)</h3>
+      <p>OKLab 기반 6개 검사, light 모드, surface <code>#ffffff</code>, <code>--pairs all</code></p>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:22%">팔레트</th><th style="width:14%">결과</th><th style="width:64%">근거</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>기존 semantic<br /><code>#147253 #8a5a08 #b4232d #667085</code></td>
+              <td><b style="color:var(--color-danger)">FAIL</b></td>
+              <td>적–주황 쌍 deutan <b>ΔE 1.7</b> — 2형 색각에서 “확인되지 않음”과 “일부 일치”가 사실상 같은 색으로 보인다. 일반 시각에서도 회색–초록 쌍 ΔE 12.1로 기준(15) 미달. <b>차트 마크로 쓸 수 없다.</b></td>
+            </tr>
+            <tr>
+              <td>채택<br /><code>#12855f #a16207 #a01b3c #8792a6</code></td>
+              <td><b style="color:var(--color-warning)">조건부 통과</b></td>
+              <td>
+                명도 밴드 <b>PASS</b> · 일반 시각 최악 쌍 <b>ΔE 16.2 PASS</b> · surface 대비 4색 모두 <b>3:1 이상 PASS</b> ·
+                CVD 최악 쌍(초록↔crimson) <b>ΔE 7.9 WARN</b> — 6–8 구간은 <b>2차 인코딩이 있을 때만</b> 허용된다.
+                채도 하한은 <code>#8792a6</code>만 미달인데, 이는 UNKNOWN이 “정보 없음”이라는 <b>의도된 무채색</b>이므로 수용한다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--do" style="margin-top:1.25rem"><b>WARN을 상쇄하는 2차 인코딩 — 4가지 전부 필수</b>
+        <span>① 상태별 전용 아이콘(check/half/x/question) ② 한글 라벨 상시 노출 ③ 세그먼트 간 2px surface 간격 ④ 상태별 텍스처(45° 사선 / 135° 사선 / 도트). 이 중 하나라도 빠지면 팔레트가 검증을 통과하지 못한 것과 같다.</span></div>
+      <div class="note note--info" style="margin-top:.5rem"><b>다크 모드</b>
+        <span>제품이 <code>color-scheme: light</code> 단일이므로 다크 스텝을 만들지 않는다. 다크 모드를 도입하는 시점에 위 4색을 다크 surface 기준으로 <b>다시 검증해서</b> 별도 스텝을 정한다. 명도를 자동 반전하지 않는다.</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>차트에서 금지하는 것</h3>
+      <div class="stack" style="gap:.5rem">
+        <div class="note note--dont"><b>이중 축</b><span>적합도와 커버리지를 한 그래프에 두 y축으로 겹치지 않는다. 게이지의 2중 링은 <b>같은 0–100 척도</b>를 공유하므로 이중 축이 아니다.</span></div>
+        <div class="note note--dont"><b>파이·도넛</b><span>9개 조건의 4단계 상태 비교에 각도 인코딩을 쓰지 않는다. 100% 누적 막대가 항상 더 정확하다.</span></div>
+        <div class="note note--dont"><b>3D·그림자·글로우</b><span>막대와 링에 입체감을 넣지 않는다. 데이터 마크에는 그림자를 쓰지 않는다.</span></div>
+        <div class="note note--dont"><b>모든 점에 숫자</b><span>추이 차트에서 세 점 모두에 라벨을 붙이지 않는다. 마지막 점 하나만.</span></div>
+        <div class="note note--dont"><b>필터가 색을 재배정</b><span>“일치만 보기” 필터를 눌러도 남은 항목의 색이 바뀌지 않는다. 색은 상태에 고정되며 순서에 따르지 않는다.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 11 ============================ -->
+  <section class="chapter" id="c11">
+    <p class="chapter__no">CHAPTER 11</p>
+    <h2>모션과 접근성</h2>
+
+    <div class="panel">
+      <h3>모션 — 전부 상태 전달용, 장식 없음</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:24%">대상</th><th style="width:24%">동작</th><th style="width:52%">근거와 제약</th></tr></thead>
+          <tbody>
+            <tr><td>게이지 아크</td><td><code>stroke-dashoffset</code> 0 → 실제값, 900ms</td><td>값이 0에서 차오르는 것을 보여 “측정된 결과”임을 전달. 1회만, 반복 없음.</td></tr>
+            <tr><td>카테고리 막대</td><td><code>scaleX(0→1)</code>, 700ms, 60ms 순차 지연</td><td>좌측 기준선에서 자라야 한다. 중앙에서 퍼지면 길이 비교를 방해한다.</td></tr>
+            <tr><td>진행 단계 마커</td><td>active 단계만 2px 링 pulse, 1.6s 무한</td><td>“지금 이 단계”를 알리는 유일한 반복 모션. 동시에 하나만.</td></tr>
+            <tr><td>disclosure caret</td><td><code>rotate(90deg)</code>, 200ms</td><td>열림 상태를 아이콘 방향으로도 전달.</td></tr>
+            <tr><td>버튼</td><td>hover 배경, active <code>translateY(1px)</code>, 140ms</td><td>이동 거리 2px 이하.</td></tr>
+            <tr><td><b>금지</b></td><td>—</td><td>스크롤 리빌, 패럴랙스, 카드 tilt, 숫자 카운트업, 로딩 스켈레톤 shimmer, 페이지 진입 페이드. 정보 접근을 지연시키는 모션은 전부 금지.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--do" style="margin-top:1.25rem"><b>reduced-motion</b>
+        <span><code>@media (prefers-reduced-motion: reduce)</code>에서 아크·막대·pulse 애니메이션을 모두 <code>animation: none</code>으로 끈다. <b>최종 상태는 그대로 보인다</b> — 애니메이션을 끄면 값이 사라지는 구현은 버그다.</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>접근성 체크리스트</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:22%">항목</th><th style="width:78%">요구사항</th></tr></thead>
+          <tbody>
+            <tr><td>차트 대체 텍스트</td><td>4개 차트 모두 <code>role="img"</code> + 값을 문장으로 서술한 <code>aria-label</code>. 게이지 라벨에는 점수의 <b>의미 한계</b>까지 포함한다.</td></tr>
+            <tr><td>색 단독 금지</td><td>상태를 나타내는 모든 지점에 아이콘 또는 텍스트가 동반된다. 분포 막대, 조건 마커, 경험 행, 레전드 전부.</td></tr>
+            <tr><td>제목 구조</td><td><code>h1</code> 공고명(JobDetailLayout) → <code>h2</code> 결정 문장 → <code>h3</code> 섹션 → <code>h4</code> 강점/보완. 레벨을 건너뛰지 않는다.</td></tr>
+            <tr><td>disclosure</td><td>네이티브 <code>details/summary</code> 유지. <code>summary</code>에 <code>list-style:none</code>을 걸어도 키보드 토글은 그대로 동작해야 한다.</td></tr>
+            <tr><td>필터</td><td><code>button</code> + <code>aria-pressed</code>. 필터 변경 시 결과 개수를 <code>role="status"</code>로 알린다.</td></tr>
+            <tr><td>라이브 영역</td><td>진행률 변화는 <code>aria-live="polite"</code>. 실패는 <code>role="alert"</code>, 정보성 배너는 <code>role="status"</code>.</td></tr>
+            <tr><td>포커스</td><td>기존 <code>--focus-ring</code> 유지. quiet 버튼 위에서도 링이 보이도록 <code>outline-offset: 2px</code>.</td></tr>
+            <tr><td>터치 타깃</td><td>모바일 44px 이상. 필터 칩 38px는 상하 패딩 포함 44px 히트 영역으로 확장한다.</td></tr>
+            <tr><td>대비</td><td>본문 4.5:1, 큰 텍스트·아이콘 3:1 이상. <code>--color-muted #667085</code>는 흰 배경에서만 사용하고 <code>--color-fill</code> 위에서는 <code>--color-muted-strong</code>으로 올린다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 12 ============================ -->
+  <section class="chapter" id="c12">
+    <p class="chapter__no">CHAPTER 12</p>
+    <h2>구현 체크리스트</h2>
+    <p class="lede">
+      Codex가 이 가이드로 작업할 때의 순서와 완료 조건이다.
+      <code>docs/agent-rules/frontend-development.md</code>와 각 디렉터리의 <code>progress.md</code> 규칙을 함께 지킨다.
+    </p>
+
+    <div class="panel">
+      <h3>변경 대상 파일</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:34%">파일</th><th style="width:66%">변경 내용</th></tr></thead>
+          <tbody>
+            <tr><td><code>frontend/src/styles/main.css</code></td><td><code>:root</code>에 3장의 토큰 8개 + 차트 팔레트 6개 <b>추가만</b>. 기존 토큰 수정·삭제 금지.</td></tr>
+            <tr><td><code>frontend/src/shared/ui/AppIcon.vue</code></td><td>4장 아이콘 18종 등록. 기존 <code>arrow-right</code>·<code>arrow-left</code>는 이미 있으면 재사용.</td></tr>
+            <tr><td><code>frontend/src/pages/JobAnalysisPage.vue</code></td><td>template 전면 교체 + <code>&lt;style scoped&gt;</code>를 2장 <code>.hs-*</code> 규칙으로 교체. <b>script setup의 상태·쿼리·mutation·watch 로직은 그대로 유지</b>한다.</td></tr>
+            <tr><td><code>frontend/src/features/jobs/JobPreparationJourney.vue</code></td><td>8-A의 링 + 4단계 스텝 구조로 교체.</td></tr>
+            <tr><td><code>frontend/src/layouts/JobDetailLayout.vue</code></td><td>리소스 헤더·탭 스타일만 조정. 라우팅과 <code>aria-current</code> 유지.</td></tr>
+            <tr><td><code>frontend/src/pages/JobAnalysisPage.test.ts</code></td><td>DOM 셀렉터 변경 반영. <b>단언의 의미(문구·개수·상태)는 바꾸지 않는다.</b></td></tr>
+            <tr><td><code>frontend/e2e/job-analysis.spec.ts</code></td><td>동일. 접근성 이름 기반 셀렉터를 우선 사용해 클래스명 변경에 덜 민감하게 만든다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>순서</h3>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:8%">단계</th><th style="width:52%">작업</th><th style="width:40%">완료 조건</th></tr></thead>
+          <tbody>
+            <tr><td><b>1</b></td><td>토큰 추가 + 아이콘 등록</td><td>다른 페이지 시각 회귀 없음. <code>corepack pnpm check</code> 통과.</td></tr>
+            <tr><td><b>2</b></td><td>리포트 패널 골격 + 결정 히어로 + 게이지</td><td><code>fitScore=null</code>, <code>analysisCoverage=null</code> 두 케이스가 깨지지 않음.</td></tr>
+            <tr><td><b>3</b></td><td>분포 막대 · 카테고리 차트</td><td>세 곳의 개수·합계가 <code>scoreBreakdown</code> 하나에서만 파생. 배점 합 불일치 시 콘솔 경고가 아니라 <b>UI가 자연스럽게 축소</b>되어야 함(빈 배열 = 섹션 미렌더).</td></tr>
+            <tr><td><b>4</b></td><td>공고 핵심 · 강점/보완 · 활용 경험</td><td>각 배열이 빈 경우 기존 빈 문구 유지.</td></tr>
+            <tr><td><b>5</b></td><td>조건 리스트 · 필터 · 페이지네이션</td><td>필터 전환 시 <code>criterionPage</code> 리셋 로직 보존. 5개/페이지 유지.</td></tr>
+            <tr><td><b>6</b></td><td>이력 추이 차트</td><td>이력 1건이면 차트 미렌더, 목록만. 페이지네이션 동작 유지.</td></tr>
+            <tr><td><b>7</b></td><td>진행/빈/실패/outdated 4개 상태</td><td>6장 분기 우선순위대로 동작. 진행 중 SSE 끊김이 실패로 표시되지 않음.</td></tr>
+            <tr><td><b>8</b></td><td>반응형 · 접근성 검증</td><td>320 / 375 / 768 / 1180 / 1440px에서 body 가로 스크롤 없음. reduced-motion에서 값이 정상 표시.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>완료 판정 — 하나라도 아니면 미완료</h3>
+      <div class="stack" style="gap:.5rem">
+        <div class="note note--do"><b>01</b><span>파란 채움 버튼이 화면에 <b>하나만</b> 있다.</span></div>
+        <div class="note note--do"><b>02</b><span>브라우저에서 CSS 필터로 채도를 0으로 만들어도 4개 상태가 구분된다.</span></div>
+        <div class="note note--do"><b>03</b><span>52px 히어로 숫자가 페이지에 하나뿐이다.</span></div>
+        <div class="note note--do"><b>04</b><span>결과 영역 안에 중첩된 카드(둥근 면 안의 둥근 면 안의 둥근 면)가 없다.</span></div>
+        <div class="note note--do"><b>05</b><span>화면의 모든 수치가 API 필드에서 직접 나오며, 파생 계산은 <code>scoreBreakdown</code> 합산뿐이다.</span></div>
+        <div class="note note--do"><b>06</b><span>320px에서 가로 스크롤이 없고, 모든 텍스트가 잘리지 않는다.</span></div>
+        <div class="note note--do"><b>07</b><span>기존 테스트의 문구·개수·상태 단언이 그대로 통과한다.</span></div>
+        <div class="note note--do"><b>08</b><span><code>corepack pnpm check</code>와 e2e가 통과하고, 영향받은 <code>index.md</code>·<code>progress.md</code>가 갱신되어 있다.</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>기존 design-system.md와의 관계</h3>
+      <p><code>.superdesign/design-system.md</code>는 그라디언트·글로우를 금지한다. 이번 가이드는 두 곳에서 그 규칙을 완화했고, 그 외에는 전부 따른다.</p>
+      <div class="tablewrap">
+        <table class="spec">
+          <thead><tr><th style="width:26%">완화 지점</th><th style="width:36%">적용 범위</th><th style="width:38%">근거</th></tr></thead>
+          <tbody>
+            <tr><td>결정 히어로 배경 blob</td><td>우상단 1곳, radial-gradient, 최대 alpha 0.13, <code>pointer-events:none</code></td><td>사용자가 지정한 토스 레퍼런스의 핵심 시각 장치. 리포트에서 “결론 영역”을 한 번에 찾게 하는 기능을 한다. 텍스트 대비에 영향을 주지 않는 강도로 제한했다.</td></tr>
+            <tr><td>추이 차트 면 채움</td><td>라인 아래 <code>#3157ff</code> 0.14 → 0 세로 그라디언트</td><td>라인 차트의 표준 관례이며 값 읽기를 방해하지 않는다. 데이터 마크(라인·점) 자체는 단색이다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note--info" style="margin-top:1.25rem"><b>이 문서를 반영할 때</b>
+        <span>위 두 예외의 근거는 <code>docs/design/progress.md</code>의 Session Summary와 이 문서에 남긴다. <code>.superdesign/design-system.md</code>가 저장소에 존재하는 동안에는 같은 예외를 그 문서에도 함께 명시한다. 문서와 구현이 어긋난 채로 두지 않는다.</span></div>
+    </div>
+  </section>
+
+  <footer style="margin-top:var(--space-10);padding-top:var(--space-7);border-top:1px solid var(--color-border);color:var(--color-muted);font-size:.8125rem">
+    <p style="margin:0"><b style="color:var(--color-ink-soft)">Hiresemble · 공고 분석 페이지 디자인 개편 가이드</b> — 2026-08-05</p>
+    <p style="margin:.5rem 0 0">
+      샘플 데이터의 회사·공고·경력은 전부 가상이다. 실제 사용자 데이터가 아니다.
+      레퍼런스로 참고한 토스 화면의 자산·문구·브랜드 색은 사용하지 않았고, 정보 구조 원칙만 번역해 적용했다.
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>

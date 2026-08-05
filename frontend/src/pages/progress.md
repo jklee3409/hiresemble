@@ -4,6 +4,43 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (공고 분석 모바일 판단·차트 재우선순위)
+
+- What was done:
+  - 모바일 hero를 104px 단일 적합도 gauge와 결정 문장, 커버리지·분석 시각 meta로 압축하고 desktop 지원 가능성·커버리지 tile을 숨겼다.
+  - primary CTA를 첫 viewport 전폭 action으로 유지하고 category chart 기본 접힘, 상태 legend 4행, 강점·보완 첫 항목 disclosure를 적용했다.
+- Key decisions:
+  - desktop의 216px 2중 ring과 전체 비교 정보는 유지하고 48rem 이하에서만 정보 우선순위를 바꾼다.
+- Issues encountered:
+  - 기존 모바일 E2E의 세 metric 844px 계약이 가이드와 충돌했다.
+- Validation:
+  - Frontend check 67 files/282 tests·production build와 관련 Chromium 2/2 통과.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (공고 분석 결과 화면 디자인 가이드 구현)
+
+- What was done:
+  - `JobAnalysisPage.vue`의 결과 영역을 카드 적층에서 단일 report surface로 재구성했다. 내부 블록은 1px 구분선과 여백으로만 나누고 그림자는 패널에 1회만 적용한다.
+  - 적합도를 270° 2중 링 게이지(외부 `fitScore`, 내부 `analysisCoverage`)로 표현하고, 요건 분포는 2px 간격·직접 개수 라벨·상태별 텍스처를 가진 100% 누적 막대로, 카테고리 충족도는 단일 hue 가로 막대로, 분석 이력은 `analysisVersion` 정수 축 추이 라인 차트로 바꿨다.
+  - 조건 행에 상태 marker와 score/weight meter를 추가하고, 강점·보완 항목에 의미 있는 icon을 붙였다. filter는 채움 pill로 교체했다.
+  - `<style scoped>` 블록에 누적돼 있던 3세대 중복 CSS(약 3,260줄)를 단일 구현(약 1,260줄)으로 대체했다.
+- Key decisions:
+  - 기존 class 이름과 DOM 계약(`analysis-result__metrics > div` 3개, `abbr[title]`, `analysis-insight li > p`, `analysis-criterion`, pagination `aria-label` 등)을 유지해 화면 계약과 테스트 단언의 의미를 바꾸지 않았다. script setup의 상태·query·mutation·watch 로직은 그대로 두고 게이지·추이 계산 computed만 추가했다.
+  - `fitScore`가 `null`이면 게이지를 렌더하지 않고 "산정하지 못함" 문구만 남긴다. 0점으로 그리지 않는다.
+  - 이력이 1건이면 추이 차트를 렌더하지 않는다.
+  - 막대 길이는 반올림하지 않은 비율을 쓰고 라벨만 기존 `roundToFive` 계약을 따른다.
+- Issues encountered:
+  - `animation-fill-mode: both`와 `from` 키프레임만 선언한 조합에서 게이지 아크와 카테고리 막대가 종료 후에도 0 상태로 고정됐다. `backwards`로 바꾸고 아크 전체 길이를 element별 CSS 변수로 분리해 해결했다.
+  - `.analysis-breakdown__filter--active`가 `.analysis-breakdown__filters button`보다 specificity가 낮아 선택 상태가 적용되지 않았다. 선택자를 결합해 해결했다.
+  - `minmax(19rem, 1fr)` grid가 320px에서 컨테이너를 넘어 가로 스크롤을 만들었다. `minmax(min(19rem, 100%), 1fr)`로 해결했다.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check .`, `vite build` 통과.
+  - build 산출 CSS로 결과 화면 DOM을 렌더해 computed style을 검증했다. panel radius 20px·shadow 1회, 게이지 dashoffset 107.44/43.83(70%/85%), 카테고리 막대 transform none(최종 상태 표시), 선택 filter `#0f1420`/흰 텍스트, PARTIAL 세그먼트 45° 텍스처, 320/375/768/1180/1440px 전부 가로 스크롤 0을 확인했다.
+  - `vitest`는 실행하지 못했다. 이 저장소는 Node 24를 요구하는데 실행 환경이 Node 20이라 `corepack pnpm`이 `node:sqlite` 부재로 기동하지 않고, 로컬 `vitest` 직접 실행도 jsdom 의존 `html-encoding-sniffer`의 `ERR_REQUIRE_ESM`으로 실패한다. 변경하지 않은 `src/features/jobs/filters.test.ts`에서도 동일하게 실패해 환경 문제임을 확인했다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 `frontend/e2e/job-analysis.spec.ts`를 실행해 회귀를 확인한다.
+
 ## [2026-08-04] Session Summary (공고 분석 판단·근거 정보 밀도 보정)
 
 - What was done:

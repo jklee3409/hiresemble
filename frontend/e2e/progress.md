@@ -15,6 +15,21 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-05] Session Summary (공고 분석 디자인 개편 회귀 동기화)
+
+- What was done:
+  - 공고 제목 30px 상한과 모바일 104px 단일 gauge, desktop metric tile 숨김, 커버리지 meta와 첫 viewport CTA를 `job-analysis.spec.ts`에 고정했다.
+- Key decisions:
+  - 새 디자인 가이드를 우선하되 owner scope, 접근성, 반응형 geometry와 overflow 검증은 유지한다.
+- Issues encountered:
+  - 첫 Playwright 실행에서 이전 35.2px 기대값이 실제 30px와 달라 실패했다.
+  - 기대값 보정 후에는 모바일 metric 영역 하단이 기존 844px 기준을 넘는 1104px로 확인됐다. `docs/spec/page.md`의 세 metric row 우선 계약과 새 디자인 가이드의 모바일 요약 타일 삭제 지시가 충돌해 임의로 보정하지 않았다.
+- Validation:
+  - Node 24에서 `corepack pnpm check`가 67 files/282 tests와 production build까지 통과했다.
+  - 사용자 승인으로 디자인 가이드 우선 계약을 적용한 뒤 `job-analysis.spec.ts` Chromium 1/1과 `ui-redesign.visual.spec.ts` 1/1이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (공고 분석 compact flow 반응형 회귀)
 
 - What was done:

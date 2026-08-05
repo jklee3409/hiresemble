@@ -7,6 +7,35 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/282 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (공고 분석 디자인 가이드 모바일 계약 완성)
+
+- What was done:
+  - 공고 분석 redesign의 모바일 판단 영역을 104px 단일 gauge, 커버리지·시각 meta, 전폭 CTA와 접힌 category chart로 재우선순위화했다.
+  - 상태 legend를 4행으로 바꾸고 강점·보완은 첫 항목과 `N개 더 보기` disclosure를 우선하며 작은 화면의 면접 tab 문구를 축약했다.
+- Key decisions:
+  - desktop 2중 gauge와 세 metric DOM은 유지하되 mobile에서는 score gauge만 표시한다.
+- Issues encountered:
+  - 기존 844px metric geometry 계약이 새 가이드와 충돌해 사용자 승인 뒤 E2E를 새 계약으로 전환했다.
+- Validation:
+  - Node 24 `corepack pnpm check` 67 files/282 tests·production build, Job Analysis·visual fixture Chromium 2/2 통과.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (공고 분석 페이지 디자인 가이드 적용)
+
+- What was done:
+  - `docs/design/job-analysis-page-design-guide.html`의 스펙을 실제 화면에 적용했다. `main.css` token 추가, `AppIcon.vue` icon 15종 추가, `JobAnalysisPage.vue` 결과 화면 재구성과 CSS 전면 교체, `JobPreparationJourney.vue` surface·모션 보정, `JobDetailLayout.vue` tab·제목 위계 보정.
+- Key decisions:
+  - 공개 API 계약, route, 화면 문구, 상태 분기, 접근성 이름을 바꾸지 않는 표현 계층 변경으로 한정했다. 기존 class 이름과 DOM 계약을 유지해 테스트 단언의 의미를 보존했다.
+  - 차트 마크 색은 기존 semantic token과 분리한 `--chart-*` 4색을 사용하고, 색각 검증 WARN 구간을 상쇄하기 위해 아이콘·한글 라벨·2px 간격·텍스처의 2차 인코딩을 항상 함께 적용한다.
+- Issues encountered:
+  - 실행 환경이 Node 20이라 `corepack pnpm`(Node 22+ `node:sqlite` 필요)과 `vitest`(jsdom `ERR_REQUIRE_ESM`)를 실행하지 못했다. 변경하지 않은 테스트 파일에서도 동일하게 실패해 환경 제약임을 확인했다.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check .`, `vite build` 통과. build 산출 CSS 기준 computed style과 320~1440px 가로 스크롤 검증 완료.
+  - `vitest`와 Playwright는 미실행이다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 job-analysis E2E를 실행한다.
+
 ## [2026-08-04] Session Summary (공고 분석 compact decision flow 구현)
 
 - What was done:
