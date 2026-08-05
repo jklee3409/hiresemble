@@ -7,6 +7,19 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (공고 기간 menu 밀도·정렬 보정)
+
+- What was done:
+  - 기간 menu를 기존 폭의 80%로 축소하고 날짜 입력과 `~ 오늘`을 한 줄에 고정했으며 상하반기 label을 강조했다.
+- Key decisions:
+  - 연도는 보조 정보로 유지하고 상반기·하반기는 brand 색상, 큰 글자와 800 굵기로 우선 표시한다.
+- Issues encountered:
+  - 좁은 menu에서 날짜 input이 suffix 공간을 밀어 `오늘`이 두 줄로 보였다.
+- Validation:
+  - Job page 집중 9 tests와 `pnpm check` 67 files/284 tests·production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 목록 등록 반기 필터)
 
 - What was done:

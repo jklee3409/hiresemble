@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (공고 기간 dropdown compact 보정)
+
+- What was done:
+  - dropdown 폭·행 높이·padding을 줄이고 custom 기간을 grid로 바꿔 `~ 오늘` 기준선을 맞췄다.
+- Key decisions:
+  - 상반기·하반기만 brand 강조하고 날짜 범위는 작은 보조 정보로 유지한다.
+- Issues encountered:
+  - 기존 flex 배치에서는 date control 최소 폭 때문에 `오늘`이 글자 단위로 줄바꿈됐다.
+- Validation:
+  - page component 9 tests와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 목록 기간 dropdown)
 
 - What was done:

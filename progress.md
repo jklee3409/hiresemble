@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (공고 기간 filter 시각 보정)
+
+- What was done:
+  - 공고 기간 menu를 compact하게 조정하고 `오늘` 줄맞춤과 상반기·하반기 강조를 보완했다.
+- Key decisions:
+  - 기간 조회 동작과 API 계약은 유지하고 Frontend 표현만 수정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend `pnpm check` 67 files/284 tests·production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 등록 반기 분류와 목록 기간 필터)
 
 - What was done:

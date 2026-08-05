@@ -282,8 +282,13 @@ function currentSeoulDate(): string {
                 }"
                 @click="selectPeriod(period.year, period.half)"
               >
-                <strong>{{ periodLabel(period.year, period.half) }}</strong>
-                <span>{{ periodRange(period.year, period.half) }}</span>
+                <span class="period-select__option-label">
+                  <span>{{ period.year }}</span>
+                  <strong>{{ period.half === 'FIRST_HALF' ? '상반기' : '하반기' }}</strong>
+                </span>
+                <span class="period-select__option-range">
+                  {{ periodRange(period.year, period.half) }}
+                </span>
               </button>
               <label class="period-select__custom" for="job-posting-start-from">
                 <strong>기간 설정</strong>
@@ -533,7 +538,7 @@ function currentSeoulDate(): string {
   z-index: 20;
   top: calc(100% + var(--space-2));
   right: 0;
-  width: min(30rem, calc(100vw - 2rem));
+  width: min(24rem, calc(100vw - 2rem));
   overflow: hidden;
   padding: var(--space-2) 0;
   border: 1px solid var(--color-border);
@@ -546,10 +551,10 @@ function currentSeoulDate(): string {
 .period-select__custom {
   display: flex;
   width: 100%;
-  min-height: 3.5rem;
+  min-height: 3rem;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-4);
   text-align: left;
 }
 
@@ -558,29 +563,57 @@ function currentSeoulDate(): string {
   background: var(--color-surface-subtle);
 }
 
-.period-select__option strong,
 .period-select__custom strong {
   color: var(--color-text);
   font-size: var(--font-size-md);
 }
 
-.period-select__option span,
+.period-select__option-range,
 .period-select__custom-range > span {
   color: var(--color-text-secondary);
 }
 
+.period-select__option-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.period-select__option-label strong {
+  color: var(--color-brand-strong);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+}
+
+.period-select__option-range {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
 .period-select__custom {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   border-top: 1px solid var(--color-border);
 }
 
 .period-select__custom-range {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
   align-items: center;
   gap: var(--space-2);
 }
 
+.period-select__custom-range > span {
+  white-space: nowrap;
+}
+
 .period-select__custom input {
+  width: 100%;
   min-width: 0;
 }
 
@@ -673,10 +706,17 @@ function currentSeoulDate(): string {
     left: 0;
   }
 
-  .period-select__option,
-  .period-select__custom {
+  .period-select__option {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .period-select__option-range {
+    margin-left: 0;
+  }
+
+  .period-select__custom {
+    grid-template-columns: 1fr;
   }
 
   .job-row__content {

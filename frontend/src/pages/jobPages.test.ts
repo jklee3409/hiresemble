@@ -161,8 +161,12 @@ describe('P5 Job pages', () => {
     expect(wrapper.get('[data-testid="job-business-status"]').text()).toContain('마감')
     expect(wrapper.get('[data-testid="job-extraction-status"]').text()).toContain('직접 입력 완료')
     expect(wrapper.text()).toContain('서류 제출 이력 있음')
-    expect(wrapper.text()).toContain('2026 하반기')
-    expect(wrapper.text()).not.toContain('2026 상반기')
+    expect(wrapper.get('.period-select__option-label').text()).toContain('2026')
+    expect(wrapper.get('.period-select__option-label strong').text()).toBe('하반기')
+    expect(
+      wrapper.findAll('.period-select__option-label strong').map((label) => label.text()),
+    ).not.toContain('상반기')
+    expect(wrapper.get('.period-select__custom-range > span').text()).toBe('~ 오늘')
     expect(wrapper.text()).not.toContain('공고 불러오기 상태')
     expect(wrapper.text()).not.toContain('마감 시작')
     expect(wrapper.text()).not.toContain('마감 종료')
