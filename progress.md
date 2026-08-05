@@ -15,6 +15,21 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (내 지원 정보 화면 개편과 화면 계약 갱신)
+
+- What was done:
+  - Frontend 프로필 목록(학력·경력·자격증·어학·수상) 항목을 icon·상태 배지·사실 목록·설명 카드로 재구성하고, 기본 정보 화면의 미완료 안내와 section·navigation icon을 정리했다.
+  - `docs/spec/page.md` 5장에 해당 표현 계약을 반영했다.
+- Key decisions:
+  - 새 API 호출과 추정 상태를 만들지 않고 기존 DTO 값에서만 표시를 유도한다.
+- Issues encountered:
+  - 경력 timeline marker가 목록 `overflow: hidden`에 잘려 반쪽 원으로 보이던 시각 결함을 함께 고쳤다.
+- Validation:
+  - Node 24에서 Frontend `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+  - Chromium `profile`·`ui-shell` E2E는 기존 `profile suggestions` 실패 1건을 제외하고 통과.
+- Next steps:
+  - 기존 `profile suggestions` E2E 실패 원인 조사.
+
 ## [2026-08-05] Session Summary (Dashboard 시각 개편과 화면 계약 갱신)
 
 - What was done:

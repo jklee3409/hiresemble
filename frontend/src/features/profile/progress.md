@@ -4,6 +4,20 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-08-05] Session Summary (프로필 navigation 항목 icon)
+
+- What was done:
+  - `ProfileTabs.vue`의 desktop 항목에 `aria-hidden` icon tile을 추가하고 hover·현재 항목에서 tile 색을 바꾸도록 했다.
+- Key decisions:
+  - link의 접근 가능한 이름과 mobile selector option은 그대로 두어 기존 navigation 계약과 단언 의미를 바꾸지 않는다.
+  - 가상의 section 완료 count는 여전히 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Node 24에서 `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (지원 자격 자기신고 form)
 
 - What was done:

@@ -4,6 +4,28 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (내 지원 정보 목록·기본 정보 화면 정보 위계 개편)
+
+- What was done:
+  - `StructuredProfilePage.vue`에 `resourceIcon`·`resourceBadges`·`resourceFacts`·`resourceNotes`와 `formatDay`·`periodText`·`isExpired`를 추가하고, 제목·부제만 있던 행을 icon tile, 상태 배지, 사실 목록(기간·학점·자격번호·유효기간), 서술형 설명(역할·성과·설명)을 가진 카드로 재구성했다.
+  - `resourceSubtitle`에서 날짜와 상태를 빼 배지·사실 목록과의 중복을 없앴다.
+  - 경력 timeline rail과 marker를 목록 바깥 `border-left`에서 카드 안쪽 icon 열로 옮겨 `.data-list`의 `overflow: hidden`에 잘려 반쪽 원(`)`)으로 보이던 문제를 없앴다.
+  - `ol` 기본 marker를 제거하고 도구 영역을 `등록 N건`(서버 `totalElements`)과 정렬로 나누며 `정렬` label이 글자 단위로 접히지 않게 고정했다.
+  - `ProfileBasicPage.vue`의 미완료 안내를 warning surface 카드로 바꾸고 남은 항목 배지에 `남은 항목` label을 붙였으며, 네 form section 제목에 icon tile을 추가했다.
+- Key decisions:
+  - 표시 값은 모두 기존 DTO 필드에서만 유도하고 새 API·계약·추정 상태를 만들지 않는다.
+  - `유효기간 지남` 판정은 서울 자정 기준 `expiresAt` 비교로만 하고 서버가 주지 않는 상태를 만들지 않는다.
+  - 기존 class·DOM 계약(`.structured-item`, `.structured-list--timeline`, `.profile-outline__link` 텍스트, `최종 학력` 문구)을 유지했다.
+- Issues encountered:
+  - 임시 fixture 초안이 실제 DTO와 다른 field명을 써서 목록이 비어 보였다. `contracts.ts` 기준으로 `admissionDate`·`isPrimary`·`organization`·`isCurrent`·`acquiredDate`·`testedAt`·`organizer`와 `/profile/language-scores` 경로로 맞춘 뒤 재확인했다.
+  - `e2e/ui-shell.spec.ts`의 `profile suggestions...`는 stash 후 clean tree에서도 같은 `희망 직무` combobox 지점에서 실패해 기존 실패로 재확인했다.
+- Validation:
+  - Node 24에서 `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+  - Chromium `e2e/profile.spec.ts` 통과, `e2e/ui-shell.spec.ts`는 위의 기존 실패 1건 외 통과.
+  - 임시 fixture spec으로 7개 프로필 화면을 1440·390px에서 캡처해 배치를 확인한 뒤 spec을 삭제했다.
+- Next steps:
+  - 기존 `profile suggestions` E2E 실패 원인 조사.
+
 ## [2026-08-05] Session Summary (Dashboard 시각 위계·D-day·동적 효과 개편)
 
 - What was done:

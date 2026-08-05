@@ -7,6 +7,22 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (내 지원 정보 화면 개편 통합)
+
+- What was done:
+  - `StructuredProfilePage.vue` 목록 항목을 icon·배지·사실 목록·설명을 가진 카드로 재구성하고, 경력 timeline이 목록 overflow에 잘리던 문제와 `ol` marker 노출, `정렬` label 줄바꿈을 함께 고쳤다.
+  - `ProfileBasicPage.vue` 미완료 안내를 warning 카드로 바꾸고 form section 제목과 `ProfileTabs.vue` navigation 항목에 icon을 추가했다.
+  - `docs/spec/page.md` 5장에 목록 항목 표현 규칙과 navigation·기본 정보 icon 계약을 반영했다.
+- Key decisions:
+  - 표시 값은 기존 DTO에서만 유도하고 새 API 호출이나 추정 상태를 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Node 24에서 `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+  - Chromium `profile`·`ui-shell` E2E는 기존 `profile suggestions` 실패 1건을 제외하고 통과.
+- Next steps:
+  - 기존 `profile suggestions` E2E 실패 원인 조사.
+
 ## [2026-08-05] Session Summary (Dashboard 시각 개편 통합)
 
 - What was done:

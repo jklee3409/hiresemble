@@ -320,7 +320,9 @@ function emptyForm(): ProfileFormValues {
           aria-label="프로필 보완 권장"
         >
           <div>
-            <AppIcon name="alert" />
+            <span class="profile-completion-note__icon" aria-hidden="true">
+              <AppIcon name="alert" />
+            </span>
             <span>
               <strong
                 >필수 항목 {{ profileQuery.data.value.missingCompletionItems.length }}개가 남아
@@ -330,6 +332,7 @@ function emptyForm(): ProfileFormValues {
             </span>
           </div>
           <ul>
+            <li class="profile-completion-note__legend">남은 항목</li>
             <li v-for="item in profileQuery.data.value.missingCompletionItems" :key="item">
               {{ completionLabels[item] }}
             </li>
@@ -358,6 +361,9 @@ function emptyForm(): ProfileFormValues {
         >
           <section class="profile-editor__section" aria-labelledby="profile-identity-heading">
             <header class="profile-editor__section-heading">
+              <span class="profile-editor__section-icon" aria-hidden="true">
+                <AppIcon name="person-card" />
+              </span>
               <h2 id="profile-identity-heading">기본 정보</h2>
               <p>지원서에 공통으로 사용할 이름과 졸업 정보를 입력하세요.</p>
             </header>
@@ -406,6 +412,9 @@ function emptyForm(): ProfileFormValues {
 
           <section class="profile-editor__section" aria-labelledby="profile-introduction-heading">
             <header class="profile-editor__section-heading">
+              <span class="profile-editor__section-icon" aria-hidden="true">
+                <AppIcon name="pen" />
+              </span>
               <h2 id="profile-introduction-heading">자기소개</h2>
               <p>핵심 경험과 강점을 짧게 정리하면 공고 분석과 작성에 활용하기 좋아요.</p>
             </header>
@@ -446,6 +455,9 @@ function emptyForm(): ProfileFormValues {
 
           <section class="profile-editor__section" aria-labelledby="profile-preference-heading">
             <header class="profile-editor__section-heading">
+              <span class="profile-editor__section-icon" aria-hidden="true">
+                <AppIcon name="target" />
+              </span>
               <h2 id="profile-preference-heading">희망 조건</h2>
               <p>직무, 산업과 지역을 최대 10개까지 자유롭게 입력할 수 있어요.</p>
             </header>
@@ -504,6 +516,9 @@ function emptyForm(): ProfileFormValues {
         >
           <section class="profile-editor__section" aria-labelledby="profile-eligibility-heading">
             <header class="profile-editor__section-heading">
+              <span class="profile-editor__section-icon" aria-hidden="true">
+                <AppIcon name="shield" />
+              </span>
               <h2 id="profile-eligibility-heading">지원 자격 확인 정보</h2>
               <p>
                 아래 내용은 사용자 입력 기준이며, 실제 지원 단계에서 회사가 별도로 확인할 수 있어요.
@@ -680,25 +695,38 @@ function emptyForm(): ProfileFormValues {
 
 .profile-completion-note {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3) var(--space-4);
   margin-top: var(--space-5);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
   color: var(--color-muted-strong);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) var(--space-4);
 }
 
 .profile-completion-note > div {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.profile-completion-note > div > .icon {
-  width: 1rem;
+.profile-completion-note__icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
   flex: 0 0 auto;
-  margin-top: 0.2rem;
+  place-items: center;
+  border-radius: var(--radius-sm);
   color: var(--color-warning);
+  background: var(--color-surface);
+}
+
+.profile-completion-note__icon .icon {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .profile-completion-note strong,
@@ -707,19 +735,20 @@ function emptyForm(): ProfileFormValues {
 }
 
 .profile-completion-note strong {
-  color: var(--color-ink-soft);
+  color: var(--color-warning-strong);
   font-size: var(--font-size-sm);
 }
 
 .profile-completion-note small {
   margin-top: 0.1rem;
-  color: var(--color-muted);
+  color: var(--color-warning);
   font-size: var(--font-size-xs);
 }
 
 .profile-completion-note ul {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
   margin: 0;
@@ -728,11 +757,20 @@ function emptyForm(): ProfileFormValues {
 }
 
 .profile-completion-note li {
+  border: 1px solid var(--color-warning-border);
   border-radius: 999px;
-  background: var(--color-neutral-soft);
-  color: var(--color-muted-strong);
+  background: var(--color-surface);
+  color: var(--color-warning-strong);
   padding: 0.3rem 0.625rem;
   font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.profile-completion-note__legend {
+  border: 0;
+  background: none;
+  color: var(--color-warning);
+  padding: 0;
   font-weight: 650;
 }
 
@@ -760,6 +798,22 @@ function emptyForm(): ProfileFormValues {
   color: var(--color-ink);
   font-size: 1.0625rem;
   letter-spacing: -0.02em;
+}
+
+.profile-editor__section-icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.profile-editor__section-icon .icon {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .profile-editor__section-heading p {

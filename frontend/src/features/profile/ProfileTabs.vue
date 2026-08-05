@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import AppIcon from '@/shared/ui/AppIcon.vue'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -9,30 +11,37 @@ const sections = [
   {
     to: '/profile/basic',
     label: '기본 정보',
+    icon: 'person-card',
   },
   {
     to: '/profile/education',
     label: '학력',
+    icon: 'guide',
   },
   {
     to: '/profile/careers',
     label: '경력',
+    icon: 'jobs',
   },
   {
     to: '/profile/certifications',
     label: '자격증',
+    icon: 'shield',
   },
   {
     to: '/profile/languages',
     label: '어학',
+    icon: 'compass',
   },
   {
     to: '/profile/awards',
     label: '수상',
+    icon: 'trophy',
   },
   {
     to: '/profile/activities',
     label: '대외활동',
+    icon: 'spark',
   },
 ] as const
 
@@ -60,6 +69,9 @@ function changeSection(event: Event): void {
         :to="section.to"
         class="profile-outline__link"
       >
+        <span class="profile-outline__icon" aria-hidden="true">
+          <AppIcon :name="section.icon" />
+        </span>
         <strong>{{ section.label }}</strong>
         <span v-if="route.path === section.to" class="profile-outline__current">현재</span>
       </RouterLink>
@@ -117,7 +129,7 @@ function changeSection(event: Event): void {
 .profile-outline__link {
   display: grid;
   min-height: 3rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
   border-left: 2px solid transparent;
@@ -141,6 +153,34 @@ function changeSection(event: Event): void {
   border-left-color: var(--color-brand);
   background: var(--color-brand-soft);
   color: var(--hs-blue-800);
+}
+
+.profile-outline__icon {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: var(--radius-xs);
+  color: var(--color-muted);
+  background: var(--color-neutral-soft);
+  transition:
+    color var(--motion-fast),
+    background-color var(--motion-fast);
+}
+
+.profile-outline__icon :deep(.icon) {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.profile-outline__link:hover .profile-outline__icon {
+  color: var(--color-brand);
+  background: var(--hs-blue-100);
+}
+
+.profile-outline__link[aria-current='page'] .profile-outline__icon {
+  color: #ffffff;
+  background: var(--color-brand);
 }
 
 .profile-outline__current {

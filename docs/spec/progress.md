@@ -6,6 +6,20 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (프로필 목록 표현 계약 보강)
+
+- What was done:
+  - `page.md` 5장에 학력·경력·자격증·어학·수상 목록 항목의 공통 표현 규칙(icon·배지·사실 목록·설명, 날짜 표기, 경력 timeline 위치, 도구 영역 등록 건수·정렬)과 navigation·기본 정보 section icon, 남은 항목 배지 규칙을 추가했다.
+- Key decisions:
+  - 배지와 사실은 이미 저장된 서버 값에서만 유도하고 새 상태나 API를 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Markdown 필수 섹션과 상대 링크 확인.
+  - Node 24에서 Frontend `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Dashboard 시각 표현 계약 보강)
 
 - What was done:

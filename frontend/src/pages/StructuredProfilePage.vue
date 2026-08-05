@@ -20,6 +20,7 @@ import {
   validateEducationForm,
   validateLanguageScoreForm,
 } from '@/features/profile/schemas'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
@@ -440,33 +441,173 @@ function resourceSubtitle(kind: ResourceKind, item: StructuredProfileDto): strin
   switch (kind) {
     case 'education': {
       const education = item as EducationDto
-      return [
-        educationLevelLabels[education.educationLevel],
-        education.major,
-        education.degree,
-        educationStatusLabel(education.educationStatus),
-      ]
+      return [educationLevelLabels[education.educationLevel], education.major, education.degree]
         .filter(Boolean)
         .join(' · ')
     }
+    case 'certification':
+      return (item as CertificationDto).issuer ?? ''
+    case 'language':
+      return (item as LanguageScoreDto).grade ?? ''
+    case 'award':
+      return (item as AwardDto).organizer ?? ''
+    case 'career': {
+      const career = item as CareerDto
+      return [career.position, career.employmentType].filter(Boolean).join(' · ')
+    }
+  }
+}
+
+type ItemIconName = 'guide' | 'jobs' | 'shield' | 'compass' | 'trophy'
+type ItemBadge = { label: string; tone: 'brand' | 'success' | 'warning' | 'neutral' }
+type ItemFact = { label: string; value: string }
+type ItemNote = { label: string; text: string }
+
+function resourceIcon(kind: ResourceKind): ItemIconName {
+  switch (kind) {
+    case 'education':
+      return 'guide'
+    case 'career':
+      return 'jobs'
+    case 'certification':
+      return 'shield'
+    case 'language':
+      return 'compass'
+    case 'award':
+      return 'trophy'
+  }
+}
+
+/** `2023-02-28`을 목록에서 읽기 쉬운 `2023.02.28`로 바꾼다. */
+function formatDay(value: string | null | undefined): string {
+  const trimmed = value?.trim()
+  return trimmed === undefined || trimmed === '' ? '' : trimmed.replaceAll('-', '.')
+}
+
+function periodText(
+  start: string | null,
+  end: string | null,
+  openEndedLabel: string | null,
+): string {
+  const from = formatDay(start) || '시작일 미입력'
+  const to = openEndedLabel ?? (formatDay(end) || '종료일 미입력')
+  if (start === null && end === null && openEndedLabel === null) return ''
+  return `${from} ~ ${to}`
+}
+
+function isExpired(value: string | null): boolean {
+  if (value === null || value.trim() === '') return false
+  const expiry = Date.parse(`${value}T23:59:59+09:00`)
+  return !Number.isNaN(expiry) && expiry < Date.now()
+}
+
+function resourceBadges(kind: ResourceKind, item: StructuredProfileDto): ItemBadge[] {
+  switch (kind) {
+    case 'education': {
+      const education = item as EducationDto
+      const badges: ItemBadge[] = []
+      if (education.isPrimary) badges.push({ label: '최종 학력', tone: 'brand' })
+      badges.push({ label: educationStatusLabel(education.educationStatus), tone: 'neutral' })
+      return badges
+    }
+    case 'career':
+      return (item as CareerDto).isCurrent ? [{ label: '재직 중', tone: 'success' }] : []
     case 'certification': {
       const certification = item as CertificationDto
-      return [certification.issuer, certification.acquiredDate].filter(Boolean).join(' · ')
+      return isExpired(certification.expiresAt) ? [{ label: '유효기간 지남', tone: 'warning' }] : []
     }
     case 'language': {
       const language = item as LanguageScoreDto
-      return [language.grade, language.testedAt].filter(Boolean).join(' · ')
+      return isExpired(language.expiresAt) ? [{ label: '유효기간 지남', tone: 'warning' }] : []
     }
-    case 'award': {
-      const award = item as AwardDto
-      return [award.organizer, award.awardedAt].filter(Boolean).join(' · ')
+    case 'award':
+      return []
+  }
+}
+
+function resourceFacts(kind: ResourceKind, item: StructuredProfileDto): ItemFact[] {
+  const facts: ItemFact[] = []
+  switch (kind) {
+    case 'education': {
+      const education = item as EducationDto
+      const period = periodText(education.admissionDate, education.graduationDate, null)
+      if (period !== '') facts.push({ label: '재학 기간', value: period })
+      if (education.gpa !== null) {
+        facts.push({
+          label: '학점',
+          value:
+            education.gpaScale === null
+              ? String(education.gpa)
+              : `${education.gpa} / ${education.gpaScale}`,
+        })
+      }
+      return facts
     }
     case 'career': {
       const career = item as CareerDto
-      return [career.position, career.startedAt, career.isCurrent ? '재직 중' : career.endedAt]
-        .filter(Boolean)
-        .join(' · ')
+      const period = periodText(career.startedAt, career.endedAt, career.isCurrent ? '현재' : null)
+      if (period !== '') facts.push({ label: '재직 기간', value: period })
+      return facts
     }
+    case 'certification': {
+      const certification = item as CertificationDto
+      if (formatDay(certification.acquiredDate) !== '') {
+        facts.push({ label: '취득일', value: formatDay(certification.acquiredDate) })
+      }
+      if (formatDay(certification.expiresAt) !== '') {
+        facts.push({ label: '유효기간', value: `${formatDay(certification.expiresAt)}까지` })
+      }
+      if (certification.credentialNumber) {
+        facts.push({ label: '자격번호', value: certification.credentialNumber })
+      }
+      return facts
+    }
+    case 'language': {
+      const language = item as LanguageScoreDto
+      if (formatDay(language.testedAt) !== '') {
+        facts.push({ label: '응시일', value: formatDay(language.testedAt) })
+      }
+      if (formatDay(language.expiresAt) !== '') {
+        facts.push({ label: '유효기간', value: `${formatDay(language.expiresAt)}까지` })
+      }
+      return facts
+    }
+    case 'award': {
+      const award = item as AwardDto
+      if (formatDay(award.awardedAt) !== '') {
+        facts.push({ label: '수상일', value: formatDay(award.awardedAt) })
+      }
+      return facts
+    }
+  }
+}
+
+function resourceNotes(kind: ResourceKind, item: StructuredProfileDto): ItemNote[] {
+  const notes: ItemNote[] = []
+  switch (kind) {
+    case 'career': {
+      const career = item as CareerDto
+      if (career.responsibilities) notes.push({ label: '역할', text: career.responsibilities })
+      if (career.achievements) notes.push({ label: '성과', text: career.achievements })
+      return notes
+    }
+    case 'education': {
+      const description = (item as EducationDto).description
+      if (description) notes.push({ label: '설명', text: description })
+      return notes
+    }
+    case 'certification': {
+      const description = (item as CertificationDto).description
+      if (description) notes.push({ label: '설명', text: description })
+      return notes
+    }
+    case 'award': {
+      const description = (item as AwardDto).description
+      if (description) notes.push({ label: '설명', text: description })
+      return notes
+    }
+    case 'language':
+      return notes
   }
 }
 
@@ -690,6 +831,10 @@ const resourceLabels: Record<
       </p>
 
       <div class="filter-toolbar structured-profile__toolbar">
+        <p class="structured-profile__count">
+          등록 <strong>{{ resourceQuery.data.value?.totalElements ?? 0 }}</strong
+          >건
+        </p>
         <label class="field field--inline" :for="`${kind}-sort`">
           <span class="field__label">정렬</span>
           <select
@@ -1035,13 +1180,18 @@ const resourceLabels: Record<
           class="structured-item data-card"
         >
           <div class="structured-item__body">
+            <span class="structured-item__icon" aria-hidden="true">
+              <AppIcon :name="resourceIcon(kind)" />
+            </span>
             <div class="structured-item__content">
               <div class="structured-item__title">
                 <h3>{{ resourceTitle(kind, item) }}</h3>
                 <span
-                  v-if="kind === 'education' && (item as EducationDto).isPrimary"
-                  class="status-badge status-badge--brand"
-                  >최종 학력</span
+                  v-for="badge in resourceBadges(kind, item)"
+                  :key="badge.label"
+                  class="status-badge"
+                  :class="`status-badge--${badge.tone}`"
+                  >{{ badge.label }}</span
                 >
               </div>
               <p v-if="resourceSubtitle(kind, item)" class="structured-item__meta">
@@ -1051,7 +1201,7 @@ const resourceLabels: Record<
             <div class="structured-item__actions">
               <button
                 type="button"
-                class="button button--ghost button--compact"
+                class="button button--secondary button--compact"
                 @click="openEdit(item)"
               >
                 수정
@@ -1066,6 +1216,20 @@ const resourceLabels: Record<
               </button>
             </div>
           </div>
+          <dl v-if="resourceFacts(kind, item).length" class="structured-item__facts">
+            <div v-for="fact in resourceFacts(kind, item)" :key="fact.label">
+              <dt>{{ fact.label }}</dt>
+              <dd>{{ fact.value }}</dd>
+            </div>
+          </dl>
+          <p
+            v-for="note in resourceNotes(kind, item)"
+            :key="note.label"
+            class="structured-item__note"
+          >
+            <strong>{{ note.label }}</strong>
+            <span>{{ note.text }}</span>
+          </p>
         </li>
       </ol>
 
@@ -1092,7 +1256,36 @@ const resourceLabels: Record<
 }
 
 .structured-profile__toolbar {
-  justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.structured-profile__count {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.structured-profile__count strong {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 정렬 label이 좁은 열에서 글자 단위로 접히지 않게 고정한다. */
+.structured-profile__toolbar .field--inline {
+  flex: 0 1 auto;
+}
+
+.structured-profile__toolbar .field__label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.structured-profile__toolbar .control {
+  width: auto;
+  min-width: 10.5rem;
 }
 
 .structured-editor {
@@ -1155,30 +1348,67 @@ const resourceLabels: Record<
   grid-column: 1 / -1;
 }
 
+/* `ol` marker가 카드 밖으로 새지 않도록 목록 표식을 직접 관리한다. */
+.structured-list {
+  list-style: none;
+}
+
 .structured-item {
   position: relative;
   padding: var(--space-5);
 }
 
-.structured-list--timeline {
-  padding-left: var(--space-5);
-  border-left: 2px solid var(--color-border);
-}
-
+/*
+ * 경력 timeline rail은 카드 안쪽 아이콘 열 중앙을 지난다.
+ * 목록 바깥에 두면 `.data-list`의 overflow에 잘려 반쪽 원으로 보인다.
+ */
 .structured-list--timeline .structured-item::before {
   position: absolute;
-  top: 1.6rem;
-  left: calc(-1 * var(--space-5) - 0.42rem);
-  width: 0.75rem;
-  height: 0.75rem;
-  border: 2px solid var(--color-brand);
-  border-radius: 50%;
-  background: var(--color-canvas);
+  top: 0;
+  bottom: 0;
+  left: calc(var(--space-5) + 1.25rem - 1px);
+  width: 2px;
+  background: var(--color-border);
   content: '';
+}
+
+.structured-list--timeline .structured-item:first-child::before {
+  top: var(--space-5);
+}
+
+.structured-list--timeline .structured-item:last-child::before {
+  bottom: auto;
+  height: 2.5rem;
+}
+
+.structured-list--timeline .structured-item__icon {
+  position: relative;
+  box-shadow: 0 0 0 0.25rem var(--color-surface);
+}
+
+.structured-item__body {
+  align-items: flex-start;
+}
+
+.structured-item__icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.structured-item__icon :deep(.icon) {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .structured-item__content {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .structured-item__title,
@@ -1188,7 +1418,9 @@ const resourceLabels: Record<
 }
 
 .structured-item__title h3 {
+  margin: 0;
   overflow-wrap: anywhere;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -1198,13 +1430,81 @@ const resourceLabels: Record<
   font-size: var(--font-size-sm);
 }
 
+.structured-item__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-4) 0 0;
+  padding-left: calc(2.5rem + var(--space-4));
+}
+
+.structured-item__facts > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.structured-item__facts dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.structured-item__facts dd {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-sm);
+  font-weight: 680;
+  overflow-wrap: anywhere;
+}
+
+.structured-item__note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding-left: calc(2.5rem + var(--space-4));
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+}
+
+.structured-item__note strong {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1.9;
+  white-space: nowrap;
+}
+
 @media (max-width: 48rem) {
   .structured-profile__toolbar {
-    justify-content: stretch;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .structured-profile__toolbar .field {
     width: 100%;
+  }
+
+  .structured-profile__toolbar .control {
+    width: 100%;
+  }
+
+  .structured-item__facts,
+  .structured-item__note {
+    padding-left: 0;
+  }
+
+  .structured-item__note {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .structured-item__note strong {
+    line-height: 1.4;
   }
 
   .structured-form {
@@ -1219,9 +1519,19 @@ const resourceLabels: Record<
     grid-column: 1;
   }
 
+  /* 좁은 폭에서도 아이콘과 제목은 같은 행에 두고 action만 아래로 내린다. */
   .structured-item__body {
     align-items: flex-start;
-    flex-direction: column;
+    flex-wrap: wrap;
+  }
+
+  .structured-item__content {
+    flex: 1 1 10rem;
+  }
+
+  .structured-item__actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>
