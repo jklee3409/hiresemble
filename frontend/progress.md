@@ -5,7 +5,20 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/282 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-05] Session Summary (공고 목록 등록 반기 필터)
+
+- What was done:
+  - 공고 목록의 추출 상태·마감 시작/종료·임박 필터를 삭제하고 실제 보유 연도·상하반기 dropdown과 시작일~오늘 직접 설정을 구현했다.
+- Key decisions:
+  - 서버 `availablePeriods`만 preset으로 표시하고 URL에는 preset 또는 직접 시작일 중 하나만 canonical하게 유지한다.
+- Issues encountered:
+  - 새 page 응답 필드로 기존 typed fixture 두 곳을 보강했다.
+- Validation:
+  - `pnpm check`: lint·format·typecheck, 67 files/284 tests, production build 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-05] Session Summary (공고 분석 디자인 가이드 모바일 계약 완성)
 

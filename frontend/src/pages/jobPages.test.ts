@@ -140,26 +140,44 @@ describe('P5 Job pages', () => {
     )
   })
 
-  it('shows separate business/extraction badges, submitted history, filters and status menu', async () => {
+  it('shows only owner periods, one direct start date, business badges and status menu', async () => {
     vi.mocked(jobApi.listJobs).mockResolvedValue(
-      page([
-        jobSummaryFixture({
-          status: 'CLOSED',
-          extractionStatus: 'MANUAL_INPUT_PROVIDED',
-          submittedAt: '2026-07-25T00:00:00Z',
-        }),
-      ]),
+      page(
+        [
+          jobSummaryFixture({
+            status: 'CLOSED',
+            extractionStatus: 'MANUAL_INPUT_PROVIDED',
+            submittedAt: '2026-07-25T00:00:00Z',
+          }),
+        ],
+        [{ year: 2026, half: 'SECOND_HALF' }],
+      ),
     )
     vi.mocked(jobApi.updateJobStatus).mockResolvedValue(
       jobDetailFixture({ status: 'IN_PROGRESS', version: 3 }),
     )
-    const { wrapper } = await mountList('/jobs?status=CLOSED&page=0')
+    const { wrapper, router } = await mountList('/jobs?status=CLOSED&page=0')
 
     expect(wrapper.get('[data-testid="job-business-status"]').text()).toContain('마감')
     expect(wrapper.get('[data-testid="job-extraction-status"]').text()).toContain('직접 입력 완료')
     expect(wrapper.text()).toContain('서류 제출 이력 있음')
-    expect(wrapper.findAll('input[type="date"]')).toHaveLength(2)
+    expect(wrapper.text()).toContain('2026 하반기')
+    expect(wrapper.text()).not.toContain('2026 상반기')
+    expect(wrapper.text()).not.toContain('공고 불러오기 상태')
+    expect(wrapper.text()).not.toContain('마감 시작')
+    expect(wrapper.text()).not.toContain('마감 종료')
+    expect(wrapper.findAll('.field__label').map((label) => label.text())).not.toContain('마감 임박')
+    expect(wrapper.findAll('input[type="date"]')).toHaveLength(1)
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(3)
+
+    await wrapper.get('#job-posting-start-from').setValue('2026-07-01')
+    await wrapper.get('.job-filters').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toMatchObject({
+      status: 'CLOSED',
+      postingStartFrom: '2026-07-01',
+    })
+    expect(router.currentRoute.value.query).not.toHaveProperty('postingYear')
 
     await wrapper
       .get(`select[aria-label="${jobSummaryFixture().title} 지원 상태 변경"]`)
@@ -402,9 +420,13 @@ function testCache() {
   })
 }
 
-function page<T>(items: T[]) {
+function page<T>(
+  items: T[],
+  availablePeriods: { year: number; half: 'FIRST_HALF' | 'SECOND_HALF' }[] = [],
+) {
   return {
     items,
+    availablePeriods,
     page: 0,
     size: 20,
     totalElements: items.length,

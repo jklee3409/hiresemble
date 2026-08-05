@@ -65,7 +65,7 @@ describe('authentication route policy', () => {
     vi.mocked(profileApi.getProfileEligibility).mockResolvedValue(emptyEligibility())
     vi.mocked(profileApi.listEducations).mockResolvedValue(emptyPage())
     vi.mocked(documentApi.listDocuments).mockResolvedValue(emptyPage())
-    vi.mocked(jobApi.listJobs).mockResolvedValue(emptyPage())
+    vi.mocked(jobApi.listJobs).mockResolvedValue({ ...emptyPage(), availablePeriods: [] })
     vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(emptyPage())
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue(emptyDashboard())
     vi.mocked(dashboardApi.listCareerGuides).mockResolvedValue([])

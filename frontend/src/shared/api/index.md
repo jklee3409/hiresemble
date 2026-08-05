@@ -14,8 +14,8 @@ Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 - [`agentRunApi.ts`](agentRunApi.ts): Agent Run 목록·상세·retry·cancel·개별/선택 history delete consumer
 - [`documentContracts.ts`](documentContracts.ts): 원본 파일명을 포함한 문서·parse·evidence enum과 공개 DTO Zod 계약
 - [`documentApi.ts`](documentApi.ts): 문서 공개 API 8개 multipart·version·idempotency consumer
-- [`jobContracts.ts`](jobContracts.ts): 업무·추출·자동 `BALANCED` 분석 projection·P6 분석 enum과 공개 DTO의 strict Zod 계약
-- [`jobApi.ts`](jobApi.ts): Job 공개 API 10개, filter·version·idempotency consumer
+- [`jobContracts.ts`](jobContracts.ts): 업무·추출·등록 상하반기·자동 `BALANCED` 분석 projection·P6 분석 enum과 공개 DTO의 strict Zod 계약
+- [`jobApi.ts`](jobApi.ts): Job 공개 API 10개, 등록 기간 filter·version·idempotency consumer
 - [`coverLetterContracts.ts`](coverLetterContracts.ts): P7 상태·질문·version·verification strict Zod 계약
 - [`coverLetterApi.ts`](coverLetterApi.ts): Cover Letter 공개 API 17개, CAS·Idempotency consumer
 - [`interviewContracts.ts`](interviewContracts.ts): P8 조사·질문·답변·feedback strict Zod 계약

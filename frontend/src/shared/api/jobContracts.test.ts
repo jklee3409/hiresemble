@@ -7,6 +7,7 @@ import {
   FIT_CRITERION_CATEGORIES,
   JOB_DESCRIPTION_SOURCES,
   JOB_EXTRACTION_STATUSES,
+  JOB_POSTING_HALVES,
   MATCH_LEVELS,
   OUTDATED_REASONS,
   JOB_STATUSES,
@@ -19,6 +20,7 @@ import {
 describe('P6 Job contracts', () => {
   it('keeps the canonical Job and analysis enums', () => {
     expect(JOB_STATUSES).toEqual(['IN_PROGRESS', 'SUBMITTED', 'CLOSED'])
+    expect(JOB_POSTING_HALVES).toEqual(['FIRST_HALF', 'SECOND_HALF'])
     expect(JOB_EXTRACTION_STATUSES).toEqual([
       'QUEUED',
       'EXTRACTING',
@@ -127,6 +129,28 @@ describe('P6 Job contracts', () => {
         size: 20,
         totalElements: 1,
         totalPages: 1,
+      }).success,
+    ).toBe(false)
+  })
+
+  it('accepts only canonical owner posting periods in the Job page response', () => {
+    const page = {
+      items: [],
+      availablePeriods: [
+        { year: 2026, half: 'SECOND_HALF' },
+        { year: 2026, half: 'FIRST_HALF' },
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+    }
+
+    expect(jobPageSchema.parse(page).availablePeriods).toEqual(page.availablePeriods)
+    expect(
+      jobPageSchema.safeParse({
+        ...page,
+        availablePeriods: [{ year: 2026, half: 'AUTUMN' }],
       }).success,
     ).toBe(false)
   })

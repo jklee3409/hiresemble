@@ -51,7 +51,14 @@ describe('P5 Job API', () => {
   it('maps list, detail, update, status, retry and delete to the seven P5 endpoints', async () => {
     const get = vi
       .spyOn(apiClient, 'get')
-      .mockResolvedValueOnce({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 })
+      .mockResolvedValueOnce({
+        items: [],
+        availablePeriods: [{ year: 2026, half: 'SECOND_HALF' }],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+      })
       .mockResolvedValueOnce(detail())
     const put = vi.spyOn(apiClient, 'put').mockResolvedValue(detail())
     const patch = vi.spyOn(apiClient, 'patch').mockResolvedValue({
@@ -67,9 +74,17 @@ describe('P5 Job API', () => {
       replayed: false,
     })
     const remove = vi.spyOn(apiClient, 'delete').mockResolvedValue(undefined)
-    const params = { status: 'IN_PROGRESS' as const, page: 0, size: 20 }
+    const params = {
+      status: 'IN_PROGRESS' as const,
+      postingYear: 2026,
+      postingHalf: 'SECOND_HALF' as const,
+      page: 0,
+      size: 20,
+    }
 
-    await jobApi.listJobs(params)
+    await expect(jobApi.listJobs(params)).resolves.toMatchObject({
+      availablePeriods: [{ year: 2026, half: 'SECOND_HALF' }],
+    })
     await jobApi.getJob(uuid(1))
     await jobApi.updateJob(uuid(1), { companyName: 'New', version: 1 })
     await jobApi.updateJobStatus(uuid(1), { status: 'SUBMITTED', version: 2 })

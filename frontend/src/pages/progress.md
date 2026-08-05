@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (공고 목록 기간 dropdown)
+
+- What was done:
+  - 첨부 이미지 형태의 pill summary·기간 menu를 구현하고 추출 상태·마감 범위·임박 filter를 제거했다.
+- Key decisions:
+  - 목록 응답에 존재하는 owner 기간만 행으로 표시하며 직접 설정은 date 하나와 `~ 오늘`로 표현한다.
+- Issues encountered:
+  - 마감 임박순 정렬은 필터 삭제 범위가 아니므로 유지하고 테스트는 filter label만 검사한다.
+- Validation:
+  - Job page component test와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 분석 모바일 판단·차트 재우선순위)
 
 - What was done:

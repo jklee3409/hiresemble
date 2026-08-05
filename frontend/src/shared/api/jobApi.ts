@@ -15,7 +15,7 @@ import {
   type JobAnalysisDetailDto,
   type JobAnalysisPageDto,
   type JobDetailDto,
-  type JobExtractionStatus,
+  type JobPostingHalf,
   type JobPageDto,
   type JobStatus,
   type RetryJobExtractionRequest,
@@ -28,11 +28,10 @@ export type JobSort = (typeof JOB_SORTS)[number]
 
 export interface JobListParams {
   status?: JobStatus
-  extractionStatus?: JobExtractionStatus
   query?: string
-  deadlineFrom?: string
-  deadlineTo?: string
-  deadlineWithinDays?: number
+  postingYear?: number
+  postingHalf?: JobPostingHalf
+  postingStartFrom?: string
   page?: number
   size?: number
   sort?: JobSort

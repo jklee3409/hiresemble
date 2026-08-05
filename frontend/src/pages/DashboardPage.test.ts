@@ -158,7 +158,7 @@ function mockSources(): void {
   )
   vi.mocked(dashboardApi.listCareerGuides).mockResolvedValue(guides())
   vi.mocked(documentApi.listDocuments).mockResolvedValue(page([]))
-  vi.mocked(jobApi.listJobs).mockResolvedValue(page([]))
+  vi.mocked(jobApi.listJobs).mockResolvedValue({ ...page([]), availablePeriods: [] })
   vi.mocked(agentRunApi.listAgentRuns).mockResolvedValue(page([]))
 }
 

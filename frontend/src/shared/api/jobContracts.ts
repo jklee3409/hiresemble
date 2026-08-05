@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { safeErrorSchema } from './agentRunContracts'
 
 export const JOB_STATUSES = ['IN_PROGRESS', 'SUBMITTED', 'CLOSED'] as const
+export const JOB_POSTING_HALVES = ['FIRST_HALF', 'SECOND_HALF'] as const
 export const JOB_EXTRACTION_STATUSES = [
   'QUEUED',
   'EXTRACTING',
@@ -55,6 +56,7 @@ export const EVIDENCE_VERIFICATION_STATUSES = [
 ] as const
 
 export type JobStatus = (typeof JOB_STATUSES)[number]
+export type JobPostingHalf = (typeof JOB_POSTING_HALVES)[number]
 export type JobExtractionStatus = (typeof JOB_EXTRACTION_STATUSES)[number]
 export type DeadlineSource = (typeof DEADLINE_SOURCES)[number]
 export type ClosedReason = (typeof CLOSED_REASONS)[number]
@@ -223,6 +225,15 @@ export const jobDetailSchema = z.object({
 
 export const jobPageSchema = z.object({
   items: z.array(jobSummarySchema),
+  availablePeriods: z
+    .array(
+      z.object({
+        year: z.number().int().min(2_000).max(9_999),
+        half: z.enum(JOB_POSTING_HALVES),
+      }),
+    )
+    .optional()
+    .default([]),
   page: z.number().int().nonnegative(),
   size: z.number().int().min(1).max(100),
   totalElements: z.number().int().nonnegative(),

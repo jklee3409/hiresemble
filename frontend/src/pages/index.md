@@ -23,7 +23,7 @@
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록
 - [`DocumentDetailPage.vue`](DocumentDetailPage.vue): 전문 자료 정보·preview·manual resume·다시 분석·원본 확인·delete와 batch evidence 검토
-- [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·추출/마감 filter·정렬·pagination·상태 mutation
+- [`JobListPage.vue`](JobListPage.vue): 상태 tab·검색·실제 보유 연도·상하반기/직접 시작일 filter·정렬·pagination·상태 mutation
 - [`JobNewPage.vue`](JobNewPage.vue): URL 우선 등록·접을 수 있는 직접 입력·날짜/오전·오후/30분 단위 마감 시각과 201/202 생성
 - [`JobOverviewPage.vue`](JobOverviewPage.vue): 자동 준비 journey, 읽기 전용 document view와 분리된 편집·추출·retry·delete·version conflict
 - [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, compact 판단 지표·커버리지·요건 분포, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED disclosure·이력

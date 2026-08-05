@@ -8,25 +8,23 @@ import {
 } from './filters'
 
 describe('P5 Job URL filters', () => {
-  it('parses canonical status tabs, extraction, search, deadline, pagination and sort', () => {
+  it('parses canonical status tabs, posting period, search, pagination and sort', () => {
     expect(
       parseJobFilters({
         status: 'CLOSED',
-        extractionStatus: 'NEEDS_MANUAL_INPUT',
         query: '  Hiresemble  ',
-        deadlineFrom: '2026-07-01T09:00:00+09:00',
-        deadlineTo: '2026-07-31T23:59:59Z',
+        postingYear: '2026',
+        postingHalf: 'SECOND_HALF',
         page: '2',
         size: '50',
         sort: 'deadlineAt,asc',
       }),
     ).toEqual({
       status: 'CLOSED',
-      extractionStatus: 'NEEDS_MANUAL_INPUT',
       query: 'Hiresemble',
-      deadlineFrom: '2026-07-01T00:00:00.000Z',
-      deadlineTo: '2026-07-31T23:59:59.000Z',
-      deadlineWithinDays: undefined,
+      postingYear: 2026,
+      postingHalf: 'SECOND_HALF',
+      postingStartFrom: undefined,
       page: 2,
       size: 50,
       sort: 'deadlineAt,asc',
@@ -36,52 +34,54 @@ describe('P5 Job URL filters', () => {
   it('canonicalizes invalid values and defaults to the in-progress first tab', () => {
     const filters = parseJobFilters({
       status: 'OPEN',
-      extractionStatus: 'DONE',
       query: 'x'.repeat(201),
-      deadlineFrom: 'not-an-instant',
-      deadlineTo: '2026-01-01T00:00:00Z',
-      deadlineWithinDays: '31',
+      postingYear: '1999',
+      postingHalf: 'AUTUMN',
+      postingStartFrom: 'not-a-date',
       page: '-1',
       size: '101',
       sort: 'companyName,asc',
     })
     expect(filters).toEqual({
       status: 'IN_PROGRESS',
-      extractionStatus: undefined,
       query: undefined,
-      deadlineFrom: undefined,
-      deadlineTo: '2026-01-01T00:00:00.000Z',
-      deadlineWithinDays: undefined,
+      postingYear: undefined,
+      postingHalf: undefined,
+      postingStartFrom: undefined,
       page: 0,
       size: 20,
       sort: 'createdAt,desc',
     })
-    expect(canonicalJobQuery(filters)).toEqual({
-      deadlineTo: '2026-01-01T00:00:00.000Z',
+    expect(canonicalJobQuery(filters)).toEqual({})
+  })
+
+  it('uses a direct start date instead of a half-year period', () => {
+    expect(
+      parseJobFilters({
+        postingYear: '2026',
+        postingHalf: 'SECOND_HALF',
+        postingStartFrom: '2025-12-13',
+      }),
+    ).toMatchObject({
+      postingYear: undefined,
+      postingHalf: undefined,
+      postingStartFrom: '2025-12-13',
+    })
+    expect(canonicalJobQuery(parseJobFilters({ postingStartFrom: '2025-12-13' }))).toEqual({
+      postingStartFrom: '2025-12-13',
     })
   })
 
-  it('enforces relative-vs-absolute deadline xor and drops reversed ranges', () => {
+  it('drops incomplete period pairs and impossible dates', () => {
     expect(
       parseJobFilters({
-        deadlineWithinDays: '7',
-        deadlineFrom: '2026-07-01T00:00:00Z',
-        deadlineTo: '2026-07-02T00:00:00Z',
+        postingYear: '2026',
+        postingStartFrom: '2026-02-30',
       }),
     ).toMatchObject({
-      deadlineWithinDays: 7,
-      deadlineFrom: undefined,
-      deadlineTo: undefined,
-    })
-    expect(
-      parseJobFilters({
-        deadlineFrom: '2026-07-03T00:00:00Z',
-        deadlineTo: '2026-07-02T00:00:00Z',
-      }),
-    ).toMatchObject({
-      deadlineWithinDays: undefined,
-      deadlineFrom: undefined,
-      deadlineTo: undefined,
+      postingYear: undefined,
+      postingHalf: undefined,
+      postingStartFrom: undefined,
     })
   })
 

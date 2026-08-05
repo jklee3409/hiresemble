@@ -4,6 +4,19 @@
 
 P5 Job filter·mutation·stream·version conflict, 안전한 공고 문서 parser와 P6 자동 분석 journey·presentation·terminal invalidation이 구현됐다.
 
+## [2026-08-05] Session Summary (공고 등록 기간 URL filter)
+
+- What was done:
+  - `postingYear`+`postingHalf` preset과 `postingStartFrom` 직접 기간을 parse·canonicalize하도록 filter 계약을 교체했다.
+- Key decisions:
+  - 직접 시작일이 있으면 preset을 제거하고 불완전 pair·실재하지 않는 날짜는 canonical URL에서 삭제한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - filter unit test와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (자동 분석 journey surface·진행 단계 모션)
 
 - What was done:

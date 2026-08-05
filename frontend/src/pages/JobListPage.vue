@@ -4,9 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import {
   canonicalJobQuery,
-  deadlineFromInput,
-  deadlineInputValue,
-  deadlineToInput,
   jobFiltersForPage,
   jobFiltersForStatus,
   jobQuerySignature,
@@ -21,13 +18,14 @@ import {
 } from '@/features/jobs/presentation'
 import { useJobListQuery, useUpdateJobStatusMutation } from '@/features/jobs/queries'
 import {
-  JOB_EXTRACTION_STATUSES,
   JOB_STATUSES,
+  type JobPostingHalf,
   type JobExtractionStatus,
   type JobStatus,
 } from '@/shared/api/jobContracts'
 import { JOB_SORTS } from '@/shared/api/jobApi'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
@@ -43,22 +41,26 @@ const jobs = useJobListQuery(userId, filters)
 const statusMutation = useUpdateJobStatusMutation(userId)
 
 const search = ref('')
-const extractionStatus = ref('')
-const deadlineFrom = ref('')
-const deadlineTo = ref('')
-const deadlineWithinDays = ref('')
+const postingStartFrom = ref('')
+const periodDetails = ref<HTMLDetailsElement>()
 const actionError = ref('')
 const message = ref('')
+const seoulToday = currentSeoulDate()
+const periodSummary = computed(() => {
+  if (filters.value.postingStartFrom !== undefined) {
+    return `기간 설정 ${formatDate(filters.value.postingStartFrom)} ~ 오늘`
+  }
+  if (filters.value.postingYear !== undefined && filters.value.postingHalf !== undefined) {
+    return `${periodLabel(filters.value.postingYear, filters.value.postingHalf)} ${periodRange(filters.value.postingYear, filters.value.postingHalf)}`
+  }
+  return '기간 전체'
+})
 
 watch(
   filters,
   (value) => {
     search.value = value.query ?? ''
-    extractionStatus.value = value.extractionStatus ?? ''
-    deadlineFrom.value = deadlineInputValue(value.deadlineFrom)
-    deadlineTo.value = deadlineInputValue(value.deadlineTo)
-    deadlineWithinDays.value =
-      value.deadlineWithinDays === undefined ? '' : String(value.deadlineWithinDays)
+    postingStartFrom.value = value.postingStartFrom ?? ''
   },
   { immediate: true },
 )
@@ -79,30 +81,46 @@ function selectTab(status: JobStatus): void {
 }
 
 function applyFilters(): void {
-  const relative = Number(deadlineWithinDays.value)
-  const within =
-    deadlineWithinDays.value !== '' && Number.isInteger(relative) && relative >= 1 && relative <= 30
-      ? relative
-      : undefined
-  const extraction = JOB_EXTRACTION_STATUSES.find((value) => value === extractionStatus.value) as
-    JobExtractionStatus | undefined
+  const directStart = postingStartFrom.value || undefined
   void router.push({
     query: canonicalJobQuery({
       ...filters.value,
-      extractionStatus: extraction,
       query: search.value.trim() || undefined,
-      deadlineFrom: within === undefined ? deadlineFromInput(deadlineFrom.value) : undefined,
-      deadlineTo: within === undefined ? deadlineToInput(deadlineTo.value) : undefined,
-      deadlineWithinDays: within,
+      postingYear: directStart === undefined ? filters.value.postingYear : undefined,
+      postingHalf: directStart === undefined ? filters.value.postingHalf : undefined,
+      postingStartFrom: directStart,
       page: 0,
     }),
   })
+  if (periodDetails.value) periodDetails.value.open = false
 }
 
-function clearDeadline(): void {
-  deadlineFrom.value = ''
-  deadlineTo.value = ''
-  deadlineWithinDays.value = ''
+function selectPeriod(year: number, half: JobPostingHalf): void {
+  postingStartFrom.value = ''
+  void router.push({
+    query: canonicalJobQuery({
+      ...filters.value,
+      postingYear: year,
+      postingHalf: half,
+      postingStartFrom: undefined,
+      page: 0,
+    }),
+  })
+  if (periodDetails.value) periodDetails.value.open = false
+}
+
+function clearPeriod(): void {
+  postingStartFrom.value = ''
+  void router.push({
+    query: canonicalJobQuery({
+      ...filters.value,
+      postingYear: undefined,
+      postingHalf: undefined,
+      postingStartFrom: undefined,
+      page: 0,
+    }),
+  })
+  if (periodDetails.value) periodDetails.value.open = false
 }
 
 function updateSort(event: Event): void {
@@ -163,6 +181,33 @@ function extractionTone(
     } as const
   )[value]
 }
+
+function periodLabel(year: number, half: JobPostingHalf): string {
+  return `${year} ${half === 'FIRST_HALF' ? '상반기' : '하반기'}`
+}
+
+function periodRange(year: number, half: JobPostingHalf): string {
+  return half === 'FIRST_HALF' ? `${year}.01.01~${year}.06.30` : `${year}.07.01~${year}.12.31`
+}
+
+function isSelectedPeriod(year: number, half: JobPostingHalf): boolean {
+  return filters.value.postingYear === year && filters.value.postingHalf === half
+}
+
+function formatDate(value: string): string {
+  return value.replaceAll('-', '.')
+}
+
+function currentSeoulDate(): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${value.year}-${value.month}-${value.day}`
+}
 </script>
 
 <template>
@@ -208,15 +253,54 @@ function extractionTone(
             placeholder="회사명, 공고 제목, 직무명"
           />
         </label>
-        <label class="field">
-          <span class="field__label">공고 불러오기 상태</span>
-          <select v-model="extractionStatus" class="control control--compact">
-            <option value="">전체</option>
-            <option v-for="status in JOB_EXTRACTION_STATUSES" :key="status" :value="status">
-              {{ JOB_EXTRACTION_STATUS_LABELS[status] }}
-            </option>
-          </select>
-        </label>
+        <div class="field job-filters__period">
+          <span id="job-period-label" class="field__label">등록 기간</span>
+          <details ref="periodDetails" class="period-select">
+            <summary class="period-select__summary" aria-labelledby="job-period-label">
+              <AppIcon name="calendar" />
+              <span>{{ periodSummary }}</span>
+            </summary>
+            <div class="period-select__menu">
+              <button
+                type="button"
+                class="period-select__option"
+                :class="{
+                  'period-select__option--selected':
+                    filters.postingYear === undefined && filters.postingStartFrom === undefined,
+                }"
+                @click="clearPeriod"
+              >
+                <strong>기간 전체</strong>
+              </button>
+              <button
+                v-for="period in jobs.data.value?.availablePeriods"
+                :key="`${period.year}-${period.half}`"
+                type="button"
+                class="period-select__option"
+                :class="{
+                  'period-select__option--selected': isSelectedPeriod(period.year, period.half),
+                }"
+                @click="selectPeriod(period.year, period.half)"
+              >
+                <strong>{{ periodLabel(period.year, period.half) }}</strong>
+                <span>{{ periodRange(period.year, period.half) }}</span>
+              </button>
+              <label class="period-select__custom" for="job-posting-start-from">
+                <strong>기간 설정</strong>
+                <span class="period-select__custom-range">
+                  <input
+                    id="job-posting-start-from"
+                    v-model="postingStartFrom"
+                    type="date"
+                    class="control control--compact"
+                    :max="seoulToday"
+                  />
+                  <span>~ 오늘</span>
+                </span>
+              </label>
+            </div>
+          </details>
+        </div>
         <label class="field">
           <span class="field__label">정렬</span>
           <select :value="filters.sort" class="control control--compact" @change="updateSort">
@@ -225,42 +309,10 @@ function extractionTone(
             <option value="updatedAt,desc">최근 수정순</option>
           </select>
         </label>
-        <label class="field">
-          <span class="field__label">마감 시작</span>
-          <input
-            v-model="deadlineFrom"
-            type="date"
-            class="control control--compact"
-            :disabled="deadlineWithinDays !== ''"
-          />
-        </label>
-        <label class="field">
-          <span class="field__label">마감 종료</span>
-          <input
-            v-model="deadlineTo"
-            type="date"
-            class="control control--compact"
-            :disabled="deadlineWithinDays !== ''"
-          />
-        </label>
-        <label class="field">
-          <span class="field__label">마감 임박</span>
-          <select
-            v-model="deadlineWithinDays"
-            class="control control--compact"
-            :disabled="deadlineFrom !== '' || deadlineTo !== ''"
-          >
-            <option value="">사용 안 함</option>
-            <option value="3">3일 이내</option>
-            <option value="7">7일 이내</option>
-            <option value="14">14일 이내</option>
-            <option value="30">30일 이내</option>
-          </select>
-        </label>
         <div class="job-filters__actions">
           <button type="submit" class="button button--primary button--compact">필터 적용</button>
-          <button type="button" class="button button--ghost button--compact" @click="clearDeadline">
-            마감 초기화
+          <button type="button" class="button button--ghost button--compact" @click="clearPeriod">
+            기간 초기화
           </button>
         </div>
       </form>
@@ -278,7 +330,7 @@ function extractionTone(
       class="jobs-page__state"
       kind="loading"
       title="공고 목록을 불러오는 중…"
-      description="지원 상태와 공고 불러오기 상태를 확인하고 있어요."
+      description="지원 상태와 등록 기간을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="jobs.isError.value"
@@ -413,7 +465,7 @@ function extractionTone(
 
 .job-filters {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1.4fr) minmax(10rem, 1fr) auto;
   align-items: end;
   gap: var(--space-3);
 }
@@ -423,7 +475,113 @@ function extractionTone(
 }
 
 .job-filters__search {
-  grid-column: span 2;
+  min-width: 0;
+}
+
+.period-select {
+  position: relative;
+}
+
+.period-select__summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.period-select__summary::-webkit-details-marker {
+  display: none;
+}
+
+.period-select__summary::after {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: '';
+  transform: translateY(-0.15rem) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.period-select[open] .period-select__summary::after {
+  transform: translateY(0.15rem) rotate(225deg);
+}
+
+.period-select__summary :deep(.icon) {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+.period-select__summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.period-select__menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  width: min(30rem, calc(100vw - 2rem));
+  overflow: hidden;
+  padding: var(--space-2) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.period-select__option,
+.period-select__custom {
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  text-align: left;
+}
+
+.period-select__option:hover,
+.period-select__option--selected {
+  background: var(--color-surface-subtle);
+}
+
+.period-select__option strong,
+.period-select__custom strong {
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.period-select__option span,
+.period-select__custom-range > span {
+  color: var(--color-text-secondary);
+}
+
+.period-select__custom {
+  border-top: 1px solid var(--color-border);
+}
+
+.period-select__custom-range {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.period-select__custom input {
+  min-width: 0;
 }
 
 .job-filters__actions {
@@ -491,6 +649,10 @@ function extractionTone(
   .job-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .job-filters__period {
+    grid-column: span 2;
+  }
 }
 
 @media (max-width: 40rem) {
@@ -500,6 +662,21 @@ function extractionTone(
 
   .job-filters__search {
     grid-column: auto;
+  }
+
+  .job-filters__period {
+    grid-column: auto;
+  }
+
+  .period-select__menu {
+    right: auto;
+    left: 0;
+  }
+
+  .period-select__option,
+  .period-select__custom {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .job-row__content {

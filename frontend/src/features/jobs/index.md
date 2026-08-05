@@ -6,7 +6,7 @@ P5 Job URL filter·mutation과 P6 자동 Analysis projection·query·presentatio
 
 ## 주요 파일 및 하위 디렉터리
 
-- `filters.ts`: URL query parse·canonicalization과 sort allowlist
+- `filters.ts`: 상태·검색·등록 반기 preset 또는 직접 시작일 URL query parse·canonicalization과 sort allowlist
 - `queries.ts`: user-scoped Job/Analysis list·latest·command query와 cleanup
 - `validation.ts`: 생성·편집 form Zod validation
 - `conflict.ts`, `JobVersionConflictPanel.vue`: 409 비교·재적용

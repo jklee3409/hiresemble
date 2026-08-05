@@ -4,6 +4,19 @@
 
 Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-05] Session Summary (공고 반기·기간 page client 계약)
+
+- What was done:
+  - `JobPostingHalf`, `availablePeriods` Zod 계약과 새 목록 filter parameter를 client에 반영했다.
+- Key decisions:
+  - 기간 page field는 typed output에서 필수이며 parser는 과거 fixture 응답을 빈 배열로 보완한다.
+- Issues encountered:
+  - Dashboard·router의 typed Job page fixture 두 곳에 빈 기간 배열이 필요했다.
+- Validation:
+  - API·contract unit test와 Frontend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job Analysis coverage client 계약)
 
 - What was done:
