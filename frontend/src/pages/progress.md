@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (공고 기간 filter summary 말줄임 보정)
+
+- What was done:
+  - `JobListPage.vue`의 기간 filter와 summary에 `min-width: 0`·가변 너비를 적용해 좁은 화면에서 선택 label이 filter 영역을 밀어내지 않고 말줄임되도록 했다.
+- Key decisions:
+  - 기간 선택 동작과 표시 문구는 유지하고 layout 제약만 보정한다.
+- Issues encountered:
+  - summary 내부 icon의 `span`까지 기존 말줄임 selector가 적용될 수 있어 직접 자식 text `span`으로 범위를 좁혔다.
+- Validation:
+  - Node 24에서 Frontend `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (내 지원 정보 목록·기본 정보 화면 정보 위계 개편)
 
 - What was done:

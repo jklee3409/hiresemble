@@ -7,6 +7,19 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (공고 기간 filter 반응형 보정)
+
+- What was done:
+  - 공고 목록 기간 filter summary가 좁은 폭에서 영역을 넘지 않도록 flex item 최소 너비와 text 말줄임 범위를 보정했다.
+- Key decisions:
+  - 기간 선택·URL·API 계약은 변경하지 않고 CSS layout만 수정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Node 24에서 `corepack pnpm check`: lint·format·typecheck, Vitest 67 files/284 tests, production build 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (내 지원 정보 화면 개편 통합)
 
 - What was done:

@@ -483,12 +483,19 @@ function currentSeoulDate(): string {
   min-width: 0;
 }
 
+.job-filters__period {
+  min-width: 0;
+}
+
 .period-select {
   position: relative;
+  min-width: 0;
 }
 
 .period-select__summary {
   display: flex;
+  width: 100%;
+  min-width: 0;
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-2);
@@ -527,7 +534,9 @@ function currentSeoulDate(): string {
   color: var(--color-text-secondary);
 }
 
-.period-select__summary span {
+.period-select__summary > span {
+  min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
