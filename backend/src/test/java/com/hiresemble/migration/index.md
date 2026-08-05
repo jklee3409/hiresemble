@@ -1,4 +1,4 @@
-# P1~V17 Migration 테스트 안내
+# P1~V22 Migration 테스트 안내
 
 ## 디렉터리 목적
 
@@ -10,7 +10,7 @@ Flyway 단계별 보존과 최신 V17 schema·사용자 직접 대외활동·ACT
 - [`P2MigrationTest.java`](P2MigrationTest.java): 빈 DB·V1·V2 upgrade, V1·V2 hash, P2 DB 불변식과 transaction rollback
 - [`P3MigrationTest.java`](P3MigrationTest.java): 빈 DB·V1/V2/V3 upgrade, V1~V3 hash와 P3 constraint·범위
 - [`P4MigrationTest.java`](P4MigrationTest.java): 빈 DB·V1/V2/V3/V4 upgrade, V1~V4 hash와 P4 constraint·범위
-- [`P5MigrationTest.java`](P5MigrationTest.java): 빈 DB·V5 upgrade, V1~V5 hash와 P5 owner·상태·canonical constraint·범위
+- [`P5MigrationTest.java`](P5MigrationTest.java): 빈 DB·V5 upgrade, V1~V5 hash와 P5 owner·상태·canonical constraint·범위 및 V21~V22 공고 반기 backfill·제약
 - [`P6MigrationTest.java`](P6MigrationTest.java): P6 Job Analysis V7 migration·불변식
 - [`FinalEducationMigrationTest.java`](FinalEducationMigrationTest.java): 빈 DB V11과 populated V10 학력 단계 backfill·최종 학력 재계산
 - [`P8_5MigrationTest.java`](P8_5MigrationTest.java): V13 가격 item·불변성·provider call unique index와 V14 활성 embedding 정책

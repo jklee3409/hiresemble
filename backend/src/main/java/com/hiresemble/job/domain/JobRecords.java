@@ -38,6 +38,8 @@ public final class JobRecords {
             boolean titleUserOverride,
             boolean positionUserOverride,
             boolean deadlineUserOverride,
+            int postingYear,
+            JobPostingHalf postingHalf,
             long version,
             Instant createdAt,
             Instant updatedAt,
@@ -45,14 +47,18 @@ public final class JobRecords {
 
     public record JobPage(
             List<JobRecord> items,
+            List<JobPostingPeriod> availablePeriods,
             int page,
             int size,
             long totalElements,
             int totalPages) {
         public JobPage {
             items = List.copyOf(items);
+            availablePeriods = List.copyOf(availablePeriods);
         }
     }
+
+    public record JobPostingPeriod(int year, JobPostingHalf half) {}
 
     public record StatusChange(
             JobStatus fromStatus,

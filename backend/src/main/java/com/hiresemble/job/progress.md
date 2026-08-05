@@ -4,6 +4,19 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결, revision별 durable 자동 분석 orchestration이 구현됐다.
 
+## [2026-08-05] Session Summary (공고 등록 반기와 owner 기간 목록)
+
+- What was done:
+  - 등록 시각 기반 연도·반기 저장과 실제 owner 보유 기간 목록, preset·직접 시작일 조회를 Job 수직 경계에 추가했다.
+- Key decisions:
+  - 기존 상세·요약 DTO는 유지하고 기간 선택지는 목록 page projection에만 additive하게 반환한다.
+- Issues encountered:
+  - 기존 추출·마감 필터 parameter는 삭제 계약에 맞춰 unknown parameter로 거부하도록 변경했다.
+- Validation:
+  - Job 통합·OpenAPI·migration 집중 테스트와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (구조화 profile fact provenance·재사용 경계)
 
 - What was done:

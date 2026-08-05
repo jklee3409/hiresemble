@@ -22,7 +22,22 @@
 - `V18__expand_career_guide_content.sql`은 미수정 초기 가이드 5개의 장문 본문을 version 2로 보강한다.
 - `V19__add_profile_eligibility_and_structured_fact_provenance.sql`은 지원 자격 자기신고와 분석 structured fact provenance를 추가한다.
 - `V20__add_job_analysis_coverage.sql`은 rubric v2의 nullable 적합도와 분석 커버리지를 추가한다.
+- `V21__classify_job_posting_periods.sql`은 기존 공고를 서울 기준 등록 연도·상하반기로 backfill한다.
+- `V22__finalize_job_posting_period_constraints.sql`은 기간 trigger·NOT NULL·CHECK와 owner 기간 index를 확정한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-05] Session Summary (V21~V22 공고 등록 반기 backfill)
+
+- What was done:
+  - 기존 `job_postings`에 `posting_year`·`posting_half`를 backfill하고 이후 insert·`created_at` 변경을 분류하는 trigger와 제약·index를 추가했다.
+- Key decisions:
+  - 서울 현지 1~6월은 `FIRST_HALF`, 7~12월은 `SECOND_HALF`로 고정했다.
+- Issues encountered:
+  - DML 뒤 동일 transaction의 ALTER가 pending trigger event로 거부되어 backfill V21과 제약 V22를 분리했다.
+- Validation:
+  - V20 populated upgrade의 6월 30일/7월 1일 서울 경계, trigger 재분류, CHECK와 Backend 전체 check 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-04] Session Summary (V20 Job Analysis coverage)
 

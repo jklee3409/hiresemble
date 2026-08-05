@@ -6,6 +6,7 @@ import com.hiresemble.job.domain.ClosedReason;
 import com.hiresemble.job.domain.DeadlineSource;
 import com.hiresemble.job.domain.JobDescriptionSource;
 import com.hiresemble.job.domain.JobExtractionStatus;
+import com.hiresemble.job.domain.JobPostingHalf;
 import com.hiresemble.job.domain.JobStatus;
 import com.hiresemble.job.domain.OutdatedReason;
 import com.hiresemble.job.api.JobAnalysisDtos.JobAnalysisSummaryDto;
@@ -100,12 +101,17 @@ public final class JobDtos {
     @Schema(name = "JobPageDto")
     public record JobPageDto(
             List<JobSummaryDto> items,
+            List<JobPostingPeriodDto> availablePeriods,
             int page,
             int size,
             long totalElements,
             int totalPages) {
         public JobPageDto {
             items = List.copyOf(items);
+            availablePeriods = List.copyOf(availablePeriods);
         }
     }
+
+    @Schema(name = "JobPostingPeriodDto")
+    public record JobPostingPeriodDto(int year, JobPostingHalf half) {}
 }

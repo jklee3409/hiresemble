@@ -4,8 +4,21 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
-- V1~V20 migration이 적용됐고 V19는 지원 자격 provenance, V20은 Job Analysis coverage를 소유한다.
-- 최신 완료된 Backend 전체 `check`는 79 suites/538 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
+- 최신 완료된 Backend 전체 `check`는 79 suites/539 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-05] Session Summary (공고 반기 저장·목록 API와 V21~V22 upgrade)
+
+- What was done:
+  - `JobPostingHalf`, 저장 연도·반기, owner 실제 기간 projection과 preset/직접 시작일 목록 필터를 구현하고 기존 행을 V21~V22로 분류했다.
+- Key decisions:
+  - 등록 `created_at`의 Asia/Seoul 날짜를 시작 기준으로 사용하고 DB trigger와 CHECK로 직접 SQL 경로까지 동일 규칙을 강제한다.
+- Issues encountered:
+  - backfill 직후 같은 transaction의 ALTER가 pending trigger event로 실패해 DML과 제약 확정을 연속 migration으로 분리했다.
+- Validation:
+  - 집중 Job·migration·OpenAPI 테스트와 전체 `gradlew check` 79 suites/539 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-04] Session Summary (Job requirement legacy Provider 필드 제거)
 

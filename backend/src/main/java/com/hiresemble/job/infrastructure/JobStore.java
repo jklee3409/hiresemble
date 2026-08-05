@@ -11,13 +11,17 @@ import com.hiresemble.job.domain.JobExtractionStatus;
 import com.hiresemble.job.domain.JobHistoryActor;
 import com.hiresemble.job.domain.JobRecords.JobPage;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
+import com.hiresemble.job.domain.JobRecords.JobPostingPeriod;
 import com.hiresemble.job.domain.JobRecords.StatusChange;
+import com.hiresemble.job.domain.JobPostingHalf;
 import com.hiresemble.job.domain.JobStatus;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +34,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class JobStore {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private static final String SELECT_COLUMNS = """
             j.*, c.display_name AS company_name,
@@ -51,6 +57,8 @@ public class JobStore {
         String deadlineSource = command.deadlineAt() == null ? "UNKNOWN" : "USER_ENTERED";
         String extractionStatus =
                 command.descriptionText() == null ? "QUEUED" : "MANUAL_INPUT_PROVIDED";
+        LocalDate postingStartedOn = LocalDate.ofInstant(now, SEOUL);
+        JobPostingHalf postingHalf = JobPostingHalf.from(now);
         try {
             jdbc.sql("""
                             INSERT INTO job_postings (
@@ -60,13 +68,13 @@ public class JobStore {
                                 status,extraction_status,submitted_at,closed_at,closed_reason,
                                 content_hash,latest_agent_run_id,company_user_override,
                                 title_user_override,position_user_override,deadline_user_override,
-                                version,created_at,updated_at,deleted_at
+                                posting_year,posting_half,version,created_at,updated_at,deleted_at
                             ) VALUES (
                                 :id,:userId,:companyId,:sourceUrl,:canonicalUrl,NULL,:positionName,
                                 NULL,NULL,NULL,:descriptionText,:descriptionSource,:deadlineAt,
                                 :deadlineSource,NULL,'IN_PROGRESS',:extractionStatus,NULL,NULL,NULL,
                                 :contentHash,NULL,:companyOverride,false,:positionOverride,
-                                :deadlineOverride,0,:now,:now,NULL
+                                :deadlineOverride,:postingYear,:postingHalf,0,:now,:now,NULL
                             )
                             """)
                     .param("id", command.jobId())
@@ -85,6 +93,8 @@ public class JobStore {
                     .param("companyOverride", command.companyName() != null)
                     .param("positionOverride", command.positionName() != null)
                     .param("deadlineOverride", command.deadlineAt() != null)
+                    .param("postingYear", postingStartedOn.getYear())
+                    .param("postingHalf", postingHalf.name())
                     .param("now", utc(now))
                     .update();
         } catch (DataIntegrityViolationException exception) {
@@ -142,18 +152,14 @@ public class JobStore {
     public JobPage list(
             UUID userId,
             JobListQuery criteria,
-            Instant relativeDeadlineFrom,
-            Instant relativeDeadlineTo) {
+            Instant postingStartFrom,
+            Instant postingStartTo) {
         StringBuilder where = new StringBuilder("j.user_id=:userId AND j.deleted_at IS NULL");
         Map<String, Object> parameters = new LinkedHashMap<>();
         parameters.put("userId", userId);
         if (criteria.status() != null) {
             where.append(" AND j.status=:status");
             parameters.put("status", criteria.status().name());
-        }
-        if (criteria.extractionStatus() != null) {
-            where.append(" AND j.extraction_status=:extractionStatus");
-            parameters.put("extractionStatus", criteria.extractionStatus().name());
         }
         if (criteria.query() != null) {
             where.append("""
@@ -165,22 +171,18 @@ public class JobStore {
                     """);
             parameters.put("query", "%" + escapeLike(criteria.query().toLowerCase(java.util.Locale.ROOT)) + "%");
         }
-        if (criteria.deadlineFrom() != null) {
-            where.append(" AND j.deadline_at >= :deadlineFrom");
-            parameters.put("deadlineFrom", utc(criteria.deadlineFrom()));
+        if (criteria.postingYear() != null) {
+            where.append(" AND j.posting_year=:postingYear AND j.posting_half=:postingHalf");
+            parameters.put("postingYear", criteria.postingYear());
+            parameters.put("postingHalf", criteria.postingHalf().name());
         }
-        if (criteria.deadlineTo() != null) {
-            where.append(" AND j.deadline_at <= :deadlineTo");
-            parameters.put("deadlineTo", utc(criteria.deadlineTo()));
-        }
-        if (relativeDeadlineTo != null) {
+        if (postingStartFrom != null) {
             where.append("""
-                     AND j.deadline_at IS NOT NULL
-                     AND j.deadline_at >= :relativeDeadlineFrom
-                     AND j.deadline_at <= :relativeDeadlineTo
+                     AND j.created_at >= :postingStartFrom
+                     AND j.created_at <= :postingStartTo
                     """);
-            parameters.put("relativeDeadlineFrom", utc(relativeDeadlineFrom));
-            parameters.put("relativeDeadlineTo", utc(relativeDeadlineTo));
+            parameters.put("postingStartFrom", utc(postingStartFrom));
+            parameters.put("postingStartTo", utc(postingStartTo));
         }
         String countSql = """
                 SELECT count(*)
@@ -215,7 +217,27 @@ public class JobStore {
                 .query(this::job)
                 .list();
         int totalPages = total == 0 ? 0 : (int) ((total + criteria.size() - 1) / criteria.size());
-        return new JobPage(items, criteria.page(), criteria.size(), total, totalPages);
+        return new JobPage(
+                items,
+                availablePeriods(userId),
+                criteria.page(),
+                criteria.size(),
+                total,
+                totalPages);
+    }
+
+    private List<JobPostingPeriod> availablePeriods(UUID userId) {
+        return jdbc.sql("""
+                        SELECT DISTINCT posting_year,posting_half
+                        FROM job_postings
+                        WHERE user_id=:userId AND deleted_at IS NULL
+                        ORDER BY posting_year DESC,posting_half DESC
+                        """)
+                .param("userId", userId)
+                .query((rs, row) -> new JobPostingPeriod(
+                        rs.getInt("posting_year"),
+                        JobPostingHalf.valueOf(rs.getString("posting_half"))))
+                .list();
     }
 
     public Optional<JobRecord> updateUserFields(
@@ -593,6 +615,8 @@ public class JobStore {
                 rs.getBoolean("title_user_override"),
                 rs.getBoolean("position_user_override"),
                 rs.getBoolean("deadline_user_override"),
+                rs.getInt("posting_year"),
+                JobPostingHalf.valueOf(rs.getString("posting_half")),
                 rs.getLong("version"),
                 instant(rs, "created_at"),
                 instant(rs, "updated_at"),

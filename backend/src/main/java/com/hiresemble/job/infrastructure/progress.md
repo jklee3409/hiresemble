@@ -4,6 +4,19 @@
 
 P5 Job JDBC·Scheduler/fetch, P6 immutable Analysis JDBC·비용 설정과 자동 분석 claim store·reconciliation 설정이 구현됐다.
 
+## [2026-08-05] Session Summary (공고 기간 저장·조회 SQL)
+
+- What was done:
+  - 생성 시 연도·반기를 저장하고 stored preset·직접 시작일로 목록을 제한하며 owner active 기간을 별도 distinct projection으로 조회했다.
+- Key decisions:
+  - 기간 선택지는 현재 status·검색·기간 filter와 무관하게 owner의 모든 active 공고에서 계산한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Job list count·기간 선택지 순서·직접 기간과 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job Analysis coverage 저장)
 
 - What was done:

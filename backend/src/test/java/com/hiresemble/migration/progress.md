@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V18 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V22 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-05] Session Summary (V21~V22 공고 기간 upgrade 검증)
+
+- What was done:
+  - populated V20에서 V21~V22로 올리며 기존 공고의 서울 반기 backfill, trigger·index·CHECK를 검증했다.
+- Key decisions:
+  - UTC 2026-06-30 14:59:59/15:00:00으로 서울 6월/7월 경계를 고정했다.
+- Issues encountered:
+  - trigger가 동작하는 `created_at` 변경 fixture에서 기존 시간 CHECK에 맞춰 `updated_at`도 함께 조정했다.
+- Validation:
+  - 집중 migration test와 Backend 전체 check 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-02] Session Summary (V19 fresh·V18 upgrade 검증)
 

@@ -4,6 +4,19 @@
 
 P5 Job 상태·URL 정책과 P6 analysis enum·hash·결정론적 scoring, 자동 분석 request 상태 정책이 구현됐다.
 
+## [2026-08-05] Session Summary (JobPostingHalf 도메인 분류)
+
+- What was done:
+  - `FIRST_HALF`·`SECOND_HALF` enum과 서울 기준 등록 시각 분류를 domain record·query에 추가했다.
+- Key decisions:
+  - 6월까지 상반기, 7월부터 하반기로 경계를 고정했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 6월 30일/7월 1일 migration 경계와 2026 하반기 생성 통합 검증 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (적합도 rubric v2·analysis coverage)
 
 - What was done:

@@ -22,7 +22,7 @@ import com.hiresemble.job.application.model.JobApplicationResults.JobCreationAcc
 import com.hiresemble.job.application.model.JobApplicationResults.RunAccepted;
 import com.hiresemble.job.domain.JobCommands.JobListQuery;
 import com.hiresemble.job.domain.JobCommands.UpdateJob;
-import com.hiresemble.job.domain.JobExtractionStatus;
+import com.hiresemble.job.domain.JobPostingHalf;
 import com.hiresemble.job.domain.JobStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,7 +38,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
@@ -67,11 +67,10 @@ public class JobController {
 
     private static final Set<String> LIST_PARAMETERS = Set.of(
             "status",
-            "extractionStatus",
             "query",
-            "deadlineFrom",
-            "deadlineTo",
-            "deadlineWithinDays",
+            "postingYear",
+            "postingHalf",
+            "postingStartFrom",
             "page",
             "size",
             "sort");
@@ -135,7 +134,7 @@ public class JobController {
     @Operation(
             operationId = "listJobs",
             summary = "List job postings",
-            description = "Filters active owner-scoped jobs by business status, extraction state, search, and deadline.")
+            description = "Filters active owner-scoped jobs by business status, search, and stored posting period.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = JobPageDto.class))),
         @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
@@ -143,11 +142,10 @@ public class JobController {
     })
     public JobPageDto list(
             @RequestParam(required = false) JobStatus status,
-            @RequestParam(required = false) JobExtractionStatus extractionStatus,
             @RequestParam(required = false) @Size(max = 200) String query,
-            @RequestParam(required = false) Instant deadlineFrom,
-            @RequestParam(required = false) Instant deadlineTo,
-            @RequestParam(required = false) @Min(1) @Max(30) Integer deadlineWithinDays,
+            @RequestParam(required = false) @Min(2000) @Max(9999) Integer postingYear,
+            @RequestParam(required = false) JobPostingHalf postingHalf,
+            @RequestParam(required = false) LocalDate postingStartFrom,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort,
@@ -158,16 +156,19 @@ public class JobController {
                 user.id(),
                 new JobListQuery(
                         status,
-                        extractionStatus,
                         query,
-                        deadlineFrom,
-                        deadlineTo,
-                        deadlineWithinDays,
+                        postingYear,
+                        postingHalf,
+                        postingStartFrom,
                         page,
                         size,
                         sort));
         return new JobPageDto(
                 result.items().stream().map(mapper::summary).toList(),
+                result.availablePeriods().stream()
+                        .map(period -> new JobDtos.JobPostingPeriodDto(
+                                period.year(), period.half()))
+                        .toList(),
                 result.page(),
                 result.size(),
                 result.totalElements(),

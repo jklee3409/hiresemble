@@ -14,7 +14,7 @@ P5 채용 공고와 P6 immutable 공고 분석의 owner-scoped API, 생성·조�
 
 ## 구성 요소 역할
 
-업무 상태와 추출 상태를 분리하고 사용자 소유권·낙관적 잠금·soft delete를 Job use case에 적용한다. usable 본문 revision은 V16 후속 의도를 원자적으로 남기고 lease reconciliation이 별도 `BALANCED` 분석 Run을 최대 한 번 생성한다. 분석은 현재 snapshot과 별개의 immutable version으로 보존하며 OUTDATED는 hash 비교 projection으로 계산한다. 공고 section·점수 category·support type을 분리하고 구조화 profile fact와 evidence provenance를 별도 link로 저장한다.
+업무 상태와 추출 상태를 분리하고 사용자 소유권·낙관적 잠금·soft delete를 Job use case에 적용한다. 공고 등록 시각은 서울 기준 연도와 `JobPostingHalf`로 분류하며 목록은 owner가 실제 보유한 active 기간만 선택지로 제공한다. usable 본문 revision은 V16 후속 의도를 원자적으로 남기고 lease reconciliation이 별도 `BALANCED` 분석 Run을 최대 한 번 생성한다. 분석은 현재 snapshot과 별개의 immutable version으로 보존하며 OUTDATED는 hash 비교 projection으로 계산한다. 공고 section·점수 category·support type을 분리하고 구조화 profile fact와 evidence provenance를 별도 link로 저장한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -91,6 +91,10 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo("MANUAL_INPUT_PROVIDED");
         assertThat(accepted.get("agentRunId").isNull()).isTrue();
         assertThat(jdbcTemplate.queryForObject(
+                "SELECT posting_year || ':' || posting_half FROM job_postings WHERE id=?",
+                String.class,
+                jobId)).isEqualTo("2026:SECOND_HALF");
+        assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM agent_runs WHERE user_id=?",
                 Long.class,
                 owner.userId())).isEqualTo(1L);
@@ -623,11 +627,20 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                         NOW.plusSeconds(864_000)),
                 201);
 
+        jdbcTemplate.update(
+                """
+                UPDATE job_postings
+                SET created_at='2026-03-01T00:00:00Z',
+                    posting_year=2026,posting_half='FIRST_HALF'
+                WHERE user_id=? AND canonical_url='https://example.com/list/one'
+                """,
+                owner.userId());
+
         mockMvc.perform(get("/api/v1/jobs")
                         .cookie(owner.cookie())
                         .queryParam("query", "backend")
-                        .queryParam("extractionStatus", "MANUAL_INPUT_PROVIDED")
-                        .queryParam("deadlineWithinDays", "3")
+                        .queryParam("postingYear", "2026")
+                        .queryParam("postingHalf", "FIRST_HALF")
                         .queryParam("page", "0")
                         .queryParam("size", "1")
                         .queryParam("sort", "deadlineAt,asc"))
@@ -639,16 +652,36 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.items[0].analysisOutdated").value(false))
                 .andExpect(jsonPath("$.items[0].outdatedReasons.length()").value(0))
                 .andExpect(jsonPath("$.items[0].coverLetterStatus").isEmpty())
-                .andExpect(jsonPath("$.items[0].interviewPreparationCount").value(0));
+                .andExpect(jsonPath("$.items[0].interviewPreparationCount").value(0))
+                .andExpect(jsonPath("$.availablePeriods.length()").value(2))
+                .andExpect(jsonPath("$.availablePeriods[0].year").value(2026))
+                .andExpect(jsonPath("$.availablePeriods[0].half").value("SECOND_HALF"))
+                .andExpect(jsonPath("$.availablePeriods[1].half").value("FIRST_HALF"));
+
+        mockMvc.perform(get("/api/v1/jobs")
+                        .cookie(owner.cookie())
+                        .queryParam("postingStartFrom", "2026-07-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].companyName").value("Beta Company"));
 
         assertValidationError(get("/api/v1/jobs")
                 .cookie(owner.cookie())
-                .queryParam("deadlineFrom", "2026-08-02T00:00:00Z")
-                .queryParam("deadlineTo", "2026-08-01T00:00:00Z"));
+                .queryParam("postingYear", "2026"));
         assertValidationError(get("/api/v1/jobs")
                 .cookie(owner.cookie())
-                .queryParam("deadlineWithinDays", "7")
-                .queryParam("deadlineFrom", NOW.toString()));
+                .queryParam("postingYear", "2026")
+                .queryParam("postingHalf", "SECOND_HALF")
+                .queryParam("postingStartFrom", "2026-07-01"));
+        assertValidationError(get("/api/v1/jobs")
+                .cookie(owner.cookie())
+                .queryParam("postingStartFrom", "2026-07-28"));
+        assertValidationError(get("/api/v1/jobs")
+                .cookie(owner.cookie())
+                .queryParam("extractionStatus", "MANUAL_INPUT_PROVIDED"));
+        assertValidationError(get("/api/v1/jobs")
+                .cookie(owner.cookie())
+                .queryParam("deadlineWithinDays", "7"));
         assertValidationError(get("/api/v1/jobs")
                 .cookie(owner.cookie())
                 .queryParam("sort", "title,asc"));

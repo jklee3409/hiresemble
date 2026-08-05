@@ -658,6 +658,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(fieldNames(schemas.at("/JobCreationAcceptedDto/properties")))
                 .containsExactlyInAnyOrder(
                         "jobId", "status", "extractionStatus", "agentRunId");
+        assertThat(fieldNames(schemas.at("/JobPageDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "items", "availablePeriods", "page", "size", "totalElements", "totalPages");
+        assertThat(fieldNames(schemas.at("/JobPostingPeriodDto/properties")))
+                .containsExactlyInAnyOrder("year", "half");
+        assertThat(schemas.at("/JobPostingPeriodDto/properties/half/enum").toString())
+                .contains("FIRST_HALF", "SECOND_HALF");
         assertThat(fieldNames(schemas.at("/JobSummaryDto/properties")))
                 .containsExactlyInAnyOrder(
                         "id", "companyName", "title", "positionName", "status",

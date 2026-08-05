@@ -4,6 +4,19 @@
 
 P5~P6 Job 공개 API 10개의 validation·OpenAPI·HTTP status 계약, 자동 분석 projection과 P7/P8 child resource projection이 구현됐다.
 
+## [2026-08-05] Session Summary (공고 기간 목록 API 계약)
+
+- What was done:
+  - `GET /jobs`를 등록 반기 preset·직접 시작일 filter와 `availablePeriods` page projection으로 변경했다.
+- Key decisions:
+  - 추출 상태와 마감 범위·임박 query는 allowlist에서 제거하고 기존 sort 계약은 유지한다.
+- Issues encountered:
+  - OpenAPI enum은 별도 component가 아닌 기간 DTO 필드에 inline 생성됐다.
+- Validation:
+  - OpenAPI contract와 Job API 통합 테스트, Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Job Analysis coverage API 확장)
 
 - What was done:

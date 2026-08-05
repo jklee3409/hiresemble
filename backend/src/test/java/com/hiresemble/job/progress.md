@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안과 P6 자동 분석 orchestration 회귀 테스트가 구현됐다.
 
+## [2026-08-05] Session Summary (공고 반기 생성·목록 회귀)
+
+- What was done:
+  - 생성 저장값, owner 실제 기간, preset·직접 시작일과 삭제된 legacy filter 거부를 Job 통합 테스트로 고정했다.
+- Key decisions:
+  - 고정 Clock 2026-07-27을 하반기 생성 기준으로 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Job 테스트와 Backend 전체 79 suites/539 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (Job 자동 분석 connection 대기 회귀 검증)
 
 - What was done:

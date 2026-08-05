@@ -2,6 +2,7 @@ package com.hiresemble.job.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public final class JobCommands {
@@ -30,11 +31,10 @@ public final class JobCommands {
 
     public record JobListQuery(
             JobStatus status,
-            JobExtractionStatus extractionStatus,
             String query,
-            Instant deadlineFrom,
-            Instant deadlineTo,
-            Integer deadlineWithinDays,
+            Integer postingYear,
+            JobPostingHalf postingHalf,
+            LocalDate postingStartFrom,
             int page,
             int size,
             String sort) {}

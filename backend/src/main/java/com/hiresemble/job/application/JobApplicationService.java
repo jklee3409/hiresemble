@@ -21,7 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class JobApplicationService {
 
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Set<String> SORTS =
             Set.of("createdAt,desc", "deadlineAt,asc", "updatedAt,desc");
     private final JobStore store;
@@ -120,14 +122,13 @@ public class JobApplicationService {
                 || requested.size() < 1
                 || requested.size() > 100
                 || !SORTS.contains(requested.sort())
-                || (requested.deadlineWithinDays() != null
-                        && (requested.deadlineFrom() != null || requested.deadlineTo() != null))
-                || (requested.deadlineWithinDays() != null
-                        && (requested.deadlineWithinDays() < 1
-                                || requested.deadlineWithinDays() > 30))
-                || (requested.deadlineFrom() != null
-                        && requested.deadlineTo() != null
-                        && requested.deadlineFrom().isAfter(requested.deadlineTo()))) {
+                || (requested.postingYear() == null) != (requested.postingHalf() == null)
+                || (requested.postingYear() != null
+                        && (requested.postingYear() < 2000 || requested.postingYear() > 9999))
+                || (requested.postingStartFrom() != null && requested.postingYear() != null)
+                || (requested.postingStartFrom() != null
+                        && (requested.postingStartFrom().getYear() < 2000
+                                || requested.postingStartFrom().isAfter(LocalDate.now(clock.withZone(SEOUL)))))) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
         String query = requested.query() == null ? null : requested.query().trim();
@@ -139,20 +140,18 @@ public class JobApplicationService {
         }
         JobListQuery normalized = new JobListQuery(
                 requested.status(),
-                requested.extractionStatus(),
                 query,
-                requested.deadlineFrom(),
-                requested.deadlineTo(),
-                requested.deadlineWithinDays(),
+                requested.postingYear(),
+                requested.postingHalf(),
+                requested.postingStartFrom(),
                 requested.page(),
                 requested.size(),
                 requested.sort());
-        Instant relativeFrom =
-                requested.deadlineWithinDays() == null ? null : clock.instant();
-        Instant relativeTo = relativeFrom == null
+        Instant postingStartFrom = requested.postingStartFrom() == null
                 ? null
-                : relativeFrom.plus(requested.deadlineWithinDays(), ChronoUnit.DAYS);
-        return store.list(userId, normalized, relativeFrom, relativeTo);
+                : requested.postingStartFrom().atStartOfDay(SEOUL).toInstant();
+        Instant postingStartTo = postingStartFrom == null ? null : clock.instant();
+        return store.list(userId, normalized, postingStartFrom, postingStartTo);
     }
 
     public JobRecord detail(UUID userId, UUID jobId) {

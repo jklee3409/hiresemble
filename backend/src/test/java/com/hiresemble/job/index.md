@@ -6,7 +6,7 @@ P5 Job API·application·DB·Scheduler·Agent Run·idempotency 통합 계약과 
 
 ## 주요 파일 및 하위 디렉터리
 
-- `JobIntegrationTest`: PostgreSQL 기반 API·owner·version·retry·Scheduler 통합 검증
+- `JobIntegrationTest`: PostgreSQL 기반 API·owner·등록 연도·상하반기 목록·version·retry·Scheduler 통합 검증
 - `JobAnalysisIntegrationTest`: P6 분석 snapshot·점수·provenance·이력 상태 projection 통합 검증
 - `JobAutoAnalysisIntegrationTest`: 수동 등록 자동 `BALANCED` 접수, idempotency·owner·budget 보존·restart reconciliation
 - [`domain/`](domain/index.md): 상태 전이와 canonicalization

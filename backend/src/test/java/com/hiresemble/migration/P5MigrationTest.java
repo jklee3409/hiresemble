@@ -246,6 +246,51 @@ class P5MigrationTest {
                 """.formatted(jobId))).isEqualTo(runId.toString());
     }
 
+    @Test
+    void v21AndV22BackfillPostingPeriodsFromSeoulRegistrationDate() throws Exception {
+        assertThat(flyway("20").migrate().success).isTrue();
+        UUID userId = UUID.randomUUID();
+        UUID firstHalfJobId = UUID.randomUUID();
+        UUID secondHalfJobId = UUID.randomUUID();
+        seedUser(userId, "posting-period-upgrade@example.com");
+        insertJob(firstHalfJobId, userId, "https://example.com/jobs/first-half");
+        insertJob(secondHalfJobId, userId, "https://example.com/jobs/second-half");
+        execute("""
+                UPDATE job_postings
+                SET created_at='2026-06-30T14:59:59Z',updated_at='2026-06-30T14:59:59Z'
+                WHERE id='%s';
+                UPDATE job_postings
+                SET created_at='2026-06-30T15:00:00Z',updated_at='2026-06-30T15:00:00Z'
+                WHERE id='%s';
+                """.formatted(firstHalfJobId, secondHalfJobId));
+
+        Flyway upgraded = flyway("22");
+        assertThat(upgraded.migrate().success).isTrue();
+        assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+        assertThat(queryStrings("""
+                SELECT posting_year || ':' || posting_half
+                FROM job_postings
+                ORDER BY created_at
+                """)).containsExactly("2026:FIRST_HALF", "2026:SECOND_HALF");
+        assertThat(queryStrings(
+                        "SELECT indexname FROM pg_indexes WHERE schemaname='public'"))
+                .contains("job_postings_owner_period_ix");
+        execute("""
+                UPDATE job_postings
+                SET created_at='2027-01-01T00:00:00Z',updated_at='2027-01-01T00:00:00Z'
+                WHERE id='%s'
+                """.formatted(secondHalfJobId));
+        assertThat(queryOne("""
+                SELECT posting_year || ':' || posting_half
+                FROM job_postings WHERE id='%s'
+                """.formatted(secondHalfJobId))).isEqualTo("2027:FIRST_HALF");
+        assertThatThrownBy(() -> execute("""
+                UPDATE job_postings SET posting_half='INVALID'
+                WHERE id='%s'
+                """.formatted(firstHalfJobId)))
+                .isInstanceOf(SQLException.class);
+    }
+
     private void assertDigest(String resource, String expected) throws Exception {
         try (InputStream input = new ClassPathResource(resource).getInputStream()) {
             String digest = HexFormat.of().formatHex(

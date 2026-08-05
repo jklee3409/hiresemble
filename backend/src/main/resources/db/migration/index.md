@@ -27,6 +27,9 @@
 | [`V17__create_career_guide_posts.sql`](V17__create_career_guide_posts.sql)                                                       | 취업 준비 가이드 게시 상태·정렬·초기 5개 콘텐츠          |
 | [`V18__expand_career_guide_content.sql`](V18__expand_career_guide_content.sql)                                                   | 미수정 초기 가이드 5개의 장문 본문·version 2 보강         |
 | [`V19__add_profile_eligibility_and_structured_fact_provenance.sql`](V19__add_profile_eligibility_and_structured_fact_provenance.sql) | 지원 자격 자기신고와 공고 분석 구조화 fact provenance |
+| [`V20__add_job_analysis_coverage.sql`](V20__add_job_analysis_coverage.sql)                                                         | 공고 분석 판정 coverage 저장                          |
+| [`V21__classify_job_posting_periods.sql`](V21__classify_job_posting_periods.sql)                                                 | 기존·신규 공고의 서울 기준 연도·상하반기 분류        |
+| [`V22__finalize_job_posting_period_constraints.sql`](V22__finalize_job_posting_period_constraints.sql)                         | 공고 연도·상하반기 제약과 owner 기간 index 확정      |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -50,6 +53,9 @@
 - V17은 전역 `career_guide_posts`의 게시 상태·노출 순서·version 제약과 최초 게시 콘텐츠 5개를 추가한다.
 - V18은 version 1이고 `updated_at=created_at`인 미수정 V17 seed만 장문 본문으로 갱신하고 version 2로 올린다.
 - V19는 기존 사용자까지 `UNSPECIFIED`로 backfill한 owner-scoped 지원 자격 1:1 row와 immutable 분석 structured fact link를 추가한다.
+- V20은 새 rubric의 실제 판정 가중치 비율을 nullable `analysis_coverage`로 추가한다.
+- V21은 `job_postings.created_at`을 서울 현지 날짜로 변환해 기존 row를 연도·상하반기로 backfill한다.
+- V22는 backfill transaction 뒤 insert·`created_at` 변경 시 기간을 다시 계산하는 trigger, 연도·상하반기 NOT NULL·CHECK와 active owner 기간 조회 index를 확정한다.
 - P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-05] Session Summary (공고 목록 기간 검증)
+
+- What was done:
+  - 연도·반기 pair, preset/직접 설정 상호 배타성, 미래 시작일을 검증하고 서울 시작일~현재 시각 조회 범위를 계산했다.
+- Key decisions:
+  - 기간 종료 parameter는 공개하지 않고 server Clock의 오늘을 사용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 유효·부분 preset·혼합 방식·미래 날짜 Job 통합 시나리오와 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (criterion별 hybrid evidence 검색)
 
 - What was done:
