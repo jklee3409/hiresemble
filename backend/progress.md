@@ -7,6 +7,20 @@
 - V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
 - 최신 완료된 Backend 전체 `check`는 79 suites/549 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-05] Session Summary (플래티어 Cover Letter 생성 실패 복구)
+
+- What was done:
+  - `PLAN_QUESTIONS` strict output의 조건부 Java record 계약과 exact output schema version을 prompt에 공개하고 nullable connection의 빈 문자열을 `null`로 정규화했다.
+  - 단일 문항은 불필요한 계획·분석·배분 model call을 서버 결정으로 대체하고, 최종 Writer만 실제 AI를 사용하도록 최소화했다.
+- Key decisions:
+  - 공개 API·DB migration·Frontend는 변경하지 않았다. 다중 문항은 기존 AI 배분 정책을 유지한다.
+- Issues encountered:
+  - 중간 검증 Run에서 exact output schema version 누락과 provider timeout이 확인됐다. 임시 계정 물리 삭제는 불변 provenance trigger로 rollback됐다.
+- Validation:
+  - 집중 contract test, `bootJar`, 최종 `backend/.\gradlew.bat check` 성공. 실제 성공 Run은 8단계 100%, 답변 1개·752자·`AI_GENERATED`를 확인했다.
+- Next steps:
+  - 배포 후 기존 실패 Run을 retry한다.
+
 ## [2026-08-05] Session Summary (Cover Letter workflow v3 hardening)
 
 - What was done:

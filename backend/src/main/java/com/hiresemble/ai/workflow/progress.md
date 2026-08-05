@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter 단일 문항 생성 안정화)
+
+- What was done:
+  - v3 plan의 field·text·framework·connection·section 실패를 value-free safe reason과 구체적 repair guidance로 분리했다.
+  - 단일 문항은 `DIRECT_RESPONSE` 계획·분석·근거 배분을 결정적으로 구성하고, document 근거가 없으면 embedding을 생략하며 Writer와 기존 validator로 답변을 완성하도록 했다. local fact-check는 positive verified claim을 만들지 않고 Writer claim을 제출 전 확인이 필요한 `UNVERIFIED_CLAIM`으로 보수적으로 남긴다.
+- Key decisions:
+  - 단일 문항에서 의미가 없는 cross-question allocation을 model에 위임하지 않고, 다중 문항의 기존 배분 작은 유지했다.
+- Issues encountered:
+  - 기존 generic `AI_SO_JAVA_RECORD_INVALID` correction은 exact schema version과 조건부 규칙을 model이 회복하기에 부족했다.
+- Validation:
+  - workflow contract 집중 test와 전체 Backend `check` 성공. 실제 Run의 `PLAN_QUESTIONS` 1차 성공과 최종 `APPLY_ANSWER_VERSION` 100%를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter generation·verification v3)
 
 - What was done:

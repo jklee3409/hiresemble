@@ -15,6 +15,21 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (플래티어 AI 자기소개서 2단계 실패 복구)
+
+- What was done:
+  - 실제 사용자의 플래티어 생성 Run이 `PLAN_QUESTIONS`에서 `AI_SO_JAVA_RECORD_INVALID`로 반복 실패한 원인을 output `schemaVersion`·question/framework/section 조건부 계약·nullable 빈 문자열이 prompt에 충분히 공개되지 않은 것으로 확인했다.
+  - 단일 문항은 계획·분석·중복 배분을 서버가 결정하고, 직접 경력 근거만 있으면 embedding을 생략하며, 최종 답변 작성은 실제 AI Writer가 수행하도록 고정 흐름을 안정화했다.
+- Key decisions:
+  - REST·DB·Frontend 계약은 변경하지 않고, v3 prompt identity와 Java record 경계만 보정했다. 다중 문항의 AI 경험 배분 흐름은 유지했다.
+- Issues encountered:
+  - 실제 provider 검증 중 완료 응답이 없는 `AI_CHAT_TIMEOUT` 2회가 있었다. 불변 provenance trigger가 임시 데이터의 물리 삭제를 차단해 삭제 transaction은 전체 rollback되었고, `example.com` 식별자의 로컬 검증 계정 4개가 남았다.
+- Validation:
+  - `backend/.\gradlew.bat check` 성공. 실제 HTTP Session/CSRF 흐름에서 회원가입→VERIFIED 경력 근거→플래티어 공고 분석 context→자기소개서 생성이 `SUCCEEDED`, `AI_GENERATED` 752자, 답변 문항 1개로 저장됐다.
+  - 사용량 원장의 고유 `provider_call_id`는 총 10개였고 최종 성공 Run은 1개를 사용했다. timeout 2회는 usage row가 없었다.
+- Next steps:
+  - 기존 실패 Run은 terminal 이력으로 유지되므로, 실제 사용자는 배포 후 해당 Run을 retry해야 한다.
+
 ## [2026-08-05] Session Summary (자기소개서 Workflow v3 의미 정합성 hardening)
 
 - What was done:

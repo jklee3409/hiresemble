@@ -9,6 +9,7 @@ import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
 import com.hiresemble.ai.validation.ProviderNullable;
 import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
+import com.hiresemble.ai.validation.StructuredOutputValidationException;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.BoundedText;
@@ -736,6 +737,39 @@ public final class CoverLetterGenerationWorkflow {
 
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            PlanQuestionsInputV3 input = read(
+                    invocation.input().gatewayPayload(), PlanQuestionsInputV3.class);
+            if (input.questions().size() == 1) {
+                QuestionPlanningInput question = input.questions().getFirst();
+                int target = Math.max(1, Math.min(
+                        800,
+                        question.maxLength() == null ? 800 : question.maxLength()));
+                List<Integer> requirementIndexes = java.util.stream.IntStream.range(
+                                0, Math.min(100, input.requirements().size()))
+                        .boxed()
+                        .toList();
+                return localResponse(new PlanQuestionsOutputV3(
+                        PLAN_SCHEMA_V3,
+                        List.of(new QuestionPlanV3(
+                                question.questionId(),
+                                QuestionType.FREEFORM,
+                                "Answer the supplied question directly with verified experience.",
+                                NarrativeFramework.DIRECT_RESPONSE,
+                                "Give a direct, evidence-grounded answer tailored to the role.",
+                                List.of("Direct answer", "Personal action", "Result", "Role application"),
+                                List.of("Unsupported claims", "Generic company praise"),
+                                requirementIndexes,
+                                null,
+                                null,
+                                List.of("Current verified experience relevant to the question"),
+                                target,
+                                HeadingPolicy.DISALLOWED,
+                                List.of(new NarrativeSectionPlan(
+                                        CoverLetterWorkflowV3Policy.NarrativeSectionType.DIRECT_ANSWER,
+                                        "Answer the question with verified experience and role application.",
+                                        100)))),
+                        input.avoidExperienceDuplication()));
+            }
             return chat(invocation);
         }
 
@@ -762,7 +796,9 @@ public final class CoverLetterGenerationWorkflow {
                     || output.plans().isEmpty()
                     || output.plans().size() > 20
                     || hasDuplicates(output.plans().stream().map(QuestionPlanV3::questionId).toList())) {
-                throw new IllegalArgumentException("v3 question plan is invalid");
+                throw repairable(
+                        "COVER_PLAN_OUTPUT_INVALID",
+                        "Set schemaVersion to cover-generation-plan-output-v3 and return exactly one nonempty plan for every supplied questionId in supplied order.");
             }
             ContextAvailabilityInput availability = contextAvailability(state(context));
             output.plans().forEach(plan -> validateQuestionPlanV3(plan, availability));
@@ -844,6 +880,30 @@ public final class CoverLetterGenerationWorkflow {
 
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            GenerationState state = state(invocation.executionContext());
+            if (state.snapshot().questions().size() == 1) {
+                AnalyzeQuestionInputV3 input = read(
+                        invocation.input().gatewayPayload(), AnalyzeQuestionInputV3.class);
+                QuestionPlanV3 plan = input.plan();
+                return localResponse(new QuestionAnalysisOutputV3(
+                        ANALYSIS_SCHEMA_V3,
+                        input.questionId(),
+                        plan.questionType(),
+                        "Directly answer the supplied question using only verified context.",
+                        plan.objective(),
+                        plan.coreMessage(),
+                        plan.requiredElements(),
+                        plan.avoidContent(),
+                        plan.narrativeFramework(),
+                        plan.narrativeSections(),
+                        "Emphasize the applicant's own decisions and actions.",
+                        plan.evidenceSelectionCriteria(),
+                        plan.requirementIndexes(),
+                        plan.roleConnection(),
+                        plan.companyConnection(),
+                        "Conclude with a concrete role application.",
+                        plan.headingPolicy()));
+            }
             return chat(invocation);
         }
 
@@ -1203,6 +1263,16 @@ public final class CoverLetterGenerationWorkflow {
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             GenerationState state = state(invocation.executionContext());
             RetrieveEvidenceInput input = read(invocation.input().gatewayPayload(), RetrieveEvidenceInput.class);
+            if (state.snapshot().questions().size() == 1
+                    && state.snapshot().verifiedEvidence().stream()
+                            .allMatch(evidence -> evidence.documentId() == null)) {
+                return localResponse(new RetrievedEvidenceOutput(
+                        RETRIEVAL_SCHEMA,
+                        input.questionId(),
+                        sha256(input.queryText()),
+                        selectEvidence(state.snapshot(), input.queryText()),
+                        List.of()));
+            }
             AiGatewayResponse embedding = invocation.embeddingGateway().embed(new EmbeddingRequest(
                     state.embeddingPolicy().providerKey(),
                     state.embeddingPolicy().productKey(),
@@ -1466,6 +1536,20 @@ public final class CoverLetterGenerationWorkflow {
 
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            AllocateExperiencesInputV3 input = read(
+                    invocation.input().gatewayPayload(), AllocateExperiencesInputV3.class);
+            if (input.candidates().size() == 1) {
+                AllocationCandidateInputV3 candidate = input.candidates().getFirst();
+                return localResponse(new ExperienceAllocationOutputV2(
+                        ALLOCATION_SCHEMA_V2,
+                        List.of(new ExperienceAllocationV2(
+                                candidate.questionId(),
+                                candidate.candidateEvidence().stream()
+                                        .map(EvidencePlanningInput::evidenceId)
+                                        .toList(),
+                                null,
+                                null))));
+            }
             return chat(invocation);
         }
 
@@ -2008,6 +2092,28 @@ public final class CoverLetterGenerationWorkflow {
 
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            GenerationState state = state(invocation.executionContext());
+            if (state.snapshot().questions().size() == 1) {
+                FactCheckAnswerInputV3 input = read(
+                        invocation.input().gatewayPayload(), FactCheckAnswerInputV3.class);
+                List<VerificationIssueDraftV2> issues = input.claims().stream()
+                        .map(claim -> new VerificationIssueDraftV2(
+                                VerificationIssueKind.FACTUAL,
+                                VerificationIssueCode.UNVERIFIED_CLAIM,
+                                IssueSeverity.ERROR,
+                                "생성된 사실 주장은 제출 전에 연결된 근거와 직접 대조해 확인해 주세요.",
+                                null,
+                                List.of(claim.evidenceId())))
+                        .toList();
+                return localResponse(new FactCheckAnswerOutputV3(
+                        FACT_CHECK_SCHEMA_V3,
+                        input.questionId(),
+                        issues,
+                        issues.isEmpty()
+                                ? List.of()
+                                : List.of("표시된 주장을 근거 원문과 대조한 뒤 제출해 주세요."),
+                        List.of()));
+            }
             return chat(invocation);
         }
 
@@ -3871,17 +3977,50 @@ public final class CoverLetterGenerationWorkflow {
                 || plan.requirementIndexes() == null
                 || plan.requirementIndexes().size() > 100
                 || plan.requirementIndexes().stream().anyMatch(value -> value == null || value < 0)) {
-            throw new IllegalArgumentException("v3 question plan item is invalid");
+            throw repairable(
+                    "COVER_PLAN_FIELD_INVALID",
+                    "Return every required plan field. Use targetCharacterCount 1..10000 and at most 100 unique nonnegative requirementIndexes.");
         }
-        requireText(plan.coreMessage(), 1_000);
-        requireText(plan.objective(), 1_000);
-        requireTexts(plan.requiredElements(), 20, 1_000);
-        requireTexts(plan.avoidContent(), 20, 1_000);
-        requireTexts(plan.evidenceSelectionCriteria(), 20, 1_000);
-        CoverLetterWorkflowV3Policy.validateQuestionFramework(
-                plan.questionType(), plan.narrativeFramework());
-        validateOptionalConnections(plan.roleConnection(), plan.companyConnection(), availability);
-        CoverLetterWorkflowV3Policy.validateSections(plan.narrativeFramework(), plan.narrativeSections());
+        try {
+            requireText(plan.coreMessage(), 1_000);
+            requireText(plan.objective(), 1_000);
+            requireTexts(plan.requiredElements(), 20, 1_000);
+            requireTexts(plan.avoidContent(), 20, 1_000);
+            requireTexts(plan.evidenceSelectionCriteria(), 20, 1_000);
+        } catch (IllegalArgumentException exception) {
+            throw repairable(
+                    "COVER_PLAN_TEXT_INVALID",
+                    "Return nonblank coreMessage and objective. Text arrays may have at most 20 nonblank values, each at most 1000 characters.");
+        }
+        try {
+            CoverLetterWorkflowV3Policy.validateQuestionFramework(
+                    plan.questionType(), plan.narrativeFramework());
+        } catch (IllegalArgumentException exception) {
+            throw repairable(
+                    "COVER_PLAN_FRAMEWORK_INVALID",
+                    "Use the exact questionType to narrativeFramework mapping stated in the instructions.");
+        }
+        try {
+            validateOptionalConnections(plan.roleConnection(), plan.companyConnection(), availability);
+        } catch (IllegalArgumentException exception) {
+            throw repairable(
+                    "COVER_PLAN_CONNECTION_INVALID",
+                    "Use null for an unavailable or unused role/company connection; otherwise use nonblank supplied context of at most 1000 characters.");
+        }
+        try {
+            CoverLetterWorkflowV3Policy.validateSections(
+                    plan.narrativeFramework(), plan.narrativeSections());
+        } catch (IllegalArgumentException exception) {
+            throw repairable(
+                    "COVER_PLAN_SECTIONS_INVALID",
+                    "Use only unique section types allowed for the selected framework, nonblank objectives, and integer weights totaling exactly 100. Technical plans require DECISION and TRADEOFF.");
+        }
+    }
+
+    private StructuredOutputValidationException repairable(
+            String safeReason, String guidance) {
+        return StructuredOutputValidationException.repairable(
+                ValidationPhase.JAVA_RECORD, safeReason, guidance);
     }
 
     private void validateOptionalConnections(
@@ -4892,6 +5031,12 @@ public final class CoverLetterGenerationWorkflow {
             requiredElements = copy(requiredElements);
             avoidContent = copy(avoidContent);
             requirementIndexes = copy(requirementIndexes);
+            roleConnection = roleConnection == null || roleConnection.isBlank()
+                    ? null
+                    : roleConnection;
+            companyConnection = companyConnection == null || companyConnection.isBlank()
+                    ? null
+                    : companyConnection;
             evidenceSelectionCriteria = copy(evidenceSelectionCriteria);
             narrativeSections = copy(narrativeSections);
         }
@@ -4962,6 +5107,12 @@ public final class CoverLetterGenerationWorkflow {
             narrativeSections = copy(narrativeSections);
             requiredEvidenceTraits = copy(requiredEvidenceTraits);
             requirementIndexes = copy(requirementIndexes);
+            roleConnection = roleConnection == null || roleConnection.isBlank()
+                    ? null
+                    : roleConnection;
+            companyConnection = companyConnection == null || companyConnection.isBlank()
+                    ? null
+                    : companyConnection;
         }
     }
 

@@ -42,6 +42,12 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     }
 
     private static String promptVersion(String stepKey) {
+        if (CoverLetterGenerationWorkflow.PLAN_QUESTIONS.equals(stepKey)) {
+            return "cover-letter-plan-questions-prompt-v5";
+        }
+        if (CoverLetterGenerationWorkflow.WRITE_ANSWER.equals(stepKey)) {
+            return "cover-letter-write-answer-prompt-v4";
+        }
         return "cover-letter-" + stepKey.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
                 + "-prompt-v3";
     }
@@ -103,11 +109,32 @@ public final class CoverLetterGenerationV3PromptDefinitions {
                     only IDs, versions, hashes, counts, locale, and availability metadata.
                     """;
             case CoverLetterGenerationWorkflow.PLAN_QUESTIONS -> """
-                    Return one plan per question in order. Choose a question-appropriate framework
-                    and only its allowed narrative section types; unique section weights total 100.
-                    Motivation and future-contribution plans are not STAR plans. Technical projects
-                    include decision and tradeoff. When company or role context is unavailable, keep
-                    its connection null and do not infer company business, values, or responsibilities.
+                    Set top-level schemaVersion to exactly cover-generation-plan-output-v3 and return
+                    exactly one nonempty plan per supplied question in order. Choose a
+                    question-appropriate framework using exactly this mapping:
+                    MOTIVATION -> MOTIVATION_CONNECTION -> COMPANY_REASON, ROLE_REASON,
+                    EXPERIENCE_CONNECTION, CONTRIBUTION.
+                    FUTURE_CONTRIBUTION -> FUTURE_CONTRIBUTION_PATH -> CURRENT_CAPABILITY,
+                    EARLY_CONTRIBUTION, GROWTH_PATH, ORGANIZATION_CONNECTION.
+                    ROLE_COMPETENCY -> COMPETENCY_EVIDENCE_APPLICATION; PROBLEM_SOLVING ->
+                    PROBLEM_ACTION_RESULT; CHALLENGE_FAILURE -> CHALLENGE_LEARNING; GROWTH_VALUES ->
+                    VALUES_TO_ACTION; FREEFORM or OTHER -> DIRECT_RESPONSE. Those five frameworks
+                    may use only SITUATION, PROBLEM, ACTION, PERSONAL_ACTION, RESULT, LEARNING,
+                    CONTRIBUTION, DIRECT_ANSWER, or VALUE.
+                    TECHNICAL_PROJECT -> TECHNICAL_DECISION_TRADEOFF -> PROBLEM, ALTERNATIVES,
+                    DECISION, IMPLEMENTATION, TRADEOFF, RESULT; include DECISION and TRADEOFF.
+                    COLLABORATION_CONFLICT -> COLLABORATION_ALIGNMENT -> SHARED_GOAL, CONFLICT,
+                    PERSONAL_ACTION, ALIGNMENT, RESULT, PRINCIPLE.
+                    Every narrative section must be unique, use a non-blank objective of at most
+                    1,000 characters, and have a weight from 1 to 100; weights must total exactly 100.
+                    Motivation and future-contribution plans are not STAR plans. Return each supplied
+                    questionId exactly once in the supplied order and preserve avoidExperienceDuplication.
+                    targetCharacterCount is 1..10,000 and must not exceed that question's maxLength.
+                    Each text list has at most 20 non-blank items of at most 1,000 characters. Use only
+                    zero-based requirementIndexes present in the supplied requirements. When company
+                    or role context is unavailable, keep its connection null and do not infer company
+                    business, values, or responsibilities. Never return an empty string for a nullable
+                    connection; use either a non-blank supplied-context connection or null.
                     """;
             case CoverLetterGenerationWorkflow.ANALYZE_QUESTION -> """
                     Preserve the plan's type, framework, sections, core message, and heading policy.
@@ -123,13 +150,14 @@ public final class CoverLetterGenerationV3PromptDefinitions {
                     necessity reason and distinct emphasis. Do not invent evidence IDs or facts.
                     """;
             case CoverLetterGenerationWorkflow.WRITE_ANSWER -> """
-                    Directly answer the question and implement the planned framework. currentAnswer
-                    and sibling answers include original/provided counts, truncated, full hash, and
-                    bounded text. Never assume truncated text is complete; revise only the safely
-                    supplied scope. Every factual evidence claim must use an allowed evidenceId and
-                    exactAnswerExcerpt that appears verbatim in the answer, with its claimType.
-                    Positive support comes only from supplied current VERIFIED evidence.
-                    Respect maxLength and return safe TipTap JSON only.
+                    Set schemaVersion to exactly cover-generation-answer-output-v3 and copy the
+                    supplied questionId exactly. Directly answer the question and implement the
+                    planned framework. currentAnswer and sibling answers include original/provided
+                    counts, truncated, full hash, and bounded text. Never assume truncated text is
+                    complete; revise only the safely supplied scope. Every factual evidence claim
+                    must use an allowed evidenceId and exactAnswerExcerpt that appears verbatim in
+                    the answer, with its claimType. Positive support comes only from current VERIFIED
+                    evidence supplied in context. Respect maxLength and return safe TipTap JSON only.
                     """;
             case CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER -> """
                     Do not modify the answer. Positive verified claims are supported exact answer

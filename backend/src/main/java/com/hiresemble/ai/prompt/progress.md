@@ -4,6 +4,20 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-05] Session Summary (Cover Letter plan·writer prompt 계약 보정)
+
+- What was done:
+  - `PLAN_QUESTIONS` prompt를 v5로 격리하고 `cover-generation-plan-output-v3` exact schemaVersion, 문항 수·순서, question type-framework-section mapping, weight·text·index·nullable 계약을 명시했다.
+  - Writer prompt를 v4로 격리하고 exact output schemaVersion과 questionId 복사 조건을 추가했다.
+- Key decisions:
+  - 기존 v1/v2 prompt identity와 v3의 다른 step identity는 변경하지 않았다.
+- Issues encountered:
+  - input/output에 모두 `schemaVersion`이 있어 exact output value를 명시하지 않으면 schema-valid JSON이 Java record 의미 검증에서 반복 탈락했다.
+- Validation:
+  - prompt metadata·nullable normalization contract test와 Backend 전체 `check` 성공. 실제 `PLAN_QUESTIONS` step이 v5 1차에 성공했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v3 prompt identity)
 
 - What was done:

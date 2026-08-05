@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter plan prompt 회귀 경계)
+
+- What was done:
+  - plan prompt v5의 exact output schemaVersion·framework/section 계약과 plan/analysis record의 blank nullable connection 정규화를 contract test로 고정했다.
+- Key decisions:
+  - provider 원문을 fixture에 복제하지 않고 value-free prompt/record 계약만 회귀 검증했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `CoverLetterWorkflowContractTest` 집중 test와 Backend 전체 `check` 성공.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v3 의미 검증 경계)
 
 - What was done:

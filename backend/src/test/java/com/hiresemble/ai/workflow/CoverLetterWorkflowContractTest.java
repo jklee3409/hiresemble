@@ -14,6 +14,7 @@ import com.hiresemble.ai.prompt.CoverLetterVerificationV3PromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class CoverLetterWorkflowContractTest {
@@ -189,6 +190,81 @@ class CoverLetterWorkflowContractTest {
                         "current VERIFIED evidence",
                         "exact answer excerpts",
                         "ko-KR");
+    }
+
+    @Test
+    void v3QuestionPlanningPromptPublishesConditionalRecordContract() {
+        var prompt = CoverLetterGenerationV3PromptDefinitions.all().stream()
+                .filter(value -> value.key().stepKey().equals(
+                        CoverLetterGenerationWorkflow.PLAN_QUESTIONS))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(prompt.promptVersion())
+                .isEqualTo("cover-letter-plan-questions-prompt-v5");
+        assertThat(prompt.instructions())
+                .contains(
+                        "schemaVersion to exactly cover-generation-plan-output-v3",
+                        "ROLE_COMPETENCY -> COMPETENCY_EVIDENCE_APPLICATION",
+                        "TECHNICAL_PROJECT -> TECHNICAL_DECISION_TRADEOFF",
+                        "FREEFORM or OTHER -> DIRECT_RESPONSE",
+                        "Never return an empty string",
+                        "nullable",
+                        "Every narrative section must be unique",
+                        "weights must total exactly 100");
+        assertThat(CoverLetterGenerationV3PromptDefinitions.all().stream()
+                        .filter(value -> value.key().stepKey().equals(
+                                CoverLetterGenerationWorkflow.WRITE_ANSWER))
+                        .findFirst()
+                        .orElseThrow()
+                        .promptVersion())
+                .isEqualTo("cover-letter-write-answer-prompt-v4");
+    }
+
+    @Test
+    void v3PlanningRecordsNormalizeBlankOptionalConnections() {
+        var sections = List.of(new CoverLetterWorkflowV3Policy.NarrativeSectionPlan(
+                CoverLetterWorkflowV3Policy.NarrativeSectionType.DIRECT_ANSWER,
+                "objective",
+                100));
+        var plan = new CoverLetterGenerationWorkflow.QuestionPlanV3(
+                UUID.randomUUID(),
+                CoverLetterGenerationWorkflow.QuestionType.ROLE_COMPETENCY,
+                "core message",
+                CoverLetterGenerationWorkflow.NarrativeFramework.COMPETENCY_EVIDENCE_APPLICATION,
+                "objective",
+                List.of(),
+                List.of(),
+                List.of(),
+                "",
+                "   ",
+                List.of(),
+                800,
+                CoverLetterGenerationWorkflow.HeadingPolicy.OPTIONAL,
+                sections);
+        var analysis = new CoverLetterGenerationWorkflow.QuestionAnalysisOutputV3(
+                "cover-generation-question-analysis-output-v3",
+                plan.questionId(),
+                plan.questionType(),
+                "intent",
+                "direction",
+                "opening",
+                List.of(),
+                List.of(),
+                plan.narrativeFramework(),
+                sections,
+                "personal action",
+                List.of(),
+                List.of(),
+                "",
+                "   ",
+                "conclusion",
+                CoverLetterGenerationWorkflow.HeadingPolicy.OPTIONAL);
+
+        assertThat(plan.roleConnection()).isNull();
+        assertThat(plan.companyConnection()).isNull();
+        assertThat(analysis.roleConnection()).isNull();
+        assertThat(analysis.companyConnection()).isNull();
     }
 
     private WorkflowRegistry.WorkflowDefinition definition(WorkflowType type) {

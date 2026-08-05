@@ -4,6 +4,19 @@
 
 P7 자기소개서 생성·문항 관리·immutable 답변 version·근거 provenance·검증·최종화·보관과 AI application port가 final-source actual 및 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-05] Session Summary (플래티어 단일 문항 AI 답변 실제 검증)
+
+- What was done:
+  - 실제 플래티어 공고 분석 context와 유사 백엔드 경력 VERIFIED 근거를 사용해 단일 자기소개서 문항 생성을 HTTP 사용자 흐름으로 검증했다.
+- Key decisions:
+  - 실제 사용자의 password·Session을 읽지 않고 `example.com` 테스트 계정과 owner-scoped 복제 context를 사용했다.
+- Issues encountered:
+  - 성공 전 provider timeout과 strict output 실패가 있었고, 임시 계정은 불변 provenance 정책으로 물리 삭제할 수 없었다.
+- Validation:
+  - 최종 Run `SUCCEEDED`, progress 100%, answered question 1, `AI_GENERATED` 752자, `PLAN_QUESTIONS` v5 attempt 1 성공.
+- Next steps:
+  - 실제 사용자의 기존 terminal 실패 Run을 retry한다.
+
 ## [2026-08-05] Session Summary (자기소개서 v3 provenance·검증 정합성)
 
 - What was done:
