@@ -276,7 +276,7 @@
 ### 등록 처리
 
 1. URL 정규화와 중복 확인
-2. `job_postings` 생성
+2. 등록 시각을 공고 시작일로 보고 `Asia/Seoul` 기준 연도와 반기(`FIRST_HALF`=1~6월, `SECOND_HALF`=7~12월)를 분류해 `job_postings` 생성
 3. 기본 상태 `IN_PROGRESS`
 4. 사용 가능한 공고 본문을 직접 입력했다면 `MANUAL_INPUT_PROVIDED`로 저장하고 URL 추출 Agent Run을 만들지 않음
 5. 직접 입력 본문이 없다면 `QUEUED`로 URL 본문 비동기 추출
@@ -352,7 +352,8 @@ CLOSED → IN_PROGRESS 또는 SUBMITTED  // 마감 연장·오등록 시 사용�
 - 서류 제출: `SUBMITTED`
 - 마감: `CLOSED`
 - 회사명·직무명 검색
-- 마감 임박
+- 사용자가 보유한 active 공고에서 도출한 등록 연도·상하반기
+- 직접 기간 설정: 조회 시작일만 입력하고 종료는 조회 시점의 오늘
 - 정렬: 최근 등록, 마감 임박, 최근 수정
 
 ## JOB-004 공고 분석

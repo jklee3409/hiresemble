@@ -15,6 +15,19 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (공고 등록 반기 분류와 목록 기간 필터)
+
+- What was done:
+  - 공고 등록 시각을 서울 기준 연도·상하반기로 저장하고 기존 데이터를 backfill했으며, 목록의 추출·마감 기간 필터를 실제 보유 반기와 직접 시작일 필터로 교체했다.
+- Key decisions:
+  - 별도 시작일 필드가 없는 현재 계약에서는 `created_at`을 공고 시작 시각으로 사용하고 직접 기간 종료는 조회 시점의 오늘로 고정한다.
+- Issues encountered:
+  - PostgreSQL pending trigger 때문에 backfill과 NOT NULL 확정을 V21·V22로 분리했고 직접 SQL insert도 같은 분류를 따르도록 DB trigger를 추가했다.
+- Validation:
+  - Backend `gradlew check` 79 suites/539 tests, Frontend `pnpm check` 67 files/284 tests와 production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 분석 디자인 가이드 계약 확정과 회귀 완료)
 
 - What was done:

@@ -32,6 +32,7 @@
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `users.status`                                       | `ACTIVE`, `LOCKED`, `WITHDRAWN`                                                                                                                                                                         |
 | `job_postings.status`                                | `IN_PROGRESS`, `SUBMITTED`, `CLOSED`                                                                                                                                                                    |
+| `job_postings.posting_half`                          | `FIRST_HALF`, `SECOND_HALF`                                                                                                                                                                             |
 | `job_postings.extraction_status`                     | `QUEUED`, `EXTRACTING`, `EXTRACTED`, `MANUAL_INPUT_PROVIDED`, `NEEDS_MANUAL_INPUT`, `FAILED`                                                                                                            |
 | `documents.parse_status`                             | `UPLOADED`, `PARSING`, `PARSED`, `NEEDS_MANUAL_TEXT`, `FAILED`                                                                                                                                          |
 | `documents.evidence_extraction_status`               | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
@@ -191,9 +192,11 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 
 ### 5.2 `job_postings`
 
-`id,user_id`, `company_id uuid NULL`, `source_url/canonical_url varchar(2000)`, `title/position_name varchar(300) NULL`, `role_category/employment_type varchar(100) NULL`, `location varchar(200) NULL`, `description_text text NULL CHECK <=200000`, `description_source varchar(30) NULL`, `deadline_at NULL`, `deadline_source`, `deadline_confidence numeric(4,3) NULL`, 두 상태 축, `submitted_at/closed_at NULL`, `closed_reason varchar(30) NULL`, 내부 `content_hash char(64) NULL`, `latest_agent_run_id uuid NULL`, `version`, timestamps, `deleted_at NULL`.
+`id,user_id`, `company_id uuid NULL`, `source_url/canonical_url varchar(2000)`, `title/position_name varchar(300) NULL`, `role_category/employment_type varchar(100) NULL`, `location varchar(200) NULL`, `description_text text NULL CHECK <=200000`, `description_source varchar(30) NULL`, `deadline_at NULL`, `deadline_source`, `deadline_confidence numeric(4,3) NULL`, 두 상태 축, `submitted_at/closed_at NULL`, `closed_reason varchar(30) NULL`, 내부 `content_hash char(64) NULL`, `latest_agent_run_id uuid NULL`, `posting_year integer NOT NULL CHECK 2000..9999`, `posting_half varchar(20) NOT NULL`, `version`, timestamps, `deleted_at NULL`.
 
 - active partial unique `(user_id,canonical_url) WHERE deleted_at IS NULL`.
+- `created_at`을 공고 시작 시각으로 사용하며 `Asia/Seoul` 현지 날짜의 1~6월은 `FIRST_HALF`, 7~12월은 `SECOND_HALF`로 분류한다. 기존 row도 같은 기준으로 backfill하고 insert·`created_at` 변경 trigger가 직접 SQL 경로에도 같은 불변식을 적용한다.
+- 사용자별 active 기간 선택지 조회를 위한 `(user_id, posting_year DESC, posting_half DESC) WHERE deleted_at IS NULL` partial index를 둔다.
 - create request에 usable `description_text`가 있으면 `description_source=USER_ENTERED`, `extraction_status=MANUAL_INPUT_PROVIDED`, `latest_agent_run_id=NULL`이며 extraction run을 만들지 않는다. 본문이 없으면 `extraction_status=QUEUED`와 `JOB_POSTING_EXTRACTION` run을 같은 transaction에서 만든다.
 - `submitted_at`은 최초 SUBMITTED에서 설정하고 영구 보존한다. reopen은 현재 `closed_at/closed_reason`만 null로 만들며 history는 보존한다.
 - status 변경과 history는 한 transaction, Scheduler도 업무 status만 변경한다.

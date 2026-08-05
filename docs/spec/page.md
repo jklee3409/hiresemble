@@ -421,9 +421,8 @@ API:
 ### Filter
 
 - 회사·직무 검색
-- URL 추출 상태
-- 마감 기간
-- 마감 임박
+- 등록 기간: 사용자가 보유한 공고에 실제 존재하는 `연도 상반기|하반기`만 표시
+- 기간 직접 설정: 시작 날짜만 입력하고 종료는 오늘로 고정
 - 정렬
 
 ### Job Card
@@ -967,7 +966,7 @@ Query Key 예시:
 
 - documents: `documentType`, `parseStatus`, `evidenceExtractionStatus`, `sort`, `page`, `size`
 - evidence: `verificationStatus`, `evidenceCategory`, `documentId`, `sort`, `page`, `size`
-- jobs: `status`, `extractionStatus`, `query`, `deadlineFrom`, `deadlineTo`, `deadlineWithinDays`, `sort`, `page`, `size`
+- jobs: `status`, `query`, preset `postingYear`+`postingHalf` 또는 직접 설정 `postingStartFrom`, `sort`, `page`, `size`
 - cover letters: `jobId`, `status`, `query`, `sort`, `page`, `size`
 - Agent Runs: repeatable `workflowType`, repeatable `status`, `resourceType`, `resourceId`, `retryable`, `sort`, `page`, `size`
 - `/interviews`의 두 목록은 11.2의 `qs*`·`mock*` URL namespace를 API parameter로 변환한다.

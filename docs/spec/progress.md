@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (공고 등록 반기·목록 기간 계약)
+
+- What was done:
+  - 기능·API·DB·페이지 명세에 서울 기준 공고 연도·상하반기 저장, 기존 row backfill, owner 실제 기간과 직접 시작일 목록 filter를 반영했다.
+- Key decisions:
+  - 현재 모델의 `created_at`을 공고 시작 시각으로 사용하고 직접 기간 종료는 오늘로 고정하며 기존 추출·마감 범위·임박 filter는 제거한다.
+- Issues encountered:
+  - DB trigger event 제약 때문에 backfill과 NOT NULL 확정이 V21·V22로 분리되는 구현 사실을 DB 계약에 맞췄다.
+- Validation:
+  - Backend 전체 79 suites/539 tests와 Frontend 전체 67 files/284 tests·production build에 명세를 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 분석 디자인 가이드 모바일 계약 반영)
 
 - What was done:

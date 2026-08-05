@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 profile eligibility GET/PUT을 포함해 총 94 operations/69 paths다. 공고 생성 응답은 호환성을 유지하고 `GET /jobs/{id}`가 자동 `BALANCED` 분석 후속 상태를 additive projection으로 제공한다. Frontend는 anonymous `/` 공개 Landing, 상단·mobile bottom navigation, `/guide`, 공고 document view와 등록→추출→자동 분석 journey를 제공하며 `/dashboard`는 owner-scoped 정확 집계·서울 기준 월별 마감과 서버 게시 가이드를 행동 중심 화면으로 제공한다.
+공개 HTTP 범위는 profile eligibility GET/PUT을 포함해 총 94 operations/69 paths다. 공고 생성 응답은 호환성을 유지하고 등록 시각의 서울 기준 연도·상하반기를 저장하며 `GET /jobs`는 owner가 실제 보유한 기간 선택지를 반환한다. `GET /jobs/{id}`는 자동 `BALANCED` 분석 후속 상태를 additive projection으로 제공한다. Frontend는 anonymous `/` 공개 Landing, 상단·mobile bottom navigation, `/guide`, 공고 document view와 등록→추출→자동 분석 journey를 제공하며 `/dashboard`는 owner-scoped 정확 집계·서울 기준 월별 마감과 서버 게시 가이드를 행동 중심 화면으로 제공한다.
 
 ## 변경 시 주의사항
 

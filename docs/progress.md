@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (공고 반기·기간 필터 명세 동기화)
+
+- What was done:
+  - 공고 등록 반기 분류와 목록 기간 filter의 기능·API·DB·페이지 계약을 서버·클라이언트 구현에 맞춰 동기화했다.
+- Key decisions:
+  - 등록 시각의 서울 날짜를 시작 기준으로 사용하고 owner 보유 범위 밖 preset은 화면에 표시하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend·Frontend 전체 표준 검증 결과와 명세를 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Landing motion·공고 분석 화면 계약 동기화)
 
 - What was done:
