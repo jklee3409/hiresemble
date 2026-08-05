@@ -7,26 +7,36 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.EvidenceClaimDraft;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.EvidenceClaimDraftV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocation;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutputV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.HeadingPolicy;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.NarrativeFramework;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutputV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapDocumentOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapNodeOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutputV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlan;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlanV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlanV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionType;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraftV3;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutputV3;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.ClaimType;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.NarrativeSectionPlan;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.NarrativeSectionType;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.FactCheckOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.RequirementCheckOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
@@ -214,6 +224,46 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         """
                         SELECT count(*) FROM agent_runs
                         WHERE workflow_type='COVER_LETTER_GENERATION'
+                          AND workflow_version='cover-letter-generation-v3'
+                        """,
+                        Long.class))
+                .isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*) FROM agent_runs
+                        WHERE workflow_type='COVER_LETTER_VERIFICATION'
+                          AND workflow_version='cover-letter-verification-v3'
+                        """,
+                        Long.class))
+                .isPositive();
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*) FROM agent_runs
+                        WHERE workflow_type IN (
+                            'COVER_LETTER_GENERATION','COVER_LETTER_VERIFICATION')
+                          AND workflow_version IN (
+                            'cover-letter-generation-v1','cover-letter-generation-v2',
+                            'cover-letter-verification-v1','cover-letter-verification-v2')
+                        """,
+                        Long.class))
+                .isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*)
+                        FROM agent_runs retry
+                        JOIN agent_runs predecessor
+                          ON predecessor.user_id=retry.user_id
+                         AND predecessor.id=retry.retry_of_run_id
+                        WHERE retry.workflow_type='COVER_LETTER_GENERATION'
+                          AND retry.workflow_version=predecessor.workflow_version
+                          AND retry.workflow_version='cover-letter-generation-v3'
+                        """,
+                        Long.class))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*) FROM agent_runs
+                        WHERE workflow_type='COVER_LETTER_GENERATION'
                           AND status='FAILED'
                           AND error_code='COVER_LETTER_GENERATION_PARTIAL_FAILURE'
                         """,
@@ -241,6 +291,24 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         """,
                         Long.class))
                 .isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*) FROM cover_letter_answer_versions
+                        WHERE source_type='AI_REVISED' AND parent_version_id IS NOT NULL
+                        """,
+                        Long.class))
+                .isPositive();
+        assertThat(jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*)
+                        FROM cover_letter_evidence_links link
+                        JOIN profile_evidence evidence
+                          ON evidence.user_id=link.user_id
+                         AND evidence.id=link.profile_evidence_id
+                        WHERE evidence.source_type='ACTIVITY'
+                        """,
+                        Long.class))
+                .isPositive();
         assertThat(jdbcTemplate.queryForObject(
                         """
                         SELECT count(*) FROM cover_letter_answer_versions
@@ -404,10 +472,14 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         generationPlan(request.input());
                 case "cover-generation-plan-output-v2" ->
                         generationPlanV2(request.input());
+                case "cover-generation-plan-output-v3" ->
+                        generationPlanV3(request.input());
                 case "cover-generation-question-analysis-output-v1" ->
                         questionAnalysis(request.input());
                 case "cover-generation-question-analysis-output-v2" ->
                         questionAnalysisV2(request.input());
+                case "cover-generation-question-analysis-output-v3" ->
+                        questionAnalysisV3(request.input());
                 case "cover-generation-allocation-output-v1" ->
                         experienceAllocation(request.input());
                 case "cover-generation-allocation-output-v2" ->
@@ -416,18 +488,26 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         writtenAnswer(request.input());
                 case "cover-generation-answer-output-v2" ->
                         writtenAnswerV2(request.input());
+                case "cover-generation-answer-output-v3" ->
+                        writtenAnswerV3(request.input());
                 case "cover-generation-fact-check-output-v1" ->
                         generatedAnswerFactCheck(request.input());
                 case "cover-generation-fact-check-output-v2" ->
                         generatedAnswerFactCheckV2(request.input());
+                case "cover-generation-fact-check-output-v3" ->
+                        generatedAnswerFactCheckV3(request.input());
                 case "cover-verification-facts-output-v1" ->
                         verificationFacts(request.input());
                 case "cover-verification-facts-output-v2" ->
                         verificationFactsV2(request.input());
+                case "cover-verification-facts-output-v3" ->
+                        verificationFactsV3(request.input());
                 case "cover-verification-requirements-output-v1" ->
                         verificationRequirements(request.input());
                 case "cover-verification-requirements-output-v2" ->
                         verificationRequirementsV2(request.input());
+                case "cover-verification-requirements-output-v3" ->
+                        verificationRequirementsV3(request.input());
                 default -> throw new AssertionError(
                         "Unexpected P7 chat schema: " + request.outputSchemaVersion());
             };
@@ -459,7 +539,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             }
             var candidate = new DocumentIngestionWorkflow.EvidenceCandidatePayload(
                     "프로젝트",
-                    "P7 approved project evidence",
+                    "P7 승인 프로젝트 근거",
                     grounded,
                     new BigDecimal("0.900"),
                     List.of(first.path("chunkRef").asText()),
@@ -570,6 +650,61 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     input.path("avoidExperienceDuplication").asBoolean());
         }
 
+        private PlanQuestionsOutputV3 generationPlanV3(JsonNode input) {
+            List<QuestionPlanV3> plans = new ArrayList<>();
+            int order = 0;
+            for (JsonNode question : input.path("questions")) {
+                int currentOrder = ++order;
+                Integer maximum = question.path("maxLength").isNumber()
+                        ? question.path("maxLength").asInt()
+                        : null;
+                boolean technical = currentOrder % 2 == 0;
+                NarrativeFramework framework = technical
+                        ? NarrativeFramework.TECHNICAL_DECISION_TRADEOFF
+                        : NarrativeFramework.COMPETENCY_EVIDENCE_APPLICATION;
+                List<NarrativeSectionPlan> sections = technical
+                        ? List.of(
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.PROBLEM, "문제를 설명한다.", 25),
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.DECISION, "선택 근거를 설명한다.", 30),
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.TRADEOFF, "트레이드오프를 설명한다.", 20),
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.RESULT, "결과를 설명한다.", 25))
+                        : List.of(
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.DIRECT_ANSWER, "역량을 직접 답한다.", 25),
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.PERSONAL_ACTION, "개인 행동을 설명한다.", 45),
+                                new NarrativeSectionPlan(
+                                        NarrativeSectionType.RESULT, "검증된 결과를 설명한다.", 30));
+                plans.add(new QuestionPlanV3(
+                        UUID.fromString(question.path("questionId").asText()),
+                        technical ? QuestionType.TECHNICAL_PROJECT : QuestionType.ROLE_COMPETENCY,
+                        technical ? "기술 선택과 트레이드오프" : "검증된 직무 역량",
+                        framework,
+                        "검증된 근거로 문항에 직접 답한다.",
+                        List.of("개인 행동", "직무 관련성"),
+                        List.of("근거 없는 주장"),
+                        input.path("requirements").isEmpty() ? List.of() : List.of(0),
+                        input.path("contextAvailability").path("roleContextAvailable").asBoolean()
+                                ? "개인 행동을 직무와 연결한다."
+                                : null,
+                        input.path("contextAvailability").path("companyContextAvailable").asBoolean()
+                                ? "제공된 회사 정보만 사용한다."
+                                : null,
+                        List.of("결정, 행동, 결과가 있는 근거"),
+                        maximum == null ? 400 : Math.min(400, maximum),
+                        HeadingPolicy.OPTIONAL,
+                        sections));
+            }
+            return new PlanQuestionsOutputV3(
+                    "cover-generation-plan-output-v3",
+                    plans,
+                    input.path("avoidExperienceDuplication").asBoolean());
+        }
+
         private Object questionAnalysis(JsonNode input) {
             UUID questionId = UUID.fromString(input.path("questionId").asText());
             if (input.path("questionText").asText().contains(FAILURE_MARKER)
@@ -618,6 +753,46 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     "Relate the action to the role responsibility.",
                     "Use only the supplied posting context.",
                     "End with a grounded contribution direction.",
+                    HeadingPolicy.valueOf(plan.path("headingPolicy").asText()));
+        }
+
+        private Object questionAnalysisV3(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            if (input.path("questionText").asText().contains(FAILURE_MARKER)
+                    && forcedFailureAttempts
+                                    .computeIfAbsent(questionId, ignored -> new AtomicInteger())
+                                    .incrementAndGet()
+                            <= 3) {
+                return "{\"schemaVersion\":\"cover-generation-question-analysis-output-v3\"}";
+            }
+            JsonNode plan = input.path("plan");
+            List<NarrativeSectionPlan> sections = new ArrayList<>();
+            plan.path("narrativeSections").forEach(section -> sections.add(
+                    new NarrativeSectionPlan(
+                            NarrativeSectionType.valueOf(section.path("sectionType").asText()),
+                            section.path("objective").asText(),
+                            section.path("emphasisWeight").asInt())));
+            return new QuestionAnalysisOutputV3(
+                    "cover-generation-question-analysis-output-v3",
+                    questionId,
+                    QuestionType.valueOf(plan.path("questionType").asText()),
+                    "문항 의도를 근거 중심으로 분석한다.",
+                    "첫 문장에서 핵심 답변을 제시한다.",
+                    plan.path("coreMessage").asText(),
+                    List.of("개인 행동", "구체적 기여"),
+                    List.of("근거 없는 수치"),
+                    NarrativeFramework.valueOf(plan.path("narrativeFramework").asText()),
+                    sections,
+                    "지원자가 직접 판단하고 수행한 행동을 강조한다.",
+                    List.of("문제, 결정, 행동, 결과가 검증된 근거"),
+                    input.path("requirements").isEmpty() ? List.of() : List.of(0),
+                    plan.path("roleConnection").isNull()
+                            ? null
+                            : plan.path("roleConnection").asText(),
+                    plan.path("companyConnection").isNull()
+                            ? null
+                            : plan.path("companyConnection").asText(),
+                    "검증된 기여 방향으로 마무리한다.",
                     HeadingPolicy.valueOf(plan.path("headingPolicy").asText()));
         }
 
@@ -684,6 +859,27 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     claims);
         }
 
+        private WrittenAnswerOutputV3 writtenAnswerV3(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            boolean technical = "TECHNICAL_PROJECT".equals(
+                    input.path("plan").path("questionType").asText());
+            String answer = technical
+                    ? "기술 프로젝트에서 Spring Boot와 PostgreSQL의 트레이드오프를 검토해 안정적인 API를 구현했습니다."
+                    : "검증된 프로젝트에서 요구사항을 분석하고 맡은 API를 안정적으로 구현해 직무 역량을 입증했습니다.";
+            JsonNode firstEvidence = input.path("verifiedEvidence").get(0);
+            List<EvidenceClaimDraftV3> claims = firstEvidence == null
+                    ? List.of()
+                    : List.of(new EvidenceClaimDraftV3(
+                            UUID.fromString(firstEvidence.path("id").asText()),
+                            answer,
+                            ClaimType.ACHIEVEMENT));
+            return new WrittenAnswerOutputV3(
+                    "cover-generation-answer-output-v3",
+                    questionId,
+                    providerTipTap(answer),
+                    claims);
+        }
+
         private FactCheckAnswerOutput generatedAnswerFactCheck(JsonNode input) {
             UUID questionId = UUID.fromString(input.path("questionId").asText());
             List<UUID> evidenceIds = input.path("claims").isEmpty()
@@ -716,6 +912,23 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                             "The answer is supported by approved project evidence.",
                             true,
                             evidenceIds)));
+        }
+
+        private FactCheckAnswerOutputV3 generatedAnswerFactCheckV3(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            JsonNode firstClaim = input.path("claims").get(0);
+            List<VerifiedClaimDraftV3> claims = firstClaim == null
+                    ? List.of()
+                    : List.of(new VerifiedClaimDraftV3(
+                            firstClaim.path("exactAnswerExcerpt").asText(),
+                            true,
+                            List.of(UUID.fromString(firstClaim.path("evidenceId").asText()))));
+            return new FactCheckAnswerOutputV3(
+                    "cover-generation-fact-check-output-v3",
+                    questionId,
+                    List.of(),
+                    List.of(),
+                    claims);
         }
 
         private FactCheckOutput verificationFacts(JsonNode input) {
@@ -769,6 +982,39 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     v1.verifiedClaims());
         }
 
+        private FactCheckOutput verificationFactsV3(JsonNode input) {
+            UUID answerVersionId = UUID.fromString(input.path("answerVersionId").asText());
+            String answerText = input.path("answer").path("boundedPlainText").asText();
+            UUID evidenceId = firstCurrentEvidence(input.path("currentVerifiedEvidence"));
+            List<com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.VerificationIssueDraft>
+                    issues;
+            List<String> suggestions;
+            if (answerText.contains(WARNING_MARKER) && !answerText.contains(PASSED_MARKER)) {
+                issues = List.of(new com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow
+                        .VerificationIssueDraft(
+                        VerificationIssueCode.UNVERIFIED_CLAIM,
+                        IssueSeverity.WARNING,
+                        "승인된 근거로 이 문장을 더 명확하게 설명해 주세요.",
+                        WARNING_MARKER,
+                        evidenceId == null ? List.of() : List.of(evidenceId)));
+                suggestions = List.of("승인된 근거를 반영해 문장을 보완해 주세요. " + PASSED_MARKER);
+            } else {
+                issues = List.of();
+                suggestions = List.of();
+            }
+            List<com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.VerifiedClaimDraft>
+                    claims = evidenceId == null || answerText.isBlank()
+                    ? List.of()
+                    : List.of(new com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow
+                            .VerifiedClaimDraft(answerText, true, List.of(evidenceId)));
+            return new FactCheckOutput(
+                    "cover-verification-facts-output-v3",
+                    answerVersionId,
+                    issues,
+                    suggestions,
+                    claims);
+        }
+
         private RequirementCheckOutput verificationRequirements(JsonNode input) {
             return new RequirementCheckOutput(
                     "cover-verification-requirements-output-v1",
@@ -780,6 +1026,14 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
         private RequirementCheckOutput verificationRequirementsV2(JsonNode input) {
             return new RequirementCheckOutput(
                     "cover-verification-requirements-output-v2",
+                    UUID.fromString(input.path("answerVersionId").asText()),
+                    List.of(),
+                    List.of());
+        }
+
+        private RequirementCheckOutput verificationRequirementsV3(JsonNode input) {
+            return new RequirementCheckOutput(
+                    "cover-verification-requirements-output-v3",
                     UUID.fromString(input.path("answerVersionId").asText()),
                     List.of(),
                     List.of());

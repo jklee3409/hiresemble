@@ -511,7 +511,9 @@ async function uploadAndApproveEvidence(page: Page): Promise<DocumentDetail> {
   await page.waitForURL(/\/documents\/[0-9a-f-]+\?run=[0-9a-f-]+$/)
   const documentId = new URL(page.url()).pathname.split('/').pop()
   if (!documentId) throw new Error('P7 document ID is missing.')
-  await expect(page.getByText('정리 완료', { exact: true })).toBeVisible({ timeout: 120_000 })
+  await expect(
+    page.getByLabel('분석 결과 요약').getByText('정리 완료', { exact: true }),
+  ).toBeVisible({ timeout: 120_000 })
   const evidenceCard = page.locator('[aria-labelledby="document-evidence-heading"] li').first()
   await expect(evidenceCard).toContainText('검토 대기')
   await evidenceCard.getByRole('button', { name: '수정' }).click()
