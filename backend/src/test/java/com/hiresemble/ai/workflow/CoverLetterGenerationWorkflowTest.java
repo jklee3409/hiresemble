@@ -407,7 +407,7 @@ class CoverLetterGenerationWorkflowTest {
             ExecutableWorkflowStep step,
             StepInput input,
             StepExecutionContext context) {
-        PromptRegistry registry = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+        PromptRegistry registry = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                         context.run().workflowVersion())
                 ? v2Prompts
                 : prompts;
@@ -647,7 +647,7 @@ class CoverLetterGenerationWorkflowTest {
         return new AgentRunSnapshot(
                 legacy.id(), legacy.userId(), legacy.workflowType(), legacy.status(),
                 legacy.currentStep(), legacy.progressPercent(),
-                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION,
                 legacy.canonicalInputHash(), legacy.inputReferenceSnapshot(),
                 legacy.budgetPolicyVersion(), legacy.priceVersion(),
                 legacy.requestedQualityMode(), legacy.highestModelTierUsed(),

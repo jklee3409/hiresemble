@@ -4,6 +4,9 @@ import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
+import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.BoundedText;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.EvidenceSelection;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
@@ -65,16 +68,20 @@ public final class CoverLetterVerificationWorkflow {
             "cover-verification-provenance-output-v1";
     private static final String FACTS_SCHEMA = "cover-verification-facts-output-v1";
     private static final String FACTS_SCHEMA_V2 = "cover-verification-facts-output-v2";
+    private static final String FACTS_SCHEMA_V3 = "cover-verification-facts-output-v3";
     private static final String REQUIREMENTS_SCHEMA =
             "cover-verification-requirements-output-v1";
     private static final String REQUIREMENTS_SCHEMA_V2 =
             "cover-verification-requirements-output-v2";
+    private static final String REQUIREMENTS_SCHEMA_V3 =
+            "cover-verification-requirements-output-v3";
     private static final String AGGREGATE_SCHEMA =
             "cover-verification-aggregate-output-v1";
     private static final String PERSIST_SCHEMA =
             "cover-verification-persist-output-v1";
     private static final String INPUT_SCHEMA = "cover-letter-input-v1";
     private static final String INPUT_SCHEMA_V2 = "cover-letter-input-v2";
+    private static final String INPUT_SCHEMA_V3 = "cover-letter-input-v3";
     private static final String WRITING_QUALITY_RUBRIC_VERSION =
             "cover-letter-writing-quality-rubric-v2";
     private static final int MAX_VERIFICATION_EVIDENCE = 30;
@@ -106,18 +113,33 @@ public final class CoverLetterVerificationWorkflow {
                         step(
                                 BUILD_PROVENANCE_CONTEXT,
                                 new BuildProvenanceExecutor()),
-                        step(CHECK_FACTS, new CheckFactsExecutor(false)),
+                        step(CHECK_FACTS, new CheckFactsExecutor(1)),
                         step(
                                 CHECK_REQUIREMENTS_AND_LENGTH,
-                                new CheckRequirementsExecutor(false)),
+                                new CheckRequirementsExecutor(1)),
                         step(
                                 AGGREGATE_VERIFICATION,
                                 new AggregateVerificationExecutor()),
                         step(PERSIST_VERIFICATION, new PersistVerificationExecutor())));
     }
 
-    /** Active v2 contribution. The legacy contribution remains executable for durable v1 runs. */
+    /** Durable v2 contribution. */
     public ExecutableWorkflowContribution v2Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.COVER_LETTER_VERIFICATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
+                List.of(
+                        step(LOAD_ANSWER_VERSION, new LoadAnswerExecutor()),
+                        step(BUILD_PROVENANCE_CONTEXT, new BuildProvenanceExecutor()),
+                        step(CHECK_FACTS, new CheckFactsExecutor(2)),
+                        step(CHECK_REQUIREMENTS_AND_LENGTH, new CheckRequirementsExecutor(2)),
+                        step(AGGREGATE_VERIFICATION, new AggregateVerificationExecutor()),
+                        step(PERSIST_VERIFICATION, new PersistVerificationExecutor())));
+    }
+
+    /** Active v3 contribution. Legacy v1/v2 runs remain executable by exact version. */
+    public ExecutableWorkflowContribution v3Contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_VERIFICATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
@@ -125,8 +147,8 @@ public final class CoverLetterVerificationWorkflow {
                 List.of(
                         step(LOAD_ANSWER_VERSION, new LoadAnswerExecutor()),
                         step(BUILD_PROVENANCE_CONTEXT, new BuildProvenanceExecutor()),
-                        step(CHECK_FACTS, new CheckFactsExecutor(true)),
-                        step(CHECK_REQUIREMENTS_AND_LENGTH, new CheckRequirementsExecutor(true)),
+                        step(CHECK_FACTS, new CheckFactsExecutor(3)),
+                        step(CHECK_REQUIREMENTS_AND_LENGTH, new CheckRequirementsExecutor(3)),
                         step(AGGREGATE_VERIFICATION, new AggregateVerificationExecutor()),
                         step(PERSIST_VERIFICATION, new PersistVerificationExecutor())));
     }
@@ -191,6 +213,8 @@ public final class CoverLetterVerificationWorkflow {
                             != WorkflowType.COVER_LETTER_VERIFICATION
                     || (!CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
                                     context.run().workflowVersion())
+                            && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
+                                    context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION.equals(
                                     context.run().workflowVersion()))
                     || !"COVER_LETTER".equals(context.run().resourceType())
@@ -206,8 +230,7 @@ public final class CoverLetterVerificationWorkflow {
                         UUID.fromString(input.path("verificationId").asText());
                 VerificationSnapshot snapshot =
                         context.run().retryOfRunId() == null
-                                ? CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                                                context.run().workflowVersion())
+                                ? isModern(context.run().workflowVersion())
                                         ? queryPort.loadVerificationSnapshotV2(
                                                 context.run().userId(),
                                                 answerVersionId,
@@ -218,8 +241,7 @@ public final class CoverLetterVerificationWorkflow {
                                                 answerVersionId,
                                                 context.run().requestedQualityMode(),
                                                 context.contextSnapshot().contextHash())
-                                : CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                                                context.run().workflowVersion())
+                                : isModern(context.run().workflowVersion())
                                         ? queryPort.loadVerificationRetrySnapshotV2(
                                                 context.run().userId(),
                                                 context.run().id(),
@@ -535,11 +557,11 @@ public final class CoverLetterVerificationWorkflow {
 
     private final class CheckFactsExecutor
             extends VerificationExecutor<FactCheckOutput> {
-        private final boolean v2;
+        private final int generation;
 
-        private CheckFactsExecutor(boolean v2) {
-            super(CHECK_FACTS, v2 ? FACTS_SCHEMA_V2 : FACTS_SCHEMA, FactCheckOutput.class);
-            this.v2 = v2;
+        private CheckFactsExecutor(int generation) {
+            super(CHECK_FACTS, factsSchema(generation), FactCheckOutput.class);
+            this.generation = generation;
         }
 
         @Override
@@ -552,18 +574,35 @@ public final class CoverLetterVerificationWorkflow {
             Set<UUID> historicallyUsed = state.snapshot().historicalEvidence().stream()
                     .map(HistoricalEvidence::id)
                     .collect(java.util.stream.Collectors.toSet());
-            List<ApprovedEvidenceInput> current = state.snapshot().currentVerifiedEvidence().stream()
-                            .sorted(Comparator
-                                    .<VerifiedEvidence, Boolean>comparing(
-                                            value -> !historicallyUsed.contains(value.id()))
-                                    .thenComparing(VerifiedEvidence::id))
-                            .limit(v2 ? MAX_VERIFICATION_EVIDENCE : Long.MAX_VALUE)
+            EvidenceSelection<VerifiedEvidence> selection = generation == 3
+                    ? CoverLetterWorkflowV3Policy.selectRelevant(
+                            state.snapshot().currentVerifiedEvidence(),
+                            historicallyUsed,
+                            state.snapshot().answerVersion().plainText(),
+                            MAX_VERIFICATION_EVIDENCE,
+                            VerifiedEvidence::id,
+                            value -> Objects.toString(value.title(), "")
+                                    + " "
+                                    + Objects.toString(value.content(), ""))
+                    : new EvidenceSelection<>(
+                            state.snapshot().currentVerifiedEvidence().stream()
+                                    .sorted(Comparator
+                                            .<VerifiedEvidence, Boolean>comparing(
+                                                    value -> !historicallyUsed.contains(value.id()))
+                                            .thenComparing(VerifiedEvidence::id))
+                                    .limit(generation == 2
+                                            ? MAX_VERIFICATION_EVIDENCE
+                                            : Long.MAX_VALUE)
+                                    .toList(),
+                            0,
+                            "legacy-uuid-order");
+            List<ApprovedEvidenceInput> current = selection.selected().stream()
                             .map(value -> new ApprovedEvidenceInput(
                                     value.id(),
                                     value.sourceType().name(),
                                     value.evidenceCategory(),
-                                    bounded(value.title(), v2 ? 200 : 250),
-                                    bounded(value.content(), v2 ? 1_500 : 4_000),
+                                    bounded(value.title(), generation >= 2 ? 200 : 250),
+                                    bounded(value.content(), generation >= 2 ? 1_500 : 4_000),
                                     value.version()))
                             .toList();
             var refs = baseRefs(state);
@@ -575,8 +614,21 @@ public final class CoverLetterVerificationWorkflow {
                     state,
                     refs,
                     stableHash(provenance),
-                    v2
-                            ? tree(new CheckFactsInputV2(
+                    generation == 3
+                            ? tree(new CheckFactsInputV3(
+                                    INPUT_SCHEMA_V3,
+                                    CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                                    state.snapshot().answerVersion().id(),
+                                    CoverLetterWorkflowV3Policy.bound(
+                                            state.snapshot().answerVersion().plainText(), 20_000),
+                                    provenance.historicalEvidence(),
+                                    current,
+                                    selection.omittedCount(),
+                                    selection.policyVersion(),
+                                    bounded(state.snapshot().job().companyName(), 200),
+                                    bounded(state.snapshot().job().positionName(), 300)))
+                            : generation == 2
+                                    ? tree(new CheckFactsInputV2(
                                     INPUT_SCHEMA_V2,
                                     state.snapshot().answerVersion().id(),
                                     bounded(state.snapshot().answerVersion().plainText(), 20_000),
@@ -586,7 +638,7 @@ public final class CoverLetterVerificationWorkflow {
                                             - current.size()),
                                     bounded(state.snapshot().job().companyName(), 200),
                                     bounded(state.snapshot().job().positionName(), 300)))
-                            : tree(new CheckFactsInput(
+                                    : tree(new CheckFactsInput(
                                     INPUT_SCHEMA,
                                     state.snapshot().answerVersion().id(),
                                     bounded(state.snapshot().answerVersion().plainText(), 20_000),
@@ -616,7 +668,7 @@ public final class CoverLetterVerificationWorkflow {
         @Override
         public JsonNode minimalOutput(FactCheckOutput output, ObjectMapper ignored) {
             return objectMapper.createObjectNode()
-                    .put("schemaVersion", v2 ? FACTS_SCHEMA_V2 : FACTS_SCHEMA)
+                    .put("schemaVersion", factsSchema(generation))
                     .put("answerVersionId", output.answerVersionId().toString())
                     .put("factsHash", stableHash(output))
                     .put("issueCount", output.issues().size())
@@ -633,7 +685,7 @@ public final class CoverLetterVerificationWorkflow {
                 FactCheckOutput output, StepExecutionContext context) {
             validateCheckOutput(
                     output.schemaVersion(),
-                    v2 ? FACTS_SCHEMA_V2 : FACTS_SCHEMA,
+                    factsSchema(generation),
                     output.answerVersionId(),
                     output.issues(),
                     output.suggestions());
@@ -649,7 +701,21 @@ public final class CoverLetterVerificationWorkflow {
                     throw new IllegalArgumentException(
                             "verified claim evidence is invalid");
                 }
+                if (generation == 3
+                        && (!value.supported()
+                                || value.evidenceIds().isEmpty()
+                                || !CoverLetterWorkflowV3Policy.normalize(
+                                                state(context).snapshot().answerVersion().plainText())
+                                        .contains(CoverLetterWorkflowV3Policy.normalize(
+                                                value.claim())))) {
+                    throw new IllegalArgumentException(
+                            "verified claims must be positive grounded excerpts");
+                }
             });
+            if (generation == 3) {
+                output.issues().forEach(CoverLetterVerificationWorkflow.this::validateV3FactIssue);
+                requireKorean(output.issues(), output.suggestions());
+            }
         }
 
         @Override
@@ -711,14 +777,14 @@ public final class CoverLetterVerificationWorkflow {
 
     private final class CheckRequirementsExecutor
             extends VerificationExecutor<RequirementCheckOutput> {
-        private final boolean v2;
+        private final int generation;
 
-        private CheckRequirementsExecutor(boolean v2) {
+        private CheckRequirementsExecutor(int generation) {
             super(
                     CHECK_REQUIREMENTS_AND_LENGTH,
-                    v2 ? REQUIREMENTS_SCHEMA_V2 : REQUIREMENTS_SCHEMA,
+                    requirementsSchema(generation),
                     RequirementCheckOutput.class);
-            this.v2 = v2;
+            this.generation = generation;
         }
 
         @Override
@@ -726,10 +792,12 @@ public final class CoverLetterVerificationWorkflow {
             VerificationState state = state(context);
             List<RequirementInput> requirements =
                     state.snapshot().job().requirements().stream()
-                            .limit(v2 ? MAX_VERIFICATION_REQUIREMENTS : Long.MAX_VALUE)
+                            .limit(generation >= 2
+                                    ? MAX_VERIFICATION_REQUIREMENTS
+                                    : Long.MAX_VALUE)
                             .map(value -> new RequirementInput(
                                     value.category(),
-                                    bounded(value.text(), v2 ? 500 : 2_000),
+                                    bounded(value.text(), generation >= 2 ? 500 : 2_000),
                                     value.required()))
                             .toList();
             var refs = baseRefs(state);
@@ -758,8 +826,36 @@ public final class CoverLetterVerificationWorkflow {
                     state,
                     refs,
                     stableHash(requirements),
-                    v2
-                            ? tree(new CheckRequirementsInputV2(
+                    generation == 3
+                            ? tree(new CheckRequirementsInputV3(
+                                    INPUT_SCHEMA_V3,
+                                    CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                                    state.snapshot().answerVersion().id(),
+                                    bounded(state.snapshot().question().questionText(), 2_000),
+                                    CoverLetterWorkflowV3Policy.bound(
+                                            state.snapshot().answerVersion().plainText(), 20_000),
+                                    state.snapshot().answerVersion().characterCount(),
+                                    state.snapshot().question().maxLength(),
+                                    new JobWritingContextInput(
+                                            bounded(state.snapshot().job().companyName(), 200),
+                                            bounded(state.snapshot().job().title(), 300),
+                                            bounded(state.snapshot().job().positionName(), 300),
+                                            bounded(state.snapshot().job().descriptionText(), 4_000),
+                                            requirements,
+                                            state.snapshot().job().analysisOutdated()),
+                                    requirements,
+                                    state.snapshot().siblingAnswers().stream()
+                                            .map(value -> new SiblingAnswerInputV3(
+                                                    value.questionId(),
+                                                    bounded(value.questionText(), 800),
+                                                    value.maxLength(),
+                                                    CoverLetterWorkflowV3Policy.bound(
+                                                            value.plainText(), 800)))
+                                            .toList(),
+                                    WRITING_QUALITY_RUBRIC_VERSION,
+                                    CoverLetterWorkflowV3Policy.DUPLICATION_POLICY_VERSION))
+                            : generation == 2
+                                    ? tree(new CheckRequirementsInputV2(
                                     INPUT_SCHEMA_V2,
                                     state.snapshot().answerVersion().id(),
                                     bounded(state.snapshot().question().questionText(), 2_000),
@@ -776,7 +872,7 @@ public final class CoverLetterVerificationWorkflow {
                                     requirements,
                                     siblings,
                                     WRITING_QUALITY_RUBRIC_VERSION))
-                            : tree(new CheckRequirementsInput(
+                                    : tree(new CheckRequirementsInput(
                                     INPUT_SCHEMA,
                                     state.snapshot().answerVersion().id(),
                                     bounded(state.snapshot().question().questionText(), 2_000),
@@ -808,7 +904,7 @@ public final class CoverLetterVerificationWorkflow {
         public JsonNode minimalOutput(
                 RequirementCheckOutput output, ObjectMapper ignored) {
             return objectMapper.createObjectNode()
-                    .put("schemaVersion", v2 ? REQUIREMENTS_SCHEMA_V2 : REQUIREMENTS_SCHEMA)
+                    .put("schemaVersion", requirementsSchema(generation))
                     .put("answerVersionId", output.answerVersionId().toString())
                     .put("requirementsHash", stableHash(output))
                     .put("issueCount", output.issues().size());
@@ -825,14 +921,18 @@ public final class CoverLetterVerificationWorkflow {
                 StepExecutionContext context) {
             validateCheckOutput(
                     output.schemaVersion(),
-                    v2 ? REQUIREMENTS_SCHEMA_V2 : REQUIREMENTS_SCHEMA,
+                    requirementsSchema(generation),
                     output.answerVersionId(),
                     output.issues(),
                     output.suggestions());
-            if (v2 && output.issues().stream().anyMatch(issue ->
+            if (generation >= 2 && output.issues().stream().anyMatch(issue ->
                     issue.code() == VerificationIssueCode.OTHER
                             && issue.severity() != IssueSeverity.WARNING)) {
                 throw new IllegalArgumentException("writing-quality issues must be warnings");
+            }
+            if (generation == 3) {
+                output.issues().forEach(CoverLetterVerificationWorkflow.this::validateV3RequirementIssue);
+                requireKorean(output.issues(), output.suggestions());
             }
         }
 
@@ -849,6 +949,25 @@ public final class CoverLetterVerificationWorkflow {
                                     == VerificationIssueCode.LENGTH_VIOLATION)) {
                 throw new IllegalArgumentException(
                         "length violation issue is required");
+            }
+            if (generation == 3) {
+                boolean duplicate = state.snapshot().siblingAnswers().stream().anyMatch(sibling ->
+                        CoverLetterWorkflowV3Policy.duplication(
+                                        state.snapshot().answerVersion().plainText(),
+                                        Set.of(),
+                                        "",
+                                        sibling.plainText(),
+                                        Set.of(),
+                                        "",
+                                        null)
+                                .warningRequired());
+                if (duplicate
+                        && output.issues().stream().noneMatch(issue ->
+                                issue.code() == VerificationIssueCode.OTHER
+                                        && issue.severity() == IssueSeverity.WARNING)) {
+                    throw new IllegalArgumentException(
+                            "high cross-answer duplication requires a warning");
+                }
             }
         }
 
@@ -1208,6 +1327,41 @@ public final class CoverLetterVerificationWorkflow {
         }
     }
 
+    private void validateV3FactIssue(VerificationIssueDraft issue) {
+        if (!Set.of(
+                        VerificationIssueCode.UNVERIFIED_CLAIM,
+                        VerificationIssueCode.CONTRADICTION,
+                        VerificationIssueCode.SOURCE_DELETED)
+                .contains(issue.code())) {
+            throw new IllegalArgumentException("fact issue code is incompatible");
+        }
+    }
+
+    private void validateV3RequirementIssue(VerificationIssueDraft issue) {
+        if (issue.code() == VerificationIssueCode.OTHER) {
+            if (issue.severity() != IssueSeverity.WARNING) {
+                throw new IllegalArgumentException("style issue must be a warning");
+            }
+            return;
+        }
+        if (!Set.of(
+                        VerificationIssueCode.REQUIREMENT_MISSING,
+                        VerificationIssueCode.LENGTH_VIOLATION)
+                .contains(issue.code())) {
+            throw new IllegalArgumentException("requirement issue code is incompatible");
+        }
+    }
+
+    private void requireKorean(
+            List<VerificationIssueDraft> issues, List<String> suggestions) {
+        if (issues.stream().anyMatch(issue ->
+                        !KoreanUserFacingTextPolicy.containsKorean(issue.message()))
+                || suggestions.stream()
+                        .anyMatch(value -> !KoreanUserFacingTextPolicy.containsKorean(value))) {
+            throw new IllegalArgumentException("user-facing verification prose must be Korean");
+        }
+    }
+
     private String issueKey(VerificationIssueDraft issue) {
         return issue.code()
                 + "|"
@@ -1346,8 +1500,30 @@ public final class CoverLetterVerificationWorkflow {
             UUID verificationId,
             String workflowVersion) {}
 
+    private boolean isModern(String workflowVersion) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(workflowVersion)
+                || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
+                        workflowVersion);
+    }
+
+    private static String factsSchema(int generation) {
+        return generation == 3
+                ? FACTS_SCHEMA_V3
+                : generation == 2 ? FACTS_SCHEMA_V2 : FACTS_SCHEMA;
+    }
+
+    private static String requirementsSchema(int generation) {
+        return generation == 3
+                ? REQUIREMENTS_SCHEMA_V3
+                : generation == 2 ? REQUIREMENTS_SCHEMA_V2 : REQUIREMENTS_SCHEMA;
+    }
+
     private String inputSchema(VerificationState state) {
-        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+        if (CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                state.workflowVersion())) {
+            return INPUT_SCHEMA_V3;
+        }
+        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                         state.workflowVersion())
                 ? INPUT_SCHEMA_V2
                 : INPUT_SCHEMA;
@@ -1435,6 +1611,23 @@ public final class CoverLetterVerificationWorkflow {
         }
     }
 
+    public record CheckFactsInputV3(
+            String schemaVersion,
+            String outputLocale,
+            UUID answerVersionId,
+            BoundedText answer,
+            List<HistoricalEvidenceRef> historicalEvidence,
+            List<ApprovedEvidenceInput> currentVerifiedEvidence,
+            int omittedCurrentVerifiedEvidenceCount,
+            String evidenceSelectionPolicyVersion,
+            String companyName,
+            String positionName) {
+        public CheckFactsInputV3 {
+            historicalEvidence = copy(historicalEvidence);
+            currentVerifiedEvidence = copy(currentVerifiedEvidence);
+        }
+    }
+
     public record VerificationIssueDraft(
             VerificationIssueCode code,
             IssueSeverity severity,
@@ -1514,6 +1707,31 @@ public final class CoverLetterVerificationWorkflow {
             List<SiblingAnswerInput> siblingAnswers,
             String writingQualityRubricVersion) {
         public CheckRequirementsInputV2 {
+            jobRequirements = copy(jobRequirements);
+            siblingAnswers = copy(siblingAnswers);
+        }
+    }
+
+    public record SiblingAnswerInputV3(
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            BoundedText answer) {}
+
+    public record CheckRequirementsInputV3(
+            String schemaVersion,
+            String outputLocale,
+            UUID answerVersionId,
+            String questionText,
+            BoundedText answer,
+            int characterCount,
+            Integer maxLength,
+            JobWritingContextInput job,
+            List<RequirementInput> jobRequirements,
+            List<SiblingAnswerInputV3> siblingAnswers,
+            String writingQualityRubricVersion,
+            String duplicationPolicyVersion) {
+        public CheckRequirementsInputV3 {
             jobRequirements = copy(jobRequirements);
             siblingAnswers = copy(siblingAnswers);
         }

@@ -44,6 +44,8 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
         if (run.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION
                 || (!CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
                                 run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
+                                run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION.equals(
                                 run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())
@@ -98,15 +100,13 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
     private VerificationSnapshot load(AgentRunSnapshot run, InputReference input) {
         try {
             if (run.retryOfRunId() != null) {
-                return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                                run.workflowVersion())
+                return isModern(run.workflowVersion())
                         ? queryPort.loadVerificationRetrySnapshotV2(
                                 run.userId(), run.id(), null)
                         : queryPort.loadVerificationRetrySnapshot(
                                 run.userId(), run.id(), null);
             }
-            return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                            run.workflowVersion())
+            return isModern(run.workflowVersion())
                     ? queryPort.loadVerificationSnapshotV2(
                             run.userId(),
                             input.answerVersionId(),
@@ -126,6 +126,12 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                     exception.errorCode().code(),
                     exception.errorCode().defaultMessage());
         }
+    }
+
+    private boolean isModern(String workflowVersion) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(workflowVersion)
+                || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
+                        workflowVersion);
     }
 
     private InputReference input(AgentRunSnapshot run) {

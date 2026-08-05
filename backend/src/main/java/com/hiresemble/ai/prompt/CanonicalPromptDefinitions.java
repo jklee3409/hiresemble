@@ -16,8 +16,10 @@ public final class CanonicalPromptDefinitions {
         prompts.addAll(JobAnalysisPromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationPromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationV2PromptDefinitions.all());
+        prompts.addAll(CoverLetterGenerationV3PromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationPromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationV2PromptDefinitions.all());
+        prompts.addAll(CoverLetterVerificationV3PromptDefinitions.all());
         prompts.addAll(InterviewPreparationPromptDefinitions.all());
         prompts.addAll(InterviewAnswerFeedbackPromptDefinitions.all());
         return List.copyOf(prompts);

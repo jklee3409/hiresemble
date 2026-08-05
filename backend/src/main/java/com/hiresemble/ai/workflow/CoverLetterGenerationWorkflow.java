@@ -8,8 +8,12 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
 import com.hiresemble.ai.validation.ProviderNullable;
+import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.BoundedText;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.ClaimType;
+import com.hiresemble.ai.workflow.CoverLetterWorkflowV3Policy.NarrativeSectionPlan;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
@@ -77,6 +81,8 @@ public final class CoverLetterGenerationWorkflow {
     public static final String RETRIEVAL_POLICY_VERSION = "cover-generation-retrieval-v1";
     public static final String CONTEXT_POLICY_VERSION_V2 = "cover-generation-context-v2";
     public static final String RETRIEVAL_POLICY_VERSION_V2 = "cover-generation-retrieval-v2";
+    public static final String CONTEXT_POLICY_VERSION_V3 = "cover-generation-context-v3";
+    public static final String RETRIEVAL_POLICY_VERSION_V3 = "cover-generation-retrieval-v3";
 
     private static final String BUILD_SCHEMA = "cover-generation-build-output-v1";
     private static final String PLAN_SCHEMA = "cover-generation-plan-output-v1";
@@ -98,8 +104,15 @@ public final class CoverLetterGenerationWorkflow {
     private static final String ANSWER_SCHEMA_V2 = "cover-generation-answer-output-v2";
     private static final String FACT_CHECK_SCHEMA_V2 =
             "cover-generation-fact-check-output-v2";
+    private static final String PLAN_SCHEMA_V3 = "cover-generation-plan-output-v3";
+    private static final String ANALYSIS_SCHEMA_V3 =
+            "cover-generation-question-analysis-output-v3";
+    private static final String ANSWER_SCHEMA_V3 = "cover-generation-answer-output-v3";
+    private static final String FACT_CHECK_SCHEMA_V3 =
+            "cover-generation-fact-check-output-v3";
     private static final String INPUT_SCHEMA = "cover-letter-input-v1";
     private static final String INPUT_SCHEMA_V2 = "cover-letter-input-v2";
+    private static final String INPUT_SCHEMA_V3 = "cover-letter-input-v3";
     private static final int MAX_EVIDENCE_PER_QUESTION = 12;
     private static final int MAX_PLANNING_EVIDENCE = 20;
     private static final int MAX_CHUNK_REFS = 8;
@@ -161,7 +174,7 @@ public final class CoverLetterGenerationWorkflow {
     public ExecutableWorkflowContribution v2Contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_GENERATION,
-                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION,
                 TerminalPartialPolicy.fail(
                         "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
                         "일부 자기소개서 문항을 생성하지 못했습니다.",
@@ -175,6 +188,26 @@ public final class CoverLetterGenerationWorkflow {
                         step(WRITE_ANSWER, new V2WriteAnswerExecutor()),
                         step(FACT_CHECK_ANSWER, new V2FactCheckAnswerExecutor()),
                         step(APPLY_ANSWER_VERSION, new V2ApplyAnswerExecutor())));
+    }
+
+    /** Active v3 contribution; v1/v2 contributions remain exact-version durable executors. */
+    public ExecutableWorkflowContribution v3Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.COVER_LETTER_GENERATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                TerminalPartialPolicy.fail(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다.",
+                        TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES),
+                List.of(
+                        step(BUILD_GENERATION_CONTEXT, new V3BuildContextExecutor()),
+                        step(PLAN_QUESTIONS, new V3PlanQuestionsExecutor()),
+                        step(ANALYZE_QUESTION, new V3AnalyzeQuestionExecutor()),
+                        step(RETRIEVE_EVIDENCE, new V3RetrieveEvidenceExecutor()),
+                        step(ALLOCATE_EXPERIENCES, new V3AllocateExperiencesExecutor()),
+                        step(WRITE_ANSWER, new V3WriteAnswerExecutor()),
+                        step(FACT_CHECK_ANSWER, new V3FactCheckAnswerExecutor()),
+                        step(APPLY_ANSWER_VERSION, new V3ApplyAnswerExecutor())));
     }
 
     private ExecutableWorkflowStep step(
@@ -234,6 +267,8 @@ public final class CoverLetterGenerationWorkflow {
                     || context.run().workflowType()
                             != WorkflowType.COVER_LETTER_GENERATION
                     || (!CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                                    context.run().workflowVersion())
+                            && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                     context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
                                     context.run().workflowVersion()))
@@ -345,6 +380,15 @@ public final class CoverLetterGenerationWorkflow {
             refs.put("contextPolicyVersion", CONTEXT_POLICY_VERSION_V2);
             refs.put("retrievalPolicyVersion", RETRIEVAL_POLICY_VERSION_V2);
             refs.put("inputSchemaVersion", INPUT_SCHEMA_V2);
+            return refs;
+        }
+
+        protected final ObjectNode baseRefsV3(GenerationState state) {
+            var refs = baseRefs(state);
+            refs.put("contextPolicyVersion", CONTEXT_POLICY_VERSION_V3);
+            refs.put("retrievalPolicyVersion", RETRIEVAL_POLICY_VERSION_V3);
+            refs.put("inputSchemaVersion", INPUT_SCHEMA_V3);
+            refs.put("outputLocale", CoverLetterWorkflowV3Policy.OUTPUT_LOCALE);
             return refs;
         }
 
@@ -529,6 +573,57 @@ public final class CoverLetterGenerationWorkflow {
         }
     }
 
+    private final class V3BuildContextExecutor
+            extends GenerationExecutor<BuildGenerationContextOutput> {
+        private V3BuildContextExecutor() {
+            super(BUILD_GENERATION_CONTEXT, BUILD_SCHEMA, BuildGenerationContextOutput.class);
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            GenerationState state = state(context);
+            return localInput(
+                    state,
+                    null,
+                    baseRefsV3(state),
+                    BUILD_SCHEMA + "|" + INPUT_SCHEMA_V3,
+                    tree(new BuildGenerationContextInput(
+                            INPUT_SCHEMA_V3,
+                            state.snapshot().coverLetterId(),
+                            state.snapshot().coverLetterVersion(),
+                            state.snapshot().snapshotHash())));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            GenerationState state = state(invocation.executionContext());
+            GenerationSnapshot snapshot = state.snapshot();
+            return localResponse(new BuildGenerationContextOutput(
+                    BUILD_SCHEMA,
+                    snapshot.coverLetterId(),
+                    snapshot.coverLetterVersion(),
+                    snapshot.snapshotHash(),
+                    snapshot.job().jobId(),
+                    snapshot.job().analysisId(),
+                    snapshot.job().analysisVersion(),
+                    snapshot.job().analysisOutdated(),
+                    snapshot.questions().stream().map(GenerationQuestion::questionId).toList(),
+                    state.reusedQuestionIds(),
+                    snapshot.verifiedEvidence().stream().map(VerifiedEvidence::id).sorted().toList(),
+                    snapshot.preferredEvidenceIds()));
+        }
+
+        @Override
+        protected void validateJavaRecord(BuildGenerationContextOutput output, StepExecutionContext context) {
+            validateBuildOutput(output);
+        }
+
+        @Override
+        protected void validateDomainOutput(BuildGenerationContextOutput output, StepExecutionContext context) {
+            validateBuildScope(output, state(context));
+        }
+    }
+
     private final class V2BuildContextExecutor
             extends GenerationExecutor<BuildGenerationContextOutput> {
         private V2BuildContextExecutor() {
@@ -603,6 +698,212 @@ public final class CoverLetterGenerationWorkflow {
                 throw domainFailure(
                         "COVER_GENERATION_CONTEXT_STALE",
                         "자기소개서 생성 기준 정보가 변경되었습니다.");
+            }
+        }
+    }
+
+    private final class V3PlanQuestionsExecutor extends GenerationExecutor<PlanQuestionsOutputV3> {
+        private V3PlanQuestionsExecutor() {
+            super(PLAN_QUESTIONS, PLAN_SCHEMA_V3, PlanQuestionsOutputV3.class);
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            GenerationState state = state(context);
+            List<QuestionPlanningInput> questions = planningQuestions(state);
+            List<RequirementInput> requirements = requirementInputs(state);
+            List<EvidencePlanningInput> evidence = planningEvidence(state);
+            var refs = baseRefsV3(state);
+            refs.put("questionCount", questions.size());
+            refs.put("planningEvidenceCount", evidence.size());
+            refs.put("outputLocale", CoverLetterWorkflowV3Policy.OUTPUT_LOCALE);
+            return localInput(
+                    state,
+                    null,
+                    refs,
+                    stableHash(questions) + "|" + stableHash(evidence),
+                    tree(new PlanQuestionsInputV3(
+                            INPUT_SCHEMA_V3,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            contextAvailability(state),
+                            jobWritingContext(state),
+                            questions,
+                            requirements,
+                            evidence,
+                            Math.max(0, state.snapshot().verifiedEvidence().size() - evidence.size()),
+                            state.snapshot().avoidExperienceDuplication())));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(PlanQuestionsOutputV3 output, ObjectMapper ignored) {
+            var result = objectMapper.createObjectNode()
+                    .put("schemaVersion", PLAN_SCHEMA_V3)
+                    .put("planHash", stableHash(output))
+                    .put("questionCount", output.plans().size());
+            var ids = result.putArray("questionIds");
+            output.plans().forEach(value -> ids.add(value.questionId().toString()));
+            return result;
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(PlanQuestionsOutputV3 output, StepExecutionContext context) {
+            if (!PLAN_SCHEMA_V3.equals(output.schemaVersion())
+                    || output.plans() == null
+                    || output.plans().isEmpty()
+                    || output.plans().size() > 20
+                    || hasDuplicates(output.plans().stream().map(QuestionPlanV3::questionId).toList())) {
+                throw new IllegalArgumentException("v3 question plan is invalid");
+            }
+            ContextAvailabilityInput availability = contextAvailability(state(context));
+            output.plans().forEach(plan -> validateQuestionPlanV3(plan, availability));
+        }
+
+        @Override
+        protected void validateWorkflowOutput(PlanQuestionsOutputV3 output, StepExecutionContext context) {
+            if (output.avoidExperienceDuplication() && output.plans().size() > 1) {
+                List<String> messages = output.plans().stream()
+                        .map(plan -> CoverLetterWorkflowV3Policy.normalize(plan.coreMessage()))
+                        .toList();
+                if (new HashSet<>(messages).size() != messages.size()) {
+                    throw new IllegalArgumentException("question core messages must be distinct");
+                }
+            }
+        }
+
+        @Override
+        protected void validateDomainOutput(PlanQuestionsOutputV3 output, StepExecutionContext context) {
+            GenerationState state = state(context);
+            List<UUID> expected = state.snapshot().questions().stream()
+                    .map(GenerationQuestion::questionId)
+                    .toList();
+            if (!expected.equals(output.plans().stream().map(QuestionPlanV3::questionId).toList())
+                    || output.avoidExperienceDuplication()
+                            != state.snapshot().avoidExperienceDuplication()) {
+                throw domainFailure(
+                        "COVER_GENERATION_PLAN_SCOPE_INVALID",
+                        "자기소개서 문항 생성 계획 범위를 확인하지 못했습니다.");
+            }
+            for (QuestionPlanV3 plan : output.plans()) {
+                GenerationQuestion question = question(state, plan.questionId());
+                if ((question.maxLength() != null
+                                && plan.targetCharacterCount() > question.maxLength())
+                        || plan.requirementIndexes().stream().anyMatch(index ->
+                                index >= requirementInputs(state).size())) {
+                    throw new IllegalArgumentException("v3 plan references invalid input");
+                }
+            }
+        }
+    }
+
+    private final class V3AnalyzeQuestionExecutor
+            extends QuestionExecutor<QuestionAnalysisOutputV3> {
+        private V3AnalyzeQuestionExecutor() {
+            super(ANALYZE_QUESTION, ANALYSIS_SCHEMA_V3, QuestionAnalysisOutputV3.class);
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context,
+                GenerationState state,
+                GenerationQuestion question) {
+            PlanQuestionsOutputV3 plan = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            QuestionPlanV3 selected = plan.plans().stream()
+                    .filter(value -> value.questionId().equals(question.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            var refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("planHash", stableHash(selected));
+            refs.put("outputLocale", CoverLetterWorkflowV3Policy.OUTPUT_LOCALE);
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    stableHash(selected),
+                    tree(new AnalyzeQuestionInputV3(
+                            INPUT_SCHEMA_V3,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            contextAvailability(state),
+                            question.questionId(),
+                            bounded(question.questionText(), 2_000),
+                            question.maxLength(),
+                            selected,
+                            jobWritingContext(state),
+                            requirementInputs(state))));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(QuestionAnalysisOutputV3 output, ObjectMapper ignored) {
+            return objectMapper.createObjectNode()
+                    .put("schemaVersion", ANALYSIS_SCHEMA_V3)
+                    .put("questionId", output.questionId().toString())
+                    .put("analysisHash", stableHash(output))
+                    .put("sectionCount", output.narrativeSections().size());
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(QuestionAnalysisOutputV3 output, StepExecutionContext context) {
+            if (!ANALYSIS_SCHEMA_V3.equals(output.schemaVersion())
+                    || output.questionId() == null
+                    || output.questionType() == null
+                    || output.narrativeFramework() == null
+                    || output.headingPolicy() == null
+                    || output.requirementIndexes() == null
+                    || output.requirementIndexes().size() > 100) {
+                throw new IllegalArgumentException("v3 question analysis is invalid");
+            }
+            requireText(output.intent(), 2_000);
+            requireText(output.directAnswerDirection(), 1_000);
+            requireText(output.openingCoreMessage(), 1_000);
+            requireText(output.personalActionFocus(), 1_000);
+            requireText(output.conclusionDirection(), 1_000);
+            requireTexts(output.requiredElements(), 20, 1_000);
+            requireTexts(output.avoidContent(), 20, 1_000);
+            requireTexts(output.requiredEvidenceTraits(), 20, 1_000);
+            CoverLetterWorkflowV3Policy.validateSections(
+                    output.narrativeFramework(), output.narrativeSections());
+            validateOptionalConnections(
+                    output.roleConnection(), output.companyConnection(), contextAvailability(state(context)));
+        }
+
+        @Override
+        protected void validateDomainOutput(QuestionAnalysisOutputV3 output, StepExecutionContext context) {
+            GenerationState state = state(context);
+            PlanQuestionsOutputV3 plan = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            QuestionPlanV3 selected = plan.plans().stream()
+                    .filter(value -> value.questionId().equals(output.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            if (!output.questionId().toString().equals(context.scopeKey())
+                    || output.questionType() != selected.questionType()
+                    || output.narrativeFramework() != selected.narrativeFramework()
+                    || output.headingPolicy() != selected.headingPolicy()
+                    || !output.narrativeSections().equals(selected.narrativeSections())
+                    || output.requirementIndexes().stream().anyMatch(index ->
+                            index == null || index < 0 || index >= requirementInputs(state).size())) {
+                throw domainFailure(
+                        "COVER_GENERATION_QUESTION_SCOPE_INVALID",
+                        "자기소개서 문항 분석 범위를 확인하지 못했습니다.");
             }
         }
     }
@@ -848,6 +1149,109 @@ public final class CoverLetterGenerationWorkflow {
         }
     }
 
+    private final class V3RetrieveEvidenceExecutor extends QuestionExecutor<RetrievedEvidenceOutput> {
+        private V3RetrieveEvidenceExecutor() {
+            super(RETRIEVE_EVIDENCE, RETRIEVAL_SCHEMA, RetrievedEvidenceOutput.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            return context.ephemeral(ANALYZE_QUESTION, question.questionId().toString()) != null;
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            QuestionAnalysisOutputV3 analysis = requiredScopedEphemeral(
+                    context, ANALYZE_QUESTION, question.questionId(), QuestionAnalysisOutputV3.class);
+            PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            QuestionPlanV3 plan = plans.plans().stream()
+                    .filter(value -> value.questionId().equals(question.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            String requirementText = analysis.requirementIndexes().stream()
+                    .map(index -> state.snapshot().job().requirements().get(index).text())
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            String queryText = bounded(String.join(
+                    "\n",
+                    question.questionText(),
+                    plan.coreMessage(),
+                    analysis.directAnswerDirection(),
+                    String.join("\n", analysis.requiredElements()),
+                    String.join("\n", analysis.requiredEvidenceTraits()),
+                    requirementText), 4_000);
+            var refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("queryHash", sha256(queryText));
+            refs.put("embeddingPolicyVersion", state.embeddingPolicy().version());
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    sha256(queryText + "|" + RETRIEVAL_POLICY_VERSION_V3),
+                    tree(new RetrieveEvidenceInput(
+                            INPUT_SCHEMA_V3,
+                            question.questionId(),
+                            queryText,
+                            state.embeddingPolicy().version(),
+                            state.embeddingPolicy().dimension(),
+                            state.embeddingPolicy().generation(),
+                            RETRIEVAL_POLICY_VERSION_V3)));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            GenerationState state = state(invocation.executionContext());
+            RetrieveEvidenceInput input = read(invocation.input().gatewayPayload(), RetrieveEvidenceInput.class);
+            AiGatewayResponse embedding = invocation.embeddingGateway().embed(new EmbeddingRequest(
+                    state.embeddingPolicy().providerKey(),
+                    state.embeddingPolicy().productKey(),
+                    List.of(input.queryText()),
+                    state.embeddingPolicy().dimension(),
+                    EMBEDDING_TIMEOUT,
+                    invocation.executionContext().run().priceVersion()));
+            List<Double> vector = parseSingleVector(embedding.rawJson(), state.embeddingPolicy().dimension());
+            List<CandidateChunk> chunks = queryPort.searchEvidenceCandidates(
+                    state.snapshot().userId(), vector, MAX_CHUNK_REFS);
+            RetrievedEvidenceOutput output = new RetrievedEvidenceOutput(
+                    RETRIEVAL_SCHEMA,
+                    input.questionId(),
+                    sha256(input.queryText()),
+                    selectEvidence(state.snapshot(), input.queryText()),
+                    chunks.stream()
+                            .sorted(Comparator.comparingDouble(CandidateChunk::distance)
+                                    .thenComparing(CandidateChunk::chunkId))
+                            .limit(MAX_CHUNK_REFS)
+                            .map(value -> new ChunkCandidateRef(
+                                    value.chunkId(),
+                                    value.documentId(),
+                                    bounded(value.maskedContent(), 4_000),
+                                    value.distance()))
+                            .toList());
+            return new AiGatewayResponse(write(output), embedding.usage());
+        }
+
+        @Override
+        public JsonNode minimalOutput(RetrievedEvidenceOutput output, ObjectMapper ignored) {
+            return retrievalMinimalOutput(output);
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(RetrievedEvidenceOutput output, StepExecutionContext context) {
+            validateRetrievedEvidence(output);
+        }
+
+        @Override
+        protected void validateDomainOutput(RetrievedEvidenceOutput output, StepExecutionContext context) {
+            validateRetrievedEvidenceScope(output, state(context), context.scopeKey());
+        }
+    }
+
     private final class V2RetrieveEvidenceExecutor
             extends QuestionExecutor<RetrievedEvidenceOutput> {
         private V2RetrieveEvidenceExecutor() {
@@ -1012,6 +1416,70 @@ public final class CoverLetterGenerationWorkflow {
         }
     }
 
+    private final class V3AllocateExperiencesExecutor
+            extends GenerationExecutor<ExperienceAllocationOutputV2> {
+        private V3AllocateExperiencesExecutor() {
+            super(ALLOCATE_EXPERIENCES, ALLOCATION_SCHEMA_V2, ExperienceAllocationOutputV2.class);
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            GenerationState state = state(context);
+            PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            Map<String, Object> analyses = context.scopedEphemeral(ANALYZE_QUESTION);
+            Map<String, Object> retrieved = context.scopedEphemeral(RETRIEVE_EVIDENCE);
+            List<AllocationCandidateInputV3> candidates = state.snapshot().questions().stream()
+                    .filter(question -> analyses.containsKey(question.questionId().toString()))
+                    .filter(question -> retrieved.containsKey(question.questionId().toString()))
+                    .map(question -> {
+                        QuestionPlanV3 plan = plans.plans().stream()
+                                .filter(value -> value.questionId().equals(question.questionId()))
+                                .findFirst()
+                                .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+                        QuestionAnalysisOutputV3 analysis = cast(
+                                analyses.get(question.questionId().toString()), QuestionAnalysisOutputV3.class);
+                        RetrievedEvidenceOutput output = cast(
+                                retrieved.get(question.questionId().toString()), RetrievedEvidenceOutput.class);
+                        return new AllocationCandidateInputV3(
+                                question.questionId(),
+                                plan.questionType(),
+                                plan.coreMessage(),
+                                plan.narrativeFramework(),
+                                analysis.narrativeSections(),
+                                analysis.requiredEvidenceTraits(),
+                                output.evidenceIds().stream().map(id -> evidencePlanning(state, id)).toList());
+                    })
+                    .toList();
+            var refs = baseRefsV3(state);
+            refs.put("candidateHash", stableHash(candidates));
+            return localInput(
+                    state,
+                    null,
+                    refs,
+                    stableHash(candidates),
+                    tree(new AllocateExperiencesInputV3(
+                            INPUT_SCHEMA_V3,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            candidates,
+                            state.snapshot().avoidExperienceDuplication())));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        protected void validateJavaRecord(ExperienceAllocationOutputV2 output, StepExecutionContext context) {
+            validateAllocation(output);
+        }
+
+        @Override
+        protected void validateDomainOutput(ExperienceAllocationOutputV2 output, StepExecutionContext context) {
+            validateAllocationScope(output, state(context), context);
+        }
+    }
+
     private final class V2AllocateExperiencesExecutor
             extends GenerationExecutor<ExperienceAllocationOutputV2> {
         private V2AllocateExperiencesExecutor() {
@@ -1137,6 +1605,150 @@ public final class CoverLetterGenerationWorkflow {
                                 "duplicated v2 experience requires reason and distinct emphasis");
                     }
                 });
+            }
+        }
+    }
+
+    private final class V3WriteAnswerExecutor extends QuestionExecutor<WrittenAnswerOutputV3> {
+        private V3WriteAnswerExecutor() {
+            super(WRITE_ANSWER, ANSWER_SCHEMA_V3, WrittenAnswerOutputV3.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            return context.ephemeral(ALLOCATE_EXPERIENCES) instanceof ExperienceAllocationOutputV2 allocation
+                    && context.ephemeral(ANALYZE_QUESTION, question.questionId().toString()) != null
+                    && allocation.allocations().stream()
+                            .anyMatch(item -> item.questionId().equals(question.questionId()));
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            QuestionPlanV3 plan = plans.plans().stream()
+                    .filter(value -> value.questionId().equals(question.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            QuestionAnalysisOutputV3 analysis = requiredScopedEphemeral(
+                    context, ANALYZE_QUESTION, question.questionId(), QuestionAnalysisOutputV3.class);
+            ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                    context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+            ExperienceAllocationV2 allocation = allocations.allocations().stream()
+                    .filter(value -> value.questionId().equals(question.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            List<ApprovedEvidenceInput> evidence = allocation.evidenceIds().stream()
+                    .map(id -> approvedEvidenceV2(state, id))
+                    .toList();
+            List<OtherQuestionStrategyInput> otherQuestions = plans.plans().stream()
+                    .filter(value -> !value.questionId().equals(question.questionId()))
+                    .map(value -> {
+                        ExperienceAllocationV2 sibling = allocations.allocations().stream()
+                                .filter(item -> item.questionId().equals(value.questionId()))
+                                .findFirst()
+                                .orElse(null);
+                        return new OtherQuestionStrategyInput(
+                                value.questionId(),
+                                value.coreMessage(),
+                                sibling == null ? List.of() : sibling.evidenceIds(),
+                                sibling == null ? null : sibling.distinctEmphasis());
+                    })
+                    .toList();
+            BoundedText current = CoverLetterWorkflowV3Policy.bound(
+                    question.currentPlainText(),
+                    question.maxLength() == null ? MAX_TEXT : Math.min(MAX_TEXT, question.maxLength()));
+            var refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("currentAnswerOriginalCharacterCount", current.originalCharacterCount());
+            refs.put("currentAnswerProvidedCharacterCount", current.providedCharacterCount());
+            refs.put("currentAnswerTruncated", current.truncated());
+            refs.put("currentAnswerFullTextHash", current.fullTextHash());
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    stableHash(plan) + "|" + current.fullTextHash(),
+                    tree(new WriteAnswerInputV3(
+                            INPUT_SCHEMA_V3,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            contextAvailability(state),
+                            question.questionId(),
+                            bounded(question.questionText(), 2_000),
+                            question.maxLength(),
+                            plan,
+                            analysis,
+                            plan.targetCharacterCount(),
+                            evidence,
+                            jobWritingContext(state),
+                            question.currentAnswerVersionId(),
+                            current,
+                            otherQuestions,
+                            plan.headingPolicy())));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(WrittenAnswerOutputV3 output, ObjectMapper ignored) {
+            TipTapDocumentDto content = mapTipTap(output.content());
+            String text = plainText(content);
+            var result = objectMapper.createObjectNode()
+                    .put("schemaVersion", ANSWER_SCHEMA_V3)
+                    .put("questionId", output.questionId().toString())
+                    .put("answerHash", sha256(write(content)))
+                    .put("characterCount", text.codePointCount(0, text.length()));
+            var evidenceIds = result.putArray("evidenceIds");
+            output.claims().stream().map(EvidenceClaimDraftV3::evidenceId).distinct().sorted()
+                    .forEach(id -> evidenceIds.add(id.toString()));
+            return result;
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(WrittenAnswerOutputV3 output, StepExecutionContext context) {
+            if (!ANSWER_SCHEMA_V3.equals(output.schemaVersion())
+                    || output.questionId() == null
+                    || output.content() == null) {
+                throw new IllegalArgumentException("v3 written answer is invalid");
+            }
+            TipTapDocumentDto content = mapTipTap(output.content());
+            validateTipTap(content);
+            String text = plainText(content);
+            CoverLetterWorkflowV3Policy.validateDistinctClaims(output.claims(), text);
+            if (CoverLetterWorkflowV3Policy.hasFactualPattern(text) && output.claims().isEmpty()) {
+                throw new IllegalArgumentException("factual answer requires grounded claims");
+            }
+        }
+
+        @Override
+        protected void validateDomainOutput(WrittenAnswerOutputV3 output, StepExecutionContext context) {
+            GenerationState state = state(context);
+            GenerationQuestion question = question(state, output.questionId());
+            ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                    context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+            Set<UUID> allowed = allocations.allocations().stream()
+                    .filter(value -> value.questionId().equals(output.questionId()))
+                    .flatMap(value -> value.evidenceIds().stream())
+                    .collect(java.util.stream.Collectors.toSet());
+            String text = plainText(mapTipTap(output.content()));
+            int count = text.codePointCount(0, text.length());
+            if (!output.questionId().toString().equals(context.scopeKey())
+                    || output.claims().stream().map(EvidenceClaimDraftV3::evidenceId)
+                            .anyMatch(id -> !allowed.contains(id))
+                    || text.isBlank()
+                    || count > MAX_TEXT
+                    || (question.maxLength() != null && count > question.maxLength())) {
+                throw domainFailure(
+                        "COVER_GENERATION_ANSWER_INVALID",
+                        "자기소개서 답변의 구조와 승인 근거를 확인하지 못했습니다.");
             }
         }
     }
@@ -1298,6 +1910,210 @@ public final class CoverLetterGenerationWorkflow {
                 throw domainFailure(
                         "COVER_GENERATION_ANSWER_INVALID",
                         "자기소개서 답변의 구조와 승인 근거를 확인하지 못했습니다.");
+            }
+        }
+    }
+
+    private final class V3FactCheckAnswerExecutor
+            extends QuestionExecutor<FactCheckAnswerOutputV3> {
+        private V3FactCheckAnswerExecutor() {
+            super(FACT_CHECK_ANSWER, FACT_CHECK_SCHEMA_V3, FactCheckAnswerOutputV3.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            String scope = question.questionId().toString();
+            return context.ephemeral(WRITE_ANSWER, scope) != null
+                    && context.ephemeral(RETRIEVE_EVIDENCE, scope) != null;
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            WrittenAnswerOutputV3 answer = requiredScopedEphemeral(
+                    context, WRITE_ANSWER, question.questionId(), WrittenAnswerOutputV3.class);
+            RetrievedEvidenceOutput retrieval = requiredScopedEphemeral(
+                    context, RETRIEVE_EVIDENCE, question.questionId(), RetrievedEvidenceOutput.class);
+            PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+            QuestionPlanV3 plan = plans.plans().stream()
+                    .filter(value -> value.questionId().equals(question.questionId()))
+                    .findFirst()
+                    .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            QuestionAnalysisOutputV3 analysis = requiredScopedEphemeral(
+                    context, ANALYZE_QUESTION, question.questionId(), QuestionAnalysisOutputV3.class);
+            ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                    context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+            String answerText = plainText(mapTipTap(answer.content()));
+            List<SiblingAnswerInputV3> siblings = context.scopedEphemeral(WRITE_ANSWER).entrySet().stream()
+                    .filter(entry -> !entry.getKey().equals(question.questionId().toString()))
+                    .map(entry -> {
+                        WrittenAnswerOutputV3 sibling = cast(entry.getValue(), WrittenAnswerOutputV3.class);
+                        QuestionPlanV3 siblingPlan = plans.plans().stream()
+                                .filter(value -> value.questionId().equals(sibling.questionId()))
+                                .findFirst()
+                                .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+                        ExperienceAllocationV2 siblingAllocation = allocations.allocations().stream()
+                                .filter(value -> value.questionId().equals(sibling.questionId()))
+                                .findFirst()
+                                .orElse(null);
+                        String fullText = plainText(mapTipTap(sibling.content()));
+                        return new SiblingAnswerInputV3(
+                                sibling.questionId(),
+                                siblingPlan.coreMessage(),
+                                siblingAllocation == null ? null : siblingAllocation.distinctEmphasis(),
+                                CoverLetterWorkflowV3Policy.bound(fullText, MAX_SIBLING_ANSWER),
+                                sibling.claims().stream()
+                                        .map(EvidenceClaimDraftV3::evidenceId)
+                                        .distinct()
+                                        .toList());
+                    })
+                    .sorted(Comparator.comparing(SiblingAnswerInputV3::questionId))
+                    .toList();
+            var refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("answerHash", sha256(answerText));
+            refs.put("duplicationPolicyVersion", CoverLetterWorkflowV3Policy.DUPLICATION_POLICY_VERSION);
+            var siblingMetadata = refs.putArray("siblingAnswerMetadata");
+            siblings.forEach(value -> siblingMetadata.addObject()
+                    .put("questionId", value.questionId().toString())
+                    .put("originalCharacterCount", value.answer().originalCharacterCount())
+                    .put("providedCharacterCount", value.answer().providedCharacterCount())
+                    .put("truncated", value.answer().truncated())
+                    .put("fullTextHash", value.answer().fullTextHash()));
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    sha256(answerText) + "|" + stableHash(siblings),
+                    tree(new FactCheckAnswerInputV3(
+                            INPUT_SCHEMA_V3,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            question.questionId(),
+                            bounded(question.questionText(), 2_000),
+                            question.maxLength(),
+                            plan,
+                            analysis,
+                            mapTipTap(answer.content()),
+                            answerText,
+                            answer.claims(),
+                            retrieval.evidenceIds().stream()
+                                    .map(id -> approvedEvidenceV2(state, id))
+                                    .toList(),
+                            requirementInputs(state),
+                            retrieval.candidateChunks(),
+                            siblings,
+                            state.snapshot().job().analysisOutdated(),
+                            CoverLetterWorkflowV3Policy.DUPLICATION_POLICY_VERSION)));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(FactCheckAnswerOutputV3 output, ObjectMapper ignored) {
+            var result = objectMapper.createObjectNode()
+                    .put("schemaVersion", FACT_CHECK_SCHEMA_V3)
+                    .put("questionId", output.questionId().toString())
+                    .put("factCheckHash", stableHash(output))
+                    .put("issueCount", output.issues().size())
+                    .put("verifiedClaimCount", output.verifiedClaims().size());
+            var evidenceIds = result.putArray("evidenceIds");
+            referencedEvidenceV3(output).stream().sorted().forEach(id -> evidenceIds.add(id.toString()));
+            return result;
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(FactCheckAnswerOutputV3 output, StepExecutionContext context) {
+            if (!FACT_CHECK_SCHEMA_V3.equals(output.schemaVersion())
+                    || output.questionId() == null
+                    || output.issues() == null
+                    || output.issues().size() > 100
+                    || output.suggestions() == null
+                    || output.suggestions().size() > 20
+                    || output.verifiedClaims() == null
+                    || output.verifiedClaims().size() > 100) {
+                throw new IllegalArgumentException("v3 fact check is invalid");
+            }
+            output.issues().forEach(issue -> {
+                CoverLetterWorkflowV3Policy.validateIssueCompatibility(
+                        issue.issueKind(), issue.code(), issue.severity());
+                requireText(issue.message(), 1_000);
+                if (!KoreanUserFacingTextPolicy.containsKorean(issue.message())) {
+                    throw new IllegalArgumentException("issue message must be Korean user-facing text");
+                }
+                if (issue.relatedText() != null && issue.relatedText().length() > 1_000) {
+                    throw new IllegalArgumentException("related text is invalid");
+                }
+                if (issue.evidenceIds() == null
+                        || issue.evidenceIds().size() > 20
+                        || hasDuplicates(issue.evidenceIds())) {
+                    throw new IllegalArgumentException("issue evidence is invalid");
+                }
+            });
+            requireTexts(output.suggestions(), 20, 1_000);
+            if (output.suggestions().stream().anyMatch(value ->
+                    !KoreanUserFacingTextPolicy.containsKorean(value))) {
+                throw new IllegalArgumentException("suggestions must be Korean user-facing text");
+            }
+            String answerText = plainText(mapTipTap(requiredScopedEphemeral(
+                            context, WRITE_ANSWER, output.questionId(), WrittenAnswerOutputV3.class)
+                    .content()));
+            Set<String> seen = new HashSet<>();
+            output.verifiedClaims().forEach(value -> {
+                requireText(value.exactAnswerExcerpt(), 2_000);
+                if (!value.supported() || value.evidenceIds() == null || value.evidenceIds().isEmpty()
+                        || value.evidenceIds().size() > 20 || hasDuplicates(value.evidenceIds())
+                        || !CoverLetterWorkflowV3Policy.normalize(answerText)
+                                .contains(CoverLetterWorkflowV3Policy.normalize(value.exactAnswerExcerpt()))
+                        || !seen.add(CoverLetterWorkflowV3Policy.normalize(value.exactAnswerExcerpt()))) {
+                    throw new IllegalArgumentException("verified claim must be positive grounded provenance");
+                }
+            });
+        }
+
+        @Override
+        protected void validateWorkflowOutput(FactCheckAnswerOutputV3 output, StepExecutionContext context) {
+            GenerationState state = state(context);
+            WrittenAnswerOutputV3 answer = requiredScopedEphemeral(
+                    context, WRITE_ANSWER, output.questionId(), WrittenAnswerOutputV3.class);
+            String answerText = plainText(mapTipTap(answer.content()));
+            if (!KoreanUserFacingTextPolicy.containsKorean(answerText)) {
+                throw new IllegalArgumentException("answer must be Korean user-facing text");
+            }
+            if (!unsupportedNumbers(answerText, state.snapshot().verifiedEvidence()).isEmpty()
+                    && output.issues().stream().noneMatch(issue ->
+                            issue.issueKind() == VerificationIssueKind.FACTUAL
+                                    && (issue.code() == VerificationIssueCode.UNVERIFIED_CLAIM
+                                            || issue.code() == VerificationIssueCode.CONTRADICTION)
+                                    && issue.severity() == IssueSeverity.ERROR)) {
+                throw new IllegalArgumentException("unsupported numbers require a factual error");
+            }
+            if (requiresDuplicationWarningV3(output.questionId(), answerText, context)
+                    && output.issues().stream().noneMatch(issue ->
+                            issue.issueKind() == VerificationIssueKind.DUPLICATION
+                                    && issue.code() == VerificationIssueCode.OTHER
+                                    && issue.severity() == IssueSeverity.WARNING)) {
+                throw new IllegalArgumentException("cross-answer duplication requires a warning");
+            }
+        }
+
+        @Override
+        protected void validateDomainOutput(FactCheckAnswerOutputV3 output, StepExecutionContext context) {
+            Set<UUID> allowed = state(context).snapshot().verifiedEvidence().stream()
+                    .map(VerifiedEvidence::id)
+                    .collect(java.util.stream.Collectors.toSet());
+            if (!output.questionId().toString().equals(context.scopeKey())
+                    || !allowed.containsAll(referencedEvidenceV3(output))) {
+                throw domainFailure(
+                        "COVER_GENERATION_FACT_CHECK_EVIDENCE_INVALID",
+                        "자기소개서 사실 검증 근거를 확인하지 못했습니다.");
             }
         }
     }
@@ -1491,6 +2307,147 @@ public final class CoverLetterGenerationWorkflow {
                 throw domainFailure(
                         "COVER_GENERATION_FACT_CHECK_EVIDENCE_INVALID",
                         "자기소개서 사실 검증 근거를 확인하지 못했습니다.");
+            }
+        }
+    }
+
+    private final class V3ApplyAnswerExecutor extends QuestionExecutor<ApplyAnswerRequestOutput> {
+        private V3ApplyAnswerExecutor() {
+            super(APPLY_ANSWER_VERSION, APPLY_SCHEMA, ApplyAnswerRequestOutput.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            String scope = question.questionId().toString();
+            return context.ephemeral(WRITE_ANSWER, scope) != null
+                    && context.ephemeral(FACT_CHECK_ANSWER, scope) != null;
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            WrittenAnswerOutputV3 answer = requiredScopedEphemeral(
+                    context, WRITE_ANSWER, question.questionId(), WrittenAnswerOutputV3.class);
+            FactCheckAnswerOutputV3 factCheck = requiredScopedEphemeral(
+                    context, FACT_CHECK_ANSWER, question.questionId(), FactCheckAnswerOutputV3.class);
+            String answerHash = sha256(write(mapTipTap(answer.content())));
+            String factCheckHash = stableHash(factCheck);
+            var refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("answerHash", answerHash);
+            refs.put("factCheckHash", factCheckHash);
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    state.agentRunId() + "|" + answerHash + "|" + factCheckHash,
+                    tree(new ApplyAnswerRequestInput(
+                            INPUT_SCHEMA_V3,
+                            state.agentRunId(),
+                            state.snapshot().coverLetterId(),
+                            question.questionId(),
+                            state.snapshot().coverLetterVersion(),
+                            question.currentAnswerVersionId(),
+                            state.snapshot().snapshotHash(),
+                            answerHash,
+                            factCheckHash)));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            ApplyAnswerRequestInput input = read(invocation.input().gatewayPayload(), ApplyAnswerRequestInput.class);
+            return localResponse(new ApplyAnswerRequestOutput(
+                    APPLY_SCHEMA,
+                    input.agentRunId(),
+                    input.coverLetterId(),
+                    input.questionId(),
+                    input.expectedCoverLetterVersion(),
+                    input.expectedCurrentVersionId(),
+                    input.snapshotHash(),
+                    input.answerHash(),
+                    input.factCheckHash()));
+        }
+
+        @Override
+        public DomainStepCompletion completeFresh(
+                ApplyAnswerRequestOutput output, JsonNode minimalOutput, StepExecutionContext context) {
+            WrittenAnswerOutputV3 answer = requiredScopedEphemeral(
+                    context, WRITE_ANSWER, output.questionId(), WrittenAnswerOutputV3.class);
+            FactCheckAnswerOutputV3 factCheck = requiredScopedEphemeral(
+                    context, FACT_CHECK_ANSWER, output.questionId(), FactCheckAnswerOutputV3.class);
+            AppliedAnswer applied;
+            try {
+                applied = commandPort.applyGeneratedAnswer(
+                        context.run().userId(),
+                        context.run().id(),
+                        new PersistGeneratedAnswer(
+                                output.coverLetterId(),
+                                output.questionId(),
+                                output.expectedCoverLetterVersion(),
+                                output.expectedCurrentVersionId(),
+                                output.snapshotHash(),
+                                mapTipTap(answer.content()),
+                                evidenceUsesV3(answer, factCheck),
+                                verificationResultV3(factCheck)));
+            } catch (BusinessException exception) {
+                throw mapBusiness(exception);
+            }
+            JsonNode appliedOutput = tree(new AppliedAnswerOutput(
+                    APPLY_SCHEMA,
+                    output.questionId(),
+                    applied.answerVersion().id(),
+                    applied.generationVerification().id(),
+                    applied.answerVersion().sourceType().name(),
+                    applied.answerVersion().characterCount(),
+                    applied.coverLetterVersion(),
+                    output.snapshotHash()));
+            return new DomainStepCompletion(
+                    appliedOutput,
+                    Optional.empty(),
+                    new PartialResult(
+                            List.of(output.questionId().toString()),
+                            List.of(),
+                            List.of(new ResourceReference(
+                                    "COVER_LETTER_ANSWER_VERSION",
+                                    applied.answerVersion().id(),
+                                    "자기소개서 답변 버전"))));
+        }
+
+        @Override
+        public Optional<PartialResult> partialResultFromMinimal(
+                JsonNode minimalOutput, StepExecutionContext context) {
+            AppliedAnswerOutput output = read(minimalOutput, AppliedAnswerOutput.class);
+            return Optional.of(new PartialResult(
+                    List.of(output.questionId().toString()),
+                    List.of(),
+                    List.of(new ResourceReference(
+                            "COVER_LETTER_ANSWER_VERSION", output.answerVersionId(), "자기소개서 답변 버전"))));
+        }
+
+        @Override
+        public Object ephemeralOutputFromMinimal(JsonNode minimalOutput) {
+            return read(minimalOutput, AppliedAnswerOutput.class);
+        }
+
+        @Override
+        protected void validateJavaRecord(ApplyAnswerRequestOutput output, StepExecutionContext context) {
+            validateApplyOutput(output);
+        }
+
+        @Override
+        protected void validateDomainOutput(ApplyAnswerRequestOutput output, StepExecutionContext context) {
+            WrittenAnswerOutputV3 answer = requiredScopedEphemeral(
+                    context, WRITE_ANSWER, output.questionId(), WrittenAnswerOutputV3.class);
+            FactCheckAnswerOutputV3 factCheck = requiredScopedEphemeral(
+                    context, FACT_CHECK_ANSWER, output.questionId(), FactCheckAnswerOutputV3.class);
+            if (!output.agentRunId().equals(context.run().id())
+                    || !output.coverLetterId().equals(context.run().resourceId())
+                    || !output.questionId().toString().equals(context.scopeKey())
+                    || !output.answerHash().equals(sha256(write(mapTipTap(answer.content()))))
+                    || !output.factCheckHash().equals(stableHash(factCheck))) {
+                throw domainFailure(
+                        "COVER_GENERATION_APPLY_HASH_INVALID",
+                        "검증된 자기소개서 답변을 적용하지 못했습니다.");
             }
         }
     }
@@ -2860,6 +3817,290 @@ public final class CoverLetterGenerationWorkflow {
                         "자기소개서에 사용할 승인 근거가 변경되었습니다."));
     }
 
+    private void validateBuildOutput(BuildGenerationContextOutput output) {
+        if (!BUILD_SCHEMA.equals(output.schemaVersion())
+                || output.coverLetterId() == null
+                || output.coverLetterVersion() < 0
+                || !isHash(output.snapshotHash())
+                || output.jobId() == null
+                || output.analysisId() == null
+                || output.analysisVersion() < 1
+                || output.questionIds() == null
+                || output.questionIds().size() > 20
+                || hasDuplicates(output.questionIds())
+                || hasDuplicates(output.reusedQuestionIds())
+                || hasDuplicates(output.verifiedEvidenceIds())
+                || hasDuplicates(output.preferredEvidenceIds())) {
+            throw new IllegalArgumentException("generation context output is invalid");
+        }
+    }
+
+    private void validateBuildScope(BuildGenerationContextOutput output, GenerationState state) {
+        if (!output.coverLetterId().equals(state.snapshot().coverLetterId())
+                || output.coverLetterVersion() != state.snapshot().coverLetterVersion()
+                || !output.snapshotHash().equals(state.snapshot().snapshotHash())
+                || !output.questionIds().equals(state.snapshot().questions().stream()
+                        .map(GenerationQuestion::questionId)
+                        .toList())
+                || !output.reusedQuestionIds().equals(state.reusedQuestionIds())) {
+            throw domainFailure(
+                    "COVER_GENERATION_CONTEXT_STALE",
+                    "자기소개서 생성 기준 정보가 변경되었습니다.");
+        }
+    }
+
+    private ContextAvailabilityInput contextAvailability(GenerationState state) {
+        var job = state.snapshot().job();
+        return new ContextAvailabilityInput(
+                job.companyName() != null && !job.companyName().isBlank(),
+                (job.positionName() != null && !job.positionName().isBlank())
+                        || (job.title() != null && !job.title().isBlank()),
+                job.descriptionText() != null && !job.descriptionText().isBlank(),
+                !job.requirements().isEmpty());
+    }
+
+    private void validateQuestionPlanV3(
+            QuestionPlanV3 plan, ContextAvailabilityInput availability) {
+        if (plan == null
+                || plan.questionId() == null
+                || plan.questionType() == null
+                || plan.narrativeFramework() == null
+                || plan.headingPolicy() == null
+                || plan.targetCharacterCount() < 1
+                || plan.targetCharacterCount() > 10_000
+                || plan.requirementIndexes() == null
+                || plan.requirementIndexes().size() > 100
+                || plan.requirementIndexes().stream().anyMatch(value -> value == null || value < 0)) {
+            throw new IllegalArgumentException("v3 question plan item is invalid");
+        }
+        requireText(plan.coreMessage(), 1_000);
+        requireText(plan.objective(), 1_000);
+        requireTexts(plan.requiredElements(), 20, 1_000);
+        requireTexts(plan.avoidContent(), 20, 1_000);
+        requireTexts(plan.evidenceSelectionCriteria(), 20, 1_000);
+        CoverLetterWorkflowV3Policy.validateQuestionFramework(
+                plan.questionType(), plan.narrativeFramework());
+        validateOptionalConnections(plan.roleConnection(), plan.companyConnection(), availability);
+        CoverLetterWorkflowV3Policy.validateSections(plan.narrativeFramework(), plan.narrativeSections());
+    }
+
+    private void validateOptionalConnections(
+            String roleConnection,
+            String companyConnection,
+            ContextAvailabilityInput availability) {
+        if (roleConnection != null && (roleConnection.isBlank() || roleConnection.length() > 1_000)) {
+            throw new IllegalArgumentException("role connection is invalid");
+        }
+        if (companyConnection != null
+                && (companyConnection.isBlank() || companyConnection.length() > 1_000)) {
+            throw new IllegalArgumentException("company connection is invalid");
+        }
+        if (!availability.roleContextAvailable() && roleConnection != null) {
+            throw new IllegalArgumentException("unavailable role context must not be invented");
+        }
+        if (!availability.companyContextAvailable() && companyConnection != null) {
+            throw new IllegalArgumentException("unavailable company context must not be invented");
+        }
+    }
+
+    private JsonNode retrievalMinimalOutput(RetrievedEvidenceOutput output) {
+        var result = objectMapper.createObjectNode()
+                .put("schemaVersion", RETRIEVAL_SCHEMA)
+                .put("questionId", output.questionId().toString())
+                .put("queryHash", output.queryHash());
+        var evidenceIds = result.putArray("evidenceIds");
+        output.evidenceIds().forEach(id -> evidenceIds.add(id.toString()));
+        var chunks = result.putArray("candidateChunks");
+        output.candidateChunks().forEach(value -> chunks.addObject()
+                .put("chunkId", value.chunkId().toString())
+                .put("documentId", value.documentId().toString())
+                .put("distance", value.distance()));
+        return result;
+    }
+
+    private void validateRetrievedEvidence(RetrievedEvidenceOutput output) {
+        if (!RETRIEVAL_SCHEMA.equals(output.schemaVersion())
+                || output.questionId() == null
+                || !isHash(output.queryHash())
+                || output.evidenceIds() == null
+                || output.evidenceIds().size() > MAX_EVIDENCE_PER_QUESTION
+                || hasDuplicates(output.evidenceIds())
+                || output.candidateChunks() == null
+                || output.candidateChunks().size() > MAX_CHUNK_REFS
+                || hasDuplicates(output.candidateChunks().stream()
+                        .map(ChunkCandidateRef::chunkId)
+                        .toList())) {
+            throw new IllegalArgumentException("retrieval output is invalid");
+        }
+    }
+
+    private void validateRetrievedEvidenceScope(
+            RetrievedEvidenceOutput output, GenerationState state, String scopeKey) {
+        Set<UUID> allowed = state.snapshot().verifiedEvidence().stream()
+                .map(VerifiedEvidence::id)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!output.questionId().toString().equals(scopeKey)
+                || !allowed.containsAll(output.evidenceIds())) {
+            throw domainFailure(
+                    "COVER_GENERATION_EVIDENCE_SCOPE_INVALID",
+                    "자기소개서에 사용할 승인 근거를 확인하지 못했습니다.");
+        }
+    }
+
+    private void validateAllocation(ExperienceAllocationOutputV2 output) {
+        if (!ALLOCATION_SCHEMA_V2.equals(output.schemaVersion())
+                || output.allocations() == null
+                || output.allocations().size() > 20
+                || hasDuplicates(output.allocations().stream()
+                        .map(ExperienceAllocationV2::questionId)
+                        .toList())) {
+            throw new IllegalArgumentException("allocation is invalid");
+        }
+        output.allocations().forEach(value -> {
+            if (value.questionId() == null
+                    || value.evidenceIds() == null
+                    || value.evidenceIds().size() > MAX_EVIDENCE_PER_QUESTION
+                    || hasDuplicates(value.evidenceIds())
+                    || (value.duplicationReason() != null && value.duplicationReason().length() > 1_000)
+                    || (value.distinctEmphasis() != null && value.distinctEmphasis().length() > 1_000)) {
+                throw new IllegalArgumentException("allocation item is invalid");
+            }
+        });
+    }
+
+    private void validateAllocationScope(
+            ExperienceAllocationOutputV2 output,
+            GenerationState state,
+            StepExecutionContext context) {
+        Map<String, Object> retrieved = context.scopedEphemeral(RETRIEVE_EVIDENCE);
+        List<UUID> expected = state.snapshot().questions().stream()
+                .map(GenerationQuestion::questionId)
+                .filter(id -> retrieved.containsKey(id.toString()))
+                .toList();
+        if (!expected.equals(output.allocations().stream()
+                .map(ExperienceAllocationV2::questionId)
+                .toList())) {
+            throw domainFailure(
+                    "COVER_GENERATION_ALLOCATION_SCOPE_INVALID",
+                    "자기소개서 경험 배분 범위를 확인하지 못했습니다.");
+        }
+        for (ExperienceAllocationV2 allocation : output.allocations()) {
+            RetrievedEvidenceOutput candidate = cast(
+                    retrieved.get(allocation.questionId().toString()), RetrievedEvidenceOutput.class);
+            if (!candidate.evidenceIds().containsAll(allocation.evidenceIds())) {
+                throw domainFailure(
+                        "COVER_GENERATION_ALLOCATION_EVIDENCE_INVALID",
+                        "문항별 승인 근거 배분을 확인하지 못했습니다.");
+            }
+            boolean duplicated = allocation.evidenceIds().stream().anyMatch(id ->
+                    output.allocations().stream()
+                                    .filter(other -> !other.questionId().equals(allocation.questionId()))
+                                    .filter(other -> other.evidenceIds().contains(id))
+                                    .count()
+                            > 0);
+            if (duplicated
+                    && (allocation.duplicationReason() == null
+                            || allocation.duplicationReason().isBlank()
+                            || allocation.distinctEmphasis() == null
+                            || allocation.distinctEmphasis().isBlank())) {
+                throw new IllegalArgumentException(
+                        "duplicated experience requires reason and distinct emphasis");
+            }
+        }
+    }
+
+    private Set<UUID> referencedEvidenceV3(FactCheckAnswerOutputV3 output) {
+        LinkedHashSet<UUID> ids = new LinkedHashSet<>();
+        output.issues().forEach(value -> ids.addAll(value.evidenceIds()));
+        output.verifiedClaims().forEach(value -> ids.addAll(value.evidenceIds()));
+        return Set.copyOf(ids);
+    }
+
+    private boolean requiresDuplicationWarningV3(
+            UUID questionId, String answerText, StepExecutionContext context) {
+        PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+        ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+        QuestionPlanV3 plan = plans.plans().stream()
+                .filter(value -> value.questionId().equals(questionId))
+                .findFirst()
+                .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+        ExperienceAllocationV2 allocation = allocations.allocations().stream()
+                .filter(value -> value.questionId().equals(questionId))
+                .findFirst()
+                .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+        return context.scopedEphemeral(WRITE_ANSWER).values().stream()
+                .filter(WrittenAnswerOutputV3.class::isInstance)
+                .map(WrittenAnswerOutputV3.class::cast)
+                .filter(value -> !value.questionId().equals(questionId))
+                .anyMatch(value -> {
+                    QuestionPlanV3 siblingPlan = plans.plans().stream()
+                            .filter(candidate -> candidate.questionId().equals(value.questionId()))
+                            .findFirst()
+                            .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+                    ExperienceAllocationV2 siblingAllocation = allocations.allocations().stream()
+                            .filter(candidate -> candidate.questionId().equals(value.questionId()))
+                            .findFirst()
+                            .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+                    return CoverLetterWorkflowV3Policy.duplication(
+                                    answerText,
+                                    Set.copyOf(allocation.evidenceIds()),
+                                    plan.coreMessage(),
+                                    plainText(mapTipTap(value.content())),
+                                    Set.copyOf(siblingAllocation.evidenceIds()),
+                                    siblingPlan.coreMessage(),
+                                    allocation.distinctEmphasis())
+                            .warningRequired();
+                });
+    }
+
+    private VerificationResult verificationResultV3(FactCheckAnswerOutputV3 output) {
+        List<VerificationIssue> issues = output.issues().stream()
+                .map(value -> new VerificationIssue(
+                        value.code(), value.severity(), value.message(), value.relatedText(), value.evidenceIds()))
+                .toList();
+        VerificationStatus status = issues.stream().anyMatch(value -> value.severity() == IssueSeverity.ERROR)
+                ? VerificationStatus.FAILED
+                : issues.isEmpty() ? VerificationStatus.PASSED : VerificationStatus.WARNING;
+        return new VerificationResult(
+                status,
+                issues,
+                output.suggestions(),
+                output.verifiedClaims().stream()
+                        .map(value -> new VerifiedClaim(
+                                value.exactAnswerExcerpt(), true, value.evidenceIds()))
+                        .toList());
+    }
+
+    private List<EvidenceUse> evidenceUsesV3(
+            WrittenAnswerOutputV3 answer, FactCheckAnswerOutputV3 factCheck) {
+        LinkedHashMap<UUID, EvidenceUse> uses = new LinkedHashMap<>();
+        answer.claims().forEach(value -> uses.putIfAbsent(
+                value.evidenceId(),
+                new EvidenceUse(
+                        value.evidenceId(),
+                        value.exactAnswerExcerpt(),
+                        CoverLetterEvidenceUsageType.SUPPORTING_CLAIM)));
+        factCheck.verifiedClaims().stream()
+                .flatMap(claim -> claim.evidenceIds().stream().map(id -> new EvidenceUse(
+                        id, claim.exactAnswerExcerpt(), CoverLetterEvidenceUsageType.FACT_CHECK)))
+                .forEach(value -> uses.putIfAbsent(value.evidenceId(), value));
+        return List.copyOf(uses.values());
+    }
+
+    private void validateApplyOutput(ApplyAnswerRequestOutput output) {
+        if (!APPLY_SCHEMA.equals(output.schemaVersion())
+                || output.agentRunId() == null
+                || output.coverLetterId() == null
+                || output.questionId() == null
+                || output.expectedCoverLetterVersion() < 0
+                || !isHash(output.snapshotHash())
+                || !isHash(output.answerHash())
+                || !isHash(output.factCheckHash())) {
+            throw new IllegalArgumentException("answer apply output is invalid");
+        }
+    }
+
     private boolean requiresDuplicationWarning(
             UUID questionId, String answerText, StepExecutionContext context) {
         Set<String> answerTokens = tokens(answerText);
@@ -3620,6 +4861,224 @@ public final class CoverLetterGenerationWorkflow {
             List<String> suggestions,
             List<VerifiedClaimDraft> verifiedClaims) {
         public FactCheckAnswerOutputV2 {
+            issues = copy(issues);
+            suggestions = copy(suggestions);
+            verifiedClaims = copy(verifiedClaims);
+        }
+    }
+
+    public record ContextAvailabilityInput(
+            boolean companyContextAvailable,
+            boolean roleContextAvailable,
+            boolean jobDescriptionAvailable,
+            boolean requirementContextAvailable) {}
+
+    public record QuestionPlanV3(
+            UUID questionId,
+            QuestionType questionType,
+            String coreMessage,
+            NarrativeFramework narrativeFramework,
+            String objective,
+            List<String> requiredElements,
+            List<String> avoidContent,
+            List<Integer> requirementIndexes,
+            @ProviderNullable String roleConnection,
+            @ProviderNullable String companyConnection,
+            List<String> evidenceSelectionCriteria,
+            int targetCharacterCount,
+            HeadingPolicy headingPolicy,
+            List<NarrativeSectionPlan> narrativeSections) {
+        public QuestionPlanV3 {
+            requiredElements = copy(requiredElements);
+            avoidContent = copy(avoidContent);
+            requirementIndexes = copy(requirementIndexes);
+            evidenceSelectionCriteria = copy(evidenceSelectionCriteria);
+            narrativeSections = copy(narrativeSections);
+        }
+    }
+
+    public record PlanQuestionsInputV3(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            JobWritingContextInput job,
+            List<QuestionPlanningInput> questions,
+            List<RequirementInput> requirements,
+            List<EvidencePlanningInput> evidenceCandidates,
+            int omittedEvidenceCount,
+            boolean avoidExperienceDuplication) {
+        public PlanQuestionsInputV3 {
+            questions = copy(questions);
+            requirements = copy(requirements);
+            evidenceCandidates = copy(evidenceCandidates);
+        }
+    }
+
+    public record PlanQuestionsOutputV3(
+            String schemaVersion,
+            List<QuestionPlanV3> plans,
+            boolean avoidExperienceDuplication) {
+        public PlanQuestionsOutputV3 {
+            plans = copy(plans);
+        }
+    }
+
+    public record AnalyzeQuestionInputV3(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            QuestionPlanV3 plan,
+            JobWritingContextInput job,
+            List<RequirementInput> requirements) {
+        public AnalyzeQuestionInputV3 {
+            requirements = copy(requirements);
+        }
+    }
+
+    public record QuestionAnalysisOutputV3(
+            String schemaVersion,
+            UUID questionId,
+            QuestionType questionType,
+            String intent,
+            String directAnswerDirection,
+            String openingCoreMessage,
+            List<String> requiredElements,
+            List<String> avoidContent,
+            NarrativeFramework narrativeFramework,
+            List<NarrativeSectionPlan> narrativeSections,
+            String personalActionFocus,
+            List<String> requiredEvidenceTraits,
+            List<Integer> requirementIndexes,
+            @ProviderNullable String roleConnection,
+            @ProviderNullable String companyConnection,
+            String conclusionDirection,
+            HeadingPolicy headingPolicy) {
+        public QuestionAnalysisOutputV3 {
+            requiredElements = copy(requiredElements);
+            avoidContent = copy(avoidContent);
+            narrativeSections = copy(narrativeSections);
+            requiredEvidenceTraits = copy(requiredEvidenceTraits);
+            requirementIndexes = copy(requirementIndexes);
+        }
+    }
+
+    public record AllocationCandidateInputV3(
+            UUID questionId,
+            QuestionType questionType,
+            String coreMessage,
+            NarrativeFramework narrativeFramework,
+            List<NarrativeSectionPlan> narrativeSections,
+            List<String> requiredEvidenceTraits,
+            List<EvidencePlanningInput> candidateEvidence) {
+        public AllocationCandidateInputV3 {
+            narrativeSections = copy(narrativeSections);
+            requiredEvidenceTraits = copy(requiredEvidenceTraits);
+            candidateEvidence = copy(candidateEvidence);
+        }
+    }
+
+    public record AllocateExperiencesInputV3(
+            String schemaVersion,
+            String outputLocale,
+            List<AllocationCandidateInputV3> candidates,
+            boolean avoidExperienceDuplication) {
+        public AllocateExperiencesInputV3 {
+            candidates = copy(candidates);
+        }
+    }
+
+    public record EvidenceClaimDraftV3(
+            UUID evidenceId, String exactAnswerExcerpt, ClaimType claimType)
+            implements CoverLetterWorkflowV3Policy.ClaimView {}
+
+    public record WriteAnswerInputV3(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            int targetCharacterCount,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            JobWritingContextInput job,
+            UUID currentAnswerVersionId,
+            BoundedText currentAnswer,
+            List<OtherQuestionStrategyInput> otherQuestions,
+            HeadingPolicy headingPolicy) {
+        public WriteAnswerInputV3 {
+            verifiedEvidence = copy(verifiedEvidence);
+            otherQuestions = copy(otherQuestions);
+        }
+    }
+
+    public record WrittenAnswerOutputV3(
+            String schemaVersion,
+            UUID questionId,
+            ProviderTipTapDocumentOutput content,
+            List<EvidenceClaimDraftV3> claims) {
+        public WrittenAnswerOutputV3 {
+            claims = copy(claims);
+        }
+    }
+
+    public record SiblingAnswerInputV3(
+            UUID questionId,
+            String coreMessage,
+            @ProviderNullable String distinctEmphasis,
+            BoundedText answer,
+            List<UUID> evidenceIds) {
+        public SiblingAnswerInputV3 {
+            evidenceIds = copy(evidenceIds);
+        }
+    }
+
+    public record FactCheckAnswerInputV3(
+            String schemaVersion,
+            String outputLocale,
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            TipTapDocumentDto content,
+            String plainText,
+            List<EvidenceClaimDraftV3> claims,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            List<RequirementInput> requirements,
+            List<ChunkCandidateRef> candidateChunks,
+            List<SiblingAnswerInputV3> siblingAnswers,
+            boolean analysisOutdated,
+            String duplicationPolicyVersion) {
+        public FactCheckAnswerInputV3 {
+            claims = copy(claims);
+            verifiedEvidence = copy(verifiedEvidence);
+            requirements = copy(requirements);
+            candidateChunks = copy(candidateChunks);
+            siblingAnswers = copy(siblingAnswers);
+        }
+    }
+
+    public record VerifiedClaimDraftV3(
+            String exactAnswerExcerpt,
+            boolean supported,
+            List<UUID> evidenceIds) {
+        public VerifiedClaimDraftV3 {
+            evidenceIds = copy(evidenceIds);
+        }
+    }
+
+    public record FactCheckAnswerOutputV3(
+            String schemaVersion,
+            UUID questionId,
+            List<VerificationIssueDraftV2> issues,
+            List<String> suggestions,
+            List<VerifiedClaimDraftV3> verifiedClaims) {
+        public FactCheckAnswerOutputV3 {
             issues = copy(issues);
             suggestions = copy(suggestions);
             verifiedClaims = copy(verifiedClaims);

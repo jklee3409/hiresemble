@@ -224,6 +224,55 @@ class CoverLetterApplicationIntegrationTest extends PostgresIntegrationTest {
         assertThat(service.isReferenced(owner, UUID.randomUUID())).isFalse();
     }
 
+    @Test
+    void userEditedVersionPreservesOnlyParentClaimExcerptsStillPresent() {
+        UUID owner = seedUser("cover-user-edit-provenance@example.com");
+        UUID job = seedJob(owner, "user-edit-provenance");
+        Detail cover = service.create(
+                        owner, job, "User edit provenance", "cover-user-edit-provenance-0001")
+                .body();
+        Question question = service.addQuestion(
+                owner, cover.summary().id(), 1, "경험을 작성해 주세요.", 1000, null, 0);
+        AnswerVersion parent = service.saveUserVersion(
+                owner,
+                question.id(),
+                content("Spring Boot API를 구현했습니다. 성능을 30% 개선했습니다."),
+                null);
+        UUID retainedEvidence = seedEvidence(owner, "Retained evidence");
+        UUID removedEvidence = seedEvidence(owner, "Removed evidence");
+        store.insertEvidenceLinks(
+                owner,
+                parent.id(),
+                List.of(
+                        new EvidenceUse(
+                                retainedEvidence,
+                                "Spring Boot API를 구현했습니다.",
+                                CoverLetterEvidenceUsageType.SUPPORTING_CLAIM),
+                        new EvidenceUse(
+                                removedEvidence,
+                                "성능을 30% 개선했습니다.",
+                                CoverLetterEvidenceUsageType.SUPPORTING_CLAIM)),
+                Instant.now());
+
+        AnswerVersion edited = service.saveUserVersion(
+                owner,
+                question.id(),
+                content("Spring Boot API를 구현했습니다. 운영 안정성을 점검했습니다."),
+                parent.id());
+
+        assertThat(jdbcTemplate.queryForList(
+                        """
+                        SELECT profile_evidence_id
+                        FROM cover_letter_evidence_links
+                        WHERE user_id=? AND answer_version_id=?
+                        """,
+                        UUID.class,
+                        owner,
+                        edited.id()))
+                .containsExactly(retainedEvidence)
+                .doesNotContain(removedEvidence);
+    }
+
     private Question activeQuestion(Detail detail, UUID questionId) {
         return detail.questions().stream()
                 .filter(question -> question.id().equals(questionId))

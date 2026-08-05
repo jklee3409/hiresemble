@@ -180,8 +180,10 @@ public class AiRuntimeConfiguration {
                         jobAnalysisWorkflow.contribution(),
                         coverLetterGenerationWorkflow.contribution(),
                         coverLetterGenerationWorkflow.v2Contribution(),
+                        coverLetterGenerationWorkflow.v3Contribution(),
                         coverLetterVerificationWorkflow.contribution(),
                         coverLetterVerificationWorkflow.v2Contribution(),
+                        coverLetterVerificationWorkflow.v3Contribution(),
                         interviewPreparationWorkflow.contribution(),
                         interviewAnswerFeedbackWorkflow.contribution()));
     }

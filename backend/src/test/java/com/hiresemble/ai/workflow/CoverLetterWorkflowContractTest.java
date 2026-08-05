@@ -7,8 +7,10 @@ import com.hiresemble.agentrun.domain.model.ModelTier;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterGenerationV2PromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterGenerationV3PromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationV2PromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterVerificationV3PromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import java.util.List;
 import java.util.Set;
@@ -106,19 +108,23 @@ class CoverLetterWorkflowContractTest {
                 .extracting(WorkflowRegistry.WorkflowDefinition::version)
                 .containsExactly(
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION);
         assertThat(CanonicalWorkflowDefinitions.all())
                 .filteredOn(value -> value.type() == WorkflowType.COVER_LETTER_VERIFICATION)
                 .extracting(WorkflowRegistry.WorkflowDefinition::version)
                 .containsExactly(
                         CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION);
 
         PromptRegistry prompts = new PromptRegistry(java.util.stream.Stream.of(
                         CoverLetterGenerationPromptDefinitions.all(),
                         CoverLetterGenerationV2PromptDefinitions.all(),
+                        CoverLetterGenerationV3PromptDefinitions.all(),
                         CoverLetterVerificationPromptDefinitions.all(),
-                        CoverLetterVerificationV2PromptDefinitions.all())
+                        CoverLetterVerificationV2PromptDefinitions.all(),
+                        CoverLetterVerificationV3PromptDefinitions.all())
                 .flatMap(List::stream)
                 .toList());
         assertThat(prompts.require(
@@ -140,8 +146,10 @@ class CoverLetterWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(java.util.stream.Stream.of(
                         CoverLetterGenerationPromptDefinitions.all(),
                         CoverLetterGenerationV2PromptDefinitions.all(),
+                        CoverLetterGenerationV3PromptDefinitions.all(),
                         CoverLetterVerificationPromptDefinitions.all(),
-                        CoverLetterVerificationV2PromptDefinitions.all())
+                        CoverLetterVerificationV2PromptDefinitions.all(),
+                        CoverLetterVerificationV3PromptDefinitions.all())
                 .flatMap(List::stream)
                 .toList());
 
@@ -169,8 +177,8 @@ class CoverLetterWorkflowContractTest {
                         .instructions())
                 .contains(
                         "current VERIFIED",
-                        "currentPlainText",
-                        "embedded instructions");
+                        "currentAnswer",
+                        "exactAnswerExcerpt");
         assertThat(prompts.require(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions
@@ -179,8 +187,8 @@ class CoverLetterWorkflowContractTest {
                         .instructions())
                 .contains(
                         "current VERIFIED evidence",
-                        "historical evidence is audit context",
-                        "positive support");
+                        "exact answer excerpts",
+                        "ko-KR");
     }
 
     private WorkflowRegistry.WorkflowDefinition definition(WorkflowType type) {

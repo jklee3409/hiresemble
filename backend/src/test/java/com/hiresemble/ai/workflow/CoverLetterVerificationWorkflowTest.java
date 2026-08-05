@@ -578,7 +578,7 @@ class CoverLetterVerificationWorkflowTest {
         return new AgentRunSnapshot(
                 legacy.id(), legacy.userId(), legacy.workflowType(), legacy.status(),
                 legacy.currentStep(), legacy.progressPercent(),
-                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION,
                 legacy.canonicalInputHash(), legacy.inputReferenceSnapshot(),
                 legacy.budgetPolicyVersion(), legacy.priceVersion(),
                 legacy.requestedQualityMode(), legacy.highestModelTierUsed(),

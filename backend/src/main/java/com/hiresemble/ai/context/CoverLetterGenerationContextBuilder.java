@@ -48,6 +48,8 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
         if (run.workflowType() != WorkflowType.COVER_LETTER_GENERATION
                 || (!CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
                                 run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
+                                run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
                                 run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())

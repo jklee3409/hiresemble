@@ -17,7 +17,7 @@ public final class CoverLetterVerificationV2PromptDefinitions {
     public static List<PromptDefinition> all() {
         var workflow = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value -> value.type() == WorkflowType.COVER_LETTER_VERIFICATION
-                        && CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                        && CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                                 value.version()))
                 .findFirst()
                 .orElseThrow();
@@ -26,7 +26,7 @@ public final class CoverLetterVerificationV2PromptDefinitions {
             prompts.add(new PromptDefinition(
                     new PromptKey(
                             WorkflowType.COVER_LETTER_VERIFICATION,
-                            CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                            CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION,
                             step.stepKey()),
                     promptVersion(step.stepKey()),
                     inputType(step.stepKey()),

@@ -93,8 +93,8 @@ public class CoverLetterApplicationService
                 ResourceCompensationPort,
                 EvidenceReferenceQueryPort {
 
-    public static final String GENERATION_WORKFLOW_VERSION = "cover-letter-generation-v2";
-    public static final String VERIFICATION_WORKFLOW_VERSION = "cover-letter-verification-v2";
+    public static final String GENERATION_WORKFLOW_VERSION = "cover-letter-generation-v3";
+    public static final String VERIFICATION_WORKFLOW_VERSION = "cover-letter-verification-v3";
     public static final String RESOURCE_TYPE = "COVER_LETTER";
     private static final Set<String> LIST_SORTS =
             Set.of("updatedAt,desc", "createdAt,desc", "title,asc");
@@ -350,6 +350,14 @@ public class CoverLetterApplicationService
                 CoverLetterVersionSource.USER_EDITED,
                 AnswerCreatedBy.USER,
                 clock.instant());
+        if (current != null) {
+            store.copyEvidenceLinksMatchingText(
+                    userId,
+                    current.id(),
+                    created.id(),
+                    content.plainText(),
+                    clock.instant());
+        }
         store.touchDraft(userId, cover.id(), clock.instant());
         return created;
     }
@@ -969,7 +977,7 @@ public class CoverLetterApplicationService
         VerificationSnapshot snapshot;
         if (run.retryOfRunId() == null) {
             requireRunHash(run, command.expectedSnapshotHash());
-            snapshot = VERIFICATION_WORKFLOW_VERSION.equals(run.workflowVersion())
+            snapshot = isModernVerification(run.workflowVersion())
                     ? loadVerificationSnapshotV2(
                             userId,
                             answer.id(),
@@ -981,7 +989,7 @@ public class CoverLetterApplicationService
                             run.requestedQualityMode(),
                             command.expectedSnapshotHash());
         } else {
-            snapshot = VERIFICATION_WORKFLOW_VERSION.equals(run.workflowVersion())
+            snapshot = isModernVerification(run.workflowVersion())
                     ? loadVerificationRetrySnapshotV2(
                             userId, agentRunId, command.expectedSnapshotHash())
                     : loadVerificationRetrySnapshot(
@@ -1007,6 +1015,11 @@ public class CoverLetterApplicationService
     @Transactional
     public void failPendingVerification(UUID userId, UUID agentRunId) {
         store.failPendingVerification(userId, agentRunId);
+    }
+
+    private boolean isModernVerification(String workflowVersion) {
+        return VERIFICATION_WORKFLOW_VERSION.equals(workflowVersion)
+                || "cover-letter-verification-v2".equals(workflowVersion);
     }
 
     @Transactional

@@ -734,6 +734,35 @@ public class CoverLetterStore {
                 .update();
     }
 
+    /** Preserves only parent provenance whose exact claim excerpt survived a user edit. */
+    public void copyEvidenceLinksMatchingText(
+            UUID userId,
+            UUID sourceAnswerVersionId,
+            UUID editedAnswerVersionId,
+            String editedPlainText,
+            Instant now) {
+        jdbc.sql("""
+                        INSERT INTO cover_letter_evidence_links (
+                            id,user_id,answer_version_id,profile_evidence_id,
+                            claim_text,usage_type,created_at
+                        )
+                        SELECT gen_random_uuid(),user_id,:editedAnswerId,profile_evidence_id,
+                               claim_text,usage_type,:now
+                        FROM cover_letter_evidence_links
+                        WHERE user_id=:userId
+                          AND answer_version_id=:sourceAnswerId
+                          AND claim_text IS NOT NULL
+                          AND btrim(claim_text) <> ''
+                          AND strpos(:editedPlainText, claim_text) > 0
+                        """)
+                .param("editedAnswerId", editedAnswerVersionId)
+                .param("editedPlainText", editedPlainText)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("sourceAnswerId", sourceAnswerVersionId)
+                .update();
+    }
+
     public int countRunAppliedAnswers(UUID userId, UUID agentRunId) {
         return jdbc.sql("""
                         SELECT count(DISTINCT link.cover_letter_answer_version_id)
