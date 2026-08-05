@@ -4,6 +4,19 @@
 
 P7 V8 schema를 사용하는 owner-scoped JDBC store와 generation·verification 비용 설정이 구현됐다.
 
+## [2026-08-05] Session Summary (USER_EDITED exact excerpt provenance SQL)
+
+- What was done:
+  - parent answer evidence link 중 nonblank claim_text가 새 편집 본문에 실제 존재하는 link만 새 answer version으로 복사하는 owner-scoped SQL을 추가했다.
+- Key decisions:
+  - 새 migration 없이 기존 immutable link table에 historical candidate provenance를 생성한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PostgreSQL 통합 테스트와 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 PostgreSQL store)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-05] Session Summary (Cover Letter v3 runtime 정책)
+
+- What was done:
+  - runtime에 generation·verification v3 contribution과 prompt를 등록하고 v1/v2 exact retry 경계를 유지했다.
+- Key decisions:
+  - 신규 접수만 v3이며 local deterministic validator가 Provider output의 provenance·issue·locale 의미를 persistence 전에 차단한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - runtime registry·strict schema·전체 Backend check 통과.
+- Next steps:
+  - 실제 Provider 품질 UAT는 별도 승인 범위다.
+
 ## [2026-08-05] Session Summary (Cover Letter v2 AI runtime 연결)
 
 - What was done:

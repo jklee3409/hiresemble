@@ -14,8 +14,9 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - `JobAnalysisWorkflow`: P6 owner-scoped snapshot·active embedding policy route 기반 verified RAG·결정론적 score·command-only persist 8단계 contribution과 block ID·원문·ordinal만 소유하는 Provider requirements·eligibility·match output→서버 내부 DTO mapping
 - `JobRequirementNormalizationPolicy`: source requirement의 명확한 atomic 분할, section·required·support type·category·근무일 결정, 중복 제거와 source ordinal/text provenance를 소유하는 단일 canonical 정책
-- `CoverLetterGenerationWorkflow`: P7 generation v1 durable contribution과 active v2 8단계 bounded fan-out, typed question strategy·bounded evidence planning·current answer revision·sibling duplication context·partial apply
-- `CoverLetterVerificationWorkflow`: P7 immutable answer verification v1 durable contribution과 active v2 fact·writing-quality rubric·sibling current answer context를 포함한 6단계 contribution
+- `CoverLetterGenerationWorkflow`: P7 generation v1/v2 durable contribution과 active v3 8단계 bounded fan-out, framework-neutral section plan·exact excerpt provenance·명시적 truncation·한국어 출력·cross-answer duplication 검증·partial apply
+- `CoverLetterWorkflowV3Policy`: 문항 유형–framework–section, issue compatibility, bounded text hash/count, relevance evidence selection과 generation/verification 공용 duplication policy
+- `CoverLetterVerificationWorkflow`: P7 immutable answer verification v1/v2 durable contribution과 active v3 relevance evidence selection·exact claim grounding·한국어 fact/writing-quality·sibling truncation context를 포함한 6단계 contribution
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상
 - [`document/`](document/index.md): P4 `DOCUMENT_INGESTION` 8단계 contribution과 실패 보상
 - [`progress.md`](progress.md): registry 상태
@@ -30,7 +31,7 @@ step 순서, schema, bounded fan-out, tool allowlist, attempt 내부 call cap, r
 
 ## 변경 시 주의사항
 
-duplicate step key와 weight 합 오류를 거부하고 handler가 없는 canonical workflow를 executable로 등록하지 않는다. `JOB_ANALYSIS` 8개, generation 8개, verification 6개 공개 step key를 변경하지 않고 모델이 domain source·finalization을 결정하지 않게 한다. Cover Letter 신규 접수는 v2 canonical definition을 사용하고 기존 v1 Run은 별도 non-canonical executable definition으로 재개한다.
+duplicate step key와 weight 합 오류를 거부하고 handler가 없는 canonical workflow를 executable로 등록하지 않는다. `JOB_ANALYSIS` 8개, generation 8개, verification 6개 공개 step key를 변경하지 않고 모델이 domain source·finalization을 결정하지 않게 한다. Cover Letter 신규 접수는 v3 canonical definition을 사용하고 기존 v1/v2 Run은 exact non-canonical executable definition으로 재개한다.
 
 ## 관련 규칙 및 문서
 

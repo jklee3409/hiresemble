@@ -19,7 +19,7 @@
 | [`ui-redesign.visual.spec.ts`](ui-redesign.visual.spec.ts)                     | 안전한 고정 fixture의 주요 화면 1440/390px 전후 full-page 캡처                                                               |
 | [`landing.spec.ts`](landing.spec.ts)                                           | anonymous Landing·Hero 2줄·자동 DOM demo lifecycle·reduced motion·1440/390/320px, auth-aware `/`와 Dashboard 0/3~3/3 fixture |
 | [`job-analysis.actual.spec.ts`](job-analysis.actual.spec.ts)                   | 실제 분석·reuse·OUTDATED·재분석·근거 부족·owner 격리                                                                         |
-| [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts)                   | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리                                                      |
+| [`cover-letter.actual.spec.ts`](cover-letter.actual.spec.ts)                   | 실제 자기소개서 생성·문항·partial AI·version·검증·finalize·archive·격리와 고유한 분석 결과 영역 locator                      |
 | [`interview-preparation.actual.spec.ts`](interview-preparation.actual.spec.ts) | 실제 조사 coverage·source·질문·답변 409·feedback·retry·history delete·격리                                                   |
 | [`index.md`](index.md)                                                         | E2E 영역의 책임과 의존 관계 설명                                                                                             |
 | [`progress.md`](progress.md)                                                   | E2E 구현 상태와 검증 이력 추적                                                                                               |

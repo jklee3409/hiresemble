@@ -4,6 +4,19 @@
 
 P7 자기소개서 생성·문항 관리·immutable 답변 version·근거 provenance·검증·최종화·보관과 AI application port가 final-source actual 및 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-05] Session Summary (자기소개서 v3 provenance·검증 정합성)
+
+- What was done:
+  - 신규 Agent Run을 generation/verification v3로 접수하고 USER_EDITED exact excerpt provenance 계승과 v3 검증 persistence를 연결했다.
+- Key decisions:
+  - 공개 API·DB schema·V22 migration은 유지하며 v1/v2 retry는 저장된 exact version으로 실행한다.
+- Issues encountered:
+  - P7은 selector 모호성 수정 후 최종 미재실행 상태다.
+- Validation:
+  - application 통합 테스트와 Backend 전체 check 통과, P7 최종 통과 미검증.
+- Next steps:
+  - P7 추가 1회가 필요하다.
+
 ## [2026-08-05] Session Summary (자기소개서 작성 품질 v2 application 연결)
 
 - What was done:

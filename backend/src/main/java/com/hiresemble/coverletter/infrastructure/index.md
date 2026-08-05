@@ -6,7 +6,7 @@ P7 자기소개서 PostgreSQL 영속성, owner-scoped 조회·CAS·immutable his
 
 ## 주요 파일 및 하위 디렉터리
 
-- `CoverLetterStore`: 자기소개서·문항·답변·근거·검증·acknowledgement SQL
+- `CoverLetterStore`: 자기소개서·문항·답변·근거·검증·acknowledgement SQL과 USER_EDITED exact excerpt 일치 provenance 복사
 - `CoverLetterAiCostProperties`: generation·verification 비용 예약 설정
 - `CoverLetterInfrastructureConfiguration`: 검증된 infrastructure bean 조립
 - [`progress.md`](progress.md): infrastructure 구현 상태

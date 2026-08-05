@@ -13,7 +13,7 @@ P7 자기소개서 use case, transaction, owner scope, optimistic version과 AI 
 
 ## 구성 요소 역할
 
-상태 전이, current answer 교체, 검증 freshness, warning acknowledgement와 finalization eligibility를 transaction 안에서 재검증한다.
+상태 전이, current answer 교체, 검증 freshness, warning acknowledgement와 finalization eligibility를 transaction 안에서 재검증한다. USER_EDITED 저장은 parent claim 중 편집 후 plain text에 exact excerpt가 남은 provenance만 historical candidate로 계승한다.
 
 ## 다른 디렉터리와의 의존 관계
 

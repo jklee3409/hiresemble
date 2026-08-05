@@ -15,6 +15,19 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-05] Session Summary (P7 Document 완료 locator 고유화)
+
+- What was done:
+  - P7 actual spec의 `정리 완료` 확인을 전역 text locator에서 `분석 결과 요약` label 내부 locator로 한정했다.
+- Key decisions:
+  - status badge와 summary 값이 동시에 존재해도 의미상 summary 영역 하나만 검증한다.
+- Issues encountered:
+  - 수정 전 P7 재검증이 strict mode의 2개 element 매칭으로 중단됐다.
+- Validation:
+  - selector 수정 후 Frontend `pnpm check` 67 files/284 tests·format·lint·typecheck·build 통과. P7은 재검증 상한에 따라 미실행이다.
+- Next steps:
+  - selector 수정 후 P7 1회가 필요하다.
+
 ## [2026-08-05] Session Summary (공고 분석 디자인 개편 회귀 동기화)
 
 - What was done:

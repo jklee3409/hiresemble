@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter generation·verification v3)
+
+- What was done:
+  - question type별 허용 framework/section과 weight 100 계약, head/tail bounded metadata, exact answer excerpt claim, issue kind-code-severity matrix를 v3 executor에 구현했다.
+  - generation/explicit verification에 `cover-letter-duplication-v3`, explicit verification에 historical-first+lexical relevance `cover-letter-evidence-selection-v3`를 적용했다.
+- Key decisions:
+  - unsupported claim은 positive verified claim으로 저장하지 않고 factual issue로만 표현하며, QUALITY/DUPLICATION은 `OTHER + WARNING`만 허용한다.
+- Issues encountered:
+  - P7 재검증은 workflow 진입 전 Document 완료 selector 모호성에서 중단됐다.
+- Validation:
+  - v3 policy negative tests, generation/verification workflow tests, registry·strict schema와 전체 Backend check 통과.
+- Next steps:
+  - selector 수정 후 P7 full pipeline과 DB assertion 최종 통과 확인이 남았다.
+
 ## [2026-08-05] Session Summary (Cover Letter generation·verification v2)
 
 - What was done:

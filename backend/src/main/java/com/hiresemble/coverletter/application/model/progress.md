@@ -4,6 +4,19 @@
 
 P7 API·generation·verification에 필요한 최소 immutable application record가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v3 model compatibility 확인)
+
+- What was done:
+  - 공개 application model은 변경하지 않고 v3 strict DTO와 truncation/selection metadata를 AI workflow 내부 record로 격리했다.
+- Key decisions:
+  - DB/API용 `VerifiedClaim`, `EvidenceUse`, `VerificationSnapshot` 의미는 유지하고 unsupported claim은 workflow persistence 전에 제거한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - application·workflow·strict schema 테스트와 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Verification sibling answer snapshot)
 
 - What was done:

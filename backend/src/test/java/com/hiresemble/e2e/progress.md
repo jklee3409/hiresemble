@@ -4,6 +4,20 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-05] Session Summary (P7 Cover Letter v3 Fake·DB assertion)
+
+- What was done:
+  - Document evidence 제목과 v3 generation/verification Fake 본문·이슈·제안을 한국어로 바꾸고 서로 다른 question type, exact excerpt claim과 v3 workflow DB assertion을 추가했다.
+  - generation/retry exact v3, 신규 v1/v2 부재, AI_REVISED parent, ACTIVITY provenance와 terminal PENDING 부재를 DB로 검사한다.
+- Key decisions:
+  - 실제 Provider 호출 없이 격리 Fake만 사용한다.
+- Issues encountered:
+  - 최초 실행은 영문 evidence 제목의 한국어 정책 위반이었다. 수정 후 실행은 Document 완료 뒤 동일 `정리 완료` 두 요소의 Playwright strict locator에서 실패했다.
+- Validation:
+  - Backend check에는 포함되지 않는 P7 task의 최종 통과는 미검증이다. selector 수정 후 세 번째 실행은 재검증 상한 때문에 수행하지 않았다.
+- Next steps:
+  - 승인된 추가 실행으로 전체 v3 DB assertion을 확인한다.
+
 ## [2026-08-05] Session Summary (P7 Cover Letter v2 Fake fixture 갱신)
 
 - What was done:

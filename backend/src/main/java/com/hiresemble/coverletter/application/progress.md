@@ -4,6 +4,20 @@
 
 P7 자기소개서 application use case와 generation·verification port가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v3 launch와 USER_EDITED provenance)
+
+- What was done:
+  - active launch version을 v3로 변경하고 verification persistence의 v2/v3 modern snapshot 분기를 보존했다.
+  - USER_EDITED 저장 시 parent evidence link의 claim_text가 새 plain text에 실제 남은 경우만 candidate provenance로 복사한다.
+- Key decisions:
+  - 편집으로 사라진 claim은 자동 계승하지 않으며 verification이 current VERIFIED freshness를 다시 판정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `CoverLetterApplicationIntegrationTest` exact excerpt 유지/제거 경계와 전체 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v2 launch와 sibling snapshot)
 
 - What was done:

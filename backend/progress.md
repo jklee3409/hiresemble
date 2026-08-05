@@ -7,6 +7,20 @@
 - V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
 - 최신 완료된 Backend 전체 `check`는 79 suites/549 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
 
+## [2026-08-05] Session Summary (Cover Letter workflow v3 hardening)
+
+- What was done:
+  - active generation·verification v3와 legacy v1/v2 executable, strict prompt/schema registry, deterministic claim·issue·framework·truncation·evidence selection 정책을 연결했다.
+  - USER_EDITED parent provenance는 새 본문에 exact excerpt가 남은 link만 복사하도록 보강했다.
+- Key decisions:
+  - 공개 REST/DB 계약과 적용 migration은 유지하고 workflow 내부 strict 구조 변경만 version bump로 격리했다.
+- Issues encountered:
+  - 전체 check 최초 실행은 도구 timeout 뒤 한 registry count 회귀를 확인했고 수정 후 장시간 재실행이 통과했다. P7 수정 후 실행은 selector 모호성으로 실패했다.
+- Validation:
+  - `compileJava`, `compileTestJava`, 집중 tests, `check` 80 suites/564 tests 통과. P7 최종 통과 미검증, 유료 Provider 0회.
+- Next steps:
+  - 고유 selector 수정본의 P7 재검증이 필요하다.
+
 ## [2026-08-05] Session Summary (Cover Letter workflow v2와 durable v1 호환)
 
 - What was done:

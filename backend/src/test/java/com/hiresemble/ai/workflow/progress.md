@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v3 의미 검증 경계)
+
+- What was done:
+  - framework mismatch/STAR section/weight, phantom·duplicate claim, issue matrix 음성 조합, truncation hash/count, 30개 초과 relevance selection과 duplication signal 테스트를 추가했다.
+  - registry와 기존 v1/v2 workflow 회귀 기대값을 v3 canonical+legacy 구조에 맞췄다.
+- Key decisions:
+  - 실제 Provider 없이 Fake·deterministic policy로만 검증한다.
+- Issues encountered:
+  - 전체 check 최초 결과에서 registry definition count 기대값이 이전 12로 남아 있었고 14로 교정했다.
+- Validation:
+  - 집중 workflow/strict schema tests와 전체 80 suites/564 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v1/v2 workflow 회귀)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-05] Session Summary (Cover Letter v3 prompt identity)
+
+- What was done:
+  - generation·verification v3 단계별 prompt에 `ko-KR`, Context availability, bounded/truncated text, exact excerpt claim, issue matrix와 partial sibling 지시를 명시했다.
+- Key decisions:
+  - v1/v2 PromptKey는 변경하지 않고 v3 key/schema만 추가해 durable checkpoint 호환을 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - PromptRegistry completeness와 OpenAI strict schema compatibility 테스트 통과.
+- Next steps:
+  - 실제 Provider 한국어 품질은 호출 승인 후 확인한다.
+
 ## [2026-08-05] Session Summary (Cover Letter 단계별 v2 prompt identity)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-05] Session Summary (Cover Letter v1/v2/v3 runtime registry)
+
+- What was done:
+  - generation·verification v3 executable을 canonical registry에 추가하고 v1/v2 contribution을 non-canonical durable 실행으로 유지했다.
+- Key decisions:
+  - Provider route·비용 설정은 변경하지 않았고 Fake gateway 검증만 사용했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - registry sequence/count와 전체 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v1/v2 runtime registry)
 
 - What was done:

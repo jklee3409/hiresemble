@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (자기소개서 Workflow v3 의미 정합성 hardening)
+
+- What was done:
+  - 신규 자기소개서 generation·verification 접수를 v3로 전환하고 framework-neutral section, exact excerpt provenance, truncation metadata, relevance evidence selection, 공용 duplication policy와 `ko-KR` 계약을 구현했다.
+  - v1/v2 definition·prompt·executor의 exact-version 실행을 보존하고 P7 Fake와 DB workflow version assertion을 v3에 맞췄다.
+- Key decisions:
+  - strict record field가 바뀌므로 v2를 제자리 수정하지 않고 v3를 canonical로 추가했으며 공개 API·DB migration·Frontend 계약은 변경하지 않았다.
+- Issues encountered:
+  - 최초 P7은 영문 evidence 제목의 한국어 정책 위반으로 실패했다. 수정 후 재검증은 Document 완료 뒤 중복된 `정리 완료` locator 때문에 실패했고 selector를 고유 영역으로 수정했으나 실행 상한에 따라 세 번째 P7은 수행하지 않았다.
+- Validation:
+  - Backend `check` 80 suites/564 tests, Frontend `pnpm check` 67 files/284 tests·typecheck·build, strict schema와 집중 workflow 테스트 통과. P7 최종 통과는 미검증이며 실제 Provider 호출은 0회다.
+- Next steps:
+  - 승인된 추가 P7 1회로 수정된 selector 이후 generation/retry/verification/restore/finalize DB assertion을 최종 확인한다.
+
 ## [2026-08-05] Session Summary (자기소개서 생성·검증 작성 품질 v2)
 
 - What was done:
