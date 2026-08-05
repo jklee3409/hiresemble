@@ -8,17 +8,17 @@ defineEmits<{ reapply: []; cancel: [] }>()
 <template>
   <section class="cover-conflict" role="alertdialog" aria-labelledby="cover-conflict-title">
     <div>
-      <p class="page-eyebrow">409 버전 충돌</p>
+      <p class="page-eyebrow">다른 곳에서 먼저 저장됐어요</p>
       <h3 id="cover-conflict-title">{{ conflictHeading(conflict) }}</h3>
-      <p>최신 서버 내용과 저장하지 않은 내용을 비교한 뒤 직접 선택해 주세요.</p>
+      <p>지금 저장된 내용과 내가 쓰던 내용을 나란히 두었어요. 어느 쪽을 남길지 직접 골라 주세요.</p>
     </div>
     <div class="cover-conflict__comparison">
       <article>
-        <h4>최신 서버 내용</h4>
+        <h4>지금 저장된 내용</h4>
         <pre>{{ conflict.serverSnapshot }}</pre>
       </article>
       <article>
-        <h4>내 미저장 내용</h4>
+        <h4>내가 쓰던 내용</h4>
         <pre>{{ conflict.localDraft }}</pre>
       </article>
     </div>
@@ -29,9 +29,11 @@ defineEmits<{ reapply: []; cancel: [] }>()
         :disabled="reapplying"
         @click="$emit('reapply')"
       >
-        {{ reapplying ? '재적용 중…' : '최신 버전에 재적용' }}
+        {{ reapplying ? '저장하는 중…' : '내가 쓰던 내용으로 저장' }}
       </button>
-      <button type="button" class="button button--secondary" @click="$emit('cancel')">취소</button>
+      <button type="button" class="button button--secondary" @click="$emit('cancel')">
+        저장된 내용 그대로 두기
+      </button>
     </div>
   </section>
 </template>

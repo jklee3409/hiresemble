@@ -4,6 +4,35 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (충돌 안내 component test 정합성 보정)
+
+- What was done:
+  - `CoverLetterConflictPanel.test.ts`가 새 사용자 문구인 `저장된 답변이 그 사이에 바뀌었어요.`와 `저장하는 중…`을 검증하도록 보정했다.
+- Key decisions:
+  - HTTP·version 내부 용어 대신 실제 화면에 표시되는 사용자 문구를 회귀 경계로 유지한다.
+- Issues encountered:
+  - 최초 Frontend 전체 검사에서 과거 `현재 답변 버전`·`재적용 중` 문구 assertion 2개가 실패했다.
+- Validation:
+  - 집중 Vitest와 최종 `corepack pnpm check`가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-05] Session Summary (사용자 언어 label과 충돌 안내 문구 정리)
+
+- What was done:
+  - `presentation.ts`의 공용 label을 사용자 언어로 고쳤다. 상태 `최종화 → 작성 완료`, 검토 `검증 중 → 검토 중`·`통과 → 문제없음`·`검증 실패 → 수정 필요`, 작성 출처 `사용자 저장 → 내가 쓴 글`·`과거 버전 복원 → 되돌린 내용`, issue code와 severity 문구, 근거 현재 상태 `현재 승인 거절됨 → 지금은 사용 안 함` 계열을 정리했다.
+  - `conflict.ts`의 `현재 답변 버전이 달라졌어요` 문구와 `CoverLetterConflictPanel.vue`의 `409 버전 충돌` eyebrow·비교 제목·button label을 `다른 곳에서 먼저 저장됐어요`·`지금 저장된 내용`·`내가 쓰던 내용`·`내가 쓰던 내용으로 저장`·`저장된 내용 그대로 두기`로 바꿨다.
+  - `CoverLetterTipTapEditor.vue` 본문 폭을 46rem으로 제한하고 좁은 화면에서 서식 button이 폭을 나눠 갖도록 했다.
+- Key decisions:
+  - label 값만 바꾸고 enum·API 계약·tone 매핑은 그대로 둔다. 이 label을 함께 쓰는 목록·공고 tab 화면도 같은 문구를 사용한다.
+  - 사용자 문구에서 HTTP status와 `immutable` 같은 내부 용어를 제거하되 개발자 로그와 계약 문서에서는 유지한다.
+- Issues encountered:
+  - 로컬 Node 20.18.0에서 `vitest` 실행이 불가능해 component test는 미검증이다.
+- Validation:
+  - `eslint`, `prettier --check`, `vue-tsc -b --force`, `vite build` 통과와 실제 Chromium fixture 캡처로 확인했다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`로 component test 회귀를 확인한다.
+
 ## [2026-08-05] Session Summary (작성 화면 개편에 맞춘 feature component 정리)
 
 - What was done:

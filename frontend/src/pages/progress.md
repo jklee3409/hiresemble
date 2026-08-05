@@ -4,6 +4,65 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (자기소개서 편집 page test 정합성 보정)
+
+- What was done:
+  - `CoverLetterEditPage.test.ts`의 미저장 안내 기대값을 현재 사용자 문구로 바꾸고, 과거 저장본 선택을 화면의 `1번째` label에 맞췄다.
+- Key decisions:
+  - 사용자 문구와 저장 기록 순번을 기준으로 검증하되 답변 복원·최종 완료 동작 계약은 유지한다.
+- Issues encountered:
+  - 최초 Frontend 전체 검사에서 과거 `서버 미저장`·`v1` selector 때문에 test 2개가 실패했다.
+- Validation:
+  - 집중 Vitest와 최종 `corepack pnpm check`가 통과했다.
+- Next steps:
+  - 실제 Backend를 사용하는 `cover-letter.actual.spec.ts`는 이번 commit 준비 과정에서 재실행하지 않았다.
+
+## [2026-08-05] Session Summary (자기소개서 작성 화면 tab 폭·참고 자료 표현 보정)
+
+- What was done:
+  - 선택 문항 제목이 오른쪽 여백을 남기지 않도록 `max-width: 48rem`을 없애고 제목 열에 `flex: 1 1 20rem`과 `min-width: 0`을 줬다.
+  - `공고가 원하는 것` 목록을 disc bullet(`rail-list`)에서 강점 목록과 같은 칸 디자인(`insight-list`)으로 바꾸고 brand tone check icon을 붙였다. 사용하지 않게 된 `.rail-list`는 제거했다.
+  - `쓸 경험 고르기`의 `공고와 맞는 경험 N개 담기` 일괄 담기 button과 관련 computed·handler를 제거했다. 선택 해제만 남는다.
+  - 문항 tab을 `width: 15.5rem` 고정에서 `flex: 1 1 15.5rem` + `min-width: 15.5rem`으로 바꿔 문항 수가 적으면 남는 폭을 나눠 갖고, 많아지면 기존처럼 가로 scroll한다. 좁은 화면 기준값도 `min-width`·`flex-basis` 13.5rem으로 맞췄다.
+- Key decisions:
+  - 추천 경험은 목록 정렬과 `공고와 맞아요` 배지로만 알려 주고 일괄 선택은 제공하지 않는다.
+  - 참고 자료 세 dropdown은 같은 목록 표현을 공유해 시각 규칙을 하나로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint src`, `prettier`, `vue-tsc -b --force`, `vite build` 통과.
+  - `vite preview` + Playwright Chromium fixture로 1440px 캡처해 제목 폭과 단일 문항 tab 확장을 확인했다. 토큰 예산 때문에 이번에는 추가 상태 캡처와 Vitest는 실행하지 않았다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 `cover-letter.actual.spec.ts` 실행.
+
+## [2026-08-05] Session Summary (자기소개서 작성 화면 가로 문항 tab 전환과 문구 검수)
+
+- What was done:
+  - 좁아서 읽기 어렵던 좌측 문항 rail을 없애고 상단 가로 문항 tab(`role="tablist"`, roving tabindex, Arrow·Home·End 이동)으로 바꿨다. 선택 문항 작업대가 `role="tabpanel"`이 되고 답변 영역은 전체 폭을 쓴다.
+  - `AI 초안 받기`·`이 답변 검토받기`를 tab bar 우측으로 올리고, 대상 문항·작성 방식·경험 중복 최소화는 같은 줄의 접힌 `AI에게 맡길 문항과 방식` disclosure로 옮겼다.
+  - 세로로 길던 오른쪽 rail을 `1 공고가 원하는 것 · 2 내 강점과 보완할 점 · 3 쓸 경험 고르기` 3열 dropdown으로 바꾸고 각 summary에 한 줄 미리보기와 개수를 붙였다. 검증 결과는 편집기 아래 전체 폭 `AI 코치의 검토 결과`로 옮겼다.
+  - 문항 순서 변경을 선택 문항의 `앞으로 이동`·`뒤로 이동`으로 바꾸고, 문항 목록 대신 tab에서 상태 badge와 글자 수를 보여 준다.
+  - `COVER_LETTER_GENERATION` run 진행 중에는 편집기를 읽기 전용으로 두고 저장·제안 적용을 막으며 안내 문구를 표시하는 `generationInProgress`·`answerLocked`를 추가했다.
+  - 화면 문구 전반을 사용자 언어로 고쳤다. `최종화 확인 → 제출 전 마지막 점검`, `자기소개서 최종화 → 작성 완료로 표시하기`, `답변 대기 → 작성 전`, `새 버전 저장 → 저장하기`, `ARCHIVED · 읽기 전용 → 보관된 자기소개서예요 · 읽기 전용`, `DRAFT로 복구 → 다시 쓰기`, `승인한/승인된 경험 → 확인한 경험`, `409 버전 충돌 → 다른 곳에서 먼저 저장됐어요`로 바꾸고 임시 저장 안내를 `아직 저장하지 않았어요` 계열로 통일했다.
+  - 공용 label(`presentation.ts`)의 `최종화 → 작성 완료`, `검증 중 → 검토 중`, `통과 → 문제없음`, `검증 실패 → 수정 필요`, `사용자 저장 → 내가 쓴 글`, `과거 버전 복원 → 되돌린 내용`과 issue code 문구를 고치고 `CoverLetterListPage.vue`의 `DRAFT로 복구`도 `다시 쓰기`로 맞췄다.
+- Key decisions:
+  - 문항 원문 가독성이 목록 밀도보다 중요하므로 tab 폭을 15.5rem로 두고 넘치면 가로 scroll한다. 좁은 화면에서는 tab만 가로 scroll하고 실행 button은 2열 grid로 접는다.
+  - 참고 자료는 항상 펼쳐 두지 않고 summary의 미리보기·개수로 요약한 뒤 필요할 때만 펼친다.
+  - 편집 잠금은 workflow type이 초안 생성일 때만 적용하고, 검토 run은 편집을 막지 않는다.
+  - enum 이름과 내부 용어는 사용자 문구에서 제거하되 API 계약·상태 전이는 그대로 둔다.
+- Issues encountered:
+  - `.question-bar`가 grid container라 자식의 기본 `min-width: auto`가 tab 목록의 max-content를 그대로 밀어 올려 1440·390px 모두에서 카드가 넘쳤다. 실제 Chromium에서 `scrollWidth` 680 / 카드 366을 측정해 원인을 찾고 `min-width: 0`으로 고쳤다.
+  - 좁은 화면에서 `flex-direction: column`에 `flex-wrap: wrap`이 남아 항목이 옆 column으로 넘어가 가로 scroll이 생겨 `nowrap`으로 고정했다.
+  - `getByText('쓸 경험 고르기')`가 코치 단계 label과 dropdown summary 양쪽에 걸려 실제 E2E helper를 `.reference-card:has(.evidence-options) > summary`처럼 범위를 좁힌 selector로 바꿨다.
+  - 편집 중이 아닐 때 brief 글자 수가 편집기 footer와 1자 어긋나 `displayedCharacterCount`로 서버 값을 함께 쓰도록 맞췄다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - `vite preview` + Playwright Chromium fixture로 `ui-redesign.visual.spec.ts`·`landing.spec.ts`·`ui-shell.spec.ts` 12건 중 10건 통과. 실패 2건은 이 변경과 무관하다. `ui-shell`의 `profile suggestions…`는 기존 기록에 있는 실패이고, `landing`의 skip link Tab focus는 `pnpm dev` 대신 production preview에서 실행한 환경 차이로 재현된다.
+  - 임시 fixture spec으로 문항 0개·문항 추가 form·문항 3개 혼합·참고 자료 펼침·초안 생성 중 잠금·390px 화면을 캡처해 확인한 뒤 임시 spec을 삭제했다.
+  - Vitest는 로컬 Node 20.18.0 제약으로 여전히 미실행이다. `CoverLetterEditPage.test.ts`의 selector(`.question-tab`)와 문구 단언, `CoverLetterListPage.test.ts`의 `다시 쓰기`를 함께 고쳤으나 실행 확인은 Node 24 환경에서 필요하다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 `cover-letter.actual.spec.ts`를 실행해 단위·실제 흐름 회귀를 확인한다.
+
 ## [2026-08-05] Session Summary (자기소개서 작성 화면 협업 시나리오 개편)
 
 - What was done:

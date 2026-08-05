@@ -17,7 +17,7 @@ describe('CoverLetterConflictPanel', () => {
     })
 
     expect(wrapper.attributes('role')).toBe('alertdialog')
-    expect(wrapper.text()).toContain('현재 답변 버전이 달라졌어요.')
+    expect(wrapper.text()).toContain('저장된 답변이 그 사이에 바뀌었어요.')
     expect(wrapper.text()).toContain('서버의 최신 답변')
     expect(wrapper.text()).toContain('내가 저장하지 않은 답변')
 
@@ -41,6 +41,6 @@ describe('CoverLetterConflictPanel', () => {
     })
 
     expect(wrapper.get('button.button--primary').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('button.button--primary').text()).toBe('재적용 중…')
+    expect(wrapper.get('button.button--primary').text()).toBe('저장하는 중…')
   })
 })

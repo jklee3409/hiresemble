@@ -258,13 +258,13 @@ describe('CoverLetterEditPage', () => {
 
     expect(wrapper.find('[data-testid="cover-letter-editor"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Vue 경험')
-    expect(wrapper.text()).toContain('현재 승인 거절됨')
+    expect(wrapper.text()).toContain('지금은 사용 안 함')
     expect(wrapper.text()).toContain('원본 삭제됨')
-    expect(wrapper.text()).toContain('새 생성·검증에서는 제외됨')
+    expect(wrapper.text()).toContain('새 초안·검토에서는 쓰지 않아요')
 
     await wrapper.get('[data-testid="fake-cover-editor"]').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('서버 미저장')
+    expect(wrapper.text()).toContain('아직 저장하지 않았어요')
     expect(window.sessionStorage.length).toBe(1)
 
     await wrapper.get('[data-testid="save-answer-version"]').trigger('click')
@@ -296,7 +296,7 @@ describe('CoverLetterEditPage', () => {
         coverLetterVersion: 3,
       },
     })
-    expect(wrapper.text()).toContain('편집기는 계속 사용할 수 있어요.')
+    expect(wrapper.text()).toContain('답변 편집은 잠시 멈춰 둘게요')
 
     await wrapper.get('[data-testid="verify-answer-version"]').trigger('click')
     await flushPromises()
@@ -365,12 +365,12 @@ describe('CoverLetterEditPage', () => {
     const wrapper = await mountPage()
     const finalize = wrapper.get<HTMLButtonElement>('[data-testid="finalize-cover-letter"]')
     expect(finalize.attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('1번 문항의 경고를 확인해 주세요.')
+    expect(wrapper.text()).toContain('1번 문항의 확인 사항을 읽어 주세요.')
 
     const oldVersion = wrapper
       .get('[aria-label="답변 버전"]')
       .findAll('button')
-      .find((button) => button.text().includes('v1'))
+      .find((button) => button.text().includes('1번째'))
     await oldVersion?.trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="restore-answer-version"]').trigger('click')
@@ -394,7 +394,7 @@ describe('CoverLetterEditPage', () => {
         acknowledgedWarningVerificationIds: [COVER_LETTER_VERIFICATION_ID],
       },
     })
-    expect(wrapper.text()).toContain('공고의 제출 상태는 별도 사용자 행동')
+    expect(wrapper.text()).toContain('공고의 지원 상태는 공고 화면에서 따로 바꿔 주세요')
   })
 
   it('updates, reorders and soft-deletes questions through aggregate versions', async () => {
@@ -415,7 +415,7 @@ describe('CoverLetterEditPage', () => {
     const wrapper = await mountPage()
 
     const secondSelect = wrapper
-      .findAll('.question-list__select')
+      .findAll('.question-tab')
       .find((button) => button.text().includes('두 번째 문항'))
     await secondSelect?.trigger('click')
     await flushPromises()
@@ -438,7 +438,7 @@ describe('CoverLetterEditPage', () => {
       },
     })
 
-    await wrapper.get('[aria-label="2번 문항 위로 이동"]').trigger('click')
+    await wrapper.get('[aria-label="2번 문항 앞으로 이동"]').trigger('click')
     await flushPromises()
     expect(mocks.reorder.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
@@ -616,11 +616,12 @@ describe('CoverLetterEditPage', () => {
       .mockResolvedValueOnce(latestDetail)
     const wrapper = await mountPage()
 
-    await wrapper.get('[aria-label="2번 문항 위로 이동"]').trigger('click')
+    await selectQuestionTab(wrapper, '두 번째 로컬 문항')
+    await wrapper.get('[aria-label="2번 문항 앞으로 이동"]').trigger('click')
     await flushPromises()
 
     const panel = wrapper.get('.cover-conflict')
-    expect(panel.text()).toContain('최신 서버 순서')
+    expect(panel.text()).toContain('지금 저장된 순서')
     expect(panel.text()).toContain('1. 서버 세 번째 문항')
     expect(panel.text()).toContain('2. 서버 첫 번째 문항')
     expect(panel.text()).toContain('3. 서버 두 번째 문항')
@@ -677,14 +678,15 @@ describe('CoverLetterEditPage', () => {
     mocks.reorder.mutateAsync.mockRejectedValueOnce(versionConflict())
     const wrapper = await mountPage()
 
-    await wrapper.get('[aria-label="2번 문항 위로 이동"]').trigger('click')
+    await selectQuestionTab(wrapper, '로컬 둘째 문항')
+    await wrapper.get('[aria-label="2번 문항 앞으로 이동"]').trigger('click')
     await flushPromises()
     await wrapper.get('.cover-conflict button.button--secondary').trigger('click')
     await flushPromises()
 
     expect(mocks.reorder.mutateAsync).toHaveBeenCalledTimes(1)
     expect(wrapper.find('.cover-conflict').exists()).toBe(false)
-    expect(wrapper.findAll('.question-list__select')[0]!.text()).toContain('서버 첫 순서 문항')
+    expect(wrapper.findAll('.question-tab')[0]!.text()).toContain('서버 첫 순서 문항')
   })
 
   it('compares the current answer ID, version and content then reapplies the saved editor document', async () => {
@@ -793,14 +795,14 @@ describe('CoverLetterEditPage', () => {
     })
     const wrapper = await mountPage()
 
-    expect(wrapper.text()).toContain('ARCHIVED · 읽기 전용')
+    expect(wrapper.text()).toContain('보관된 자기소개서예요 · 읽기 전용')
     expect(wrapper.find('[data-testid="save-answer-version"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="generate-cover-letter"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="verify-answer-version"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="restore-answer-version"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="finalize-cover-letter"]').exists()).toBe(false)
 
-    const recover = wrapper.findAll('button').find((button) => button.text() === 'DRAFT로 복구')
+    const recover = wrapper.findAll('button').find((button) => button.text() === '다시 쓰기')
     await recover?.trigger('click')
     await flushPromises()
     expect(mocks.unarchive.mutateAsync).toHaveBeenCalledWith({
@@ -883,6 +885,13 @@ function versionConflict(): ApiClientError {
     status: 409,
     code: 'OPTIMISTIC_LOCK_CONFLICT',
   })
+}
+
+async function selectQuestionTab(wrapper: VueWrapper, text: string): Promise<void> {
+  const tab = wrapper.findAll('.question-tab').find((button) => button.text().includes(text))
+  if (!tab) throw new Error(`Question tab not found: ${text}`)
+  await tab.trigger('click')
+  await flushPromises()
 }
 
 function findButton(wrapper: VueWrapper, text: string): DOMWrapper<HTMLButtonElement> {

@@ -29,7 +29,7 @@
 - [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, compact 판단 지표·커버리지·요건 분포, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED disclosure·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
-- [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 상태에서 유도한 단일 다음 행동과 5단계 진행을 제시하는 AI 코치 panel, 문항 Navigator·중앙 문항 등록/답변 작업대·번호가 있는 요구사항→강점→소재→AI 요청→검증 rail, 버전 이력과 문항별 최종화 확인을 조합한 canonical editor
+- [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 상태에서 유도한 단일 다음 행동과 5단계 진행을 제시하는 AI 코치 panel, 가로 문항 tab과 AI 초안·검토 실행을 묶은 상단 bar, 요구사항→강점→경험 3열 dropdown, 전체 폭 답변 작업대와 검토 결과, 저장 기록과 문항별 제출 전 점검을 조합한 canonical editor
 - [`JobInterviewPage.vue`](JobInterviewPage.vue): 공고별 자기소개서·조사 품질·질문 조건 면접 준비 접수
 - [`InterviewListPage.vue`](InterviewListPage.vue): `qs*` URL filter·pagination·sort 기반 예상 질문 set 목록
 - [`InterviewQuestionSetPage.vue`](InterviewQuestionSetPage.vue): 조사 source·coverage·질문·답변 version·409·feedback 상세
@@ -53,7 +53,9 @@
 - Landing의 주요 CTA는 `/signup`과 `/login`만 사용하고 보호 제품 route를 anonymous 사용자에게 직접 연결하지 않는다.
 - 공고 분석 결과는 해당 Job child page에서만 표시하며 Agent Run 목록·상세에 결과 전체를 복제하지 않는다.
 - 자기소개서 전체 editor는 canonical edit route에만 두고 공고 tab과 Agent Run에는 상태·resource link만 표시한다.
-- 자기소개서 편집의 코치 문장·단계·추천 소재는 기존 detail·분석·경험·Agent Run 응답에서만 유도하고 새 API나 서버가 주지 않는 상태를 만들지 않는다.
+- 자기소개서 편집의 코치 문장·단계·추천 경험은 기존 detail·분석·경험·Agent Run 응답에서만 유도하고 새 API나 서버가 주지 않는 상태를 만들지 않는다.
+- 사용자에게 보이는 문구에 `ARCHIVED`·`DRAFT` 같은 enum 이름과 `버전 충돌`·`immutable` 같은 내부 용어를 노출하지 않는다.
+- 초안 생성 run이 진행 중인 동안에는 답변 편집기를 읽기 전용으로 두어 사용자의 편집과 도착한 초안이 서로를 덮어쓰지 않게 한다.
 - P8 `/interviews`는 예상 질문 set만 표시하며 P9 mock session placeholder를 만들지 않는다.
 
 ## 관련 규칙 및 문서

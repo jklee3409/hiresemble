@@ -106,7 +106,7 @@ describe('CoverLetterListPage', () => {
     const unarchive = wrapper
       .get(`[data-testid="cover-letter-row-${uuid(200)}"]`)
       .findAll('button')
-      .find((button) => button.text() === 'DRAFT로 복구')
+      .find((button) => button.text() === '다시 쓰기')
     await unarchive?.trigger('click')
     await flushPromises()
     expect(mocks.unarchive.mutateAsync).toHaveBeenCalledWith({

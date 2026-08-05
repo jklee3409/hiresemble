@@ -9,36 +9,36 @@ import type { EvidenceRefDto } from '@/shared/api/jobContracts'
 
 export const COVER_LETTER_STATUS_LABELS: Record<CoverLetterStatus, string> = {
   DRAFT: '작성 중',
-  FINALIZED: '최종화',
+  FINALIZED: '작성 완료',
   ARCHIVED: '보관됨',
 }
 
 export const VERIFICATION_STATUS_LABELS: Record<VerificationStatus, string> = {
-  PENDING: '검증 중',
-  PASSED: '통과',
+  PENDING: '검토 중',
+  PASSED: '문제없음',
   WARNING: '확인 필요',
-  FAILED: '검증 실패',
+  FAILED: '수정 필요',
 }
 
 export const ANSWER_SOURCE_LABELS: Record<CoverLetterVersionSource, string> = {
   AI_GENERATED: 'AI 초안',
-  USER_EDITED: '사용자 저장',
+  USER_EDITED: '내가 쓴 글',
   AI_REVISED: 'AI 수정안',
-  RESTORED: '과거 버전 복원',
+  RESTORED: '되돌린 내용',
 }
 
 export const ISSUE_CODE_LABELS: Record<VerificationIssueCode, string> = {
-  UNVERIFIED_CLAIM: '근거 확인 필요',
-  CONTRADICTION: '근거와 불일치',
-  REQUIREMENT_MISSING: '문항 요구 누락',
+  UNVERIFIED_CLAIM: '근거를 찾지 못한 내용',
+  CONTRADICTION: '경험과 다른 내용',
+  REQUIREMENT_MISSING: '문항이 요구한 내용 빠짐',
   LENGTH_VIOLATION: '글자 수 초과',
-  SOURCE_DELETED: '원본 삭제',
-  OTHER: '추가 확인',
+  SOURCE_DELETED: '원본 자료 삭제됨',
+  OTHER: '한 번 더 확인',
 }
 
 export const ISSUE_SEVERITY_LABELS: Record<IssueSeverity, string> = {
-  WARNING: '경고',
-  ERROR: '오류',
+  WARNING: '확인 권장',
+  ERROR: '수정 필요',
 }
 
 export function coverLetterJobLabel(job: {
@@ -57,12 +57,12 @@ export function evidenceCurrentState(evidence: EvidenceRefDto): {
     return { label: '원본 삭제됨', excludedFromNewContext: true }
   }
   if (evidence.verificationStatus === 'REJECTED') {
-    return { label: '현재 승인 거절됨', excludedFromNewContext: true }
+    return { label: '지금은 사용 안 함', excludedFromNewContext: true }
   }
   if (evidence.verificationStatus === 'PENDING') {
-    return { label: '현재 검토 대기', excludedFromNewContext: true }
+    return { label: '아직 확인 전', excludedFromNewContext: true }
   }
-  return { label: '현재 승인됨', excludedFromNewContext: false }
+  return { label: '지금도 확인된 경험', excludedFromNewContext: false }
 }
 
 export function formatCoverLetterInstant(value: string): string {

@@ -117,7 +117,7 @@ async function unarchive(id: string, version: number, reapply = false): Promise<
   statusMessage.value = ''
   try {
     await unarchiveMutation.mutateAsync({ coverLetterId: id, version })
-    statusMessage.value = '자기소개서를 DRAFT로 복구했어요.'
+    statusMessage.value = '다시 쓸 수 있게 되돌렸어요.'
     conflict.value = null
   } catch (error) {
     await handleLifecycleConflict('unarchive', id, error, reapply)
@@ -145,7 +145,7 @@ async function handleLifecycleConflict(
     serverSnapshot: latest
       ? `${COVER_LETTER_STATUS_LABELS[latest.status]} · version ${latest.version}`
       : '최신 목록에서 항목을 찾을 수 없음',
-    localDraft: action === 'archive' ? '보관 요청' : 'DRAFT 복구 요청',
+    localDraft: action === 'archive' ? '보관 요청' : '다시 쓰기 요청',
   }
   if (reapply) actionError.value = '최신 상태에서도 요청을 적용할 수 없어요.'
 }
@@ -320,7 +320,7 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
             :disabled="unarchiveMutation.isPending.value"
             @click="unarchive(item.id, item.version)"
           >
-            DRAFT로 복구
+            다시 쓰기
           </button>
         </div>
       </article>

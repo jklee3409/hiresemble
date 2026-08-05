@@ -240,6 +240,7 @@ const generationQuestionIds = ref(new Set<string>())
 const qualityMode = ref<AiQualityMode>('BALANCED')
 const avoidExperienceDuplication = ref(true)
 const acceptedRunId = ref('')
+const acceptedRunKind = ref<'GENERATE' | 'VERIFY' | ''>('')
 const warningAcknowledgements = ref(new Set<string>())
 const actionError = ref('')
 const statusMessage = ref('')
@@ -288,6 +289,20 @@ const aiActionUnavailable = computed(
     latestRun.isLoading.value ||
     latestRun.isError.value,
 )
+/*
+ * AI가 초안을 쓰는 동안에는 답변 편집을 잠근다.
+ * 사용자가 편집한 내용과 도착한 초안이 같은 문항에서 서로를 덮어쓰는 상황을 만들지 않는다.
+ */
+const generationInProgress = computed(() => {
+  if (generateMutation.isPending.value || acceptedRunKind.value === 'GENERATE') return true
+  const run = latestRun.data.value?.items[0]
+  if (!run) return false
+  return (
+    run.workflowType === 'COVER_LETTER_GENERATION' &&
+    ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(run.status)
+  )
+})
+const answerLocked = computed(() => readOnly.value || generationInProgress.value)
 const questionLabels = computed<Record<string, string>>(() =>
   Object.fromEntries(
     activeQuestions.value.map((question) => [
@@ -297,8 +312,17 @@ const questionLabels = computed<Record<string, string>>(() =>
   ),
 )
 
+const QUALITY_MODE_LABELS: Record<AiQualityMode, string> = {
+  ECONOMY: '빠르게 초안만',
+  BALANCED: '적당한 속도와 완성도',
+  HIGH_QUALITY: '천천히, 더 꼼꼼하게',
+}
+
 const jobLabel = computed(() =>
   coverLetter.data.value ? coverLetterJobLabel(coverLetter.data.value.job) : '등록 공고',
+)
+const selectedQuestionIndex = computed(() =>
+  activeQuestions.value.findIndex((question) => question.id === selectedQuestionId.value),
 )
 const questionCount = computed(() => activeQuestions.value.length)
 const answeredQuestions = computed(() =>
@@ -343,6 +367,19 @@ const requirementHighlights = computed(() => {
 })
 const analysisStrengths = computed(() => analysis.data.value?.strengths ?? [])
 const analysisGaps = computed(() => analysis.data.value?.gaps ?? [])
+const requirementSummary = computed(
+  () => requirementHighlights.value[0]?.text ?? '공고 분석 결과가 아직 없어요.',
+)
+const strengthSummary = computed(
+  () => analysisStrengths.value[0] ?? analysisGaps.value[0] ?? '공고 분석 결과가 아직 없어요.',
+)
+const evidenceSummary = computed(() => {
+  if (evidence.isLoading.value) return '불러오는 중…'
+  const total = evidenceItems.value.length
+  if (total === 0) return '확인해 둔 경험이 아직 없어요.'
+  if (selectedEvidenceIds.value.size === 0) return `확인한 경험 ${total}개를 모두 참고해요.`
+  return `${total}개 중 ${selectedEvidenceIds.value.size}개를 골랐어요.`
+})
 const recommendedEvidenceIds = computed(
   () => new Set((analysis.data.value?.matchedEvidenceRefs ?? []).map((item) => item.id)),
 )
@@ -353,19 +390,15 @@ const evidenceItems = computed(() =>
       (recommendedEvidenceIds.value.has(right.id) ? 0 : 1),
   ),
 )
-const unselectedRecommendedIds = computed(() =>
-  evidenceItems.value
-    .filter(
-      (item) =>
-        recommendedEvidenceIds.value.has(item.id) && !selectedEvidenceIds.value.has(item.id),
-    )
-    .map((item) => item.id),
-)
 
+/* 편집 중이 아닐 때는 편집기 footer와 같은 서버 글자 수를 보여 준다. */
+const displayedCharacterCount = computed(() =>
+  editorDirty.value ? editorCharacterCount.value : selectedServerCount.value,
+)
 const answerLengthPercent = computed(() => {
   const limit = selectedQuestion.value?.maxLength ?? null
   if (limit === null || limit === 0) return null
-  return Math.min(100, Math.round((editorCharacterCount.value / limit) * 100))
+  return Math.min(100, Math.round((displayedCharacterCount.value / limit) * 100))
 })
 
 const journeySteps = computed<JourneyStep[]>(() => {
@@ -381,36 +414,36 @@ const journeySteps = computed<JourneyStep[]>(() => {
     },
     {
       key: 'materials',
-      label: '강점·소재 고르기',
+      label: '쓸 경험 고르기',
       hint:
         selectedEvidenceIds.value.size > 0
           ? `${selectedEvidenceIds.value.size}개 선택`
           : answered > 0
-            ? '승인된 경험 전체 사용'
-            : '선택 전이에요',
+            ? '확인한 경험 전체 사용'
+            : '아직 안 골랐어요',
       done: total > 0 && (selectedEvidenceIds.value.size > 0 || answered > 0),
     },
     {
       key: 'draft',
       label: 'AI 초안 받기',
-      hint: total === 0 ? '문항 등록 후' : `${answered}/${total} 작성`,
+      hint: total === 0 ? '문항을 먼저 추가해요' : `${answered}/${total} 작성`,
       done: total > 0 && answered === total,
     },
     {
       key: 'refine',
       label: '내 문장으로 다듬기',
-      hint: refinedCount.value > 0 ? `${refinedCount.value}개 수정` : '수정 전이에요',
+      hint: refinedCount.value > 0 ? `${refinedCount.value}개 고쳤어요` : '아직 안 고쳤어요',
       done: total > 0 && refinedCount.value >= total,
     },
     {
       key: 'finalize',
-      label: '검증하고 최종화',
+      label: '검토하고 마무리',
       hint:
         status === 'FINALIZED'
-          ? '최종화 완료'
+          ? '작성 완료'
           : total === 0
-            ? '검증 전'
-            : `검증 ${reviewedCount.value}/${total}`,
+            ? '아직 멀었어요'
+            : `검토 ${reviewedCount.value}/${total}`,
       done: status === 'FINALIZED',
     },
   ]
@@ -434,76 +467,84 @@ const journeySteps = computed<JourneyStep[]>(() => {
 const coachAction = computed<CoachAction>(() => {
   const detail = coverLetter.data.value
   if (!detail) {
-    return coach('자기소개서를 준비하고 있어요.', '잠시만 기다려 주세요.', '', 'NONE')
+    return coach('자기소개서를 불러오고 있어요.', '잠시만 기다려 주세요.', '', 'NONE')
   }
   if (detail.status === 'ARCHIVED') {
     return coach(
-      '보관된 자기소개서를 함께 보고 있어요.',
-      '문항, 답변 버전과 검증 기록은 그대로 남아 있어요. 다시 쓰려면 DRAFT로 되돌려 주세요.',
-      detail.canUnarchive ? 'DRAFT로 되돌리기' : '',
+      '보관해 둔 자기소개서를 함께 보고 있어요.',
+      '문항과 저장한 답변, 검토 기록은 그대로 남아 있어요. 이어서 쓰려면 보관을 해제해 주세요.',
+      detail.canUnarchive ? '보관 해제하고 이어 쓰기' : '',
       detail.canUnarchive ? 'UNARCHIVE' : 'NONE',
       { disabled: unarchiveMutation.isPending.value },
     )
   }
+  if (generationInProgress.value) {
+    return coach(
+      'AI 코치가 초안을 쓰고 있어요.',
+      '다 쓰면 새 답변으로 바로 보여 드릴게요. 그동안 답변 편집은 잠시 멈춰 둘게요. 이 화면을 닫아도 계속 진행돼요.',
+      '',
+      'NONE',
+    )
+  }
   if (questionCount.value === 0) {
     return coach(
-      '먼저 지원서에 답할 문항을 알려 주세요.',
-      '공고에서 요구하는 문항을 그대로 옮겨 적으면, 제가 공고 분석과 승인된 경험을 연결해 초안을 만들어 드릴게요.',
-      '첫 문항 등록하기',
+      '먼저 어떤 문항에 답할지 알려 주세요.',
+      '공고에 적힌 문항을 그대로 옮겨 적으면, 제가 공고 분석과 확인한 경험을 연결해 초안을 써 드릴게요.',
+      '첫 문항 추가하기',
       'ADD_QUESTION',
     )
   }
   if (editorDirty.value) {
     return coach(
-      '지금 쓰고 있는 답변이 아직 서버에 저장되지 않았어요.',
+      '방금 쓴 내용이 아직 저장되지 않았어요.',
       editorOverLimit.value
-        ? '최대 글자 수를 넘었어요. 분량을 줄이면 새 버전으로 저장할 수 있어요.'
-        : '새 버전으로 저장하면 이전 버전은 그대로 보존되고, 언제든 되돌릴 수 있어요.',
-      '새 버전으로 저장',
+        ? '글자 수가 넘었어요. 조금만 줄이면 바로 저장할 수 있어요.'
+        : '저장해도 이전에 쓴 내용은 그대로 남아요. 언제든 예전 내용으로 되돌릴 수 있어요.',
+      '지금 저장하기',
       'SAVE_ANSWER',
       { disabled: editorOverLimit.value || saveVersionMutation.isPending.value },
     )
   }
   if (unansweredQuestions.value.length > 0) {
     return coach(
-      `아직 답변이 없는 문항이 ${unansweredQuestions.value.length}개 있어요.`,
+      `아직 답변을 안 쓴 문항이 ${unansweredQuestions.value.length}개 있어요.`,
       selectedEvidenceIds.value.size > 0
-        ? `선택한 경험 ${selectedEvidenceIds.value.size}개를 근거로 초안을 만들어 볼게요. 초안은 그대로 제출하지 말고 꼭 직접 다듬어 주세요.`
-        : '오른쪽에서 쓸 경험을 고르면 근거가 분명한 초안을 만들 수 있어요. 고르지 않아도 승인된 경험 전체를 참고해요.',
-      '남은 문항 초안 만들기',
+        ? `골라 주신 경험 ${selectedEvidenceIds.value.size}개를 근거로 초안을 써 볼게요. 초안은 그대로 내지 말고 꼭 직접 다듬어 주세요.`
+        : '위에서 쓸 경험을 고르면 근거가 분명한 초안을 쓸 수 있어요. 고르지 않으면 확인해 둔 경험 전체를 참고해요.',
+      '남은 문항 초안 받기',
       'GENERATE',
       { disabled: aiActionUnavailable.value, note: aiRunNote() },
     )
   }
   if (pendingVerificationQuestion.value) {
     return coach(
-      '초안이 모두 준비됐어요. 근거를 확인해 볼까요?',
-      `${pendingVerificationQuestion.value.questionOrder}번 문항의 현재 버전이 아직 검증되지 않았어요. 검증하면 근거 없는 문장과 요구 누락을 함께 확인해 드려요.`,
-      '이 문항 검증하기',
+      '답변이 모두 채워졌어요. 근거를 함께 확인해 볼까요?',
+      `${pendingVerificationQuestion.value.questionOrder}번 문항은 아직 검토하지 않았어요. 검토하면 근거가 없는 문장과 빠진 요구사항을 짚어 드려요.`,
+      '이 문항 검토받기',
       'VERIFY',
       { disabled: aiActionUnavailable.value, note: aiRunNote() },
     )
   }
   if (detail.status === 'FINALIZED') {
     return coach(
-      '최종본이 준비됐어요.',
-      '문항이나 답변을 다시 수정하면 작성 중 상태로 돌아가고, 바뀐 답변은 다시 검증해야 해요.',
+      '작성을 마쳤어요. 이대로 제출하면 돼요.',
+      '문항이나 답변을 다시 고치면 작성 중으로 돌아가고, 고친 답변은 한 번 더 검토받아야 해요.',
       '',
       'NONE',
     )
   }
   if (finalizeBlockers.value.length > 0) {
     return coach(
-      '최종화까지 확인할 것이 조금 남았어요.',
-      finalizeBlockers.value[0] ?? '아래 최종화 확인 목록을 살펴봐 주세요.',
+      '마무리까지 확인할 것이 조금 남았어요.',
+      finalizeBlockers.value[0] ?? '아래 마지막 점검 목록을 살펴봐 주세요.',
       '',
       'NONE',
     )
   }
   return coach(
-    '모든 문항의 답변과 검증이 준비됐어요.',
-    '최종화하면 이 자기소개서를 제출 기준본으로 표시해요. 공고의 제출 상태는 따로 변경해야 해요.',
-    '자기소개서 최종화',
+    '모든 문항의 답변과 검토가 끝났어요.',
+    '작성 완료로 표시하면 이 자기소개서가 제출본이 돼요. 공고의 지원 상태는 공고 화면에서 따로 바꿔 주세요.',
+    '작성 완료로 표시하기',
     'FINALIZE',
     { disabled: !canFinalizeNow.value || finalizeMutation.isPending.value },
   )
@@ -536,9 +577,8 @@ async function runCoachAction(): Promise<void> {
   const action = coachAction.value
   if (action.disabled || action.kind === 'NONE') return
   if (action.kind === 'ADD_QUESTION') {
-    addingQuestion.value = true
-    await nextTick()
-    newQuestionInput.value?.focus()
+    addingQuestion.value = false
+    await toggleAddQuestion()
     return
   }
   if (action.kind === 'SAVE_ANSWER') {
@@ -565,11 +605,28 @@ async function runCoachAction(): Promise<void> {
   await unarchiveCover()
 }
 
-function selectRecommendedEvidence(): void {
-  if (readOnly.value) return
-  const next = new Set(selectedEvidenceIds.value)
-  unselectedRecommendedIds.value.forEach((id) => next.add(id))
-  selectedEvidenceIds.value = next
+async function toggleAddQuestion(): Promise<void> {
+  addingQuestion.value = !addingQuestion.value
+  if (!addingQuestion.value) return
+  await nextTick()
+  newQuestionInput.value?.focus()
+}
+
+function onQuestionTabKeydown(event: KeyboardEvent, index: number): void {
+  const last = activeQuestions.value.length - 1
+  const target = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: last }[event.key]
+  if (target === undefined) return
+  event.preventDefault()
+  focusQuestionTab(Math.min(Math.max(target, 0), last))
+}
+
+function focusQuestionTab(index: number): void {
+  const question = activeQuestions.value[index]
+  if (!question) return
+  selectedQuestionId.value = question.id
+  void nextTick(() => {
+    document.querySelector<HTMLElement>(`[data-question-tab="${question.id}"]`)?.focus()
+  })
 }
 
 function clearSelectedEvidence(): void {
@@ -603,7 +660,7 @@ function questionStatus(question: CoverLetterQuestionDto): { label: string; tone
     }
   }
   const answer = question.currentAnswer
-  if (!answer) return { label: '답변 대기', tone: 'neutral' }
+  if (!answer) return { label: '작성 전', tone: 'neutral' }
   return {
     label: ANSWER_SOURCE_LABELS[answer.sourceType],
     tone: answer.sourceType === 'AI_GENERATED' ? 'brand' : 'info',
@@ -683,8 +740,8 @@ watch(
     })
     draftNotice.value = draftCandidate.value
       ? draftCandidate.value.baseMatches
-        ? '이 브라우저 세션에 저장하지 않은 답변이 있어요.'
-        : '브라우저 임시 저장의 기준 버전이 서버의 현재 버전과 달라요.'
+        ? '저장하지 않은 답변이 남아 있어요.'
+        : '저장하지 않은 답변이 있는데, 그 사이에 답변이 새로 저장됐어요.'
       : ''
   },
   { immediate: true },
@@ -727,29 +784,30 @@ const warningVerificationIds = computed(() =>
 const finalizeBlockers = computed(() => {
   const detail = coverLetter.data.value
   if (!detail) return ['자기소개서 정보를 확인하는 중이에요.']
-  if (detail.status === 'ARCHIVED') return ['보관된 자기소개서는 최종화할 수 없어요.']
+  if (detail.status === 'ARCHIVED') return ['보관된 자기소개서는 작성 완료로 표시할 수 없어요.']
   if (detail.status === 'FINALIZED') return []
   const blockers: string[] = []
-  if (activeQuestions.value.length === 0) blockers.push('문항을 하나 이상 등록해 주세요.')
+  if (activeQuestions.value.length === 0) blockers.push('문항을 하나 이상 추가해 주세요.')
   for (const question of activeQuestions.value) {
     if (!question.currentAnswer) {
       blockers.push(`${question.questionOrder}번 문항의 답변을 저장해 주세요.`)
       continue
     }
     if (question.maxLength !== null && question.currentAnswer.characterCount > question.maxLength) {
-      blockers.push(`${question.questionOrder}번 문항의 최대 글자 수를 맞춰 주세요.`)
+      blockers.push(`${question.questionOrder}번 문항의 글자 수를 줄여 주세요.`)
     }
     const verification = question.latestVerification
-    if (!verification) blockers.push(`${question.questionOrder}번 문항을 검증해 주세요.`)
+    if (!verification)
+      blockers.push(`${question.questionOrder}번 문항을 AI 코치에게 검토받아 주세요.`)
     else if (verification.status === 'PENDING') {
-      blockers.push(`${question.questionOrder}번 문항 검증이 진행 중이에요.`)
+      blockers.push(`${question.questionOrder}번 문항을 검토하는 중이에요.`)
     } else if (verification.status === 'FAILED') {
-      blockers.push(`${question.questionOrder}번 문항을 수정하고 다시 검증해 주세요.`)
+      blockers.push(`${question.questionOrder}번 문항을 고친 뒤 다시 검토받아 주세요.`)
     } else if (
       verification.status === 'WARNING' &&
       !warningAcknowledgements.value.has(verification.id)
     ) {
-      blockers.push(`${question.questionOrder}번 문항의 경고를 확인해 주세요.`)
+      blockers.push(`${question.questionOrder}번 문항의 확인 사항을 읽어 주세요.`)
     }
   }
   return blockers
@@ -782,7 +840,7 @@ function onEditorUpdate(content: TipTapDocumentDto, characterCount: number): voi
     baseVersionId: question.currentAnswer?.id ?? null,
     contentJson: content,
   })
-  draftNotice.value = '이 브라우저 세션에 임시 저장했어요. 서버 버전은 아직 만들지 않았어요.'
+  draftNotice.value = '아직 저장하지 않았어요. 저장하기를 눌러야 이 내용이 남아요.'
 }
 
 function applyDraftCandidate(): void {
@@ -792,8 +850,8 @@ function applyDraftCandidate(): void {
   editorCharacterCount.value = canonical.characterCount
   editorDirty.value = !sameTipTapContent(canonical.document, selectedServerContent.value)
   draftNotice.value = draftCandidate.value.baseMatches
-    ? '임시 저장 내용을 편집기에 적용했어요. 버전 저장 전까지 서버에는 반영되지 않아요.'
-    : '기준 버전이 다른 임시 저장 내용을 재적용했어요. 서버 저장 전에 내용을 확인하세요.'
+    ? '쓰던 내용을 다시 불러왔어요. 저장하기를 눌러야 남아요.'
+    : '그 사이에 답변이 바뀌었어요. 불러온 내용을 확인한 뒤 저장해 주세요.'
   draftCandidate.value = null
 }
 
@@ -806,7 +864,7 @@ function discardDraftCandidate(): void {
     questionId: question.id,
   })
   draftCandidate.value = null
-  draftNotice.value = '브라우저 임시 저장을 폐기하고 서버 버전을 유지했어요.'
+  draftNotice.value = '쓰던 내용을 버리고 저장된 답변을 그대로 두었어요.'
 }
 
 async function saveTitle(): Promise<void> {
@@ -988,7 +1046,7 @@ async function submitQuestionDelete(
     })
     deleteConfirmationId.value = ''
     await coverLetter.refetch()
-    statusMessage.value = '문항을 삭제했어요. 과거 버전과 검증 기록은 보존됩니다.'
+    statusMessage.value = '문항을 삭제했어요. 지금까지 저장한 답변 기록은 그대로 남아요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('QUESTION', error, {
@@ -998,7 +1056,7 @@ async function submitQuestionDelete(
       retry: async (latest) => {
         const latestQuestion = findActiveQuestion(latest, snapshot.questionId)
         if (!latestQuestion) {
-          statusMessage.value = '문항이 이미 서버에서 삭제됐어요.'
+          statusMessage.value = '이 문항은 이미 삭제되어 있었어요.'
           clearConflictState()
           return
         }
@@ -1052,11 +1110,11 @@ async function submitQuestionOrder(
     clearConflictState()
   } catch (error) {
     await handleConflict('ORDER', error, {
-      localSnapshot: `내가 적용한 순서\n${formatSavedQuestionOrderSnapshot(snapshot)}\n기준 자기소개서 version: ${snapshot.baseCoverLetterVersion}`,
+      localSnapshot: `내가 바꾼 순서\n${formatSavedQuestionOrderSnapshot(snapshot)}\n기준 자기소개서 version: ${snapshot.baseCoverLetterVersion}`,
       serverSnapshot: (latest) =>
         latest
-          ? `최신 서버 순서\n${formatQuestionOrderSnapshot(latest.questions)}\n자기소개서 version: ${latest.version}`
-          : '최신 서버 문항 순서를 찾지 못했어요.',
+          ? `지금 저장된 순서\n${formatQuestionOrderSnapshot(latest.questions)}\n자기소개서 version: ${latest.version}`
+          : '지금 저장된 문항 순서를 찾지 못했어요.',
       retry: async (latest) => submitQuestionOrder(snapshot, latest.version),
       cancel: () => undefined,
     })
@@ -1104,7 +1162,7 @@ async function submitAnswerSave(
     editorDirty.value = false
     draftCandidate.value = null
     draftNotice.value = ''
-    statusMessage.value = `버전 ${answer.versionNo}을 저장했어요. 검증은 별도로 실행해 주세요.`
+    statusMessage.value = `버전 ${answer.versionNo}을 저장했어요. 검토는 필요할 때 직접 눌러 주세요.`
     clearConflictState()
   } catch (error) {
     await handleConflict('ANSWER', error, {
@@ -1157,7 +1215,7 @@ async function submitAnswerRestore(
     })
     await coverLetter.refetch()
     selectedVersionId.value = answer.id
-    statusMessage.value = `버전 ${snapshot.versionNo}을 새 RESTORED 버전으로 복원했어요.`
+    statusMessage.value = `버전 ${snapshot.versionNo}의 내용으로 되돌렸어요. 되돌린 내용도 새 저장본으로 남아요.`
     clearConflictState()
   } catch (error) {
     await handleConflict('ANSWER', error, {
@@ -1213,7 +1271,9 @@ async function submitGeneration(
       },
     })
     acceptedRunId.value = accepted.agentRunId
-    statusMessage.value = 'AI 초안 생성을 접수했어요. 편집기는 계속 사용할 수 있어요.'
+    acceptedRunKind.value = 'GENERATE'
+    statusMessage.value =
+      'AI가 초안을 쓰기 시작했어요. 다 쓸 때까지 답변 편집은 잠시 멈춰 둘게요. 이 화면을 닫아도 계속 진행돼요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('LIFECYCLE', error, {
@@ -1247,7 +1307,8 @@ async function submitVerification(snapshot: VerificationSnapshot): Promise<void>
       request: { qualityMode: snapshot.qualityMode },
     })
     acceptedRunId.value = accepted.agentRunId
-    statusMessage.value = '현재 immutable 답변 버전의 검증을 접수했어요.'
+    acceptedRunKind.value = 'VERIFY'
+    statusMessage.value = '지금 저장된 답변을 AI 코치가 살펴보고 있어요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('ANSWER', error, {
@@ -1263,7 +1324,7 @@ async function submitVerification(snapshot: VerificationSnapshot): Promise<void>
 function applySuggestion(suggestion: string): void {
   if (readOnly.value) return
   editorRef.value?.insertSuggestion(suggestion)
-  statusMessage.value = '제안을 편집기에 적용했어요. 확인 후 새 버전으로 저장해 주세요.'
+  statusMessage.value = '제안을 편집기에 넣었어요. 내용을 다듬은 뒤 저장해 주세요.'
 }
 
 function toggleEvidence(id: string): void {
@@ -1313,7 +1374,7 @@ async function submitFinalize(
       },
     })
     statusMessage.value =
-      '자기소개서를 최종화했어요. 공고의 제출 상태는 별도 사용자 행동으로 유지됩니다.'
+      '자기소개서를 작성 완료로 표시했어요. 공고의 지원 상태는 공고 화면에서 따로 바꿔 주세요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('LIFECYCLE', error, {
@@ -1346,7 +1407,7 @@ async function submitArchive(
       version: expectedCoverLetterVersion,
     })
     removeCoverLetterDrafts({ userId: userId.value, coverLetterId: coverLetterId.value })
-    statusMessage.value = '자기소개서를 보관했어요. 이제 읽기 전용입니다.'
+    statusMessage.value = '보관함으로 옮겼어요. 이제 읽기 전용이에요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('LIFECYCLE', error, {
@@ -1362,7 +1423,7 @@ async function unarchiveCover(): Promise<void> {
   const detail = coverLetter.data.value
   if (!detail || !detail.canUnarchive) return
   const snapshot: LifecycleSnapshot = Object.freeze({
-    action: 'DRAFT 복구',
+    action: '다시 쓰기',
     baseCoverLetterVersion: detail.version,
   })
   await submitUnarchive(snapshot, detail.version)
@@ -1378,7 +1439,7 @@ async function submitUnarchive(
       coverLetterId: coverLetterId.value,
       version: expectedCoverLetterVersion,
     })
-    statusMessage.value = '자기소개서를 DRAFT로 복구했어요.'
+    statusMessage.value = '다시 쓸 수 있게 되돌렸어요.'
     clearConflictState()
   } catch (error) {
     await handleConflict('LIFECYCLE', error, {
@@ -1392,6 +1453,7 @@ async function submitUnarchive(
 
 async function handleRunTerminal(run: AgentRunDetailDto): Promise<void> {
   acceptedRunId.value = ''
+  acceptedRunKind.value = ''
   await invalidateCoverLetterQueries(cache, userId.value, coverLetterId.value)
   await latestRun.refetch()
   await coverLetter.refetch()
@@ -1400,7 +1462,7 @@ async function handleRunTerminal(run: AgentRunDetailDto): Promise<void> {
   if (run.partialResult?.failedScopeKeys.length) {
     generationQuestionIds.value = new Set(run.partialResult.failedScopeKeys)
     statusMessage.value =
-      '일부 문항만 완료됐어요. 성공 버전은 보존됐고 실패 문항만 선택해 두었어요.'
+      '일부 문항만 초안이 나왔어요. 완성된 답변은 그대로 두고 남은 문항만 다시 골라 두었어요.'
   }
 }
 
@@ -1627,10 +1689,10 @@ function coverLetterActionMessage(error: ApiClientError): string {
     return '보관된 자기소개서는 읽기 전용이에요.'
   }
   if (error.code === 'COVER_LETTER_NOT_FINALIZABLE') {
-    return '최신 답변과 검증 상태를 다시 확인해 주세요.'
+    return '최신 답변과 검토 상태를 다시 확인해 주세요.'
   }
   if (error.code === 'QUALITY_MODE_NOT_SUPPORTED') {
-    return '현재 AI 설정에서 선택한 작성 방식을 사용할 수 없어요.'
+    return '지금 설정으로는 선택한 작성 방식을 쓸 수 없어요. 다른 방식을 골라 주세요.'
   }
   return error.message
 }
@@ -1645,12 +1707,12 @@ function verificationTone(
 </script>
 
 <template>
-  <section class="cover-editor app-page" aria-label="자기소개서 편집">
+  <section class="cover-editor app-page" aria-label="자기소개서 작성">
     <StatePanel
       v-if="coverLetter.isLoading.value"
       kind="loading"
       title="자기소개서를 불러오는 중…"
-      description="문항, 현재 답변과 검증 상태를 확인하고 있어요."
+      description="문항과 지금까지 쓴 답변을 확인하고 있어요."
     />
     <StatePanel
       v-else-if="coverLetter.isError.value"
@@ -1721,7 +1783,7 @@ function verificationTone(
               :disabled="archiveMutation.isPending.value"
               @click="archiveCover()"
             >
-              보관
+              보관하기
             </button>
           </div>
         </div>
@@ -1751,21 +1813,21 @@ function verificationTone(
           <div
             class="cover-progress"
             role="img"
-            :aria-label="`문항 ${questionCount}개 중 ${answeredQuestions.length}개 답변 작성`"
+            :aria-label="`문항 ${questionCount}개 중 ${answeredQuestions.length}개 작성`"
           >
             <span class="cover-progress__fill" :style="{ width: `${answeredPercent}%` }" />
           </div>
           <dl class="cover-header__facts">
             <div>
-              <dt>답변</dt>
+              <dt>답변 작성</dt>
               <dd>{{ answeredQuestions.length }} / {{ questionCount }}</dd>
             </div>
             <div>
-              <dt>검증</dt>
+              <dt>AI 검토</dt>
               <dd>{{ reviewedCount }} / {{ questionCount }}</dd>
             </div>
             <div>
-              <dt>마지막 수정</dt>
+              <dt>마지막 저장</dt>
               <dd>{{ formatCoverLetterInstant(coverLetter.data.value.updatedAt) }}</dd>
             </div>
           </dl>
@@ -1774,8 +1836,8 @@ function verificationTone(
 
       <section v-if="readOnly" class="cover-editor__archived alert alert--warning" role="status">
         <div>
-          <strong>ARCHIVED · 읽기 전용</strong>
-          <p>제목, 문항, 답변 저장·복원, AI 생성·검증과 최종화는 사용할 수 없습니다.</p>
+          <strong>보관된 자기소개서예요 · 읽기 전용</strong>
+          <p>제목과 문항, 답변 저장, AI 초안·검토와 작성 완료는 사용할 수 없어요.</p>
         </div>
         <button
           v-if="coverLetter.data.value.canUnarchive"
@@ -1784,7 +1846,7 @@ function verificationTone(
           :disabled="unarchiveMutation.isPending.value"
           @click="unarchiveCover()"
         >
-          DRAFT로 복구
+          다시 쓰기
         </button>
       </section>
 
@@ -1849,429 +1911,212 @@ function verificationTone(
         @terminal="handleRunTerminal"
       />
 
-      <div class="cover-editor__workspace" data-testid="cover-letter-editor">
-        <aside class="cover-editor__navigator" aria-label="자기소개서 문항">
-          <div class="panel-heading">
-            <div>
-              <h2>문항 {{ questionCount }}개</h2>
-              <p>답변 {{ answeredQuestions.length }}개 작성됨</p>
-            </div>
+      <section class="question-bar" data-testid="cover-letter-editor">
+        <div class="question-bar__row">
+          <div
+            v-if="questionCount > 0"
+            class="question-bar__tabs"
+            role="tablist"
+            aria-label="자기소개서 문항"
+          >
+            <button
+              v-for="(question, index) in activeQuestions"
+              :id="`question-tab-${question.id}`"
+              :key="question.id"
+              type="button"
+              role="tab"
+              class="question-tab"
+              :class="{ 'question-tab--active': selectedQuestionId === question.id }"
+              :aria-selected="selectedQuestionId === question.id"
+              :aria-controls="`question-panel-${question.id}`"
+              :tabindex="selectedQuestionId === question.id ? 0 : -1"
+              :data-question-tab="question.id"
+              @click="selectedQuestionId = question.id"
+              @keydown="onQuestionTabKeydown($event, index)"
+            >
+              <span class="question-tab__order">{{ question.questionOrder }}</span>
+              <span class="question-tab__body">
+                <strong>{{ question.questionText }}</strong>
+                <span class="question-tab__meta">
+                  <StatusBadge
+                    :label="questionStatus(question).label"
+                    :tone="questionStatus(question).tone"
+                  />
+                  <small>{{ questionLengthLabel(question) }}</small>
+                </span>
+              </span>
+            </button>
+          </div>
+          <p v-else class="question-bar__empty">
+            아직 등록한 문항이 없어요. 공고에 적힌 문항을 추가하면 작성을 시작할 수 있어요.
+          </p>
+
+          <div class="question-bar__actions">
             <button
               v-if="!readOnly && questionCount < 20"
               type="button"
               class="button button--secondary button--compact"
               :aria-expanded="addingQuestion"
-              @click="addingQuestion = !addingQuestion"
+              @click="toggleAddQuestion()"
             >
-              문항 추가
+              <AppIcon name="plus" />문항 추가
             </button>
+            <template v-if="!readOnly">
+              <button
+                type="button"
+                class="button button--primary button--compact"
+                :disabled="generationQuestionIds.size === 0 || aiActionUnavailable"
+                data-testid="generate-cover-letter"
+                @click="generateAnswers()"
+              >
+                <AppIcon name="sparkle" />
+                {{ aiActionUnavailable ? 'AI 작업 중…' : 'AI 초안 받기' }}
+              </button>
+              <button
+                type="button"
+                class="button button--secondary button--compact"
+                :disabled="!selectedQuestion?.currentAnswer || aiActionUnavailable"
+                data-testid="verify-answer-version"
+                @click="verifyCurrentAnswer"
+              >
+                {{ aiActionUnavailable ? 'AI 작업 중…' : '이 답변 검토받기' }}
+              </button>
+            </template>
           </div>
+        </div>
 
-          <p v-if="questionCount === 0" class="question-list__empty">
-            아직 등록한 문항이 없어요. 문항을 추가하면 답변 작성과 AI 초안을 시작할 수 있어요.
-          </p>
-          <ol v-else class="question-list">
-            <li v-for="(question, index) in activeQuestions" :key="question.id">
-              <button
-                type="button"
-                class="question-list__select"
-                :class="{ 'question-list__select--active': selectedQuestionId === question.id }"
-                :aria-current="selectedQuestionId === question.id ? 'step' : undefined"
-                @click="selectedQuestionId = question.id"
-              >
-                <span class="question-list__order">{{ question.questionOrder }}</span>
-                <span class="question-list__body">
-                  <strong>{{ question.questionText }}</strong>
-                  <span class="question-list__meta">
-                    <StatusBadge
-                      :label="questionStatus(question).label"
-                      :tone="questionStatus(question).tone"
-                    />
-                    <small>{{ questionLengthLabel(question) }}</small>
-                  </span>
-                </span>
-              </button>
-              <div v-if="!readOnly" class="question-list__move" aria-label="문항 순서 변경">
-                <button
-                  type="button"
-                  :disabled="index === 0 || reorderMutation.isPending.value"
-                  :aria-label="`${question.questionOrder}번 문항 위로 이동`"
-                  @click="moveQuestion(question.id, -1)"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  :disabled="index === questionCount - 1 || reorderMutation.isPending.value"
-                  :aria-label="`${question.questionOrder}번 문항 아래로 이동`"
-                  @click="moveQuestion(question.id, 1)"
-                >
-                  ↓
-                </button>
-              </div>
-            </li>
-          </ol>
-        </aside>
-
-        <main class="cover-editor__answer">
-          <section v-if="addingQuestion && !readOnly" class="question-add-panel">
-            <div class="panel-heading">
-              <div>
-                <h2><AppIcon name="plus" />새 문항 등록</h2>
-                <p>
-                  공고에 적힌 문항을 그대로 옮겨 적으면 AI 코치가 같은 기준으로 초안을 만들어요.
-                </p>
-              </div>
-              <button
-                type="button"
-                class="button button--ghost button--compact"
-                @click="addingQuestion = false"
-              >
-                닫기
-              </button>
-            </div>
-            <form class="question-add" @submit.prevent="addQuestion()">
-              <label class="field question-add__text">
-                <span class="field__label">문항 내용</span>
-                <textarea
-                  ref="newQuestionInput"
-                  v-model="newQuestionText"
-                  class="control"
-                  maxlength="2000"
-                  rows="3"
-                  placeholder="예) 지원 직무를 선택한 이유와 준비 과정을 설명해 주세요."
-                  required
-                />
-              </label>
-              <label class="field">
-                <span class="field__label">최대 글자 수</span>
+        <details v-if="!readOnly" class="ai-settings">
+          <summary>
+            <span>AI에게 맡길 문항과 방식</span>
+            <small>
+              {{ generationQuestionIds.size }}개 문항 · {{ QUALITY_MODE_LABELS[qualityMode] }}
+            </small>
+          </summary>
+          <div class="ai-settings__body">
+            <fieldset v-if="questionCount > 0" class="generation-questions">
+              <legend>초안을 받을 문항</legend>
+              <label v-for="question in activeQuestions" :key="`generate-${question.id}`">
                 <input
-                  v-model="newQuestionMaxLength"
-                  class="control control--compact"
-                  type="number"
-                  min="1"
-                  max="10000"
-                  placeholder="예: 700"
+                  type="checkbox"
+                  class="checkbox-control"
+                  :checked="generationQuestionIds.has(question.id)"
+                  @change="toggleGenerationQuestion(question.id)"
                 />
-                <span class="field__help">비워 두면 글자 수 제한 없이 작성해요.</span>
+                {{ question.questionOrder }}번
               </label>
-              <div class="question-add__presets">
-                <button
-                  v-for="preset in [500, 700, 1000, 1500]"
-                  :key="preset"
-                  type="button"
-                  class="chip"
-                  @click="applyLengthPreset(preset)"
-                >
-                  {{ preset }}자
-                </button>
-              </div>
-              <label class="field question-add__text">
-                <span class="field__label">메모</span>
-                <textarea
-                  v-model="newQuestionMemo"
-                  class="control"
-                  maxlength="2000"
-                  rows="2"
-                  placeholder="강조하고 싶은 방향이나 기억할 점을 적어 두세요. AI 초안에도 함께 참고해요."
-                />
-              </label>
-              <button
-                type="submit"
-                class="button button--primary question-add__submit"
-                :disabled="createQuestionMutation.isPending.value"
-              >
-                추가
-              </button>
-            </form>
-          </section>
-
-          <template v-if="selectedQuestion">
-            <section class="answer-brief">
-              <div class="answer-brief__top">
-                <div>
-                  <p class="answer-brief__eyebrow">{{ selectedQuestion.questionOrder }}번 문항</p>
-                  <h2 class="answer-brief__question">{{ selectedQuestion.questionText }}</h2>
-                </div>
-                <StatusBadge
-                  :label="questionStatus(selectedQuestion).label"
-                  :tone="questionStatus(selectedQuestion).tone"
-                />
-              </div>
-
-              <p v-if="selectedQuestion.memo" class="answer-brief__memo">
-                <AppIcon name="pen" />
-                <span>{{ selectedQuestion.memo }}</span>
-              </p>
-
-              <div class="answer-brief__length">
-                <div class="answer-brief__length-copy">
-                  <strong>
-                    {{ editorCharacterCount }}자
-                    <span v-if="selectedQuestion.maxLength">
-                      / {{ selectedQuestion.maxLength }}자
-                    </span>
-                  </strong>
-                  <small v-if="editorOverLimit" class="answer-brief__over">
-                    최대 글자 수를 {{ editorCharacterCount - (selectedQuestion.maxLength ?? 0) }}자
-                    넘었어요.
-                  </small>
-                  <small v-else-if="selectedQuestion.maxLength">
-                    {{ Math.max(0, selectedQuestion.maxLength - editorCharacterCount) }}자 더 쓸 수
-                    있어요.
-                  </small>
-                  <small v-else>이 문항에는 글자 수 제한이 없어요.</small>
-                </div>
-                <div
-                  v-if="answerLengthPercent !== null"
-                  class="answer-brief__meter"
-                  aria-hidden="true"
-                >
-                  <span
-                    :class="{ 'answer-brief__meter--over': editorOverLimit }"
-                    :style="{ width: `${answerLengthPercent}%` }"
-                  />
-                </div>
-              </div>
-
-              <details v-if="!readOnly" class="question-meta question-settings">
-                <summary>문항 내용·글자 수·메모 수정</summary>
-                <div class="question-meta__form">
-                  <label class="field question-meta__text">
-                    <span class="field__label">문항 내용</span>
-                    <textarea
-                      v-model="questionTextDraft"
-                      class="control"
-                      rows="3"
-                      maxlength="2000"
-                    />
-                  </label>
-                  <label class="field">
-                    <span class="field__label">최대 글자 수</span>
-                    <input
-                      v-model="questionMaxLengthDraft"
-                      class="control control--compact"
-                      type="number"
-                      min="1"
-                      max="10000"
-                    />
-                  </label>
-                  <label class="field">
-                    <span class="field__label">메모</span>
-                    <textarea
-                      v-model="questionMemoDraft"
-                      class="control"
-                      rows="2"
-                      maxlength="2000"
-                    />
-                  </label>
-                </div>
-                <div class="question-meta__actions">
-                  <button
-                    type="button"
-                    class="button button--secondary"
-                    :disabled="updateQuestionMutation.isPending.value"
-                    @click="updateQuestion()"
-                  >
-                    문항 저장
-                  </button>
-                  <button
-                    v-if="deleteConfirmationId !== selectedQuestion.id"
-                    type="button"
-                    class="button button--ghost"
-                    @click="deleteConfirmationId = selectedQuestion.id"
-                  >
-                    문항 삭제
-                  </button>
-                  <template v-else>
-                    <button
-                      type="button"
-                      class="button button--danger"
-                      :disabled="deleteQuestionMutation.isPending.value"
-                      @click="removeQuestion(selectedQuestion)"
-                    >
-                      삭제 확인
-                    </button>
-                    <button
-                      type="button"
-                      class="button button--secondary"
-                      @click="deleteConfirmationId = ''"
-                    >
-                      취소
-                    </button>
-                  </template>
-                </div>
-                <p class="question-settings__note">
-                  문항을 삭제해도 과거 답변 버전과 검증 기록은 보존돼요.
-                </p>
-              </details>
-              <div v-else class="question-settings question-settings--readonly">
-                <p>보관된 자기소개서라 문항 정보를 수정할 수 없어요.</p>
-              </div>
-            </section>
-
-            <section
-              v-if="draftCandidate || draftNotice"
-              class="draft-recovery alert alert--warning"
-              role="status"
-            >
-              <div class="draft-recovery__lead">
-                <strong>이 브라우저에만 있는 임시 저장</strong>
-                <p>{{ draftNotice }}</p>
-              </div>
-              <div v-if="draftCandidate" class="draft-recovery__comparison">
-                <article>
-                  <h3>현재 서버 버전</h3>
-                  <pre>{{ selectedQuestion.currentAnswer?.plainText ?? '(저장된 답변 없음)' }}</pre>
-                </article>
-                <article>
-                  <h3>임시 저장</h3>
-                  <pre>{{ canonicalizeEditorContent(draftCandidate.contentJson).plainText }}</pre>
-                </article>
-              </div>
-              <div v-if="draftCandidate" class="draft-recovery__actions">
-                <button type="button" class="button button--primary" @click="applyDraftCandidate">
-                  임시 저장 재적용
-                </button>
-                <button
-                  type="button"
-                  class="button button--secondary"
-                  @click="discardDraftCandidate"
-                >
-                  서버 버전 유지
-                </button>
-              </div>
-            </section>
-
-            <CoverLetterTipTapEditor
-              ref="editorRef"
-              :content="editorContent"
-              :readonly="readOnly"
-              :max-length="selectedQuestion.maxLength"
-              :server-character-count="editorDirty ? null : selectedServerCount"
-              @update="onEditorUpdate"
-            />
-
-            <div class="answer-actions">
-              <p class="answer-actions__state" :data-dirty="editorDirty">
-                <AppIcon :name="editorDirty ? 'clock' : 'check'" />
-                <span v-if="editorDirty">브라우저 임시 저장됨 · 서버 미저장</span>
-                <span v-else-if="selectedQuestion.currentAnswer">
-                  서버 v{{ selectedQuestion.currentAnswer.versionNo }}와 동일 ·
-                  {{ ANSWER_SOURCE_LABELS[selectedQuestion.currentAnswer.sourceType] }}
-                </span>
-                <span v-else>아직 저장된 답변이 없어요.</span>
-              </p>
-              <button
-                v-if="!readOnly"
-                type="button"
-                class="button button--primary"
-                :disabled="!editorDirty || editorOverLimit || saveVersionMutation.isPending.value"
-                data-testid="save-answer-version"
-                @click="saveAnswer()"
-              >
-                {{ saveVersionMutation.isPending.value ? '저장 중…' : '새 버전 저장' }}
-              </button>
-            </div>
-          </template>
-          <StatePanel
-            v-else-if="!addingQuestion"
-            kind="empty"
-            title="문항을 선택하거나 추가해 주세요."
-            description="답변 편집기는 선택한 문항의 현재 서버 버전을 기준으로 열립니다."
-          />
-        </main>
-
-        <aside class="cover-editor__rail" aria-label="AI 코치 작업 패널">
-          <section class="rail-section">
-            <div class="rail-section__heading">
-              <span class="rail-section__step" aria-hidden="true">1</span>
-              <h2><AppIcon name="target" />공고가 원하는 것</h2>
-              <RouterLink
-                v-if="jobId"
-                :to="{ name: 'job-analysis', params: { jobId } }"
-                class="text-link"
-              >
-                분석 보기
-              </RouterLink>
-            </div>
-            <p v-if="job.data.value?.analysisOutdated" class="rail-section__warning">
-              공고 분석이 현재 공고·프로필·근거와 달라졌어요. 기존 결과는 참고할 수 있지만 재분석을
-              권장합니다.
+            </fieldset>
+            <label class="field">
+              <span class="field__label">작성 방식</span>
+              <select v-model="qualityMode" class="control control--compact">
+                <option value="ECONOMY">빠르게 초안만</option>
+                <option value="BALANCED">적당한 속도와 완성도</option>
+                <option value="HIGH_QUALITY">천천히, 더 꼼꼼하게</option>
+              </select>
+            </label>
+            <label class="check-field">
+              <input
+                v-model="avoidExperienceDuplication"
+                type="checkbox"
+                class="checkbox-control"
+              />
+              문항마다 다른 경험을 쓰도록 하기
+            </label>
+            <p class="ai-settings__hint">
+              초안은 지금 쓰던 글을 덮어쓰지 않고 새 답변으로 도착해요. 검토는 저장된 답변을
+              기준으로 해요.
             </p>
-            <p v-if="analysis.isLoading.value" class="rail-section__empty">
-              요구사항을 불러오는 중…
+          </div>
+        </details>
+      </section>
+
+      <div class="reference-strip">
+        <details class="reference-card">
+          <summary>
+            <span class="reference-card__step" aria-hidden="true">1</span>
+            <span class="reference-card__title">
+              <strong><AppIcon name="target" />공고가 원하는 것</strong>
+              <small>{{ requirementSummary }}</small>
+            </span>
+            <span class="reference-card__count">{{ requirementHighlights.length }}개</span>
+          </summary>
+          <div class="reference-card__body">
+            <p v-if="job.data.value?.analysisOutdated" class="reference-card__warning">
+              공고 분석 이후에 공고나 내 정보가 바뀌었어요. 지금 내용도 참고할 수 있지만 다시
+              분석하면 더 정확해요.
             </p>
-            <ul v-else-if="requirementHighlights.length" class="rail-list">
+            <ul v-if="requirementHighlights.length" class="insight-list insight-list--brand">
               <li
                 v-for="requirement in requirementHighlights"
                 :key="`${requirement.category}-${requirement.text}`"
               >
-                {{ requirement.text }}
+                <AppIcon name="check" />
+                <span>{{ requirement.text }}</span>
               </li>
             </ul>
-            <p v-else class="rail-section__empty">
-              공고 분석 결과가 없어요. 분석 없이도 작성은 가능하지만 요구사항 연결을 직접 확인해
-              주세요.
+            <p v-else class="reference-card__empty">
+              아직 공고 분석 결과가 없어요. 분석 없이도 쓸 수 있지만, 공고가 요구하는 내용을 직접
+              확인해 주세요.
             </p>
-          </section>
+            <RouterLink
+              v-if="jobId"
+              :to="{ name: 'job-analysis', params: { jobId } }"
+              class="text-link"
+            >
+              공고 분석 전체 보기
+            </RouterLink>
+          </div>
+        </details>
 
-          <section class="rail-section">
-            <div class="rail-section__heading">
-              <span class="rail-section__step" aria-hidden="true">2</span>
-              <h2><AppIcon name="spark" />내 강점과 보완점</h2>
-            </div>
+        <details class="reference-card">
+          <summary>
+            <span class="reference-card__step" aria-hidden="true">2</span>
+            <span class="reference-card__title">
+              <strong><AppIcon name="spark" />내 강점과 보완할 점</strong>
+              <small>{{ strengthSummary }}</small>
+            </span>
+            <span class="reference-card__count">
+              {{ analysisStrengths.length + analysisGaps.length }}개
+            </span>
+          </summary>
+          <div class="reference-card__body">
             <ul v-if="analysisStrengths.length" class="insight-list">
-              <li v-for="strength in analysisStrengths.slice(0, 4)" :key="strength">
+              <li v-for="strength in analysisStrengths" :key="strength">
                 <AppIcon name="check" />
                 <span>{{ strength }}</span>
               </li>
             </ul>
-            <p v-else class="rail-section__empty">
+            <p v-else class="reference-card__empty">
               공고 분석에서 찾은 강점이 아직 없어요. 확인한 경험을 늘리면 근거가 풍부해져요.
             </p>
-            <details v-if="analysisGaps.length" class="insight-gaps">
-              <summary>보완 포인트 {{ analysisGaps.length }}개</summary>
-              <ul class="insight-list insight-list--gap">
-                <li v-for="gap in analysisGaps" :key="gap">
-                  <AppIcon name="lift" />
-                  <span>{{ gap }}</span>
-                </li>
-              </ul>
-            </details>
-          </section>
+            <ul v-if="analysisGaps.length" class="insight-list insight-list--gap">
+              <li v-for="gap in analysisGaps" :key="gap">
+                <AppIcon name="lift" />
+                <span>{{ gap }}</span>
+              </li>
+            </ul>
+          </div>
+        </details>
 
-          <section class="rail-section">
-            <div class="rail-section__heading">
-              <span class="rail-section__step" aria-hidden="true">3</span>
-              <h2><AppIcon name="evidence" />쓸 소재 고르기</h2>
-              <span class="rail-section__count">{{ selectedEvidenceIds.size }}개 선택</span>
-            </div>
-            <p class="rail-section__hint">
-              승인한 경험만 근거로 사용해요. 고르지 않으면 승인된 경험 전체를 참고합니다.
+        <details class="reference-card">
+          <summary>
+            <span class="reference-card__step" aria-hidden="true">3</span>
+            <span class="reference-card__title">
+              <strong><AppIcon name="evidence" />쓸 경험 고르기</strong>
+              <small>{{ evidenceSummary }}</small>
+            </span>
+            <span class="reference-card__count">{{ selectedEvidenceIds.size }}개 선택</span>
+          </summary>
+          <div class="reference-card__body">
+            <p class="reference-card__hint">
+              내가 확인해 둔 경험만 근거로 써요. 고르지 않으면 확인한 경험 전체를 참고해요.
             </p>
-            <div v-if="!readOnly && evidenceItems.length" class="evidence-quick">
-              <button
-                v-if="unselectedRecommendedIds.length"
-                type="button"
-                class="chip chip--brand"
-                @click="selectRecommendedEvidence()"
-              >
-                공고와 연결된 {{ unselectedRecommendedIds.length }}개 담기
-              </button>
-              <button
-                v-if="selectedEvidenceIds.size"
-                type="button"
-                class="chip"
-                @click="clearSelectedEvidence()"
-              >
-                선택 해제
-              </button>
+            <div v-if="!readOnly && selectedEvidenceIds.size" class="evidence-quick">
+              <button type="button" class="chip" @click="clearSelectedEvidence()">모두 해제</button>
             </div>
-            <p v-if="evidence.isLoading.value" class="rail-section__empty">
+            <p v-if="evidence.isLoading.value" class="reference-card__empty">
               확인한 경험을 불러오는 중…
             </p>
-            <p v-else-if="evidence.isError.value" class="rail-section__warning">
+            <p v-else-if="evidence.isError.value" class="reference-card__warning">
               경험 정보를 불러오지 못했어요.
             </p>
             <ul v-else-if="evidenceItems.length" class="evidence-options">
@@ -2287,7 +2132,7 @@ function verificationTone(
                   <span class="evidence-options__body">
                     <span class="evidence-options__title">
                       <strong>{{ item.title }}</strong>
-                      <em v-if="recommendedEvidenceIds.has(item.id)">공고와 연결됨</em>
+                      <em v-if="recommendedEvidenceIds.has(item.id)">공고와 맞아요</em>
                     </span>
                     <small>{{ item.evidenceCategory }}</small>
                     <small v-if="evidenceSnippet(item)" class="evidence-options__snippet">
@@ -2297,87 +2142,319 @@ function verificationTone(
                 </label>
               </li>
             </ul>
-            <p v-else class="rail-section__empty">
-              승인한 경험이 아직 없어요. 이력서·자료에서 경험을 확인하면 근거로 쓸 수 있어요.
+            <p v-else class="reference-card__empty">
+              확인해 둔 경험이 아직 없어요. 이력서·자료에서 자료를 올리고 경험을 확인하면 근거로 쓸
+              수 있어요.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <main class="cover-editor__workspace">
+        <section v-if="addingQuestion && !readOnly" class="question-add-panel">
+          <div class="panel-heading">
+            <div>
+              <h2><AppIcon name="plus" />문항 추가하기</h2>
+              <p>공고에 적힌 문항을 그대로 옮겨 적으면 AI 코치가 같은 기준으로 초안을 써요.</p>
+            </div>
+            <button
+              type="button"
+              class="button button--ghost button--compact"
+              @click="addingQuestion = false"
+            >
+              닫기
+            </button>
+          </div>
+          <form class="question-add" @submit.prevent="addQuestion()">
+            <label class="field question-add__text">
+              <span class="field__label">문항 내용</span>
+              <textarea
+                ref="newQuestionInput"
+                v-model="newQuestionText"
+                class="control"
+                maxlength="2000"
+                rows="3"
+                placeholder="예) 지원 직무를 선택한 이유와 준비 과정을 설명해 주세요."
+                required
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">글자 수 제한</span>
+              <input
+                v-model="newQuestionMaxLength"
+                class="control control--compact"
+                type="number"
+                min="1"
+                max="10000"
+                placeholder="예: 700"
+              />
+              <span class="field__help">비워 두면 제한 없이 쓸 수 있어요.</span>
+            </label>
+            <div class="question-add__presets">
+              <button
+                v-for="preset in [500, 700, 1000, 1500]"
+                :key="preset"
+                type="button"
+                class="chip"
+                @click="applyLengthPreset(preset)"
+              >
+                {{ preset }}자
+              </button>
+            </div>
+            <label class="field question-add__text">
+              <span class="field__label">메모</span>
+              <textarea
+                v-model="newQuestionMemo"
+                class="control"
+                maxlength="2000"
+                rows="2"
+                placeholder="강조하고 싶은 방향이나 기억할 점을 적어 두세요. AI 초안에도 함께 참고해요."
+              />
+            </label>
+            <button
+              type="submit"
+              class="button button--primary question-add__submit"
+              :disabled="createQuestionMutation.isPending.value"
+            >
+              추가
+            </button>
+          </form>
+        </section>
+
+        <template v-if="selectedQuestion">
+          <section
+            :id="`question-panel-${selectedQuestion.id}`"
+            class="answer-brief"
+            role="tabpanel"
+            :aria-labelledby="`question-tab-${selectedQuestion.id}`"
+          >
+            <div class="answer-brief__top">
+              <div>
+                <p class="answer-brief__eyebrow">{{ selectedQuestion.questionOrder }}번 문항</p>
+                <h2 class="answer-brief__question">{{ selectedQuestion.questionText }}</h2>
+              </div>
+              <div class="answer-brief__tools">
+                <StatusBadge
+                  :label="questionStatus(selectedQuestion).label"
+                  :tone="questionStatus(selectedQuestion).tone"
+                />
+                <div v-if="!readOnly && questionCount > 1" class="answer-brief__move">
+                  <button
+                    type="button"
+                    :disabled="selectedQuestionIndex === 0 || reorderMutation.isPending.value"
+                    :aria-label="`${selectedQuestion.questionOrder}번 문항 앞으로 이동`"
+                    @click="moveQuestion(selectedQuestion.id, -1)"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    :disabled="
+                      selectedQuestionIndex === questionCount - 1 || reorderMutation.isPending.value
+                    "
+                    :aria-label="`${selectedQuestion.questionOrder}번 문항 뒤로 이동`"
+                    @click="moveQuestion(selectedQuestion.id, 1)"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="selectedQuestion.memo" class="answer-brief__memo">
+              <AppIcon name="pen" />
+              <span>{{ selectedQuestion.memo }}</span>
+            </p>
+
+            <div class="answer-brief__length">
+              <div class="answer-brief__length-copy">
+                <strong>
+                  {{ displayedCharacterCount }}자
+                  <span v-if="selectedQuestion.maxLength">
+                    / {{ selectedQuestion.maxLength }}자
+                  </span>
+                </strong>
+                <small v-if="editorOverLimit" class="answer-brief__over">
+                  {{ displayedCharacterCount - (selectedQuestion.maxLength ?? 0) }}자 넘었어요.
+                  조금만 줄여 주세요.
+                </small>
+                <small v-else-if="selectedQuestion.maxLength">
+                  {{ Math.max(0, selectedQuestion.maxLength - displayedCharacterCount) }}자 더 쓸 수
+                  있어요.
+                </small>
+                <small v-else>이 문항은 글자 수 제한이 없어요.</small>
+              </div>
+              <div
+                v-if="answerLengthPercent !== null"
+                class="answer-brief__meter"
+                aria-hidden="true"
+              >
+                <span
+                  :class="{ 'answer-brief__meter--over': editorOverLimit }"
+                  :style="{ width: `${answerLengthPercent}%` }"
+                />
+              </div>
+            </div>
+
+            <details v-if="!readOnly" class="question-meta question-settings">
+              <summary>문항 내용과 글자 수 고치기</summary>
+              <div class="question-meta__form">
+                <label class="field question-meta__text">
+                  <span class="field__label">문항 내용</span>
+                  <textarea v-model="questionTextDraft" class="control" rows="3" maxlength="2000" />
+                </label>
+                <label class="field">
+                  <span class="field__label">글자 수 제한</span>
+                  <input
+                    v-model="questionMaxLengthDraft"
+                    class="control control--compact"
+                    type="number"
+                    min="1"
+                    max="10000"
+                  />
+                </label>
+                <label class="field">
+                  <span class="field__label">메모</span>
+                  <textarea v-model="questionMemoDraft" class="control" rows="2" maxlength="2000" />
+                </label>
+              </div>
+              <div class="question-meta__actions">
+                <button
+                  type="button"
+                  class="button button--secondary"
+                  :disabled="updateQuestionMutation.isPending.value"
+                  @click="updateQuestion()"
+                >
+                  문항 저장
+                </button>
+                <button
+                  v-if="deleteConfirmationId !== selectedQuestion.id"
+                  type="button"
+                  class="button button--ghost"
+                  @click="deleteConfirmationId = selectedQuestion.id"
+                >
+                  문항 삭제
+                </button>
+                <template v-else>
+                  <button
+                    type="button"
+                    class="button button--danger"
+                    :disabled="deleteQuestionMutation.isPending.value"
+                    @click="removeQuestion(selectedQuestion)"
+                  >
+                    삭제 확인
+                  </button>
+                  <button
+                    type="button"
+                    class="button button--secondary"
+                    @click="deleteConfirmationId = ''"
+                  >
+                    취소
+                  </button>
+                </template>
+              </div>
+              <p class="question-settings__note">
+                문항을 지워도 지금까지 저장한 답변 기록은 그대로 남아요.
+              </p>
+            </details>
+            <p v-else class="question-settings__note">
+              보관된 자기소개서라 문항 정보를 고칠 수 없어요.
             </p>
           </section>
 
-          <section v-if="!readOnly" class="rail-section generation-command">
-            <div class="rail-section__heading">
-              <span class="rail-section__step" aria-hidden="true">4</span>
-              <h2><AppIcon name="sparkle" />AI에게 초안 맡기기</h2>
+          <section
+            v-if="draftCandidate || draftNotice"
+            class="draft-recovery alert alert--warning"
+            role="status"
+          >
+            <div class="draft-recovery__lead">
+              <strong>아직 저장하지 않은 내용이 있어요</strong>
+              <p>{{ draftNotice }}</p>
             </div>
-            <fieldset v-if="questionCount > 0" class="generation-questions">
-              <legend>초안을 만들 문항</legend>
-              <label v-for="question in activeQuestions" :key="`generate-${question.id}`">
-                <input
-                  type="checkbox"
-                  class="checkbox-control"
-                  :checked="generationQuestionIds.has(question.id)"
-                  @change="toggleGenerationQuestion(question.id)"
-                />
-                {{ question.questionOrder }}번
-              </label>
-            </fieldset>
-            <label class="field">
-              <span class="field__label">작성 방식</span>
-              <select v-model="qualityMode" class="control control--compact">
-                <option value="ECONOMY">빠르게 초안 만들기</option>
-                <option value="BALANCED">균형 있게 작성</option>
-                <option value="HIGH_QUALITY">내용을 더 꼼꼼히 작성</option>
-              </select>
-            </label>
-            <label class="check-field">
-              <input
-                v-model="avoidExperienceDuplication"
-                type="checkbox"
-                class="checkbox-control"
-              />
-              지원서 전체에서 경험 중복 최소화
-            </label>
+            <div v-if="draftCandidate" class="draft-recovery__comparison">
+              <article>
+                <h3>저장된 답변</h3>
+                <pre>{{ selectedQuestion.currentAnswer?.plainText ?? '(저장된 답변 없음)' }}</pre>
+              </article>
+              <article>
+                <h3>내가 쓰던 내용</h3>
+                <pre>{{ canonicalizeEditorContent(draftCandidate.contentJson).plainText }}</pre>
+              </article>
+            </div>
+            <div v-if="draftCandidate" class="draft-recovery__actions">
+              <button type="button" class="button button--primary" @click="applyDraftCandidate">
+                쓰던 내용으로 이어 쓰기
+              </button>
+              <button type="button" class="button button--secondary" @click="discardDraftCandidate">
+                저장된 답변 그대로 두기
+              </button>
+            </div>
+          </section>
+
+          <p v-if="generationInProgress" class="answer-lock alert alert--info" role="status">
+            <AppIcon name="sparkle" />
+            <span
+              >AI 코치가 초안을 쓰는 동안에는 답변을 고칠 수 없어요. 곧 새 답변이 도착해요.</span
+            >
+          </p>
+
+          <CoverLetterTipTapEditor
+            ref="editorRef"
+            :content="editorContent"
+            :readonly="answerLocked"
+            :max-length="selectedQuestion.maxLength"
+            :server-character-count="editorDirty ? null : selectedServerCount"
+            @update="onEditorUpdate"
+          />
+
+          <div class="answer-actions">
+            <p class="answer-actions__state" :data-dirty="editorDirty">
+              <AppIcon :name="editorDirty ? 'clock' : 'check'" />
+              <span v-if="editorDirty">아직 저장하지 않았어요 · 이 브라우저에만 남아 있어요</span>
+              <span v-else-if="selectedQuestion.currentAnswer">
+                저장 완료 · {{ selectedQuestion.currentAnswer.versionNo }}번째 저장본 ·
+                {{ ANSWER_SOURCE_LABELS[selectedQuestion.currentAnswer.sourceType] }}
+              </span>
+              <span v-else>아직 저장된 답변이 없어요.</span>
+            </p>
             <button
+              v-if="!readOnly"
               type="button"
               class="button button--primary"
-              :disabled="generationQuestionIds.size === 0 || aiActionUnavailable"
-              data-testid="generate-cover-letter"
-              @click="generateAnswers()"
+              :disabled="
+                !editorDirty ||
+                editorOverLimit ||
+                answerLocked ||
+                saveVersionMutation.isPending.value
+              "
+              data-testid="save-answer-version"
+              @click="saveAnswer()"
             >
-              {{ aiActionUnavailable ? 'AI 작업 진행 중…' : '선택 문항 AI 초안 생성' }}
+              {{ saveVersionMutation.isPending.value ? '저장 중…' : '저장하기' }}
             </button>
-            <button
-              type="button"
-              class="button button--secondary"
-              :disabled="!selectedQuestion?.currentAnswer || aiActionUnavailable"
-              data-testid="verify-answer-version"
-              @click="verifyCurrentAnswer"
-            >
-              {{ aiActionUnavailable ? 'AI 작업 진행 중…' : '현재 답변 검증' }}
-            </button>
-            <p class="rail-section__hint">
-              초안은 편집기를 덮어쓰지 않고 새 버전으로 도착해요. 검증은 지금 저장된 버전을 기준으로
-              실행됩니다.
-            </p>
-          </section>
+          </div>
 
-          <section class="rail-section">
-            <div class="rail-section__heading">
-              <span class="rail-section__step" aria-hidden="true">5</span>
-              <h2><AppIcon name="shield" />검증 결과</h2>
-              <span v-if="selectedVersion" class="rail-section__count">
-                v{{ selectedVersion.versionNo }}
+          <section class="verification" aria-labelledby="verification-title">
+            <div class="panel-heading">
+              <div>
+                <h2 id="verification-title"><AppIcon name="shield" />AI 코치의 검토 결과</h2>
+                <p>근거가 없는 문장과 빠진 요구사항을 짚어 드려요.</p>
+              </div>
+              <span v-if="selectedVersion" class="panel-heading__count">
+                {{ selectedVersion.versionNo }}번째 저장본 기준
               </span>
             </div>
-            <p v-if="!selectedVersion" class="rail-section__empty">
-              문항과 답변 버전을 선택하면 검증 결과를 보여 드려요.
+            <p v-if="!selectedVersion" class="reference-card__empty">
+              저장본을 고르면 검토 결과를 보여 드려요.
             </p>
-            <p v-else-if="verifications.isLoading.value" class="rail-section__empty">
-              검증 이력을 불러오는 중…
+            <p v-else-if="verifications.isLoading.value" class="reference-card__empty">
+              검토 결과를 불러오는 중…
             </p>
             <p
               v-else-if="(verifications.data.value?.items.length ?? 0) === 0"
-              class="rail-section__empty"
+              class="reference-card__empty"
             >
-              선택한 답변 버전의 검증 기록이 없어요.
+              이 저장본은 아직 검토받지 않았어요. 위의 `이 답변 검토받기`를 눌러 주세요.
             </p>
             <article
               v-for="verification in verifications.data.value?.items ?? []"
@@ -2397,56 +2474,64 @@ function verificationTone(
                   }"
                   class="text-link"
                 >
-                  AI 작업
+                  검토 과정 보기
                 </RouterLink>
               </header>
-              <ul v-if="verification.issues.length" class="verification-issues">
-                <li v-for="(issue, index) in verification.issues" :key="`${issue.code}-${index}`">
-                  <strong>
-                    {{ ISSUE_CODE_LABELS[issue.code] }} ·
-                    {{ ISSUE_SEVERITY_LABELS[issue.severity] }}
-                  </strong>
-                  <blockquote v-if="issue.relatedText">{{ issue.relatedText }}</blockquote>
-                  <p>{{ issue.message }}</p>
-                  <ul v-if="issue.evidenceRefs.length" class="historical-evidence">
-                    <li v-for="reference in issue.evidenceRefs" :key="reference.id">
-                      <span>{{ reference.title }}</span>
-                      <small>{{ evidenceCurrentState(reference).label }}</small>
-                      <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
-                        새 생성·검증에서는 제외됨
-                      </small>
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-              <div v-if="verification.suggestions.length" class="verification-suggestions">
-                <h3>코치의 수정 제안</h3>
-                <div v-for="suggestion in verification.suggestions" :key="suggestion">
-                  <p>{{ suggestion }}</p>
-                  <button
-                    v-if="!readOnly"
-                    type="button"
-                    class="button button--secondary button--compact"
-                    @click="applySuggestion(suggestion)"
-                  >
-                    편집기에 적용
-                  </button>
+              <div class="verification-card__body">
+                <ul v-if="verification.issues.length" class="verification-issues">
+                  <li v-for="(issue, index) in verification.issues" :key="`${issue.code}-${index}`">
+                    <strong>
+                      {{ ISSUE_CODE_LABELS[issue.code] }} ·
+                      {{ ISSUE_SEVERITY_LABELS[issue.severity] }}
+                    </strong>
+                    <blockquote v-if="issue.relatedText">{{ issue.relatedText }}</blockquote>
+                    <p>{{ issue.message }}</p>
+                    <ul v-if="issue.evidenceRefs.length" class="historical-evidence">
+                      <li v-for="reference in issue.evidenceRefs" :key="reference.id">
+                        <span>{{ reference.title }}</span>
+                        <small>{{ evidenceCurrentState(reference).label }}</small>
+                        <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
+                          새 초안·검토에서는 쓰지 않아요
+                        </small>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+                <div v-if="verification.suggestions.length" class="verification-suggestions">
+                  <h3>이렇게 고쳐 보면 어떨까요</h3>
+                  <div v-for="suggestion in verification.suggestions" :key="suggestion">
+                    <p>{{ suggestion }}</p>
+                    <button
+                      v-if="!answerLocked"
+                      type="button"
+                      class="button button--secondary button--compact"
+                      @click="applySuggestion(suggestion)"
+                    >
+                      편집기에 넣기
+                    </button>
+                  </div>
+                  <small>넣기만 해서는 저장되지 않아요. 다듬은 뒤 저장하기를 눌러 주세요.</small>
                 </div>
-                <small>제안 적용은 서버에 자동 저장되지 않습니다.</small>
               </div>
               <ul v-if="verification.evidenceRefs.length" class="historical-evidence">
                 <li v-for="reference in verification.evidenceRefs" :key="reference.id">
                   <span>{{ reference.title }}</span>
                   <small>{{ evidenceCurrentState(reference).label }}</small>
                   <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
-                    새 생성·검증에서는 제외됨
+                    새 초안·검토에서는 쓰지 않아요
                   </small>
                 </li>
               </ul>
             </article>
           </section>
-        </aside>
-      </div>
+        </template>
+        <StatePanel
+          v-else-if="!addingQuestion"
+          kind="empty"
+          title="문항을 고르거나 추가해 주세요."
+          description="위에서 문항을 고르면 그 문항의 답변을 여기서 쓸 수 있어요."
+        />
+      </main>
 
       <section
         v-if="selectedQuestion"
@@ -2456,13 +2541,15 @@ function verificationTone(
         <div class="panel-heading">
           <div>
             <h2 id="version-history-title">
-              <AppIcon name="history" />{{ selectedQuestion.questionOrder }}번 문항 답변 이력
+              <AppIcon name="history" />{{ selectedQuestion.questionOrder }}번 문항 저장 기록
             </h2>
-            <p>저장한 버전은 지워지지 않아요. 언제든 비교하고 되돌릴 수 있어요.</p>
+            <p>저장한 내용은 지워지지 않아요. 언제든 비교하고 되돌릴 수 있어요.</p>
           </div>
           <span class="panel-heading__count">{{ versions.data.value?.totalElements ?? 0 }}개</span>
         </div>
-        <p v-if="versions.isLoading.value" class="rail-section__empty">버전 이력을 불러오는 중…</p>
+        <p v-if="versions.isLoading.value" class="reference-card__empty">
+          저장 기록을 불러오는 중…
+        </p>
         <div v-else class="version-history__layout">
           <div class="version-history__list" role="listbox" aria-label="답변 버전">
             <button
@@ -2475,23 +2562,23 @@ function verificationTone(
               @click="selectedVersionId = version.id"
             >
               <span class="version-history__label">
-                <strong>v{{ version.versionNo }}</strong>
+                <strong>{{ version.versionNo }}번째</strong>
                 <StatusBadge
                   :label="ANSWER_SOURCE_LABELS[version.sourceType]"
                   :tone="version.sourceType === 'AI_GENERATED' ? 'brand' : 'info'"
                 />
               </span>
               <small>{{ formatCoverLetterInstant(version.createdAt) }}</small>
-              <small v-if="version.isCurrent" class="version-history__current">현재 버전</small>
+              <small v-if="version.isCurrent" class="version-history__current">지금 답변</small>
             </button>
           </div>
           <div v-if="selectedVersion" class="version-history__comparison">
             <article>
-              <h3>현재 서버 답변</h3>
+              <h3>지금 답변</h3>
               <pre>{{ selectedQuestion.currentAnswer?.plainText ?? '(답변 없음)' }}</pre>
             </article>
             <article>
-              <h3>선택한 v{{ selectedVersion.versionNo }}</h3>
+              <h3>{{ selectedVersion.versionNo }}번째 저장본</h3>
               <pre>{{ selectedVersion.plainText || '(빈 답변)' }}</pre>
             </article>
             <button
@@ -2502,11 +2589,7 @@ function verificationTone(
               data-testid="restore-answer-version"
               @click="restoreVersion(selectedVersion)"
             >
-              {{
-                restoreMutation.isPending.value
-                  ? '복원 중…'
-                  : '선택 버전을 새 RESTORED 버전으로 복원'
-              }}
+              {{ restoreMutation.isPending.value ? '되돌리는 중…' : '이 내용으로 되돌리기' }}
             </button>
           </div>
         </div>
@@ -2515,14 +2598,17 @@ function verificationTone(
       <section class="finalization" aria-labelledby="finalization-title">
         <div class="panel-heading">
           <div>
-            <h2 id="finalization-title"><AppIcon name="flag" />최종화 확인</h2>
+            <h2 id="finalization-title"><AppIcon name="flag" />제출 전 마지막 점검</h2>
             <p>
-              자기소개서 최종화는 공고를 SUBMITTED로 바꾸지 않습니다. 공고 제출 상태는 별도로
-              변경하세요.
+              작성 완료로 표시해도 공고의 지원 상태는 바뀌지 않아요. 공고 화면에서 따로 바꿔 주세요.
             </p>
           </div>
           <StatusBadge
-            :label="finalizeBlockers.length === 0 ? '준비됨' : `확인 ${finalizeBlockers.length}건`"
+            :label="
+              finalizeBlockers.length === 0
+                ? '모두 준비됐어요'
+                : `확인할 것 ${finalizeBlockers.length}개`
+            "
             :tone="finalizeBlockers.length === 0 ? 'success' : 'warning'"
           />
         </div>
@@ -2546,7 +2632,7 @@ function verificationTone(
           v-if="warningVerificationIds.length > 0 && coverLetter.data.value.status === 'DRAFT'"
           class="finalization__warnings"
         >
-          <legend>확인 필요 검증을 읽었는지 확인해 주세요</legend>
+          <legend>확인 필요 항목을 읽었는지 체크해 주세요</legend>
           <label v-for="id in warningVerificationIds" :key="id">
             <input
               type="checkbox"
@@ -2554,7 +2640,7 @@ function verificationTone(
               :checked="warningAcknowledgements.has(id)"
               @change="toggleWarningAcknowledgement(id)"
             />
-            검증 {{ id.slice(0, 8) }}의 경고를 확인했습니다.
+            검토 {{ id.slice(0, 8) }}의 확인 사항을 읽었어요.
           </label>
         </fieldset>
 
@@ -2566,10 +2652,10 @@ function verificationTone(
           data-testid="finalize-cover-letter"
           @click="finalizeCover()"
         >
-          {{ finalizeMutation.isPending.value ? '최종화 중…' : '자기소개서 최종화' }}
+          {{ finalizeMutation.isPending.value ? '표시하는 중…' : '작성 완료로 표시하기' }}
         </button>
         <p v-else-if="coverLetter.data.value.status === 'FINALIZED'" role="status">
-          최종화된 자기소개서입니다. 문항이나 답변을 수정하면 DRAFT로 돌아갑니다.
+          작성을 마친 자기소개서예요. 문항이나 답변을 고치면 다시 작성 중으로 돌아가요.
         </p>
       </section>
     </template>
@@ -2581,9 +2667,10 @@ function verificationTone(
  * 자기소개서 작성 화면.
  * 공고 분석 결과 화면과 같은 규칙을 따른다.
  *   - 정보는 카드를 중첩하지 않고 하나의 면 안에서 구분선과 여백으로 나눈다.
- *   - 화면마다 primary CTA는 하나이며, 그 하나는 항상 코치 패널이 소유한다.
  *   - 상태 색은 항상 한글 라벨과 함께 쓰고 색만으로 의미를 전달하지 않는다.
- * 오른쪽 rail의 1~5 번호는 코치 패널의 진행 단계와 같은 순서를 가리킨다.
+ * 배치는 위에서 아래로 한 줄기로 읽힌다.
+ *   header → 코치 → 문항 tab과 AI 실행 → 참고 자료 dropdown → 답변 작업대 → 저장 기록 → 마지막 점검
+ * 참고 자료 3장의 1~3 번호는 코치 패널 단계와 같은 순서를 가리킨다.
  */
 
 .cover-editor {
@@ -2797,7 +2884,7 @@ function verificationTone(
 
 .coach__description {
   margin-top: var(--space-2);
-  max-width: 44rem;
+  max-width: 46rem;
   color: var(--color-text-secondary);
 }
 
@@ -2922,56 +3009,456 @@ function verificationTone(
   margin-top: var(--space-4);
 }
 
-/* ------------------------------------------------------------- 작업대 */
+/* ------------------------------------------------- 문항 tab과 AI 실행 */
 
-.cover-editor__workspace {
+.question-bar {
   display: grid;
-  grid-template-columns: minmax(13rem, 0.62fr) minmax(24rem, 1.55fr) minmax(18rem, 0.85fr);
-  align-items: start;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-top: var(--space-6);
-}
-
-.cover-editor__navigator,
-.cover-editor__answer,
-.cover-editor__rail,
-.version-history,
-.finalization {
-  min-width: 0;
-}
-
-.cover-editor__navigator,
-.cover-editor__rail {
-  display: grid;
-  gap: var(--space-4);
-}
-
-/*
- * 문항 목록만 sticky로 고정한다.
- * 오른쪽 코치 rail은 5개 section이 길어 내부 scroll을 만들지 않고 페이지 흐름을 따른다.
- */
-.cover-editor__navigator {
-  position: sticky;
-  top: calc(var(--global-header-height) + var(--space-4));
-  max-height: calc(100dvh - var(--global-header-height) - var(--space-8));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.cover-editor__navigator,
-.answer-brief,
-.question-add-panel,
-.rail-section,
-.version-history,
-.finalization {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  padding: var(--space-5);
+  padding: var(--space-4) clamp(var(--space-4), 2.5vw, var(--space-5));
   box-shadow: var(--shadow-panel);
 }
 
-.panel-heading,
-.rail-section__heading {
+/* grid item의 기본 min-width: auto가 tab 목록의 max-content를 그대로 밀어 올려 카드를 넘치게 한다. */
+.question-bar__row,
+.ai-settings {
+  min-width: 0;
+}
+
+.question-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+}
+
+.question-bar__tabs {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-1);
+}
+
+.question-bar__empty {
+  flex: 1;
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.question-tab {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: var(--space-2);
+  min-width: 15.5rem;
+  flex: 1 1 15.5rem;
+  scroll-snap-align: start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  text-align: left;
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast);
+}
+
+.question-tab:hover {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+}
+
+.question-tab__order {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-fill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.question-tab__body {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.question-tab__body strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.question-tab__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.question-tab__meta small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.question-tab--active {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  box-shadow: inset 0 -3px 0 var(--color-brand);
+}
+
+.question-tab--active .question-tab__order {
+  background: var(--color-brand);
+  color: white;
+}
+
+.question-bar__actions {
+  display: flex;
+  align-items: flex-start;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.question-bar__actions .button .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ai-settings {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.ai-settings > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  list-style: none;
+}
+
+.ai-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-settings > summary::before {
+  content: '▸';
+  color: var(--color-text-muted);
+  transition: transform var(--motion-fast);
+}
+
+.ai-settings[open] > summary::before {
+  content: '▾';
+}
+
+.ai-settings > summary small {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.ai-settings__body {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-4);
+}
+
+.ai-settings__hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+/* -------------------------------------------------- 참고 자료 dropdown */
+
+.reference-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.reference-card {
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.reference-card > summary {
+  display: grid;
+  grid-template-columns: 1.375rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  cursor: pointer;
+  padding: var(--space-4);
+  list-style: none;
+}
+
+.reference-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.reference-card > summary::after {
+  content: '▸';
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.reference-card[open] > summary::after {
+  content: '▾';
+}
+
+.reference-card__step {
+  display: grid;
+  width: 1.375rem;
+  height: 1.375rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.reference-card__title {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.reference-card__title strong {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 760;
+  color: var(--color-ink-title);
+}
+
+.reference-card__title strong .icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--color-brand);
+}
+
+.reference-card__title small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-card__count {
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
+  color: var(--color-text-secondary);
+  padding: 0.125rem 0.55rem;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reference-card[open] > summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reference-card[open] .reference-card__title small {
+  white-space: normal;
+}
+
+.reference-card__body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.reference-card__hint,
+.reference-card__empty {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.reference-card__warning {
+  color: var(--color-warning-strong);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.insight-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.insight-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.insight-list .icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  color: var(--color-success);
+}
+
+.insight-list--gap .icon {
+  color: var(--color-warning);
+}
+
+.insight-list--brand .icon {
+  color: var(--color-brand);
+}
+
+.evidence-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0.7rem;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.chip:hover {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+}
+
+.chip--brand {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+}
+
+.evidence-options {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.evidence-options label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+}
+
+.evidence-options label:hover {
+  border-color: var(--color-brand-border);
+}
+
+.evidence-options__item--on {
+  border-color: var(--color-brand) !important;
+  background: var(--color-brand-soft);
+}
+
+.evidence-options__body {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.evidence-options__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.evidence-options__title strong {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.evidence-options__title em {
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.evidence-options small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.evidence-options__snippet {
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------- 답변 작업대 */
+
+.cover-editor__workspace {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  min-width: 0;
+}
+
+.answer-brief,
+.question-add-panel,
+.verification,
+.version-history,
+.finalization {
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: clamp(var(--space-4), 2.5vw, var(--space-5));
+  box-shadow: var(--shadow-panel);
+}
+
+.panel-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3007,8 +3494,6 @@ function verificationTone(
   font-variant-numeric: tabular-nums;
 }
 
-/* ------------------------------------------------------- 문항 목록 */
-
 .question-add-panel {
   display: grid;
   gap: var(--space-4);
@@ -3017,7 +3502,7 @@ function verificationTone(
 
 .question-add {
   display: grid;
-  grid-template-columns: minmax(10rem, 0.5fr) minmax(0, 1fr);
+  grid-template-columns: minmax(10rem, 0.4fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--space-3) var(--space-4);
 }
@@ -3031,155 +3516,10 @@ function verificationTone(
   justify-self: start;
 }
 
-.question-list__empty {
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
-  padding: var(--space-4);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  line-height: 1.6;
-}
-
-.question-add__presets,
-.evidence-quick {
+.question-add__presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.chip {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  padding: 0.25rem 0.7rem;
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-}
-
-.chip:hover {
-  border-color: var(--color-brand-border);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-}
-
-.chip--brand {
-  border-color: var(--color-brand-border);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-}
-
-.question-list {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.question-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-1);
-}
-
-.question-list__select {
-  display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr);
-  gap: var(--space-2);
-  width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  padding: var(--space-3);
-  text-align: left;
-  transition:
-    border-color var(--motion-fast),
-    background var(--motion-fast);
-}
-
-.question-list__select:hover {
-  border-color: var(--color-brand-border);
-  background: var(--color-brand-soft);
-}
-
-.question-list__order {
-  display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-fill);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 800;
-}
-
-.question-list__body {
-  display: grid;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.question-list__body strong {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.question-list__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.question-list__meta small {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.question-list__select--active {
-  border-color: var(--color-brand);
-  background: var(--color-brand-soft);
-  box-shadow: inset 3px 0 0 var(--color-brand);
-}
-
-.question-list__select--active .question-list__order {
-  background: var(--color-brand);
-  color: white;
-}
-
-.question-list__move {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.question-list__move button {
-  width: 2rem;
-  min-height: 1.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-subtle);
-  color: var(--color-text-secondary);
-}
-
-.question-list__move button:hover:not(:disabled) {
-  border-color: var(--color-brand-border);
-  color: var(--color-brand-strong);
-}
-
-.question-list__move button:disabled {
-  opacity: 0.45;
-}
-
-/* ---------------------------------------------------------- 답변 작업 */
-
-.cover-editor__answer {
-  display: grid;
-  gap: var(--space-4);
 }
 
 .answer-brief {
@@ -3195,6 +3535,40 @@ function verificationTone(
   gap: var(--space-3);
 }
 
+.answer-brief__top > div:first-child {
+  min-width: 0;
+  flex: 1 1 20rem;
+}
+
+.answer-brief__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.answer-brief__move {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.answer-brief__move button {
+  width: 2rem;
+  min-height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+.answer-brief__move button:hover:not(:disabled) {
+  border-color: var(--color-brand-border);
+  color: var(--color-brand-strong);
+}
+
+.answer-brief__move button:disabled {
+  opacity: 0.45;
+}
+
 .answer-brief__eyebrow {
   color: var(--color-brand-strong);
   font-size: var(--font-size-xs);
@@ -3203,8 +3577,7 @@ function verificationTone(
 
 .answer-brief__question {
   margin-top: var(--space-1);
-  max-width: 44rem;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 780;
   line-height: 1.5;
   letter-spacing: -0.01em;
@@ -3289,11 +3662,6 @@ function verificationTone(
   font-weight: 700;
 }
 
-.question-settings--readonly p {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
 .question-settings__note {
   margin-top: var(--space-3);
   color: var(--color-text-muted);
@@ -3367,6 +3735,18 @@ function verificationTone(
   color: var(--color-text-secondary);
 }
 
+.answer-lock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.answer-lock .icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+
 .answer-actions {
   align-items: center;
   justify-content: space-between;
@@ -3396,218 +3776,31 @@ function verificationTone(
   color: var(--color-warning);
 }
 
-/* -------------------------------------------------------- 코치 rail */
+/* ---------------------------------------------------------- 검토 결과 */
 
-.rail-section {
+.verification {
   display: grid;
-  gap: var(--space-3);
-}
-
-.rail-section__heading h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-md);
-  font-weight: 760;
-  color: var(--color-ink-title);
-}
-
-.rail-section__heading h2 .icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: 0 0 auto;
-  color: var(--color-brand);
-}
-
-.rail-section__step {
-  display: grid;
-  width: 1.375rem;
-  height: 1.375rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-  font-size: 0.6875rem;
-  font-weight: 800;
-}
-
-.rail-section__heading h2 {
-  flex: 1;
-  min-width: 0;
-}
-
-.rail-section__count {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.rail-section__hint,
-.rail-section__empty {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.rail-section__warning {
-  color: var(--color-warning-strong);
-  font-size: var(--font-size-sm);
-}
-
-.rail-list {
-  display: grid;
-  gap: var(--space-2);
-  padding-left: var(--space-5);
-  list-style: disc;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.insight-list {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.insight-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
-  padding: var(--space-3);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: 1.55;
-}
-
-.insight-list .icon {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
-  margin-top: 0.15rem;
-  color: var(--color-success);
-}
-
-.insight-list--gap .icon {
-  color: var(--color-warning);
-}
-
-.insight-gaps > summary {
-  width: fit-content;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-}
-
-.insight-gaps > ul {
-  margin-top: var(--space-2);
-}
-
-.evidence-options {
-  display: grid;
-  gap: var(--space-2);
-  max-height: 20rem;
-  overflow-y: auto;
-}
-
-.evidence-options label {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  cursor: pointer;
-}
-
-.evidence-options label:hover {
-  border-color: var(--color-brand-border);
-}
-
-.evidence-options__item--on {
-  border-color: var(--color-brand) !important;
-  background: var(--color-brand-soft);
-}
-
-.evidence-options__body {
-  display: grid;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
-.evidence-options__title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.evidence-options__title strong {
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.evidence-options__title em {
-  border-radius: var(--radius-pill);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-  padding: 0.05rem 0.45rem;
-  font-size: 0.6875rem;
-  font-style: normal;
-  font-weight: 750;
-}
-
-.evidence-options small {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  overflow-wrap: anywhere;
-}
-
-.evidence-options__snippet {
-  line-height: 1.5;
-}
-
-.generation-questions,
-.finalization__warnings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  border: 0;
-  padding: 0;
-}
-
-.generation-questions legend,
-.finalization__warnings legend {
-  width: 100%;
-  margin-bottom: var(--space-2);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-}
-
-.generation-questions label,
-.finalization__warnings label,
-.check-field {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
+  gap: var(--space-4);
 }
 
 .verification-card {
   display: grid;
   gap: var(--space-3);
   border-top: 1px solid var(--color-border);
-  padding-top: var(--space-3);
+  padding-top: var(--space-4);
 }
 
 .verification-card header {
   display: flex;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+.verification-card__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4);
 }
 
 .verification-issues {
@@ -3635,6 +3828,7 @@ function verificationTone(
 
 .verification-suggestions {
   display: grid;
+  align-content: start;
   gap: var(--space-2);
 }
 
@@ -3679,16 +3873,16 @@ function verificationTone(
   font-size: var(--font-size-xs);
 }
 
-/* --------------------------------------------------------- 버전 이력 */
+/* --------------------------------------------------------- 저장 기록 */
 
 .version-history,
 .finalization {
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
 }
 
 .version-history__layout {
   display: grid;
-  grid-template-columns: minmax(11rem, 0.35fr) minmax(0, 1.65fr);
+  grid-template-columns: minmax(11rem, 0.3fr) minmax(0, 1.7fr);
   gap: var(--space-4);
   margin-top: var(--space-4);
 }
@@ -3742,7 +3936,7 @@ function verificationTone(
   justify-self: start;
 }
 
-/* ------------------------------------------------------------ 최종화 */
+/* --------------------------------------------------------- 마지막 점검 */
 
 .finalization {
   display: grid;
@@ -3795,45 +3989,61 @@ function verificationTone(
   font-size: var(--font-size-sm);
 }
 
+.finalization__warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  border: 0;
+  padding: 0;
+}
+
+.generation-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  border: 0;
+  padding: 0;
+}
+
+.generation-questions legend,
+.finalization__warnings legend {
+  width: 100%;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.generation-questions label,
+.finalization__warnings label,
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
 .finalization .button {
   justify-self: start;
 }
 
 /* ------------------------------------------------------------ 반응형 */
 
-@media (max-width: 80rem) {
-  .cover-editor__workspace {
-    grid-template-columns: minmax(12rem, 0.6fr) minmax(0, 1.4fr);
-  }
-
-  .cover-editor__rail {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 64rem) {
-  .cover-editor__workspace {
+  .reference-strip {
     grid-template-columns: 1fr;
-  }
-
-  .cover-editor__navigator {
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .cover-editor__rail {
-    grid-column: auto;
   }
 
   .coach__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .verification-card__body {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 48rem) {
-  .cover-editor__rail,
   .question-add,
   .question-meta__form,
   .draft-recovery__comparison,
@@ -3841,6 +4051,27 @@ function verificationTone(
   .version-history__comparison,
   .cover-header__rename {
     grid-template-columns: 1fr;
+  }
+
+  /* column 방향에서 wrap을 남기면 항목이 옆 column으로 넘쳐 가로 스크롤이 생긴다. */
+  .question-bar__row {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .question-bar__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    width: 100%;
+  }
+
+  .question-bar__actions .button {
+    width: 100%;
+  }
+
+  .question-tab {
+    min-width: 13.5rem;
+    flex-basis: 13.5rem;
   }
 
   .coach__body {
@@ -3899,7 +4130,6 @@ function verificationTone(
   .question-meta__actions .button,
   .answer-actions .button,
   .draft-recovery__actions .button,
-  .generation-command .button,
   .finalization .button {
     width: 100%;
   }

@@ -6,6 +6,23 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (자기소개서 편집 tab 구조와 사용자 문구 계약)
+
+- What was done:
+  - `page.md` 8.1을 좌측 rail 대신 상단 가로 문항 tab·AI 실행 bar·참고 자료 3열 dropdown·전체 폭 답변 작업대 구조로 갱신하고 tab 키보드 이동과 `tabpanel` 관계를 명시했다.
+  - 초안 생성 run 진행 중 답변 편집기를 읽기 전용으로 두는 규칙과, enum 이름·내부 용어를 사용자 문구에 노출하지 않는 규칙을 8.1에 추가했다.
+  - 8.2의 문항 등록·설정·순서 변경 위치를 새 구조에 맞추고, 8.4 검증 표시 표에 사용자 라벨 열(`검토 중 / 문제없음 / 확인 필요 / 수정 필요`)을 추가했다.
+- Key decisions:
+  - 표시 계약만 바꾸고 8.3 API 목록, 검증 상태 enum, `ARCHIVED` 읽기 전용 규칙은 그대로 둔다.
+  - 편집 잠금은 `COVER_LETTER_GENERATION` run에만 적용하고 검증 run은 편집을 막지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Markdown 필수 섹션과 상대 링크 확인.
+  - Frontend 구현 검증은 [`../../frontend/src/pages/progress.md`](../../frontend/src/pages/progress.md)의 같은 날짜 기록을 따른다. Vitest는 로컬 Node 20.18.0 제약으로 미실행이다.
+- Next steps:
+  - Node 24 환경에서 Frontend `corepack pnpm check` 재실행.
+
 ## [2026-08-05] Session Summary (자기소개서 편집 화면 구조 계약 보강)
 
 - What was done:

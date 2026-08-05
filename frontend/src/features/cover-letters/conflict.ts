@@ -19,7 +19,7 @@ export function conflictHeading(conflict: CoverLetterConflict): string {
     case 'ORDER':
       return '문항 순서가 달라졌어요.'
     case 'ANSWER':
-      return '현재 답변 버전이 달라졌어요.'
+      return '저장된 답변이 그 사이에 바뀌었어요.'
     case 'ACTIVE_EXISTS':
       return '이 공고에 작성 중인 자기소개서가 있어요.'
     case 'LIFECYCLE':

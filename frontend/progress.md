@@ -7,6 +7,19 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-06] Session Summary (자기소개서 작성 화면 최종 검증)
+
+- What was done:
+  - 가로 문항 tab·참고 자료 dropdown·초안 생성 중 편집 잠금·사용자 중심 문구 개편에 맞지 않던 component test 기대값 4개를 현재 화면 계약에 맞췄다.
+- Key decisions:
+  - 화면 동작을 되돌리지 않고 사용자에게 실제 표시되는 문구와 `1번째` 저장 기록 선택 방식을 test 기준으로 사용한다.
+- Issues encountered:
+  - 최초 `corepack pnpm check`에서 과거 문구와 `v1` 표시를 찾는 assertion 4개가 실패했다.
+- Validation:
+  - 집중 Vitest 2 files/15 tests와 최종 `corepack pnpm check`의 lint·format·typecheck, Vitest 67 files/284 tests, production build가 통과했다.
+- Next steps:
+  - 실제 Backend를 사용하는 `cover-letter.actual.spec.ts`는 이번 commit 준비 과정에서 재실행하지 않았다.
+
 ## [2026-08-05] Session Summary (공고 기간 filter 반응형 보정)
 
 - What was done:
