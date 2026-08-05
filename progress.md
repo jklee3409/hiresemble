@@ -15,6 +15,20 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (Dashboard 시각 개편과 화면 계약 갱신)
+
+- What was done:
+  - Frontend Dashboard의 요약 카드, 마감 캘린더 D-day, 다음 할 일 빠른 실행, 최근 활동, 가이드 카드 시각 위계와 motion을 개편했다. 자체 제작 icon 8종과 motion·강조 token을 추가했다.
+  - `docs/spec/page.md` Dashboard 절에 새 표현 계약(요약 보조 문구, D-day 배지·legend, 빠른 실행, 가이드 icon 매핑, reduced-motion)을 반영했다.
+- Key decisions:
+  - 참고 서비스의 관용구만 차용하고 색 체계는 기존 Hiresemble Blue·semantic token을 벗어나지 않는다. 조회 실패는 계속 `—`로 표시한다.
+- Issues encountered:
+  - 로컬 Node 20.18.0에서는 `corepack pnpm`과 `vitest`가 실행되지 않아 component test는 미검증이다.
+- Validation:
+  - Frontend `vue-tsc`·`eslint`·`prettier`·`vite build`와 Chromium UI shell·Landing E2E. `profile suggestions` 1건은 clean tree에서도 실패하는 기존 문제로 확인했다.
+- Next steps:
+  - Node 22 이상 환경에서 `corepack pnpm check` 재실행과 기존 `profile suggestions` E2E 실패 원인 조사.
+
 ## [2026-08-05] Session Summary (공고 기간 반기 label 색상 보정)
 
 - What was done:

@@ -4,6 +4,29 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (Dashboard 시각 위계·D-day·동적 효과 개편)
+
+- What was done:
+  - 요약 4장을 `summaryCards` computed 기반 `v-for`로 바꾸고 서버 값에서 유도한 보조 문구(`등록한 공고 N건 중`, `분석 중 N건`)와 tone별 아이콘 면, hover elevation, 상단 accent bar, `requestAnimationFrame` count-up을 추가했다.
+  - 마감 캘린더에 D-day 계산(`daysUntil`·`ddayLabel`·`deadlineTone`)을 추가해 셀과 선택 날짜 항목에 3일 이내 danger, 7일 이내 warning, 그 밖 brand tone을 적용하고 grid 아래 legend를 붙였다.
+  - `다음 할 일` 카드 하단에 공고 등록·자료 등록·자기소개서·면접 준비 `빠른 실행` 4개 링크를 고정해 할 일이 적을 때 생기던 빈 면을 없앴다.
+  - 최근 활동 행에 자료·공고·AI 작업 아이콘 면과 hover 배경을 추가하고, 가이드 카드 아이콘을 `index` 하드코딩에서 `post.category` 매핑으로 바꿨다.
+  - 커리어 카드 sheen, 준비도 track fill, 섹션 진입 stagger(0~240ms)를 추가하고 관련 hover·animation을 `prefers-reduced-motion: reduce`에서 모두 정지시켰다.
+- Key decisions:
+  - 점핏·커리어마이징의 D-day 배지와 카드 hover 관용구를 참고하되 색은 기존 Hiresemble Blue와 semantic token만 사용하고 새 hue를 만들지 않는다.
+  - 조회 실패는 그대로 `—`와 확인 실패 문구를 유지하고 count-up 대상에서 제외해 실패를 0으로 계산하지 않는다.
+  - 기존 DOM 계약(`.dashboard-title__name`, `.summary-grid`, `.calendar-day--sunday|saturday`, `.deadline-detail--desktop`, `.guide-card`, 바로가기 anchor 4개)을 유지해 화면 계약과 단언 의미를 바꾸지 않았다.
+- Issues encountered:
+  - 할 일 항목을 남는 높이만큼 늘리자 내용 대비 빈 상자로 보여, 목록은 자연 높이를 유지하고 `빠른 실행`만 카드 하단에 고정하는 방식으로 되돌렸다.
+  - 로컬 Node가 20.18.0이라 `pnpm`과 `vitest`가 실행되지 않는다(`ERR_REQUIRE_ESM`, `node:sqlite`). Vitest 단언은 이번 세션에서 미검증이다.
+  - `e2e/ui-shell.spec.ts`의 `profile suggestions...` 1건은 stash 후 clean tree에서도 같은 지점에서 실패해 이번 변경과 무관한 기존 실패로 확인했다.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check`, `vite build` 통과.
+  - Chromium `e2e/ui-shell.spec.ts`·`e2e/landing.spec.ts` 11건 중 10건 통과, 1건은 위의 기존 실패.
+  - 임시 fixture spec으로 1440·390px Dashboard와 마감 섹션을 캡처해 배치·D-day 배지를 확인한 뒤 spec을 삭제했다.
+- Next steps:
+  - Node 22 이상 환경에서 `corepack pnpm check`로 Vitest 단언을 재확인한다.
+
 ## [2026-08-05] Session Summary (공고 기간 반기 label 색상 보정)
 
 - What was done:

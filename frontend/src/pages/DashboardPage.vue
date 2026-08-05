@@ -22,6 +22,20 @@ import { useAuthStore } from '@/stores/auth'
 import { useQuery } from '@tanstack/vue-query'
 
 const SEOUL_TIME_ZONE = 'Asia/Seoul'
+const DEADLINE_SOON_DAYS = 7
+const COUNT_UP_DURATION_MS = 520
+const GUIDE_CATEGORY_ICONS: Record<string, GuideIconName> = {
+  '공고 분석': 'target',
+  '공고 관리': 'flag',
+  이력서: 'documents',
+  '이력서·자료': 'documents',
+  자기소개서: 'pen',
+  면접: 'interview',
+  '면접 준비': 'interview',
+  '지원 관리': 'calendar',
+  '커리어 설계': 'compass',
+  성장: 'trend-up',
+} as const
 const EDUCATION_LEVEL_LABELS = {
   OTHER: '기타 학력',
   HIGH_SCHOOL: '고등학교',
@@ -130,6 +144,170 @@ const monthLabel = computed(() => {
   const [year, month] = currentMonth.value.split('-').map(Number)
   return `${year}년 ${month}월`
 })
+
+type GuideIconName =
+  | 'target'
+  | 'flag'
+  | 'documents'
+  | 'pen'
+  | 'interview'
+  | 'calendar'
+  | 'compass'
+  | 'trend-up'
+  | 'guide'
+
+type SummaryTone = 'primary' | 'success' | 'brand' | 'neutral'
+type SummaryCard = {
+  key: string
+  to: string
+  label: string
+  icon: 'jobs' | 'check' | 'runs' | 'documents'
+  tone: SummaryTone
+  value: number | null
+  hint: string
+}
+
+const summaryCards = computed<SummaryCard[]>(() => {
+  const dashboard = dashboardQuery.data.value
+  const unavailable = dashboardUnavailable.value
+  const registeredJobs = dashboard?.jobs.registeredCount ?? 0
+  const processingDocuments = dashboard?.documents.processingCount ?? 0
+  return [
+    {
+      key: 'preparing',
+      to: '/jobs?status=IN_PROGRESS',
+      label: '준비 중인 공고',
+      icon: 'jobs',
+      tone: 'primary',
+      value: unavailable ? null : (dashboard?.jobs.preparingCount ?? 0),
+      hint: unavailable ? '수치를 확인하지 못했어요' : `등록한 공고 ${registeredJobs}건 중`,
+    },
+    {
+      key: 'submitted',
+      to: '/jobs?status=SUBMITTED',
+      label: '지원 완료',
+      icon: 'check',
+      tone: 'success',
+      value: unavailable ? null : (dashboard?.jobs.submittedCount ?? 0),
+      hint: unavailable ? '수치를 확인하지 못했어요' : `등록한 공고 ${registeredJobs}건 중`,
+    },
+    {
+      key: 'runs',
+      to: '/agent-runs',
+      label: 'AI가 확인 중',
+      icon: 'runs',
+      tone: 'brand',
+      value: unavailable ? null : (dashboard?.agentRuns.activeCount ?? 0),
+      hint: unavailable ? '수치를 확인하지 못했어요' : '실행 중인 AI 작업',
+    },
+    {
+      key: 'documents',
+      to: '/documents',
+      label: '등록한 이력서·자료',
+      icon: 'documents',
+      tone: 'neutral',
+      value: unavailable ? null : (dashboard?.documents.registeredCount ?? 0),
+      hint: unavailable
+        ? '수치를 확인하지 못했어요'
+        : processingDocuments > 0
+          ? `분석 중 ${processingDocuments}건`
+          : '모든 자료 분석 완료',
+    },
+  ]
+})
+
+const countedValues = ref<Record<string, number>>({})
+const countFrames = new Map<string, number>()
+
+watch(
+  summaryCards,
+  (cards) => {
+    for (const card of cards) {
+      if (card.value === null) continue
+      animateCount(card.key, card.value)
+    }
+  },
+  { immediate: true },
+)
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function animateCount(key: string, target: number): void {
+  const frame = countFrames.get(key)
+  if (frame !== undefined) cancelAnimationFrame(frame)
+  const from = countedValues.value[key] ?? 0
+  if (from === target) return
+  if (typeof requestAnimationFrame !== 'function' || prefersReducedMotion()) {
+    countedValues.value = { ...countedValues.value, [key]: target }
+    return
+  }
+  const startedAt = performance.now()
+  const step = (now: number): void => {
+    const progress = Math.min(1, (now - startedAt) / COUNT_UP_DURATION_MS)
+    const eased = 1 - (1 - progress) ** 3
+    countedValues.value = {
+      ...countedValues.value,
+      [key]: Math.round(from + (target - from) * eased),
+    }
+    if (progress < 1) countFrames.set(key, requestAnimationFrame(step))
+    else countFrames.delete(key)
+  }
+  countFrames.set(key, requestAnimationFrame(step))
+}
+
+function summaryValueLabel(card: SummaryCard): string {
+  if (card.value === null) return '—'
+  return String(countedValues.value[card.key] ?? card.value)
+}
+
+function guideIcon(category: string, index: number): GuideIconName {
+  const fallbacks: GuideIconName[] = ['target', 'documents', 'pen', 'interview', 'calendar']
+  return GUIDE_CATEGORY_ICONS[category.trim()] ?? fallbacks[index % fallbacks.length] ?? 'guide'
+}
+
+type DeadlineTone = 'passed' | 'today' | 'urgent' | 'soon' | 'normal'
+
+function daysUntil(date: string): number | null {
+  const target = Date.parse(`${date}T00:00:00+09:00`)
+  const today = Date.parse(`${seoulToday()}T00:00:00+09:00`)
+  if (Number.isNaN(target) || Number.isNaN(today)) return null
+  return Math.round((target - today) / 86_400_000)
+}
+
+function ddayLabel(value: string): string {
+  const date = value.length > 10 ? seoulDate(value) : value
+  const days = daysUntil(date)
+  if (days === null) return '마감일 미확인'
+  if (days === 0) return 'D-DAY'
+  return days > 0 ? `D-${days}` : `D+${Math.abs(days)}`
+}
+
+function deadlineTone(value: string): DeadlineTone {
+  const date = value.length > 10 ? seoulDate(value) : value
+  const days = daysUntil(date)
+  if (days === null) return 'normal'
+  if (days < 0) return 'passed'
+  if (days === 0) return 'today'
+  if (days <= 3) return 'urgent'
+  if (days <= DEADLINE_SOON_DAYS) return 'soon'
+  return 'normal'
+}
+
+function seoulDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SEOUL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+type ActivityIconName = 'documents' | 'jobs' | 'runs'
 
 type StartItemState = 'completed' | 'pending' | 'unknown'
 type StartItem = {
@@ -270,6 +448,7 @@ const nextTasks = computed<NextTask[]>(() => {
 type ActivityItem = {
   key: string
   at: string
+  icon: ActivityIconName
   eyebrow: string
   title: string
   description: string
@@ -281,6 +460,7 @@ const recentActivity = computed<ActivityItem[]>(() => {
     (document) => ({
       key: `document-${document.id}`,
       at: document.updatedAt,
+      icon: 'documents',
       eyebrow: '이력서·자료',
       title: document.displayName,
       description: documentStatus(document),
@@ -290,6 +470,7 @@ const recentActivity = computed<ActivityItem[]>(() => {
   const jobs: ActivityItem[] = (recentJobsQuery.data.value?.items ?? []).map((job) => ({
     key: `job-${job.id}`,
     at: job.updatedAt,
+    icon: 'jobs',
     eyebrow: jobCompanyLabel(job.companyName),
     title: jobDisplayTitle(job),
     description:
@@ -299,6 +480,7 @@ const recentActivity = computed<ActivityItem[]>(() => {
   const runs: ActivityItem[] = (recentRunsQuery.data.value?.items ?? []).map((run) => ({
     key: `run-${run.id}`,
     at: run.updatedAt,
+    icon: 'runs',
     eyebrow: 'AI 작업',
     title: WORKFLOW_LABELS[run.workflowType],
     description: STATUS_LABELS[run.status],
@@ -326,6 +508,8 @@ watch(selectedGuide, async (guide) => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleGuideKeydown)
   if (selectedGuide.value !== null) document.body.style.overflow = bodyOverflowBeforeGuide
+  for (const frame of countFrames.values()) cancelAnimationFrame(frame)
+  countFrames.clear()
 })
 
 function moveMonth(offset: number): void {
@@ -542,6 +726,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
             aria-label="사용자 커리어와 다음 행동"
           >
             <article class="career-card">
+              <span class="career-card__sheen" aria-hidden="true" />
               <div class="career-card__identity">
                 <span class="career-card__person" aria-hidden="true">
                   <AppIcon name="person-card" />
@@ -678,6 +863,25 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                   <p>지원 준비 현황을 다시 불러오면 우선순위를 안내할게요.</p>
                 </div>
               </div>
+
+              <nav class="quick-actions" aria-label="바로 실행">
+                <RouterLink to="/jobs/new">
+                  <span><AppIcon name="plus" /></span>
+                  공고 등록
+                </RouterLink>
+                <RouterLink to="/documents">
+                  <span><AppIcon name="upload" /></span>
+                  자료 등록
+                </RouterLink>
+                <RouterLink to="/cover-letters">
+                  <span><AppIcon name="pen" /></span>
+                  자기소개서
+                </RouterLink>
+                <RouterLink to="/interviews">
+                  <span><AppIcon name="interview" /></span>
+                  면접 준비
+                </RouterLink>
+              </nav>
             </article>
           </section>
 
@@ -689,55 +893,22 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               /></RouterLink>
             </div>
             <div class="summary-grid">
-              <RouterLink to="/jobs?status=IN_PROGRESS" class="summary-card summary-card--primary">
-                <span class="summary-card__icon"><AppIcon name="jobs" /></span>
-                <span>
-                  <small>준비 중인 공고</small>
-                  <strong>{{
-                    dashboardUnavailable
-                      ? '—'
-                      : (dashboardQuery.data.value?.jobs.preparingCount ?? 0)
-                  }}</strong>
+              <RouterLink
+                v-for="card in summaryCards"
+                :key="card.key"
+                :to="card.to"
+                class="summary-card"
+                :class="`summary-card--${card.tone}`"
+              >
+                <span class="summary-card__icon"><AppIcon :name="card.icon" /></span>
+                <span class="summary-card__body">
+                  <small>{{ card.label }}</small>
+                  <strong>{{ summaryValueLabel(card) }}</strong>
+                  <em>{{ card.hint }}</em>
                 </span>
-                <AppIcon name="arrow-right" />
-              </RouterLink>
-              <RouterLink to="/jobs?status=SUBMITTED" class="summary-card">
-                <span class="summary-card__icon summary-card__icon--success"
-                  ><AppIcon name="check"
+                <span class="summary-card__go" aria-hidden="true"
+                  ><AppIcon name="arrow-right"
                 /></span>
-                <span>
-                  <small>지원 완료</small>
-                  <strong>{{
-                    dashboardUnavailable
-                      ? '—'
-                      : (dashboardQuery.data.value?.jobs.submittedCount ?? 0)
-                  }}</strong>
-                </span>
-                <AppIcon name="arrow-right" />
-              </RouterLink>
-              <RouterLink to="/agent-runs" class="summary-card">
-                <span class="summary-card__icon"><AppIcon name="runs" /></span>
-                <span>
-                  <small>AI가 확인 중</small>
-                  <strong>{{
-                    dashboardUnavailable
-                      ? '—'
-                      : (dashboardQuery.data.value?.agentRuns.activeCount ?? 0)
-                  }}</strong>
-                </span>
-                <AppIcon name="arrow-right" />
-              </RouterLink>
-              <RouterLink to="/documents" class="summary-card">
-                <span class="summary-card__icon"><AppIcon name="documents" /></span>
-                <span>
-                  <small>등록한 이력서·자료</small>
-                  <strong>{{
-                    dashboardUnavailable
-                      ? '—'
-                      : (dashboardQuery.data.value?.documents.registeredCount ?? 0)
-                  }}</strong>
-                </span>
-                <AppIcon name="arrow-right" />
               </RouterLink>
             </div>
           </section>
@@ -821,13 +992,16 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                       v-else
                       type="button"
                       class="calendar-day"
-                      :class="{
-                        'calendar-day--selected': selectedDate === cell.date,
-                        'calendar-day--today': cell.isToday,
-                        'calendar-day--has-deadline': cell.count > 0,
-                        'calendar-day--sunday': cell.weekday === 0,
-                        'calendar-day--saturday': cell.weekday === 6,
-                      }"
+                      :class="[
+                        {
+                          'calendar-day--selected': selectedDate === cell.date,
+                          'calendar-day--today': cell.isToday,
+                          'calendar-day--has-deadline': cell.count > 0,
+                          'calendar-day--sunday': cell.weekday === 0,
+                          'calendar-day--saturday': cell.weekday === 6,
+                        },
+                        cell.count > 0 ? `calendar-day--${deadlineTone(cell.date)}` : '',
+                      ]"
                       :aria-pressed="selectedDate === cell.date"
                       :aria-label="`${cell.date}, 마감 공고 ${cell.count}건${cell.isToday ? ', 오늘' : ''}`"
                       @click="selectedDate = cell.date"
@@ -838,6 +1012,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                     </button>
                   </template>
                 </div>
+                <p class="calendar-legend">
+                  <span class="calendar-legend__today">오늘</span>
+                  <span class="calendar-legend__urgent">3일 이내 마감</span>
+                  <span class="calendar-legend__soon">7일 이내 마감</span>
+                  <span class="calendar-legend__normal">마감 예정</span>
+                </p>
               </div>
 
               <aside class="deadline-detail deadline-detail--desktop" aria-live="polite">
@@ -849,10 +1029,17 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                   <span>{{ selectedDeadlineItems.length }}건</span>
                 </header>
                 <ul v-if="selectedDeadlineItems.length" class="deadline-items">
-                  <li v-for="job in selectedDeadlineItems" :key="job.id">
-                    <span class="deadline-items__status">{{
-                      job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
-                    }}</span>
+                  <li
+                    v-for="job in selectedDeadlineItems"
+                    :key="job.id"
+                    :data-tone="deadlineTone(job.deadlineAt)"
+                  >
+                    <span class="deadline-items__badges">
+                      <span class="deadline-items__dday">{{ ddayLabel(job.deadlineAt) }}</span>
+                      <span class="deadline-items__status">{{
+                        job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
+                      }}</span>
+                    </span>
                     <strong>{{ deadlineTitle(job) }}</strong>
                     <small>{{ jobCompanyLabel(job.companyName) }}</small>
                     <time :datetime="job.deadlineAt">{{
@@ -875,10 +1062,17 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               <details class="deadline-detail deadline-detail--mobile" open>
                 <summary>{{ selectedDate }} 마감 공고 {{ selectedDeadlineItems.length }}건</summary>
                 <ul v-if="selectedDeadlineItems.length" class="deadline-items">
-                  <li v-for="job in selectedDeadlineItems" :key="job.id">
-                    <span class="deadline-items__status">{{
-                      job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
-                    }}</span>
+                  <li
+                    v-for="job in selectedDeadlineItems"
+                    :key="job.id"
+                    :data-tone="deadlineTone(job.deadlineAt)"
+                  >
+                    <span class="deadline-items__badges">
+                      <span class="deadline-items__dday">{{ ddayLabel(job.deadlineAt) }}</span>
+                      <span class="deadline-items__status">{{
+                        job.status === 'SUBMITTED' ? '지원 완료' : '준비 중'
+                      }}</span>
+                    </span>
                     <strong>{{ deadlineTitle(job) }}</strong>
                     <small>{{ jobCompanyLabel(job.companyName) }}</small>
                     <time :datetime="job.deadlineAt">{{
@@ -912,7 +1106,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               <ul v-if="recentActivity.length" class="activity-list">
                 <li v-for="activity in recentActivity" :key="activity.key">
                   <RouterLink :to="activity.to">
-                    <span>
+                    <span class="activity-list__icon" aria-hidden="true">
+                      <AppIcon :name="activity.icon" />
+                    </span>
+                    <span class="activity-list__body">
                       <small>{{ activity.eyebrow }}</small>
                       <strong>{{ activity.title }}</strong>
                     </span>
@@ -1005,7 +1202,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               >
                 <span class="guide-card__number">{{ String(index + 1).padStart(2, '0') }}</span>
                 <span class="guide-card__icon"
-                  ><AppIcon :name="index === 3 ? 'interview' : index === 4 ? 'check' : 'guide'"
+                  ><AppIcon :name="guideIcon(post.category, index)"
                 /></span>
                 <small>{{ post.category }}</small>
                 <strong>{{ post.title }}</strong>
@@ -1508,8 +1705,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 .priority-card {
+  display: flex;
+  flex-direction: column;
   padding: clamp(1.25rem, 2.5vw, 2rem);
-  background: linear-gradient(160deg, var(--color-surface) 0%, var(--hs-blue-50) 100%);
+  background:
+    radial-gradient(circle at 96% -8%, rgb(49 87 255 / 8%), transparent 42%),
+    linear-gradient(160deg, var(--color-surface) 0%, var(--hs-blue-50) 100%);
 }
 .priority-card > header {
   display: flex;
@@ -1536,6 +1737,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   margin: 0;
   padding: 0;
   list-style: none;
+}
+/* 할 일 수가 적어도 카드 하단 빠른 실행이 같은 위치에 오도록 남는 높이는 목록이 흡수한다. */
+.priority-card .task-list {
+  flex: 1 1 auto;
+  align-content: start;
 }
 .task-list a {
   display: grid;
@@ -1602,6 +1808,64 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: 1rem;
   height: 1rem;
 }
+.task-list a:hover .task-item__action {
+  transform: translateX(2px);
+}
+.task-item__action {
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1.1rem;
+}
+.quick-actions a {
+  display: grid;
+  min-height: 4.6rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color var(--motion-base),
+    color var(--motion-base),
+    transform var(--motion-base),
+    box-shadow var(--motion-base);
+}
+.quick-actions a > span {
+  display: grid;
+  width: 1.95rem;
+  height: 1.95rem;
+  place-items: center;
+  border-radius: 0.6rem;
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+  transition: background-color var(--motion-base);
+}
+.quick-actions a > span :deep(.icon) {
+  width: 1rem;
+  height: 1rem;
+}
+.quick-actions a:hover {
+  border-color: var(--hs-blue-300);
+  color: var(--color-brand-ink);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-2px);
+}
+.quick-actions a:hover > span {
+  background: var(--hs-blue-100);
+}
 
 .dashboard-section-heading,
 .deadline-section__heading {
@@ -1649,21 +1913,58 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: 0.75rem;
 }
 .summary-card {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.8rem;
   align-items: center;
-  min-height: 6.25rem;
+  min-height: 6.75rem;
   padding: 1rem;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--motion-base),
+    transform var(--motion-base),
+    box-shadow var(--motion-base);
+}
+.summary-card::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.2rem;
+  background: var(--summary-accent, var(--hs-blue-300));
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-slow) var(--ease-emphasized);
+}
+.summary-card:hover,
+.summary-card:focus-visible {
+  border-color: var(--hs-blue-300);
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-3px);
+}
+.summary-card:hover::after,
+.summary-card:focus-visible::after {
+  transform: scaleX(1);
+}
+.summary-card--success {
+  --summary-accent: var(--color-success);
+}
+.summary-card--neutral {
+  --summary-accent: var(--color-muted-strong);
 }
 .summary-card--primary {
   color: white;
   border-color: var(--hs-blue-700);
-  background: var(--hs-blue-800);
+  background:
+    radial-gradient(circle at 88% 12%, rgb(255 255 255 / 16%), transparent 46%),
+    linear-gradient(145deg, var(--hs-blue-800), var(--hs-blue-600));
+  --summary-accent: var(--color-onbrand-accent);
 }
 .summary-card__icon {
   display: grid;
@@ -1673,38 +1974,88 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   border-radius: 0.82rem;
   color: var(--color-primary);
   background: var(--hs-blue-50);
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    background-color var(--motion-base);
+}
+.summary-card:hover .summary-card__icon {
+  transform: translateY(-1px) scale(1.06);
 }
 .summary-card--primary .summary-card__icon {
   color: white;
-  background: rgb(255 255 255 / 13%);
+  background: rgb(255 255 255 / 15%);
 }
-.summary-card__icon--success {
+.summary-card--success .summary-card__icon {
   color: var(--color-success);
   background: var(--color-success-soft);
 }
+.summary-card--neutral .summary-card__icon {
+  color: var(--color-muted-strong);
+  background: var(--color-neutral-soft);
+}
+.summary-card__body {
+  min-width: 0;
+}
 .summary-card small,
-.summary-card strong {
+.summary-card strong,
+.summary-card em {
   display: block;
 }
 .summary-card small {
   color: var(--color-muted);
   font-size: 0.76rem;
+  font-weight: 700;
 }
 .summary-card--primary small {
-  color: rgb(255 255 255 / 70%);
+  color: rgb(255 255 255 / 74%);
 }
 .summary-card strong {
   margin-top: 0.15rem;
-  font-size: 1.65rem;
-  line-height: 1;
+  font-size: 1.85rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
-.summary-card > :deep(.icon) {
+.summary-card em {
+  margin-top: 0.22rem;
+  overflow: hidden;
+  color: var(--color-subtle);
+  font-size: 0.7rem;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.summary-card--primary em {
+  color: rgb(255 255 255 / 62%);
+}
+.summary-card__go {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-subtle);
+  background: transparent;
+  transition:
+    color var(--motion-base),
+    background-color var(--motion-base),
+    transform var(--motion-base) var(--ease-emphasized);
+}
+.summary-card__go :deep(.icon) {
   width: 1rem;
   height: 1rem;
-  color: var(--color-subtle);
 }
-.summary-card--primary > :deep(.icon) {
-  color: rgb(255 255 255 / 70%);
+.summary-card:hover .summary-card__go {
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+  transform: translateX(2px);
+}
+.summary-card--primary .summary-card__go {
+  color: rgb(255 255 255 / 72%);
+}
+.summary-card--primary:hover .summary-card__go {
+  color: white;
+  background: rgb(255 255 255 / 16%);
 }
 
 .deadline-section {
@@ -1966,6 +2317,64 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   border-color: var(--hs-blue-100);
   background: #fbfcff;
 }
+.calendar-day--urgent,
+.calendar-day--today.calendar-day--has-deadline {
+  border-color: var(--color-danger-border);
+  background: #fffaf9;
+}
+.calendar-day--urgent > strong,
+.calendar-day--today.calendar-day--has-deadline > strong {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.calendar-day--soon {
+  border-color: var(--color-warning-border);
+  background: #fffdf6;
+}
+.calendar-day--soon > strong {
+  border-color: var(--color-warning-border);
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+.calendar-day--passed {
+  opacity: 0.72;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-subtle);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.calendar-legend span {
+  display: inline-flex;
+  gap: 0.32rem;
+  align-items: center;
+}
+.calendar-legend span::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 0.16rem;
+  content: '';
+}
+.calendar-legend__today::before {
+  background: var(--color-primary);
+}
+.calendar-legend__urgent::before {
+  background: var(--color-danger);
+}
+.calendar-legend__soon::before {
+  background: var(--color-warning);
+}
+.calendar-legend__normal::before {
+  background: var(--hs-blue-200);
+}
 .calendar-day--selected {
   border-color: var(--hs-blue-400);
   background: linear-gradient(145deg, var(--hs-blue-50), #f8faff);
@@ -2032,11 +2441,68 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   list-style: none;
 }
 .deadline-items li {
+  position: relative;
   display: grid;
   gap: 0.2rem;
-  padding: 0.85rem;
+  padding: 0.85rem 0.85rem 0.85rem 1.1rem;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 0.85rem;
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base);
+}
+.deadline-items li::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.28rem;
+  background: var(--hs-blue-200);
+  content: '';
+}
+.deadline-items li:hover {
+  border-color: var(--hs-blue-300);
+  box-shadow: var(--shadow-xs);
+}
+.deadline-items li[data-tone='today']::before,
+.deadline-items li[data-tone='urgent']::before {
+  background: var(--color-danger);
+}
+.deadline-items li[data-tone='soon']::before {
+  background: var(--color-warning);
+}
+.deadline-items li[data-tone='passed']::before {
+  background: var(--color-border-strong);
+}
+.deadline-items__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+.deadline-items__dday {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  color: white;
+  background: var(--color-muted-strong);
+  font-size: 0.66rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.deadline-items li[data-tone='today'] .deadline-items__dday,
+.deadline-items li[data-tone='urgent'] .deadline-items__dday {
+  background: var(--color-danger);
+}
+.deadline-items li[data-tone='soon'] .deadline-items__dday {
+  background: var(--color-warning);
+}
+.deadline-items li[data-tone='normal'] .deadline-items__dday {
+  background: var(--color-primary);
+}
+.deadline-items li[data-tone='today'] .deadline-items__dday {
+  animation: dday-pulse 1.8s ease-in-out infinite;
 }
 .deadline-items__status {
   width: fit-content;
@@ -2046,6 +2512,15 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--hs-blue-50);
   font-size: 0.66rem;
   font-weight: 800;
+}
+@keyframes dday-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(180 35 45 / 32%);
+  }
+  60% {
+    box-shadow: 0 0 0 0.35rem rgb(180 35 45 / 0%);
+  }
 }
 .deadline-items strong {
   margin-top: 0.2rem;
@@ -2085,8 +2560,17 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .guide-section {
   padding: clamp(1.2rem, 2.5vw, 1.75rem);
 }
+.dashboard-columns > .dashboard-section {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-columns > .dashboard-section > .compact-empty {
+  flex: 1 1 auto;
+  align-items: center;
+  margin-top: 0.85rem;
+}
 .activity-list {
-  margin: 0.85rem 0 0;
+  margin: 0.85rem -0.55rem 0;
   padding: 0;
   list-style: none;
 }
@@ -2095,10 +2579,39 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .activity-list a {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
   align-items: center;
-  padding: 0.8rem 0;
+  padding: 0.8rem 0.55rem;
+  border-radius: 0.75rem;
+  transition: background-color var(--motion-base);
+}
+.activity-list a:hover {
+  background: var(--hs-blue-50);
+}
+.activity-list__icon {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.7rem;
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    background-color var(--motion-base);
+}
+.activity-list__icon :deep(.icon) {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.activity-list a:hover .activity-list__icon {
+  background: var(--hs-blue-100);
+  transform: scale(1.06);
+}
+.activity-list__body {
+  min-width: 0;
 }
 .activity-list small,
 .activity-list strong {
@@ -2231,10 +2744,25 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     transform 160ms ease,
     box-shadow 160ms ease;
 }
+.guide-card::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.22rem;
+  background: linear-gradient(90deg, var(--color-primary), var(--hs-blue-300));
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-slow) var(--ease-emphasized);
+}
 .guide-card:hover {
   border-color: var(--hs-blue-300);
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+}
+.guide-card:hover::before {
+  transform: scaleX(1);
 }
 .guide-card__number {
   position: absolute;
@@ -2244,6 +2772,22 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-size: 2rem;
   font-weight: 900;
   line-height: 1;
+  transition: color var(--motion-base);
+}
+.guide-card:hover .guide-card__number {
+  color: var(--hs-blue-300);
+}
+.guide-card__icon {
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    background-color var(--motion-base);
+}
+.guide-card:hover .guide-card__icon {
+  background: var(--hs-blue-100);
+  transform: translateY(-2px) rotate(-4deg);
+}
+.guide-card:hover em {
+  color: var(--color-brand-hover);
 }
 .guide-card__icon {
   display: grid;
@@ -2441,6 +2985,85 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-style: normal;
 }
 
+/* 진입 시 위에서부터 순서대로 드러나는 절제된 stagger. */
+@keyframes dashboard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes career-sheen {
+  from {
+    transform: translateX(-120%) rotate(12deg);
+  }
+  to {
+    transform: translateX(320%) rotate(12deg);
+  }
+}
+@keyframes career-track-fill {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.dashboard-content > * {
+  animation: dashboard-rise var(--motion-slow) var(--ease-emphasized) both;
+}
+.dashboard-content > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.dashboard-content > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.dashboard-content > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.dashboard-content > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.dashboard-content > *:nth-child(n + 5) {
+  animation-delay: 240ms;
+}
+
+.career-card__sheen {
+  position: absolute;
+  top: -40%;
+  left: 0;
+  width: 28%;
+  height: 180%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 12%), transparent);
+  pointer-events: none;
+  animation: career-sheen 5.5s ease-in-out 1.2s infinite;
+}
+.career-card__track {
+  animation: career-track-fill 900ms var(--ease-emphasized) 200ms both;
+}
+.career-card__readiness {
+  background: var(--color-onbrand-accent);
+}
+.career-card__track::-webkit-progress-value {
+  background: var(--color-onbrand-accent);
+}
+.career-card__track::-moz-progress-bar {
+  background: var(--color-onbrand-accent);
+}
+.start-checklist li[data-state='completed'] {
+  color: var(--color-onbrand-accent);
+}
+.career-card__cta {
+  transition: gap var(--motion-base) var(--ease-emphasized);
+}
+.career-card:hover .career-card__cta {
+  gap: 0.6rem;
+}
+
 @media (max-width: 87rem) {
   .dashboard :deep(.page-header),
   .dashboard > :deep(.state-panel),
@@ -2536,7 +3159,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     grid-template-columns: 1fr;
   }
   .summary-card {
-    min-height: 5.4rem;
+    min-height: 5.6rem;
+  }
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .deadline-section__heading {
     align-items: stretch;
@@ -2620,8 +3246,26 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 
 @media (prefers-reduced-motion: reduce) {
   .task-list a,
-  .guide-card {
+  .guide-card,
+  .summary-card,
+  .quick-actions a,
+  .activity-list a,
+  .deadline-items li {
     transition: none;
+  }
+  .dashboard-content > *,
+  .career-card__sheen,
+  .career-card__track,
+  .deadline-items__dday {
+    animation: none;
+  }
+  .career-card__sheen {
+    display: none;
+  }
+  .summary-card:hover,
+  .guide-card:hover,
+  .quick-actions a:hover {
+    transform: none;
   }
 }
 </style>

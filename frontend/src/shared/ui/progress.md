@@ -5,6 +5,21 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-05] Session Summary (Dashboard용 자체 제작 icon 8종 추가)
+
+- What was done:
+  - `AppIcon.vue`에 `rocket`, `flag`, `trend-up`, `bolt`, `pen`, `bookmark`, `trophy`, `compass`를 추가하고 `index.md`의 icon 설명을 갱신했다.
+  - Dashboard 빠른 실행과 가이드 카드 category 매핑에서 실제로 사용하는 이름만 추가했다.
+- Key decisions:
+  - 기존과 같은 24×24 grid, stroke-width 1.8, `currentColor` 규칙을 유지하고 외부 icon dependency는 추가하지 않는다.
+  - 사용처가 없는 이름은 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check`, `vite build` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 분석용 자체 제작 icon 15종 추가)
 
 - What was done:

@@ -7,6 +7,20 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (Dashboard 시각 개편 통합)
+
+- What was done:
+  - `DashboardPage.vue` 요약·마감 캘린더·다음 할 일·최근 활동·가이드 카드의 시각 위계와 상호작용을 개편하고, `AppIcon.vue`에 자체 제작 icon 8종, `styles/main.css`에 motion·강조 token을 추가했다.
+  - `docs/spec/page.md`의 Dashboard 절에 요약 보조 문구, 빠른 실행, D-day 배지와 legend, 가이드 icon 매핑, reduced-motion 계약을 반영했다.
+- Key decisions:
+  - 색은 기존 Hiresemble Blue와 semantic token만 사용하고, 조회 실패는 계속 `—`로 유지한다.
+- Issues encountered:
+  - 로컬 Node 20.18.0에서는 `pnpm`과 `vitest`가 실행되지 않아 component test를 미검증으로 남겼다.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check`, `vite build`와 Chromium UI shell·Landing E2E(기존 실패 1건 제외) 통과.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check` 재실행.
+
 ## [2026-08-05] Session Summary (공고 기간 반기 label 색상 보정)
 
 - What was done:

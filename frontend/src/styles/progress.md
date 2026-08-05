@@ -6,6 +6,20 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-05] Session Summary (Dashboard 개편용 motion·강조 token 추가)
+
+- What was done:
+  - `main.css` `:root`에 `--motion-slow`, `--ease-emphasized`, `--shadow-lift`, 어두운 brand surface 전용 `--color-onbrand-accent`·`--color-onbrand-accent-strong`를 추가했다.
+- Key decisions:
+  - Dashboard가 SFC에 하드코딩하던 `#dff9b8`을 token으로 승격하고, 밝은 surface 본문에는 쓰지 않는다는 제약을 주석으로 남겼다.
+  - 기존 token 값과 이름은 그대로 두고 additive로만 확장했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vue-tsc -b --force`, `eslint .`, `prettier --check`, `vite build` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 분석 개편용 design token 추가)
 
 - What was done:

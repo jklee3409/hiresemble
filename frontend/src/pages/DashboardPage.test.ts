@@ -183,6 +183,8 @@ async function mountDashboard() {
       { path: '/jobs', component: { template: '<div />' } },
       { path: '/jobs/new', component: { template: '<div />' } },
       { path: '/jobs/:jobId/overview', component: { template: '<div />' } },
+      { path: '/cover-letters', component: { template: '<div />' } },
+      { path: '/interviews', component: { template: '<div />' } },
       { path: '/agent-runs', component: { template: '<div />' } },
       { path: '/agent-runs/:agentRunId', component: { template: '<div />' } },
       { path: '/guide', component: { template: '<div />' } },

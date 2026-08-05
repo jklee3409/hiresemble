@@ -115,6 +115,16 @@
 
   --motion-fast: 140ms cubic-bezier(0.2, 0, 0, 1);
   --motion-base: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-slow: 340ms cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.85, 0.3, 1);
+
+  /*
+   * 어두운 brand surface 위에서만 쓰는 강조색과 카드 hover elevation.
+   * 밝은 surface의 본문 텍스트에는 대비가 부족하므로 사용하지 않는다.
+   */
+  --color-onbrand-accent: #dff9b8;
+  --color-onbrand-accent-strong: #c8f18d;
+  --shadow-lift: 0 18px 44px rgb(22 26 43 / 12%);
 
   /* 무테두리 채움면 체계. 이 토큰을 쓰는 요소에는 border를 넣지 않는다. */
   --color-fill: #f2f4f6;

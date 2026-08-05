@@ -6,6 +6,20 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (Dashboard 시각 표현 계약 보강)
+
+- What was done:
+  - `page.md` Dashboard 절에 요약 카드 보조 문구와 실패 표기, `빠른 실행` 고정 링크, 최근 활동 icon, D-day 배지·tone과 캘린더 legend, 가이드 카드 category icon 매핑, reduced-motion 계약을 추가했다.
+- Key decisions:
+  - 새 색 체계나 데이터 계약은 만들지 않고 기존 서버 값에서 유도 가능한 표현만 계약으로 확정한다.
+  - 조회 실패를 0이나 완료로 계산하지 않는 기존 규칙을 요약 카드 보조 문구에도 명시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Markdown 필수 섹션과 상대 링크 확인, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 등록 반기·목록 기간 계약)
 
 - What was done:

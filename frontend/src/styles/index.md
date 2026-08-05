@@ -17,6 +17,7 @@
 ## 구성 요소 역할
 
 - `main.css`는 Tailwind utility 생성과 함께 `#3157ff` Hiresemble Blue scale, neutral canvas·surface·text hierarchy·border, semantic color, spacing·layout gap, 제한된 radius·shadow, 80rem content width와 typography token을 선언한다.
+- motion token은 `--motion-fast`·`--motion-base`·`--motion-slow`와 `--ease-emphasized`, elevation은 `--shadow-xs|sm|md|panel|lift`를 사용한다. `--color-onbrand-accent`계열은 어두운 brand surface 위 강조에만 쓰고 밝은 surface의 본문에는 사용하지 않는다.
 - 최소 reset, focus ring, reduced motion, 44px button·input·select·checkbox·radio·switch·date·file, alert·status·skeleton·progress·section reveal·pagination처럼 여러 화면이 공유하는 pattern만 전역으로 제공한다.
 - PrimeVue dependency는 유지하지만 현재 component 사용처가 없어 Aura theme을 전역 초기화하지 않는다.
 

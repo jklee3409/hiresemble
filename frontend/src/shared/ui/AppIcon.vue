@@ -37,6 +37,14 @@ type AppIconName =
   | 'scale'
   | 'flow'
   | 'info'
+  | 'rocket'
+  | 'flag'
+  | 'trend-up'
+  | 'bolt'
+  | 'pen'
+  | 'bookmark'
+  | 'trophy'
+  | 'compass'
 
 defineProps<{
   name: AppIconName
@@ -203,6 +211,45 @@ defineProps<{
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11.2v5.2" />
       <circle cx="12" cy="7.9" r="1.05" fill="currentColor" stroke="none" />
+    </template>
+    <template v-else-if="name === 'rocket'">
+      <path d="M12 2.8c2.5 2.1 3.9 5 3.9 8.4v3.6l1.5 2.1H6.6l1.5-2.1v-3.6c0-3.4 1.4-6.3 3.9-8.4z" />
+      <circle cx="12" cy="9.6" r="1.75" />
+      <path d="M8.1 12.9 5.3 14.9v2.6M15.9 12.9l2.8 2v2.6" />
+      <path d="M9.7 18.3c.35 1.7 1.12 2.75 2.3 3.15 1.18-.4 1.95-1.45 2.3-3.15" />
+    </template>
+    <template v-else-if="name === 'flag'">
+      <path d="M6.2 3.2v17.6" />
+      <path d="M6.2 4.4h11.2l-2.1 3.7 2.1 3.7H6.2z" />
+    </template>
+    <template v-else-if="name === 'trend-up'">
+      <path d="M3.6 16.6 9.2 11l3.3 3.3 6.9-6.9" />
+      <path d="M14.9 7.4h5.1v5.1" />
+      <path d="M3.6 20.4h16.8" />
+    </template>
+    <template v-else-if="name === 'bolt'">
+      <path d="M13.5 2.6 5.8 13.2h5l-.7 8.2 7.9-10.9h-5.1z" />
+    </template>
+    <template v-else-if="name === 'pen'">
+      <path
+        d="m4.2 19.8.75-3.9L16 4.85a1.9 1.9 0 0 1 2.7 0l.45.45a1.9 1.9 0 0 1 0 2.7L8.1 19.05z"
+      />
+      <path d="m14.6 6.25 3.15 3.15" />
+      <path d="M13.4 20.4h6.4" />
+    </template>
+    <template v-else-if="name === 'bookmark'">
+      <path d="M6.4 3.4h11.2v17.2L12 16.5l-5.6 4.1z" />
+      <path d="M9.4 8.4h5.2" />
+    </template>
+    <template v-else-if="name === 'trophy'">
+      <path d="M7.4 3.4h9.2v4.9a4.6 4.6 0 0 1-9.2 0z" />
+      <path d="M7.4 5.1H4.6v1.4a3.1 3.1 0 0 0 2.8 3.05M16.6 5.1h2.8v1.4a3.1 3.1 0 0 1-2.8 3.05" />
+      <path d="M12 12.9v3.3" />
+      <path d="M9.2 20.6h5.6l-.7-2.5h-4.2z" />
+    </template>
+    <template v-else-if="name === 'compass'">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15.4 8.6-1.9 4.9-4.9 1.9 1.9-4.9z" />
     </template>
     <template v-else>
       <path d="M4 6h16M7 12h10M10 18h4" />
