@@ -33,6 +33,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.PersistGen
 import com.hiresemble.coverletter.application.model.CoverLetterModels.PersistVerification;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Question;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.RequirementContext;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.SiblingAnswerSummary;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.RunAccepted;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Summary;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Verification;
@@ -92,8 +93,8 @@ public class CoverLetterApplicationService
                 ResourceCompensationPort,
                 EvidenceReferenceQueryPort {
 
-    public static final String GENERATION_WORKFLOW_VERSION = "cover-letter-generation-v1";
-    public static final String VERIFICATION_WORKFLOW_VERSION = "cover-letter-verification-v1";
+    public static final String GENERATION_WORKFLOW_VERSION = "cover-letter-generation-v2";
+    public static final String VERIFICATION_WORKFLOW_VERSION = "cover-letter-verification-v2";
     public static final String RESOURCE_TYPE = "COVER_LETTER";
     private static final Set<String> LIST_SORTS =
             Set.of("updatedAt,desc", "createdAt,desc", "title,asc");
@@ -500,7 +501,7 @@ public class CoverLetterApplicationService
                 RunAccepted.class,
                 () -> new PreparedVerification(
                         UUID.randomUUID(),
-                        loadVerificationSnapshot(
+                        loadVerificationSnapshotV2(
                                 userId, answerVersionId, qualityMode, null)),
                 prepared -> {
                     WorkflowLaunchResult launched = launchVerification(prepared);
@@ -720,6 +721,27 @@ public class CoverLetterApplicationService
             UUID answerVersionId,
             AiQualityMode qualityMode,
             String expectedSnapshotHash) {
+        return loadVerificationSnapshot(
+                userId, answerVersionId, qualityMode, expectedSnapshotHash, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VerificationSnapshot loadVerificationSnapshotV2(
+            UUID userId,
+            UUID answerVersionId,
+            AiQualityMode qualityMode,
+            String expectedSnapshotHash) {
+        return loadVerificationSnapshot(
+                userId, answerVersionId, qualityMode, expectedSnapshotHash, true);
+    }
+
+    private VerificationSnapshot loadVerificationSnapshot(
+            UUID userId,
+            UUID answerVersionId,
+            AiQualityMode qualityMode,
+            String expectedSnapshotHash,
+            boolean includeSiblingAnswers) {
         requireQuality(userId, qualityMode);
         AnswerVersion answer = store.findAnswer(userId, answerVersionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -732,8 +754,22 @@ public class CoverLetterApplicationService
                 store.historicalEvidence(userId, answerVersionId);
         List<VerifiedEvidence> current = verifiedEvidence(userId);
         JobContext job = jobContext(userId, cover.jobId());
+        List<SiblingAnswerSummary> siblings = includeSiblingAnswers
+                ? store.findQuestions(userId, cover.id(), false).stream()
+                        .filter(value -> !value.id().equals(question.id()))
+                        .sorted(Comparator.comparingInt(QuestionRow::questionOrder))
+                        .map(value -> question(userId, value))
+                        .filter(value -> value.currentAnswer() != null)
+                        .map(value -> new SiblingAnswerSummary(
+                                value.id(),
+                                value.questionText(),
+                                value.maxLength(),
+                                value.currentAnswer().plainText(),
+                                value.currentAnswer().characterCount()))
+                        .toList()
+                : List.of();
         String snapshotHash = verificationHash(
-                cover, question, answer, job, historical, current, qualityMode);
+                cover, question, answer, job, historical, current, siblings, qualityMode);
         requireHash(expectedSnapshotHash, snapshotHash);
         return new VerificationSnapshot(
                 userId,
@@ -744,6 +780,7 @@ public class CoverLetterApplicationService
                 job,
                 historical,
                 current,
+                siblings,
                 qualityMode,
                 snapshotHash);
     }
@@ -773,6 +810,39 @@ public class CoverLetterApplicationService
         }
         VerificationSnapshot snapshot = loadVerificationSnapshot(
                 userId, answerVersionId, run.requestedQualityMode(), null);
+        requireHash(expectedSnapshotHash, snapshot.snapshotHash());
+        return snapshot;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VerificationSnapshot loadVerificationRetrySnapshotV2(
+            UUID userId, UUID agentRunId, String expectedSnapshotHash) {
+        AgentRunSnapshot run = runQuery.findByOwner(userId, agentRunId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (run.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION
+                || run.retryOfRunId() == null
+                || !RESOURCE_TYPE.equals(run.resourceType())
+                || run.status() != AgentRunStatus.RUNNING
+                || run.cancelRequestedAt() != null) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        UUID answerVersionId;
+        try {
+            answerVersionId = UUID.fromString(
+                    run.inputReferenceSnapshot().path("answerVersionId").asText());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT, exception);
+        }
+        if (!store.runHasAnswerLink(userId, agentRunId, answerVersionId)) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        VerificationSnapshot snapshot = loadVerificationSnapshot(
+                userId,
+                answerVersionId,
+                run.requestedQualityMode(),
+                null,
+                true);
         requireHash(expectedSnapshotHash, snapshot.snapshotHash());
         return snapshot;
     }
@@ -899,14 +969,23 @@ public class CoverLetterApplicationService
         VerificationSnapshot snapshot;
         if (run.retryOfRunId() == null) {
             requireRunHash(run, command.expectedSnapshotHash());
-            snapshot = loadVerificationSnapshot(
-                    userId,
-                    answer.id(),
-                    run.requestedQualityMode(),
-                    command.expectedSnapshotHash());
+            snapshot = VERIFICATION_WORKFLOW_VERSION.equals(run.workflowVersion())
+                    ? loadVerificationSnapshotV2(
+                            userId,
+                            answer.id(),
+                            run.requestedQualityMode(),
+                            command.expectedSnapshotHash())
+                    : loadVerificationSnapshot(
+                            userId,
+                            answer.id(),
+                            run.requestedQualityMode(),
+                            command.expectedSnapshotHash());
         } else {
-            snapshot = loadVerificationRetrySnapshot(
-                    userId, agentRunId, command.expectedSnapshotHash());
+            snapshot = VERIFICATION_WORKFLOW_VERSION.equals(run.workflowVersion())
+                    ? loadVerificationRetrySnapshotV2(
+                            userId, agentRunId, command.expectedSnapshotHash())
+                    : loadVerificationRetrySnapshot(
+                            userId, agentRunId, command.expectedSnapshotHash());
             if (!snapshot.answerVersion().id().equals(answer.id())) {
                 throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
             }
@@ -1231,6 +1310,7 @@ public class CoverLetterApplicationService
             JobContext job,
             List<HistoricalEvidence> historical,
             List<VerifiedEvidence> current,
+            List<SiblingAnswerSummary> siblings,
             AiQualityMode quality) {
         StringBuilder value = new StringBuilder()
                 .append(cover.id()).append('|').append(cover.version())
@@ -1242,6 +1322,10 @@ public class CoverLetterApplicationService
                 .append(':').append(item.sourceDeleted()));
         current.forEach(item -> value.append("|e:")
                 .append(item.id()).append(':').append(item.version()));
+        siblings.forEach(item -> value.append("|s:")
+                .append(item.questionId()).append(':')
+                .append(item.characterCount()).append(':')
+                .append(sha256(item.plainText())));
         return sha256(value.toString());
     }
 

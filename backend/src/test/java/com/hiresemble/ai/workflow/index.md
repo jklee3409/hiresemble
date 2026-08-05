@@ -13,9 +13,9 @@ canonical registry coverage와 Document·Job·Cover Letter metadata·contributio
 - `JobAnalysisWorkflowTest`: P6 source block identity 전용 Provider DTO→서버 내부 DTO mapping, 8단계 신규·재사용·점수·persist와 세부 safe reason
 - `JobRequirementNormalizationPolicyTest`: 복합 공고 atomic 분할·typed 분류·근무일·중복 제거·source provenance와 보수 fallback
 - `JobAnalysisWorkflowContractTest`: P6 공개 step, prompt/schema identity와 Provider 타입의 모델 소유 필드 경계
-- `CoverLetterGenerationWorkflowTest`: P7 8단계·Provider TipTap mapping·partial success/retry·restart
-- `CoverLetterVerificationWorkflowTest`: P7 6단계·issue·compensation
-- `CoverLetterWorkflowContractTest`: 공개 step·structured output·privacy 계약
+- `CoverLetterGenerationWorkflowTest`: P7 v1 durable 실행과 v2 typed plan·ACTIVITY allocation·current answer revision input·Provider TipTap·partial success/retry
+- `CoverLetterVerificationWorkflowTest`: P7 v1 durable 실행과 v2 job/rubric/sibling quality context·issue·compensation
+- `CoverLetterWorkflowContractTest`: v1/v2 definition·prompt identity, 공개 step·strict structured output·privacy 계약
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할

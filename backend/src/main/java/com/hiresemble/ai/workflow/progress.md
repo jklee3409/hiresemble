@@ -4,6 +4,21 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter generation·verification v2)
+
+- What was done:
+  - active generation v2에 question type/core message/framework, bounded evidence content allocation, current answer revision, sibling answer fact-check Context를 추가했다.
+  - active verification v2에 bounded job/requirement/sibling Context와 writing-quality rubric을 추가하고 v1 contribution을 별도로 실행 가능하게 유지했다.
+- Key decisions:
+  - 현재 VERIFIED evidence만 positive support로 사용하며 ACTIVITY도 같은 allowlist·owner·version 검증을 적용한다. candidate chunk는 계속 contradiction/discovery 전용이다.
+  - cross-answer 중복은 실제 sibling plain text/core/evidence Context를 Provider에 전달하고, 매우 높은 local token overlap도 WARNING을 요구한다.
+- Issues encountered:
+  - incomplete `WAITING_USER`를 만들지 않기 위해 근거 부족 보완 lifecycle은 구현하지 않았다.
+- Validation:
+  - v1/v2 contribution sequence, input/output record, strict schema와 Backend 79 suites/549 tests가 통과했다.
+- Next steps:
+  - 사용자 보완·same Run resume 전체 경로는 Backend/Frontend 공개 계약과 함께 설계한다.
+
 ## [2026-08-04] Session Summary (Source block Provider 책임 회귀 수정)
 
 - What was done:

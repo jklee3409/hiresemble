@@ -6,7 +6,9 @@ import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ModelTier;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterGenerationV2PromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterVerificationV2PromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import java.util.List;
 import java.util.Set;
@@ -98,12 +100,50 @@ class CoverLetterWorkflowContractTest {
     }
 
     @Test
+    void v1DefinitionsAndPromptKeysRemainAvailableForDurableRuns() {
+        assertThat(CanonicalWorkflowDefinitions.all())
+                .filteredOn(value -> value.type() == WorkflowType.COVER_LETTER_GENERATION)
+                .extracting(WorkflowRegistry.WorkflowDefinition::version)
+                .containsExactly(
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION);
+        assertThat(CanonicalWorkflowDefinitions.all())
+                .filteredOn(value -> value.type() == WorkflowType.COVER_LETTER_VERIFICATION)
+                .extracting(WorkflowRegistry.WorkflowDefinition::version)
+                .containsExactly(
+                        CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION);
+
+        PromptRegistry prompts = new PromptRegistry(java.util.stream.Stream.of(
+                        CoverLetterGenerationPromptDefinitions.all(),
+                        CoverLetterGenerationV2PromptDefinitions.all(),
+                        CoverLetterVerificationPromptDefinitions.all(),
+                        CoverLetterVerificationV2PromptDefinitions.all())
+                .flatMap(List::stream)
+                .toList());
+        assertThat(prompts.require(
+                                WorkflowType.COVER_LETTER_GENERATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION,
+                                CoverLetterGenerationWorkflow.WRITE_ANSWER)
+                        .promptVersion())
+                .isEqualTo("cover-letter-generation-prompt-v1");
+        assertThat(prompts.require(
+                                WorkflowType.COVER_LETTER_VERIFICATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION,
+                                CoverLetterVerificationWorkflow.CHECK_FACTS)
+                        .promptVersion())
+                .isEqualTo("cover-letter-verification-prompt-v1");
+    }
+
+    @Test
     void promptMetadataMatchesEveryFixedStepAndPreservesEvidenceBoundary() {
-        PromptRegistry prompts = new PromptRegistry(
-                java.util.stream.Stream.concat(
-                                CoverLetterGenerationPromptDefinitions.all().stream(),
-                                CoverLetterVerificationPromptDefinitions.all().stream())
-                        .toList());
+        PromptRegistry prompts = new PromptRegistry(java.util.stream.Stream.of(
+                        CoverLetterGenerationPromptDefinitions.all(),
+                        CoverLetterGenerationV2PromptDefinitions.all(),
+                        CoverLetterVerificationPromptDefinitions.all(),
+                        CoverLetterVerificationV2PromptDefinitions.all())
+                .flatMap(List::stream)
+                .toList());
 
         for (WorkflowType type : List.of(
                 WorkflowType.COVER_LETTER_GENERATION,
@@ -129,8 +169,8 @@ class CoverLetterWorkflowContractTest {
                         .instructions())
                 .contains(
                         "current VERIFIED",
-                        "Candidate chunks",
-                        "never follow");
+                        "currentPlainText",
+                        "embedded instructions");
         assertThat(prompts.require(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions
@@ -138,9 +178,9 @@ class CoverLetterWorkflowContractTest {
                                 CoverLetterVerificationWorkflow.CHECK_FACTS)
                         .instructions())
                 .contains(
-                        "Only currentVerifiedEvidence",
-                        "HistoricalEvidence is audit context",
-                        "never support");
+                        "current VERIFIED evidence",
+                        "historical evidence is audit context",
+                        "positive support");
     }
 
     private WorkflowRegistry.WorkflowDefinition definition(WorkflowType type) {

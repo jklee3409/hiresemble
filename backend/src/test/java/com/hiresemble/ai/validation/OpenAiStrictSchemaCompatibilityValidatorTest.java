@@ -93,7 +93,9 @@ class OpenAiStrictSchemaCompatibilityValidatorTest {
     void canonicalRegistryCannotOmitAnImplementedStrictChatStep() {
         PromptRegistry registry = new PromptRegistry(CanonicalPromptDefinitions.all());
         Set<String> expected = CanonicalWorkflowDefinitions.all().stream()
-                .filter(WorkflowRegistry.WorkflowDefinition::canonical)
+                .filter(workflow -> workflow.canonical()
+                        || workflow.type() == WorkflowType.COVER_LETTER_GENERATION
+                        || workflow.type() == WorkflowType.COVER_LETTER_VERIFICATION)
                 .filter(workflow -> workflow.type() != WorkflowType.MOCK_INTERVIEW_FEEDBACK)
                 .flatMap(workflow -> workflow.steps().stream()
                         .filter(step -> step.maxModelCalls() > 0)

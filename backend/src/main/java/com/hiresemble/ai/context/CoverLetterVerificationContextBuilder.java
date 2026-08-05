@@ -42,8 +42,10 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
     public ContextSnapshot build(ContextRequest request) {
         AgentRunSnapshot run = request.run();
         if (run.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION
-                || !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                        run.workflowVersion())
+                || (!CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                                run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION.equals(
+                                run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())
                 || run.resourceId() == null
                 || run.requestedQualityMode() == null) {
@@ -96,14 +98,25 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
     private VerificationSnapshot load(AgentRunSnapshot run, InputReference input) {
         try {
             if (run.retryOfRunId() != null) {
-                return queryPort.loadVerificationRetrySnapshot(
-                        run.userId(), run.id(), null);
+                return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                                run.workflowVersion())
+                        ? queryPort.loadVerificationRetrySnapshotV2(
+                                run.userId(), run.id(), null)
+                        : queryPort.loadVerificationRetrySnapshot(
+                                run.userId(), run.id(), null);
             }
-            return queryPort.loadVerificationSnapshot(
-                    run.userId(),
-                    input.answerVersionId(),
-                    input.qualityMode(),
-                    input.snapshotHash());
+            return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                            run.workflowVersion())
+                    ? queryPort.loadVerificationSnapshotV2(
+                            run.userId(),
+                            input.answerVersionId(),
+                            input.qualityMode(),
+                            input.snapshotHash())
+                    : queryPort.loadVerificationSnapshot(
+                            run.userId(),
+                            input.answerVersionId(),
+                            input.qualityMode(),
+                            input.snapshotHash());
         } catch (BusinessException exception) {
             if (exception.errorCode() == ErrorCode.RESOURCE_NOT_FOUND) {
                 throw ownerFailure();

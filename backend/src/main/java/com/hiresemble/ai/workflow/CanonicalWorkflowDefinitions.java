@@ -24,8 +24,12 @@ public final class CanonicalWorkflowDefinitions {
             "job-posting-extraction-v1";
     public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
     public static final String COVER_LETTER_GENERATION_VERSION =
+            "cover-letter-generation-v2";
+    public static final String COVER_LETTER_GENERATION_LEGACY_VERSION =
             "cover-letter-generation-v1";
     public static final String COVER_LETTER_VERIFICATION_VERSION =
+            "cover-letter-verification-v2";
+    public static final String COVER_LETTER_VERIFICATION_LEGACY_VERSION =
             "cover-letter-verification-v1";
     public static final String INTERVIEW_PREPARATION_VERSION =
             "interview-preparation-v1";
@@ -51,7 +55,9 @@ public final class CanonicalWorkflowDefinitions {
                 jobPostingExtractionLegacy(),
                 jobAnalysis(),
                 coverLetterGeneration(),
+                coverLetterGenerationLegacy(),
                 coverLetterVerification(),
+                coverLetterVerificationLegacy(),
                 interviewPreparation(),
                 interviewAnswerFeedback(),
                 definition(WorkflowType.MOCK_INTERVIEW_FEEDBACK, Set.of(AiQualityMode.BALANCED),
@@ -353,16 +359,34 @@ public final class CanonicalWorkflowDefinitions {
     }
 
     private static WorkflowDefinition coverLetterGeneration() {
+        return coverLetterGeneration(
+                COVER_LETTER_GENERATION_VERSION,
+                true,
+                "cover-letter-input-v2",
+                true);
+    }
+
+    private static WorkflowDefinition coverLetterGenerationLegacy() {
+        return coverLetterGeneration(
+                COVER_LETTER_GENERATION_LEGACY_VERSION,
+                false,
+                "cover-letter-input-v1",
+                false);
+    }
+
+    private static WorkflowDefinition coverLetterGeneration(
+            String version, boolean canonical, String inputSchemaVersion, boolean v2) {
         List<BigDecimal> weights = WorkflowRegistry.distributedWeights(8);
         return new WorkflowDefinition(
                 WorkflowType.COVER_LETTER_GENERATION,
-                COVER_LETTER_GENERATION_VERSION,
-                true,
+                version,
+                canonical,
                 allQuality(),
                 List.of(
                         coverLetterStep(
                                 "BUILD_GENERATION_CONTEXT",
                                 "cover-generation-build-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 1,
@@ -371,7 +395,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(0)),
                         coverLetterStep(
                                 "PLAN_QUESTIONS",
-                                "cover-generation-plan-output-v1",
+                                v2 ? "cover-generation-plan-output-v2" : "cover-generation-plan-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 1,
@@ -380,7 +405,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(1)),
                         coverLetterStep(
                                 "ANALYZE_QUESTION",
-                                "cover-generation-question-analysis-output-v1",
+                                v2 ? "cover-generation-question-analysis-output-v2" : "cover-generation-question-analysis-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 20,
@@ -390,6 +416,7 @@ public final class CanonicalWorkflowDefinitions {
                         coverLetterStep(
                                 "RETRIEVE_EVIDENCE",
                                 "cover-generation-retrieval-output-v1",
+                                inputSchemaVersion,
                                 Set.of("EMBEDDING"),
                                 1,
                                 20,
@@ -398,7 +425,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(3)),
                         coverLetterStep(
                                 "ALLOCATE_EXPERIENCES",
-                                "cover-generation-allocation-output-v1",
+                                v2 ? "cover-generation-allocation-output-v2" : "cover-generation-allocation-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 1,
@@ -407,7 +435,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(4)),
                         coverLetterStep(
                                 "WRITE_ANSWER",
-                                "cover-generation-answer-output-v1",
+                                v2 ? "cover-generation-answer-output-v2" : "cover-generation-answer-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 20,
@@ -416,7 +445,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(5)),
                         coverLetterStep(
                                 "FACT_CHECK_ANSWER",
-                                "cover-generation-fact-check-output-v1",
+                                v2 ? "cover-generation-fact-check-output-v2" : "cover-generation-fact-check-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 20,
@@ -426,6 +456,7 @@ public final class CanonicalWorkflowDefinitions {
                         coverLetterStep(
                                 "APPLY_ANSWER_VERSION",
                                 "cover-generation-apply-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 20,
@@ -435,16 +466,34 @@ public final class CanonicalWorkflowDefinitions {
     }
 
     private static WorkflowDefinition coverLetterVerification() {
+        return coverLetterVerification(
+                COVER_LETTER_VERIFICATION_VERSION,
+                true,
+                "cover-letter-input-v2",
+                true);
+    }
+
+    private static WorkflowDefinition coverLetterVerificationLegacy() {
+        return coverLetterVerification(
+                COVER_LETTER_VERIFICATION_LEGACY_VERSION,
+                false,
+                "cover-letter-input-v1",
+                false);
+    }
+
+    private static WorkflowDefinition coverLetterVerification(
+            String version, boolean canonical, String inputSchemaVersion, boolean v2) {
         List<BigDecimal> weights = WorkflowRegistry.distributedWeights(6);
         return new WorkflowDefinition(
                 WorkflowType.COVER_LETTER_VERIFICATION,
-                COVER_LETTER_VERIFICATION_VERSION,
-                true,
+                version,
+                canonical,
                 allQuality(),
                 List.of(
                         coverLetterStep(
                                 "LOAD_ANSWER_VERSION",
                                 "cover-verification-load-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 1,
@@ -454,6 +503,7 @@ public final class CanonicalWorkflowDefinitions {
                         coverLetterStep(
                                 "BUILD_PROVENANCE_CONTEXT",
                                 "cover-verification-provenance-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 1,
@@ -462,7 +512,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(1)),
                         coverLetterStep(
                                 "CHECK_FACTS",
-                                "cover-verification-facts-output-v1",
+                                v2 ? "cover-verification-facts-output-v2" : "cover-verification-facts-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 1,
@@ -471,7 +522,8 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(2)),
                         coverLetterStep(
                                 "CHECK_REQUIREMENTS_AND_LENGTH",
-                                "cover-verification-requirements-output-v1",
+                                v2 ? "cover-verification-requirements-output-v2" : "cover-verification-requirements-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 1,
                                 1,
@@ -481,6 +533,7 @@ public final class CanonicalWorkflowDefinitions {
                         coverLetterStep(
                                 "AGGREGATE_VERIFICATION",
                                 "cover-verification-aggregate-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 1,
@@ -490,6 +543,7 @@ public final class CanonicalWorkflowDefinitions {
                         coverLetterStep(
                                 "PERSIST_VERIFICATION",
                                 "cover-verification-persist-output-v1",
+                                inputSchemaVersion,
                                 Set.of(),
                                 0,
                                 1,
@@ -501,6 +555,7 @@ public final class CanonicalWorkflowDefinitions {
     private static StepDefinition coverLetterStep(
             String key,
             String outputSchemaVersion,
+            String inputSchemaVersion,
             Set<String> tools,
             int modelCalls,
             int maxFanOut,
@@ -510,7 +565,7 @@ public final class CanonicalWorkflowDefinitions {
         return new StepDefinition(
                 key,
                 agentName(key),
-                "cover-letter-input-v1",
+                inputSchemaVersion,
                 outputSchemaVersion,
                 tools,
                 modelCalls,

@@ -21,6 +21,7 @@ import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.AggregatedVerificationOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.CheckFactsInput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.CheckRequirementsInput;
+import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.CheckRequirementsInputV2;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.FactCheckOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.RequirementCheckOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.VerifiedClaimDraft;
@@ -29,6 +30,7 @@ import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainStepCompletion;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.GatewayInvocation;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepExecutionContext;
+import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepInput;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AnswerVersion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAnswer;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
@@ -39,6 +41,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.PersistGen
 import com.hiresemble.coverletter.application.model.CoverLetterModels.PersistVerification;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Question;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.RequirementContext;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.SiblingAnswerSummary;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Verification;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerificationSnapshot;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerifiedEvidence;
@@ -77,6 +80,30 @@ class CoverLetterVerificationWorkflowTest {
             new PromptRegistry(CoverLetterVerificationPromptDefinitions.all());
 
     @Test
+    void v2QualityCheckReceivesJobRubricAndSiblingCurrentAnswers() {
+        Fixture fixture = fixture();
+        AgentRunSnapshot run = runV2(fixture.snapshot, fixture.verificationId, UUID.randomUUID());
+        ExecutableWorkflowStep step = fixture.workflow.v2Contribution().steps().stream()
+                .filter(value -> value.stepKey().equals(
+                        CoverLetterVerificationWorkflow.CHECK_REQUIREMENTS_AND_LENGTH))
+                .findFirst()
+                .orElseThrow();
+
+        StepInput input = step.executor()
+                .prepareInputs(context(run, Map.of(), Map.of()))
+                .getFirst();
+        CheckRequirementsInputV2 payload = objectMapper.treeToValue(
+                input.gatewayPayload(), CheckRequirementsInputV2.class);
+
+        assertThat(payload.schemaVersion()).isEqualTo("cover-letter-input-v2");
+        assertThat(payload.writingQualityRubricVersion())
+                .isEqualTo("cover-letter-writing-quality-rubric-v2");
+        assertThat(payload.job().companyName()).isEqualTo("Hiresemble");
+        assertThat(payload.siblingAnswers()).singleElement()
+                .satisfies(value -> assertThat(value.boundedPlainText()).isEqualTo("sibling answer"));
+    }
+
+    @Test
     void verifiesImmutableVersionAndAddsCurrentEvidenceStateWarnings() {
         Fixture fixture = fixture();
         Map<String, JsonNode> upstream = new HashMap<>();
@@ -97,7 +124,7 @@ class CoverLetterVerificationWorkflowTest {
                     prompts.require(
                             WorkflowType.COVER_LETTER_VERIFICATION,
                             CanonicalWorkflowDefinitions
-                                    .COVER_LETTER_VERIFICATION_VERSION,
+                                    .COVER_LETTER_VERIFICATION_LEGACY_VERSION,
                             step.stepKey()),
                     fixture.chat,
                     request -> {
@@ -264,7 +291,7 @@ class CoverLetterVerificationWorkflowTest {
                         prompts.require(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions
-                                        .COVER_LETTER_VERIFICATION_VERSION,
+                                        .COVER_LETTER_VERIFICATION_LEGACY_VERSION,
                                 aggregate.stepKey()),
                         fixture.chat,
                         request -> {
@@ -471,6 +498,12 @@ class CoverLetterVerificationWorkflowTest {
                         "현재 승인 근거",
                         "Spring 서비스 성과를 만들었습니다.",
                         5L)),
+                List.of(new SiblingAnswerSummary(
+                        UUID.randomUUID(),
+                        "other question",
+                        500,
+                        "sibling answer",
+                        14)),
                 AiQualityMode.BALANCED,
                 SNAPSHOT_HASH);
         FakeQuery query = new FakeQuery(snapshot);
@@ -507,7 +540,7 @@ class CoverLetterVerificationWorkflowTest {
                 AgentRunStatus.RUNNING,
                 null,
                 0,
-                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION,
                 "f".repeat(64),
                 input,
                 1L,
@@ -537,6 +570,25 @@ class CoverLetterVerificationWorkflowTest {
                 null,
                 NOW,
                 List.of());
+    }
+
+    private AgentRunSnapshot runV2(
+            VerificationSnapshot snapshot, UUID verificationId, UUID runId) {
+        AgentRunSnapshot legacy = run(snapshot, verificationId, runId);
+        return new AgentRunSnapshot(
+                legacy.id(), legacy.userId(), legacy.workflowType(), legacy.status(),
+                legacy.currentStep(), legacy.progressPercent(),
+                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                legacy.canonicalInputHash(), legacy.inputReferenceSnapshot(),
+                legacy.budgetPolicyVersion(), legacy.priceVersion(),
+                legacy.requestedQualityMode(), legacy.highestModelTierUsed(),
+                legacy.estimatedCostUsd(), legacy.reservedCostUsd(), legacy.actualCostUsd(),
+                legacy.resourceType(), legacy.resourceId(), legacy.retryOfRunId(),
+                legacy.rootRunId(), legacy.runAttemptNo(), legacy.retryableFailure(),
+                legacy.safeError(), legacy.partialResult(), legacy.claimToken(), legacy.claimedBy(),
+                legacy.leaseExpiresAt(), legacy.heartbeatAt(), legacy.cancelRequestedAt(),
+                legacy.requiredUserAction(), legacy.stateVersion(), legacy.queuedAt(),
+                legacy.startedAt(), legacy.completedAt(), legacy.updatedAt(), legacy.steps());
     }
 
     private TipTapDocumentDto document(String text) {

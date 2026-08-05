@@ -223,6 +223,14 @@ public final class CoverLetterModels {
             String claimText,
             CoverLetterEvidenceUsageType usageType) {}
 
+    /** Bounded by the workflow before provider use; owner-scoped current answers only. */
+    public record SiblingAnswerSummary(
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            String plainText,
+            int characterCount) {}
+
     public record VerificationSnapshot(
             UUID userId,
             UUID coverLetterId,
@@ -232,11 +240,13 @@ public final class CoverLetterModels {
             JobContext job,
             List<HistoricalEvidence> historicalEvidence,
             List<VerifiedEvidence> currentVerifiedEvidence,
+            List<SiblingAnswerSummary> siblingAnswers,
             AiQualityMode qualityMode,
             String snapshotHash) {
         public VerificationSnapshot {
             historicalEvidence = List.copyOf(historicalEvidence);
             currentVerifiedEvidence = List.copyOf(currentVerifiedEvidence);
+            siblingAnswers = List.copyOf(siblingAnswers);
         }
     }
 

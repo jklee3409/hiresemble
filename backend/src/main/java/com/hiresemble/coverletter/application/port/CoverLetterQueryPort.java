@@ -28,8 +28,22 @@ public interface CoverLetterQueryPort {
             AiQualityMode qualityMode,
             String expectedSnapshotHash);
 
+    default VerificationSnapshot loadVerificationSnapshotV2(
+            UUID userId,
+            UUID answerVersionId,
+            AiQualityMode qualityMode,
+            String expectedSnapshotHash) {
+        return loadVerificationSnapshot(
+                userId, answerVersionId, qualityMode, expectedSnapshotHash);
+    }
+
     VerificationSnapshot loadVerificationRetrySnapshot(
             UUID userId, UUID agentRunId, String expectedSnapshotHash);
+
+    default VerificationSnapshot loadVerificationRetrySnapshotV2(
+            UUID userId, UUID agentRunId, String expectedSnapshotHash) {
+        return loadVerificationRetrySnapshot(userId, agentRunId, expectedSnapshotHash);
+    }
 
     List<CandidateChunk> searchEvidenceCandidates(
             UUID userId, List<Double> queryVector, int limit);

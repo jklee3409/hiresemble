@@ -4,6 +4,19 @@
 
 P7 자기소개서 application use case와 generation·verification port가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v2 launch와 sibling snapshot)
+
+- What was done:
+  - 신규 generation·verification launch version을 v2로 전환하고 verification snapshot에 다른 문항의 current answer summary를 owner scope로 구성했다.
+- Key decisions:
+  - v2 sibling 본문 hash를 snapshot freshness에 포함하되 durable v1 loader/hash는 기존 계약을 유지하고 API·DB·immutable version·CAS 계약은 변경하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - application/integration 회귀와 Backend 전체 check 통과.
+- Next steps:
+  - 사용자 보완 action/resume은 Frontend와 함께 별도 계약으로 진행한다.
+
 ## [2026-07-31] Session Summary (P8 owner-aware resource resolver 연결)
 
 - What was done:

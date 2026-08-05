@@ -4,6 +4,19 @@
 
 P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview owner/version/hash snapshot이 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v1/v2 ContextBuilder 호환)
+
+- What was done:
+  - generation·verification ContextBuilder가 active v2와 durable v1 Run을 모두 owner/version/hash 검증 후 로드하도록 확장했다.
+- Key decisions:
+  - checkpoint Context에는 기존처럼 ID·hash·count만 유지하고 본문은 저장하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 preparation·feedback context)
 
 - What was done:

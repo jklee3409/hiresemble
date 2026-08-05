@@ -4,6 +4,19 @@
 
 P7 API·generation·verification에 필요한 최소 immutable application record가 구현됐다.
 
+## [2026-08-05] Session Summary (Verification sibling answer snapshot)
+
+- What was done:
+  - `SiblingAnswerSummary`와 verification snapshot의 sibling current answer 목록을 추가했다.
+- Key decisions:
+  - owner-scoped current answer만 포함하고 Provider 전달 시 workflow가 질문·본문 길이를 다시 제한한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - application/integration 및 Backend 전체 check 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-30] Session Summary (P7 immutable application model)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-05] Session Summary (Cover Letter v1/v2 runtime registry)
+
+- What was done:
+  - generation·verification v1과 v2 executable contribution을 동일 runtime registry에 등록했다.
+- Key decisions:
+  - 새 접수는 application이 v2를 선택하고 기존 Run은 저장된 exact version으로 executor를 찾는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - WorkflowRegistry 및 Backend 전체 check 통과, 실제 Provider 호출 0회.
+- Next steps:
+  - None.
+
 ## [2026-08-03] Session Summary (OpenAI Chat wall-clock deadline)
 
 - What was done:

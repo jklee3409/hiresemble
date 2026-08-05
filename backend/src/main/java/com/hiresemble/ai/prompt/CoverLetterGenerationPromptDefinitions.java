@@ -19,7 +19,9 @@ public final class CoverLetterGenerationPromptDefinitions {
     public static List<PromptDefinition> all() {
         var workflow = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value ->
-                        value.type() == WorkflowType.COVER_LETTER_GENERATION)
+                        value.type() == WorkflowType.COVER_LETTER_GENERATION
+                                && CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
+                                        value.version()))
                 .findFirst()
                 .orElseThrow();
         List<PromptDefinition> prompts = new ArrayList<>();
@@ -27,7 +29,7 @@ public final class CoverLetterGenerationPromptDefinitions {
             prompts.add(new PromptDefinition(
                     new PromptKey(
                             WorkflowType.COVER_LETTER_GENERATION,
-                            CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                            CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION,
                             step.stepKey()),
                     PROMPT_VERSION,
                     inputType(step.stepKey()),

@@ -9,14 +9,24 @@ import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.EvidenceClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocation;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.HeadingPolicy;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.NarrativeFramework;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapDocumentOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapNodeOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlan;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlanV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionType;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.FactCheckOutput;
 import com.hiresemble.ai.workflow.CoverLetterVerificationWorkflow.RequirementCheckOutput;
 import com.hiresemble.ai.workflow.JobAnalysisWorkflow.ProviderEligibilityOutput;
@@ -382,6 +392,8 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             calls.incrementAndGet();
             Object output = switch (request.outputSchemaVersion()) {
                 case "output-v1" -> documentEvidence(request.input());
+                case "document-evidence-provider-output-v2" ->
+                        documentEvidence(request.input());
                 case "job-analysis-requirements-source-output-v6" ->
                         jobRequirements(request.input());
                 case "job-analysis-eligibility-output-v3" ->
@@ -390,18 +402,32 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         jobMatches(request.input());
                 case "cover-generation-plan-output-v1" ->
                         generationPlan(request.input());
+                case "cover-generation-plan-output-v2" ->
+                        generationPlanV2(request.input());
                 case "cover-generation-question-analysis-output-v1" ->
                         questionAnalysis(request.input());
+                case "cover-generation-question-analysis-output-v2" ->
+                        questionAnalysisV2(request.input());
                 case "cover-generation-allocation-output-v1" ->
                         experienceAllocation(request.input());
+                case "cover-generation-allocation-output-v2" ->
+                        experienceAllocationV2(request.input());
                 case "cover-generation-answer-output-v1" ->
                         writtenAnswer(request.input());
+                case "cover-generation-answer-output-v2" ->
+                        writtenAnswerV2(request.input());
                 case "cover-generation-fact-check-output-v1" ->
                         generatedAnswerFactCheck(request.input());
+                case "cover-generation-fact-check-output-v2" ->
+                        generatedAnswerFactCheckV2(request.input());
                 case "cover-verification-facts-output-v1" ->
                         verificationFacts(request.input());
+                case "cover-verification-facts-output-v2" ->
+                        verificationFactsV2(request.input());
                 case "cover-verification-requirements-output-v1" ->
                         verificationRequirements(request.input());
+                case "cover-verification-requirements-output-v2" ->
+                        verificationRequirementsV2(request.input());
                 default -> throw new AssertionError(
                         "Unexpected P7 chat schema: " + request.outputSchemaVersion());
             };
@@ -432,7 +458,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                 grounded = grounded.substring(0, 600);
             }
             var candidate = new DocumentIngestionWorkflow.EvidenceCandidatePayload(
-                    "PROJECT",
+                    "프로젝트",
                     "P7 approved project evidence",
                     grounded,
                     new BigDecimal("0.900"),
@@ -516,6 +542,34 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     input.path("avoidExperienceDuplication").asBoolean());
         }
 
+        private PlanQuestionsOutputV2 generationPlanV2(JsonNode input) {
+            List<QuestionPlanV2> plans = new ArrayList<>();
+            int order = 0;
+            for (JsonNode question : input.path("questions")) {
+                Integer maximum = question.path("maxLength").isNumber()
+                        ? question.path("maxLength").asInt()
+                        : null;
+                plans.add(new QuestionPlanV2(
+                        UUID.fromString(question.path("questionId").asText()),
+                        QuestionType.ROLE_COMPETENCY,
+                        "Verified role competency " + (++order == 1 ? "primary" : "secondary"),
+                        NarrativeFramework.COMPETENCY_EVIDENCE_APPLICATION,
+                        "Answer directly with verified evidence.",
+                        List.of("personal action", "job relevance"),
+                        List.of("unsupported claims"),
+                        input.path("requirements").isEmpty() ? List.of() : List.of(0),
+                        "Connect the applicant action to the role.",
+                        "Use only supplied posting context.",
+                        List.of("evidence with a decision, action, and result"),
+                        maximum == null ? 400 : Math.min(400, maximum),
+                        HeadingPolicy.OPTIONAL));
+            }
+            return new PlanQuestionsOutputV2(
+                    "cover-generation-plan-output-v2",
+                    plans,
+                    input.path("avoidExperienceDuplication").asBoolean());
+        }
+
         private Object questionAnalysis(JsonNode input) {
             UUID questionId = UUID.fromString(input.path("questionId").asText());
             if (input.path("questionText").asText().contains(FAILURE_MARKER)
@@ -534,6 +588,39 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     input.path("jobRequirements").isEmpty() ? List.of() : List.of(0));
         }
 
+        private Object questionAnalysisV2(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            if (input.path("questionText").asText().contains(FAILURE_MARKER)
+                    && forcedFailureAttempts
+                                    .computeIfAbsent(questionId, ignored -> new AtomicInteger())
+                                    .incrementAndGet()
+                            <= 3) {
+                return "{\"schemaVersion\":\"cover-generation-question-analysis-output-v2\"}";
+            }
+            JsonNode plan = input.path("plan");
+            return new QuestionAnalysisOutputV2(
+                    "cover-generation-question-analysis-output-v2",
+                    questionId,
+                    QuestionType.valueOf(plan.path("questionType").asText()),
+                    "Connect verified experience to the requested role.",
+                    "Answer with a concrete personal action.",
+                    plan.path("coreMessage").asText(),
+                    List.of("personal action", "specific contribution"),
+                    List.of("fabricated numbers"),
+                    NarrativeFramework.valueOf(plan.path("narrativeFramework").asText()),
+                    15,
+                    45,
+                    25,
+                    15,
+                    "Explain the applicant's own decision and action.",
+                    List.of("verified problem, decision, action, and result"),
+                    input.path("requirements").isEmpty() ? List.of() : List.of(0),
+                    "Relate the action to the role responsibility.",
+                    "Use only the supplied posting context.",
+                    "End with a grounded contribution direction.",
+                    HeadingPolicy.valueOf(plan.path("headingPolicy").asText()));
+        }
+
         private ExperienceAllocationOutput experienceAllocation(JsonNode input) {
             List<ExperienceAllocation> allocations = new ArrayList<>();
             for (JsonNode candidate : input.path("candidates")) {
@@ -544,6 +631,22 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
             }
             return new ExperienceAllocationOutput(
                     "cover-generation-allocation-output-v1", allocations);
+        }
+
+        private ExperienceAllocationOutputV2 experienceAllocationV2(JsonNode input) {
+            List<ExperienceAllocationV2> allocations = new ArrayList<>();
+            for (JsonNode candidate : input.path("candidates")) {
+                List<UUID> evidenceIds = new ArrayList<>();
+                candidate.path("candidateEvidence").forEach(value -> evidenceIds.add(
+                        UUID.fromString(value.path("evidenceId").asText())));
+                allocations.add(new ExperienceAllocationV2(
+                        UUID.fromString(candidate.path("questionId").asText()),
+                        List.copyOf(evidenceIds),
+                        "The bounded candidate is reused because it is the only verified fit.",
+                        "Emphasize a distinct personal action for this question."));
+            }
+            return new ExperienceAllocationOutputV2(
+                    "cover-generation-allocation-output-v2", allocations);
         }
 
         private WrittenAnswerOutput writtenAnswer(JsonNode input) {
@@ -563,6 +666,24 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     claims);
         }
 
+        private WrittenAnswerOutputV2 writtenAnswerV2(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            List<EvidenceClaimDraft> claims = new ArrayList<>();
+            JsonNode firstEvidence = input.path("verifiedEvidence").get(0);
+            if (firstEvidence != null) {
+                claims.add(new EvidenceClaimDraft(
+                        UUID.fromString(firstEvidence.path("id").asText()),
+                        "The approved project evidence supports this answer."));
+            }
+            return new WrittenAnswerOutputV2(
+                    "cover-generation-answer-output-v2",
+                    questionId,
+                    providerTipTap(
+                            input.path("plan").path("coreMessage").asText()
+                                    + ": I directly used the approved evidence to choose and implement a stable API design."),
+                    claims);
+        }
+
         private FactCheckAnswerOutput generatedAnswerFactCheck(JsonNode input) {
             UUID questionId = UUID.fromString(input.path("questionId").asText());
             List<UUID> evidenceIds = input.path("claims").isEmpty()
@@ -571,6 +692,23 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                             input.path("claims").get(0).path("evidenceId").asText()));
             return new FactCheckAnswerOutput(
                     "cover-generation-fact-check-output-v1",
+                    questionId,
+                    List.of(),
+                    List.of(),
+                    List.of(new VerifiedClaimDraft(
+                            "The answer is supported by approved project evidence.",
+                            true,
+                            evidenceIds)));
+        }
+
+        private FactCheckAnswerOutputV2 generatedAnswerFactCheckV2(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            List<UUID> evidenceIds = input.path("claims").isEmpty()
+                    ? List.of()
+                    : List.of(UUID.fromString(
+                            input.path("claims").get(0).path("evidenceId").asText()));
+            return new FactCheckAnswerOutputV2(
+                    "cover-generation-fact-check-output-v2",
                     questionId,
                     List.of(),
                     List.of(),
@@ -621,9 +759,27 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                     claims);
         }
 
+        private FactCheckOutput verificationFactsV2(JsonNode input) {
+            FactCheckOutput v1 = verificationFacts(input);
+            return new FactCheckOutput(
+                    "cover-verification-facts-output-v2",
+                    v1.answerVersionId(),
+                    v1.issues(),
+                    v1.suggestions(),
+                    v1.verifiedClaims());
+        }
+
         private RequirementCheckOutput verificationRequirements(JsonNode input) {
             return new RequirementCheckOutput(
                     "cover-verification-requirements-output-v1",
+                    UUID.fromString(input.path("answerVersionId").asText()),
+                    List.of(),
+                    List.of());
+        }
+
+        private RequirementCheckOutput verificationRequirementsV2(JsonNode input) {
+            return new RequirementCheckOutput(
+                    "cover-verification-requirements-output-v2",
                     UUID.fromString(input.path("answerVersionId").asText()),
                     List.of(),
                     List.of());

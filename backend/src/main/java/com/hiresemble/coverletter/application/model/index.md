@@ -6,7 +6,7 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-- `CoverLetterModels`: summary/detail/question/version/verification, generation·verification snapshot과 apply command
+- `CoverLetterModels`: summary/detail/question/version/verification, generation·verification snapshot, owner-scoped sibling current answer summary와 apply command
 - [`progress.md`](progress.md): application model 계약 상태
 
 ## 구성 요소 역할

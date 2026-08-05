@@ -14,7 +14,7 @@ P7 자기소개서의 owner-scoped 생성·목록·편집, 문항, immutable 답
 
 ## 구성 요소 역할
 
-하나의 공고에 active 자기소개서를 최대 하나로 제한하고, 답변·검증·근거는 immutable history로 보존한다. AI workflow는 application query/command port만 사용하며 JDBC row나 공개 DTO에 의존하지 않는다.
+하나의 공고에 active 자기소개서를 최대 하나로 제한하고, 답변·검증·근거는 immutable history로 보존한다. AI workflow는 application query/command port만 사용하며 JDBC row나 공개 DTO에 의존하지 않는다. generation·verification v2 snapshot은 current VERIFIED evidence와 owner-scoped sibling current answer를 bounded AI Context로 제공하고 공개 lifecycle은 그대로 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 

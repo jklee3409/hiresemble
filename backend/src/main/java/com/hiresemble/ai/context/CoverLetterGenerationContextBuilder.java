@@ -46,8 +46,10 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
     public ContextSnapshot build(ContextRequest request) {
         AgentRunSnapshot run = request.run();
         if (run.workflowType() != WorkflowType.COVER_LETTER_GENERATION
-                || !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
-                        run.workflowVersion())
+                || (!CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                                run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
+                                run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())
                 || run.resourceId() == null
                 || run.requestedQualityMode() == null) {

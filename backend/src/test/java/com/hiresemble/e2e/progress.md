@@ -4,6 +4,20 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-05] Session Summary (P7 Cover Letter v2 Fake fixture 갱신)
+
+- What was done:
+  - P7 Fake chat에 generation·verification v2 strict output fixture와 기존 document evidence v2 schema route를 추가했다.
+  - document evidence category를 현재 한국어 canonical policy에 맞게 보정했다.
+- Key decisions:
+  - 모든 AI 응답은 Fake이며 OpenAI·Tavily 호출은 하지 않는다.
+- Issues encountered:
+  - Browser E2E 1차는 누락된 document evidence v2 schema route, 2차는 기존 영문 category로 자기소개서 단계 전에 실패했다. 두 원인은 수정했지만 재검증 상한에 따라 최종 fixture는 미재실행이다.
+- Validation:
+  - `backend/.\gradlew.bat p7BrowserE2eTest` 2회 실패; Backend compile/check는 통과.
+- Next steps:
+  - 보정된 fixture로 P7 수직 경로를 다시 검증한다.
+
 ## [2026-08-04] Session Summary (P6/P7 requirements v6 Fake 계약)
 
 - What was done:

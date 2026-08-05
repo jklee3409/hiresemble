@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v1/v2 strict schema registry)
+
+- What was done:
+  - canonical v2와 durable v1 Cover Letter Chat 단계 모두 중앙 strict schema registry에 존재하는지 검사 범위를 확장했다.
+- Key decisions:
+  - non-canonical이라도 실제 실행 가능한 durable v1 Chat prompt는 strict registry에서 제외하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAI strict schema compatibility 전체 parameterized test와 Backend check 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Requirements source v6 최소 schema)
 
 - What was done:

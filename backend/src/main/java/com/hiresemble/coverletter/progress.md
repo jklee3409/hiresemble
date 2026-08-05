@@ -4,6 +4,21 @@
 
 P7 자기소개서 생성·문항 관리·immutable 답변 version·근거 provenance·검증·최종화·보관과 AI application port가 final-source actual 및 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-05] Session Summary (자기소개서 작성 품질 v2 application 연결)
+
+- What was done:
+  - 신규 생성·검증 launch version을 v2로 전환하고 explicit verification snapshot에 owner-scoped sibling current answer summary를 포함했다.
+  - v2 verification snapshot hash에 sibling answer identity·character count·본문 hash를 포함해 변경 시 stale Context를 거부한다. durable v1은 기존 hash 계산을 그대로 유지한다.
+- Key decisions:
+  - current answer가 있으면 Writer에 실제 bounded plain text와 version ID를 전달해 `AI_REVISED` 의미를 맞춘다.
+  - 공개 API/DB/Frontend와 immutable version/CAS/finalize 계약은 변경하지 않는다.
+- Issues encountered:
+  - 정보 부족 사용자 조치와 resume UI가 완결되어 있지 않아 새 WAITING_USER 상태는 추가하지 않았다.
+- Validation:
+  - Cover Letter application/integration 회귀와 Backend 전체 check가 통과했다.
+- Next steps:
+  - 근거 보완 route와 retry/resume UX를 별도 계약으로 정의한다.
+
 ## [2026-07-30] Session Summary (P7 coverletter 최종 판정)
 
 - What was done:

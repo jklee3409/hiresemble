@@ -23,7 +23,7 @@ class WorkflowRegistryTest {
     void canonicalRegistryCoversExactlyEightTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(10);
+        assertThat(registry.definitions()).hasSize(12);
         assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
                 .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());
@@ -37,14 +37,24 @@ class WorkflowRegistryTest {
             assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
         });
         assertThat(registry.definitions().stream().filter(definition -> !definition.canonical()))
-                .hasSize(2)
+                .hasSize(4)
                 .allSatisfy(definition -> {
-                    assertThat(definition.type()).isEqualTo(WorkflowType.JOB_POSTING_EXTRACTION);
                     assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
                 })
-                .extracting(WorkflowDefinition::version)
+                .extracting(WorkflowDefinition::type, WorkflowDefinition::version)
                 .containsExactlyInAnyOrder(
-                        "job-posting-extraction-v1", "job-posting-extraction-v2");
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.JOB_POSTING_EXTRACTION,
+                                "job-posting-extraction-v1"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.JOB_POSTING_EXTRACTION,
+                                "job-posting-extraction-v2"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.COVER_LETTER_GENERATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.COVER_LETTER_VERIFICATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION));
     }
 
     @Test

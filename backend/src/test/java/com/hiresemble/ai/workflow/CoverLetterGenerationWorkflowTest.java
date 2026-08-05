@@ -17,21 +17,34 @@ import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterGenerationV2PromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.AllocateExperiencesInput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.AllocateExperiencesInputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.AnalyzeQuestionInput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.AnalyzeQuestionInputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.EvidenceClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocation;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationOutputV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ExperienceAllocationV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerInput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsInput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsInputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.PlanQuestionsOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapDocumentOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ProviderTipTapNodeOutput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionAnalysisOutputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlan;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionPlanV2;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.QuestionType;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.NarrativeFramework;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.HeadingPolicy;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInputV2;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
@@ -82,6 +95,44 @@ class CoverLetterGenerationWorkflowTest {
             new StructuredOutputValidator(objectMapper);
     private final PromptRegistry prompts =
             new PromptRegistry(CoverLetterGenerationPromptDefinitions.all());
+    private final PromptRegistry v2Prompts =
+            new PromptRegistry(CoverLetterGenerationV2PromptDefinitions.all());
+
+    @Test
+    void v2WriterReceivesPlanJobEvidenceAndCurrentAnswer() {
+        Fixture fixture = fixture();
+        AgentRunSnapshot run = runV2(fixture.snapshot, UUID.randomUUID());
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        for (ExecutableWorkflowStep executable : fixture.workflow.v2Contribution().steps()) {
+            if (executable.stepKey().equals(CoverLetterGenerationWorkflow.WRITE_ANSWER)) {
+                List<StepInput> inputs = executable.executor().prepareInputs(
+                        context(run, upstream, ephemeral, null));
+                StepInput revised = inputs.stream()
+                        .filter(value -> value.scopeKey().equals(
+                                fixture.snapshot.questions().get(1).questionId().toString()))
+                        .findFirst()
+                        .orElseThrow();
+                WriteAnswerInputV2 payload = objectMapper.treeToValue(
+                        revised.gatewayPayload(), WriteAnswerInputV2.class);
+                assertThat(payload.plan().coreMessage()).isNotBlank();
+                assertThat(payload.analysis().narrativeFramework())
+                        .isEqualTo(payload.plan().narrativeFramework());
+                assertThat(payload.job().companyName()).isEqualTo("Hiresemble");
+                assertThat(payload.verifiedEvidence()).singleElement();
+                assertThat(payload.verifiedEvidence().getFirst().sourceType())
+                        .isEqualTo(EvidenceSourceType.ACTIVITY.name());
+                assertThat(payload.currentAnswerVersionId())
+                        .isEqualTo(fixture.secondCurrentVersionId);
+                assertThat(payload.currentPlainText())
+                        .isEqualTo(fixture.snapshot.questions().get(1).currentPlainText());
+                assertThat(payload.otherQuestions()).singleElement();
+                return;
+            }
+            executeWholeStepWithRun(fixture, run, executable, upstream, ephemeral);
+        }
+        throw new AssertionError("WRITE_ANSWER step was not found");
+    }
 
     @Test
     void contributionKeepsCoverLetterSpecificTerminalPartialFailurePolicy() {
@@ -306,6 +357,25 @@ class CoverLetterGenerationWorkflowTest {
         }
     }
 
+    private void executeWholeStepWithRun(
+            Fixture fixture,
+            AgentRunSnapshot run,
+            ExecutableWorkflowStep step,
+            Map<String, JsonNode> upstream,
+            Map<String, Object> ephemeral) {
+        List<StepInput> inputs = step.executor().prepareInputs(
+                context(run, upstream, ephemeral, null));
+        for (StepInput input : inputs) {
+            executeAndStore(
+                    fixture,
+                    step,
+                    input,
+                    context(run, upstream, ephemeral, input.scopeKey()),
+                    upstream,
+                    ephemeral);
+        }
+    }
+
     private void executeAndStore(
             Fixture fixture,
             ExecutableWorkflowStep step,
@@ -337,12 +407,16 @@ class CoverLetterGenerationWorkflowTest {
             ExecutableWorkflowStep step,
             StepInput input,
             StepExecutionContext context) {
+        PromptRegistry registry = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                        context.run().workflowVersion())
+                ? v2Prompts
+                : prompts;
         AiGatewayResponse response = step.executor().invoke(new GatewayInvocation(
                 input,
                 new ModelRoute(1L, ModelTier.BALANCED, "fake", "fake", false),
-                prompts.require(
+                registry.require(
                         WorkflowType.COVER_LETTER_GENERATION,
-                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        context.run().workflowVersion(),
                         step.stepKey()),
                 fixture.chat,
                 fixture.embedding,
@@ -485,7 +559,7 @@ class CoverLetterGenerationWorkflowTest {
                                 "기존 답변")),
                 List.of(new VerifiedEvidence(
                         evidenceId,
-                        EvidenceSourceType.MANUAL,
+                        EvidenceSourceType.ACTIVITY,
                         UUID.randomUUID(),
                         null,
                         "CAREER",
@@ -536,7 +610,7 @@ class CoverLetterGenerationWorkflowTest {
                 AgentRunStatus.RUNNING,
                 null,
                 0,
-                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION,
                 "f".repeat(64),
                 input,
                 1L,
@@ -566,6 +640,24 @@ class CoverLetterGenerationWorkflowTest {
                 null,
                 NOW,
                 List.of());
+    }
+
+    private AgentRunSnapshot runV2(GenerationSnapshot snapshot, UUID runId) {
+        AgentRunSnapshot legacy = run(snapshot, runId);
+        return new AgentRunSnapshot(
+                legacy.id(), legacy.userId(), legacy.workflowType(), legacy.status(),
+                legacy.currentStep(), legacy.progressPercent(),
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                legacy.canonicalInputHash(), legacy.inputReferenceSnapshot(),
+                legacy.budgetPolicyVersion(), legacy.priceVersion(),
+                legacy.requestedQualityMode(), legacy.highestModelTierUsed(),
+                legacy.estimatedCostUsd(), legacy.reservedCostUsd(), legacy.actualCostUsd(),
+                legacy.resourceType(), legacy.resourceId(), legacy.retryOfRunId(),
+                legacy.rootRunId(), legacy.runAttemptNo(), legacy.retryableFailure(),
+                legacy.safeError(), legacy.partialResult(), legacy.claimToken(), legacy.claimedBy(),
+                legacy.leaseExpiresAt(), legacy.heartbeatAt(), legacy.cancelRequestedAt(),
+                legacy.requiredUserAction(), legacy.stateVersion(), legacy.queuedAt(),
+                legacy.startedAt(), legacy.completedAt(), legacy.updatedAt(), legacy.steps());
     }
 
     private TipTapDocumentDto document(String text) {
@@ -617,6 +709,69 @@ class CoverLetterGenerationWorkflowTest {
         @Override
         public AiGatewayResponse chat(ChatRequest request) {
             Object output = switch (request.outputSchemaVersion()) {
+                case "cover-generation-plan-output-v2" -> {
+                    PlanQuestionsInputV2 input =
+                            mapper.treeToValue(request.input(), PlanQuestionsInputV2.class);
+                    yield new PlanQuestionsOutputV2(
+                            "cover-generation-plan-output-v2",
+                            input.questions().stream()
+                                    .map(question -> new QuestionPlanV2(
+                                            question.questionId(),
+                                            QuestionType.ROLE_COMPETENCY,
+                                            "Spring 문제 해결 역량 " + question.questionOrder(),
+                                            NarrativeFramework.COMPETENCY_EVIDENCE_APPLICATION,
+                                            "질문에 직접 답하고 직무 역량을 증명한다",
+                                            List.of("개인 행동", "선택 이유"),
+                                            List.of("근거 없는 수치"),
+                                            List.of(0),
+                                            "검증된 행동을 직무 책임과 연결한다",
+                                            "제공된 공고 범위에서만 회사 연결을 설명한다",
+                                            List.of("구체적인 행동과 결과가 있는 경험"),
+                                            Math.min(300, question.maxLength()),
+                                            HeadingPolicy.OPTIONAL))
+                                    .toList(),
+                            input.avoidExperienceDuplication());
+                }
+                case "cover-generation-question-analysis-output-v2" -> {
+                    AnalyzeQuestionInputV2 input =
+                            mapper.treeToValue(request.input(), AnalyzeQuestionInputV2.class);
+                    yield new QuestionAnalysisOutputV2(
+                            "cover-generation-question-analysis-output-v2",
+                            input.questionId(),
+                            input.plan().questionType(),
+                            "직무 역량을 검증하는 질문",
+                            "검증된 문제 해결 행동으로 답한다",
+                            input.plan().coreMessage(),
+                            input.plan().requiredElements(),
+                            input.plan().avoidContent(),
+                            input.plan().narrativeFramework(),
+                            15,
+                            45,
+                            25,
+                            15,
+                            "대안을 비교하고 선택한 개인 행동",
+                            List.of("문제, 판단, 행동, 결과가 있는 경험"),
+                            input.plan().requirementIndexes(),
+                            input.plan().roleConnection(),
+                            input.plan().companyConnection(),
+                            "직무 적용 방향으로 마무리한다",
+                            input.plan().headingPolicy());
+                }
+                case "cover-generation-allocation-output-v2" -> {
+                    AllocateExperiencesInputV2 input = mapper.treeToValue(
+                            request.input(), AllocateExperiencesInputV2.class);
+                    yield new ExperienceAllocationOutputV2(
+                            "cover-generation-allocation-output-v2",
+                            input.candidates().stream()
+                                    .map(candidate -> new ExperienceAllocationV2(
+                                            candidate.questionId(),
+                                            candidate.candidateEvidence().stream()
+                                                    .map(value -> value.evidenceId())
+                                                    .toList(),
+                                            "검증된 후보가 하나뿐이다",
+                                            "문항별 서로 다른 개인 행동을 강조한다"))
+                                    .toList());
+                }
                 case "cover-generation-plan-output-v1" -> {
                     PlanQuestionsInput input =
                             mapper.treeToValue(request.input(), PlanQuestionsInput.class);

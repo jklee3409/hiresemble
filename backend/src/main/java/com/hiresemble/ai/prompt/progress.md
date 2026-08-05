@@ -4,6 +4,21 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-05] Session Summary (Cover Letter 단계별 v2 prompt identity)
+
+- What was done:
+  - generation plan·analysis·allocation·write·fact-check와 verification facts·quality에 단계별 v2 prompt identity와 strict output schema를 등록했다.
+  - 기존 generation/verification v1 PromptKey와 prompt 전문은 durable Run용으로 보존했다.
+- Key decisions:
+  - 기업 조사·기업 유형 하드코딩·Writer web search 없이 supplied job Context와 current VERIFIED evidence만 사용한다.
+  - 품질 이슈는 기존 `OTHER` WARNING/suggestion을 우선하고 공개 issue enum은 확장하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - canonical/legacy prompt completeness, 중복 PromptKey, OpenAI strict schema compatibility를 포함한 Backend 전체 check가 통과했다.
+- Next steps:
+  - 실제 Provider 품질 UAT는 별도 opt-in 작업으로 남긴다.
+
 ## [2026-08-04] Session Summary (Job requirement source-only prompt v9)
 
 - What was done:

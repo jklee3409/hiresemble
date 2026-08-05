@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-05] Session Summary (Cover Letter v1/v2 workflow 회귀)
+
+- What was done:
+  - v1 durable definition/prompt/executor 보존, v2 strict registry, ACTIVITY planning/allocation, Writer current answer와 explicit verification sibling/rubric Context 회귀를 추가했다.
+  - WorkflowRegistry legacy definition 기대값을 generation·verification v1까지 확장했다.
+- Key decisions:
+  - 기존 v1 실행 테스트는 legacy version으로 고정하고 active v2 입력은 별도 테스트한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Backend 전체 check 79 suites/549 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (Requirements v6 legacy field 부재 회귀)
 
 - What was done:

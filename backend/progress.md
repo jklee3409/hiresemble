@@ -5,7 +5,23 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
-- 최신 완료된 Backend 전체 `check`는 79 suites/539 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- 최신 완료된 Backend 전체 `check`는 79 suites/549 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-05] Session Summary (Cover Letter workflow v2와 durable v1 호환)
+
+- What was done:
+  - generation·verification 신규 접수를 v2로 전환하고 v1 definition/prompt/executor를 durable Run용으로 유지했다.
+  - typed strategy, bounded job/evidence/sibling Context, ACTIVITY support, AI_REVISED current answer 전달과 explicit verification 품질 rubric을 추가했다.
+- Key decisions:
+  - 공개 API·DB·Frontend 계약과 V22 migration은 변경하지 않고 internal workflow/input/output schema만 versioning했다.
+  - Provider call cap·model tier·24,000 input token cap과 bounded correction 정책은 유지했다.
+- Issues encountered:
+  - P7 Browser E2E의 기존 document Fake가 최신 provider schema/category와 불일치해 cover-letter 단계 전에 실패했다. fixture는 보정했으나 최종 재실행하지 않았다.
+- Validation:
+  - `backend/.\gradlew.bat check` 성공: 79 suites/549 tests. OpenAPI 94 operations/69 paths 유지, 실제 Provider 호출 0회.
+  - `backend/.\gradlew.bat p7BrowserE2eTest` 실패: document evidence fixture 선행 오류.
+- Next steps:
+  - 보정된 P7 E2E fixture 재검증과 정보 부족 사용자 보완 lifecycle 설계.
 
 ## [2026-08-05] Session Summary (공고 반기 저장·목록 API와 V21~V22 upgrade)
 
