@@ -617,6 +617,7 @@ function attachSafeBrowserDiagnostics(page: Page): void {
 }
 
 async function deleteSelectedQuestion(page: Page, questionId: string): Promise<void> {
+  await openQuestionSettings(page)
   const responsePromise = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname.endsWith(`/questions/${questionId}`) &&
@@ -644,8 +645,16 @@ async function moveQuestionUp(page: Page, order: number): Promise<void> {
   ).toBeVisible()
 }
 
+async function openQuestionSettings(page: Page): Promise<void> {
+  const settings = page.locator('.question-meta')
+  if (await settings.evaluate((element) => (element as HTMLDetailsElement).open)) return
+  await settings.getByText('문항 내용·글자 수·메모 수정').click()
+  await expect(settings.locator('.question-meta__form')).toBeVisible()
+}
+
 async function editQuestionMemo(page: Page, questionText: string, memo: string): Promise<void> {
   await selectQuestion(page, questionText)
+  await openQuestionSettings(page)
   await page.locator('.question-meta').getByLabel('메모').fill(memo)
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -667,6 +676,7 @@ async function exerciseTitleConflict(page: Page, coverLetterId: string): Promise
     version: current.version,
   })
   expect(serverUpdate.status).toBe(200)
+  await page.getByRole('button', { name: '제목 수정', exact: true }).click()
   await page.getByLabel('자기소개서 제목').fill('브라우저의 미저장 제목')
   const conflictResponse = page.waitForResponse(
     (response) =>
@@ -710,6 +720,7 @@ async function exerciseQuestionConflict(
   )
   expect(serverUpdate.status).toBe(200)
 
+  await openQuestionSettings(page)
   const questionForm = page.locator('.question-meta')
   await questionForm.getByLabel('문항 내용').fill(originalQuestion.questionText)
   await questionForm.getByLabel('최대 글자 수').fill('1000')

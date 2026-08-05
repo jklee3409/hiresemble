@@ -41,13 +41,15 @@ defineEmits<{ reapply: []; cancel: [] }>()
   display: grid;
   gap: var(--space-4);
   border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-warning-soft);
-  padding: var(--space-5);
+  padding: clamp(var(--space-4), 2.5vw, var(--space-6));
 }
 
 .cover-conflict h3 {
   margin-top: var(--space-1);
+  font-size: var(--font-size-lg);
+  font-weight: 780;
 }
 
 .cover-conflict p {
@@ -63,10 +65,14 @@ defineEmits<{ reapply: []; cancel: [] }>()
 
 .cover-conflict__comparison article {
   min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   padding: var(--space-4);
+}
+
+.cover-conflict__comparison h4 {
+  font-size: var(--font-size-sm);
+  font-weight: 750;
 }
 
 .cover-conflict__comparison pre {

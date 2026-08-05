@@ -6,6 +6,21 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-05] Session Summary (자기소개서 편집 화면 구조 계약 보강)
+
+- What was done:
+  - `page.md` 8.1에 작업 header, AI 코치 panel, 중앙 문항 등록 form, 번호가 있는 오른쪽 1~5 panel과 하단 버전 이력·최종화 확인을 반영하고, 8.2에 다음 행동 안내·강점 확인·추천 소재 우선 표시·문항별 최종화 확인 목록을 추가했다.
+- Key decisions:
+  - 코치 panel은 기존 자기소개서 상세·공고 분석·확인한 경험·Agent Run 응답에서만 문장과 단계를 유도하며 새 API나 서버 상태를 정의하지 않는다.
+  - 화면의 primary action은 코치 panel 하나가 소유하고 기존 8.3 API 목록과 8.4 검증 표시 계약은 그대로 둔다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Markdown 필수 섹션과 상대 링크 확인.
+  - Frontend 구현 검증은 [`../../frontend/src/pages/progress.md`](../../frontend/src/pages/progress.md)의 같은 날짜 기록을 따른다. Vitest는 로컬 Node 20.18.0 제약으로 미실행이다.
+- Next steps:
+  - Node 24 환경에서 Frontend `corepack pnpm check` 재실행.
+
 ## [2026-08-05] Session Summary (프로필 목록 표현 계약 보강)
 
 - What was done:

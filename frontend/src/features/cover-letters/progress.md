@@ -4,6 +4,22 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-05] Session Summary (작성 화면 개편에 맞춘 feature component 정리)
+
+- What was done:
+  - `CoverLetterRunMonitor.vue`에 avatar와 상태별 코치 문장(`AI 코치가 초안을 쓰고 있어요`·`다 썼어요`·`끝내지 못했어요`)을 추가하고 panel surface로 다듬었다.
+  - `CoverLetterTipTapEditor.vue`를 읽기 폭 46rem·1.85 행간 문서 면으로 조정하고, 정의되지 않은 `--color-focus-ring`을 쓰던 focus box-shadow를 공용 `--focus-ring`으로 고쳤다. 좁은 화면에서 서식 button이 폭을 나눠 갖도록 했다.
+  - `CoverLetterConflictPanel.vue`의 radius·padding·제목 위계를 새 화면 언어에 맞췄다.
+- Key decisions:
+  - 세 component 모두 props·emit·DOM 계약(`data-testid`, `.cover-conflict` button 구성, 진행률 `progress`)을 바꾸지 않고 표현만 조정한다.
+  - Run 문장은 workflow type과 서버 상태에서만 유도하고 완료된 run을 진행 중처럼 표시하지 않는다.
+- Issues encountered:
+  - 로컬 Node 20.18.0에서 `vitest` 실행이 불가능해 component test는 미검증이다.
+- Validation:
+  - `eslint`, `prettier --check`, `vue-tsc -b --force`, `vite build` 통과와 실제 Chromium fixture 캡처로 확인했다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`로 component test 회귀를 확인한다.
+
 ## [2026-07-30] Session Summary (P7 cover-letter feature 최종 판정)
 
 - What was done:

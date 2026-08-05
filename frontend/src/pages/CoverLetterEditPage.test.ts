@@ -191,6 +191,9 @@ describe('CoverLetterEditPage', () => {
     mocks.analysis.data.value = {
       requiredQualifications: [{ category: 'REQUIRED_QUALIFICATION', text: 'Vue 경험' }],
       responsibilities: [{ category: 'CORE_RESPONSIBILITY_OR_SKILL', text: '사용자 경험 개선' }],
+      strengths: ['컴포넌트 구조를 정리한 경험이 공고와 잘 맞아요.'],
+      gaps: ['대규모 트래픽 경험을 보강하면 좋아요.'],
+      matchedEvidenceRefs: [{ id: COVER_LETTER_EVIDENCE_ID }],
     }
     for (const state of [
       mocks.detail,
@@ -210,6 +213,7 @@ describe('CoverLetterEditPage', () => {
           id: COVER_LETTER_EVIDENCE_ID,
           title: '검증된 프로젝트 경험',
           evidenceCategory: 'PROJECT',
+          content: '주문 처리 지연을 35% 줄인 개선 경험입니다.',
           verificationStatus: 'VERIFIED',
         },
       ]),

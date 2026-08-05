@@ -4,6 +4,32 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (자기소개서 작성 화면 협업 시나리오 개편)
+
+- What was done:
+  - `CoverLetterEditPage.vue`의 `PageHeader`를 공고·제목·상태·답변/검증 진행률을 함께 보여 주는 전용 작업 header로 바꾸고 제목 편집을 `제목 수정` disclosure form으로 분리했다.
+  - 상태에서 유도한 단일 다음 행동(`첫 문항 등록하기`·`새 버전으로 저장`·`남은 문항 초안 만들기`·`이 문항 검증하기`·`자기소개서 최종화`·`DRAFT로 되돌리기`)과 `문항 등록 → 강점·소재 고르기 → AI 초안 받기 → 내 문장으로 다듬기 → 검증하고 최종화` 5단계를 가진 AI 코치 panel을 추가했다.
+  - 문항 등록 form을 좁은 좌측 rail에서 중앙 열의 `새 문항 등록` panel로 옮기고 500/700/1000/1500자 preset과 안내 문구를 붙였다. 문항 내용·글자 수·메모 수정은 선택 문항 Brief 안의 `question-meta` disclosure로 접었다.
+  - 오른쪽 rail을 `1 공고가 원하는 것 → 2 내 강점과 보완점 → 3 쓸 소재 고르기 → 4 AI에게 초안 맡기기 → 5 검증 결과` 번호 순서로 재구성하고, 강점·보완점은 최신 공고 분석의 `strengths`·`gaps`, 소재는 `matchedEvidenceRefs` 기준 추천 정렬·`공고와 연결됨` 배지·본문 미리보기·일괄 담기/해제를 사용한다.
+  - 문항 목록에 검증·작성 출처 기반 상태 badge와 글자 수를, 선택 문항에 메모·글자 수 meter를, 최종화 section에 문항별 확인 목록을 추가했다.
+  - `CoverLetterRunMonitor.vue`를 상태별 코치 문장과 avatar를 가진 panel로, `CoverLetterTipTapEditor.vue`를 읽기 폭 46rem·1.85 행간 문서 면으로 다듬고 `--color-focus-ring`(미정의) focus box-shadow를 `--focus-ring`으로 고쳤다.
+- Key decisions:
+  - 코치 문장·단계·추천은 `GET /cover-letters/:id`, 최신 공고 분석, 확인한 경험, Agent Run 응답에서만 유도하고 새 API·새 서버 상태를 만들지 않는다.
+  - 화면의 primary button은 코치 panel 하나만 갖고 기존 생성·검증·최종화 button은 보조 위계와 기존 `data-testid`를 유지한다.
+  - 5단계는 앞 단계를 건너뛴 완료 표시가 나오지 않도록 순서대로 누적 판정한다. 소재 선택은 선택 0개여도 초안이 있으면 완료로 본다.
+  - 오른쪽 rail은 section이 길어 내부 scroll을 만들지 않고 페이지 흐름을 따르며 문항 Navigator만 sticky로 둔다.
+  - 기존 DOM 계약(`.question-add`, `.question-meta`, `.question-meta__form`, `.question-list__select`, `.evidence-options`, `.generation-questions`, `.finalization__warnings`, 답변 버전 listbox, 6개 `data-testid`, `ARCHIVED · 읽기 전용`·`브라우저 임시 저장됨 · 서버 미저장` 문구)을 유지했다.
+- Issues encountered:
+  - 문항 등록 form이 13rem 좌측 rail에서 잘려 실제 Chromium 캡처로 확인한 뒤 중앙 열 panel로 옮겼다.
+  - 문항 설정을 disclosure로 접으면서 실제 backend E2E(`cover-letter.actual.spec.ts`)의 `.question-meta` 입력과 제목 입력이 보이지 않게 되어 `openQuestionSettings` helper와 `제목 수정` 클릭을 추가했다.
+  - 로컬 Node가 20.18.0이라 `pnpm`과 `vitest`(jsdom `html-encoding-sniffer`의 `ERR_REQUIRE_ESM`)를 실행할 수 없어 Vitest 단언은 이번 세션에서 미검증이다. `CoverLetterEditPage.test.ts` fixture에 `strengths`·`gaps`·`matchedEvidenceRefs`·evidence `content`를 추가했으나 실행 확인은 다음 Node 24 환경에서 필요하다.
+- Validation:
+  - `eslint src e2e`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - `vite preview` + Playwright Chromium fixture로 `ui-redesign.visual.spec.ts`를 1440·390px에서 실행해 회귀 없이 캡처했고, 임시 fixture spec으로 문항 0개·등록 form·문항 3개 혼합 상태·ARCHIVED 읽기 전용을 확인한 뒤 임시 spec을 삭제했다.
+  - Vitest와 실제 backend E2E는 미실행이다.
+- Next steps:
+  - Node 24 환경에서 `corepack pnpm check`와 `cover-letter.actual.spec.ts`를 실행해 단위·실제 흐름 회귀를 확인한다.
+
 ## [2026-08-05] Session Summary (공고 기간 filter summary 말줄임 보정)
 
 - What was done:

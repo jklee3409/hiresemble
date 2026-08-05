@@ -173,14 +173,16 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 .cover-tiptap {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  transition: border-color var(--motion-fast);
 }
 
 .cover-tiptap:focus-within {
-  border-color: var(--color-brand-border);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  border-color: var(--color-brand);
+  box-shadow: var(--focus-ring);
 }
 
 .cover-tiptap--readonly {
@@ -221,9 +223,11 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 
 :deep(.cover-tiptap__content) {
   min-height: 22rem;
-  padding: var(--space-5);
+  max-width: 46rem;
+  padding: var(--space-6);
   outline: none;
-  line-height: 1.8;
+  font-size: var(--font-size-md);
+  line-height: 1.85;
   overflow-wrap: anywhere;
 }
 
@@ -267,6 +271,10 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
   :deep(.cover-tiptap__content) {
     min-height: 16rem;
     padding: var(--space-4);
+  }
+
+  .cover-tiptap__toolbar button {
+    flex: 1 1 auto;
   }
 }
 </style>

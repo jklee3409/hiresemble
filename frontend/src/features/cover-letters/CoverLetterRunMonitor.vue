@@ -9,6 +9,7 @@ import {
   type AgentRunConnectionState,
 } from '@/features/agent-runs/stream'
 import type { AgentRunDetailDto } from '@/shared/api/agentRunContracts'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -77,6 +78,19 @@ watch(
 
 onBeforeUnmount(() => stream?.close())
 
+const runHeadline = computed(() => {
+  const run = detail.data.value
+  if (run === undefined) return 'AI 코치와 함께 진행 중이에요'
+  const generation = run.workflowType === 'COVER_LETTER_GENERATION'
+  if (run.status === 'SUCCEEDED') {
+    return generation ? 'AI 코치가 초안을 다 썼어요' : 'AI 코치가 근거 확인을 마쳤어요'
+  }
+  if (['FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.status)) {
+    return generation ? '초안 작성을 끝내지 못했어요' : '근거 확인을 끝내지 못했어요'
+  }
+  return generation ? 'AI 코치가 초안을 쓰고 있어요' : 'AI 코치가 답변 근거를 확인하고 있어요'
+})
+
 const connectionLabel = computed(
   () =>
     ({
@@ -106,17 +120,12 @@ function scopeLabel(scopeKey: string): string {
     </p>
     <template v-else-if="detail.data.value">
       <div class="cover-run-monitor__summary">
+        <span class="cover-run-monitor__avatar" aria-hidden="true"><AppIcon name="sparkle" /></span>
         <div>
-          <strong>
-            {{
-              detail.data.value.workflowType === 'COVER_LETTER_GENERATION'
-                ? 'AI 초안 생성'
-                : '답변 검증'
-            }}
-          </strong>
+          <strong>{{ runHeadline }}</strong>
           <span>{{ STATUS_LABELS[detail.data.value.status] }}</span>
         </div>
-        <strong>{{ detail.data.value.progressPercent }}%</strong>
+        <strong class="cover-run-monitor__percent">{{ detail.data.value.progressPercent }}%</strong>
       </div>
       <progress
         class="progress-track"
@@ -175,18 +184,45 @@ function scopeLabel(scopeKey: string): string {
 .cover-run-monitor {
   display: grid;
   gap: var(--space-3);
-  border: 1px solid var(--color-brand-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-brand-soft);
-  padding: var(--space-4);
+  padding: clamp(var(--space-4), 2vw, var(--space-5));
 }
 
-.cover-run-monitor__summary,
-.cover-run-monitor__summary > div {
-  display: flex;
+.cover-run-monitor__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
+}
+
+.cover-run-monitor__summary > div {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cover-run-monitor__summary strong {
+  font-weight: 750;
+}
+
+.cover-run-monitor__avatar {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-brand);
+}
+
+.cover-run-monitor__avatar :deep(.icon) {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.cover-run-monitor__percent {
+  font-variant-numeric: tabular-nums;
 }
 
 .cover-run-monitor__summary > div span,
@@ -203,9 +239,14 @@ function scopeLabel(scopeKey: string): string {
 }
 
 .cover-run-monitor__partial > div {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   padding: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.cover-run-monitor__partial h4 {
+  font-weight: 750;
 }
 
 .cover-run-monitor__partial ul {
@@ -225,6 +266,14 @@ function scopeLabel(scopeKey: string): string {
 @media (max-width: 40rem) {
   .cover-run-monitor__partial {
     grid-template-columns: 1fr;
+  }
+
+  .cover-run-monitor__summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .cover-run-monitor__percent {
+    grid-column: 2;
   }
 
   .cover-run-monitor .button {
