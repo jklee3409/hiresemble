@@ -7,6 +7,21 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-05] Session Summary (공고 기간 반기 label 색상 보정)
+
+- What was done:
+  - 공고 기간 filter의 `상반기`, `하반기` label에서 brand 색상을 제거하고 기본 text 색상을 적용했다.
+- Key decisions:
+  - 반기 label은 큰 글자와 800 굵기만으로 강조하고 별도 강조 색상은 사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `corepack pnpm check`
+  - `corepack pnpm exec prettier --check src/pages/JobListPage.vue progress.md src/pages/progress.md`
+  - `git diff --check`
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 기간 menu 밀도·정렬 보정)
 
 - What was done:

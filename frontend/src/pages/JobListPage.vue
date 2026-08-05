@@ -583,7 +583,7 @@ function currentSeoulDate(): string {
 }
 
 .period-select__option-label strong {
-  color: var(--color-brand-strong);
+  color: var(--color-text);
   font-size: var(--font-size-lg);
   font-weight: 800;
 }

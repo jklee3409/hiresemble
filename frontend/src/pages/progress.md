@@ -4,6 +4,21 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-05] Session Summary (공고 기간 반기 label 색상 보정)
+
+- What was done:
+  - `JobListPage` 기간 filter의 `상반기`, `하반기` label에서 brand 색상을 제거했다.
+- Key decisions:
+  - 기본 text 색상을 사용하면서 기존 글자 크기와 800 굵기는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `corepack pnpm check`
+  - `corepack pnpm exec prettier --check src/pages/JobListPage.vue progress.md src/pages/progress.md`
+  - `git diff --check`
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 기간 dropdown compact 보정)
 
 - What was done:
