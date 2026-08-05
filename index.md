@@ -16,7 +16,7 @@
 | [`docs/`](docs/)               | 제품 명세, 전체 구현 설계와 에이전트 세부 규칙   |
 | [`compose.yaml`](compose.yaml) | PostgreSQL/pgvector, MinIO, 선택적 Mailpit 구성  |
 | [`.env.example`](.env.example) | 로컬 환경 변수의 안전한 예시                     |
-| [`README.md`](README.md)       | 개발 환경 실행과 검증 안내                       |
+| [`README.md`](README.md)       | 서비스 소개, 개발 환경 실행과 검증 안내          |
 | [`progress.md`](progress.md)   | 프로젝트 전체 진행 상황과 검증 이력              |
 
 ## 구성 요소 관계

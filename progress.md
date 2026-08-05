@@ -15,6 +15,41 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (자기소개서 생성·검증 작성 품질 v2)
+
+- What was done:
+  - 신규 자기소개서 생성·별도 검증 접수를 versioned v2 workflow로 전환하고, 문항 전략·bounded 근거 배분·current answer revision·형제 답변 중복 Context·공통 작성 품질 rubric을 typed strict output 계약에 반영했다.
+  - 기존 generation/verification v1 definition·prompt·executable contribution은 durable Run 재개용 non-canonical 계약으로 보존했다.
+- Key decisions:
+  - 공고와 현재 VERIFIED evidence만 사용하고 기업 유형·최신 사업을 추론하지 않는다. ACTIVITY도 동일 owner/version/allowlist 검증을 거치는 정상 근거로 취급한다.
+  - 전체 `WAITING_USER` 보완·resume UI 계약이 없어 정보 부족은 기존 문항별 safe failure로 유지하고 backend-only 상태는 추가하지 않았다.
+- Issues encountered:
+  - P7 Browser E2E는 기존 Fake가 문서 evidence v2 schema와 한국어 evidence category 정책을 따라가지 못해 두 번 모두 자기소개서 단계 전 문서 근거 추출에서 실패했다. schema alias와 category fixture는 보정했으나 재검증 상한에 따라 최종 fixture는 미재실행이다.
+- Validation:
+  - `backend/.\gradlew.bat check` 최종 성공: 79 suites/549 tests. strict schema compatibility, v1/v2 prompt registry, generation·verification v2 Context 테스트가 포함된다.
+  - `backend/.\gradlew.bat p7BrowserE2eTest` 2회 실패(문서 fixture 선행 오류), 실제 OpenAI·Tavily Provider 호출 0회. OpenAPI는 기존 94 operations/69 paths, migration은 V22 유지다.
+- Next steps:
+  - 보정된 P7 document fixture부터 network-disabled E2E를 다시 실행해 v2 cover-letter 수직 경로까지 확인한다.
+  - 사용자 승인형 계획 UI와 근거 부족 보완/resume lifecycle은 별도 공개 계약 작업으로 설계한다.
+
+## [2026-08-05] Session Summary (README 서비스 소개 재작성과 화면 캡처 추가)
+
+- What was done:
+  - 루트 `README.md`를 P5 기준의 개발 환경 안내에서 현재 구현(P1~P8 수직 흐름, P8.5 provider 연결) 기준의 서비스 소개 문서로 재작성했다.
+  - 기능별 실제 화면 캡처 15종을 `docs/assets/`에 추가하고 README 각 기능 절에 배치했다. `docs/assets/index.md`, `docs/assets/progress.md`를 생성하고 `docs/index.md`에 연결했다.
+- Key decisions:
+  - 캡처는 실제 사용자·운영 데이터와 유료 Provider 호출 없이, Vite 개발 서버와 Chromium에서 `/api/v1/**`를 가로챈 결정론적 예시 fixture로 생성한다.
+  - 1440px 폭과 device scale factor 2를 공통으로 두고 긴 화면만 viewport 높이·scroll 위치를 조정한다.
+  - README의 구현 범위 서술은 `docs/spec/page.md`의 route 구현 상태표와 각 `progress.md`를 근거로 하고, 미구현 범위(P8.6~P8.9-A, P9, P10-A)를 명시한다.
+- Issues encountered:
+  - 로컬 기본 Node가 20.18.0이라 `corepack pnpm`으로는 실행할 수 없어 `node_modules`의 Vite와 Playwright를 직접 실행해 캡처했다. 이 때문에 `pnpm check`는 이번 작업에서 실행하지 않았다.
+  - 초기 fixture 값이 실제 Zod 계약(`deadlineSource`, `outdatedReasons`, `automaticAnalysis.state`, evidence `sourceType`, 면접 `questionType`, Dashboard `primaryEducation`)과 어긋나 오류 화면이 캡처돼 계약 값으로 보정 후 재캡처했다.
+- Validation:
+  - 캡처된 15개 PNG를 직접 확인해 오류 배너 없이 의도한 화면이 렌더링됐는지 검증했다.
+  - 애플리케이션 코드는 변경하지 않았으므로 backend/frontend 표준 검증은 실행하지 않았다.
+- Next steps:
+  - Node 22 이상 환경에서 문서 변경분에 대한 `corepack pnpm exec prettier --check` 실행.
+
 ## [2026-08-05] Session Summary (공고 기간 filter 좁은 폭 보정)
 
 - What was done:

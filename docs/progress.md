@@ -4,6 +4,19 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-05] Session Summary (README 서비스 소개 재작성용 화면 자산 영역 추가)
+
+- What was done:
+  - `docs/assets/`를 신설해 루트 README 서비스 소개에 사용할 실제 화면 캡처 15종과 추적 문서를 관리하도록 했고, `docs/index.md`의 하위 디렉터리 표에 반영했다.
+- Key decisions:
+  - 문서 전용 정적 자산만 두고 자동 생성 test artifact는 옮기지 않는다. 캡처는 실제 사용자·운영 데이터 없이 결정론적 fixture로만 생성한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 생성한 캡처와 README 링크 경로 일치를 직접 확인했다.
+- Next steps:
+  - 화면 계약이 바뀌면 캡처와 README 설명을 함께 갱신한다.
+
 ## [2026-08-05] Session Summary (공고 반기·기간 필터 명세 동기화)
 
 - What was done:
