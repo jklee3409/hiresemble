@@ -1,3 +1,4 @@
+import '@fontsource-variable/noto-sans-kr/wght.css'
 import './styles/main.css'
 
 import { VueQueryPlugin } from '@tanstack/vue-query'

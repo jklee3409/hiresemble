@@ -543,10 +543,10 @@ function period(item: ActivityDto): string {
   align-items: flex-start;
   gap: 0.875rem;
   margin-top: 1.25rem;
-  border: 1px solid var(--color-brand-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-brand-soft);
-  padding: 1rem;
+  padding: 1rem 1.125rem;
 }
 .material-choice span {
   display: grid;

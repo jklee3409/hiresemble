@@ -98,12 +98,14 @@ function changeSection(event: Event): void {
   position: sticky;
   top: calc(4.5rem + var(--space-5));
   align-self: start;
-  border-right: 1px solid var(--color-border);
-  padding-right: var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-4) var(--space-3);
 }
 
 .profile-outline__intro {
-  padding: 0 var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-3) var(--space-5);
 }
 
 .profile-outline__eyebrow {
@@ -132,37 +134,34 @@ function changeSection(event: Event): void {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
-  border-left: 2px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   color: var(--color-muted-strong);
   padding: var(--space-2) var(--space-3);
   text-decoration: none;
   transition:
-    border-color var(--motion-fast),
     background-color var(--motion-fast),
     color var(--motion-fast),
     transform var(--motion-fast);
 }
 
 .profile-outline__link:hover {
-  background: var(--color-surface-subtle);
+  background: var(--color-fill);
   color: var(--color-ink);
 }
 
 .profile-outline__link[aria-current='page'] {
-  border-left-color: var(--color-brand);
   background: var(--color-brand-soft);
   color: var(--hs-blue-800);
 }
 
 .profile-outline__icon {
   display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.875rem;
+  height: 1.875rem;
   place-items: center;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   color: var(--color-muted);
-  background: var(--color-neutral-soft);
+  background: var(--color-fill);
   transition:
     color var(--motion-fast),
     background-color var(--motion-fast);
@@ -200,8 +199,9 @@ function changeSection(event: Event): void {
 @media (max-width: 63.99rem) {
   .profile-outline {
     position: static;
-    border-right: 0;
-    padding-right: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
   }
 
   .profile-outline__intro,

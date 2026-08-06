@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import '@fontsource-variable/noto-sans-kr/wght.css'
 
 import { STATUS_LABELS, WORKFLOW_LABELS } from '@/features/agent-runs/presentation'
 import { useAgentRunListQuery } from '@/features/agent-runs/queries'
@@ -1329,11 +1328,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   position: sticky;
   top: calc(var(--global-header-height) + 1rem);
   grid-column: 3;
-  padding: 0.85rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-surface) 96%, var(--hs-blue-50));
-  box-shadow: var(--shadow-xs);
+  padding: 0.75rem;
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
 }
 
 .dashboard-toc > p {
@@ -1355,8 +1354,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   min-height: 2.45rem;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.6rem;
-  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-pill);
   color: var(--color-muted-strong);
   font-size: 0.78rem;
   font-weight: 720;
@@ -1398,12 +1397,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   max-width: 38rem;
 }
 .section-kicker {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.4rem;
   color: var(--color-primary);
   font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: 780;
+  letter-spacing: 0.01em;
 }
 .dashboard h2,
 .dashboard h3,
@@ -1412,10 +1410,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .dashboard :deep(.page-header h1),
 .dashboard h2 {
-  font-family:
-    'Noto Sans KR Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  font-weight: 750;
-  letter-spacing: -0.022em;
+  font-family: var(--font-display);
+  font-weight: 780;
+  letter-spacing: -0.032em;
   text-wrap: balance;
 }
 
@@ -1424,17 +1421,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   grid-template-columns: auto 1fr auto;
   gap: 1rem;
   align-items: center;
-  padding: 1rem 1.125rem;
-  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, var(--color-border));
+  padding: 1.125rem 1.25rem;
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--color-danger-soft);
+  box-shadow: inset 0 0 0 1px var(--color-danger-border);
 }
 .dashboard-error__icon {
   display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   place-items: center;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   color: var(--color-danger);
   background: var(--color-surface);
 }
@@ -1465,19 +1463,19 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .dashboard-section,
 .workspace-note,
 .guide-section {
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: var(--radius-xl);
   background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-panel);
 }
 .career-card {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.25rem, 2.5vw, 2rem);
+  padding: clamp(1.5rem, 2.5vw, 2rem);
   color: white;
   border: 0;
   background: linear-gradient(145deg, var(--hs-blue-900) 0%, var(--hs-blue-700) 58%, #3157ff 100%);
-  box-shadow: 0 24px 56px rgb(22 58 170 / 20%);
+  box-shadow: 0 18px 44px -18px rgb(22 58 170 / 55%);
 }
 .career-card::before,
 .career-card::after {
@@ -1515,10 +1513,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: 3.25rem;
   height: 3.25rem;
   place-items: center;
-  border: 1px solid rgb(255 255 255 / 28%);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 13%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 16%);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 16%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%);
 }
 .career-card__person :deep(.icon) {
   width: 1.8rem;
@@ -1555,16 +1553,16 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   align-items: center;
   margin-top: 1.75rem;
   padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 15%);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 8%);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 10%);
 }
 .career-card__role-icon {
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
   place-items: center;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   color: var(--hs-blue-100);
   background: rgb(255 255 255 / 10%);
 }
@@ -1723,9 +1721,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: 2.75rem;
   height: 2.75rem;
   place-items: center;
-  border-radius: 0.9rem;
-  color: var(--color-primary);
-  background: var(--hs-blue-100);
+  border-radius: var(--radius-md);
+  color: white;
+  background: var(--color-brand);
+  box-shadow: var(--shadow-brand);
 }
 .priority-card h2 {
   margin: 0;
@@ -1749,19 +1748,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: 0.75rem;
   align-items: center;
   min-height: 5rem;
-  padding: 0.85rem 0.95rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   transition:
-    border-color 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
 }
 .task-list a:hover {
-  border-color: var(--hs-blue-300);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
 }
 .task-item__order {
   color: var(--color-subtle);
@@ -1773,7 +1771,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: 2.35rem;
   height: 2.35rem;
   place-items: center;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--hs-blue-50);
 }
@@ -1829,26 +1827,26 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   justify-items: center;
   gap: 0.4rem;
   padding: 0.6rem 0.4rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.85rem;
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   color: var(--color-ink-soft);
   font-size: 0.75rem;
   font-weight: 750;
   text-align: center;
   text-decoration: none;
   transition:
-    border-color var(--motion-base),
     color var(--motion-base),
     transform var(--motion-base),
     box-shadow var(--motion-base);
 }
 .quick-actions a > span {
   display: grid;
-  width: 1.95rem;
-  height: 1.95rem;
+  width: 2.1rem;
+  height: 2.1rem;
   place-items: center;
-  border-radius: 0.6rem;
+  border-radius: var(--radius-sm);
   color: var(--color-primary);
   background: var(--hs-blue-50);
   transition: background-color var(--motion-base);
@@ -1858,9 +1856,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   height: 1rem;
 }
 .quick-actions a:hover {
-  border-color: var(--hs-blue-300);
   color: var(--color-brand-ink);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-lift);
   transform: translateY(-2px);
 }
 .quick-actions a:hover > span {
@@ -1919,14 +1916,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: 0.8rem;
   align-items: center;
   min-height: 6.75rem;
-  padding: 1rem;
+  padding: 1.125rem;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   transition:
-    border-color var(--motion-base),
     transform var(--motion-base),
     box-shadow var(--motion-base);
 }
@@ -1944,7 +1940,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .summary-card:hover,
 .summary-card:focus-visible {
-  border-color: var(--hs-blue-300);
   box-shadow: var(--shadow-lift);
   transform: translateY(-3px);
 }
@@ -1960,7 +1955,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .summary-card--primary {
   color: white;
-  border-color: var(--hs-blue-700);
   background:
     radial-gradient(circle at 88% 12%, rgb(255 255 255 / 16%), transparent 46%),
     linear-gradient(145deg, var(--hs-blue-800), var(--hs-blue-600));
@@ -1968,10 +1962,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .summary-card__icon {
   display: grid;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   place-items: center;
-  border-radius: 0.82rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--hs-blue-50);
   transition:
@@ -2061,9 +2055,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .deadline-section {
   overflow: hidden;
   padding: clamp(1.25rem, 2.8vw, 2rem);
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    linear-gradient(135deg, var(--hs-blue-100), var(--color-border), var(--hs-blue-50)) border-box;
+  background: var(--color-surface);
 }
 .deadline-section__heading {
   align-items: center;
@@ -2074,9 +2066,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   align-items: center;
   min-width: 9.5rem;
   padding: 0.7rem 0.9rem;
-  border: 1px solid var(--hs-blue-100);
-  border-radius: 1rem;
-  background: linear-gradient(135deg, var(--hs-blue-50), #fafbff);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--hs-blue-50);
 }
 .deadline-section__summary > span {
   display: grid;
@@ -2084,7 +2076,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   height: 2.35rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
@@ -2118,7 +2110,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   place-items: center;
   padding: 0 0.7rem;
   border: 0;
-  border-radius: 0.62rem;
+  border-radius: var(--radius-pill);
   color: var(--color-ink);
   background: transparent;
   transition:
@@ -2133,10 +2125,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .calendar-controls__step {
   display: inline-flex;
-  padding: 0.2rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.82rem;
-  background: var(--color-canvas);
+  padding: 0.25rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
 }
 .calendar-controls__step button + button {
   margin-left: 0.1rem;
@@ -2152,7 +2144,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   padding: 1rem;
   border-radius: var(--radius-lg);
   color: var(--color-muted);
-  background: var(--color-canvas);
+  background: var(--color-fill);
 }
 .calendar-state--error {
   color: var(--color-danger);
@@ -2166,11 +2158,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .calendar-card {
   min-width: 0;
-  padding: clamp(0.85rem, 1.6vw, 1.15rem);
-  border: 1px solid #dfe4ef;
-  border-radius: 1.2rem;
+  padding: clamp(0.85rem, 1.6vw, 1.25rem);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
-  box-shadow: 0 10px 30px rgb(32 46 120 / 6%);
+  box-shadow: var(--shadow-sm);
 }
 .calendar-card__toolbar {
   display: flex;
@@ -2192,7 +2184,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   height: 2.5rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--hs-blue-50);
 }
@@ -2224,9 +2216,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .calendar-weekdays {
   margin-bottom: 0.35rem;
   padding: 0.22rem 0;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  background: var(--color-canvas);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
 }
 .calendar-weekdays span {
   padding: 0.3rem 0.2rem;
@@ -2250,20 +2242,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   justify-items: start;
   overflow: hidden;
   padding: 0.48rem;
-  border: 1px solid #edf0f6;
-  border-radius: 0.72rem;
+  border: 0;
+  border-radius: var(--radius-md);
   color: var(--color-ink);
   background: var(--color-surface);
   transition:
-    border-color 160ms ease,
     background-color 160ms ease,
     box-shadow 160ms ease;
 }
 .calendar-day:hover {
   z-index: 1;
-  border-color: var(--hs-blue-200);
-  background: #f8faff;
-  box-shadow: inset 0 0 0 1px rgb(49 87 255 / 8%);
+  background: var(--hs-blue-50);
+  box-shadow: var(--shadow-xs);
 }
 .calendar-day:focus-visible {
   z-index: 2;
@@ -2272,10 +2262,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .calendar-day > span {
   display: grid;
-  min-width: 1.65rem;
-  height: 1.65rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
   place-items: center;
-  border-radius: 0.52rem;
+  border-radius: var(--radius-pill);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -2286,7 +2276,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   justify-content: center;
   margin-top: auto;
   padding: 0.14rem 0.4rem;
-  border: 1px solid var(--hs-blue-100);
+  border: 0;
   border-radius: 999px;
   color: var(--color-primary);
   background: var(--hs-blue-50);
@@ -2314,28 +2304,23 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-weight: 800;
 }
 .calendar-day--has-deadline {
-  border-color: var(--hs-blue-100);
-  background: #fbfcff;
+  background: var(--hs-blue-50);
 }
 .calendar-day--urgent,
 .calendar-day--today.calendar-day--has-deadline {
-  border-color: var(--color-danger-border);
-  background: #fffaf9;
+  background: var(--color-danger-soft);
 }
 .calendar-day--urgent > strong,
 .calendar-day--today.calendar-day--has-deadline > strong {
-  border-color: var(--color-danger-border);
   color: var(--color-danger);
-  background: var(--color-danger-soft);
+  background: var(--color-surface);
 }
 .calendar-day--soon {
-  border-color: var(--color-warning-border);
-  background: #fffdf6;
+  background: var(--color-warning-soft);
 }
 .calendar-day--soon > strong {
-  border-color: var(--color-warning-border);
   color: var(--color-warning);
-  background: var(--color-warning-soft);
+  background: var(--color-surface);
 }
 .calendar-day--passed {
   opacity: 0.72;
@@ -2376,13 +2361,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--hs-blue-200);
 }
 .calendar-day--selected {
-  border-color: var(--hs-blue-400);
-  background: linear-gradient(145deg, var(--hs-blue-50), #f8faff);
-  box-shadow: inset 0 0 0 1px var(--hs-blue-300);
+  background: var(--hs-blue-50);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 .calendar-day--selected > strong {
   color: white;
-  border-color: var(--color-primary);
   background: var(--color-primary);
 }
 .calendar-day--sunday > span {
@@ -2398,15 +2381,15 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .calendar-day--blank {
   display: block;
   min-height: 4.35rem;
-  border-color: transparent;
-  background: var(--color-canvas);
-  opacity: 0.55;
+  background: var(--color-fill);
+  opacity: 0.5;
 }
 .deadline-detail {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
+  padding: 1.125rem;
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 .deadline-detail > header {
   display: flex;
@@ -2446,10 +2429,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   gap: 0.2rem;
   padding: 0.85rem 0.85rem 0.85rem 1.1rem;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 0.85rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
   transition:
-    border-color var(--motion-base),
+    background-color var(--motion-base),
     box-shadow var(--motion-base);
 }
 .deadline-items li::before {
@@ -2462,8 +2446,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   content: '';
 }
 .deadline-items li:hover {
-  border-color: var(--hs-blue-300);
-  box-shadow: var(--shadow-xs);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 .deadline-items li[data-tone='today']::before,
 .deadline-items li[data-tone='urgent']::before {
@@ -2582,8 +2566,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.85rem;
   align-items: center;
-  padding: 0.8rem 0.55rem;
-  border-radius: 0.75rem;
+  padding: 0.8rem 0.75rem;
+  border-radius: var(--radius-md);
   transition: background-color var(--motion-base);
 }
 .activity-list a:hover {
@@ -2591,11 +2575,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .activity-list__icon {
   display: grid;
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 2.4rem;
+  height: 2.4rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.7rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--hs-blue-50);
   transition:
@@ -2668,9 +2652,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   height: 3.25rem;
   place-items: center;
   margin-bottom: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 10%);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 14%);
 }
 .workspace-note .section-kicker {
   color: var(--hs-blue-100);
@@ -2700,10 +2684,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
-  padding: 1rem;
-  border-radius: 0.85rem;
+  padding: 1.125rem;
+  border-radius: var(--radius-lg);
   color: var(--color-muted);
-  background: var(--color-canvas);
+  background: var(--color-fill);
 }
 .compact-empty strong {
   color: var(--color-ink);
@@ -2732,15 +2716,15 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   min-height: 16rem;
   align-content: start;
   justify-items: start;
-  padding: 1rem;
+  padding: 1.125rem;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
+  border: 0;
+  border-radius: var(--radius-lg);
   color: var(--color-ink);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   text-align: left;
   transition:
-    border-color 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
 }
@@ -2757,8 +2741,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   transition: transform var(--motion-slow) var(--ease-emphasized);
 }
 .guide-card:hover {
-  border-color: var(--hs-blue-300);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lift);
   transform: translateY(-3px);
 }
 .guide-card:hover::before {
@@ -2791,11 +2774,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .guide-card__icon {
   display: grid;
-  width: 2.65rem;
-  height: 2.65rem;
+  width: 2.75rem;
+  height: 2.75rem;
   place-items: center;
   margin-bottom: 1.2rem;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   background: var(--hs-blue-50);
 }
@@ -2845,8 +2828,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: min(100%, 46rem);
   max-height: min(48rem, calc(100dvh - 2rem));
   overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 1.5rem;
+  border: 0;
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: 0 34px 100px rgb(8 18 48 / 44%);
 }
@@ -2883,9 +2866,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   height: 2.5rem;
   place-items: center;
   border: 0;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-pill);
   color: var(--color-ink);
-  background: var(--color-canvas);
+  background: var(--color-fill);
 }
 .guide-modal__body {
   padding: 0;
@@ -3227,7 +3210,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   }
   .guide-modal {
     max-height: 92dvh;
-    border-radius: 1.25rem 1.25rem 0 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   }
   .guide-modal__hero {
     padding: 1.5rem 1.25rem;

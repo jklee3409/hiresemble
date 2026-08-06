@@ -4,11 +4,30 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (주요 화면 soft surface 적용)
+
+- What was done:
+  - Dashboard: career/priority/deadline/activity/guide 카드에서 외곽 테두리를 없애고 `--radius-xl` + `--shadow-panel`로 띄웠다. 캘린더는 칸 테두리를 없애고 마감 tone을 채움면으로, 선택 날짜를 inset ring으로 표현했다. 월 이동 control, 캘린더 요일 줄, 바로가기 목록을 알약 형태로 정리했다.
+  - 이력서·자료: `DocumentListPage`의 dropzone을 큰 점선 사각형과 가운데 떠 있는 원형 아이콘(호버 시 확대)으로 바꾸고, 선택한 파일 카드를 아이콘 tile + 그림자 카드로 다시 그렸다. `DocumentDetailPage`의 상태 상자와 본문 미리보기를 채움면으로 바꿨다.
+  - 공고: `JobNewPage`의 단계 카드를 그림자 카드로 바꾸고 1단계에만 brand 띠와 채워진 번호 tile을 남겼다. `JobListPage`의 tab 묶음·기간 선택 trigger를 알약으로, dropdown menu를 무테두리 부동 panel로 바꿨다.
+  - 자기소개서: 목록 카드에 hover elevation을 주고, 편집 화면의 소재 선택 panel과 TipTap editor 외곽을 무테두리 + 큰 모서리로 정리했다.
+  - 그 외 Guide, Interview, AgentRun, Onboarding, Profile 화면의 카드·경고 패널·입력을 같은 규칙(외곽 테두리 제거, 경고류는 inset ring)으로 맞췄다.
+  - `.data-list`가 이제 카드 사이에 간격을 두므로 `StructuredProfilePage`의 경력 timeline rail을 간격만큼 연장해 끊기지 않게 했다.
+- Key decisions:
+  - 마크업과 class 이름은 유지하고 style만 바꿔 기존 단위·컴포넌트 테스트 selector를 보존했다.
+  - 이미 채움면 체계로 만들어져 있던 공고 분석 화면(`JobAnalysisPage`)은 내부 구분선 위주라 구조를 건드리지 않고 전역 token 변경만 반영되게 두었다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build` 성공, `prettier --check` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (완료 배너 숨김·소재 펼침 영역·작성 도움 높이)
 
 - What was done:
-  - 성공으로 끝난 AI 작업의 완료 배너를 편집 화면에서 제거했다. 진행 중과 실패만 한 줄로 노출한다.
-  - 편집기 아래에 `답변에 사용할 소재` button과 겹쳐 펼쳐지는 선택 영역을 추가했다. 열려도 아래 내용이 밀리지 않고 바깥 클릭·Escape·문항 이동으로 닫힌다.
+  - 끝난 AI 작업의 상태 bar를 편집 화면에서 제거했다. 진행 중일 때만 한 줄로 노출하고 실패 결과는 toast로 알린다. 결과 알림은 이 화면에서 진행을 지켜본 작업에만 띄운다.
+  - 상단 주요 행동 button(`AI 초안 만들기`·`AI 검토 받기` 등) 바로 아래에 `답변에 사용할 소재` button과 겹쳐 펼쳐지는 선택 영역을 추가했다. 열려도 아래 내용이 밀리지 않고 바깥 클릭·Escape·문항 이동으로 닫힌다.
   - 우측 작성 도움에서 소재 tab을 없애고 `공고 요구사항`·`AI 검토 결과`만 남겼으며, 열 높이를 편집 영역과 같게 맞춰 아래로 더 내려가지 않게 했다.
 - Key decisions:
   - 작성 도움 열은 내용을 흐름에서 빼고 `align-self: stretch`로 채워 grid 행 높이를 늘리지 않는다.

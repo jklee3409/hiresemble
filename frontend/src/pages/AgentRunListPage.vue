@@ -442,10 +442,10 @@ async function removeSelected(): Promise<void> {
   cursor: pointer;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }

@@ -5,6 +5,20 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-06] Session Summary (공용 UI 표면 정리)
+
+- What was done:
+  - `AppNotifications`의 toast를 무테두리 + 큰 모서리로 바꿨다.
+  - `PageHeader`, `StatePanel`, `StatusBadge`, `PaginationNav`는 마크업을 바꾸지 않고 전역 `main.css`의 새 표면 규칙(알약 pagination, 그림자 state panel, 무테두리 badge, pill eyebrow)을 그대로 따르게 했다.
+- Key decisions:
+  - 공용 component의 props와 DOM 구조를 유지해 `uiComponents.test.ts`의 기대를 그대로 만족시켰다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build` 성공, `prettier --check` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Dashboard용 자체 제작 icon 8종 추가)
 
 - What was done:

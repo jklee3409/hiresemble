@@ -93,8 +93,9 @@ function reapply(): void {
 <style scoped>
 .conflict-panel {
   overflow: hidden;
-  border: 1px solid #dfbf69;
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px #e6cd8a;
   background: #fffaf0;
 }
 

@@ -716,9 +716,9 @@ async function retryLoad(): Promise<void> {
   height: 2rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--color-border-strong);
+  border: 0;
   border-radius: 999px;
-  background: var(--color-surface);
+  background: var(--color-fill-strong);
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 750;
@@ -797,9 +797,9 @@ async function retryLoad(): Promise<void> {
   display: grid;
   gap: 1rem;
   margin: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   padding: 1rem;
 }
 
@@ -833,9 +833,9 @@ async function retryLoad(): Promise<void> {
 .onboarding-summary {
   display: grid;
   gap: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   padding: 1rem;
 }
 

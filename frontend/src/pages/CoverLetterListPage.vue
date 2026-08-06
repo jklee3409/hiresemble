@@ -373,11 +373,19 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
 
 .cover-card {
   min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
-  padding: var(--space-5);
+  padding: var(--space-6);
   box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.cover-card:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
 }
 
 .cover-card--archived {

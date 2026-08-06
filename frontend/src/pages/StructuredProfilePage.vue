@@ -1324,9 +1324,9 @@ const resourceLabels: Record<
 .structured-form :deep(textarea) {
   width: 100%;
   margin-top: var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--color-fill);
   color: var(--color-text);
 }
 
@@ -1360,12 +1360,12 @@ const resourceLabels: Record<
 
 /*
  * 경력 timeline rail은 카드 안쪽 아이콘 열 중앙을 지난다.
- * 목록 바깥에 두면 `.data-list`의 overflow에 잘려 반쪽 원으로 보인다.
+ * `.data-list`가 카드 사이에 간격을 두므로 rail을 그 간격만큼 아래로 연장해 끊기지 않게 한다.
  */
 .structured-list--timeline .structured-item::before {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: calc(-1 * var(--space-2));
   left: calc(var(--space-5) + 1.25rem - 1px);
   width: 2px;
   background: var(--color-border);

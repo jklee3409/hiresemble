@@ -629,11 +629,11 @@ function confidenceLabel(evidence: EvidenceDto): string {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-surface), var(--color-neutral-soft));
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
   padding: var(--space-3);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
 }
 
 .evidence-guidance-item {

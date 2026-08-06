@@ -234,17 +234,8 @@ function returnToInput(): void {
 .string-list__input-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0;
+  gap: 0.5rem;
   margin-top: 0.5rem;
-}
-
-.string-list__input-row .control {
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-
-.string-list__input-row .button {
-  border-left: 0;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .string-list__suggestions {
@@ -256,10 +247,10 @@ function returnToInput(): void {
   display: grid;
   gap: 0.125rem;
   margin: 0;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface-raised);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   padding: 0.375rem;
   list-style: none;
 }
@@ -332,9 +323,9 @@ function returnToInput(): void {
   min-height: 2.5rem;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: 999px;
-  background: var(--color-surface);
+  background: var(--color-fill);
   color: var(--color-ink-soft);
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
@@ -342,7 +333,6 @@ function returnToInput(): void {
 }
 
 .string-list__presets > div:last-child > button:hover:not(:disabled) {
-  border-color: var(--color-brand-border);
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
 }
@@ -366,7 +356,7 @@ function returnToInput(): void {
   min-height: 2rem;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid var(--color-brand-border);
+  border: 0;
   border-radius: 999px;
   background: var(--color-brand-soft);
   color: var(--color-brand-ink);
@@ -399,13 +389,6 @@ function returnToInput(): void {
 @media (max-width: 399px) {
   .string-list__input-row {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-
-  .string-list__input-row .control,
-  .string-list__input-row .button {
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
   }
 }
 </style>

@@ -487,11 +487,12 @@ function categoryLabel(value: string): string {
   margin-top: var(--space-4);
 }
 .evidence-card {
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
+  padding: var(--space-5);
+  border: 0;
   border-left: 4px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 .evidence-card--verified {
   border-left-color: var(--color-success);

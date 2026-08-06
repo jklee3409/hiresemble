@@ -429,11 +429,11 @@ async function refreshPage(): Promise<void> {
 }
 
 .section-surface {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-panel);
 }
 
 .section-surface > header,
@@ -514,8 +514,9 @@ async function refreshPage(): Promise<void> {
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
   padding: var(--space-2) var(--space-3);
 }
 

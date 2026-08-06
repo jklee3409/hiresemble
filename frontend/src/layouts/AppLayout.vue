@@ -314,7 +314,9 @@ async function logout(): Promise<void> {
               aria-controls="account-menu"
               @click="toggleAccountMenu"
             >
-              <AppIcon name="profile" />
+              <span class="account-trigger__avatar" aria-hidden="true">
+                <AppIcon name="profile" />
+              </span>
               <span>{{ authStore.currentUser?.displayName || '내 계정' }}</span>
               <span class="account-trigger__chevron" aria-hidden="true">⌄</span>
             </button>
@@ -323,21 +325,55 @@ async function logout(): Promise<void> {
               v-if="accountMenuOpen"
               id="account-menu"
               ref="accountMenu"
-              class="account-menu"
+              class="account-menu menu-panel"
               role="menu"
               aria-label="내 계정"
             >
               <div class="account-menu__identity">
-                <AppIcon name="profile" />
+                <span class="account-menu__avatar" aria-hidden="true">
+                  <AppIcon name="profile" />
+                </span>
                 <span>
                   <strong>{{ authStore.currentUser?.displayName }}</strong>
                   <small>{{ authStore.currentUser?.email }}</small>
                 </span>
               </div>
-              <RouterLink data-account-first role="menuitem" to="/guide">이용 가이드</RouterLink>
-              <RouterLink role="menuitem" to="/agent-runs">AI 작업</RouterLink>
-              <button type="button" role="menuitem" @click="openNicknameModal">닉네임 변경</button>
-              <button type="button" role="menuitem" :disabled="isLoggingOut" @click="logout">
+              <RouterLink
+                data-account-first
+                role="menuitem"
+                class="account-menu__feature"
+                to="/guide"
+              >
+                <AppIcon name="sparkle" />
+                <span>이용 가이드</span>
+                <em>준비 순서</em>
+              </RouterLink>
+              <RouterLink role="menuitem" class="menu-panel__item" to="/profile/basic">
+                <AppIcon name="profile" />
+                내 정보
+              </RouterLink>
+              <RouterLink role="menuitem" class="menu-panel__item" to="/agent-runs">
+                <AppIcon name="runs" />
+                AI 작업
+              </RouterLink>
+              <button
+                type="button"
+                role="menuitem"
+                class="menu-panel__item"
+                @click="openNicknameModal"
+              >
+                <AppIcon name="pen" />
+                닉네임 변경
+              </button>
+              <hr class="menu-panel__divider" aria-hidden="true" />
+              <button
+                type="button"
+                role="menuitem"
+                class="menu-panel__item menu-panel__item--danger"
+                :disabled="isLoggingOut"
+                @click="logout"
+              >
+                <AppIcon name="logout" />
                 {{ isLoggingOut ? '로그아웃 중…' : '로그아웃' }}
               </button>
             </div>
@@ -559,9 +595,11 @@ async function logout(): Promise<void> {
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: 1px solid var(--color-border);
-  background: rgb(255 255 255 / 94%);
-  backdrop-filter: blur(16px);
+  background: rgb(255 255 255 / 88%);
+  box-shadow:
+    0 1px 0 rgb(16 24 40 / 4%),
+    0 10px 30px -22px rgb(16 24 40 / 30%);
+  backdrop-filter: blur(20px) saturate(140%);
 }
 
 .product-header__inner {
@@ -580,49 +618,45 @@ async function logout(): Promise<void> {
   text-decoration: none;
 }
 
+/* 상단 탐색은 알약 tab 묶음으로 읽힌다. 선택된 여정만 흰 알약으로 떠오른다. */
 .desktop-navigation {
   display: none;
   min-width: 0;
-  align-self: stretch;
   align-items: center;
-  justify-content: center;
+  justify-self: center;
   gap: 0.125rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
+  padding: 0.3125rem;
 }
 
 .desktop-navigation__link {
   position: relative;
   display: inline-flex;
-  min-height: 2.75rem;
+  min-height: 2.375rem;
   align-items: center;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   color: var(--color-muted-strong);
-  padding: 0.625rem clamp(0.55rem, 0.85vw, 0.875rem);
+  padding: 0.5rem clamp(0.6rem, 0.9vw, 1rem);
   font-size: 0.875rem;
   font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .desktop-navigation__link:hover {
-  background: var(--color-surface-subtle);
   color: var(--color-ink);
 }
 
 .desktop-navigation__link--active {
-  background: var(--color-brand-soft);
+  background: var(--color-surface);
   color: var(--color-brand-ink);
+  box-shadow: var(--shadow-xs);
   font-weight: 750;
-}
-
-.desktop-navigation__link--active::after {
-  position: absolute;
-  right: 0.75rem;
-  bottom: -0.95rem;
-  left: 0.75rem;
-  height: 2px;
-  border-radius: 999px 999px 0 0;
-  background: var(--color-brand);
-  content: '';
 }
 
 .product-header__actions {
@@ -641,18 +675,38 @@ async function logout(): Promise<void> {
   align-items: center;
   gap: 0.5rem;
   border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
   color: var(--color-ink-soft);
-  padding: 0.5rem 0.625rem;
+  padding: 0.3125rem 0.875rem 0.3125rem 0.3125rem;
   font-size: 0.875rem;
   font-weight: 700;
+  transition:
+    background-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .account-trigger:hover,
 .account-trigger[aria-expanded='true'] {
-  background: var(--color-neutral-soft);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   color: var(--color-ink);
+}
+
+.account-trigger__avatar {
+  display: grid;
+  width: 2.125rem;
+  height: 2.125rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: #ffffff;
+}
+
+.account-trigger__avatar :deep(.icon) {
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 
 .account-trigger__chevron {
@@ -663,42 +717,32 @@ async function logout(): Promise<void> {
 
 .account-menu {
   position: absolute;
-  top: calc(100% + 0.625rem);
+  top: calc(100% + 0.75rem);
   right: 0;
-  display: grid;
-  width: 15rem;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-surface);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
-  padding: 0.5rem;
-}
-
-.account-menu::before {
-  position: absolute;
-  top: -0.4rem;
-  right: 1.25rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-top: 1px solid var(--color-border);
-  border-left: 1px solid var(--color-border);
-  background: var(--color-surface);
-  content: '';
-  transform: rotate(45deg);
+  width: 17.5rem;
 }
 
 .account-menu__identity {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.75rem;
   margin-bottom: 0.375rem;
-  border-bottom: 1px solid var(--color-border);
-  padding: 0.625rem 0.625rem 0.875rem;
+  padding: 0.5rem 0.625rem 0.875rem;
 }
 
-.account-menu__identity span {
+.account-menu__avatar {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
+.account-menu__identity > span {
   min-width: 0;
 }
 
@@ -711,8 +755,9 @@ async function logout(): Promise<void> {
 }
 
 .account-menu__identity strong {
-  color: var(--color-ink);
-  font-size: 0.875rem;
+  color: var(--color-ink-title);
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
 }
 
 .account-menu__identity small {
@@ -721,24 +766,44 @@ async function logout(): Promise<void> {
   font-size: 0.75rem;
 }
 
-.account-menu > a,
-.account-menu > button {
-  min-height: 2.5rem;
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--color-ink-soft);
-  padding: 0.625rem;
+/* 계정 menu의 대표 진입점 한 개만 채워진 brand 행으로 강조한다. */
+.account-menu__feature {
+  display: flex;
+  min-height: 2.875rem;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.25rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(120deg, var(--hs-blue-600), var(--hs-blue-400));
+  box-shadow: var(--shadow-brand);
+  color: #ffffff;
+  padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  text-align: left;
+  font-weight: 750;
   text-decoration: none;
 }
 
-.account-menu > :is(a, button):hover,
-.account-menu > :is(a, button):focus-visible {
-  background: var(--color-neutral-soft);
-  color: var(--color-ink);
+.account-menu__feature:hover {
+  box-shadow: var(--shadow-brand-hover);
+}
+
+.account-menu__feature > span {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.account-menu__feature em {
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 22%);
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.account-menu :deep(.icon) {
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 
 .product-header__error {
@@ -767,21 +832,21 @@ async function logout(): Promise<void> {
   box-shadow: none;
 }
 
+/* 떠 있는 알약 bar. 선택된 여정은 brand 채움면으로 분명히 드러난다. */
 .mobile-bottom-navigation {
   position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  left: max(0.75rem, env(safe-area-inset-left));
   z-index: 35;
   display: grid;
-  min-height: var(--mobile-nav-height);
+  min-height: 3.75rem;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  border-top: 1px solid var(--color-border);
-  background: rgb(255 255 255 / 96%);
-  box-shadow: 0 -8px 24px rgb(22 26 43 / 7%);
-  padding: 0.375rem max(0.25rem, env(safe-area-inset-right))
-    max(0.375rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
-  backdrop-filter: blur(16px);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: var(--shadow-md);
+  padding: 0.375rem 0.375rem;
+  backdrop-filter: blur(20px) saturate(140%);
 }
 
 .mobile-bottom-navigation__item {
@@ -789,9 +854,9 @@ async function logout(): Promise<void> {
   min-width: 0;
   min-height: 3rem;
   place-items: center;
-  gap: 0.125rem;
+  gap: 0.1875rem;
   border: 0;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--color-muted);
   padding: 0.25rem 0.125rem;
@@ -799,6 +864,9 @@ async function logout(): Promise<void> {
   font-weight: 650;
   line-height: 1.2;
   text-decoration: none;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .mobile-bottom-navigation__item .icon {
@@ -806,13 +874,16 @@ async function logout(): Promise<void> {
   height: 1.25rem;
 }
 
-.mobile-bottom-navigation__item:hover,
-.mobile-bottom-navigation__item--active {
-  background: var(--color-brand-soft);
-  color: var(--color-brand-ink);
+.mobile-bottom-navigation__item:hover {
+  background: var(--color-fill);
+  color: var(--color-ink);
 }
 
-.mobile-bottom-navigation__item--active {
+.mobile-bottom-navigation__item--active,
+.mobile-bottom-navigation__item--active:hover {
+  background: var(--color-brand);
+  color: #ffffff;
+  box-shadow: var(--shadow-brand);
   font-weight: 800;
 }
 
@@ -838,10 +909,10 @@ async function logout(): Promise<void> {
   left: 0;
   max-height: min(42rem, calc(100dvh - 2rem));
   overflow-y: auto;
-  border-radius: 1.25rem 1.25rem 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
-  padding: 1rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+  padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
 }
 
 .mobile-more__header,
@@ -878,10 +949,14 @@ async function logout(): Promise<void> {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   color: var(--color-ink-soft);
-  padding: 0.625rem 0.75rem;
+  padding: 0.75rem 0.875rem;
   text-decoration: none;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .mobile-more__links > a:hover,
@@ -939,10 +1014,10 @@ async function logout(): Promise<void> {
   width: min(30rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
-  padding: 1.25rem;
+  padding: 1.5rem;
   transform: translate(-50%, -50%);
 }
 
@@ -986,12 +1061,17 @@ async function logout(): Promise<void> {
     justify-content: space-between;
   }
 
-  .product-header__actions :deep(.progress-drawer-trigger span:not(.status-badge)) {
+  .product-header__actions :deep(.run-progress__trigger-label) {
     display: none;
   }
 
-  .account-trigger span:not(.account-trigger__chevron) {
+  /* 좁은 화면에서는 이름만 감추고 avatar와 chevron은 남긴다. */
+  .account-trigger > span:not(.account-trigger__chevron, .account-trigger__avatar) {
     display: none;
+  }
+
+  .account-trigger {
+    padding-right: 0.5rem;
   }
 
   .workspace-content {
@@ -1039,7 +1119,7 @@ async function logout(): Promise<void> {
     bottom: 0;
     left: 0;
     width: auto;
-    border-radius: 1.25rem 1.25rem 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
     transform: none;
   }

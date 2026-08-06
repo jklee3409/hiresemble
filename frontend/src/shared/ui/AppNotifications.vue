@@ -122,8 +122,8 @@ function onDialogKeydown(event: KeyboardEvent): void {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
   gap: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface-raised);
   padding: 0.875rem 1rem;
   box-shadow: var(--shadow-md);

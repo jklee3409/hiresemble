@@ -243,11 +243,11 @@ async function createCoverLetter(reapply = false): Promise<void> {
 .job-cover-letter__active,
 .job-cover-letter__empty,
 .job-cover-letter__history {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-panel);
 }
 
 .job-cover-letter__active header,

@@ -613,9 +613,9 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
 .upload-panel__steps li {
   min-width: 5.5rem;
-  border-top: 1px solid var(--color-border-strong);
+  border-top: 2px solid var(--color-fill-strong);
   color: var(--color-muted);
-  padding: 0.5rem 1rem 0 0;
+  padding: 0.625rem 1rem 0 0;
 }
 
 .upload-panel__steps span,
@@ -667,19 +667,24 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * 파일 등록면. 점선 사각형 + 가운데 떠 있는 원형 아이콘 한 개로 시선을 모은다.
+ * 안내 문구는 아이콘 아래 한 덩어리로만 둔다.
+ */
 .dropzone {
   position: relative;
   display: flex;
-  min-height: 15rem;
+  min-height: 16rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: var(--space-2);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
+  gap: var(--space-3);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
   background: var(--color-surface-subtle);
   color: var(--color-text-secondary);
+  padding: var(--space-6);
   text-align: center;
   transition:
     border-color var(--motion-fast),
@@ -695,17 +700,34 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
 .dropzone__icon {
   display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
   place-items: center;
   border-radius: 50%;
-  background: var(--color-brand);
-  color: white;
-  font-size: 1.35rem;
+  background: radial-gradient(circle at 50% 35%, #ffffff, var(--hs-blue-100));
+  box-shadow:
+    0 0 0 0.625rem rgb(49 87 255 / 6%),
+    0 12px 24px -10px rgb(49 87 255 / 45%);
+  color: var(--color-brand);
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+
+.dropzone__icon :deep(.icon) {
+  width: 1.75rem;
+  height: 1.75rem;
+  stroke-width: 2;
+}
+
+.dropzone:hover .dropzone__icon,
+.dropzone--active .dropzone__icon {
+  transform: translateY(-2px) scale(1.04);
 }
 
 .dropzone strong {
-  color: var(--color-text);
+  color: var(--color-ink-title);
+  font-size: 1.0625rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }
 
 .dropzone span:last-of-type {
@@ -730,24 +752,26 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin-top: var(--space-3);
-  border: 1px solid var(--color-brand-border);
-  background: var(--color-brand-soft);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   color: var(--color-text-secondary);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-sm);
 }
 
 .selected-file__icon {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
-  background: var(--color-brand);
-  color: white;
+  border-radius: var(--radius-md);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
 }
 
 .selected-file > div {

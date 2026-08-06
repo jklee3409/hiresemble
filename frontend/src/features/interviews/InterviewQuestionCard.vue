@@ -527,10 +527,10 @@ async function refreshFeedbackAfterRun(): Promise<void> {
 <style scoped>
 .interview-question {
   min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
-  padding: var(--space-5);
+  padding: var(--space-6);
   box-shadow: var(--shadow-sm);
 }
 
@@ -644,8 +644,9 @@ async function refreshFeedbackAfterRun(): Promise<void> {
 
 .answer-conflict {
   margin-top: var(--space-4);
-  border: 1px solid var(--color-warning-border);
+  border: 0;
   border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
   background: var(--color-warning-soft);
   padding: var(--space-4);
 }
@@ -692,14 +693,15 @@ async function refreshFeedbackAfterRun(): Promise<void> {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
   padding: var(--space-3);
   cursor: pointer;
 }
 
 .answer-history__item--selected {
-  border-color: var(--color-brand);
+  box-shadow: inset 0 0 0 2px var(--color-brand);
   background: var(--color-brand-soft);
 }
 
@@ -734,8 +736,9 @@ async function refreshFeedbackAfterRun(): Promise<void> {
 }
 
 .feedback-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   padding: var(--space-4);
 }
 

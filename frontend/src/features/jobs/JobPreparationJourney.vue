@@ -124,9 +124,9 @@ const automaticFailure = computed(() => {
   height: 0.75rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--color-border-strong);
+  border: 0;
   border-radius: 50%;
-  background: var(--color-surface-subtle);
+  background: var(--color-border-strong);
   font-size: 0.625rem;
   font-weight: 800;
 }

@@ -84,9 +84,9 @@ const connectionLabel = computed(
 .job-run-monitor {
   margin-top: var(--space-4);
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-subtle);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   font-size: var(--font-size-sm);
 }
 

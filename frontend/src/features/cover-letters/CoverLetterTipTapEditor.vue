@@ -173,8 +173,8 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 .cover-tiptap {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
 }
@@ -195,7 +195,7 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 .cover-tiptap__toolbar button {
   min-height: 2.25rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text-secondary);
   padding: 0.375rem 0.625rem;

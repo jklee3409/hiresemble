@@ -166,9 +166,9 @@ function tone(status: AgentRunStatus) {
   min-height: 2.375rem;
   align-items: center;
   gap: 0.4rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
   color: var(--color-ink-soft);
   padding: 0.4rem 0.5rem 0.4rem 0.625rem;
   font-size: 0.8125rem;
@@ -176,8 +176,7 @@ function tone(status: AgentRunStatus) {
 }
 
 .run-progress__trigger:hover {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-subtle);
+  background: var(--color-fill-strong);
 }
 
 .run-progress__count {
@@ -201,8 +200,8 @@ function tone(status: AgentRunStatus) {
   z-index: 60;
   max-height: calc(100dvh - 5.25rem);
   overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
   animation: run-drawer-enter 240ms cubic-bezier(0.2, 0, 0, 1) both;
@@ -261,16 +260,16 @@ function tone(status: AgentRunStatus) {
 .run-drawer__item {
   display: grid;
   gap: 0.625rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   color: var(--color-ink-soft);
   padding: 0.875rem;
   text-decoration: none;
 }
 
 .run-drawer__item:hover {
-  border-color: var(--color-brand-border);
-  background: var(--color-surface-subtle);
+  background: var(--color-brand-soft);
 }
 
 .run-drawer__item-top,

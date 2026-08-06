@@ -313,14 +313,17 @@ function emptyForm(): JobCreateForm {
 
 .job-create-section {
   padding: clamp(var(--space-5), 3vw, var(--space-7));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
 }
 
+/* 첫 단계만 brand 채움 띠로 시작 지점을 알린다. */
 .job-create-section--primary {
-  border-color: var(--color-brand-border);
-  box-shadow: inset 3px 0 var(--color-brand);
+  box-shadow:
+    inset 4px 0 var(--color-brand),
+    var(--shadow-panel);
 }
 
 .job-create-section__heading {
@@ -368,15 +371,21 @@ function emptyForm(): JobCreateForm {
 
 .job-create-section__index {
   display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: var(--color-brand-soft);
   color: var(--color-brand-strong);
   font-size: var(--font-size-xs);
   font-weight: 800;
+}
+
+.job-create-section--primary .job-create-section__index {
+  background: var(--color-brand);
+  box-shadow: var(--shadow-brand);
+  color: #ffffff;
 }
 
 .job-create-section--optional .job-create-section__index {

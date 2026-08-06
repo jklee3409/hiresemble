@@ -529,9 +529,9 @@ function fileTypeLabel(mimeType: string): string {
   grid-template-columns: 1fr auto;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
 }
 
 .document-status__label {
@@ -583,8 +583,8 @@ function fileTypeLabel(mimeType: string): string {
   max-height: 32rem;
   margin-top: var(--space-4);
   overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface-subtle);
   color: var(--color-text-secondary);
   font-family: var(--font-sans);

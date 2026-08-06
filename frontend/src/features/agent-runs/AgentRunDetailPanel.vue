@@ -348,8 +348,9 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
 
 .run-required-action {
   padding: clamp(var(--space-5), 3vw, var(--space-7));
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
   background: var(--color-warning-soft);
 }
 

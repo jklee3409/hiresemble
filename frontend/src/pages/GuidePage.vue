@@ -140,9 +140,10 @@ const steps = PRODUCT_JOURNEY_STEPS.map((step, index) => ({
   flex: 0 0 auto;
   align-items: center;
   gap: var(--space-2);
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: 999px;
   background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
   color: var(--color-text-secondary);
   padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
@@ -214,8 +215,8 @@ const steps = PRODUCT_JOURNEY_STEPS.map((step, index) => ({
 
 .guide-preview {
   min-height: 14rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   padding: clamp(var(--space-5), 4vw, var(--space-7));
@@ -300,8 +301,9 @@ const steps = PRODUCT_JOURNEY_STEPS.map((step, index) => ({
 
 .guide-preview__editor {
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
 }
 
 .guide-preview__actions b {

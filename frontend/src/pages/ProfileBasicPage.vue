@@ -652,11 +652,11 @@ function emptyForm(): ProfileFormValues {
   justify-content: space-between;
   gap: var(--space-4);
   margin-top: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-3) var(--space-4);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-savebar__status {
@@ -700,8 +700,9 @@ function emptyForm(): ProfileFormValues {
   justify-content: space-between;
   gap: var(--space-3) var(--space-4);
   margin-top: var(--space-5);
-  border: 1px solid var(--color-warning-border);
+  border: 0;
   border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
   background: var(--color-warning-soft);
   color: var(--color-muted-strong);
   padding: var(--space-3) var(--space-4);

@@ -7,14 +7,28 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 69 files/308 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-06] Session Summary (프론트엔드 전면 design 개선)
+
+- What was done:
+  - 전역 design system을 "부드러운 표면"으로 전환하고(`src/styles/main.css`), app shell·Dashboard·이력서와 자료·공고 등록·자기소개서·면접·프로필 화면과 공용 feature component를 같은 규칙으로 맞췄다.
+  - 본문 font를 `main.ts`에서 전역 적용했다. 기존에는 `DashboardPage.vue`만 font를 import해 화면마다 서체가 달랐다.
+- Key decisions:
+  - brand 색과 API·라우팅·컴포넌트 계약은 바꾸지 않고 style만 변경했다. 신규 의존성도 추가하지 않았다.
+- Issues encountered:
+  - 로컬 Node가 20.18.0이라 `corepack pnpm check` 전체(특히 `vitest`, `vue-tsc`)를 실행하지 못했다.
+- Validation:
+  - `node node_modules/vite/bin/vite.js build` 성공, `prettier --check "src/**/*.{vue,css,ts}"` 통과, 실행 중인 dev server에서 렌더와 computed style 확인.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`와 Playwright E2E를 재실행한다.
+
 ## [2026-08-06] Session Summary (완료 배너 숨김과 소재 고르기 분리)
 
 - What was done:
-  - 성공한 AI 작업의 완료 배너를 자기소개서 편집 화면에서 노출하지 않도록 하고 진행 중·실패만 남겼다.
+  - 끝난 AI 작업의 상태 bar를 자기소개서 편집 화면에서 노출하지 않도록 하고 진행 중만 남겼다. 실패는 toast로 알린다.
   - `답변에 사용할 소재`를 편집기 아래 펼침 영역으로 분리하고 작성 도움 tab에서 제거했다.
   - 작성 도움 열 높이를 편집 영역과 동일하게 맞췄다.
 - Key decisions:
-  - 완료 배너만 숨기고 실패·부분 실패는 재시도 경로 때문에 계속 표시한다.
+  - 끝난 작업 bar는 남기지 않고 실패는 toast와 남은 문항 재선택으로 안내한다.
 - Issues encountered:
   - None.
 - Validation:

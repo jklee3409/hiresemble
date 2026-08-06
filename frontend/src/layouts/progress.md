@@ -4,6 +4,23 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-06] Session Summary (app shell 알약 navigation과 계정 dropdown 개편)
+
+- What was done:
+  - `AppLayout.vue` 상단 탐색을 채움면 위 알약 tab 묶음으로 바꾸고 활성 링크 밑줄 표식을 흰 알약 + 그림자로 대체했다.
+  - 계정 trigger에 원형 avatar를 추가하고, 계정 menu를 공용 `.menu-panel` 위에 identity 행, brand gradient 대표 진입점(이용 가이드), 아이콘이 붙은 menu 항목, 구분선, danger tone 로그아웃 순서로 재구성했다. `내 정보` 항목을 추가했다.
+  - mobile bottom navigation을 화면 하단에 떠 있는 둥근 bar로 바꾸고 현재 여정을 brand 채움 알약으로 표시했다.
+  - 좁은 화면에서 계정 이름만 숨기도록 selector를 좁혀 avatar가 함께 사라지던 문제를 막고, 존재하지 않는 class를 가리키던 `.progress-drawer-trigger` 규칙을 실제 `.run-progress__trigger-label`로 고쳤다.
+- Key decisions:
+  - menu 항목 순서와 DOM 종류(link/button)를 유지해 `.account-menu button[role="menuitem"]`을 첫 번째 button으로 찾는 기존 테스트를 깨지 않았다.
+  - bottom navigation 항목 수(4개 링크 + 더보기)는 그대로 두었다. 레퍼런스의 가운데 FAB는 좁은 화면에서 6칸이 되어 터치 영역을 해쳐 도입하지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build` 성공, `prettier --check` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 상세 모바일 tab 문구 축약)
 
 - What was done:

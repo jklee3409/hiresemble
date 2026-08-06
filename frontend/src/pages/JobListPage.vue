@@ -437,16 +437,16 @@ function currentSeoulDate(): string {
   display: inline-flex;
   max-width: 100%;
   overflow-x: auto;
-  padding: 0.2rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  padding: 0.3125rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
 }
 
 .job-tab {
-  min-height: 2.75rem;
+  min-height: 2.5rem;
   padding: 0 var(--space-4);
-  border-radius: calc(var(--radius-sm) - 2px);
+  border-radius: var(--radius-pill);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 700;
@@ -454,12 +454,12 @@ function currentSeoulDate(): string {
 }
 
 .job-tab:hover {
-  background: var(--color-surface-subtle);
   color: var(--color-text);
 }
 
 .job-tab--active {
   background: var(--color-brand);
+  box-shadow: var(--shadow-brand);
   color: white;
 }
 
@@ -499,13 +499,18 @@ function currentSeoulDate(): string {
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-brand-border);
+  padding: 0 var(--space-4);
+  border: 0;
   border-radius: 999px;
-  background: var(--color-brand-soft);
+  background: var(--color-fill);
   color: var(--color-text);
   cursor: pointer;
   list-style: none;
+  transition: background-color var(--motion-fast);
+}
+
+.period-select__summary:hover {
+  background: var(--color-fill-strong);
 }
 
 .period-select__summary::-webkit-details-marker {
@@ -550,10 +555,10 @@ function currentSeoulDate(): string {
   width: min(24rem, calc(100vw - 2rem));
   overflow: hidden;
   padding: var(--space-2) 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-panel);
+  box-shadow: var(--shadow-md);
 }
 
 .period-select__option,

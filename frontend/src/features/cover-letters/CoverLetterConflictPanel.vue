@@ -42,8 +42,9 @@ defineEmits<{ reapply: []; cancel: [] }>()
 .cover-conflict {
   display: grid;
   gap: var(--space-4);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
   background: var(--color-warning-soft);
   padding: clamp(var(--space-4), 2.5vw, var(--space-6));
 }

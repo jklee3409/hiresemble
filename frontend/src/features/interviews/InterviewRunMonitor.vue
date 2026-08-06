@@ -157,8 +157,8 @@ const connectionLabel = computed(
 .interview-run {
   display: grid;
   gap: var(--space-3);
-  border: 1px solid var(--color-brand-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
   background: var(--color-brand-soft);
   padding: var(--space-4);
 }

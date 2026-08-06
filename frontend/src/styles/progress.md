@@ -6,6 +6,25 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-06] Session Summary (soft surface design system 전환)
+
+- What was done:
+  - `main.css`의 시각 언어를 테두리 중심에서 "부드러운 표면"으로 바꿨다. canvas를 `#eef0f6`으로 낮추고 `--radius-*`를 키웠으며, `--shadow-xs|sm|md|panel|lift`를 2겹 그림자로 재정의하고 `--shadow-brand`·`--shadow-brand-hover`, 누락되어 있던 `--radius-xl`, `--font-display`를 추가했다.
+  - `.section-surface`, `.data-card`, `.data-list`, `.filter-toolbar`, `.state-panel`, `.alert`, `.status-badge`, `.pagination`, `.back-link`에서 외곽 1px 테두리를 없애고 그림자 또는 채움면으로 표면을 표현했다.
+  - `.button`을 알약(999px) 형태로 바꾸고 primary에 brand glow를 부여했다. `.control`은 채움면 + 투명 테두리로 시작해 focus에서만 흰 배경과 brand ring으로 올라온다.
+  - 레퍼런스에서 가져온 공용 class `.icon-tile(--sm|lg|neutral|success|warning|danger|solid)`, `.menu-panel`·`.menu-panel__item(--danger)`·`.menu-panel__divider`, `.pill-tabs`·`.pill-tab`을 추가했다.
+- Key decisions:
+  - 기존 brand hue(`#3157ff`)와 token 이름을 모두 유지하고 값만 조정해, token을 쓰는 화면이 자동으로 새 언어를 따르게 했다.
+  - 1px 실선은 카드 외곽이 아니라 카드 내부 구분선에만 허용한다는 규칙을 파일 상단 주석에 남겼다.
+  - `--radius-xl`은 그동안 제품 token이 아니라 Tailwind 기본 theme 값(0.75rem)에 의존하고 있었다. Dashboard가 이 이름을 쓰고 있어 제품 token으로 명시 선언했다.
+  - 본문 font는 이미 의존성에 있던 `@fontsource-variable/noto-sans-kr`를 `main.ts`에서 전역 import하고, 사용자 환경에 있으면 Pretendard가 먼저 잡히도록 stack 앞에 두었다. 신규 의존성은 추가하지 않았다.
+- Issues encountered:
+  - 로컬 Node가 20.18.0이라 `corepack pnpm`(Node 22.13+ 요구)과 `vitest`(jsdom ESM)를 실행할 수 없었다.
+- Validation:
+  - `node node_modules/vite/bin/vite.js build` 성공, `node node_modules/prettier/bin/prettier.cjs --check "src/**/*.{vue,css,ts}"` 통과. 실행 중인 dev server에서 token·button·control의 computed style을 직접 확인했다. `vitest`와 `vue-tsc`는 Node 버전 제약으로 실행하지 못했다.
+- Next steps:
+  - Node 22 이상 환경에서 `corepack pnpm check` 전체를 재실행한다.
+
 ## [2026-08-05] Session Summary (Dashboard 개편용 motion·강조 token 추가)
 
 - What was done:

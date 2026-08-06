@@ -4,6 +4,23 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews feature까지 구현되어 있다.
 
+## [2026-08-06] Session Summary (feature component soft surface 정렬)
+
+- What was done:
+  - `AgentRunProgressDrawer`, `AgentRunDetailPanel`, `InterviewQuestionCard`, `InterviewRunMonitor`, `JobRunMonitor`, `DocumentRunMonitor`, `DocumentEvidencePanel`, `CoverLetterTipTapEditor`, `CoverLetterConflictPanel`, `JobVersionConflictPanel`, `VersionConflictPanel`의 카드 외곽 테두리를 없애고 그림자 또는 채움면으로 바꿨다.
+  - 경고 tone panel은 배경색을 유지한 채 `inset 0 0 0 1px`로 경계를 표현해 다른 카드와 두께가 어긋나지 않게 했다.
+  - `ProfileTabs`의 좌측 outline을 구분선 대신 떠 있는 카드로 바꾸고 항목을 둥근 행으로 정리했다.
+  - `StringListInput`의 입력+추가 버튼 붙임 그룹을 해제했다. 버튼이 알약이 되면서 붙임 처리가 어긋나기 때문이다. 추천 chip과 선택 항목 chip도 무테두리 채움면으로 바꿨다.
+  - 테두리를 없애며 무효가 된 hover `border-color` 규칙은 배경 또는 inset ring으로 대체했다.
+- Key decisions:
+  - 이미 채움면 token을 쓰던 자기소개서 rail·assist panel은 그대로 두었다. assist panel의 밑줄 tab은 레퍼런스의 tab 유형 중 하나라 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build` 성공, `prettier --check` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 interview feature 연결)
 
 - What was done:

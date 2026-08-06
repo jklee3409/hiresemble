@@ -385,11 +385,11 @@ async function refreshDetail(): Promise<void> {
 
 .section-surface {
   min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-panel);
 }
 
 .section-surface > header,
@@ -416,8 +416,9 @@ async function refreshDetail(): Promise<void> {
 }
 
 .research-summary__coverage-warning {
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
   background: var(--color-warning-soft);
   color: var(--color-warning-strong);
   padding: var(--space-3);
@@ -474,8 +475,9 @@ async function refreshDetail(): Promise<void> {
   display: grid;
   min-width: 0;
   gap: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
   padding: var(--space-4);
 }
 
