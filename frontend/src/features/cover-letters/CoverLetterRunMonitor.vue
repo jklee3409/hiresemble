@@ -100,17 +100,12 @@ const runHeadline = computed(() => {
 const failedScopes = computed(() => detail.data.value?.partialResult?.failedScopeKeys ?? [])
 const succeededScopes = computed(() => detail.data.value?.partialResult?.succeededScopeKeys ?? [])
 /*
- * 진행 중이거나 사용자가 손봐야 하는 실패만 보여 준다.
- * 성공으로 끝난 작업의 완료 배너는 화면에 남기지 않고 결과는 답변·검토 상태로 전달한다.
- * 표시하지 않는 동안에도 terminal 통지는 그대로 emit한다.
+ * 진행 중인 작업만 보여 준다. 성공이든 실패든 끝난 작업의 상태 bar는 화면에 남기지 않고
+ * 결과는 답변·검토 상태와 알림으로 전달한다. 표시하지 않는 동안에도 terminal 통지는 emit한다.
  */
 const running = computed(() =>
   ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(detail.data.value?.status ?? ''),
 )
-const needsAttention = computed(() =>
-  ['FAILED', 'CANCELLED', 'INTERRUPTED'].includes(detail.data.value?.status ?? ''),
-)
-const visible = computed(() => running.value || needsAttention.value)
 
 const connectionLabel = computed(
   () =>
@@ -152,9 +147,9 @@ function completedScopePreview(scopeKey: string): string {
       진행 연결이 잠시 끊겼어요. 저장된 답변은 그대로 남아 있어요.
     </p>
     <details
-      v-else-if="visible && detail.data.value"
+      v-else-if="running && detail.data.value"
       class="cover-run-monitor__box"
-      :open="failedScopes.length > 0 || needsAttention"
+      :open="failedScopes.length > 0"
     >
       <summary>
         <span class="cover-run-monitor__avatar" aria-hidden="true"><AppIcon name="sparkle" /></span>

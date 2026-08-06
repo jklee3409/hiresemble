@@ -72,16 +72,21 @@ describe('CoverLetterRunMonitor', () => {
     expect(preview.attributes('title')).toBe(fullQuestion)
   })
 
-  it('shows nothing once the run finished successfully', () => {
+  it.each([
+    ['SUCCEEDED', '초안을 다 썼어요'],
+    ['FAILED', '끝내지 못했어요'],
+    ['CANCELLED', '끝내지 못했어요'],
+    ['INTERRUPTED', '끝내지 못했어요'],
+  ])('shows nothing once the run reached %s', (status, headline) => {
     runMocks.detail.data.value = {
       id: 'run-id',
       workflowType: 'COVER_LETTER_GENERATION',
       resourceType: 'COVER_LETTER',
       resourceId: 'cover-letter-id',
-      status: 'SUCCEEDED',
+      status,
       stateVersion: 3,
-      progressPercent: 100,
-      partialResult: { succeededScopeKeys: ['question-id'], failedScopeKeys: [] },
+      progressPercent: 80,
+      partialResult: { succeededScopeKeys: ['question-id'], failedScopeKeys: ['other-id'] },
     }
     const wrapper = mount(CoverLetterRunMonitor, {
       props: {
@@ -93,7 +98,9 @@ describe('CoverLetterRunMonitor', () => {
     })
 
     expect(wrapper.find('.cover-run-monitor__box').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('초안을 다 썼어요')
+    expect(wrapper.text()).not.toContain(headline)
+    expect(wrapper.text()).not.toContain('80%')
+    // 끝난 사실은 계속 알려야 답변·검토 상태를 다시 불러올 수 있다.
     expect(wrapper.emitted('terminal')).toHaveLength(1)
   })
 })

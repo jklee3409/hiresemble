@@ -4,15 +4,15 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
-## [2026-08-06] Session Summary (완료 배너 제거와 소재 고르기 분리)
+## [2026-08-06] Session Summary (끝난 AI 작업 bar 제거와 소재 고르기 분리)
 
 - What was done:
-  - `CoverLetterRunMonitor.vue`가 진행 중이거나 실패한 run만 표시하도록 했다. 성공으로 끝난 run의 완료 배너와 loading 줄은 더 이상 노출하지 않으며 terminal emit은 그대로 유지한다.
+  - `CoverLetterRunMonitor.vue`가 진행 중인 run만 표시하도록 했다. 성공·실패·취소로 끝난 run의 상태 bar와 loading 줄은 노출하지 않으며 terminal emit은 그대로 유지한다. 실패 결과는 page의 toast로만 알린다.
   - `CoverLetterMaterialPicker.vue`를 추가해 답변에 쓸 소재 선택을 작성 도움에서 분리했다. `CoverLetterAssistPanel.vue`는 `공고 요구사항`·`AI 검토 결과` 두 tab만 남기고 evidence props·event를 제거했다.
   - 작성 도움 본문이 편집 영역 높이 안에서만 스크롤하도록 `height: 100%`와 `overflow-y: auto`를 적용했다.
 - Key decisions:
-  - 성공 배너는 감추되 실패·부분 실패는 재시도 경로가 필요하므로 계속 보여 준다.
-  - 소재 선택은 modal이 아니라 button에 붙어 펼쳐지고 다른 영역 위에 겹친다.
+  - 끝난 작업 bar는 성공·실패 모두 남기지 않고 실패는 toast와 남은 문항 재선택으로 안내한다.
+  - 소재 선택은 modal이 아니라 현재 단계 주요 행동 button에 붙어 펼쳐지고 다른 영역 위에 겹친다.
 - Issues encountered:
   - jsdom은 SFC scoped style을 적용하지 않아 `getComputedStyle`로 겹침을 검증할 수 없어 DOM 구조로 검증했다.
 - Validation:

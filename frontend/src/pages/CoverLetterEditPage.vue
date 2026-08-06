@@ -250,6 +250,8 @@ const conflictReapplying = ref(false)
 const assistTab = ref<AssistTab>('JOB')
 const materialOpen = ref(false)
 const materialAnchor = ref<HTMLElement | null>(null)
+/* 이 화면에서 진행을 지켜본 AI 작업인지. 지난 작업의 결과 알림을 다시 띄우지 않는다. */
+const watchedRun = ref(false)
 const activeSheet = ref<SheetKind>('')
 const assistCollapsed = ref(false)
 
@@ -421,12 +423,9 @@ const selectedQuestionStatus = computed(() =>
     ? null
     : questionWorkStatus(selectedQuestion.value, { dirty: editorDirty.value }),
 )
+/* 이미 답변이 있으면 덮어쓰기가 아니라 새 버전으로 다시 쓴다는 뜻을 문구로 구분한다. */
 const canRegenerate = computed(
-  () =>
-    !readOnly.value &&
-    selectedQuestion.value !== null &&
-    selectedQuestion.value.currentAnswer !== null &&
-    primaryAction.value.kind !== 'GENERATE',
+  () => selectedQuestion.value !== null && selectedQuestion.value.currentAnswer !== null,
 )
 
 const requirementHighlights = computed(() => {
@@ -544,6 +543,14 @@ watch(selectedQuestionId, () => {
 })
 
 watch(selectedQuestionId, () => (materialOpen.value = false))
+
+watch(
+  [coverLetterRunActive, acceptedRunId],
+  ([active, accepted]) => {
+    if (active || accepted !== '') watchedRun.value = true
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -1343,15 +1350,22 @@ async function submitUnarchive(
   }
 }
 
+/*
+ * 끝난 작업의 상태 bar는 화면에 남기지 않으므로 결과는 알림으로만 알린다.
+ * 이 화면에서 지켜본 작업일 때만 알려서, 다시 들어왔을 때 지난 결과가 다시 뜨지 않게 한다.
+ */
 async function handleRunTerminal(run: AgentRunDetailDto): Promise<void> {
   const wasGeneration = acceptedRunKind.value === 'GENERATE'
+  const announce = watchedRun.value
   acceptedRunId.value = ''
   acceptedRunKind.value = ''
+  watchedRun.value = false
   await invalidateCoverLetterQueries(cache, userId.value, coverLetterId.value)
   await latestRun.refetch()
   await coverLetter.refetch()
   if (selectedQuestionId.value) await versions.refetch()
   if (verificationVersionId.value) await verifications.refetch()
+  if (!announce) return
   if (run.partialResult?.failedScopeKeys.length) {
     generationQuestionIds.value = new Set(run.partialResult.failedScopeKeys)
     notifications.toast(
@@ -1709,17 +1723,52 @@ function coverLetterActionMessage(error: ApiClientError): string {
               }}
             </span>
           </button>
-          <button
-            v-if="primaryAction.label && primaryAction.kind !== 'SAVE_ANSWER'"
-            type="button"
-            class="button button--primary"
-            :disabled="primaryAction.disabled"
-            :title="primaryAction.hint"
-            data-testid="primary-action"
-            @click="runPrimaryAction()"
-          >
-            {{ primaryAction.label }}
-          </button>
+          <div ref="materialAnchor" class="material-anchor">
+            <button
+              v-if="primaryAction.label && primaryAction.kind !== 'SAVE_ANSWER'"
+              type="button"
+              class="button button--primary"
+              :disabled="primaryAction.disabled"
+              :title="primaryAction.hint"
+              data-testid="primary-action"
+              @click="runPrimaryAction()"
+            >
+              {{ primaryAction.label }}
+            </button>
+            <button
+              v-if="!readOnly && selectedQuestion"
+              type="button"
+              class="button button--ghost button--compact material-anchor__trigger"
+              :aria-expanded="materialOpen"
+              aria-controls="cover-letter-material-picker"
+              data-testid="open-material-picker"
+              @click="toggleMaterialPicker()"
+            >
+              <AppIcon name="evidence" />
+              답변에 사용할 소재
+              <span v-if="selectedEvidenceIds.size">{{ selectedEvidenceIds.size }}개 선택</span>
+            </button>
+            <div
+              v-if="materialOpen"
+              id="cover-letter-material-picker"
+              class="material-anchor__panel"
+              role="group"
+              aria-label="답변에 사용할 소재"
+              @keydown.esc.stop.prevent="closeMaterialPicker()"
+            >
+              <CoverLetterMaterialPicker
+                :used-evidence="usedEvidence"
+                :evidence-items="evidenceItems"
+                :recommended-evidence-ids="recommendedEvidenceIds"
+                :selected-evidence-ids="selectedEvidenceIds"
+                :loading="evidence.isLoading.value"
+                :error="evidence.isError.value"
+                :read-only="readOnly"
+                @toggle="toggleEvidence"
+                @clear="clearSelectedEvidence()"
+              />
+            </div>
+          </div>
         </div>
         <p v-if="primaryAction.hint" class="cover-topbar__hint">{{ primaryAction.hint }}</p>
       </header>
@@ -1897,16 +1946,6 @@ function coverLetterActionMessage(error: ApiClientError): string {
                   <AppIcon name="history" />버전 기록
                 </button>
                 <button
-                  v-if="canRegenerate"
-                  type="button"
-                  class="button button--secondary button--compact"
-                  :disabled="aiActionUnavailable"
-                  data-testid="open-generation"
-                  @click="openGenerationSheet()"
-                >
-                  AI로 다시 쓰기
-                </button>
-                <button
                   v-if="!readOnly"
                   type="button"
                   class="button"
@@ -1932,42 +1971,17 @@ function coverLetterActionMessage(error: ApiClientError): string {
                 >
                   AI 검토 받기
                 </button>
-              </div>
-            </div>
 
-            <div v-if="!readOnly" ref="materialAnchor" class="material-anchor">
-              <button
-                type="button"
-                class="button button--ghost button--compact material-anchor__trigger"
-                :aria-expanded="materialOpen"
-                aria-controls="cover-letter-material-picker"
-                data-testid="open-material-picker"
-                @click="toggleMaterialPicker()"
-              >
-                <AppIcon name="evidence" />
-                답변에 사용할 소재
-                <span v-if="selectedEvidenceIds.size">{{ selectedEvidenceIds.size }}개 선택</span>
-                <AppIcon :name="materialOpen ? 'arrow-left' : 'arrow-right'" />
-              </button>
-              <div
-                v-if="materialOpen"
-                id="cover-letter-material-picker"
-                class="material-anchor__panel"
-                role="group"
-                aria-label="답변에 사용할 소재"
-                @keydown.esc.stop.prevent="closeMaterialPicker()"
-              >
-                <CoverLetterMaterialPicker
-                  :used-evidence="usedEvidence"
-                  :evidence-items="evidenceItems"
-                  :recommended-evidence-ids="recommendedEvidenceIds"
-                  :selected-evidence-ids="selectedEvidenceIds"
-                  :loading="evidence.isLoading.value"
-                  :error="evidence.isError.value"
-                  :read-only="readOnly"
-                  @toggle="toggleEvidence"
-                  @clear="clearSelectedEvidence()"
-                />
+                <button
+                  v-if="canRegenerate && !readOnly"
+                  type="button"
+                  class="button button--secondary button--compact"
+                  :disabled="aiActionUnavailable"
+                  data-testid="open-generation"
+                  @click="openGenerationSheet()"
+                >
+                  AI로 다시 쓰기
+                </button>
               </div>
             </div>
           </template>
@@ -2455,7 +2469,7 @@ function coverLetterActionMessage(error: ApiClientError): string {
 .cover-topbar__actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
   gap: var(--space-2);
 }
@@ -2694,18 +2708,21 @@ function coverLetterActionMessage(error: ApiClientError): string {
   height: 1rem;
 }
 
-/* ---------------------------------------------------- 답변에 사용할 소재 */
+/* ------------------------------------------- 답변에 사용할 소재 고르기 */
 
+/* 소재 button은 현재 단계의 주요 행동 button 바로 아래에 붙는다. */
 .material-anchor {
   position: relative;
-  justify-self: start;
+  display: grid;
+  gap: var(--space-1);
+  justify-items: stretch;
 }
 
 .material-anchor__trigger {
   gap: var(--space-2);
 }
 
-.material-anchor__trigger :deep(.icon) {
+.material-anchor :deep(.icon) {
   width: 1rem;
   height: 1rem;
 }
@@ -2726,11 +2743,11 @@ function coverLetterActionMessage(error: ApiClientError): string {
   position: absolute;
   z-index: 30;
   top: calc(100% + var(--space-2));
-  left: 0;
+  right: 0;
   width: min(30rem, calc(100vw - 2rem));
   max-height: 22rem;
   overflow: auto;
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-4);
