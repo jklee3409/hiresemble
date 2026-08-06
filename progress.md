@@ -15,6 +15,27 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-06] Session Summary (프론트엔드 design system 전면 개선)
+
+- What was done:
+  - `frontend/`의 시각 언어를 테두리 중심에서 그림자 기반 "부드러운 표면"으로 바꾸고, Dashboard·이력서와 자료·공고 등록·자기소개서·면접·프로필 화면과 app shell을 일관되게 맞췄다.
+- Key decisions:
+  - 기존 brand 색과 화면 계약을 유지한 채 전역 token과 공용 class를 먼저 바꾸고, 각 화면은 scoped style만 조정했다.
+- Issues encountered:
+  - 로컬 Node 20.18.0 제약으로 표준 검증 명령(`corepack pnpm check`)을 실행하지 못했다.
+- Validation:
+  - frontend production build와 Prettier 검사 통과. 자세한 내용은 [`frontend/progress.md`](frontend/progress.md)에 있다.
+- Next steps:
+  - Node 22 이상 환경에서 전체 check를 재실행한다.
+
+## [2026-08-06] Session Summary (전역 AI 일일 USD 10 비용 정책)
+
+- What was done: 사용자·workflow·run·turn·session별 Provider 비용 상한과 중복 환경 변수를 제거하고 전체 AI 사용량을 공유 전역 일일 USD 10 ledger로 전환했다.
+- Key decisions: Agent Run은 0원 reservation으로 시작하고 외부 호출 직전에 model·token ceiling·tool request 수와 immutable 가격 catalog로 최악 비용을 계산해 원자 reserve한다. plan·credit은 Provider 원가 안전장치와 분리된 향후 entitlement/credit ledger로 확장한다.
+- Issues encountered: 초기 `GLOBAL` scope 방식은 migration 설치 순서와 기존 in-flight reservation 호환 문제가 있어 기존 원장을 날짜별로 합산하고 reservation FK를 이전한 뒤 사용자 소유 차원을 제거하는 방식으로 보정했다.
+- Validation: 구현 중 메인·테스트 소스 컴파일, 인증 통합 테스트 1건, 전역 budget 통합 테스트 7건이 통과했다. 프로젝트에 Spotless task가 없어 `spotlessApply`는 실행할 수 없었고 diff whitespace 검사는 통과했다. 최종 원장 병합 보정 후 재검증, 별도 validator agent와 전체 검증은 사용자 요청에 따라 수행하지 않았다.
+- Next steps: plan 상품이 확정되면 `feature_usage_*` entitlement와 별도 append-only credit wallet/reservation을 구현한다.
+
 ## [2026-08-06] Session Summary (자기소개서 exact OpenAI 모델 선택·memo 품질 보정)
 
 - What was done:
