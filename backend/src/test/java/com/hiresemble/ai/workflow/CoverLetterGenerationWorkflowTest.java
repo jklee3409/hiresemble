@@ -18,6 +18,7 @@ import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterGenerationV2PromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterGenerationV3PromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.StructuredOutputValidator;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.AllocateExperiencesInput;
@@ -48,6 +49,7 @@ import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInput
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutputV3;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.WorkflowStepExecutor.DomainStepCompletion;
@@ -97,6 +99,54 @@ class CoverLetterGenerationWorkflowTest {
             new PromptRegistry(CoverLetterGenerationPromptDefinitions.all());
     private final PromptRegistry v2Prompts =
             new PromptRegistry(CoverLetterGenerationV2PromptDefinitions.all());
+    private final PromptRegistry v3Prompts =
+            new PromptRegistry(CoverLetterGenerationV3PromptDefinitions.all());
+
+    @Test
+    void v3WriterLengthViolationRequestsOneSafeCorrectionBeforeDomainApply() {
+        Fixture fixture = singleQuestionFixture();
+        AgentRunSnapshot run = runV3(fixture.snapshot, UUID.randomUUID());
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+
+        for (ExecutableWorkflowStep executable : fixture.workflow.v3Contribution().steps()) {
+            if (executable.stepKey().equals(CoverLetterGenerationWorkflow.WRITE_ANSWER)) {
+                StepInput input = executable.executor()
+                        .prepareInputs(context(run, upstream, ephemeral, null))
+                        .getFirst();
+                StepExecutionContext scoped =
+                        context(run, upstream, ephemeral, input.scopeKey());
+                WrittenAnswerOutputV3 tooLong = new WrittenAnswerOutputV3(
+                        "cover-generation-answer-output-v3",
+                        fixture.firstQuestionId,
+                        providerDocument("가".repeat(
+                                fixture.snapshot.questions().getFirst().maxLength() + 1)),
+                        List.of());
+
+                assertThatThrownBy(() -> validate(
+                                executable.executor(),
+                                objectMapper.writeValueAsString(tooLong),
+                                scoped))
+                        .isInstanceOfSatisfying(AiExecutionException.class, failure -> {
+                            assertThat(failure.safeCode())
+                                    .isEqualTo("COVER_GENERATION_ANSWER_LENGTH_INVALID");
+                            assertThat(failure.failureKind())
+                                    .isEqualTo(FailureKind.STRUCTURED_OUTPUT);
+                            assertThat(failure.retryable()).isTrue();
+                            assertThat(failure.maxAutomaticAttempts()).isEqualTo(2);
+                            assertThat(failure.correctionGuidance())
+                                    .contains("maxLength")
+                                    .doesNotContain(fixture.snapshot.questions()
+                                            .getFirst()
+                                            .questionText());
+                        });
+                assertThat(fixture.command.commands).isEmpty();
+                return;
+            }
+            executeWholeStepWithRun(fixture, run, executable, upstream, ephemeral);
+        }
+        throw new AssertionError("WRITE_ANSWER step was not found");
+    }
 
     @Test
     void v2WriterReceivesPlanJobEvidenceAndCurrentAnswer() {
@@ -407,10 +457,14 @@ class CoverLetterGenerationWorkflowTest {
             ExecutableWorkflowStep step,
             StepInput input,
             StepExecutionContext context) {
-        PromptRegistry registry = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
-                        context.run().workflowVersion())
-                ? v2Prompts
-                : prompts;
+        PromptRegistry registry =
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                                context.run().workflowVersion())
+                        ? v3Prompts
+                        : CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
+                                        context.run().workflowVersion())
+                                ? v2Prompts
+                                : prompts;
         AiGatewayResponse response = step.executor().invoke(new GatewayInvocation(
                 input,
                 new ModelRoute(1L, ModelTier.BALANCED, "fake", "fake", false),
@@ -587,6 +641,37 @@ class CoverLetterGenerationWorkflowTest {
                 secondCurrentVersionId);
     }
 
+    private Fixture singleQuestionFixture() {
+        Fixture base = fixture();
+        GenerationSnapshot source = base.snapshot();
+        GenerationSnapshot snapshot = new GenerationSnapshot(
+                source.userId(),
+                source.coverLetterId(),
+                source.coverLetterVersion(),
+                source.title(),
+                source.job(),
+                List.of(source.questions().getFirst()),
+                source.verifiedEvidence(),
+                source.preferredEvidenceIds(),
+                source.avoidExperienceDuplication(),
+                source.qualityMode(),
+                source.snapshotHash());
+        FakeQuery query = new FakeQuery(snapshot);
+        FakeCommand command = new FakeCommand(snapshot.userId());
+        CoverLetterGenerationWorkflow workflow = new CoverLetterGenerationWorkflow(
+                query, command, new FakeEmbeddingPolicy(), objectMapper);
+        return new Fixture(
+                snapshot,
+                query,
+                command,
+                new FakeChat(objectMapper),
+                new FakeEmbedding(objectMapper),
+                workflow,
+                runV3(snapshot, UUID.randomUUID()),
+                snapshot.questions().getFirst().questionId(),
+                null);
+    }
+
     private AgentRunSnapshot run(
             GenerationSnapshot snapshot, UUID runId) {
         var input = objectMapper.createObjectNode()
@@ -658,6 +743,24 @@ class CoverLetterGenerationWorkflowTest {
                 legacy.leaseExpiresAt(), legacy.heartbeatAt(), legacy.cancelRequestedAt(),
                 legacy.requiredUserAction(), legacy.stateVersion(), legacy.queuedAt(),
                 legacy.startedAt(), legacy.completedAt(), legacy.updatedAt(), legacy.steps());
+    }
+
+    private AgentRunSnapshot runV3(GenerationSnapshot snapshot, UUID runId) {
+        AgentRunSnapshot v2 = runV2(snapshot, runId);
+        return new AgentRunSnapshot(
+                v2.id(), v2.userId(), v2.workflowType(), v2.status(),
+                v2.currentStep(), v2.progressPercent(),
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                v2.canonicalInputHash(), v2.inputReferenceSnapshot(),
+                v2.budgetPolicyVersion(), v2.priceVersion(),
+                v2.requestedQualityMode(), v2.highestModelTierUsed(),
+                v2.estimatedCostUsd(), v2.reservedCostUsd(), v2.actualCostUsd(),
+                v2.resourceType(), v2.resourceId(), v2.retryOfRunId(),
+                v2.rootRunId(), v2.runAttemptNo(), v2.retryableFailure(),
+                v2.safeError(), v2.partialResult(), v2.claimToken(), v2.claimedBy(),
+                v2.leaseExpiresAt(), v2.heartbeatAt(), v2.cancelRequestedAt(),
+                v2.requiredUserAction(), v2.stateVersion(), v2.queuedAt(),
+                v2.startedAt(), v2.completedAt(), v2.updatedAt(), v2.steps());
     }
 
     private TipTapDocumentDto document(String text) {

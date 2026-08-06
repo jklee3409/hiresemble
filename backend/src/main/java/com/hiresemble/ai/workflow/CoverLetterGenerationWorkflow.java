@@ -1810,6 +1810,46 @@ public final class CoverLetterGenerationWorkflow {
             if (CoverLetterWorkflowV3Policy.hasFactualPattern(text) && output.claims().isEmpty()) {
                 throw new IllegalArgumentException("factual answer requires grounded claims");
             }
+            int count = text.codePointCount(0, text.length());
+            if (text.isBlank() || count > MAX_TEXT) {
+                throw repairable(
+                        "COVER_GENERATION_ANSWER_CONTENT_INVALID",
+                        "Return a nonblank answer whose plain-text code-point count is at most 20000. Keep the supplied safe TipTap node and mark allowlist.");
+            }
+        }
+
+        @Override
+        protected void validateWorkflowOutput(
+                WrittenAnswerOutputV3 output, StepExecutionContext context) {
+            if (!output.questionId().toString().equals(context.scopeKey())) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_SCOPE_INVALID",
+                        "Copy the supplied questionId exactly and answer only that question.");
+            }
+            GenerationState state = state(context);
+            GenerationQuestion question = question(state, output.questionId());
+            ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                    context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+            Set<UUID> allowed = allocations.allocations().stream()
+                    .filter(value -> value.questionId().equals(output.questionId()))
+                    .flatMap(value -> value.evidenceIds().stream())
+                    .collect(java.util.stream.Collectors.toSet());
+            if (output.claims().stream().map(EvidenceClaimDraftV3::evidenceId)
+                    .anyMatch(id -> !allowed.contains(id))) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_EVIDENCE_INVALID",
+                        "Use only evidenceId values supplied for this question. Remove any claim that cannot use an allowed evidenceId without inventing support.");
+            }
+            String text = plainText(mapTipTap(output.content()));
+            int count = text.codePointCount(0, text.length());
+            if (question.maxLength() != null && count > question.maxLength()) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_LENGTH_INVALID",
+                        "Shorten the answer so its final plain-text code-point count is no greater than the supplied maxLength. Preserve only grounded claims and answer the question directly.");
+            }
         }
 
         @Override
@@ -4019,8 +4059,13 @@ public final class CoverLetterGenerationWorkflow {
 
     private StructuredOutputValidationException repairable(
             String safeReason, String guidance) {
+        return repairable(ValidationPhase.JAVA_RECORD, safeReason, guidance);
+    }
+
+    private StructuredOutputValidationException repairable(
+            ValidationPhase phase, String safeReason, String guidance) {
         return StructuredOutputValidationException.repairable(
-                ValidationPhase.JAVA_RECORD, safeReason, guidance);
+                phase, safeReason, guidance);
     }
 
     private void validateOptionalConnections(

@@ -218,7 +218,17 @@ class CoverLetterWorkflowContractTest {
                         .findFirst()
                         .orElseThrow()
                         .promptVersion())
-                .isEqualTo("cover-letter-write-answer-prompt-v4");
+                .isEqualTo("cover-letter-write-answer-prompt-v5");
+        assertThat(CoverLetterGenerationV3PromptDefinitions.all().stream()
+                        .filter(value -> value.key().stepKey().equals(
+                                CoverLetterGenerationWorkflow.WRITE_ANSWER))
+                        .findFirst()
+                        .orElseThrow()
+                        .instructions())
+                .contains(
+                        "plain-text code-point count",
+                        "must not exceed",
+                        "Prefer a concise direct answer");
     }
 
     @Test

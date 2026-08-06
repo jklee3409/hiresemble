@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-06] Session Summary (Cover Letter Writer 길이 보정 회귀)
+
+- What was done:
+  - maxLength를 넘긴 v3 Writer 응답이 안전한 correction 요청을 받고 제한 안의 답변으로 회복되는 workflow 회귀 테스트를 추가했다.
+  - Writer prompt v5 identity와 명시적 길이 지시를 contract test로 고정했다.
+- Key decisions:
+  - 실제 provider 원문이나 사용자 데이터를 fixture에 넣지 않고 value-free 오류·보정 계약만 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 workflow·contract test와 Backend 전체 `check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter plan prompt 회귀 경계)
 
 - What was done:

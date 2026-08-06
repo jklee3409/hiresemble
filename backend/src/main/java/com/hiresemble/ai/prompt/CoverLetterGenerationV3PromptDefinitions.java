@@ -46,7 +46,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
             return "cover-letter-plan-questions-prompt-v5";
         }
         if (CoverLetterGenerationWorkflow.WRITE_ANSWER.equals(stepKey)) {
-            return "cover-letter-write-answer-prompt-v4";
+            return "cover-letter-write-answer-prompt-v5";
         }
         return "cover-letter-" + stepKey.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
                 + "-prompt-v3";
@@ -158,6 +158,8 @@ public final class CoverLetterGenerationV3PromptDefinitions {
                     must use an allowed evidenceId and exactAnswerExcerpt that appears verbatim in
                     the answer, with its claimType. Positive support comes only from current VERIFIED
                     evidence supplied in context. Respect maxLength and return safe TipTap JSON only.
+                    The final plain-text code-point count, excluding TipTap markup, must not exceed
+                    maxLength. Prefer a concise direct answer over filling the entire limit.
                     """;
             case CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER -> """
                     Do not modify the answer. Positive verified claims are supported exact answer

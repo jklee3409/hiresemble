@@ -4,6 +4,20 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-06] Session Summary (Cover Letter Writer repair 경계 확장)
+
+- What was done:
+  - v3 Writer의 scope·허용 evidence ID·본문 내용·문항별 최대 길이 검증을 `ValidationPhase.WORKFLOW_CONTEXT`의 repairable 오류로 분류해 기존 bounded correction loop가 처리하도록 연결했다.
+  - blank·과대 record 검증과 최종 domain validation을 별도 방어선으로 유지했다.
+- Key decisions:
+  - schema-valid하지만 의미 계약을 model이 고칠 수 있는 경우에만 재시도하고, owner scope나 저장 계약은 변경하지 않는다.
+- Issues encountered:
+  - 과거 실패는 의미 검증이 non-retryable domain boundary에만 있어 첫 위반에서 전체 Run이 종료됐다.
+- Validation:
+  - workflow 집중 test와 Backend 전체 `check` 통과. 실제 Writer 1차 strict record 오류 뒤 2차 성공과 전체 8단계 완료를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter 단일 문항 생성 안정화)
 
 - What was done:

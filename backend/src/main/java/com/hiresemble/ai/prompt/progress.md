@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-06] Session Summary (Cover Letter Writer 길이 계약 v5)
+
+- What was done:
+  - Writer prompt를 v5로 격리하고 최종 답변의 Unicode code point 수가 문항 `maxLength` 이하가 되도록 짧고 직접적으로 작성하라는 계약을 추가했다.
+- Key decisions:
+  - 다른 v3 단계와 legacy prompt identity는 유지했다.
+- Issues encountered:
+  - 기존 v4는 길이 값은 전달했지만 최종 문자열의 정확한 길이 준수와 초과 시 축약 우선순위를 충분히 명시하지 않았다.
+- Validation:
+  - prompt contract test와 Backend 전체 `check` 통과. 실제 성공 Run에서 `cover-letter-write-answer-prompt-v5`와 943/1,000자 결과를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter plan·writer prompt 계약 보정)
 
 - What was done:

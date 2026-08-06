@@ -5,7 +5,21 @@
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
 - V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
-- 최신 완료된 Backend 전체 `check`는 79 suites/549 tests가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- 최신 Backend 전체 `check`가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-06] Session Summary (Cover Letter Writer 의미 검증 보정 재시도)
+
+- What was done:
+  - 플래티어 실패 Run의 `WRITE_ANSWER` 경로에서 scope·허용 근거·내용·문항별 최대 길이 검증을 typed structured-output correction 대상으로 옮기고, Writer prompt를 v5로 격리해 Unicode code point 최대 길이를 명시했다.
+  - blank·20,000자 초과 record 경계와 기존 최종 domain validation은 방어선으로 유지했다.
+- Key decisions:
+  - 공개 REST·DB·workflow version은 바꾸지 않고 model이 스스로 고칠 수 있는 결과만 기존 제한 재시도를 사용한다. 내부 오류에는 답변 원문을 포함하지 않는다.
+- Issues encountered:
+  - 기존 실패 output은 저장되지 않아 scope·evidence·content·length 중 정확한 predicate는 복원 불가했다. 메타데이터상 3,195 output token과 1,000자 제한으로 length 위반 가능성이 가장 높다.
+- Validation:
+  - 집중 workflow·contract test와 `backend/.\gradlew.bat check` 통과. 실제 계정·DB·외부 AI Run `0b136374-97f3-456c-b9cb-4bca912821c2`가 correction 1회 후 943/1,000자 답변으로 `SUCCEEDED`했다.
+- Next steps:
+  - None.
 
 ## [2026-08-05] Session Summary (플래티어 Cover Letter 생성 실패 복구)
 
