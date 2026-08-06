@@ -4,6 +4,20 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-06] Session Summary (자기소개서 페이지 계약과 디자인 도구 참조 정리)
+
+- What was done:
+  - 자기소개서 페이지 명세를 참고 자료 기본 접힘 dropdown과 생성 완료 문항 한 줄 preview 계약으로 갱신했다.
+  - 공고 분석 HTML 가이드에서 더 이상 사용하지 않는 외부 디자인 도구 전용 문서 참조를 제거했다.
+- Key decisions:
+  - 제품 UI 계약은 `docs/spec/page.md`와 저장소 코드로 유지하며 별도 외부 디자인 도구 context를 사용하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 관련 문구 검색에서 제거 대상 도구명 0건, Frontend 전체 check와 Chromium visual fixture 통과를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (README 서비스 소개 재작성용 화면 자산 영역 추가)
 
 - What was done:

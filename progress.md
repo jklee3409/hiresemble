@@ -15,6 +15,22 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-06] Session Summary (자기소개서 완료 문항 요약과 참고 자료 드롭다운 복원)
+
+- What was done:
+  - 자기소개서 AI 작업의 생성 완료 문항을 한 줄 미리보기로 줄이고 전체 질문은 접근 가능한 이름과 title로 보존했다.
+  - 공고 요구사항·강점과 보완점·쓸 경험을 기본 접힘 3열 dropdown으로 복원하고 페이지 명세·회귀 테스트를 동기화했다.
+  - 앞으로 사용하지 않을 외부 디자인 도구의 저장소 context·ignore·활성 가이드 참조를 제거하고 과거 기록의 도구명은 일반 표현으로 정리했다.
+- Key decisions:
+  - 공개 API·DB·workflow 계약은 바꾸지 않고 Vue presentation과 페이지 계약만 변경한다.
+  - 완료 질문 미리보기는 Unicode 문자 기준 48자로 제한하며 전체 질문은 보조 속성에서 유지한다.
+- Issues encountered:
+  - 공고 분석 HTML 가이드 단독 Prettier 검사는 기존 문서 전체의 수기 formatting 때문에 실패했다. 이번 변경만 대량 재포맷하지 않고 Markdown·Vue·TypeScript와 whitespace 검증을 별도로 통과시켰다.
+- Validation:
+  - 집중 Vitest 2 files/15 tests, Frontend 전체 `corepack pnpm check` 68 files/287 tests·production build, Chromium visual fixture 1/1, `git diff --check`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (플래티어 자기소개서 생성 복구와 작성 UI 개선)
 
 - What was done:
@@ -180,7 +196,7 @@
 ## [2026-08-05] Session Summary (공고 분석 디자인 가이드 계약 확정과 회귀 완료)
 
 - What was done:
-  - 의도된 `.superdesign/` context 삭제를 확정하고 영구 HTML 디자인 가이드를 기준으로 공고 분석 desktop/mobile 표현 계약을 완성했다.
+  - 의도된 과거 외부 디자인 도구 context 삭제를 확정하고 영구 HTML 디자인 가이드를 기준으로 공고 분석 desktop/mobile 표현 계약을 완성했다.
 - Key decisions:
   - 사용자 승인에 따라 기존 모바일 세 metric row 명세보다 104px 단일 gauge·meta·첫 viewport CTA 가이드를 우선했다.
 - Issues encountered:
@@ -198,19 +214,19 @@
   - 표현 계층만 변경하고 공개 API 계약, route, 상태 분기, 화면 문구는 유지했다. design token은 additive로만 확장했다.
 - Issues encountered:
   - 실행 환경 Node 20과 저장소 요구 Node 24 불일치로 `corepack pnpm check`와 `vitest`를 실행하지 못했다.
-  - `.superdesign/` 7개 파일 삭제가 이번 세션 중 index에 staged됐으나 이 작업의 변경이 아니며 되돌리지 않았다.
+  - 과거 외부 디자인 도구 context 7개 파일 삭제가 이번 세션 중 index에 staged됐으나 이 작업의 변경이 아니며 되돌리지 않았다.
 - Validation:
   - frontend `vue-tsc`, `eslint`, `prettier --check`, `vite build` 통과. 단위·E2E 테스트는 미실행이다.
 - Next steps:
   - Node 24 환경에서 `corepack pnpm check`와 job-analysis E2E를 실행한다.
 
-## [2026-08-04] Session Summary (SuperDesign 기반 공고 분석 판단 흐름 구현)
+## [2026-08-04] Session Summary (외부 디자인 시안 기반 공고 분석 판단 흐름 구현)
 
 - What was done:
-  - 기존 화면을 SuperDesign에서 재현한 뒤 절제형·B2C형·데이터형 세 방향을 비교하고, 승인된 B2C형의 상단 밀도 보정안을 Vue 화면과 공고 상세 header에 구현했다.
-  - 결과 화면을 변경 안내 disclosure, compact 판단 surface, 단일 자기소개서 CTA, 구분선 기반 근거 흐름으로 정리하고 SuperDesign 저장소 context와 임시 파일 ignore 규칙을 구성했다.
+  - 기존 화면을 외부 디자인 도구에서 재현한 뒤 절제형·B2C형·데이터형 세 방향을 비교하고, 승인된 B2C형의 상단 밀도 보정안을 Vue 화면과 공고 상세 header에 구현했다.
+  - 결과 화면을 변경 안내 disclosure, compact 판단 surface, 단일 자기소개서 CTA, 구분선 기반 근거 흐름으로 정리하고 당시 외부 디자인 도구의 저장소 context와 임시 파일 ignore 규칙을 구성했다.
 - Key decisions:
-  - SuperDesign이 만든 임의 콘텐츠는 복사하지 않고 기존 API·상태·점수·이력 데이터를 유지한다. 모바일은 기존 AppLayout navigation을 유지하면서 공고 제목을 두 줄로 제한하고 판단·CTA·세 지표를 첫 화면에 우선한다.
+  - 외부 디자인 도구가 만든 임의 콘텐츠는 복사하지 않고 기존 API·상태·점수·이력 데이터를 유지한다. 모바일은 기존 AppLayout navigation을 유지하면서 공고 제목을 두 줄로 제한하고 판단·CTA·세 지표를 첫 화면에 우선한다.
 - Issues encountered:
   - 첫 390px 회귀에서 세 번째 지표가 첫 viewport 아래로 내려갔으나 공고 header와 판단 surface 간격만 축소해 재검증에서 해결했다.
   - 최종 `format:check`를 처음 저장소 루트에서 실행해 package manifest 오류가 났고, `frontend/`에서 다시 실행해 통과했다.
