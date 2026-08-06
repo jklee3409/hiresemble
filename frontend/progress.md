@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/284 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 67 files/286 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-06] Session Summary (AI 작업 단계명과 자기소개서 작성 흐름 개선)
+
+- What was done:
+  - 모든 canonical AI workflow step을 사용자용 한국어 명칭으로 매핑하고 숫자 순번 fallback과 상세 안내 문구를 제거했다.
+  - 자기소개서 화면의 참고 자료를 문항·AI 영역보다 먼저 배치하고 AI 설정을 항상 보이는 compact control로 전환했다. 문항 tab은 번호만 표시하며 편집기 초점 외곽선과 본문 폭 제한을 제거했다.
+- Key decisions:
+  - API enum과 workflow key는 유지하고 presentation만 변환한다. 전체 질문은 tab의 접근 가능한 이름으로 남긴다.
+- Issues encountered:
+  - 첫 모바일 확인에서 tab flex-basis가 세로로 늘어나는 문제가 보여 모바일 tab 컨테이너의 flex 축소 규칙을 보정했다.
+- Validation:
+  - `corepack pnpm check`의 lint·format·typecheck, Vitest 67 files/286 tests, production build가 통과했다. 실제 Chromium 1440px·모바일 viewport에서 순서·control·focus·폭·overflow와 상세 단계명을 확인했다.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (자기소개서 작성 화면 최종 검증)
 

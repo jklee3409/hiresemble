@@ -15,6 +15,21 @@
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 
+## [2026-08-06] Session Summary (플래티어 자기소개서 생성 복구와 작성 UI 개선)
+
+- What was done:
+  - 해당 사용자의 실패 Run을 조사해 Writer 결과의 scope·허용 근거·내용·문항 길이 검증이 model correction 경계 밖에서 즉시 실패하던 구조를 확인하고, 해당 검증을 typed repair 대상으로 옮겼다. Writer prompt에는 최종 Unicode code point 길이 준수를 명시했다.
+  - AI 작업 상세의 내부 단계명·순번 fallback·안내 문구를 사용자용 단계명으로 바꾸고, 자기소개서 작성 화면은 참고 자료→문항→AI 설정→편집 순서, 직접 노출된 설정, 번호형 문항 tab, 전체 폭 편집기로 정리했다.
+- Key decisions:
+  - 공개 API·DB 계약은 유지하고 model이 고칠 수 있는 의미 검증만 제한된 재시도 경계로 승격했다. 실패 출력 원문은 새로 저장하지 않아 기존 보안·개인정보 정책을 유지했다.
+- Issues encountered:
+  - 실패한 provider 원문은 의도적으로 저장되지 않아 어느 predicate가 마지막으로 탈락했는지는 복원할 수 없었다. 3,195 output token과 1,000자 제한상 길이 위반 가능성이 가장 높으며, 구조적 원인은 네 predicate 모두가 correction 대상이 아니었던 점이다.
+- Validation:
+  - Backend 전체 `check`, Frontend `corepack pnpm check` 67 files/286 tests·production build, `docker compose config --quiet`, `git diff --check`가 통과했다.
+  - 같은 계정·자기소개서와 실제 DB·외부 AI로 새 Run `0b136374-97f3-456c-b9cb-4bca912821c2`가 `SUCCEEDED` 100%로 완료됐다. Writer 1차 strict record 실패 뒤 correction 2차가 성공했고 1,000자 제한 안의 943자 `AI_GENERATED` 답변이 저장됐다. 실제 Chromium에서 desktop/mobile 구조·초점·overflow와 단계명을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (플래티어 AI 자기소개서 2단계 실패 복구)
 
 - What was done:

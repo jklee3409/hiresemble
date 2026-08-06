@@ -15,6 +15,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-06] Session Summary (자기소개서·AI 상세 UI 회귀 동기화)
+
+- What was done:
+  - 자기소개서 actual E2E selector를 항상 보이는 참고 자료·AI 설정과 질문 `aria-label` 계약에 맞췄다.
+  - Agent Run fixture E2E의 알 수 없는 step 기대값을 새 사용자용 fallback으로 갱신했다.
+- Key decisions:
+  - actual E2E의 비즈니스 동작 범위는 유지하고 disclosure 조작만 제거했다.
+- Issues encountered:
+  - in-app Browser에는 연결된 사용자 browser가 없어 실제 계정 인증정보를 변경하지 않았다. 실제 계정 provider 실행은 application service 경계에서 별도 검증하고 UI는 Chromium fixture로 검증했다.
+- Validation:
+  - Frontend 전체 `check` 통과. Playwright Chromium에서 desktop/mobile 화면과 AI 작업 상세의 DOM·geometry·접근 가능한 이름을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (P7 Document 완료 locator 고유화)
 
 - What was done:
