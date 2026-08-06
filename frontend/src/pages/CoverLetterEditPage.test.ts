@@ -20,8 +20,13 @@ import {
   verificationFixture,
 } from '@/features/cover-letters/testFixtures'
 import { ApiClientError } from '@/shared/api/errors'
+import { useNotifications } from '@/shared/ui/notifications'
 
 import CoverLetterEditPage from './CoverLetterEditPage.vue'
+
+const UNUSED_EVIDENCE_ID = uuid(170)
+const RECOMMENDED_MODEL = 'gpt-5.6-terra'
+const HIGH_CAPABILITY_MODEL = 'gpt-5.6-sol'
 
 const mocks = vi.hoisted(() => {
   const query = () => ({
@@ -37,6 +42,7 @@ const mocks = vi.hoisted(() => {
   })
   return {
     detail: query(),
+    aiModels: query(),
     versions: query(),
     verifications: query(),
     latestRun: query(),
@@ -73,6 +79,7 @@ vi.mock('@/features/cover-letters/queries', () => ({
   invalidateCoverLetterQueries: mocks.invalidate,
   useAnswerVersionListQuery: () => mocks.versions,
   useArchiveCoverLetterMutation: () => mocks.archive,
+  useCoverLetterAiModelsQuery: () => mocks.aiModels,
   useCoverLetterDetailQuery: () => mocks.detail,
   useCreateQuestionMutation: () => mocks.createQuestion,
   useDeleteQuestionMutation: () => mocks.deleteQuestion,
@@ -124,6 +131,7 @@ describe('CoverLetterEditPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     window.sessionStorage.clear()
+    useNotifications().state.toasts.splice(0)
     const current = answerVersionFixture({ versionNo: 2 })
     mocks.detail.data = ref(
       coverLetterDetailFixture({
@@ -181,6 +189,20 @@ describe('CoverLetterEditPage', () => {
       }),
     ])
     mocks.latestRun.data.value = page([])
+    mocks.aiModels.data.value = [
+      {
+        id: HIGH_CAPABILITY_MODEL,
+        displayName: 'GPT-5.6 Sol',
+        description: '가장 꼼꼼하게 씁니다.',
+        recommended: false,
+      },
+      {
+        id: RECOMMENDED_MODEL,
+        displayName: 'GPT-5.6 Terra',
+        description: '속도와 완성도가 균형 잡혀 있습니다.',
+        recommended: true,
+      },
+    ]
     mocks.job.data.value = {
       id: COVER_LETTER_JOB_ID,
       title: 'Frontend Engineer',
@@ -197,6 +219,7 @@ describe('CoverLetterEditPage', () => {
     }
     for (const state of [
       mocks.detail,
+      mocks.aiModels,
       mocks.versions,
       mocks.verifications,
       mocks.latestRun,
@@ -214,6 +237,13 @@ describe('CoverLetterEditPage', () => {
           title: '검증된 프로젝트 경험',
           evidenceCategory: 'PROJECT',
           content: '주문 처리 지연을 35% 줄인 개선 경험입니다.',
+          verificationStatus: 'VERIFIED',
+        },
+        {
+          id: UNUSED_EVIDENCE_ID,
+          title: '아직 쓰지 않은 협업 경험',
+          evidenceCategory: 'PROJECT',
+          content: '다른 팀과 배포 절차를 정리한 경험입니다.',
           verificationStatus: 'VERIFIED',
         },
       ]),
@@ -253,44 +283,51 @@ describe('CoverLetterEditPage', () => {
     window.sessionStorage.clear()
   })
 
-  it('shows source dropdowns before compact question and visible AI settings', async () => {
+  it('puts the question and the answer editor first without stacking status cards', async () => {
     const wrapper = await mountPage()
-    const referenceStrip = wrapper.get('.reference-strip')
-    const questionBar = wrapper.get('.question-bar')
     const question = questionFixture()
 
-    expect(
-      referenceStrip.element.compareDocumentPosition(questionBar.element) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
-    const referenceCards = wrapper.findAll('details.reference-card')
-    expect(referenceCards).toHaveLength(3)
-    expect(referenceCards.every((card) => card.attributes('open') === undefined)).toBe(true)
-    await referenceCards[0]?.get('summary').trigger('click')
-    expect(referenceCards[0]?.attributes('open')).toBeDefined()
-    expect(wrapper.get('#ai-settings-title').text()).toBe('AI 설정')
-    expect(wrapper.find('details.ai-settings').exists()).toBe(false)
-    expect(wrapper.find('select').exists()).toBe(false)
-    expect(wrapper.findAll('.quality-options input[type="radio"]')).toHaveLength(3)
+    const workspace = wrapper.get('[data-testid="cover-letter-editor"]')
+    const editor = wrapper.get('[data-testid="fake-cover-editor"]')
+    expect(workspace.element.contains(editor.element)).toBe(true)
+    expect(wrapper.get('.answer-brief__order').text()).toBe('1')
+    expect(wrapper.get('.answer-brief__question').text()).toContain(question.questionText)
 
-    const tab = wrapper.get('.question-tab')
-    expect(tab.text()).toBe('1번')
+    const rail = wrapper.get('[role="tablist"][aria-label="자기소개서 문항"]')
+    expect(rail.attributes('aria-orientation')).toBe('vertical')
+    const tab = rail.get('[role="tab"]')
     expect(tab.attributes('aria-label')).toContain(question.questionText)
-    expect(tab.text()).not.toContain(question.questionText)
+    expect(tab.attributes('aria-selected')).toBe('true')
+
+    // 생성 설정과 버전 기록은 기본 화면을 차지하지 않는다.
+    expect(wrapper.find('.generation-panel').exists()).toBe(false)
+    expect(wrapper.find('.version-panel').exists()).toBe(false)
+    expect(wrapper.find('.quality-options').exists()).toBe(false)
   })
 
-  it('keeps browser drafts separate, explicitly saves versions, and sends bounded AI commands', async () => {
+  it('highlights exactly one primary action for the current state', async () => {
     const wrapper = await mountPage()
+    const primaries = () => wrapper.findAll('button.button--primary')
 
-    expect(wrapper.find('[data-testid="cover-letter-editor"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Vue 경험')
-    expect(wrapper.text()).toContain('지금은 사용 안 함')
-    expect(wrapper.text()).toContain('원본 삭제됨')
-    expect(wrapper.text()).toContain('새 초안·검토에서는 쓰지 않아요')
+    expect(primaries()).toHaveLength(1)
+    expect(wrapper.get('[data-testid="primary-action"]').text()).toBe('남은 확인 사항 보기')
+
+    // 답변을 고치면 강조는 편집기 옆 저장 button 하나로 옮겨 간다.
+    await wrapper.get('[data-testid="fake-cover-editor"]').trigger('click')
+    await flushPromises()
+    expect(primaries()).toHaveLength(1)
+    expect(wrapper.find('[data-testid="primary-action"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="save-answer-version"]').classes()).toContain(
+      'button--primary',
+    )
+  })
+
+  it('keeps browser drafts separate and saves versions only on request', async () => {
+    const wrapper = await mountPage()
 
     await wrapper.get('[data-testid="fake-cover-editor"]').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('아직 저장하지 않았어요')
+    expect(wrapper.text()).toContain('저장 안 됨')
     expect(window.sessionStorage.length).toBe(1)
 
     await wrapper.get('[data-testid="save-answer-version"]').trigger('click')
@@ -307,32 +344,82 @@ describe('CoverLetterEditPage', () => {
     expect(saveRequest).not.toHaveProperty('sourceType')
     expect(saveRequest).not.toHaveProperty('createdBy')
     expect(window.sessionStorage.length).toBe(0)
+    expect(toastMessages()).toContainEqual(expect.stringContaining('버전 3을 저장했어요.'))
+  })
 
-    await wrapper.get('.evidence-options input').setValue(true)
-    await wrapper
-      .findAll('.quality-options input[type="radio"]')
-      .find((input) => input.attributes('value') === 'HIGH_QUALITY')
-      ?.setValue(true)
+  it('asks before leaving a question with unsaved content', async () => {
+    const secondQuestionId = uuid(150)
+    mocks.detail.data.value = coverLetterDetailFixture({
+      questions: [
+        questionFixture(),
+        questionFixture({
+          id: secondQuestionId,
+          questionOrder: 2,
+          questionText: '두 번째 문항',
+          currentAnswer: null,
+          latestVerification: null,
+          version: 1,
+        }),
+      ],
+    })
+    const wrapper = await mountPage()
+    await wrapper.get('[data-testid="fake-cover-editor"]').trigger('click')
+    await flushPromises()
+
+    const move = selectQuestionTab(wrapper, '두 번째 문항')
+    await flushPromises()
+    expect(useNotifications().state.confirmation?.title).toBe('저장하지 않은 답변이 있어요')
+    useNotifications().resolveConfirmation(false)
+    await move
+    await flushPromises()
+    expect(wrapper.get('.answer-brief__question').text()).toContain(questionFixture().questionText)
+
+    const second = selectQuestionTab(wrapper, '두 번째 문항')
+    await flushPromises()
+    useNotifications().resolveConfirmation(true)
+    await second
+    await flushPromises()
+    expect(wrapper.get('.answer-brief__question').text()).toContain('두 번째 문항')
+  })
+
+  it('confirms AI settings and the non-destructive rewrite before generating', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.get('[data-testid="open-generation"]').text()).toBe('AI로 다시 쓰기')
+    await wrapper.get('[data-testid="open-generation"]').trigger('click')
+    await flushPromises()
+
+    const panel = wrapper.get('.generation-panel')
+    expect(panel.text()).toContain('지금 답변은 지워지지 않아요')
+    expect(panel.text()).toContain('새 버전으로 저장돼요')
+    expect(mocks.generate.mutateAsync).not.toHaveBeenCalled()
+
+    // 서버가 허용한 모델 목록에서 고르고, 기본값은 추천 모델이다.
+    const modelSelect = () =>
+      wrapper.get<HTMLSelectElement>('[data-testid="cover-letter-model-select"]')
+    expect(modelSelect().element.value).toBe(RECOMMENDED_MODEL)
+
+    const availableEvidence = wrapper.findAll('.assist__evidence label')
+    expect(availableEvidence).toHaveLength(1)
+    expect(availableEvidence[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
+    await availableEvidence[0]?.get('input[type="checkbox"]').setValue(true)
+    await modelSelect().setValue(HIGH_CAPABILITY_MODEL)
+    await flushPromises()
+    expect(modelSelect().element.value).toBe(HIGH_CAPABILITY_MODEL)
     await wrapper.get('[data-testid="generate-cover-letter"]').trigger('click')
     await flushPromises()
+
     expect(mocks.generate.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
       request: {
         questionIds: [COVER_LETTER_QUESTION_ID],
-        preferredEvidenceIds: [COVER_LETTER_EVIDENCE_ID],
-        qualityMode: 'HIGH_QUALITY',
+        preferredEvidenceIds: [UNUSED_EVIDENCE_ID],
+        model: HIGH_CAPABILITY_MODEL,
         avoidExperienceDuplication: true,
         coverLetterVersion: 3,
       },
     })
-    expect(wrapper.text()).toContain('답변 편집은 잠시 멈춰 둘게요')
-
-    await wrapper.get('[data-testid="verify-answer-version"]').trigger('click')
-    await flushPromises()
-    expect(mocks.verify.mutateAsync).not.toHaveBeenCalled()
-    expect(
-      wrapper.get('[data-testid="verify-answer-version"]').attributes('disabled'),
-    ).toBeDefined()
+    expect(wrapper.find('.generation-panel').exists()).toBe(false)
   })
 
   it('submits answer verification when no other AI command is active', async () => {
@@ -343,22 +430,21 @@ describe('CoverLetterEditPage', () => {
     expect(mocks.verify.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
       versionId: COVER_LETTER_ANSWER_ID,
-      request: { qualityMode: 'BALANCED' },
+      request: { model: RECOMMENDED_MODEL },
     })
   })
 
-  it('restores an active cover-letter run and disables both AI command buttons', async () => {
+  it('restores an active cover-letter run and disables both AI commands', async () => {
     mocks.latestRun.data.value = page([{ id: COVER_LETTER_RUN_ID, status: 'RUNNING' }])
     const wrapper = await mountPage()
 
     expect(wrapper.find('[data-testid="run-monitor"]').exists()).toBe(true)
-    expect(
-      wrapper.get('[data-testid="generate-cover-letter"]').attributes('disabled'),
-    ).toBeDefined()
+    expect(wrapper.get('[data-testid="open-generation"]').attributes('disabled')).toBeDefined()
     expect(
       wrapper.get('[data-testid="verify-answer-version"]').attributes('disabled'),
     ).toBeDefined()
-    await wrapper.get('[data-testid="generate-cover-letter"]').trigger('click')
+    await wrapper.get('[data-testid="open-generation"]').trigger('click')
+    await flushPromises()
     expect(mocks.generate.mutateAsync).not.toHaveBeenCalled()
   })
 
@@ -366,10 +452,7 @@ describe('CoverLetterEditPage', () => {
     mocks.detail.data.value = coverLetterDetailFixture({ questions: [] })
     const wrapper = await mountPage()
 
-    await wrapper
-      .findAll('button')
-      .find((button) => button.text() === '문항 추가')
-      ?.trigger('click')
+    await findButton(wrapper, '문항 추가').trigger('click')
     await flushPromises()
 
     const form = wrapper.get('.question-add')
@@ -390,32 +473,28 @@ describe('CoverLetterEditPage', () => {
     })
   })
 
-  it('restores an immutable version and finalizes only after warning acknowledgement', async () => {
+  it('shows what is left before completion and finalizes after acknowledgement', async () => {
     const wrapper = await mountPage()
-    const finalize = wrapper.get<HTMLButtonElement>('[data-testid="finalize-cover-letter"]')
-    expect(finalize.attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('1번 문항의 확인 사항을 읽어 주세요.')
 
-    const oldVersion = wrapper
-      .get('[aria-label="답변 버전"]')
-      .findAll('button')
-      .find((button) => button.text().includes('1번째'))
-    await oldVersion?.trigger('click')
+    const completionTrigger = wrapper.get('[data-testid="open-completion"]')
+    expect(completionTrigger.text()).toContain('완료까지 1가지 남았어요')
+    await completionTrigger.trigger('click')
     await flushPromises()
-    await wrapper.get('[data-testid="restore-answer-version"]').trigger('click')
-    await flushPromises()
-    expect(mocks.restore.mutateAsync).toHaveBeenCalledWith({
-      coverLetterId: COVER_LETTER_ID,
-      questionId: COVER_LETTER_QUESTION_ID,
-      versionId: uuid(130),
-      request: { expectedCurrentVersionId: COVER_LETTER_ANSWER_ID },
-    })
+
+    expect(wrapper.get('[data-testid="completion-blockers"]').text()).toContain(
+      '1번 문항의 확인 사항을 읽어 주세요.',
+    )
+    const finalizeButton = () =>
+      wrapper.get<HTMLButtonElement>('[data-testid="finalize-cover-letter"]')
+    expect(finalizeButton().attributes('disabled')).toBeDefined()
 
     await wrapper.get('.finalization__warnings input').setValue(true)
     await flushPromises()
-    expect(finalize.attributes('disabled')).toBeUndefined()
-    await finalize.trigger('click')
+    expect(wrapper.find('[data-testid="completion-blockers"]').exists()).toBe(false)
+    expect(finalizeButton().attributes('disabled')).toBeUndefined()
+    await finalizeButton().trigger('click')
     await flushPromises()
+
     expect(mocks.finalize.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
       request: {
@@ -423,7 +502,58 @@ describe('CoverLetterEditPage', () => {
         acknowledgedWarningVerificationIds: [COVER_LETTER_VERIFICATION_ID],
       },
     })
-    expect(wrapper.text()).toContain('공고의 지원 상태는 공고 화면에서 따로 바꿔 주세요')
+    expect(toastMessages()).toContainEqual(
+      expect.stringContaining('공고의 지원 상태는 공고 화면에서 따로 바꿔 주세요'),
+    )
+  })
+
+  it('restores a past version from the version history panel', async () => {
+    const wrapper = await mountPage()
+
+    await wrapper.get('[data-testid="open-versions"]').trigger('click')
+    await flushPromises()
+    const panel = wrapper.get('.version-panel')
+    expect(panel.text()).toContain('그 내용으로 새 답변이 하나 더 저장돼요')
+
+    const oldVersion = panel.findAll('button').find((button) => button.text().includes('v1'))
+    await oldVersion?.trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="restore-answer-version"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.restore.mutateAsync).toHaveBeenCalledWith({
+      coverLetterId: COVER_LETTER_ID,
+      questionId: COVER_LETTER_QUESTION_ID,
+      versionId: uuid(130),
+      request: { expectedCurrentVersionId: COVER_LETTER_ANSWER_ID },
+    })
+  })
+
+  it('separates the material picker, the job requirements and the review result', async () => {
+    const wrapper = await mountPage()
+    const assist = wrapper.get('.assist')
+
+    // 기본 tab은 소재 고르기다. 공고 요구사항과 섞이지 않는다.
+    expect(assist.text()).toContain('AI 초안')
+    expect(assist.text()).toContain('이 답변에 이미 쓴 소재')
+    expect(assist.text()).toContain('프로젝트 성과')
+    expect(assist.text()).not.toContain('Vue 경험')
+    const available = wrapper.findAll('.assist__evidence label')
+    expect(available).toHaveLength(1)
+    expect(available[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
+
+    await wrapper.get('[data-testid="assist-tab-job"]').trigger('click')
+    await flushPromises()
+    expect(assist.text()).toContain('Vue 경험')
+    expect(assist.text()).toContain('대규모 트래픽 경험을 보강하면 좋아요.')
+    expect(wrapper.findAll('.assist__evidence label')).toHaveLength(0)
+
+    await wrapper.get('[data-testid="assist-tab-review"]').trigger('click')
+    await flushPromises()
+    expect(assist.text()).toContain('원본이 삭제된 근거')
+    expect(assist.text()).toContain('새 초안·검토에서는 쓰지 않아요')
+    expect(assist.text()).toContain('지금은 사용 안 함')
+    expect(assist.text()).toContain('확인 필요')
   })
 
   it('updates, reorders and soft-deletes questions through aggregate versions', async () => {
@@ -443,17 +573,11 @@ describe('CoverLetterEditPage', () => {
     })
     const wrapper = await mountPage()
 
-    const secondSelect = wrapper
-      .findAll('.question-tab')
-      .find((button) => button.attributes('aria-label')?.includes('두 번째 문항'))
-    await secondSelect?.trigger('click')
-    await flushPromises()
+    await selectQuestionTab(wrapper, '두 번째 문항')
+    await openQuestionForm(wrapper)
     const questionForm = wrapper.get('.question-meta__form')
     await questionForm.get('textarea').setValue('수정한 두 번째 문항')
-    await wrapper
-      .findAll('button')
-      .find((button) => button.text() === '문항 저장')
-      ?.trigger('click')
+    await findButton(wrapper, '문항 저장').trigger('click')
     await flushPromises()
     expect(mocks.updateQuestion.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
@@ -481,14 +605,8 @@ describe('CoverLetterEditPage', () => {
       `1/user-1/COVER_LETTER/${COVER_LETTER_ID}/${secondQuestionId}/none`,
       '{}',
     )
-    await wrapper
-      .findAll('button')
-      .find((button) => button.text() === '문항 삭제')
-      ?.trigger('click')
-    await wrapper
-      .findAll('button')
-      .find((button) => button.text() === '삭제 확인')
-      ?.trigger('click')
+    await findButton(wrapper, '문항 삭제').trigger('click')
+    await findButton(wrapper, '삭제 확인').trigger('click')
     await flushPromises()
     expect(mocks.deleteQuestion.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
@@ -515,6 +633,7 @@ describe('CoverLetterEditPage', () => {
       .mockResolvedValueOnce(serverQuestion)
     const wrapper = await mountPage()
 
+    await openQuestionForm(wrapper)
     const questionForm = wrapper.get('.question-meta__form')
     await questionForm.get('.question-meta__text textarea').setValue('내가 저장하려던 문항')
     await questionForm.get('input[type="number"]').setValue('999')
@@ -530,7 +649,8 @@ describe('CoverLetterEditPage', () => {
     expect(panel.text()).toContain('최대 글자 수: 999')
     expect(mocks.updateQuestion.mutateAsync).toHaveBeenCalledTimes(1)
 
-    await questionForm.get('.question-meta__text textarea').setValue('refetch 뒤 덮어쓴 값')
+    await openQuestionForm(wrapper)
+    await wrapper.get('.question-meta__text textarea').setValue('refetch 뒤 덮어쓴 값')
     await panel.get('button.button--primary').trigger('click')
     await flushPromises()
 
@@ -563,17 +683,20 @@ describe('CoverLetterEditPage', () => {
     )
     mocks.updateQuestion.mutateAsync.mockRejectedValueOnce(versionConflict())
     const wrapper = await mountPage()
-    const questionForm = wrapper.get('.question-meta__form')
 
-    await questionForm.get('.question-meta__text textarea').setValue('취소할 내 문항')
+    await openQuestionForm(wrapper)
+    await wrapper.get('.question-meta__text textarea').setValue('취소할 내 문항')
     await findButton(wrapper, '문항 저장').trigger('click')
     await flushPromises()
-    await questionForm.get('.question-meta__text textarea').setValue('충돌 뒤 다시 쓴 값')
+    await openQuestionForm(wrapper)
+    await wrapper.get('.question-meta__text textarea').setValue('충돌 뒤 다시 쓴 값')
     await wrapper.get('.cover-conflict button.button--secondary').trigger('click')
     await flushPromises()
 
     expect(mocks.updateQuestion.mutateAsync).toHaveBeenCalledTimes(1)
     expect(wrapper.find('.cover-conflict').exists()).toBe(false)
+    await openQuestionForm(wrapper)
+    const questionForm = wrapper.get('.question-meta__form')
     expect(
       (
         questionForm.get<HTMLTextAreaElement>('.question-meta__text textarea')
@@ -646,6 +769,7 @@ describe('CoverLetterEditPage', () => {
     const wrapper = await mountPage()
 
     await selectQuestionTab(wrapper, '두 번째 로컬 문항')
+    await openQuestionForm(wrapper)
     await wrapper.get('[aria-label="2번 문항 앞으로 이동"]').trigger('click')
     await flushPromises()
 
@@ -667,57 +791,6 @@ describe('CoverLetterEditPage', () => {
         version: 4,
       },
     })
-  })
-
-  it('cancels an order conflict without issuing a second reorder', async () => {
-    const secondQuestionId = uuid(152)
-    mocks.detail.data.value = coverLetterDetailFixture({
-      questions: [
-        questionFixture({ questionText: '로컬 첫 문항' }),
-        questionFixture({
-          id: secondQuestionId,
-          questionOrder: 2,
-          questionText: '로컬 둘째 문항',
-          currentAnswer: null,
-          latestVerification: null,
-          version: 1,
-        }),
-      ],
-    })
-    setDetailOnNextRefetch(
-      coverLetterDetailFixture({
-        version: 4,
-        questions: [
-          questionFixture({
-            id: secondQuestionId,
-            questionOrder: 1,
-            questionText: '서버 첫 순서 문항',
-            currentAnswer: null,
-            latestVerification: null,
-            version: 2,
-          }),
-          questionFixture({
-            questionOrder: 2,
-            questionText: '서버 둘째 순서 문항',
-            version: 3,
-          }),
-        ],
-      }),
-    )
-    mocks.reorder.mutateAsync.mockRejectedValueOnce(versionConflict())
-    const wrapper = await mountPage()
-
-    await selectQuestionTab(wrapper, '로컬 둘째 문항')
-    await wrapper.get('[aria-label="2번 문항 앞으로 이동"]').trigger('click')
-    await flushPromises()
-    await wrapper.get('.cover-conflict button.button--secondary').trigger('click')
-    await flushPromises()
-
-    expect(mocks.reorder.mutateAsync).toHaveBeenCalledTimes(1)
-    expect(wrapper.find('.cover-conflict').exists()).toBe(false)
-    expect(wrapper.findAll('.question-tab')[0]!.attributes('aria-label')).toContain(
-      '서버 첫 순서 문항',
-    )
   })
 
   it('compares the current answer ID, version and content then reapplies the saved editor document', async () => {
@@ -815,6 +888,23 @@ describe('CoverLetterEditPage', () => {
     expect(window.sessionStorage.length).toBe(0)
   })
 
+  it('keeps the saved answer when an AI run fails', async () => {
+    mocks.latestRun.data.value = page([{ id: COVER_LETTER_RUN_ID, status: 'RUNNING' }])
+    const wrapper = await mountPage()
+
+    wrapper
+      .findComponent({ name: 'CoverLetterRunMonitorStub' })
+      .vm.$emit('terminal', { status: 'FAILED', partialResult: null })
+    await flushPromises()
+
+    expect(toastMessages()).toContainEqual(
+      expect.stringContaining('저장한 답변은 그대로 남아 있어요'),
+    )
+    expect(wrapper.findComponent(EditorStub).props('content')).toEqual(
+      answerVersionFixture({ versionNo: 2 }).contentJson,
+    )
+  })
+
   it('makes archived content read-only and exposes only conditional DRAFT recovery', async () => {
     mocks.detail.data.value = coverLetterDetailFixture({
       status: 'ARCHIVED',
@@ -828,13 +918,12 @@ describe('CoverLetterEditPage', () => {
 
     expect(wrapper.text()).toContain('보관된 자기소개서예요 · 읽기 전용')
     expect(wrapper.find('[data-testid="save-answer-version"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="generate-cover-letter"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="open-generation"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="verify-answer-version"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="restore-answer-version"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="open-question-form"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="finalize-cover-letter"]').exists()).toBe(false)
 
-    const recover = wrapper.findAll('button').find((button) => button.text() === '다시 쓰기')
-    await recover?.trigger('click')
+    await wrapper.get('[data-testid="primary-action"]').trigger('click')
     await flushPromises()
     expect(mocks.unarchive.mutateAsync).toHaveBeenCalledWith({
       coverLetterId: COVER_LETTER_ID,
@@ -853,6 +942,7 @@ async function mountPage() {
         component: CoverLetterEditPage,
       },
       { path: '/cover-letters', name: 'cover-letters', component: { template: '<div />' } },
+      { path: '/documents', name: 'documents', component: { template: '<div />' } },
       {
         path: '/jobs/:jobId/analysis',
         name: 'job-analysis',
@@ -874,8 +964,12 @@ async function mountPage() {
     global: {
       plugins: [router, [VueQueryPlugin, { queryClient }]],
       stubs: {
+        teleport: true,
         CoverLetterTipTapEditor: EditorStub,
-        CoverLetterRunMonitor: { template: '<div data-testid="run-monitor" />' },
+        CoverLetterRunMonitor: {
+          name: 'CoverLetterRunMonitorStub',
+          template: '<div data-testid="run-monitor" />',
+        },
       },
     },
   })
@@ -903,6 +997,10 @@ function runAccepted() {
   }
 }
 
+function toastMessages(): string[] {
+  return useNotifications().state.toasts.map((toast) => toast.message)
+}
+
 function setDetailOnNextRefetch(detail: ReturnType<typeof coverLetterDetailFixture>): void {
   mocks.detail.refetch.mockImplementationOnce(async () => {
     mocks.detail.data.value = detail
@@ -920,10 +1018,16 @@ function versionConflict(): ApiClientError {
 
 async function selectQuestionTab(wrapper: VueWrapper, text: string): Promise<void> {
   const tab = wrapper
-    .findAll('.question-tab')
+    .findAll('[role="tab"]')
     .find((button) => button.attributes('aria-label')?.includes(text))
   if (!tab) throw new Error(`Question tab not found: ${text}`)
   await tab.trigger('click')
+  await flushPromises()
+}
+
+async function openQuestionForm(wrapper: VueWrapper): Promise<void> {
+  if (wrapper.find('.question-meta__form').exists()) return
+  await wrapper.get('[data-testid="open-question-form"]').trigger('click')
   await flushPromises()
 }
 

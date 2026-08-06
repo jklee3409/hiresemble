@@ -11,9 +11,58 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 profile eligibility GET/PUT을 포함해 총 94 operations·69 paths다.
+- 공개 Spring/OpenAPI는 자기소개서 AI model catalog를 포함해 총 95 operations·70 paths다.
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
+
+## [2026-08-06] Session Summary (자기소개서 exact OpenAI 모델 선택·memo 품질 보정)
+
+- What was done:
+  - `HIGH_QUALITY/BALANCED/ECONOMY` 자기소개서 공개 계약을 제거하고 공식 OpenAI model ID 10개를 중앙 catalog·API·dropdown·v4 workflow로 연결했다.
+  - 사용자가 문항에 남긴 memo를 plan과 final write의 bounded 작성 방향 context로 반영하고 immutable Run snapshot/hash에 포함했다.
+  - 공식 문서와 현재 구조를 대조한 모델 선택·안정성·초안 품질 개선 보고서와 V23 가격 catalog를 추가했다.
+- Key decisions:
+  - 신규 v4 Run은 사용자가 선택한 exact model을 chat step마다 호출하며 embedding은 독립 policy를 유지한다. 기존 v1~v3 Run은 durable replay를 위해 legacy quality 계약을 보존한다.
+  - 폐기된 `gpt-4.5-preview`는 제외하고 `gpt-5.6-sol`부터 `gpt-5`까지 공식 ID 10개만 allowlist로 공개한다.
+- Issues encountered:
+  - 로컬 Gradle daemon이 상충하는 AI 비용 환경 변수를 물려받아 일부 context test가 실패했으나 새 프로세스에서 0/0으로 고정한 전체 검증이 통과해 코드 회귀가 아님을 확인했다.
+- Validation:
+  - Backend `./gradlew.bat check --no-daemon`: 81 suites·578 tests, 실패 0.
+  - Frontend `corepack pnpm check`: 69 files·308 tests, lint·format·typecheck·build 통과.
+  - `docker compose config --quiet`와 `git diff --check` 통과. 실제 유료 OpenAI 호출은 수행하지 않았다.
+- Next steps:
+  - 운영 API key의 모델별 entitlement smoke test와 보고서의 golden-set·rubric·A/B 품질 평가를 수행한다.
+
+## [2026-08-06] Session Summary (자기소개서 편집 화면 사용자 피드백 보정)
+
+- What was done:
+  - AI 작업 진행 표시를 한 줄 요약 disclosure로 줄였다.
+  - 상단 상태·행동 영역의 화면 고정을 없애 본문과 함께 스크롤되도록 했다.
+  - 작성 도움을 `쓸 소재 / 공고 요구사항 / AI 검토 결과` tab으로 나누고 소재 선택 화면을 다시 구성했다.
+- Key decisions:
+  - 소재 선택은 공고 요구사항과 같은 tab에 두지 않고 기본 tab으로 노출한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend eslint, prettier `--check`, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build` 통과.
+- Next steps:
+  - 브라우저 시각·반응형 회귀와 P7 actual E2E 재실행이 남아 있다.
+
+## [2026-08-06] Session Summary (자기소개서 작성·수정 화면 정보 구조 재설계)
+
+- What was done:
+  - 자기소개서 편집 화면을 상단 고정 상태 영역과 문항 목록·답변 편집기·작성 도움 3열 구조로 재설계하고, AI 설정·버전 기록·작성 완료 점검·문항 form을 보조 sheet로 옮겼다.
+  - 상태에서 유도한 단일 primary 행동 판정을 `frontend/src/features/cover-letters/editorFlow.ts`로 분리하고 편집 화면 component 6개를 새로 추가했다.
+  - `docs/spec/page.md` 8장 화면 구조·기능·검증 표시 계약을 새 구조에 맞춰 갱신했다.
+- Key decisions:
+  - 자기소개서 API·DTO·mutation·409 복구 계약은 변경하지 않고 Frontend 노출 위치와 강조만 바꾼다.
+  - Backend `finalizeCover`가 모든 문항의 최신 답변 기준 검토를 요구하므로 AI 검토를 선택 기능으로 표현하지 않는다.
+- Issues encountered:
+  - 로컬 Node 20.18.0에서는 pnpm CLI와 jsdom 기반 vitest를 실행할 수 없어 동일 명령을 `node:24` 컨테이너에서 실행했다.
+- Validation:
+  - Frontend eslint, prettier `--check`, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build`가 통과했다. Backend 변경은 없어 실행하지 않았다.
+- Next steps:
+  - 브라우저 시각·반응형 회귀와 P7 actual E2E 재실행이 남아 있다.
 
 ## [2026-08-06] Session Summary (자기소개서 완료 문항 요약과 참고 자료 드롭다운 복원)
 

@@ -14,6 +14,7 @@ import {
   getCoverLetter,
   listAnswerVerifications,
   listAnswerVersions,
+  listCoverLetterAiModels,
   listCoverLetters,
   reorderCoverLetterQuestions,
   restoreAnswerVersion,
@@ -43,6 +44,9 @@ import type { AgentRunListParams } from '@/shared/api/agentRunApi'
 export const coverLetterQueryKeys = {
   root(userId: string) {
     return ['user', userId, 'coverLetters'] as const
+  },
+  aiModels() {
+    return ['coverLetters', 'aiModels'] as const
   },
   list(userId: string, filters: CoverLetterListParams) {
     return ['user', userId, 'coverLetters', filters] as const
@@ -83,6 +87,15 @@ export function useCoverLetterDetailQuery(
     queryKey: computed(() => coverLetterQueryKeys.detail(toValue(userId), toValue(coverLetterId))),
     queryFn: () => getCoverLetter(toValue(coverLetterId)),
     enabled: computed(() => toValue(userId) !== '' && toValue(coverLetterId) !== ''),
+  })
+}
+
+export function useCoverLetterAiModelsQuery(userId: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: coverLetterQueryKeys.aiModels(),
+    queryFn: listCoverLetterAiModels,
+    enabled: computed(() => toValue(userId) !== ''),
+    staleTime: 60 * 60 * 1000,
   })
 }
 
@@ -209,7 +222,7 @@ export function useGenerateCoverLetterMutation(userId: MaybeRefOrGetter<string>)
       const identity = [
         input.coverLetterId,
         input.request.coverLetterVersion,
-        input.request.qualityMode,
+        input.request.model,
         input.request.avoidExperienceDuplication,
         [...input.request.questionIds].sort().join(','),
         [...input.request.preferredEvidenceIds].sort().join(','),
@@ -297,7 +310,7 @@ export function useVerifyAnswerVersionMutation(userId: MaybeRefOrGetter<string>)
       versionId: string
       request: VerifyAnswerVersionRequest
     }) => {
-      const identity = `${input.versionId}/${input.request.qualityMode}`
+      const identity = `${input.versionId}/${input.request.model}`
       const key = keys.get(identity) ?? createCoverLetterIdempotencyKey('verify')
       keys.set(identity, key)
       return verifyAnswerVersion(input.versionId, input.request, key).then((accepted) => {

@@ -29,7 +29,7 @@
 - [`JobAnalysisPage.vue`](JobAnalysisPage.vue): `BALANCED` 고정 최초 자동 분석, 사용자 친화적 실패 안내, compact 판단 지표·커버리지·요건 분포, 단일 다음 행동, 상태 filter와 5개 단위 criterion pagination, evidence·OUTDATED disclosure·이력
 - [`JobCoverLetterPage.vue`](JobCoverLetterPage.vue): 공고 맥락 자기소개서 상태·진행률·생성/편집 진입
 - [`CoverLetterListPage.vue`](CoverLetterListPage.vue): 간격이 분리된 전체 목록 URL filter·상태·archive/unarchive
-- [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 상태에서 유도한 단일 다음 행동과 5단계 진행을 제시하는 AI 코치 panel, 문항보다 먼저 보이는 요구사항→강점→경험 3열 panel, 번호 전용 문항 tab과 항상 보이는 compact AI 설정·실행, 전체 폭 답변 작업대와 검토 결과, 저장 기록과 문항별 제출 전 점검을 조합한 canonical editor
+- [`CoverLetterEditPage.vue`](CoverLetterEditPage.vue): 단일 primary 행동, 좌측 문항 목록·중앙 답변 편집기·우측 작성 도움의 3열 작업 화면과 exact AI model 선택·버전 기록·작성 완료 점검을 sheet로 분리한 canonical editor
 - [`JobInterviewPage.vue`](JobInterviewPage.vue): 공고별 자기소개서·조사 품질·질문 조건 면접 준비 접수
 - [`InterviewListPage.vue`](InterviewListPage.vue): `qs*` URL filter·pagination·sort 기반 예상 질문 set 목록
 - [`InterviewQuestionSetPage.vue`](InterviewQuestionSetPage.vue): 조사 source·coverage·질문·답변 version·409·feedback 상세

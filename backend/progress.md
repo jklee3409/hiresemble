@@ -3,9 +3,17 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 94 operations/69 paths가 구현되어 있다.
-- V1~V22 migration이 적용됐고 V21~V22는 공고 등록 연도·상하반기 backfill과 불변식을 소유한다.
+- P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 95 operations/70 paths가 구현되어 있다.
+- V1~V23 migration이 적용됐고 V23은 선택 가능 OpenAI chat model의 immutable 가격 catalog를 소유한다.
 - 최신 Backend 전체 `check`가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-06] Session Summary (자기소개서 exact OpenAI 모델 선택과 memo context)
+
+- What was done: 자기소개서 품질 모드를 exact model catalog·v4 workflow로 교체하고 model catalog API, memo-aware 생성 context, V23 가격 catalog를 구현했다.
+- Key decisions: model ID는 `OpenAiChatModels`에서 단일 관리하고 신규 v4 Run에 고정하며 v1~v3 Run만 legacy 품질 계약으로 재개한다.
+- Issues encountered: 로컬 Gradle daemon의 비용·가격 환경 변수 쌍이 불일치해 테스트 context가 실패했으며 새 프로세스에서 테스트용 값을 0으로 고정해 코드 회귀가 아님을 확인했다.
+- Validation: `./gradlew.bat check --no-daemon` 성공, 81 suites·578 tests·실패 0.
+- Next steps: 실제 API key의 프로젝트별 model entitlement와 운영 비용 한도는 배포 전 smoke test로 확인한다.
 
 ## [2026-08-06] Session Summary (Cover Letter Writer 의미 검증 보정 재시도)
 

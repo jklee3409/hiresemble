@@ -4,6 +4,14 @@
 
 P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview owner/version/hash snapshot이 구현됐다.
 
+## [2026-08-06] Session Summary (자기소개서 memo·model snapshot)
+
+- What was done: generation v4 context에 선택 model과 문항 memo를 포함하고 verification v4도 exact model을 복원하도록 확장했다.
+- Key decisions: memo는 bounded 사용자 작성 방향이며 VERIFIED 사실 근거로 취급하지 않는다.
+- Issues encountered: None.
+- Validation: generation workflow test와 Backend 전체 `check` 통과.
+- Next steps: memo 길이 제한과 prompt 영향은 품질 평가 dataset으로 관찰한다.
+
 ## [2026-08-05] Session Summary (Cover Letter v1/v2/v3 Context 호환)
 
 - What was done:

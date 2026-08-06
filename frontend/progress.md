@@ -5,7 +5,61 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 67 files/286 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 69 files/308 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-06] Session Summary (자기소개서 exact AI model 선택)
+
+- What was done: 서버 model catalog를 사용하는 dropdown과 exact model 기반 생성·검증 client·화면 흐름을 구현했다.
+- Key decisions: model 목록은 Backend 단일 원천을 사용하고 catalog 조회 실패 시 생성 요청을 보내지 않는다.
+- Issues encountered: jsdom의 미구현 `scrollTo` warning이 있었으나 테스트 실패는 아니었다.
+- Validation: `corepack pnpm check` 성공, 69 files·308 tests와 lint·prettier·typecheck·build 통과.
+- Next steps: 실제 Chromium P7 반응형 회귀는 별도 실행한다.
+
+## [2026-08-06] Session Summary (자기소개서 편집 한 화면 배치와 번호 문항 rail)
+
+- What was done:
+  - 답변 편집 본문을 화면 높이에 맞추고 내부 스크롤로 바꿔 작성 영역이 한 화면에 들어오게 했다. 본문 글자 크기는 약 80%로 줄였다.
+  - 좌측 문항 목록을 번호만 남긴 좁은 rail로 바꾸고 상태는 색 점·접근 가능한 이름으로 전달한다. 답변 상단 질문 제목도 본문 크기로 낮췄다.
+  - 동시에 진행된 `qualityMode → model` 계약 변경에 맞춰 편집 page component test를 갱신했다.
+- Key decisions:
+  - 좁은 화면 sheet에서는 질문 preview가 필요하므로 rail을 `compact | list` variant로 나눈다.
+- Issues encountered:
+  - `shared/api/coverLetterApi.test.ts`가 아직 `qualityMode`를 사용해 `vue-tsc`가 3건 실패한다. 해당 파일은 계약을 바꾼 동시 작업 범위라 수정하지 않았다.
+- Validation:
+  - eslint, prettier `--check`, Vitest 69 files/307 tests, `vite build` 통과(node:24 컨테이너). `vue-tsc`는 위 잔여 3건으로 실패.
+- Next steps:
+  - 계약 변경 작업에서 `coverLetterApi.test.ts`를 정리하면 typecheck가 복구된다.
+
+## [2026-08-06] Session Summary (편집 화면 진행 표시·스크롤·소재 tab 보정)
+
+- What was done:
+  - AI 작업 진행을 한 줄 요약 disclosure로 축소하고, 상단 상태·행동 영역을 본문과 함께 스크롤되도록 고정 해제했다.
+  - 작성 도움을 `쓸 소재 / 공고 요구사항 / AI 검토 결과` 3 tab으로 분리하고 소재 선택 화면을 선택 개수·해제·이미 쓴 소재 구분으로 다시 썼다.
+  - `docs/spec/page.md` 8장 화면 구조·작성 도움·진행 표시 문단을 함께 갱신했다.
+- Key decisions:
+  - 기본 tab은 `쓸 소재`이며 공고 요구사항은 선택 UI와 분리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - eslint, prettier `--check`, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build` 통과(node:24 컨테이너).
+- Next steps:
+  - 브라우저 시각·반응형 회귀는 여전히 남아 있다.
+
+## [2026-08-06] Session Summary (자기소개서 작성·수정 화면 재설계)
+
+- What was done:
+  - `/cover-letters/:id/edit`를 상단 고정 상태 영역 + 문항 목록·답변 편집기·작성 도움 3열로 재구성하고, AI 설정·버전 기록·작성 완료 점검·문항 form을 sheet로 분리했다.
+  - 상태 판정 module `features/cover-letters/editorFlow.ts`와 6개 편집 화면 component를 추가했다.
+  - 완료 안내를 공통 toast로 바꾸고 미저장 답변에 대한 문항 이동·페이지 이탈 확인을 추가했다.
+  - `docs/spec/page.md` 8장 화면 구조·기능·검증 표시 계약을 새 구조에 맞춰 갱신했다.
+- Key decisions:
+  - API·DTO·mutation·409 복구 계약은 그대로 두고 노출 위치와 강조만 바꾼다. AI 검토는 Backend 최종화 필수 조건이므로 필수로 안내한다.
+- Issues encountered:
+  - 로컬 Node 20.18.0으로는 vitest(jsdom)와 pnpm CLI를 실행할 수 없어 `node:24` 컨테이너에서 동일 명령을 실행했다.
+- Validation:
+  - eslint, prettier `--check`, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build` 모두 통과(node:24 컨테이너).
+- Next steps:
+  - 실제 브라우저 시각·반응형 회귀와 P7 actual E2E 재실행이 남아 있다.
 
 ## [2026-08-06] Session Summary (자기소개서 참고 자료 드롭다운과 완료 문항 요약)
 

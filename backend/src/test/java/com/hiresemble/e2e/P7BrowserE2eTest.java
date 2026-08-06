@@ -224,7 +224,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         """
                         SELECT count(*) FROM agent_runs
                         WHERE workflow_type='COVER_LETTER_GENERATION'
-                          AND workflow_version='cover-letter-generation-v3'
+                          AND workflow_version='cover-letter-generation-v4'
                         """,
                         Long.class))
                 .isEqualTo(2);
@@ -232,7 +232,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         """
                         SELECT count(*) FROM agent_runs
                         WHERE workflow_type='COVER_LETTER_VERIFICATION'
-                          AND workflow_version='cover-letter-verification-v3'
+                          AND workflow_version='cover-letter-verification-v4'
                         """,
                         Long.class))
                 .isPositive();
@@ -243,7 +243,9 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                             'COVER_LETTER_GENERATION','COVER_LETTER_VERIFICATION')
                           AND workflow_version IN (
                             'cover-letter-generation-v1','cover-letter-generation-v2',
-                            'cover-letter-verification-v1','cover-letter-verification-v2')
+                            'cover-letter-generation-v3',
+                            'cover-letter-verification-v1','cover-letter-verification-v2',
+                            'cover-letter-verification-v3')
                         """,
                         Long.class))
                 .isZero();
@@ -256,7 +258,7 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                          AND predecessor.id=retry.retry_of_run_id
                         WHERE retry.workflow_type='COVER_LETTER_GENERATION'
                           AND retry.workflow_version=predecessor.workflow_version
-                          AND retry.workflow_version='cover-letter-generation-v3'
+                          AND retry.workflow_version='cover-letter-generation-v4'
                         """,
                         Long.class))
                 .isEqualTo(1);

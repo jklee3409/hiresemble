@@ -6,6 +6,14 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-06] Session Summary (자기소개서 exact model v4 계약)
+
+- What was done: API·DB·페이지·기술 명세를 model catalog, 요청별 exact model, memo-aware v4 snapshot과 legacy replay에 맞췄다.
+- Key decisions: 품질 모드 공개 계약은 폐기하고 provider model ID를 서버 allowlist로 검증한다.
+- Issues encountered: None.
+- Validation: OpenAPI·Backend·Frontend 전체 표준 검증 통과.
+- Next steps: 모델 catalog 변경은 API·가격 migration·운영 문서를 함께 갱신한다.
+
 ## [2026-08-06] Session Summary (자기소개서 참고 자료 dropdown과 완료 문항 preview 계약)
 
 - What was done:

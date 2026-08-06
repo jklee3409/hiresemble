@@ -215,14 +215,19 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
   opacity: 0.55;
 }
 
+/*
+ * 본문 높이는 화면에 맞춘다. 답변이 길어져도 페이지 전체가 아니라 이 영역만 스크롤해
+ * 문항·글자 수·저장 button이 한 화면에 남아 있게 한다.
+ */
 :deep(.cover-tiptap__content) {
   box-sizing: border-box;
   width: 100%;
-  min-height: 22rem;
-  padding: var(--space-6);
+  height: var(--cover-editor-height, clamp(12rem, calc(100dvh - 28rem), 40rem));
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
   outline: none;
-  font-size: var(--font-size-md);
-  line-height: 1.85;
+  font-size: 0.8125rem;
+  line-height: 1.8;
   overflow-wrap: anywhere;
 }
 
@@ -268,7 +273,7 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 
 @media (max-width: 40rem) {
   :deep(.cover-tiptap__content) {
-    min-height: 16rem;
+    height: var(--cover-editor-height, clamp(12rem, calc(100dvh - 24rem), 32rem));
     padding: var(--space-4);
   }
 

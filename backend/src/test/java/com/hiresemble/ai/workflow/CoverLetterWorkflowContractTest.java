@@ -103,12 +103,13 @@ class CoverLetterWorkflowContractTest {
     }
 
     @Test
-    void v1DefinitionsAndPromptKeysRemainAvailableForDurableRuns() {
+    void legacyDefinitionsAndPromptKeysRemainAvailableForDurableRuns() {
         assertThat(CanonicalWorkflowDefinitions.all())
                 .filteredOn(value -> value.type() == WorkflowType.COVER_LETTER_GENERATION)
                 .extracting(WorkflowRegistry.WorkflowDefinition::version)
                 .containsExactly(
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION);
         assertThat(CanonicalWorkflowDefinitions.all())
@@ -116,6 +117,7 @@ class CoverLetterWorkflowContractTest {
                 .extracting(WorkflowRegistry.WorkflowDefinition::version)
                 .containsExactly(
                         CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION);
 

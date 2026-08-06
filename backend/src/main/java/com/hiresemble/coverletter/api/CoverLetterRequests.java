@@ -1,6 +1,5 @@
 package com.hiresemble.coverletter.api;
 
-import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -49,7 +48,7 @@ public final class CoverLetterRequests {
     public record GenerateCoverLetterRequest(
             @NotEmpty @Size(max = 20) List<@NotNull UUID> questionIds,
             @Size(max = 50) List<@NotNull UUID> preferredEvidenceIds,
-            @NotNull AiQualityMode qualityMode,
+            @NotBlank @Size(max = 64) String model,
             boolean avoidExperienceDuplication,
             @PositiveOrZero long coverLetterVersion) {
         public GenerateCoverLetterRequest {
@@ -65,7 +64,8 @@ public final class CoverLetterRequests {
 
     public record RestoreAnswerVersionRequest(UUID expectedCurrentVersionId) {}
 
-    public record VerifyAnswerVersionRequest(@NotNull AiQualityMode qualityMode) {}
+    public record VerifyAnswerVersionRequest(
+            @NotBlank @Size(max = 64) String model) {}
 
     public record VersionCommandRequest(@PositiveOrZero long version) {}
 

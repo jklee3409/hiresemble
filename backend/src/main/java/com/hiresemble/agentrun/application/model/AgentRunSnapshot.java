@@ -65,4 +65,13 @@ public record AgentRunSnapshot(
                 || status == AgentRunStatus.RUNNING
                 || status == AgentRunStatus.WAITING_USER);
     }
+
+    /** Exact provider model selected for workflows that expose an allowlisted model picker. */
+    public String requestedModel() {
+        if (inputReferenceSnapshot == null) {
+            return null;
+        }
+        String value = inputReferenceSnapshot.path("model").asText(null);
+        return value == null || value.isBlank() ? null : value;
+    }
 }

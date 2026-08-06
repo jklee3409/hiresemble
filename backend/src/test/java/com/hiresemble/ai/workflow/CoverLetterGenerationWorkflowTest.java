@@ -13,6 +13,7 @@ import com.hiresemble.ai.context.ContextBuilder.ContextSnapshot;
 import com.hiresemble.ai.context.ContextBuilder.TruncationSummary;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.model.ModelRouter.ModelRoute;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
@@ -101,6 +102,54 @@ class CoverLetterGenerationWorkflowTest {
             new PromptRegistry(CoverLetterGenerationV2PromptDefinitions.all());
     private final PromptRegistry v3Prompts =
             new PromptRegistry(CoverLetterGenerationV3PromptDefinitions.all());
+
+    @Test
+    void v4PlanningReceivesBoundedUserMemoAndExactModelInput() {
+        Fixture base = singleQuestionFixture();
+        GenerationQuestion sourceQuestion = base.snapshot().questions().getFirst();
+        GenerationQuestion memoQuestion = new GenerationQuestion(
+                sourceQuestion.questionId(),
+                sourceQuestion.questionOrder(),
+                sourceQuestion.questionText(),
+                sourceQuestion.maxLength(),
+                "지원 동기보다 장애 대응에서 제가 한 판단을 강조해 주세요.",
+                sourceQuestion.currentAnswerVersionId(),
+                sourceQuestion.currentPlainText());
+        GenerationSnapshot snapshot = new GenerationSnapshot(
+                base.snapshot().userId(),
+                base.snapshot().coverLetterId(),
+                base.snapshot().coverLetterVersion(),
+                base.snapshot().title(),
+                base.snapshot().job(),
+                List.of(memoQuestion),
+                base.snapshot().verifiedEvidence(),
+                base.snapshot().preferredEvidenceIds(),
+                base.snapshot().avoidExperienceDuplication(),
+                null,
+                OpenAiChatModels.GPT_5_6_TERRA,
+                base.snapshot().snapshotHash());
+        FakeQuery query = new FakeQuery(snapshot);
+        CoverLetterGenerationWorkflow workflow = new CoverLetterGenerationWorkflow(
+                query, new FakeCommand(snapshot.userId()), new FakeEmbeddingPolicy(), objectMapper);
+        AgentRunSnapshot run = runV4(snapshot, UUID.randomUUID());
+        ExecutableWorkflowStep plan = workflow.v4Contribution().steps().stream()
+                .filter(value -> value.stepKey().equals(CoverLetterGenerationWorkflow.PLAN_QUESTIONS))
+                .findFirst()
+                .orElseThrow();
+
+        StepInput input = plan.executor()
+                .prepareInputs(context(run, Map.of(), Map.of(), null))
+                .getFirst();
+        CoverLetterGenerationWorkflow.PlanQuestionsInputV4 payload = objectMapper.treeToValue(
+                input.gatewayPayload(), CoverLetterGenerationWorkflow.PlanQuestionsInputV4.class);
+
+        assertThat(run.requestedQualityMode()).isNull();
+        assertThat(run.requestedModel()).isEqualTo(OpenAiChatModels.GPT_5_6_TERRA);
+        assertThat(payload.schemaVersion()).isEqualTo("cover-letter-input-v4");
+        assertThat(payload.questions()).singleElement()
+                .extracting(CoverLetterGenerationWorkflow.QuestionPlanningInputV4::questionMemo)
+                .isEqualTo(memoQuestion.memo());
+    }
 
     @Test
     void v3WriterLengthViolationRequestsOneSafeCorrectionBeforeDomainApply() {
@@ -458,7 +507,7 @@ class CoverLetterGenerationWorkflowTest {
             StepInput input,
             StepExecutionContext context) {
         PromptRegistry registry =
-                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION.equals(
                                 context.run().workflowVersion())
                         ? v3Prompts
                         : CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
@@ -750,7 +799,7 @@ class CoverLetterGenerationWorkflowTest {
         return new AgentRunSnapshot(
                 v2.id(), v2.userId(), v2.workflowType(), v2.status(),
                 v2.currentStep(), v2.progressPercent(),
-                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION,
                 v2.canonicalInputHash(), v2.inputReferenceSnapshot(),
                 v2.budgetPolicyVersion(), v2.priceVersion(),
                 v2.requestedQualityMode(), v2.highestModelTierUsed(),
@@ -761,6 +810,60 @@ class CoverLetterGenerationWorkflowTest {
                 v2.leaseExpiresAt(), v2.heartbeatAt(), v2.cancelRequestedAt(),
                 v2.requiredUserAction(), v2.stateVersion(), v2.queuedAt(),
                 v2.startedAt(), v2.completedAt(), v2.updatedAt(), v2.steps());
+    }
+
+    private AgentRunSnapshot runV4(GenerationSnapshot snapshot, UUID runId) {
+        var input = objectMapper.createObjectNode()
+                .put("coverLetterId", snapshot.coverLetterId().toString())
+                .put("coverLetterVersion", snapshot.coverLetterVersion())
+                .put("snapshotHash", snapshot.snapshotHash())
+                .put("model", snapshot.model())
+                .put(
+                        "avoidExperienceDuplication",
+                        snapshot.avoidExperienceDuplication());
+        var questionIds = input.putArray("questionIds");
+        snapshot.questions()
+                .forEach(value -> questionIds.add(value.questionId().toString()));
+        var preferred = input.putArray("preferredEvidenceIds");
+        snapshot.preferredEvidenceIds()
+                .forEach(value -> preferred.add(value.toString()));
+        return new AgentRunSnapshot(
+                runId,
+                snapshot.userId(),
+                WorkflowType.COVER_LETTER_GENERATION,
+                AgentRunStatus.RUNNING,
+                null,
+                0,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                "f".repeat(64),
+                input,
+                1L,
+                1L,
+                null,
+                null,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                "COVER_LETTER",
+                snapshot.coverLetterId(),
+                null,
+                runId,
+                1,
+                false,
+                null,
+                null,
+                UUID.randomUUID(),
+                "test-worker",
+                NOW.plusSeconds(60),
+                NOW,
+                null,
+                null,
+                1L,
+                NOW,
+                NOW,
+                null,
+                NOW,
+                List.of());
     }
 
     private TipTapDocumentDto document(String text) {
@@ -1024,6 +1127,25 @@ class CoverLetterGenerationWorkflowTest {
                         "APPLY completion must not reload the mutable snapshot");
             }
             snapshotLoads.incrementAndGet();
+            return snapshot;
+        }
+
+        @Override
+        public GenerationSnapshot loadGenerationSnapshotByModel(
+                UUID userId,
+                UUID coverLetterId,
+                long expectedCoverLetterVersion,
+                List<UUID> questionIds,
+                List<UUID> preferredEvidenceIds,
+                boolean avoidExperienceDuplication,
+                String model,
+                String expectedSnapshotHash) {
+            if (rejectSnapshotLoads) {
+                throw new AssertionError(
+                        "APPLY completion must not reload the mutable snapshot");
+            }
+            snapshotLoads.incrementAndGet();
+            assertThat(model).isEqualTo(snapshot.model());
             return snapshot;
         }
 

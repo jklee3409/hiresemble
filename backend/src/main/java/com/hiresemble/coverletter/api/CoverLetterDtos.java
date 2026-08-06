@@ -18,6 +18,13 @@ public final class CoverLetterDtos {
 
     private CoverLetterDtos() {}
 
+    @Schema(name = "CoverLetterAiModelDto")
+    public record CoverLetterAiModelDto(
+            @Schema(minLength = 1, maxLength = 64) String id,
+            @Schema(minLength = 1, maxLength = 100) String displayName,
+            @Schema(minLength = 1, maxLength = 200) String description,
+            boolean recommended) {}
+
     @Schema(name = "JobRefDto")
     public record JobRefDto(
             UUID id,

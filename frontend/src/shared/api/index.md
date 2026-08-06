@@ -16,8 +16,8 @@ Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 - [`documentApi.ts`](documentApi.ts): 문서 공개 API 8개 multipart·version·idempotency consumer
 - [`jobContracts.ts`](jobContracts.ts): 업무·추출·등록 상하반기·자동 `BALANCED` 분석 projection·P6 분석 enum과 공개 DTO의 strict Zod 계약
 - [`jobApi.ts`](jobApi.ts): Job 공개 API 10개, 등록 기간 filter·version·idempotency consumer
-- [`coverLetterContracts.ts`](coverLetterContracts.ts): P7 상태·질문·version·verification strict Zod 계약
-- [`coverLetterApi.ts`](coverLetterApi.ts): Cover Letter 공개 API 17개, CAS·Idempotency consumer
+- [`coverLetterContracts.ts`](coverLetterContracts.ts): P7 상태·질문·version·verification·선택 가능 AI model catalog strict Zod 계약
+- [`coverLetterApi.ts`](coverLetterApi.ts): Cover Letter 공개 API 18개, exact model·CAS·Idempotency consumer
 - [`interviewContracts.ts`](interviewContracts.ts): P8 조사·질문·답변·feedback strict Zod 계약
 - [`interviewApi.ts`](interviewApi.ts): P8 공개 API 11개, CAS·Idempotency consumer
 - [`dashboardContracts.ts`](dashboardContracts.ts): Dashboard·Career Guide strict Zod 응답 계약과 날짜별 count 일치 검증

@@ -22,18 +22,18 @@ public final class StrictStructuredOutputSchemaRegistry {
             OpenAiStrictSchemaCompatibilityValidator validator) {
         Map<SchemaKey, ValidatedSchema> values = new LinkedHashMap<>();
         for (PromptDefinition definition : promptRegistry.strictStructuredOutputDefinitions()) {
+            SchemaKey key = new SchemaKey(definition.outputType(), definition.outputSchemaVersion());
+            if (values.containsKey(key)) {
+                continue;
+            }
             String schema = generator.generate(definition.outputType());
             validator.validate(schema);
-            SchemaKey key = new SchemaKey(definition.outputType(), definition.outputSchemaVersion());
             ValidatedSchema value = new ValidatedSchema(
                     contractName(definition),
                     definition.outputSchemaVersion(),
                     sha256(schema),
                     schema);
-            ValidatedSchema previous = values.putIfAbsent(key, value);
-            if (previous != null && !previous.schema().equals(value.schema())) {
-                throw new IllegalStateException("AI_STRICT_SCHEMA_DEFINITION_CONFLICT");
-            }
+            values.put(key, value);
         }
         this.schemas = Map.copyOf(values);
     }

@@ -5,6 +5,7 @@ import com.hiresemble.agentrun.application.port.AiPreferenceQueryPort;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.common.exception.BusinessException;
@@ -50,22 +51,24 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                                 run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                 run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION.equals(
+                                run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
                                 run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())
                 || run.resourceId() == null
-                || run.requestedQualityMode() == null) {
+                || !validSelection(run)) {
             throw configurationFailure();
         }
         InputReference input = input(run);
         if (!run.resourceId().equals(input.coverLetterId())
-                || run.requestedQualityMode() != input.qualityMode()) {
+                || !selectionMatches(run, input.qualityMode(), input.model())) {
             throw ownerFailure();
         }
         GenerationSnapshot snapshot = load(run, input);
         if (!run.userId().equals(snapshot.userId())
                 || !run.resourceId().equals(snapshot.coverLetterId())
-                || snapshot.qualityMode() != run.requestedQualityMode()
+                || !selectionMatches(run, snapshot.qualityMode(), snapshot.model())
                 || snapshot.questions().size() > 20
                 || snapshot.verifiedEvidence().stream()
                         .anyMatch(value -> value.id() == null)) {
@@ -84,7 +87,9 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                 Math.max(0, snapshot.verifiedEvidence().size() - evidenceRefs.size());
         List<String> omittedKinds =
                 omittedEvidence == 0 ? List.of() : List.of("VERIFIED_EVIDENCE_TAIL");
-        var preference = preferenceQueryPort.activePreference(run.userId());
+        boolean highQualityEnabled = isExactModel(run)
+                ? false
+                : preferenceQueryPort.activePreference(run.userId()).highQualityEnabled();
         return new ContextSnapshot(
                 run.userId(),
                 List.of(
@@ -107,7 +112,7 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                 snapshot.snapshotHash(),
                 "CURRENT_VERIFIED_EVIDENCE_ONLY",
                 modelPolicyVersion,
-                preference.highQualityEnabled(),
+                highQualityEnabled,
                 budgetConfirmed(run));
     }
 
@@ -117,15 +122,25 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                 return queryPort.loadGenerationRetrySnapshot(
                         run.userId(), run.id(), null);
             }
-            return queryPort.loadGenerationSnapshot(
-                    run.userId(),
-                    input.coverLetterId(),
-                    input.coverLetterVersion(),
-                    input.questionIds(),
-                    input.preferredEvidenceIds(),
-                    input.avoidExperienceDuplication(),
-                    input.qualityMode(),
-                    input.snapshotHash());
+            return isExactModel(run)
+                    ? queryPort.loadGenerationSnapshotByModel(
+                            run.userId(),
+                            input.coverLetterId(),
+                            input.coverLetterVersion(),
+                            input.questionIds(),
+                            input.preferredEvidenceIds(),
+                            input.avoidExperienceDuplication(),
+                            input.model(),
+                            input.snapshotHash())
+                    : queryPort.loadGenerationSnapshot(
+                            run.userId(),
+                            input.coverLetterId(),
+                            input.coverLetterVersion(),
+                            input.questionIds(),
+                            input.preferredEvidenceIds(),
+                            input.avoidExperienceDuplication(),
+                            input.qualityMode(),
+                            input.snapshotHash());
         } catch (BusinessException exception) {
             throw mapBusiness(exception);
         }
@@ -138,8 +153,13 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                     UUID.fromString(input.path("coverLetterId").asText());
             long coverLetterVersion = input.path("coverLetterVersion").asLong(-1);
             String snapshotHash = input.path("snapshotHash").asText();
-            AiQualityMode qualityMode =
-                    AiQualityMode.valueOf(input.path("qualityMode").asText());
+            String model = isExactModel(run) ? input.path("model").asText(null) : null;
+            AiQualityMode qualityMode = isExactModel(run)
+                    ? null
+                    : AiQualityMode.valueOf(input.path("qualityMode").asText());
+            if (isExactModel(run)) {
+                OpenAiChatModels.requireCoverLetter(model);
+            }
             boolean avoidExperienceDuplication =
                     input.path("avoidExperienceDuplication").asBoolean(false);
             List<UUID> questionIds = uuidArray(input.path("questionIds"), 1, 20);
@@ -155,6 +175,7 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                     coverLetterVersion,
                     snapshotHash,
                     qualityMode,
+                    model,
                     avoidExperienceDuplication,
                     questionIds,
                     preferredEvidenceIds);
@@ -225,11 +246,31 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
                 "AI 실행 구성이 준비되지 않았습니다.");
     }
 
+    private boolean isExactModel(AgentRunSnapshot run) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                run.workflowVersion());
+    }
+
+    private boolean validSelection(AgentRunSnapshot run) {
+        return isExactModel(run)
+                ? run.requestedQualityMode() == null
+                        && OpenAiChatModels.supportsCoverLetter(run.requestedModel())
+                : run.requestedQualityMode() != null && run.requestedModel() == null;
+    }
+
+    private boolean selectionMatches(
+            AgentRunSnapshot run, AiQualityMode qualityMode, String model) {
+        return isExactModel(run)
+                ? qualityMode == null && run.requestedModel().equals(model)
+                : model == null && run.requestedQualityMode() == qualityMode;
+    }
+
     private record InputReference(
             UUID coverLetterId,
             long coverLetterVersion,
             String snapshotHash,
             AiQualityMode qualityMode,
+            String model,
             boolean avoidExperienceDuplication,
             List<UUID> questionIds,
             List<UUID> preferredEvidenceIds) {}

@@ -14,6 +14,7 @@
 | [`post-p8-5-operations-contract-decision.md`](post-p8-5-operations-contract-decision.md) | budget/quota/usage/billing 분리, 실패 UX, Backoffice, P9 전 단계와 거절 대안을 보존한다.                                           |
 | [`ui-ux-auto-job-analysis-redesign.md`](ui-ux-auto-job-analysis-redesign.md)             | 2026-08-02 UI 감사, B2C 정보 구조·토큰, 공고 document view와 revision별 내구성 있는 자동 분석 구현 설계를 고정한다.               |
 | [`job-analysis-page-design-guide.html`](job-analysis-page-design-guide.html)             | `/jobs/:jobId/analysis` 개편 구현 가이드다. 추가 토큰, 자체 아이콘 18종, API↔UI 매핑, 상태 분기, 데스크톱·모바일 시안, 차트 규격과 색각 검증 결과, 구현 체크리스트를 담는다. |
+| [`cover-letter-openai-model-selection-report.md`](cover-letter-openai-model-selection-report.md) | 자기소개서 요청별 exact OpenAI model 선택의 공식 지원 근거, 안정성 경계와 생성 품질 개선 우선순위를 기록한다.                    |
 | [`progress.md`](progress.md)                                                             | 설계 문서의 작성·검증 상태, P0 승인과 이후 구현 단계 상태를 추적한다.                                                              |
 
 현재 관리 대상 하위 디렉터리는 없다.
@@ -26,6 +27,7 @@
 - P8.5 이후 운영 결정 기록은 실제 호출 0인 구현 판정과 P8.5-V~P10-C 선행 관계를 보존하되 공개 목표는 활성 명세로 연결한다.
 - UI/UX·자동 분석 재설계 메모는 구현 전 감사와 선택 근거를 보존하며, 실제 공개 상태·idempotency 계약은 활성 명세와 코드를 따른다.
 - 공고 분석 페이지 디자인 가이드는 재설계 메모의 방향을 실제 구현 스펙으로 확정한 문서다. 화면 요소는 `JobAnalysisDetailDto`에 존재하는 필드로만 구성하며 새 공개 계약을 만들지 않는다.
+- 자기소개서 모델 선택 보고서는 공식 OpenAI 문서와 현재 코드 구조를 교차 검토한 판단 및 품질 개선 우선순위를 보존하며 활성 계약은 `docs/spec/**`에 둔다.
 - 진행 문서는 설계가 실제 구현 완료를 의미하지 않음을 유지하고 문서 검증·후속 결정만 기록한다.
 
 ## 다른 디렉터리와의 의존 관계

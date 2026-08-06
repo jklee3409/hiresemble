@@ -4,6 +4,14 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-06] Session Summary (자기소개서 모델 선택·품질 개선 계약 정리)
+
+- What was done: 공식 OpenAI 모델 검증 보고서를 추가하고 API·DB·페이지·기술·운영 문서를 exact model과 memo-aware v4 구현에 맞췄다.
+- Key decisions: model ID 중앙 catalog, 4.5 preview 제외, legacy Run 재개와 신규 v4 분리를 문서 계약으로 고정했다.
+- Issues encountered: 계정별 모델 접근 권한은 공식 catalog와 별개라 실제 호출 전 확인이 필요하다.
+- Validation: 관련 문서 링크·코드 계약, Backend·Frontend 전체 검증과 Compose 설정 검증을 확인했다.
+- Next steps: 운영 smoke test와 품질 평가 지표를 후속 작업으로 수행한다.
+
 ## [2026-08-06] Session Summary (자기소개서 페이지 계약과 디자인 도구 참조 정리)
 
 - What was done:

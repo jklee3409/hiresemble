@@ -22,6 +22,27 @@ import * as coverLetterApi from './coverLetterApi'
 describe('P7 cover letter API', () => {
   beforeEach(() => vi.restoreAllMocks())
 
+  it('loads and validates the server-owned selectable model catalog', async () => {
+    const models = [
+      {
+        id: 'gpt-5.6-terra',
+        displayName: 'GPT-5.6 Terra',
+        description: 'Balanced flagship',
+        recommended: true,
+      },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `gpt-5.${index}`,
+        displayName: `GPT-5.${index}`,
+        description: 'Selectable model',
+        recommended: false,
+      })),
+    ]
+    const get = vi.spyOn(apiClient, 'get').mockResolvedValue(models)
+
+    await expect(coverLetterApi.listCoverLetterAiModels()).resolves.toEqual(models)
+    expect(get).toHaveBeenCalledWith('/cover-letters/ai-models')
+  })
+
   it('uses exact create/generate/verify idempotency headers and typed resource links', async () => {
     const post = vi
       .spyOn(apiClient.client, 'post')
@@ -45,7 +66,7 @@ describe('P7 cover letter API', () => {
       {
         questionIds: [COVER_LETTER_QUESTION_ID],
         preferredEvidenceIds: [],
-        qualityMode: 'BALANCED',
+        model: 'gpt-5.6-terra',
         avoidExperienceDuplication: true,
         coverLetterVersion: 3,
       },
@@ -53,7 +74,7 @@ describe('P7 cover letter API', () => {
     )
     await coverLetterApi.verifyAnswerVersion(
       COVER_LETTER_ANSWER_ID,
-      { qualityMode: 'HIGH_QUALITY' },
+      { model: 'gpt-5.6-sol' },
       'cover-letter-verify:key-1',
     )
 
@@ -66,13 +87,13 @@ describe('P7 cover letter API', () => {
     expect(post).toHaveBeenNthCalledWith(
       2,
       `/cover-letters/${COVER_LETTER_ID}/generate`,
-      expect.objectContaining({ qualityMode: 'BALANCED', coverLetterVersion: 3 }),
+      expect.objectContaining({ model: 'gpt-5.6-terra', coverLetterVersion: 3 }),
       { headers: { 'Idempotency-Key': 'cover-letter-generate:key-1' } },
     )
     expect(post).toHaveBeenNthCalledWith(
       3,
       `/cover-letter-answer-versions/${COVER_LETTER_ANSWER_ID}/verify`,
-      { qualityMode: 'HIGH_QUALITY' },
+      { model: 'gpt-5.6-sol' },
       { headers: { 'Idempotency-Key': 'cover-letter-verify:key-1' } },
     )
   })
@@ -219,7 +240,7 @@ describe('P7 cover letter API', () => {
         {
           questionIds: [COVER_LETTER_QUESTION_ID],
           preferredEvidenceIds: [],
-          qualityMode: 'ECONOMY',
+          model: 'gpt-5.6-luna',
           avoidExperienceDuplication: true,
           coverLetterVersion: 1,
         },

@@ -4,6 +4,63 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (편집 페이지 model 선택 연결)
+
+- What was done: 자기소개서 편집 페이지가 model catalog를 조회해 추천값을 초기화하고 선택 모델로 생성·검증을 접수하도록 연결했다.
+- Key decisions: 선택 모델은 요청마다 독립적으로 전달하고 화면의 품질 모드 표현을 제거한다.
+- Issues encountered: None.
+- Validation: page test를 포함한 Frontend `pnpm check` 69 files·308 tests 통과.
+- Next steps: 실제 Chromium 반응형 회귀를 실행한다.
+
+## [2026-08-06] Session Summary (편집 화면 한 화면 배치와 번호 전용 문항 rail)
+
+- What was done:
+  - 답변 편집 본문 높이를 `clamp(12rem, calc(100dvh - 28rem), 40rem)`로 두고 내부 스크롤을 사용해, 문항·글자 수·저장 button이 한 화면에 남도록 했다. 본문 글자 크기는 1rem에서 0.8125rem으로 줄였다.
+  - 좌측 문항 rail을 번호만 남긴 2.75rem strip으로 바꾸고 상태는 색 점과 접근 가능한 이름으로 전달한다. 좁은 화면 sheet는 질문 preview까지 보여 주는 `list` variant를 쓴다.
+  - 답변 영역 상단 질문 제목을 `1.` 번호 + 본문 크기(0.875rem)로 낮추고 메모도 작게 줄였다.
+  - 동시에 진행된 `qualityMode → model` API 계약 변경에 맞춰 page component test의 생성·검토 요청 assertion과 AI 모델 query mock을 갱신했다.
+- Key decisions:
+  - rail은 번호만 남기되 상태 정보를 잃지 않도록 색 점 + `aria-label`·`title`에 상태 문구를 함께 넣는다.
+- Issues encountered:
+  - 재렌더 뒤 오래된 DOMWrapper로 `setValue`를 호출하면 조용히 무시돼, 모델 select는 매번 다시 조회하도록 test를 고쳤다.
+- Validation:
+  - 컨테이너(node:24)에서 eslint, prettier, Vitest 69 files/307 tests, `vite build` 통과. `vue-tsc`는 동시 변경 중인 `shared/api/coverLetterApi.test.ts`의 `qualityMode` 잔여 3건만 실패한다.
+- Next steps:
+  - 위 typecheck 잔여 항목은 API 계약을 바꾼 작업에서 정리해야 한다.
+
+## [2026-08-06] Session Summary (편집 화면 진행 표시·스크롤·소재 tab 보정)
+
+- What was done:
+  - AI 작업 진행 표시를 한 줄 요약 disclosure로 줄이고 연결 상태·문항 결과·상세 link는 펼쳤을 때만 보이게 했다. 재시도가 필요한 문항이 있으면 기본 펼침이다.
+  - 상단 상태·행동 영역의 `position: sticky`를 없애 본문과 함께 스크롤되도록 하고, 문항 목록·작성 도움의 sticky 기준을 전역 header 바로 아래로 낮췄다.
+  - 작성 도움을 `쓸 소재 / 공고 요구사항 / AI 검토 결과` 3 tab으로 나눴다. 소재 tab은 선택 개수·모두 해제·아직 쓰지 않은 소재·이미 쓴 소재를 구분하고, 확인한 경험이 없으면 자료 등록 경로를 준다.
+- Key decisions:
+  - 기본 tab은 작성 중 가장 자주 쓰는 `쓸 소재`로 둔다. 공고 요구사항은 읽기 정보라 선택 UI와 섞지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 컨테이너(node:24)에서 eslint, prettier, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build`가 통과했다.
+- Next steps:
+  - 브라우저 시각 확인은 여전히 미수행이다.
+
+## [2026-08-06] Session Summary (자기소개서 편집 페이지 UI/UX 재설계)
+
+- What was done:
+  - `CoverLetterEditPage.vue`를 상단 고정 상태 영역과 문항 목록·답변 편집기·작성 도움 3열 작업 화면으로 다시 구성했다. AI 코치 5단계 panel, 참고 자료 3열 dropdown, 상시 노출 AI 설정, 하단 저장 기록·마지막 점검 section을 제거했다.
+  - 상태에서 유도한 단일 primary 행동만 강조하고, 미저장 상태에서는 강조를 편집기 옆 `답변 저장`으로 넘긴다. 나머지 행동은 secondary·tertiary로 낮췄다.
+  - AI 설정·버전 기록·작성 완료 점검·문항 추가·문항 수정을 focus 가둠과 Escape 닫기를 갖춘 sheet로 옮겼다.
+  - 완료 안내를 toast로 바꾸고, 저장하지 않은 답변이 있을 때 문항 이동과 페이지 이탈에 확인을 받도록 했다.
+  - page component test를 새 구조·흐름 기준으로 다시 쓰고 P7 actual E2E 선택자와 문구를 맞췄다.
+- Key decisions:
+  - API·DTO·mutation 계약과 409 비교·복구 흐름은 그대로 두고 표시 위치와 강조만 바꿨다.
+  - 상태 판정은 `features/cover-letters/editorFlow.ts`가 소유하고 page는 결과만 사용한다.
+- Issues encountered:
+  - `onBeforeRouteLeave`는 page를 직접 mount하는 component test에서 경고만 남기고 동작하지 않아 문항 이동 확인으로 검증했다.
+- Validation:
+  - 컨테이너(node:24)에서 eslint, prettier, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build`가 통과했다.
+- Next steps:
+  - 브라우저 시각 회귀(`ui-redesign.visual.spec.ts`)와 P7 actual E2E는 재실행하지 않았다.
+
 ## [2026-08-06] Session Summary (자기소개서 참고 자료 드롭다운 복원)
 
 - What was done:

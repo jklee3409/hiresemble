@@ -3,7 +3,9 @@ package com.hiresemble.ai.workflow;
 import com.hiresemble.agentrun.domain.model.PartialResult;
 import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import com.hiresemble.ai.execution.AiExecutionException;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
@@ -114,6 +116,7 @@ public final class CoverLetterGenerationWorkflow {
     private static final String INPUT_SCHEMA = "cover-letter-input-v1";
     private static final String INPUT_SCHEMA_V2 = "cover-letter-input-v2";
     private static final String INPUT_SCHEMA_V3 = "cover-letter-input-v3";
+    private static final String INPUT_SCHEMA_V4 = "cover-letter-input-v4";
     private static final int MAX_EVIDENCE_PER_QUESTION = 12;
     private static final int MAX_PLANNING_EVIDENCE = 20;
     private static final int MAX_CHUNK_REFS = 8;
@@ -191,8 +194,28 @@ public final class CoverLetterGenerationWorkflow {
                         step(APPLY_ANSWER_VERSION, new V2ApplyAnswerExecutor())));
     }
 
-    /** Active v3 contribution; v1/v2 contributions remain exact-version durable executors. */
+    /** Durable v3 contribution; v1/v2 contributions remain exact-version durable executors. */
     public ExecutableWorkflowContribution v3Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.COVER_LETTER_GENERATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION,
+                TerminalPartialPolicy.fail(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다.",
+                        TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES),
+                List.of(
+                        step(BUILD_GENERATION_CONTEXT, new V3BuildContextExecutor()),
+                        step(PLAN_QUESTIONS, new V3PlanQuestionsExecutor()),
+                        step(ANALYZE_QUESTION, new V3AnalyzeQuestionExecutor()),
+                        step(RETRIEVE_EVIDENCE, new V3RetrieveEvidenceExecutor()),
+                        step(ALLOCATE_EXPERIENCES, new V3AllocateExperiencesExecutor()),
+                        step(WRITE_ANSWER, new V3WriteAnswerExecutor()),
+                        step(FACT_CHECK_ANSWER, new V3FactCheckAnswerExecutor()),
+                        step(APPLY_ANSWER_VERSION, new V3ApplyAnswerExecutor())));
+    }
+
+    /** Active v4 contribution with exact-model routing and memo-aware generation inputs. */
+    public ExecutableWorkflowContribution v4Contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_GENERATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
@@ -271,11 +294,13 @@ public final class CoverLetterGenerationWorkflow {
                                     context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                     context.run().workflowVersion())
+                            && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION.equals(
+                                    context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION.equals(
                                     context.run().workflowVersion()))
                     || !"COVER_LETTER".equals(context.run().resourceType())
                     || context.run().resourceId() == null
-                    || context.run().requestedQualityMode() == null) {
+                    || !validSelection(context.run())) {
                 throw configurationFailure();
             }
             try {
@@ -283,22 +308,32 @@ public final class CoverLetterGenerationWorkflow {
                 List<UUID> requestedQuestionIds =
                         uuidArray(input.path("questionIds"), 1, 20);
                 GenerationSnapshot snapshot = context.run().retryOfRunId() == null
-                        ? queryPort.loadGenerationSnapshot(
-                                context.run().userId(),
-                                context.run().resourceId(),
-                                input.path("coverLetterVersion").asLong(-1),
-                                requestedQuestionIds,
-                                uuidArray(input.path("preferredEvidenceIds"), 0, 50),
-                                input.path("avoidExperienceDuplication").asBoolean(false),
-                                context.run().requestedQualityMode(),
-                                context.contextSnapshot().contextHash())
+                        ? isExactModel(context.run())
+                                ? queryPort.loadGenerationSnapshotByModel(
+                                        context.run().userId(),
+                                        context.run().resourceId(),
+                                        input.path("coverLetterVersion").asLong(-1),
+                                        requestedQuestionIds,
+                                        uuidArray(input.path("preferredEvidenceIds"), 0, 50),
+                                        input.path("avoidExperienceDuplication").asBoolean(false),
+                                        context.run().requestedModel(),
+                                        context.contextSnapshot().contextHash())
+                                : queryPort.loadGenerationSnapshot(
+                                        context.run().userId(),
+                                        context.run().resourceId(),
+                                        input.path("coverLetterVersion").asLong(-1),
+                                        requestedQuestionIds,
+                                        uuidArray(input.path("preferredEvidenceIds"), 0, 50),
+                                        input.path("avoidExperienceDuplication").asBoolean(false),
+                                        context.run().requestedQualityMode(),
+                                        context.contextSnapshot().contextHash())
                         : queryPort.loadGenerationRetrySnapshot(
                                 context.run().userId(),
                                 context.run().id(),
                                 context.contextSnapshot().contextHash());
                 if (!snapshot.userId().equals(context.run().userId())
                         || !snapshot.coverLetterId().equals(context.run().resourceId())
-                        || snapshot.qualityMode() != context.run().requestedQualityMode()
+                        || !selectionMatches(context.run(), snapshot)
                         || !snapshot.snapshotHash().equals(
                                 context.contextSnapshot().contextHash())
                         || snapshot.questions().size() > 20) {
@@ -386,9 +421,9 @@ public final class CoverLetterGenerationWorkflow {
 
         protected final ObjectNode baseRefsV3(GenerationState state) {
             var refs = baseRefs(state);
-            refs.put("contextPolicyVersion", CONTEXT_POLICY_VERSION_V3);
-            refs.put("retrievalPolicyVersion", RETRIEVAL_POLICY_VERSION_V3);
-            refs.put("inputSchemaVersion", INPUT_SCHEMA_V3);
+            refs.put("contextPolicyVersion", contextPolicyVersion(state));
+            refs.put("retrievalPolicyVersion", retrievalPolicyVersion(state));
+            refs.put("inputSchemaVersion", inputSchemaVersion(state));
             refs.put("outputLocale", CoverLetterWorkflowV3Policy.OUTPUT_LOCALE);
             return refs;
         }
@@ -587,9 +622,9 @@ public final class CoverLetterGenerationWorkflow {
                     state,
                     null,
                     baseRefsV3(state),
-                    BUILD_SCHEMA + "|" + INPUT_SCHEMA_V3,
+                    BUILD_SCHEMA + "|" + inputSchemaVersion(state),
                     tree(new BuildGenerationContextInput(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             state.snapshot().coverLetterId(),
                             state.snapshot().coverLetterVersion(),
                             state.snapshot().snapshotHash())));
@@ -723,22 +758,12 @@ public final class CoverLetterGenerationWorkflow {
                     null,
                     refs,
                     stableHash(questions) + "|" + stableHash(evidence),
-                    tree(new PlanQuestionsInputV3(
-                            INPUT_SCHEMA_V3,
-                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
-                            contextAvailability(state),
-                            jobWritingContext(state),
-                            questions,
-                            requirements,
-                            evidence,
-                            Math.max(0, state.snapshot().verifiedEvidence().size() - evidence.size()),
-                            state.snapshot().avoidExperienceDuplication())));
+                    tree(planQuestionsInput(state, questions, requirements, evidence)));
         }
 
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
-            PlanQuestionsInputV3 input = read(
-                    invocation.input().gatewayPayload(), PlanQuestionsInputV3.class);
+            PlanningInvocationInput input = planningInvocationInput(invocation);
             if (input.questions().size() == 1) {
                 QuestionPlanningInput question = input.questions().getFirst();
                 int target = Math.max(1, Math.min(
@@ -867,7 +892,7 @@ public final class CoverLetterGenerationWorkflow {
                     refs,
                     stableHash(selected),
                     tree(new AnalyzeQuestionInputV3(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
                             contextAvailability(state),
                             question.questionId(),
@@ -1248,15 +1273,15 @@ public final class CoverLetterGenerationWorkflow {
                     state,
                     question.questionId().toString(),
                     refs,
-                    sha256(queryText + "|" + RETRIEVAL_POLICY_VERSION_V3),
+                    sha256(queryText + "|" + retrievalPolicyVersion(state)),
                     tree(new RetrieveEvidenceInput(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             question.questionId(),
                             queryText,
                             state.embeddingPolicy().version(),
                             state.embeddingPolicy().dimension(),
                             state.embeddingPolicy().generation(),
-                            RETRIEVAL_POLICY_VERSION_V3)));
+                            retrievalPolicyVersion(state))));
         }
 
         @Override
@@ -1528,7 +1553,7 @@ public final class CoverLetterGenerationWorkflow {
                     refs,
                     stableHash(candidates),
                     tree(new AllocateExperiencesInputV3(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
                             candidates,
                             state.snapshot().avoidExperienceDuplication())));
@@ -1753,22 +1778,14 @@ public final class CoverLetterGenerationWorkflow {
                     question.questionId().toString(),
                     refs,
                     stableHash(plan) + "|" + current.fullTextHash(),
-                    tree(new WriteAnswerInputV3(
-                            INPUT_SCHEMA_V3,
-                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
-                            contextAvailability(state),
-                            question.questionId(),
-                            bounded(question.questionText(), 2_000),
-                            question.maxLength(),
+                    writeAnswerInput(
+                            state,
+                            question,
                             plan,
                             analysis,
-                            plan.targetCharacterCount(),
                             evidence,
-                            jobWritingContext(state),
-                            question.currentAnswerVersionId(),
                             current,
-                            otherQuestions,
-                            plan.headingPolicy())));
+                            otherQuestions));
         }
 
         @Override
@@ -2110,7 +2127,7 @@ public final class CoverLetterGenerationWorkflow {
                     refs,
                     sha256(answerText) + "|" + stableHash(siblings),
                     tree(new FactCheckAnswerInputV3(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
                             question.questionId(),
                             bounded(question.questionText(), 2_000),
@@ -2488,7 +2505,7 @@ public final class CoverLetterGenerationWorkflow {
                     refs,
                     state.agentRunId() + "|" + answerHash + "|" + factCheckHash,
                     tree(new ApplyAnswerRequestInput(
-                            INPUT_SCHEMA_V3,
+                            inputSchemaVersion(state),
                             state.agentRunId(),
                             state.snapshot().coverLetterId(),
                             question.questionId(),
@@ -3880,6 +3897,148 @@ public final class CoverLetterGenerationWorkflow {
                 invocation.prompt().outputType()));
     }
 
+    private Object planQuestionsInput(
+            GenerationState state,
+            List<QuestionPlanningInput> questions,
+            List<RequirementInput> requirements,
+            List<EvidencePlanningInput> evidence) {
+        int omitted = Math.max(0, state.snapshot().verifiedEvidence().size() - evidence.size());
+        if (state.snapshot().model() == null) {
+            return new PlanQuestionsInputV3(
+                    INPUT_SCHEMA_V3,
+                    CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                    contextAvailability(state),
+                    jobWritingContext(state),
+                    questions,
+                    requirements,
+                    evidence,
+                    omitted,
+                    state.snapshot().avoidExperienceDuplication());
+        }
+        List<QuestionPlanningInputV4> memoAwareQuestions = state.snapshot().questions().stream()
+                .map(value -> new QuestionPlanningInputV4(
+                        value.questionId(),
+                        value.questionOrder(),
+                        bounded(value.questionText(), 1_000),
+                        bounded(value.memo(), 2_000),
+                        value.maxLength(),
+                        value.currentAnswerVersionId() != null))
+                .toList();
+        return new PlanQuestionsInputV4(
+                INPUT_SCHEMA_V4,
+                CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                contextAvailability(state),
+                jobWritingContext(state),
+                memoAwareQuestions,
+                requirements,
+                evidence,
+                omitted,
+                state.snapshot().avoidExperienceDuplication());
+    }
+
+    private PlanningInvocationInput planningInvocationInput(GatewayInvocation invocation) {
+        if (isExactModel(invocation.executionContext().run())) {
+            PlanQuestionsInputV4 input = read(
+                    invocation.input().gatewayPayload(), PlanQuestionsInputV4.class);
+            return new PlanningInvocationInput(
+                    input.questions().stream()
+                            .map(value -> new QuestionPlanningInput(
+                                    value.questionId(),
+                                    value.questionOrder(),
+                                    value.questionText(),
+                                    value.maxLength(),
+                                    value.hasCurrentAnswer()))
+                            .toList(),
+                    input.requirements(),
+                    input.avoidExperienceDuplication());
+        }
+        PlanQuestionsInputV3 input = read(
+                invocation.input().gatewayPayload(), PlanQuestionsInputV3.class);
+        return new PlanningInvocationInput(
+                input.questions(), input.requirements(), input.avoidExperienceDuplication());
+    }
+
+    private JsonNode writeAnswerInput(
+            GenerationState state,
+            GenerationQuestion question,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            List<ApprovedEvidenceInput> evidence,
+            BoundedText current,
+            List<OtherQuestionStrategyInput> otherQuestions) {
+        if (state.snapshot().model() == null) {
+            return objectMapper.valueToTree(new WriteAnswerInputV3(
+                    INPUT_SCHEMA_V3,
+                    CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                    contextAvailability(state),
+                    question.questionId(),
+                    bounded(question.questionText(), 2_000),
+                    question.maxLength(),
+                    plan,
+                    analysis,
+                    plan.targetCharacterCount(),
+                    evidence,
+                    jobWritingContext(state),
+                    question.currentAnswerVersionId(),
+                    current,
+                    otherQuestions,
+                    plan.headingPolicy()));
+        }
+        return objectMapper.valueToTree(new WriteAnswerInputV4(
+                INPUT_SCHEMA_V4,
+                CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                contextAvailability(state),
+                question.questionId(),
+                bounded(question.questionText(), 2_000),
+                bounded(question.memo(), 2_000),
+                question.maxLength(),
+                plan,
+                analysis,
+                plan.targetCharacterCount(),
+                evidence,
+                jobWritingContext(state),
+                question.currentAnswerVersionId(),
+                current,
+                otherQuestions,
+                plan.headingPolicy()));
+    }
+
+    private String inputSchemaVersion(GenerationState state) {
+        return state.snapshot().model() == null ? INPUT_SCHEMA_V3 : INPUT_SCHEMA_V4;
+    }
+
+    private String contextPolicyVersion(GenerationState state) {
+        return state.snapshot().model() == null
+                ? CONTEXT_POLICY_VERSION_V3
+                : "cover-generation-context-v4";
+    }
+
+    private String retrievalPolicyVersion(GenerationState state) {
+        return state.snapshot().model() == null
+                ? RETRIEVAL_POLICY_VERSION_V3
+                : "cover-generation-retrieval-v4";
+    }
+
+    private boolean isExactModel(AgentRunSnapshot run) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                run.workflowVersion());
+    }
+
+    private boolean validSelection(AgentRunSnapshot run) {
+        return isExactModel(run)
+                ? run.requestedQualityMode() == null
+                        && OpenAiChatModels.supportsCoverLetter(run.requestedModel())
+                : run.requestedQualityMode() != null && run.requestedModel() == null;
+    }
+
+    private boolean selectionMatches(AgentRunSnapshot run, GenerationSnapshot snapshot) {
+        return isExactModel(run)
+                ? snapshot.qualityMode() == null
+                        && run.requestedModel().equals(snapshot.model())
+                : snapshot.model() == null
+                        && run.requestedQualityMode() == snapshot.qualityMode();
+    }
+
     private List<QuestionPlanningInput> planningQuestions(GenerationState state) {
         return state.snapshot().questions().stream()
                 .map(value -> new QuestionPlanningInput(
@@ -4767,6 +4926,16 @@ public final class CoverLetterGenerationWorkflow {
             List<UUID> reusedQuestionIds,
             EmbeddingPolicySnapshot embeddingPolicy) {}
 
+    private record PlanningInvocationInput(
+            List<QuestionPlanningInput> questions,
+            List<RequirementInput> requirements,
+            boolean avoidExperienceDuplication) {
+        private PlanningInvocationInput {
+            questions = copy(questions);
+            requirements = copy(requirements);
+        }
+    }
+
     public enum QuestionType {
         MOTIVATION,
         FUTURE_CONTRIBUTION,
@@ -5104,6 +5273,31 @@ public final class CoverLetterGenerationWorkflow {
         }
     }
 
+    public record QuestionPlanningInputV4(
+            UUID questionId,
+            int questionOrder,
+            String questionText,
+            @ProviderNullable String questionMemo,
+            Integer maxLength,
+            boolean hasCurrentAnswer) {}
+
+    public record PlanQuestionsInputV4(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            JobWritingContextInput job,
+            List<QuestionPlanningInputV4> questions,
+            List<RequirementInput> requirements,
+            List<EvidencePlanningInput> evidenceCandidates,
+            int omittedEvidenceCount,
+            boolean avoidExperienceDuplication) {
+        public PlanQuestionsInputV4 {
+            questions = copy(questions);
+            requirements = copy(requirements);
+            evidenceCandidates = copy(evidenceCandidates);
+        }
+    }
+
     public record PlanQuestionsOutputV3(
             String schemaVersion,
             List<QuestionPlanV3> plans,
@@ -5207,6 +5401,29 @@ public final class CoverLetterGenerationWorkflow {
             List<OtherQuestionStrategyInput> otherQuestions,
             HeadingPolicy headingPolicy) {
         public WriteAnswerInputV3 {
+            verifiedEvidence = copy(verifiedEvidence);
+            otherQuestions = copy(otherQuestions);
+        }
+    }
+
+    public record WriteAnswerInputV4(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            UUID questionId,
+            String questionText,
+            @ProviderNullable String questionMemo,
+            Integer maxLength,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            int targetCharacterCount,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            JobWritingContextInput job,
+            UUID currentAnswerVersionId,
+            BoundedText currentAnswer,
+            List<OtherQuestionStrategyInput> otherQuestions,
+            HeadingPolicy headingPolicy) {
+        public WriteAnswerInputV4 {
             verifiedEvidence = copy(verifiedEvidence);
             otherQuestions = copy(otherQuestions);
         }

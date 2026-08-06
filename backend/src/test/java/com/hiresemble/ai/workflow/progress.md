@@ -4,6 +4,14 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-06] Session Summary (Cover Letter v4 workflow 회귀)
+
+- What was done: v4 registry·durable v3 계약, exact model과 memo plan context, 공개 step 불변식을 검증했다.
+- Key decisions: 신규 canonical과 legacy executable을 동시에 검증한다.
+- Issues encountered: 신규 executable 수에 맞춰 registry 기대값을 갱신했다.
+- Validation: 표적 workflow 테스트와 Backend 전체 `check` 통과.
+- Next steps: memo가 final write에도 미치는 품질은 golden output 평가로 보강한다.
+
 ## [2026-08-06] Session Summary (Cover Letter Writer 길이 보정 회귀)
 
 - What was done:

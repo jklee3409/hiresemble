@@ -24,7 +24,16 @@
 - `V20__add_job_analysis_coverage.sql`은 rubric v2의 nullable 적합도와 분석 커버리지를 추가한다.
 - `V21__classify_job_posting_periods.sql`은 기존 공고를 서울 기준 등록 연도·상하반기로 backfill한다.
 - `V22__finalize_job_posting_period_constraints.sql`은 기간 trigger·NOT NULL·CHECK와 owner 기간 index를 확정한다.
+- `V23__add_selectable_openai_model_prices.sql`은 선택 가능한 OpenAI chat model 10개와 기존 embedding·검색의 immutable 가격 version을 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-06] Session Summary (선택 가능 OpenAI 모델 가격 catalog)
+
+- What was done: 공식 standard token 단가를 price version `2026080601`에 추가하고 local workflow 설정을 해당 버전으로 전환했다.
+- Key decisions: 기존 적용 migration을 수정하지 않고 V23 forward migration으로 model별 input·cached input·output 단가를 고정했다.
+- Issues encountered: None.
+- Validation: Flyway 포함 Backend 전체 `check` 통과, `docker compose config --quiet` 통과.
+- Next steps: 공식 가격 변경은 새 immutable price version migration으로만 반영한다.
 
 ## [2026-08-05] Session Summary (V21~V22 공고 등록 반기 backfill)
 

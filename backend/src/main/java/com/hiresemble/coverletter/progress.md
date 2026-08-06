@@ -4,6 +4,14 @@
 
 P7 자기소개서 생성·문항 관리·immutable 답변 version·근거 provenance·검증·최종화·보관과 AI application port가 final-source actual 및 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (자기소개서 모델 직접 선택과 memo 반영)
+
+- What was done: 품질 모드 공개 계약을 제거하고 model catalog·요청별 exact model·memo-aware v4 generation/verification을 구현했다.
+- Key decisions: 신규 요청은 서버 catalog의 모델만 허용하고 선택값을 Run input에 고정하며 기존 Run 호환성은 유지한다.
+- Issues encountered: None.
+- Validation: cover letter workflow·P7 E2E와 Backend 전체 `check` 578 tests 통과.
+- Next steps: 운영 provider smoke test와 품질 golden set 평가를 수행한다.
+
 ## [2026-08-05] Session Summary (플래티어 단일 문항 AI 답변 실제 검증)
 
 - What was done:

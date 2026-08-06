@@ -21,7 +21,7 @@
 3. **에이전트 실행 순서는 자유 루프가 아니라 코드로 정의된 워크플로로 통제한다.**
 4. **각 에이전트의 입력과 출력은 Java Record/DTO 기반 구조화 데이터로 전달한다.**
 5. **모든 장기 작업은 `agent_runs`, `agent_steps`에 상태와 산출물을 기록한다.**
-6. **모델명은 코드에 하드코딩하지 않고 작업 유형과 품질 모드별 정책으로 라우팅한다.**
+6. **Provider 모델 ID는 호출부에 산재시키지 않고 중앙 카탈로그와 versioned 정책에서 관리한다.**
 7. **원본 파일과 개인정보는 필요한 최소 범위만 LLM에 전달한다.**
 8. **MVP는 단일 인스턴스 운영을 기준으로 하되, 다중 사용자 데이터 격리는 처음부터 적용한다.**
 9. **장기 실행의 상태 원천은 DB이고 SSE는 snapshot-first best-effort 전달 수단이다.**
@@ -328,7 +328,7 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 
 ## 9. 모델 라우팅과 비용
 
-공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 결과다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않고 Agent Run의 `highestModelTierUsed`만 표시한다.
+공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 자기소개서를 제외한 AI workflow의 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 및 비용 집계 분류다. 자기소개서 생성·검증 v4는 서버 소유 OpenAI 모델 카탈로그에서 사용자가 고른 exact model ID를 run input에 고정하고 모든 chat step에 그대로 전달한다. embedding step은 선택 모델과 분리해 active embedding policy를 계속 사용한다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않지만 자기소개서 모델 카탈로그와 선택 dropdown은 명시적 예외다.
 
 `ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다. Job Analysis는 criterion query를 embedding batch로 보내고 criterion별 hybrid retrieval을 수행하며, merged candidate에 허용 criterion index를 보존해 match 단계의 evidence 사용 범위를 검증한다.
 
@@ -338,7 +338,9 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 | `BALANCED`     | 추출·분류 LOW_COST, 분석·생성 BALANCED, HIGH_QUALITY 자동 승격 금지                                |
 | `HIGH_QUALITY` | 전처리·검색·추출은 저비용, 허용 workflow의 최종 생성·검토만 HIGH_QUALITY                           |
 
-`HIGH_QUALITY`는 `highQualityEnabled=true`, 요청별 명시 선택, 비용 예약 성공을 모두 요구한다. 허용 workflow는 자기소개서 생성·검증과 면접 답변 feedback뿐이다. 공고 분석과 면접 준비는 `ECONOMY|BALANCED`, 문서·공고 추출은 내부 저비용 정책만 사용한다. 모의 면접 종합 feedback은 `BALANCED` 고정이다.
+`HIGH_QUALITY`는 `highQualityEnabled=true`, 요청별 명시 선택, 비용 예약 성공을 모두 요구하며 면접 답변 feedback에서만 공개 선택한다. 자기소개서 신규 요청은 품질 모드를 받지 않고 선택한 exact model의 가격과 기존 예산 reserve/settle 정책을 적용한다. 공고 분석과 면접 준비는 `ECONOMY|BALANCED`, 문서·공고 추출은 내부 저비용 정책만 사용한다. 모의 면접 종합 feedback은 `BALANCED` 고정이다.
+
+자기소개서 모델 allowlist는 별도 상수 카탈로그 한 곳에서 ID·표시명·설명·내부 비용 tier·추천 여부를 관리한다. API DTO와 프론트 dropdown은 이 카탈로그를 조회하고, 서버는 접수 시와 실행 시 모두 allowlist를 재검증한다. 신규 workflow version은 v4이며 memo-aware input schema와 model selection을 hash에 포함한다. 기존 v1~v3 정의와 prompt는 이미 접수된 durable run 재생을 위해 읽기 호환으로 유지한다.
 
 ### 9.1 가격·reserve/settle
 

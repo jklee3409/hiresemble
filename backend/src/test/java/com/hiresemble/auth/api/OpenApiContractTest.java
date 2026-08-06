@@ -47,7 +47,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyNinetyFourOperationsAndSixtyNinePaths() {
+    void liveSpringMappingsHaveExactlyNinetyFiveOperationsAndSeventyPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -63,12 +63,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(69);
-        assertThat(operations[0]).isEqualTo(94);
+        assertThat(paths).hasSize(70);
+        assertThat(operations[0]).isEqualTo(95);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyNinetyFourOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyNinetyFiveOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -141,6 +141,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/jobs/{jobId}/analyses/latest",
                         "/api/v1/jobs/{jobId}/cover-letter",
                         "/api/v1/cover-letters",
+                        "/api/v1/cover-letters/ai-models",
                         "/api/v1/cover-letters/{coverLetterId}",
                         "/api/v1/cover-letters/{coverLetterId}/questions",
                         "/api/v1/cover-letters/{coverLetterId}/questions/{questionId}",
@@ -163,7 +164,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(94);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(95);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -265,6 +266,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                 "createCoverLetter");
         assertCoverLetterOperation(
                 document, "/api/v1/cover-letters", "get", "listCoverLetters");
+        assertCoverLetterOperation(
+                document,
+                "/api/v1/cover-letters/ai-models",
+                "get",
+                "listCoverLetterAiModels");
         assertCoverLetterOperation(
                 document,
                 "/api/v1/cover-letters/{coverLetterId}",

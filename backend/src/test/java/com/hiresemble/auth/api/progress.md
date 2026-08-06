@@ -4,6 +4,14 @@
 
 P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
 
+## [2026-08-06] Session Summary (Cover Letter model catalog OpenAPI)
+
+- What was done: model catalog endpoint를 전체 path·operation·operationId 계약에 추가했다.
+- Key decisions: OpenAPI 총계는 70 paths·95 operations로 고정했다.
+- Issues encountered: None.
+- Validation: OpenAPI 통합 테스트와 Backend 전체 `check` 통과.
+- Next steps: 공개 DTO 변경 때 strict schema assertion을 함께 유지한다.
+
 ## [2026-08-04] Session Summary (Signup password 서버·OpenAPI 회귀)
 
 - What was done:

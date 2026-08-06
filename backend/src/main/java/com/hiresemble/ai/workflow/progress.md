@@ -4,6 +4,14 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-06] Session Summary (Cover Letter workflow v4)
+
+- What was done: generation·verification 신규 canonical version을 v4로 올리고 exact model·memo context를 적용했다.
+- Key decisions: step key와 공개 진행 계약은 유지하고 v1~v3 executable을 durable replay 전용으로 보존한다.
+- Issues encountered: registry·OpenAPI 예상 개수 테스트를 신규 계약에 맞춰 갱신했다.
+- Validation: workflow contract·registry·P7 E2E와 Backend 전체 `check` 통과.
+- Next steps: 실제 provider 응답 품질은 보고서의 golden-set 평가로 추적한다.
+
 ## [2026-08-06] Session Summary (Cover Letter Writer repair 경계 확장)
 
 - What was done:

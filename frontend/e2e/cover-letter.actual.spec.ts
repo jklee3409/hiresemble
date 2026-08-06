@@ -41,11 +41,12 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     await exerciseTitleConflict(page, coverLetterId)
 
     const preferredEvidence = page
-      .locator('.evidence-options li')
+      .locator('.assist__evidence li')
       .filter({ hasText: evidence.title })
       .getByRole('checkbox')
     await expect(preferredEvidence).toBeVisible()
     await preferredEvidence.check()
+    await openGenerationSettings(page)
     const generationTargets = page.locator('.generation-questions input[type="checkbox"]')
     await expect(generationTargets).toHaveCount(2)
     for (let index = 0; index < (await generationTargets.count()); index += 1) {
@@ -103,7 +104,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
       '검토한 문서 근거를 바탕으로 성과를 크게 높였습니다. P7_FORCE_VERIFICATION_WARNING'
     const answerEditor = page.getByRole('textbox', { name: '자기소개서 답변' })
     await answerEditor.fill(userAnswer)
-    await expect(page.getByText('아직 저장하지 않았어요', { exact: false }).first()).toBeVisible()
+    await expect(page.getByText('저장 안 됨', { exact: false }).first()).toBeVisible()
     expect(
       await page.evaluate(
         ({ coverId, questionId }) =>
@@ -154,6 +155,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     const warningVerifications = await listVerifications(page, userVersion.id)
     const warningVerification = warningVerifications.items[0]
     expect(warningVerification?.status).toBe('WARNING')
+    await openReviewTab(page)
     await expect(page.locator('.verification-issues blockquote').first()).toContainText(
       'P7_FORCE_VERIFICATION_WARNING',
     )
@@ -230,6 +232,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
       expect(question.latestVerification?.answerVersionId).toBe(question.currentAnswer?.id)
       expect(['PASSED', 'WARNING']).toContain(question.latestVerification?.status)
     }
+    await page.getByTestId('open-completion').click()
     const warningCheckboxes = page.locator('.finalization__warnings input[type="checkbox"]')
     for (let index = 0; index < (await warningCheckboxes.count()); index += 1) {
       await warningCheckboxes.nth(index).check()
@@ -261,6 +264,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
       (version) => version.id === generatedFirstVersion.id,
     )
     expect(generatedHistorical).toBeDefined()
+    await page.getByTestId('open-versions').click()
     await page
       .getByRole('option')
       .filter({ hasText: `v${generatedHistorical!.versionNo}` })
@@ -275,7 +279,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     const restored = (await (await restoreResponse).json()) as AnswerVersion
     await expect(
       page.getByRole('status').filter({
-        hasText: `버전 ${generatedHistorical!.versionNo}을 새 RESTORED 버전으로 복원했어요.`,
+        hasText: `버전 ${generatedHistorical!.versionNo}의 내용으로 되돌린 답변을 새로 저장했어요.`,
       }),
     ).toBeVisible()
     expect(restored.sourceType).toBe('RESTORED')
@@ -286,6 +290,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     expect(
       afterRestoreVersions.items.find((version) => version.id === generatedHistorical!.id),
     ).toMatchObject(generatedHistorical!)
+    await page.getByRole('button', { name: '버전 기록 닫기' }).click()
     expect((await getCoverLetter(page, coverLetterId)).status).toBe('DRAFT')
 
     const generationVerifications = await listVerifications(page, generatedHistorical!.id)
@@ -314,12 +319,16 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
 
     await page.goto(`/cover-letters/${coverLetterId}/edit`)
     await selectQuestion(page, firstQuestion.questionText)
+    await page.getByTestId('open-versions').click()
     await page
       .getByRole('option')
       .filter({ hasText: `v${generatedHistorical!.versionNo}` })
       .click()
     await expect(page.getByText('원본 삭제됨', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('새 생성·검증에서는 제외됨', { exact: true }).first()).toBeVisible()
+    await expect(
+      page.getByText('새 초안·검토에서는 쓰지 않아요', { exact: true }).first(),
+    ).toBeVisible()
+    await page.getByRole('button', { name: '버전 기록 닫기' }).click()
 
     const currentAfterRestore = await getCoverLetter(page, coverLetterId)
     const rejectedGeneration = await postJson<unknown>(
@@ -328,7 +337,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
       {
         questionIds: [firstQuestion.id],
         preferredEvidenceIds: [evidence.id],
-        qualityMode: 'BALANCED',
+        model: 'gpt-5.6-terra',
         avoidExperienceDuplication: true,
         coverLetterVersion: currentAfterRestore.version,
       },
@@ -347,11 +356,13 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
         response.request().method() === 'POST' &&
         response.status() === 200,
     )
+    await page.getByTestId('open-completion').click()
     await page.getByRole('button', { name: '보관하기', exact: true }).click()
     const archived = (await (await archiveResponse).json()) as CoverLetter
     expect(archived.status).toBe('ARCHIVED')
+    await page.getByRole('button', { name: '작성 완료 점검 닫기' }).click()
     await expect(page.getByText('보관된 자기소개서예요 · 읽기 전용', { exact: true })).toBeVisible()
-    await expect(page.getByTestId('generate-cover-letter')).toHaveCount(0)
+    await expect(page.getByTestId('open-generation')).toHaveCount(0)
     await expect(page.getByTestId('verify-answer-version')).toHaveCount(0)
 
     const replacement = await postJson<CoverLetter>(
@@ -580,7 +591,7 @@ async function createCoverLetterFromJob(page: Page, jobId: string): Promise<stri
 }
 
 async function addQuestion(page: Page, questionText: string, maxLength: number): Promise<Question> {
-  await page.getByRole('button', { name: '문항 추가', exact: true }).click()
+  await page.getByRole('button', { name: '문항 추가', exact: true }).first().click()
   const form = page.locator('.question-add')
   await form.getByLabel('문항 내용').fill(questionText)
   await form.getByLabel('최대 글자 수').fill(String(maxLength))
@@ -591,11 +602,43 @@ async function addQuestion(page: Page, questionText: string, maxLength: number):
       response.request().method() === 'POST' &&
       response.status() === 201,
   )
-  await form.getByRole('button', { name: '추가', exact: true }).click()
+  await page.getByRole('button', { name: '추가', exact: true }).click()
   const question = (await (await responsePromise).json()) as Question
   await expect(form).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '문항 추가', exact: true })).toBeVisible()
   return question
+}
+
+async function openQuestionForm(page: Page): Promise<void> {
+  if (
+    await page
+      .locator('.question-meta__form')
+      .isVisible()
+      .catch(() => false)
+  )
+    return
+  await page.getByTestId('open-question-form').click()
+  await expect(page.locator('.question-meta__form')).toBeVisible()
+}
+
+async function closeQuestionForm(page: Page): Promise<void> {
+  const close = page.getByRole('button', { name: '문항 수정 닫기' })
+  if (await close.isVisible().catch(() => false)) await close.click()
+}
+
+async function openGenerationSettings(page: Page): Promise<void> {
+  if (
+    await page
+      .locator('.generation-panel')
+      .isVisible()
+      .catch(() => false)
+  )
+    return
+  await page.getByTestId('open-generation').click()
+  await expect(page.locator('.generation-panel')).toBeVisible()
+}
+
+async function openReviewTab(page: Page): Promise<void> {
+  await page.getByTestId('assist-tab-review').click()
 }
 
 function attachSafeBrowserDiagnostics(page: Page): void {
@@ -617,7 +660,7 @@ function attachSafeBrowserDiagnostics(page: Page): void {
 }
 
 async function deleteSelectedQuestion(page: Page, questionId: string): Promise<void> {
-  await openQuestionSettings(page)
+  await openQuestionForm(page)
   const responsePromise = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname.endsWith(`/questions/${questionId}`) &&
@@ -633,6 +676,7 @@ async function deleteSelectedQuestion(page: Page, questionId: string): Promise<v
 
 async function moveQuestionUp(page: Page, question: Question): Promise<void> {
   await selectQuestion(page, question.questionText)
+  await openQuestionForm(page)
   const responsePromise = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname.endsWith('/questions/order') &&
@@ -644,19 +688,13 @@ async function moveQuestionUp(page: Page, question: Question): Promise<void> {
   await expect(
     page.getByRole('status').filter({ hasText: '문항 순서를 저장했어요.' }),
   ).toBeVisible()
-}
-
-async function openQuestionSettings(page: Page): Promise<void> {
-  const settings = page.locator('.question-meta')
-  if (await settings.evaluate((element) => (element as HTMLDetailsElement).open)) return
-  await settings.getByText('문항 내용·글자 수·메모 수정').click()
-  await expect(settings.locator('.question-meta__form')).toBeVisible()
+  await closeQuestionForm(page)
 }
 
 async function editQuestionMemo(page: Page, questionText: string, memo: string): Promise<void> {
   await selectQuestion(page, questionText)
-  await openQuestionSettings(page)
-  await page.locator('.question-meta').getByLabel('메모').fill(memo)
+  await openQuestionForm(page)
+  await page.locator('.question-meta__form').getByLabel('메모').fill(memo)
   const responsePromise = page.waitForResponse(
     (response) =>
       /\/api\/v1\/cover-letters\/[^/]+\/questions\/[^/]+$/.test(new URL(response.url()).pathname) &&
@@ -668,6 +706,7 @@ async function editQuestionMemo(page: Page, questionText: string, memo: string):
   await expect(
     page.getByRole('status').filter({ hasText: '문항 정보를 저장했어요.' }),
   ).toBeVisible()
+  await closeQuestionForm(page)
 }
 
 async function exerciseTitleConflict(page: Page, coverLetterId: string): Promise<void> {
@@ -677,6 +716,7 @@ async function exerciseTitleConflict(page: Page, coverLetterId: string): Promise
     version: current.version,
   })
   expect(serverUpdate.status).toBe(200)
+  await page.getByTestId('open-completion').click()
   await page.getByRole('button', { name: '제목 수정', exact: true }).click()
   await page.getByLabel('자기소개서 제목').fill('브라우저의 미저장 제목')
   const conflictResponse = page.waitForResponse(
@@ -721,8 +761,8 @@ async function exerciseQuestionConflict(
   )
   expect(serverUpdate.status).toBe(200)
 
-  await openQuestionSettings(page)
-  const questionForm = page.locator('.question-meta')
+  await openQuestionForm(page)
+  const questionForm = page.locator('.question-meta__form')
   await questionForm.getByLabel('문항 내용').fill(originalQuestion.questionText)
   await questionForm.getByLabel('최대 글자 수').fill('1000')
   await questionForm.getByLabel('메모').fill('브라우저의 미저장 메모')
@@ -743,6 +783,8 @@ async function exerciseQuestionConflict(
   await expect(conflict).toContainText(originalQuestion.questionText)
   await expect(conflict).toContainText('메모: 브라우저의 미저장 메모')
 
+  // 충돌 안내가 보이도록 문항 수정 sheet는 닫히므로 다시 열어 편집한다.
+  await openQuestionForm(page)
   await questionForm.getByLabel('문항 내용').fill('충돌 뒤 반응형 편집 값')
   const reappliedResponse = page.waitForResponse(
     (response) =>
@@ -763,6 +805,7 @@ async function exerciseQuestionConflict(
 }
 
 async function startGeneration(page: Page): Promise<string> {
+  await openGenerationSettings(page)
   const responsePromise = page.waitForResponse(
     (response) =>
       /\/api\/v1\/cover-letters\/[^/]+\/generate$/.test(new URL(response.url()).pathname) &&
@@ -880,7 +923,7 @@ async function verifyOwnerIsolation(
   const verifyAttempt = await postJson<unknown>(
     page,
     `/api/v1/cover-letter-answer-versions/${resources.answerVersionId}/verify`,
-    { qualityMode: 'BALANCED' },
+    { model: 'gpt-5.6-terra' },
     `p7-other-verify-${uniqueToken('other')}`,
   )
   expect(verifyAttempt.status).toBe(404)

@@ -4,6 +4,14 @@
 
 fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
 
+## [2026-08-06] Session Summary (Run 고정 exact model 전달)
+
+- What was done: orchestrator가 자기소개서 v4 chat step에 requested model을 전달하도록 확장했다.
+- Key decisions: embedding route와 legacy tier 승격 로직은 선택 chat model의 영향을 받지 않는다.
+- Issues encountered: None.
+- Validation: router·workflow·전체 Backend 테스트 통과.
+- Next steps: provider usage는 기존 실제 route item 기준으로 계속 정산한다.
+
 ## [2026-08-03] Session Summary (semantic correction·transport retry 상태 분리)
 
 - What was done:

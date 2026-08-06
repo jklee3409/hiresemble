@@ -15,6 +15,7 @@ public interface ModelRouter {
             WorkflowType workflowType,
             String stepKey,
             AiQualityMode requestedQualityMode,
+            String requestedModel,
             ModelTier preferredTier,
             boolean providerRequired,
             boolean highQualityEnabled,
@@ -27,6 +28,31 @@ public interface ModelRouter {
             if (stepKey == null || stepKey.isBlank()) throw new IllegalArgumentException("stepKey is required");
             Objects.requireNonNull(preferredTier, "preferredTier");
             if (attempt < 1 || attempt > 3) throw new IllegalArgumentException("attempt is invalid");
+        }
+
+        public RoutingRequest(
+                WorkflowType workflowType,
+                String stepKey,
+                AiQualityMode requestedQualityMode,
+                ModelTier preferredTier,
+                boolean providerRequired,
+                boolean highQualityEnabled,
+                boolean budgetReservationConfirmed,
+                int attempt,
+                ModelTier previousTier,
+                FailureKind previousFailure) {
+            this(
+                    workflowType,
+                    stepKey,
+                    requestedQualityMode,
+                    null,
+                    preferredTier,
+                    providerRequired,
+                    highQualityEnabled,
+                    budgetReservationConfirmed,
+                    attempt,
+                    previousTier,
+                    previousFailure);
         }
     }
 

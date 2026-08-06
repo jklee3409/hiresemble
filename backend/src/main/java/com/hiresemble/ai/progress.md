@@ -4,6 +4,14 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-06] Session Summary (자기소개서 v4 exact model workflow)
+
+- What was done: 중앙 OpenAI model catalog, exact chat routing, memo-aware generation과 generation·verification v4 executable을 연결했다.
+- Key decisions: 선택 모델은 chat step에만 적용하고 embedding은 기존 독립 policy를 유지하며 v1~v3 replay를 보존한다.
+- Issues encountered: 중복 output 계약의 schema 반복 생성 비용을 registry deduplication으로 제거했다.
+- Validation: Backend 전체 `check` 578 tests 통과.
+- Next steps: 운영 계정의 모델 접근 권한을 비용 없는 catalog 응답이 아니라 제한된 smoke call로 최종 확인한다.
+
 ## [2026-08-05] Session Summary (Cover Letter v3 runtime 정책)
 
 - What was done:

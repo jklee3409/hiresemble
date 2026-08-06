@@ -4,6 +4,14 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
 
+## [2026-08-06] Session Summary (선택 가능 OpenAI 모델 운영 기준)
+
+- What was done: active 가격 version과 선택 model 10개, 공식 문서 보고서 링크를 provider activation 절차에 반영했다.
+- Key decisions: model 존재 여부와 계정 entitlement를 구분하고 배포 전 제한된 실제 smoke call로 확인한다.
+- Issues encountered: 실제 유료 API 호출은 사용자 승인 범위가 아니어서 수행하지 않았다.
+- Validation: 문서·설정·V23 migration 일치와 Backend 전체 `check`를 확인했다.
+- Next steps: 운영 key로 모델별 entitlement와 비용 한도를 확인한다.
+
 ## [2026-08-02] Session Summary (V16 자동 분석 반영 운영 번호 정렬)
 
 - What was done:

@@ -12,6 +12,8 @@ import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
+import com.hiresemble.ai.model.OpenAiChatModels;
+import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.common.idempotency.IdempotencyScope;
@@ -93,8 +95,10 @@ public class CoverLetterApplicationService
                 ResourceCompensationPort,
                 EvidenceReferenceQueryPort {
 
-    public static final String GENERATION_WORKFLOW_VERSION = "cover-letter-generation-v3";
-    public static final String VERIFICATION_WORKFLOW_VERSION = "cover-letter-verification-v3";
+    public static final String GENERATION_WORKFLOW_VERSION =
+            CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION;
+    public static final String VERIFICATION_WORKFLOW_VERSION =
+            CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION;
     public static final String RESOURCE_TYPE = "COVER_LETTER";
     private static final Set<String> LIST_SORTS =
             Set.of("updatedAt,desc", "createdAt,desc", "title,asc");
@@ -440,11 +444,11 @@ public class CoverLetterApplicationService
             UUID coverLetterId,
             List<UUID> questionIds,
             List<UUID> preferredEvidenceIds,
-            AiQualityMode qualityMode,
+            String model,
             boolean avoidExperienceDuplication,
             long coverLetterVersion,
             String idempotencyKey) {
-        validateGenerationInput(questionIds, preferredEvidenceIds, qualityMode);
+        validateGenerationInput(questionIds, preferredEvidenceIds, model);
         IdempotencyScope scope = new IdempotencyScope(
                 userId,
                 "POST",
@@ -454,8 +458,8 @@ public class CoverLetterApplicationService
         String canonicalRequest = canonicalIds(questionIds)
                 + "|preferred="
                 + canonicalIds(preferredEvidenceIds)
-                + "|quality="
-                + qualityMode
+                + "|model="
+                + model
                 + "|avoid="
                 + avoidExperienceDuplication
                 + "|version="
@@ -464,14 +468,14 @@ public class CoverLetterApplicationService
                 scope,
                 canonicalRequest,
                 RunAccepted.class,
-                () -> loadGenerationSnapshot(
+                () -> loadGenerationSnapshotByModel(
                         userId,
                         coverLetterId,
                         coverLetterVersion,
                         questionIds,
                         preferredEvidenceIds,
                         avoidExperienceDuplication,
-                        qualityMode,
+                        model,
                         null),
                 snapshot -> {
                     WorkflowLaunchResult launched = launchGeneration(snapshot);
@@ -493,24 +497,24 @@ public class CoverLetterApplicationService
     public IdempotentResponse<RunAccepted> acceptVerification(
             UUID userId,
             UUID answerVersionId,
-            AiQualityMode qualityMode,
+            String model,
             String idempotencyKey) {
-        requireQuality(userId, qualityMode);
+        requireModel(model);
         IdempotencyScope scope = new IdempotencyScope(
                 userId,
                 "POST",
                 "/api/v1/cover-letter-answer-versions/{id}/verify",
                 answerVersionId,
                 idempotencyKey);
-        String canonicalRequest = qualityMode.name();
+        String canonicalRequest = model;
         return idempotency.executePrepared(
                 scope,
                 canonicalRequest,
                 RunAccepted.class,
                 () -> new PreparedVerification(
                         UUID.randomUUID(),
-                        loadVerificationSnapshotV2(
-                                userId, answerVersionId, qualityMode, null)),
+                        loadVerificationSnapshotByModel(
+                                userId, answerVersionId, model, null)),
                 prepared -> {
                     WorkflowLaunchResult launched = launchVerification(prepared);
                     store.attachAnswerToRun(
@@ -551,6 +555,52 @@ public class CoverLetterApplicationService
             AiQualityMode qualityMode,
             String expectedSnapshotHash) {
         requireQuality(userId, qualityMode);
+        return loadGenerationSnapshot(
+                userId,
+                coverLetterId,
+                expectedCoverLetterVersion,
+                questionIds,
+                preferredEvidenceIds,
+                avoidExperienceDuplication,
+                qualityMode,
+                null,
+                expectedSnapshotHash);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GenerationSnapshot loadGenerationSnapshotByModel(
+            UUID userId,
+            UUID coverLetterId,
+            long expectedCoverLetterVersion,
+            List<UUID> questionIds,
+            List<UUID> preferredEvidenceIds,
+            boolean avoidExperienceDuplication,
+            String model,
+            String expectedSnapshotHash) {
+        requireModel(model);
+        return loadGenerationSnapshot(
+                userId,
+                coverLetterId,
+                expectedCoverLetterVersion,
+                questionIds,
+                preferredEvidenceIds,
+                avoidExperienceDuplication,
+                null,
+                model,
+                expectedSnapshotHash);
+    }
+
+    private GenerationSnapshot loadGenerationSnapshot(
+            UUID userId,
+            UUID coverLetterId,
+            long expectedCoverLetterVersion,
+            List<UUID> questionIds,
+            List<UUID> preferredEvidenceIds,
+            boolean avoidExperienceDuplication,
+            AiQualityMode qualityMode,
+            String model,
+            String expectedSnapshotHash) {
         CoverRow cover = requireMutableCover(userId, coverLetterId);
         if (cover.version() != expectedCoverLetterVersion) {
             throw versionConflict("coverLetterVersion");
@@ -578,6 +628,7 @@ public class CoverLetterApplicationService
                             row.questionOrder(),
                             row.questionText(),
                             row.maxLength(),
+                            model == null ? null : row.memo(),
                             current == null ? null : current.id(),
                             current == null ? null : current.plainText());
                 })
@@ -602,7 +653,8 @@ public class CoverLetterApplicationService
                 questions,
                 evidence,
                 preferred,
-                qualityMode,
+                model == null ? qualityMode.name() : model,
+                model != null,
                 avoidExperienceDuplication);
         requireHash(expectedSnapshotHash, snapshotHash);
         return new GenerationSnapshot(
@@ -616,6 +668,7 @@ public class CoverLetterApplicationService
                 preferred,
                 avoidExperienceDuplication,
                 qualityMode,
+                model,
                 snapshotHash);
     }
 
@@ -639,9 +692,16 @@ public class CoverLetterApplicationService
                 uuidArray(input.path("questionIds"), 1, 20);
         List<UUID> requestedPreferredIds =
                 uuidArray(input.path("preferredEvidenceIds"), 0, 50);
-        AiQualityMode qualityMode = parseQuality(input.path("qualityMode").asText(null));
+        String model = run.requestedModel();
+        AiQualityMode qualityMode = model == null
+                ? parseQuality(input.path("qualityMode").asText(null))
+                : null;
         boolean avoidDuplication = input.path("avoidExperienceDuplication").asBoolean(false);
-        requireQuality(userId, qualityMode);
+        if (model == null) {
+            requireQuality(userId, qualityMode);
+        } else {
+            requireModel(model);
+        }
 
         CoverRow cover = requireMutableCover(userId, run.resourceId());
         int priorApplied = store.countPriorLineageAppliedAnswers(userId, agentRunId);
@@ -684,6 +744,7 @@ public class CoverLetterApplicationService
                     question.questionOrder(),
                     question.questionText(),
                     question.maxLength(),
+                    model == null ? null : question.memo(),
                     baseline == null ? null : baseline.id(),
                     baseline == null ? null : baseline.plainText()));
         }
@@ -705,7 +766,8 @@ public class CoverLetterApplicationService
                 targetQuestions,
                 evidence,
                 preferred,
-                qualityMode,
+                model == null ? qualityMode.name() : model,
+                model != null,
                 avoidDuplication);
         requireHash(expectedSnapshotHash, snapshotHash);
         return new GenerationSnapshot(
@@ -719,6 +781,7 @@ public class CoverLetterApplicationService
                 preferred,
                 avoidDuplication,
                 qualityMode,
+                model,
                 snapshotHash);
     }
 
@@ -730,7 +793,7 @@ public class CoverLetterApplicationService
             AiQualityMode qualityMode,
             String expectedSnapshotHash) {
         return loadVerificationSnapshot(
-                userId, answerVersionId, qualityMode, expectedSnapshotHash, false);
+                userId, answerVersionId, qualityMode, null, expectedSnapshotHash, false);
     }
 
     @Override
@@ -741,16 +804,33 @@ public class CoverLetterApplicationService
             AiQualityMode qualityMode,
             String expectedSnapshotHash) {
         return loadVerificationSnapshot(
-                userId, answerVersionId, qualityMode, expectedSnapshotHash, true);
+                userId, answerVersionId, qualityMode, null, expectedSnapshotHash, true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VerificationSnapshot loadVerificationSnapshotByModel(
+            UUID userId,
+            UUID answerVersionId,
+            String model,
+            String expectedSnapshotHash) {
+        requireModel(model);
+        return loadVerificationSnapshot(
+                userId, answerVersionId, null, model, expectedSnapshotHash, true);
     }
 
     private VerificationSnapshot loadVerificationSnapshot(
             UUID userId,
             UUID answerVersionId,
             AiQualityMode qualityMode,
+            String model,
             String expectedSnapshotHash,
             boolean includeSiblingAnswers) {
-        requireQuality(userId, qualityMode);
+        if (model == null) {
+            requireQuality(userId, qualityMode);
+        } else {
+            requireModel(model);
+        }
         AnswerVersion answer = store.findAnswer(userId, answerVersionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         QuestionRow questionRow = store.findQuestion(userId, answer.questionId(), true)
@@ -777,7 +857,14 @@ public class CoverLetterApplicationService
                         .toList()
                 : List.of();
         String snapshotHash = verificationHash(
-                cover, question, answer, job, historical, current, siblings, qualityMode);
+                cover,
+                question,
+                answer,
+                job,
+                historical,
+                current,
+                siblings,
+                model == null ? qualityMode.name() : model);
         requireHash(expectedSnapshotHash, snapshotHash);
         return new VerificationSnapshot(
                 userId,
@@ -790,6 +877,7 @@ public class CoverLetterApplicationService
                 current,
                 siblings,
                 qualityMode,
+                model,
                 snapshotHash);
     }
 
@@ -817,7 +905,7 @@ public class CoverLetterApplicationService
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
         VerificationSnapshot snapshot = loadVerificationSnapshot(
-                userId, answerVersionId, run.requestedQualityMode(), null);
+                userId, answerVersionId, run.requestedQualityMode(), null, null, false);
         requireHash(expectedSnapshotHash, snapshot.snapshotHash());
         return snapshot;
     }
@@ -845,12 +933,19 @@ public class CoverLetterApplicationService
         if (!store.runHasAnswerLink(userId, agentRunId, answerVersionId)) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
-        VerificationSnapshot snapshot = loadVerificationSnapshot(
-                userId,
-                answerVersionId,
-                run.requestedQualityMode(),
-                null,
-                true);
+        VerificationSnapshot snapshot = run.requestedModel() == null
+                ? loadVerificationSnapshot(
+                        userId,
+                        answerVersionId,
+                        run.requestedQualityMode(),
+                        null,
+                        null,
+                        true)
+                : loadVerificationSnapshotByModel(
+                        userId,
+                        answerVersionId,
+                        run.requestedModel(),
+                        null);
         requireHash(expectedSnapshotHash, snapshot.snapshotHash());
         return snapshot;
     }
@@ -977,7 +1072,13 @@ public class CoverLetterApplicationService
         VerificationSnapshot snapshot;
         if (run.retryOfRunId() == null) {
             requireRunHash(run, command.expectedSnapshotHash());
-            snapshot = isModernVerification(run.workflowVersion())
+            snapshot = run.requestedModel() != null
+                    ? loadVerificationSnapshotByModel(
+                            userId,
+                            answer.id(),
+                            run.requestedModel(),
+                            command.expectedSnapshotHash())
+                    : isModernVerification(run.workflowVersion())
                     ? loadVerificationSnapshotV2(
                             userId,
                             answer.id(),
@@ -1019,6 +1120,8 @@ public class CoverLetterApplicationService
 
     private boolean isModernVerification(String workflowVersion) {
         return VERIFICATION_WORKFLOW_VERSION.equals(workflowVersion)
+                || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                        workflowVersion)
                 || "cover-letter-verification-v2".equals(workflowVersion);
     }
 
@@ -1115,7 +1218,7 @@ public class CoverLetterApplicationService
                 .put("coverLetterId", snapshot.coverLetterId().toString())
                 .put("coverLetterVersion", snapshot.coverLetterVersion())
                 .put("snapshotHash", snapshot.snapshotHash())
-                .put("qualityMode", snapshot.qualityMode().name())
+                .put("model", snapshot.model())
                 .put("avoidExperienceDuplication", snapshot.avoidExperienceDuplication());
         var questionIds = input.putArray("questionIds");
         snapshot.questions().forEach(value -> questionIds.add(value.questionId().toString()));
@@ -1131,7 +1234,7 @@ public class CoverLetterApplicationService
                                 .map(GenerationQuestion::questionId)
                                 .toList())),
                 input,
-                snapshot.qualityMode(),
+                null,
                 aiCost.generationEstimatedCostUsd(),
                 aiCost.generationPriceVersion(),
                 new ResourceReference(
@@ -1146,7 +1249,7 @@ public class CoverLetterApplicationService
                 .put("answerVersionId", snapshot.answerVersion().id().toString())
                 .put("verificationId", prepared.verificationId().toString())
                 .put("snapshotHash", snapshot.snapshotHash())
-                .put("qualityMode", snapshot.qualityMode().name());
+                .put("model", snapshot.model());
         return workflowLauncher.launch(new WorkflowLaunchCommand(
                 snapshot.userId(),
                 WorkflowType.COVER_LETTER_VERIFICATION,
@@ -1155,7 +1258,7 @@ public class CoverLetterApplicationService
                         + "|answer="
                         + snapshot.answerVersion().id()),
                 input,
-                snapshot.qualityMode(),
+                null,
                 aiCost.verificationEstimatedCostUsd(),
                 aiCost.verificationPriceVersion(),
                 new ResourceReference(
@@ -1300,16 +1403,18 @@ public class CoverLetterApplicationService
             List<GenerationQuestion> questions,
             List<VerifiedEvidence> evidence,
             List<UUID> preferred,
-            AiQualityMode quality,
-        boolean avoidDuplication) {
+            String modelOrQuality,
+            boolean includeMemo,
+            boolean avoidDuplication) {
         StringBuilder value = new StringBuilder()
                 .append(coverLetterId).append('|').append(coverLetterVersion)
                 .append('|').append(job.analysisId()).append('|').append(job.analysisVersion())
                 .append('|').append(job.jobVersion()).append('|').append(job.analysisOutdated())
-                .append('|').append(quality).append('|').append(avoidDuplication);
+                .append('|').append(modelOrQuality).append('|').append(avoidDuplication);
         questions.forEach(item -> value.append("|q:")
                 .append(item.questionId()).append(':').append(item.questionOrder())
-                .append(':').append(item.currentAnswerVersionId()));
+                .append(':').append(item.currentAnswerVersionId())
+                .append(includeMemo ? ":memo=" + sha256(item.memo() == null ? "" : item.memo()) : ""));
         evidence.forEach(item -> value.append("|e:")
                 .append(item.id()).append(':').append(item.version()));
         preferred.stream().sorted().forEach(item -> value.append("|p:").append(item));
@@ -1324,12 +1429,12 @@ public class CoverLetterApplicationService
             List<HistoricalEvidence> historical,
             List<VerifiedEvidence> current,
             List<SiblingAnswerSummary> siblings,
-            AiQualityMode quality) {
+            String modelOrQuality) {
         StringBuilder value = new StringBuilder()
                 .append(cover.id()).append('|').append(cover.version())
                 .append('|').append(question.id()).append('|').append(answer.id())
                 .append('|').append(job.analysisId()).append('|').append(job.analysisVersion())
-                .append('|').append(job.jobVersion()).append('|').append(quality);
+                .append('|').append(job.jobVersion()).append('|').append(modelOrQuality);
         historical.forEach(item -> value.append("|h:")
                 .append(item.id()).append(':').append(item.currentStatus())
                 .append(':').append(item.sourceDeleted()));
@@ -1345,7 +1450,7 @@ public class CoverLetterApplicationService
     private void validateGenerationInput(
             List<UUID> questionIds,
             List<UUID> evidenceIds,
-            AiQualityMode qualityMode) {
+            String model) {
         if (questionIds == null
                 || questionIds.isEmpty()
                 || questionIds.size() > 20
@@ -1357,9 +1462,7 @@ public class CoverLetterApplicationService
                                 || new HashSet<>(evidenceIds).size() != evidenceIds.size()))) {
             throw invalid();
         }
-        if (qualityMode == null) {
-            throw invalid();
-        }
+        requireModel(model);
     }
 
     private void validateEvidenceUses(List<EvidenceUse> uses, Set<UUID> allowed) {
@@ -1431,6 +1534,14 @@ public class CoverLetterApplicationService
         }
     }
 
+    private void requireModel(String model) {
+        try {
+            OpenAiChatModels.requireCoverLetter(model);
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(ErrorCode.AI_MODEL_NOT_SUPPORTED, exception);
+        }
+    }
+
     private AgentRunSnapshot requireRun(
             UUID userId, UUID runId, WorkflowType workflowType, UUID coverLetterId) {
         AgentRunSnapshot run = runQuery.findByOwner(userId, runId)
@@ -1440,7 +1551,7 @@ public class CoverLetterApplicationService
                 || !coverLetterId.equals(run.resourceId())
                 || run.status() != AgentRunStatus.RUNNING
                 || run.cancelRequestedAt() != null
-                || run.requestedQualityMode() == null) {
+                || (run.requestedQualityMode() == null && run.requestedModel() == null)) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
         return run;

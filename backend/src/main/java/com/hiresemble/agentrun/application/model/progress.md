@@ -4,6 +4,14 @@
 
 com.hiresemble.agentrun.application.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-06] Session Summary (Agent Run 선택 모델 조회)
+
+- What was done: immutable input snapshot에서 자기소개서 v4의 요청 model ID를 안전하게 조회하도록 확장했다.
+- Key decisions: 새 DB column 없이 기존 JSON input snapshot을 사용해 재시도·재개 시 모델을 고정한다.
+- Issues encountered: None.
+- Validation: Backend 전체 `check` 578 tests 통과.
+- Next steps: v1~v3 Run의 quality snapshot 호환성을 유지한다.
+
 ## [2026-07-31] Session Summary (P8 retry options model)
 
 - What was done:

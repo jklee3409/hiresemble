@@ -76,6 +76,28 @@ class PolicyModelRouterTest {
         assertThat(deterministic.providerKey()).isEqualTo("none");
     }
 
+    @Test
+    void exactCoverLetterModelBypassesQualityTierMappingWithoutChangingProductId() {
+        PolicyModelRouter router = new PolicyModelRouter(policy);
+
+        ModelRoute route = router.route(new RoutingRequest(
+                WorkflowType.COVER_LETTER_GENERATION,
+                "WRITE_ANSWER",
+                null,
+                OpenAiChatModels.GPT_5_6_SOL,
+                ModelTier.LOW_COST,
+                true,
+                false,
+                true,
+                2,
+                ModelTier.LOW_COST,
+                FailureKind.STRUCTURED_OUTPUT));
+
+        assertThat(route.productKey()).isEqualTo(OpenAiChatModels.GPT_5_6_SOL);
+        assertThat(route.tier()).isEqualTo(ModelTier.HIGH_QUALITY);
+        assertThat(route.promoted()).isFalse();
+    }
+
     private RoutingRequest request(
             AiQualityMode quality, int attempt, ModelTier previous, FailureKind failure) {
         return new RoutingRequest(

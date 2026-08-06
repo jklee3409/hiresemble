@@ -33,9 +33,10 @@ key 값·suffix, prompt/input/raw response, 사용자 문서·답변, embedding 
 
 ## 가격과 예산
 
-활성 catalog version은 `2026073101`이다. 2026-07-31 공개 PAYG 기준을 사용한다.
+활성 catalog version은 `2026080601`이다. 2026-08-06 공개 PAYG 기준을 사용한다.
 
 - OpenAI [`gpt-5-mini`](https://developers.openai.com/api/docs/models/gpt-5-mini): input/cached input/output을 1M token 단위의 별도 item으로 둔다.
+- 자기소개서 선택 모델 `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.2`, `gpt-5.1`, `gpt-5`: 각각 input/cached input/output을 1M token 단위의 별도 item으로 둔다. 정확한 ID와 지원 근거는 [모델 선택 보고서](../design/cover-letter-openai-model-selection-report.md)를 따른다.
 - OpenAI [`text-embedding-3-small`](https://developers.openai.com/api/docs/models/text-embedding-3-small): input을 1M token 단위로 둔다.
 - Tavily [API Credits](https://docs.tavily.com/documentation/api-credits): PAYG 1 credit USD 0.008, BASIC 1 credit, ADVANCED 2 credits를 각각 request item으로 둔다.
 

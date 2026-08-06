@@ -4,6 +4,14 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-08-06] Session Summary (P7 v4·legacy v3 재개 회귀)
+
+- What was done: P7 E2E fixture를 신규 v4와 durable v3 Run 계약에 맞춰 갱신했다.
+- Key decisions: 외부 OpenAI를 호출하지 않고 Fake gateway에서 workflow version·input 호환성을 검증한다.
+- Issues encountered: None.
+- Validation: P7 E2E를 포함한 Backend 전체 `check` 578 tests 통과.
+- Next steps: 실제 provider smoke test는 운영 절차에서 별도 수행한다.
+
 ## [2026-08-05] Session Summary (P7 Cover Letter v3 Fake·DB assertion)
 
 - What was done:

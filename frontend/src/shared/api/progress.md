@@ -4,6 +4,14 @@
 
 Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-06] Session Summary (자기소개서 AI model catalog client)
+
+- What was done: model catalog Zod schema·GET client를 추가하고 generate·verify 요청을 `model`로 변경했다.
+- Key decisions: 클라이언트에 model allowlist를 복제하지 않고 서버 응답을 strict parse한다.
+- Issues encountered: None.
+- Validation: API test를 포함한 Frontend `pnpm check` 69 files·308 tests 통과.
+- Next steps: catalog 조회 실패 시 생성 control을 비활성화하는 현재 fail-closed UX를 유지한다.
+
 ## [2026-08-05] Session Summary (공고 반기·기간 page client 계약)
 
 - What was done:

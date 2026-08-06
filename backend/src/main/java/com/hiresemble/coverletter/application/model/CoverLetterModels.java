@@ -191,8 +191,26 @@ public final class CoverLetterModels {
             int questionOrder,
             String questionText,
             Integer maxLength,
+            String memo,
             UUID currentAnswerVersionId,
-            String currentPlainText) {}
+            String currentPlainText) {
+        public GenerationQuestion(
+                UUID questionId,
+                int questionOrder,
+                String questionText,
+                Integer maxLength,
+                UUID currentAnswerVersionId,
+                String currentPlainText) {
+            this(
+                    questionId,
+                    questionOrder,
+                    questionText,
+                    maxLength,
+                    null,
+                    currentAnswerVersionId,
+                    currentPlainText);
+        }
+    }
 
     public record GenerationSnapshot(
             UUID userId,
@@ -205,11 +223,39 @@ public final class CoverLetterModels {
             List<UUID> preferredEvidenceIds,
             boolean avoidExperienceDuplication,
             AiQualityMode qualityMode,
+            String model,
             String snapshotHash) {
         public GenerationSnapshot {
             questions = List.copyOf(questions);
             verifiedEvidence = List.copyOf(verifiedEvidence);
             preferredEvidenceIds = List.copyOf(preferredEvidenceIds);
+        }
+
+        public GenerationSnapshot(
+                UUID userId,
+                UUID coverLetterId,
+                long coverLetterVersion,
+                String title,
+                JobContext job,
+                List<GenerationQuestion> questions,
+                List<VerifiedEvidence> verifiedEvidence,
+                List<UUID> preferredEvidenceIds,
+                boolean avoidExperienceDuplication,
+                AiQualityMode qualityMode,
+                String snapshotHash) {
+            this(
+                    userId,
+                    coverLetterId,
+                    coverLetterVersion,
+                    title,
+                    job,
+                    questions,
+                    verifiedEvidence,
+                    preferredEvidenceIds,
+                    avoidExperienceDuplication,
+                    qualityMode,
+                    null,
+                    snapshotHash);
         }
     }
 
@@ -242,11 +288,39 @@ public final class CoverLetterModels {
             List<VerifiedEvidence> currentVerifiedEvidence,
             List<SiblingAnswerSummary> siblingAnswers,
             AiQualityMode qualityMode,
+            String model,
             String snapshotHash) {
         public VerificationSnapshot {
             historicalEvidence = List.copyOf(historicalEvidence);
             currentVerifiedEvidence = List.copyOf(currentVerifiedEvidence);
             siblingAnswers = List.copyOf(siblingAnswers);
+        }
+
+        public VerificationSnapshot(
+                UUID userId,
+                UUID coverLetterId,
+                long coverLetterVersion,
+                Question question,
+                AnswerVersion answerVersion,
+                JobContext job,
+                List<HistoricalEvidence> historicalEvidence,
+                List<VerifiedEvidence> currentVerifiedEvidence,
+                List<SiblingAnswerSummary> siblingAnswers,
+                AiQualityMode qualityMode,
+                String snapshotHash) {
+            this(
+                    userId,
+                    coverLetterId,
+                    coverLetterVersion,
+                    question,
+                    answerVersion,
+                    job,
+                    historicalEvidence,
+                    currentVerifiedEvidence,
+                    siblingAnswers,
+                    qualityMode,
+                    null,
+                    snapshotHash);
         }
     }
 

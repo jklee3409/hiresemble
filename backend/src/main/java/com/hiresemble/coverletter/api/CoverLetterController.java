@@ -7,6 +7,7 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.common.idempotency.IdempotentResponse;
 import com.hiresemble.coverletter.api.CoverLetterDtos.CoverLetterAnswerVersionDto;
+import com.hiresemble.coverletter.api.CoverLetterDtos.CoverLetterAiModelDto;
 import com.hiresemble.coverletter.api.CoverLetterDtos.CoverLetterDetailDto;
 import com.hiresemble.coverletter.api.CoverLetterDtos.CoverLetterQuestionDto;
 import com.hiresemble.coverletter.api.CoverLetterDtos.CoverLetterSummaryDto;
@@ -25,6 +26,7 @@ import com.hiresemble.coverletter.api.CoverLetterRequests.VersionCommandRequest;
 import com.hiresemble.coverletter.application.CoverLetterApplicationService;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.RunAccepted;
 import com.hiresemble.coverletter.domain.CoverLetterStatus;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.profile.api.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -83,6 +85,21 @@ public class CoverLetterController {
             CoverLetterApplicationService service, CoverLetterApiMapper mapper) {
         this.service = service;
         this.mapper = mapper;
+    }
+
+    @GetMapping("/cover-letters/ai-models")
+    @Operation(
+            operationId = "listCoverLetterAiModels",
+            summary = "List selectable OpenAI models for cover letters",
+            description = "Returns the server-owned allowlist of exact OpenAI API model identifiers.")
+    public List<CoverLetterAiModelDto> aiModels() {
+        return OpenAiChatModels.coverLetterModels().stream()
+                .map(value -> new CoverLetterAiModelDto(
+                        value.id(),
+                        value.displayName(),
+                        value.description(),
+                        value.recommended()))
+                .toList();
     }
 
     @PostMapping(
@@ -312,7 +329,7 @@ public class CoverLetterController {
                 coverLetterId,
                 request.questionIds(),
                 request.preferredEvidenceIds(),
-                request.qualityMode(),
+                request.model(),
                 request.avoidExperienceDuplication(),
                 request.coverLetterVersion(),
                 idempotencyKey);
@@ -425,7 +442,7 @@ public class CoverLetterController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
         return accepted(service.acceptVerification(
-                user.id(), versionId, request.qualityMode(), idempotencyKey));
+                user.id(), versionId, request.model(), idempotencyKey));
     }
 
     @GetMapping("/cover-letter-answer-versions/{versionId}/verifications")

@@ -4,6 +4,14 @@
 
 P7 API·generation·verification에 필요한 최소 immutable application record가 구현됐다.
 
+## [2026-08-06] Session Summary (선택 모델과 memo application model)
+
+- What was done: generation question에 memo, generation·verification snapshot에 model을 추가하고 durable legacy constructor를 보존했다.
+- Key decisions: model은 nullable legacy와 non-null v4 계약을 context builder에서 version별 검증한다.
+- Issues encountered: None.
+- Validation: compile·workflow·Backend 전체 테스트 통과.
+- Next steps: 공개 DTO에는 필요한 catalog metadata 외 내부 snapshot을 노출하지 않는다.
+
 ## [2026-08-05] Session Summary (Cover Letter v3 model compatibility 확인)
 
 - What was done:

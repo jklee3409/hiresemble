@@ -344,6 +344,8 @@ Unique `(user_id,http_method,route_scope,resource_scope_id,idempotency_key)`. Ro
 
 `id,user_id,workflow_type,status,current_step NULL`, `progress_percent integer CHECK 0..100`, `workflow_version,input_hash,budget_policy_version,requested_quality_mode NULL,highest_model_tier_used NULL`, `estimated_cost_usd/reserved_cost_usd/actual_cost_usd numeric(12,6) CHECK >=0`, `retry_of_run_id NULL,root_run_id,run_attempt_no`, `error_code varchar(100) NULL,error_message_safe varchar(500) NULL,partial_result_json NULL,claim_token NULL,claimed_by NULL,lease_expires_at NULL,heartbeat_at NULL,cancel_requested_at NULL,waiting_reason NULL,state_version,queued_at,started_at NULL,completed_at NULL,updated_at,deleted_at NULL`.
 
+자기소개서 생성·검증 v4는 `requested_quality_mode=NULL`이고 선택한 exact model ID를 기존 `input_reference_snapshot.model`에 저장한다. 별도 mutable model column을 추가하지 않으며 retry와 step routing은 이 immutable snapshot을 사용한다. v1~v3 run의 `requested_quality_mode`는 durable replay 호환성을 위해 유지한다.
+
 Structured output 진단은 기존 run/step `error_code`에 값 없는 stable phase/reason code(`AI_SO_JSON_*`, `AI_SO_SCHEMA_*`, `AI_SO_JAVA_*`, `AI_SO_WORKFLOW_*`)로 저장한다. raw Provider response, 실제 invalid value, Jackson message, prompt와 문서 원문은 저장하지 않으며 이를 위한 새 column이나 migration을 추가하지 않는다.
 
 `partial_result_json.failedScopeKeys`는 자기소개서 문항처럼 독립적으로 완료되지 못한 실제 scope에만 사용한다. 문서 evidence candidate filtering은 이 배열에 기록하지 않으며 적용 evidence ID만 `resultRefs`로 보존할 수 있다. 문서 apply step의 기존 `output_json`에는 candidate/applied/rejected count와 stable rejection reason별 count만 저장하고 candidate 값·chunk UUID·문서 원문은 저장하지 않는다. 이 계약은 기존 column으로 충족하므로 별도 migration을 요구하지 않는다.
@@ -378,6 +380,7 @@ Unique `(user_id,agent_run_id,step_key,scope_key,attempt)`. `output_json`에는 
 
 - `ai_price_versions`: immutable catalog header와 effective range.
 - `ai_price_items`: provider, product, unit, unit_price와 price version. 외부 provider 단가를 이 명세에 금액으로 고정하지 않는다.
+- 자기소개서 allowlist의 각 exact OpenAI chat model은 활성 price version에 `CHAT_INPUT|CHAT_CACHED_INPUT|CHAT_OUTPUT` item이 모두 있어야 하며, 모델 추가·폐기는 새 Flyway migration과 새 immutable price version으로 수행한다.
 - `ai_budget_ledgers`: `id,user_id,budget_date,budget_zone,spent_usd,reserved_usd,policy_version`; unique user/date/zone.
 - `ai_budget_reservations`: `id,user_id,operation_type,agent_run_id NULL,mock_turn_id NULL,reserved_usd,settled_usd,status,expires_at,budget_policy_version,price_version,timestamps`.
 - `ai_usage_records`: `id,user_id,agent_run_id NULL,agent_step_id NULL,mock_session_id NULL,mock_turn_id NULL,operation_type,usage_type(CHAT|EMBEDDING|SEARCH),provider,product,model_tier,unit counts,price_version,price_item_id,provider_call_id NULL,cost_usd,duration_ms,created_at`.

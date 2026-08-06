@@ -23,6 +23,9 @@ public final class PolicyModelRouter implements ModelRouter {
 
     @Override
     public ModelRoute route(RoutingRequest request) {
+        if (request.requestedModel() != null) {
+            return exactModelRoute(request);
+        }
         AiQualityMode quality = request.requestedQualityMode() == null
                 ? (request.workflowType() == WorkflowType.MOCK_INTERVIEW_FEEDBACK
                         ? AiQualityMode.BALANCED : AiQualityMode.ECONOMY)
@@ -68,6 +71,37 @@ public final class PolicyModelRouter implements ModelRouter {
                 request.providerRequired() ? policy.providerKey() : "none",
                 request.providerRequired() ? product(tier) : "none",
                 promoted);
+    }
+
+    private ModelRoute exactModelRoute(RoutingRequest request) {
+        if (request.workflowType() != WorkflowType.COVER_LETTER_GENERATION
+                && request.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION) {
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.REQUEST_VALIDATION,
+                    "AI_MODEL_NOT_SUPPORTED",
+                    "선택한 AI 모델을 이 작업에서 사용할 수 없습니다.");
+        }
+        OpenAiChatModels.Model selected;
+        try {
+            selected = OpenAiChatModels.requireCoverLetter(request.requestedModel());
+        } catch (IllegalArgumentException exception) {
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.REQUEST_VALIDATION,
+                    "AI_MODEL_NOT_SUPPORTED",
+                    "선택한 AI 모델을 사용할 수 없습니다.");
+        }
+        if (request.providerRequired() && !policy.providerEnabled()) {
+            throw AiExecutionException.nonRetryable(
+                    FailureKind.CONFIGURATION,
+                    "AI_PROVIDER_DISABLED",
+                    "AI 실행 공급자가 활성화되지 않았습니다.");
+        }
+        return new ModelRoute(
+                policy.version(),
+                selected.tier(),
+                request.providerRequired() ? policy.providerKey() : "none",
+                request.providerRequired() ? selected.id() : "none",
+                false);
     }
 
     private ModelTier chooseInitialTier(AiQualityMode quality, ModelTier preferred) {

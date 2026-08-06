@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-import { AI_QUALITY_MODES } from './agentRunContracts'
 import { evidenceRefSchema } from './jobContracts'
 
 export const COVER_LETTER_STATUSES = ['DRAFT', 'FINALIZED', 'ARCHIVED'] as const
@@ -28,7 +27,6 @@ export type AnswerCreatedBy = (typeof ANSWER_CREATED_BY_VALUES)[number]
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number]
 export type VerificationIssueCode = (typeof VERIFICATION_ISSUE_CODES)[number]
 export type IssueSeverity = (typeof ISSUE_SEVERITIES)[number]
-export type AiQualityMode = (typeof AI_QUALITY_MODES)[number]
 
 export interface TipTapMarkDto {
   type: 'bold' | 'italic'
@@ -178,6 +176,15 @@ export const verificationPageSchema = z.object({
   totalPages: nonnegativeIntegerSchema,
 })
 
+export const coverLetterAiModelSchema = z.object({
+  id: z.string().min(1).max(64),
+  displayName: z.string().min(1).max(100),
+  description: z.string().min(1).max(200),
+  recommended: z.boolean(),
+})
+
+export const coverLetterAiModelsSchema = z.array(coverLetterAiModelSchema).min(7).max(30)
+
 export type JobRefDto = z.infer<typeof jobRefSchema>
 export type VerificationIssueDto = z.infer<typeof verificationIssueSchema>
 export type VerifiedClaimDto = z.infer<typeof verifiedClaimSchema>
@@ -189,6 +196,7 @@ export type CoverLetterDetailDto = z.infer<typeof coverLetterDetailSchema>
 export type CoverLetterPageDto = z.infer<typeof coverLetterPageSchema>
 export type AnswerVersionPageDto = z.infer<typeof answerVersionPageSchema>
 export type VerificationPageDto = z.infer<typeof verificationPageSchema>
+export type CoverLetterAiModelDto = z.infer<typeof coverLetterAiModelSchema>
 
 export interface CreateCoverLetterRequest {
   title: string
@@ -223,7 +231,7 @@ export interface ReorderQuestionsRequest {
 export interface GenerateCoverLetterRequest {
   questionIds: string[]
   preferredEvidenceIds: string[]
-  qualityMode: AiQualityMode
+  model: string
   avoidExperienceDuplication: boolean
   coverLetterVersion: number
 }
@@ -238,7 +246,7 @@ export interface RestoreAnswerVersionRequest {
 }
 
 export interface VerifyAnswerVersionRequest {
-  qualityMode: AiQualityMode
+  model: string
 }
 
 export interface FinalizeCoverLetterRequest {

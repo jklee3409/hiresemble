@@ -2,7 +2,15 @@
 
 ## Overview
 
-P7 자기소개서 공개 API 17개의 validation·HTTP status·DTO·OpenAPI 계약이 구현됐다.
+P7 자기소개서 공개 API 18개의 validation·HTTP status·DTO·OpenAPI 계약이 구현됐다.
+
+## [2026-08-06] Session Summary (AI model catalog API)
+
+- What was done: `GET /api/v1/cover-letters/ai-models`를 추가하고 generate·verify request를 `model` 기반으로 변경했다.
+- Key decisions: dropdown metadata는 서버가 제공하고 미지원 model은 `AI_MODEL_NOT_SUPPORTED`로 거부한다.
+- Issues encountered: None.
+- Validation: OpenAPI 70 paths·95 operations 계약과 Backend 전체 `check` 통과.
+- Next steps: catalog 응답은 장기 cache하지 않아 서버 allowlist 변경을 즉시 반영한다.
 
 ## [2026-07-30] Session Summary (P7 자기소개서 API)
 

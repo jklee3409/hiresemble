@@ -9,16 +9,22 @@ import com.hiresemble.ai.workflow.WorkflowRegistry.StepDefinition;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Stage-specific prompts for active relevance-aware explicit verification v3. */
+/** Stage-specific prompts for durable v3 and exact-model v4 verification. */
 public final class CoverLetterVerificationV3PromptDefinitions {
 
     private CoverLetterVerificationV3PromptDefinitions() {}
 
     public static List<PromptDefinition> all() {
+        List<PromptDefinition> prompts = new ArrayList<>();
+        prompts.addAll(forVersion(CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION));
+        prompts.addAll(forVersion(CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION));
+        return List.copyOf(prompts);
+    }
+
+    private static List<PromptDefinition> forVersion(String workflowVersion) {
         var workflow = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value -> value.type() == WorkflowType.COVER_LETTER_VERIFICATION
-                        && CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
-                                value.version()))
+                        && workflowVersion.equals(value.version()))
                 .findFirst()
                 .orElseThrow();
         List<PromptDefinition> prompts = new ArrayList<>();
@@ -26,11 +32,12 @@ public final class CoverLetterVerificationV3PromptDefinitions {
             prompts.add(new PromptDefinition(
                     new PromptKey(
                             WorkflowType.COVER_LETTER_VERIFICATION,
-                            CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
+                            workflowVersion,
                             step.stepKey()),
                     "cover-letter-verification-"
                             + step.stepKey().toLowerCase(java.util.Locale.ROOT).replace('_', '-')
-                            + "-prompt-v3",
+                            + (CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(workflowVersion)
+                                    ? "-prompt-v4" : "-prompt-v3"),
                     inputType(step.stepKey()),
                     outputType(step.stepKey()),
                     step.outputSchemaVersion(),

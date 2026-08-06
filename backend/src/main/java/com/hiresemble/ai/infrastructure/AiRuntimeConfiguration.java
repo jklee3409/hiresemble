@@ -181,9 +181,11 @@ public class AiRuntimeConfiguration {
                         coverLetterGenerationWorkflow.contribution(),
                         coverLetterGenerationWorkflow.v2Contribution(),
                         coverLetterGenerationWorkflow.v3Contribution(),
+                        coverLetterGenerationWorkflow.v4Contribution(),
                         coverLetterVerificationWorkflow.contribution(),
                         coverLetterVerificationWorkflow.v2Contribution(),
                         coverLetterVerificationWorkflow.v3Contribution(),
+                        coverLetterVerificationWorkflow.v4Contribution(),
                         interviewPreparationWorkflow.contribution(),
                         interviewAnswerFeedbackWorkflow.contribution()));
     }

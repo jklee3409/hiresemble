@@ -5,6 +5,7 @@ import com.hiresemble.agentrun.application.port.AiPreferenceQueryPort;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.common.exception.BusinessException;
@@ -46,11 +47,13 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                                 run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                                 run.workflowVersion())
+                        && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                                run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION.equals(
                                 run.workflowVersion()))
                 || !"COVER_LETTER".equals(run.resourceType())
                 || run.resourceId() == null
-                || run.requestedQualityMode() == null) {
+                || !validSelection(run)) {
             throw configurationFailure();
         }
         InputReference input = input(run);
@@ -58,7 +61,7 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
         if (!run.userId().equals(snapshot.userId())
                 || !run.resourceId().equals(snapshot.coverLetterId())
                 || !input.answerVersionId().equals(snapshot.answerVersion().id())
-                || snapshot.qualityMode() != run.requestedQualityMode()) {
+                || !selectionMatches(run, snapshot.qualityMode(), snapshot.model())) {
             throw ownerFailure();
         }
 
@@ -73,7 +76,9 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                 evidence.id(),
                 evidence.version(),
                 "VERIFIED")));
-        var preference = preferenceQueryPort.activePreference(run.userId());
+        boolean highQualityEnabled = isExactModel(run)
+                ? false
+                : preferenceQueryPort.activePreference(run.userId()).highQualityEnabled();
         return new ContextSnapshot(
                 run.userId(),
                 List.of(
@@ -93,7 +98,7 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                 snapshot.snapshotHash(),
                 "HISTORICAL_PROVENANCE_WITH_CURRENT_STATUS",
                 modelPolicyVersion,
-                preference.highQualityEnabled(),
+                highQualityEnabled,
                 budgetConfirmed(run));
     }
 
@@ -106,7 +111,13 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                         : queryPort.loadVerificationRetrySnapshot(
                                 run.userId(), run.id(), null);
             }
-            return isModern(run.workflowVersion())
+            return isExactModel(run)
+                    ? queryPort.loadVerificationSnapshotByModel(
+                            run.userId(),
+                            input.answerVersionId(),
+                            input.model(),
+                            input.snapshotHash())
+                    : isModern(run.workflowVersion())
                     ? queryPort.loadVerificationSnapshotV2(
                             run.userId(),
                             input.answerVersionId(),
@@ -130,6 +141,8 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
 
     private boolean isModern(String workflowVersion) {
         return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(workflowVersion)
+                || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                        workflowVersion)
                 || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                         workflowVersion);
     }
@@ -144,10 +157,15 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
             UUID verificationId =
                     UUID.fromString(input.path("verificationId").asText());
             String snapshotHash = input.path("snapshotHash").asText();
-            AiQualityMode qualityMode =
-                    AiQualityMode.valueOf(input.path("qualityMode").asText());
+            String model = isExactModel(run) ? input.path("model").asText(null) : null;
+            AiQualityMode qualityMode = isExactModel(run)
+                    ? null
+                    : AiQualityMode.valueOf(input.path("qualityMode").asText());
+            if (isExactModel(run)) {
+                OpenAiChatModels.requireCoverLetter(model);
+            }
             if (!run.resourceId().equals(coverLetterId)
-                    || run.requestedQualityMode() != qualityMode
+                    || !selectionMatches(run, qualityMode, model)
                     || snapshotHash == null
                     || !snapshotHash.matches("[0-9a-f]{64}")) {
                 throw new IllegalArgumentException("verification input is invalid");
@@ -157,7 +175,8 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                     answerVersionId,
                     verificationId,
                     snapshotHash,
-                    qualityMode);
+                    qualityMode,
+                    model);
         } catch (RuntimeException exception) {
             throw ownerFailure();
         }
@@ -202,10 +221,30 @@ public final class CoverLetterVerificationContextBuilder implements ContextBuild
                 "AI 실행 구성이 준비되지 않았습니다.");
     }
 
+    private boolean isExactModel(AgentRunSnapshot run) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                run.workflowVersion());
+    }
+
+    private boolean validSelection(AgentRunSnapshot run) {
+        return isExactModel(run)
+                ? run.requestedQualityMode() == null
+                        && OpenAiChatModels.supportsCoverLetter(run.requestedModel())
+                : run.requestedQualityMode() != null && run.requestedModel() == null;
+    }
+
+    private boolean selectionMatches(
+            AgentRunSnapshot run, AiQualityMode qualityMode, String model) {
+        return isExactModel(run)
+                ? qualityMode == null && run.requestedModel().equals(model)
+                : model == null && run.requestedQualityMode() == qualityMode;
+    }
+
     private record InputReference(
             UUID coverLetterId,
             UUID answerVersionId,
             UUID verificationId,
             String snapshotHash,
-            AiQualityMode qualityMode) {}
+            AiQualityMode qualityMode,
+            String model) {}
 }

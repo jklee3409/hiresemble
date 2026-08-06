@@ -15,6 +15,14 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-06] Session Summary (자기소개서 model request fixture)
+
+- What was done: P7 actual E2E의 생성·검증 요청을 exact model 계약으로 갱신했다.
+- Key decisions: 공식 model catalog는 Backend가 소유하며 E2E는 선택값 전달 계약만 고정한다.
+- Issues encountered: None.
+- Validation: Frontend `pnpm check` 통과. 실제 Chromium P7 spec은 이번 작업에서 실행하지 않았다.
+- Next steps: 격리 Backend 기동 환경에서 P7 actual Chromium 회귀를 실행한다.
+
 ## [2026-08-06] Session Summary (자기소개서·AI 상세 UI 회귀 동기화)
 
 - What was done:

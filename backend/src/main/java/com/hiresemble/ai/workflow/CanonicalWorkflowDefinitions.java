@@ -24,12 +24,16 @@ public final class CanonicalWorkflowDefinitions {
             "job-posting-extraction-v1";
     public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
     public static final String COVER_LETTER_GENERATION_VERSION =
+            "cover-letter-generation-v4";
+    public static final String COVER_LETTER_GENERATION_V3_VERSION =
             "cover-letter-generation-v3";
     public static final String COVER_LETTER_GENERATION_V2_VERSION =
             "cover-letter-generation-v2";
     public static final String COVER_LETTER_GENERATION_LEGACY_VERSION =
             "cover-letter-generation-v1";
     public static final String COVER_LETTER_VERIFICATION_VERSION =
+            "cover-letter-verification-v4";
+    public static final String COVER_LETTER_VERIFICATION_V3_VERSION =
             "cover-letter-verification-v3";
     public static final String COVER_LETTER_VERIFICATION_V2_VERSION =
             "cover-letter-verification-v2";
@@ -59,9 +63,11 @@ public final class CanonicalWorkflowDefinitions {
                 jobPostingExtractionLegacy(),
                 jobAnalysis(),
                 coverLetterGeneration(),
+                coverLetterGenerationV3(),
                 coverLetterGenerationV2(),
                 coverLetterGenerationLegacy(),
                 coverLetterVerification(),
+                coverLetterVerificationV3(),
                 coverLetterVerificationV2(),
                 coverLetterVerificationLegacy(),
                 interviewPreparation(),
@@ -368,6 +374,14 @@ public final class CanonicalWorkflowDefinitions {
         return coverLetterGeneration(
                 COVER_LETTER_GENERATION_VERSION,
                 true,
+                "cover-letter-input-v4",
+                3);
+    }
+
+    private static WorkflowDefinition coverLetterGenerationV3() {
+        return coverLetterGeneration(
+                COVER_LETTER_GENERATION_V3_VERSION,
+                false,
                 "cover-letter-input-v3",
                 3);
     }
@@ -491,6 +505,14 @@ public final class CanonicalWorkflowDefinitions {
         return coverLetterVerification(
                 COVER_LETTER_VERIFICATION_VERSION,
                 true,
+                "cover-letter-input-v4",
+                3);
+    }
+
+    private static WorkflowDefinition coverLetterVerificationV3() {
+        return coverLetterVerification(
+                COVER_LETTER_VERIFICATION_V3_VERSION,
+                false,
                 "cover-letter-input-v3",
                 3);
     }

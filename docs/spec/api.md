@@ -93,12 +93,13 @@
 
 | workflow                               | request DTO와 유효 모드                                       |
 | -------------------------------------- | ------------------------------------------------------------- |
-| 자기소개서 생성·검증, 면접 답변 피드백 | `qualityMode` 필수; `ECONOMY`, `BALANCED`, `HIGH_QUALITY`     |
+| 자기소개서 생성·검증                  | `model` 필수; 서버가 공개한 OpenAI model allowlist의 정확한 ID |
+| 면접 답변 피드백                       | `qualityMode` 필수; `ECONOMY`, `BALANCED`, `HIGH_QUALITY`     |
 | 공고 분석, 면접 준비                   | `qualityMode` 필수; `ECONOMY`, `BALANCED`                     |
 | 문서·공고 추출                         | 공개 `qualityMode` 없음; 내부 정책은 `ECONOMY\|BALANCED` 범위 |
 | 모의 면접 종합 feedback                | 공개 `qualityMode` 없음; `BALANCED` 고정                      |
 
-허용하지 않는 선택은 `400 QUALITY_MODE_NOT_SUPPORTED`다. provider/model 실명은 일반 API에 노출하지 않는다.
+허용하지 않는 품질 선택은 `400 QUALITY_MODE_NOT_SUPPORTED`다. 자기소개서의 미지원·폐기 model ID는 `400 AI_MODEL_NOT_SUPPORTED`다. 자기소개서 모델 카탈로그 API와 요청 DTO를 제외한 일반 API에는 provider/model 실명을 노출하지 않는다.
 
 모든 `actualCostUsd`는 provider invoice나 사용자 청구 금액이 아니라 요청 접수 시 고정한 immutable price catalog version으로 계산한 내부 Provider 원가 estimate다.
 
@@ -376,17 +377,20 @@ TipTap plain text는 CRLF→LF, NBSP→space, Unicode NFC 뒤 code point로 계�
 | `PUT /cover-letters/{id}/questions/{questionId}`                 | 생성 field + `version:long`(question)                                                                                                                                              | body version      | 200 `CoverLetterQuestionDto`                       | 400/404/409             |
 | `DELETE /cover-letters/{id}/questions/{questionId}`              | version query                                                                                                                                                                      | question version  | 204 soft delete                                    | 404/409                 |
 | `PATCH /cover-letters/{id}/questions/order`                      | 전체 active `questionIds:UUID[1..20]`, `version:long`(cover letter)                                                                                                                | aggregate version | 200 `CoverLetterDetailDto`                         | 400/404/409             |
-| `POST /cover-letters/{id}/generate`                              | `questionIds:UUID[1..20]` unique, `preferredEvidenceIds:UUID[0..50]` unique VERIFIED, `qualityMode:AiQualityMode`, `avoidExperienceDuplication:boolean`, `coverLetterVersion:long` | body version+I    | 202 `RunAcceptedDto`                               | 400/404/409/429/503     |
+| `GET /cover-letters/ai-models`                                  | 없음; 서버 allowlist의 exact OpenAI model ID, 표시명, 설명, 추천 여부를 반환                                                                                                    | 없음              | 200 `CoverLetterAiModelDto[7..30]`                 | 401                     |
+| `POST /cover-letters/{id}/generate`                              | `questionIds:UUID[1..20]` unique, `preferredEvidenceIds:UUID[0..50]` unique VERIFIED, `model:string 1..64` allowlisted, `avoidExperienceDuplication:boolean`, `coverLetterVersion:long` | body version+I    | 202 `RunAcceptedDto`                               | 400/404/409/429/503     |
 | `GET /cover-letter-questions/{id}/versions`                      | page,size; sort `versionNo,desc` 또는 `createdAt,desc`                                                                                                                             | 없음              | 200 `PageResponse<CoverLetterAnswerVersionDto>`    | 404                     |
 | `POST /cover-letter-questions/{id}/versions`                     | `contentJson:TipTapDocumentDto`, `parentVersionId:UUID?`(현재와 일치, 최초만 null)                                                                                                 | current CAS       | 201 `CoverLetterAnswerVersionDto` with USER_EDITED | 400/404/409/maxLength   |
 | `POST /cover-letter-questions/{id}/versions/{versionId}/restore` | `expectedCurrentVersionId:UUID?`                                                                                                                                                   | current CAS       | 201 `CoverLetterAnswerVersionDto` with RESTORED    | 404/409                 |
-| `POST /cover-letter-answer-versions/{id}/verify`                 | `qualityMode:AiQualityMode`                                                                                                                                                        | I                 | 202 `RunAcceptedDto`                               | 404/429/503             |
+| `POST /cover-letter-answer-versions/{id}/verify`                 | `model:string 1..64` allowlisted                                                                                                                                                   | I                 | 202 `RunAcceptedDto`                               | 400/404/429/503         |
 | `GET /cover-letter-answer-versions/{id}/verifications`           | page,size; sort `createdAt,desc`                                                                                                                                                   | 없음              | 200 `PageResponse<VerificationDto>`                | 404                     |
 | `POST /cover-letters/{id}/finalize`                              | `version:long`, `acknowledgedWarningVerificationIds:UUID[0..20]`                                                                                                                   | body version      | 200 `CoverLetterDetailDto` with FINALIZED          | 404/409 not finalizable |
 | `POST /cover-letters/{id}/archive`                               | `version:long`                                                                                                                                                                     | body version      | 200 `CoverLetterDetailDto` with ARCHIVED           | 404/409                 |
 | `POST /cover-letters/{id}/unarchive`                             | `version:long`                                                                                                                                                                     | body version      | 200 `CoverLetterDetailDto` with DRAFT              | 404/409 active          |
 
 `ARCHIVED` mutation은 `409 COVER_LETTER_ARCHIVED`다. 질문별 generation partial success를 보존하고 run partialResult로 scope를 공개한다. 최종화는 모든 active 질문의 current answer와 fresh verification을 요구한다. `PENDING|FAILED`는 금지, `WARNING`은 정확한 verification ID 확인 시에만 허용한다.
+
+신규 자기소개서 생성·검증 run은 `cover-letter-*-v4`이며 `input_reference_snapshot.model`에 선택한 exact model ID를 고정한다. 질문 `memo`는 v4 계획·작성 context에 사용자 작성 지침으로 포함하되 검증된 사실 근거로 취급하지 않는다. v1~v3의 `qualityMode` 입력은 이미 접수된 durable run 재생에만 유지한다.
 
 ## 9. 면접 준비·조사·답변 피드백
 

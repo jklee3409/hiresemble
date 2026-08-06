@@ -4,6 +4,14 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-06] Session Summary (자기소개서 memo-aware v4 prompt)
+
+- What was done: generation plan·write prompt에 bounded memo를 전달하는 v4 identity를 추가하고 verification v4를 등록했다.
+- Key decisions: memo를 사용자 의도·강조 방향으로 명시하고 사실 주장 근거로 사용하지 못하게 했다.
+- Issues encountered: None.
+- Validation: prompt registry를 포함한 Backend 전체 `check` 통과.
+- Next steps: quality rubric과 golden set으로 prompt 개선 효과를 회귀 측정한다.
+
 ## [2026-08-06] Session Summary (Cover Letter Writer 길이 계약 v5)
 
 - What was done:

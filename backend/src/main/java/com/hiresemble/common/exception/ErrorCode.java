@@ -12,6 +12,7 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
     JOB_ANALYSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "공고 분석 결과를 찾을 수 없습니다."),
     QUALITY_MODE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "이 작업에서 지원하지 않는 품질 모드입니다."),
+    AI_MODEL_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "선택한 AI 모델을 사용할 수 없습니다."),
     RESOURCE_VERSION_CONFLICT(HttpStatus.CONFLICT, "최신 내용을 확인한 뒤 다시 적용해 주세요."),
     RESOURCE_STATE_CONFLICT(HttpStatus.CONFLICT, "현재 상태에서는 요청한 작업을 수행할 수 없습니다."),
     INSUFFICIENT_JOB_DATA(HttpStatus.CONFLICT, "공고 분석에 필요한 정보가 부족합니다."),

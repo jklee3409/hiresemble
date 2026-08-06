@@ -22,6 +22,18 @@ public interface CoverLetterQueryPort {
     GenerationSnapshot loadGenerationRetrySnapshot(
             UUID userId, UUID agentRunId, String expectedSnapshotHash);
 
+    default GenerationSnapshot loadGenerationSnapshotByModel(
+            UUID userId,
+            UUID coverLetterId,
+            long expectedCoverLetterVersion,
+            List<UUID> questionIds,
+            List<UUID> preferredEvidenceIds,
+            boolean avoidExperienceDuplication,
+            String model,
+            String expectedSnapshotHash) {
+        throw new UnsupportedOperationException("exact model generation is not configured");
+    }
+
     VerificationSnapshot loadVerificationSnapshot(
             UUID userId,
             UUID answerVersionId,
@@ -35,6 +47,14 @@ public interface CoverLetterQueryPort {
             String expectedSnapshotHash) {
         return loadVerificationSnapshot(
                 userId, answerVersionId, qualityMode, expectedSnapshotHash);
+    }
+
+    default VerificationSnapshot loadVerificationSnapshotByModel(
+            UUID userId,
+            UUID answerVersionId,
+            String model,
+            String expectedSnapshotHash) {
+        throw new UnsupportedOperationException("exact model verification is not configured");
     }
 
     VerificationSnapshot loadVerificationRetrySnapshot(

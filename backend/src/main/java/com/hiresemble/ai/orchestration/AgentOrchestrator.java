@@ -523,6 +523,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                     && executor.requiresProvider(executionContext);
             ModelRoute route = modelRouter.route(new RoutingRequest(
                     run.workflowType(), stepDefinition.stepKey(), run.requestedQualityMode(),
+                    stepDefinition.toolAllowlist().isEmpty() ? run.requestedModel() : null,
                     stepDefinition.preferredTier(), providerRequired,
                     executionContext.contextSnapshot().highQualityEnabled(),
                     executionContext.contextSnapshot().budgetReservationConfirmed(),

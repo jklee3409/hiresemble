@@ -4,6 +4,14 @@
 
 P3 응답 5단계 validation 앞에 OpenAI strict request schema의 중앙 생성·호환성 검증 경계가 구현됐다.
 
+## [2026-08-06] Session Summary (공유 output schema 생성 deduplication)
+
+- What was done: durable workflow version들이 같은 output type·schema version을 공유할 때 schema를 한 번만 생성하도록 registry를 정리했다.
+- Key decisions: contract key가 동일한 경우만 deduplicate해 검증 의미와 fingerprint를 유지한다.
+- Issues encountered: v4 등록 후 전체 테스트 초기화 비용이 증가해 중복 생성 경로를 확인했다.
+- Validation: Backend 전체 `check` 578 tests 통과.
+- Next steps: schema contract 변경 시 output schema version을 함께 올린다.
+
 ## [2026-08-02] Session Summary (한국어 사용자 문장 최소 검증 정책)
 
 - What was done:

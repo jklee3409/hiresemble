@@ -17,7 +17,7 @@ AI structured output의 parsing부터 domain command까지 검증 순서를 강�
 
 ## 구성 요소 역할
 
-Provider에 보내기 전 schema 호환성을 검사하고 응답은 JSON parse, schema shape, Java binding, record policy, workflow context, domain command 순서로 검증한다. parse/schema/binding은 deterministic, 명시적으로 repairable인 record/workflow 의미 오류만 1회 correction 대상이며 domain 거절은 별도 실패 의미를 유지한다.
+Provider에 보내기 전 schema 호환성을 검사하고 응답은 JSON parse, schema shape, Java binding, record policy, workflow context, domain command 순서로 검증한다. 여러 durable workflow version이 같은 output 계약을 공유하면 registry 초기화 시 같은 type·schema version을 한 번만 생성한다. parse/schema/binding은 deterministic, 명시적으로 repairable인 record/workflow 의미 오류만 1회 correction 대상이며 domain 거절은 별도 실패 의미를 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 

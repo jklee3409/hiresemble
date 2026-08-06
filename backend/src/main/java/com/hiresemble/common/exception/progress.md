@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1~P7 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+P1~P8 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+
+## [2026-08-06] Session Summary (미지원 AI 모델 오류)
+
+- What was done: 자기소개서 model allowlist 위반을 표현하는 안정적인 `AI_MODEL_NOT_SUPPORTED` 오류를 추가했다.
+- Key decisions: provider 호출 전에 400으로 거부하고 내부 provider 응답은 노출하지 않는다.
+- Issues encountered: None.
+- Validation: OpenAPI와 Backend 전체 `check` 통과.
+- Next steps: model catalog에서 제거된 ID도 같은 오류 계약으로 처리한다.
 
 ## [2026-07-30] Session Summary (P7 Cover Letter 오류 계약)
 

@@ -4,6 +4,14 @@
 
 P7 자기소개서 application use case와 generation·verification port가 구현됐다.
 
+## [2026-08-06] Session Summary (v4 Run 접수 계약)
+
+- What was done: 생성·검증 접수에서 exact model을 검증하고 model·memo를 immutable snapshot/hash/retry input에 반영했다.
+- Key decisions: v4에는 `requestedQuality`를 저장하지 않고 legacy overload는 v1~v3 재개에만 사용한다.
+- Issues encountered: None.
+- Validation: generation service·workflow·전체 Backend 테스트 통과.
+- Next steps: model별 실제 비용·품질 지표를 운영 usage 집계와 연결한다.
+
 ## [2026-08-05] Session Summary (Cover Letter v3 launch와 USER_EDITED provenance)
 
 - What was done:

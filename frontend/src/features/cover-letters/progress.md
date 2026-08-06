@@ -4,6 +4,65 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (자기소개서 AI 모델 dropdown)
+
+- What was done: 생성 panel에 서버 catalog 기반 model dropdown을 추가하고 생성·검증 mutation identity와 payload에 선택 모델을 반영했다.
+- Key decisions: 추천 모델은 catalog의 `recommended` 표시를 따르고 catalog가 없으면 유료 작업 접수를 막는다.
+- Issues encountered: None.
+- Validation: Frontend `pnpm check` 69 files·308 tests, lint·format·typecheck·build 통과.
+- Next steps: 실제 Chromium에서 desktop/mobile dropdown 상호작용을 확인한다.
+
+## [2026-08-06] Session Summary (번호 전용 문항 rail과 화면 높이 편집기)
+
+- What was done:
+  - `CoverLetterQuestionRail.vue`에 `compact | list` variant를 넣었다. `compact`는 번호만 있는 2.75rem 사각 button과 상태 색 점, `list`는 질문 preview·상태 문구까지 보여 준다. 상태 문구는 두 variant 모두 `aria-label`에 포함한다.
+  - `CoverLetterTipTapEditor.vue` 본문을 고정 `min-height` 대신 화면 높이 기반 `height` + 내부 스크롤로 바꾸고 글자 크기를 0.8125rem, 여백을 줄였다. `--cover-editor-height`로 상위에서 덮어쓸 수 있다.
+- Key decisions:
+  - 번호만 남겨도 상태를 잃지 않도록 색 점과 접근 가능한 이름을 함께 쓴다.
+  - 답변이 길어져도 페이지 전체가 늘어나지 않게 편집 본문만 스크롤한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 컨테이너(node:24) 집중 Vitest 9 files/50 tests와 전체 69 files/307 tests·build 통과.
+- Next steps:
+  - None.
+
+## [2026-08-06] Session Summary (진행 표시 축소와 작성 도움 tab 분리)
+
+- What was done:
+  - `CoverLetterRunMonitor.vue`를 한 줄 요약 `details`로 바꿔 세로 영역을 줄이고, 연결 상태·완료/실패 문항·`AI 작업 상세`는 펼침 영역으로 옮겼다. 실패 문항이 있으면 기본 펼침이다.
+  - `AssistTab`을 `MATERIAL | JOB | REVIEW`로 나누고 `CoverLetterAssistPanel.vue`에 `쓸 소재` tab을 분리했다. 선택 개수 요약, `모두 해제`, 아직 쓰지 않은 소재와 이미 쓴 소재 구분, 경험이 없을 때의 자료 등록 link를 추가했다.
+- Key decisions:
+  - 소재 선택은 읽기 정보인 공고 요구사항과 같은 tab에 두지 않는다.
+  - `모두 해제`는 page의 선택 상태를 바꾸므로 `clear-evidence` event로 올린다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 컨테이너(node:24) 전체 검사(eslint·prettier·vue-tsc·Vitest 69 files/307 tests·build) 통과.
+- Next steps:
+  - None.
+
+## [2026-08-06] Session Summary (자기소개서 작성 화면 정보 구조 재설계)
+
+- What was done:
+  - `editorFlow.ts`를 추가해 문항별 작성·검토 상태, 작성 완료까지 남은 조건, 단일 primary 행동 판정을 한곳으로 모았다. 판정 규칙은 Backend `finalizeCover`(모든 문항 답변 저장·최대 글자 수·최신 답변 기준 검토 통과·확인 필요 동의)와 같은 조건을 사용한다.
+  - 편집 화면 component를 `CoverLetterQuestionRail`, `CoverLetterAssistPanel`, `CoverLetterSheet`, `CoverLetterGenerationPanel`, `CoverLetterVersionPanel`, `CoverLetterCompletionPanel`로 분리했다.
+  - AI 설정, 버전 기록, 작성 완료 점검, 문항 추가·수정을 sheet로 옮기고 기본 화면에서는 문항 목록·편집기·작성 도움만 남겼다.
+  - 작성 도움에서 이 답변에 실제로 쓰인 경험(최신 검토의 근거)과 아직 쓰지 않은 경험을 구분하고, 고른 경험이 다음 초안에 쓰인다는 문구를 붙였다.
+  - 버전 panel에서 고른 과거 저장본의 검토 결과를 따로 조회해 근거 상태 확인 기능을 유지했다.
+- Key decisions:
+  - AI 검토는 Backend 계약상 작성 완료 필수 조건이므로 선택 기능으로 표현하지 않는다.
+  - 재작성은 기존 답변을 지우지 않고 새 버전으로 저장되므로 실행 전에 비파괴 동작과 미저장 내용 여부를 알린다.
+  - 편집기 내용은 `currentAnswer.id` 변화에도 다시 불러오고, 미저장 본문은 sessionStorage draft 복구로 보존한다.
+  - 409 비교와 오류 안내가 sheet 뒤에 가리지 않도록 오류 발생 시 열린 sheet를 닫는다.
+- Issues encountered:
+  - `.generation-panel` DOMWrapper를 재사용하면 재렌더 뒤 하위 요소를 찾지 못해 설정 test가 조용히 통과하지 않았다. wrapper 기준 재조회로 바꿨다.
+  - 로컬 Node 20.18.0에서는 jsdom 의존성의 `require(ESM)` 때문에 vitest를 실행할 수 없어 `node:24` 컨테이너에서 검증했다.
+- Validation:
+  - 컨테이너(node:24)에서 eslint, prettier, `vue-tsc -b --force`, Vitest 69 files/307 tests, `vite build`가 모두 통과했다.
+- Next steps:
+  - 실제 브라우저에서의 시각·반응형 확인과 P7 actual E2E 재실행은 미수행이다.
+
 ## [2026-08-06] Session Summary (AI 생성 완료 문항 한 줄 preview)
 
 - What was done:

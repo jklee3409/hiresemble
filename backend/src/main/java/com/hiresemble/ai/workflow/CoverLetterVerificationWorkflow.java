@@ -1,7 +1,9 @@
 package com.hiresemble.ai.workflow;
 
+import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
+import com.hiresemble.ai.model.OpenAiChatModels;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.validation.KoreanUserFacingTextPolicy;
@@ -82,6 +84,7 @@ public final class CoverLetterVerificationWorkflow {
     private static final String INPUT_SCHEMA = "cover-letter-input-v1";
     private static final String INPUT_SCHEMA_V2 = "cover-letter-input-v2";
     private static final String INPUT_SCHEMA_V3 = "cover-letter-input-v3";
+    private static final String INPUT_SCHEMA_V4 = "cover-letter-input-v4";
     private static final String WRITING_QUALITY_RUBRIC_VERSION =
             "cover-letter-writing-quality-rubric-v2";
     private static final int MAX_VERIFICATION_EVIDENCE = 30;
@@ -138,8 +141,23 @@ public final class CoverLetterVerificationWorkflow {
                         step(PERSIST_VERIFICATION, new PersistVerificationExecutor())));
     }
 
-    /** Active v3 contribution. Legacy v1/v2 runs remain executable by exact version. */
+    /** Durable v3 contribution. Legacy v1/v2 runs remain executable by exact version. */
     public ExecutableWorkflowContribution v3Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.COVER_LETTER_VERIFICATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
+                List.of(
+                        step(LOAD_ANSWER_VERSION, new LoadAnswerExecutor()),
+                        step(BUILD_PROVENANCE_CONTEXT, new BuildProvenanceExecutor()),
+                        step(CHECK_FACTS, new CheckFactsExecutor(3)),
+                        step(CHECK_REQUIREMENTS_AND_LENGTH, new CheckRequirementsExecutor(3)),
+                        step(AGGREGATE_VERIFICATION, new AggregateVerificationExecutor()),
+                        step(PERSIST_VERIFICATION, new PersistVerificationExecutor())));
+    }
+
+    /** Active v4 contribution with an exact user-selected model. */
+    public ExecutableWorkflowContribution v4Contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_VERIFICATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION,
@@ -215,11 +233,13 @@ public final class CoverLetterVerificationWorkflow {
                                     context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                                     context.run().workflowVersion())
+                            && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                                    context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION.equals(
                                     context.run().workflowVersion()))
                     || !"COVER_LETTER".equals(context.run().resourceType())
                     || context.run().resourceId() == null
-                    || context.run().requestedQualityMode() == null) {
+                    || !validSelection(context.run())) {
                 throw configurationFailure();
             }
             try {
@@ -230,7 +250,13 @@ public final class CoverLetterVerificationWorkflow {
                         UUID.fromString(input.path("verificationId").asText());
                 VerificationSnapshot snapshot =
                         context.run().retryOfRunId() == null
-                                ? isModern(context.run().workflowVersion())
+                                ? isExactModel(context.run())
+                                        ? queryPort.loadVerificationSnapshotByModel(
+                                                context.run().userId(),
+                                                answerVersionId,
+                                                context.run().requestedModel(),
+                                                context.contextSnapshot().contextHash())
+                                        : isModern(context.run().workflowVersion())
                                         ? queryPort.loadVerificationSnapshotV2(
                                                 context.run().userId(),
                                                 answerVersionId,
@@ -254,8 +280,7 @@ public final class CoverLetterVerificationWorkflow {
                         || !snapshot.coverLetterId().equals(
                                 context.run().resourceId())
                         || !snapshot.answerVersion().id().equals(answerVersionId)
-                        || snapshot.qualityMode()
-                                != context.run().requestedQualityMode()
+                        || !selectionMatches(context.run(), snapshot)
                         || !snapshot.snapshotHash().equals(
                                 context.contextSnapshot().contextHash())) {
                     throw ownerFailure();
@@ -1502,6 +1527,8 @@ public final class CoverLetterVerificationWorkflow {
 
     private boolean isModern(String workflowVersion) {
         return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(workflowVersion)
+                || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                        workflowVersion)
                 || CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                         workflowVersion);
     }
@@ -1521,12 +1548,36 @@ public final class CoverLetterVerificationWorkflow {
     private String inputSchema(VerificationState state) {
         if (CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
                 state.workflowVersion())) {
+            return INPUT_SCHEMA_V4;
+        }
+        if (CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION.equals(
+                state.workflowVersion())) {
             return INPUT_SCHEMA_V3;
         }
         return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V2_VERSION.equals(
                         state.workflowVersion())
                 ? INPUT_SCHEMA_V2
                 : INPUT_SCHEMA;
+    }
+
+    private boolean isExactModel(AgentRunSnapshot run) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_VERSION.equals(
+                run.workflowVersion());
+    }
+
+    private boolean validSelection(AgentRunSnapshot run) {
+        return isExactModel(run)
+                ? run.requestedQualityMode() == null
+                        && OpenAiChatModels.supportsCoverLetter(run.requestedModel())
+                : run.requestedQualityMode() != null && run.requestedModel() == null;
+    }
+
+    private boolean selectionMatches(AgentRunSnapshot run, VerificationSnapshot snapshot) {
+        return isExactModel(run)
+                ? snapshot.qualityMode() == null
+                        && run.requestedModel().equals(snapshot.model())
+                : snapshot.model() == null
+                        && run.requestedQualityMode() == snapshot.qualityMode();
     }
 
     public record LoadAnswerInput(

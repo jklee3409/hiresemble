@@ -5,12 +5,14 @@ import {
   answerVersionPageSchema,
   answerVersionSchema,
   coverLetterDetailSchema,
+  coverLetterAiModelsSchema,
   coverLetterPageSchema,
   coverLetterQuestionSchema,
   verificationPageSchema,
   type AnswerVersionPageDto,
   type CoverLetterAnswerVersionDto,
   type CoverLetterDetailDto,
+  type CoverLetterAiModelDto,
   type CoverLetterPageDto,
   type CoverLetterQuestionDto,
   type CoverLetterStatus,
@@ -57,6 +59,11 @@ export interface VerificationListParams {
   page?: number
   size?: number
   sort?: VerificationSort
+}
+
+export async function listCoverLetterAiModels(): Promise<CoverLetterAiModelDto[]> {
+  const value = await apiClient.get<unknown>('/cover-letters/ai-models')
+  return parse(coverLetterAiModelsSchema, value)
 }
 
 export async function createCoverLetter(
