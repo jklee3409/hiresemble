@@ -253,7 +253,7 @@ describe('CoverLetterEditPage', () => {
     window.sessionStorage.clear()
   })
 
-  it('shows source selection before compact question and visible AI settings', async () => {
+  it('shows source dropdowns before compact question and visible AI settings', async () => {
     const wrapper = await mountPage()
     const referenceStrip = wrapper.get('.reference-strip')
     const questionBar = wrapper.get('.question-bar')
@@ -263,8 +263,11 @@ describe('CoverLetterEditPage', () => {
       referenceStrip.element.compareDocumentPosition(questionBar.element) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
-    expect(wrapper.findAll('details.reference-card')).toHaveLength(0)
-    expect(wrapper.findAll('.reference-card__body')).toHaveLength(3)
+    const referenceCards = wrapper.findAll('details.reference-card')
+    expect(referenceCards).toHaveLength(3)
+    expect(referenceCards.every((card) => card.attributes('open') === undefined)).toBe(true)
+    await referenceCards[0]?.get('summary').trigger('click')
+    expect(referenceCards[0]?.attributes('open')).toBeDefined()
     expect(wrapper.get('#ai-settings-title').text()).toBe('AI 설정')
     expect(wrapper.find('details.ai-settings').exists()).toBe(false)
     expect(wrapper.find('select').exists()).toBe(false)

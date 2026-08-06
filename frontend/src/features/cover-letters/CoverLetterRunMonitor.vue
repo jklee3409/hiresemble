@@ -105,6 +105,15 @@ const connectionLabel = computed(
 function scopeLabel(scopeKey: string): string {
   return props.questionLabels[scopeKey] ?? scopeKey
 }
+
+const COMPLETED_SCOPE_PREVIEW_LENGTH = 48
+
+function completedScopePreview(scopeKey: string): string {
+  const label = scopeLabel(scopeKey).replace(/\s+/g, ' ').trim()
+  const characters = Array.from(label)
+  if (characters.length <= COMPLETED_SCOPE_PREVIEW_LENGTH) return label
+  return `${characters.slice(0, COMPLETED_SCOPE_PREVIEW_LENGTH).join('')}…`
+}
 </script>
 
 <template>
@@ -152,7 +161,13 @@ function scopeLabel(scopeKey: string): string {
               v-for="scope in detail.data.value.partialResult.succeededScopeKeys"
               :key="`success-${scope}`"
             >
-              {{ scopeLabel(scope) }}
+              <span
+                class="cover-run-monitor__scope-preview"
+                :aria-label="scopeLabel(scope)"
+                :title="scopeLabel(scope)"
+              >
+                {{ completedScopePreview(scope) }}
+              </span>
             </li>
           </ul>
         </div>
@@ -253,6 +268,17 @@ function scopeLabel(scopeKey: string): string {
   margin-top: var(--space-2);
   padding-left: var(--space-5);
   list-style: disc;
+}
+
+.cover-run-monitor__partial li {
+  min-width: 0;
+}
+
+.cover-run-monitor__scope-preview {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cover-run-monitor .button {

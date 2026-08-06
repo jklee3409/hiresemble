@@ -4,6 +4,21 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (자기소개서 참고 자료 드롭다운 복원)
+
+- What was done:
+  - `CoverLetterEditPage.vue`의 공고 요구사항·강점과 보완점·쓸 경험 영역을 각각 기본 접힘 `details/summary`로 복원했다.
+  - summary의 번호·제목·한 줄 미리보기·개수와 펼침 indicator를 유지하고, 펼친 본문은 최대 22rem 내부 scroll을 사용한다.
+  - page component test가 세 dropdown의 기본 접힘과 summary 클릭 펼침을 검증하도록 갱신했다.
+- Key decisions:
+  - 참고 자료는 문항보다 먼저 배치하되 사용자가 필요한 항목만 펼쳐 화면 높이를 제어한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Vitest와 Frontend 전체 check, Chromium 1440px·390px fixture에서 기본 접힘·반응형 배치를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (자기소개서 소재 우선 작성 흐름)
 
 - What was done:

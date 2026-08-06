@@ -7,6 +7,20 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 67 files/286 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-06] Session Summary (자기소개서 참고 자료 드롭다운과 완료 문항 요약)
+
+- What was done:
+  - 자기소개서 참고 자료 세 panel을 기본 접힘 dropdown으로 복원하고 AI 생성 완료 질문을 48자 한 줄 preview로 줄였다.
+  - 전체 질문은 `aria-label`과 `title`에 유지하고 관련 component/page test를 추가·수정했다.
+- Key decisions:
+  - 네이티브 `details/summary` semantics를 사용하고 기존 3열·모바일 1열 layout과 내부 scroll을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Vitest 2 files/15 tests, `corepack pnpm check` 68 files/287 tests·production build, Chromium visual fixture 1/1 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (AI 작업 단계명과 자기소개서 작성 흐름 개선)
 
 - What was done:

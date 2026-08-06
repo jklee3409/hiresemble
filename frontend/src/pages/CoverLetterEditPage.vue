@@ -1907,8 +1907,8 @@ function verificationTone(
       />
 
       <div class="reference-strip" aria-label="초안에 참고할 내용">
-        <section class="reference-card" aria-labelledby="requirements-reference-title">
-          <header class="reference-card__header">
+        <details class="reference-card" aria-labelledby="requirements-reference-title">
+          <summary>
             <span class="reference-card__step" aria-hidden="true">1</span>
             <span class="reference-card__title">
               <strong id="requirements-reference-title"
@@ -1917,7 +1917,7 @@ function verificationTone(
               <small>{{ requirementSummary }}</small>
             </span>
             <span class="reference-card__count">{{ requirementHighlights.length }}개</span>
-          </header>
+          </summary>
           <div class="reference-card__body">
             <p v-if="job.data.value?.analysisOutdated" class="reference-card__warning">
               공고 분석 이후에 공고나 내 정보가 바뀌었어요. 지금 내용도 참고할 수 있지만 다시
@@ -1944,10 +1944,10 @@ function verificationTone(
               공고 분석 전체 보기
             </RouterLink>
           </div>
-        </section>
+        </details>
 
-        <section class="reference-card" aria-labelledby="strengths-reference-title">
-          <header class="reference-card__header">
+        <details class="reference-card" aria-labelledby="strengths-reference-title">
+          <summary>
             <span class="reference-card__step" aria-hidden="true">2</span>
             <span class="reference-card__title">
               <strong id="strengths-reference-title"
@@ -1958,7 +1958,7 @@ function verificationTone(
             <span class="reference-card__count">
               {{ analysisStrengths.length + analysisGaps.length }}개
             </span>
-          </header>
+          </summary>
           <div class="reference-card__body">
             <ul v-if="analysisStrengths.length" class="insight-list">
               <li v-for="strength in analysisStrengths" :key="strength">
@@ -1976,10 +1976,10 @@ function verificationTone(
               </li>
             </ul>
           </div>
-        </section>
+        </details>
 
-        <section class="reference-card" aria-labelledby="evidence-reference-title">
-          <header class="reference-card__header">
+        <details class="reference-card" aria-labelledby="evidence-reference-title">
+          <summary>
             <span class="reference-card__step" aria-hidden="true">3</span>
             <span class="reference-card__title">
               <strong id="evidence-reference-title"
@@ -1988,7 +1988,7 @@ function verificationTone(
               <small>{{ evidenceSummary }}</small>
             </span>
             <span class="reference-card__count">{{ selectedEvidenceIds.size }}개 선택</span>
-          </header>
+          </summary>
           <div class="reference-card__body">
             <p class="reference-card__hint">
               내가 확인해 둔 경험만 근거로 써요. 고르지 않으면 확인한 경험 전체를 참고해요.
@@ -2030,7 +2030,7 @@ function verificationTone(
               수 있어요.
             </p>
           </div>
-        </section>
+        </details>
       </div>
 
       <section class="question-bar" data-testid="cover-letter-editor">
@@ -3156,13 +3156,36 @@ function verificationTone(
   box-shadow: var(--shadow-panel);
 }
 
-.reference-card__header {
+.reference-card > summary {
   display: grid;
-  grid-template-columns: 1.375rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.375rem minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
   padding: var(--space-4);
+  list-style: none;
+}
+
+.reference-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.reference-card > summary::after {
+  content: '▸';
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.reference-card[open] > summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reference-card[open] > summary::after {
+  content: '▾';
+}
+
+.reference-card[open] .reference-card__title small {
+  white-space: normal;
 }
 
 .reference-card__step {

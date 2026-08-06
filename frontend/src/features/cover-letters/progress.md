@@ -4,6 +4,21 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (AI 생성 완료 문항 한 줄 preview)
+
+- What was done:
+  - `CoverLetterRunMonitor.vue`의 생성 완료 문항 label을 공백 정규화 후 Unicode 문자 기준 48자로 제한하고 말줄임표를 붙였다.
+  - 전체 질문은 `aria-label`과 hover `title`에 보존하고 CSS 한 줄 ellipsis를 함께 적용했다.
+  - 전용 component test를 추가해 축약 길이와 전체 접근성 label 보존을 검증했다.
+- Key decisions:
+  - 재시도가 필요한 실패 문항은 문제 식별을 위해 기존 전체 label 표시를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 집중 Vitest 2 files/15 tests와 Frontend 전체 `corepack pnpm check` 68 files/287 tests·production build가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (자기소개서 편집기 전체 폭과 초점 표현)
 
 - What was done:
