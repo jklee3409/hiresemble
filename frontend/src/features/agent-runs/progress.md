@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-06] Session Summary (AI 작업 상세 단계명 전면 정리)
+
+- What was done:
+  - 현재와 legacy를 포함한 canonical workflow step 57개를 이해하기 쉬운 한국어 작업명으로 매핑하고, 알 수 없는 step의 fallback을 `작업 진행 내용`으로 바꿨다.
+  - 상세 panel의 `실제로 진행한 작업을 이해하기 쉬운 이름으로 보여드려요.` 안내 문구를 제거했다.
+- Key decisions:
+  - backend step key와 API는 그대로 두고 presentation layer만 변환하며 내부 key·underscore·숫자 순번을 사용자에게 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 57개 key 전수 component test와 Frontend 전체 `check` 통과. Chromium 상세 화면에서 자기소개서 8단계 사용자명과 안내 문구·숫자 fallback 부재를 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (공통 활성 Run 조회)
 
 - What was done:

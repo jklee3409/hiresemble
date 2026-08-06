@@ -112,7 +112,7 @@ test('snapshot → progress → disconnect → 1/2/5 reconnect → polling termi
 
   const timeline = page.locator('.run-timeline')
   await timeline.getByText('분석 과정 자세히 보기', { exact: true }).click()
-  await expect(timeline.getByText('2번째 작업', { exact: true })).toBeVisible()
+  await expect(timeline.getByText('작업 진행 내용', { exact: true })).toBeVisible()
   await expect(page.getByText('TRANSFORM_FIXTURE', { exact: true })).toHaveCount(0)
   await expect(page.getByLabel('진행률').getByRole('progressbar')).toHaveAttribute('value', '45')
   await expect(timeline.getByText('완료', { exact: true })).toBeVisible()

@@ -263,14 +263,13 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
         >
         <span>{{ run.steps.length }}개 과정</span>
       </summary>
-      <p class="run-timeline__guide">실제로 진행한 작업을 이해하기 쉬운 이름으로 보여드려요.</p>
       <p v-if="run.steps.length === 0" class="run-timeline__empty">아직 기록된 과정이 없어요.</p>
       <ol v-else class="run-timeline__list">
         <li v-for="step in run.steps" :key="step.id" class="run-step">
           <span class="run-step__marker" aria-hidden="true" />
           <div class="run-step__body">
             <div class="run-step__header">
-              <strong>{{ formatStepName(step.stepKey, step.stepOrder) }}</strong>
+              <strong>{{ formatStepName(step.stepKey) }}</strong>
               <StatusBadge :label="stepLabel(step.status)" :tone="stepTone(step.status)" />
             </div>
             <p v-if="step.attempt > 1">{{ step.attempt }}번째 시도 중</p>
@@ -447,12 +446,6 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }
-.run-timeline__guide {
-  margin-top: var(--space-4);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
 .run-timeline__list {
   margin-top: var(--space-5);
   padding-left: 0.4rem;

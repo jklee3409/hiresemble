@@ -75,6 +75,7 @@ const STEP_LABELS: Record<string, string> = {
   MERGE_USER_OVERRIDES: '입력 내용 반영',
   VALIDATE_JOB_EXTRACTION: '채용 정보 확인',
   APPLY_JOB_EXTRACTION: '결과 저장',
+  SANITIZE_PAGE_TEXT: '공고 내용 안전하게 정리',
   BUILD_JOB_SNAPSHOT: '공고 분석 준비',
   EXTRACT_REQUIREMENTS: '지원 요건 정리',
   ASSESS_ELIGIBILITY: '지원 가능 여부 확인',
@@ -83,10 +84,41 @@ const STEP_LABELS: Record<string, string> = {
   SCORE_FIT: '직무 적합도 계산',
   VALIDATE_ANALYSIS: '분석 결과 확인',
   PERSIST_ANALYSIS: '결과 저장',
+  BUILD_GENERATION_CONTEXT: '초안 작성 정보 준비',
+  PLAN_QUESTIONS: '문항별 작성 방향 정하기',
+  ANALYZE_QUESTION: '문항 의도 파악',
+  RETRIEVE_EVIDENCE: '쓸 경험 찾기',
+  ALLOCATE_EXPERIENCES: '문항별 경험 배치',
+  WRITE_ANSWER: '자기소개서 초안 작성',
+  FACT_CHECK_ANSWER: '사실과 근거 확인',
+  APPLY_ANSWER_VERSION: '작성한 초안 저장',
+  LOAD_ANSWER_VERSION: '검토할 답변 확인',
+  BUILD_PROVENANCE_CONTEXT: '근거 자료 준비',
+  CHECK_FACTS: '사실과 근거 확인',
+  CHECK_REQUIREMENTS_AND_LENGTH: '요구사항과 글자 수 확인',
+  AGGREGATE_VERIFICATION: '검토 결과 정리',
+  PERSIST_VERIFICATION: '검토 결과 저장',
+  VALIDATE_PREREQUISITES: '면접 준비 상태 확인',
+  BUILD_PUBLIC_SEARCH_PLAN: '찾아볼 정보 정하기',
+  SEARCH_OFFICIAL_SOURCES: '공식 자료 찾기',
+  SEARCH_INTERVIEW_SOURCES: '면접 정보 찾기',
+  DEDUPE_CLASSIFY_SOURCES: '찾은 자료 정리',
+  ASSESS_SOURCE_COVERAGE: '자료가 충분한지 확인',
+  BUILD_QUESTION_CONTEXT: '예상 질문 준비',
+  GENERATE_QUESTIONS: '예상 질문 만들기',
+  VALIDATE_QUESTION_PROVENANCE: '질문의 근거 확인',
+  PERSIST_RESEARCH_AND_QUESTION_SET: '면접 준비 결과 저장',
+  BUILD_FEEDBACK_CONTEXT: '답변 검토 정보 준비',
+  ANALYZE_ANSWER: '면접 답변 분석',
+  VALIDATE_FEEDBACK: '피드백 내용 확인',
+  PERSIST_FEEDBACK: '피드백 저장',
+  LOAD_SESSION_SNAPSHOT: '모의 면접 기록 확인',
+  ANALYZE_TURNS: '질문과 답변 분석',
+  SYNTHESIZE_SESSION_FEEDBACK: '종합 피드백 만들기',
 }
 
-export function formatStepName(stepKey: string, stepOrder: number): string {
-  return STEP_LABELS[stepKey] ?? `${stepOrder}번째 작업`
+export function formatStepName(stepKey: string): string {
+  return STEP_LABELS[stepKey] ?? '작업 진행 내용'
 }
 
 export function formatInstant(value: string | null): string {

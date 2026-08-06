@@ -12,6 +12,75 @@ const global = {
 }
 
 describe('AgentRunDetailPanel', () => {
+  it('uses user-friendly names for every current AI workflow step', () => {
+    const stepKeys = [
+      'LOAD_DOCUMENT_SOURCE',
+      'EXTRACT_OR_ACCEPT_TEXT',
+      'MASK_TEXT',
+      'CHUNK_TEXT',
+      'EMBED_CHUNKS',
+      'EXTRACT_EVIDENCE_CANDIDATES',
+      'APPLY_EVIDENCE_CANDIDATES',
+      'FINALIZE_DOCUMENT',
+      'FETCH_JOB_PAGE',
+      'INSPECT_JOB_PAGE',
+      'FETCH_JOB_IMAGES',
+      'EXTRACT_JOB_IMAGE_TEXT',
+      'COMPOSE_JOB_SOURCE_TEXT',
+      'EXTRACT_JOB_FIELDS',
+      'MERGE_USER_OVERRIDES',
+      'VALIDATE_JOB_EXTRACTION',
+      'APPLY_JOB_EXTRACTION',
+      'SANITIZE_PAGE_TEXT',
+      'BUILD_JOB_SNAPSHOT',
+      'EXTRACT_REQUIREMENTS',
+      'ASSESS_ELIGIBILITY',
+      'RETRIEVE_VERIFIED_EVIDENCE',
+      'MATCH_EVIDENCE',
+      'SCORE_FIT',
+      'VALIDATE_ANALYSIS',
+      'PERSIST_ANALYSIS',
+      'BUILD_GENERATION_CONTEXT',
+      'PLAN_QUESTIONS',
+      'ANALYZE_QUESTION',
+      'RETRIEVE_EVIDENCE',
+      'ALLOCATE_EXPERIENCES',
+      'WRITE_ANSWER',
+      'FACT_CHECK_ANSWER',
+      'APPLY_ANSWER_VERSION',
+      'LOAD_ANSWER_VERSION',
+      'BUILD_PROVENANCE_CONTEXT',
+      'CHECK_FACTS',
+      'CHECK_REQUIREMENTS_AND_LENGTH',
+      'AGGREGATE_VERIFICATION',
+      'PERSIST_VERIFICATION',
+      'VALIDATE_PREREQUISITES',
+      'BUILD_PUBLIC_SEARCH_PLAN',
+      'SEARCH_OFFICIAL_SOURCES',
+      'SEARCH_INTERVIEW_SOURCES',
+      'DEDUPE_CLASSIFY_SOURCES',
+      'ASSESS_SOURCE_COVERAGE',
+      'BUILD_QUESTION_CONTEXT',
+      'GENERATE_QUESTIONS',
+      'VALIDATE_QUESTION_PROVENANCE',
+      'PERSIST_RESEARCH_AND_QUESTION_SET',
+      'BUILD_FEEDBACK_CONTEXT',
+      'ANALYZE_ANSWER',
+      'VALIDATE_FEEDBACK',
+      'PERSIST_FEEDBACK',
+      'LOAD_SESSION_SNAPSHOT',
+      'ANALYZE_TURNS',
+      'SYNTHESIZE_SESSION_FEEDBACK',
+    ]
+
+    for (const stepKey of stepKeys) {
+      const label = formatStepName(stepKey)
+      expect(label).not.toContain('_')
+      expect(label).not.toMatch(/^\d+번째 작업$/)
+    }
+    expect(formatStepName('FUTURE_STEP')).toBe('작업 진행 내용')
+  })
+
   it('uses user-friendly labels for every Job analysis step', () => {
     expect(
       [
@@ -23,7 +92,7 @@ describe('AgentRunDetailPanel', () => {
         'SCORE_FIT',
         'VALIDATE_ANALYSIS',
         'PERSIST_ANALYSIS',
-      ].map((stepKey, index) => formatStepName(stepKey, index + 1)),
+      ].map((stepKey) => formatStepName(stepKey)),
     ).toEqual([
       '공고 분석 준비',
       '지원 요건 정리',
@@ -125,6 +194,7 @@ describe('AgentRunDetailPanel', () => {
     expect(wrapper.text()).not.toContain('prompt')
     expect(wrapper.text()).not.toContain('claimToken')
     expect(wrapper.text()).not.toContain('inputHash')
+    expect(wrapper.text()).not.toContain('실제로 진행한 작업을 이해하기 쉬운 이름으로 보여드려요.')
   })
 
   it('does not expose the persisted technical error message', () => {

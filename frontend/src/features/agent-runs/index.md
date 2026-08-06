@@ -9,7 +9,7 @@
 - `filters.ts`: repeatable URL query parse·canonicalization
 - `queries.ts`: user-scoped list/detail/retry/cancel/history delete mutation query
 - `stream.ts`: snapshot-first SSE와 reconnect·polling
-- `AgentRunDetailPanel.vue`: 기본 접힌 사용자용 단계명, 안전 오류와 작업 한도 대비 사용량 projection
+- `AgentRunDetailPanel.vue`: 모든 canonical step을 설명하는 사용자용 단계명, 안전 오류와 작업 한도 대비 사용량 projection
 - `AgentRunProgressDrawer.vue`: 최근 조회된 active Run
 - `*.test.ts`, `testFixtures.ts`: contract·UI·stream 검증
 - [`progress.md`](progress.md): P3 구현 상태
