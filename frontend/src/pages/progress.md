@@ -4,6 +4,21 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (공고·자기소개서 화면 중복 제목 제거)
+
+- What was done:
+  - `JobOverviewPage`에서 "공고 정보" 제목과 설명 줄을 없애고, 편집·본문 직접 입력·다시 불러오기·삭제 버튼을 `Teleport`로 공고 상세 header의 `#job-detail-actions`(원본 공고 보기 아래)로 옮겼다. 제목 줄이 쓰던 세로 공간도 함께 제거했다.
+  - `JobCoverLetterPage`에서 "자기소개서" 제목과 설명 줄을 없앴다. 탭이 이미 같은 이름을 보여 주므로 접근성용 제목만 `sr-only`로 남기고, 카드 간격은 컨테이너 grid gap으로 대체했다.
+- Key decisions:
+  - 제목을 완전히 삭제하지 않고 `aria-labelledby`가 가리키는 `sr-only` 제목으로 남겨 화면 낭독기 사용자에게는 영역 이름이 계속 전달되게 했다.
+  - 동작 버튼을 layout으로 옮기지 않고 Teleport만 사용해 편집 form의 상태 관리 위치를 바꾸지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (주요 화면 soft surface 적용)
 
 - What was done:

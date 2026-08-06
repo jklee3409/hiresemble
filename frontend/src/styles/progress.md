@@ -6,6 +6,19 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-06] Session Summary (목록 pagination 여백 보정)
+
+- What was done:
+  - `.pagination`에 `margin-top: var(--space-5)`를 넣었다. 테두리를 없애면서 예전 `border-top` + `padding-top`이 만들던 목록과의 간격이 사라져 카드에 붙어 보였다.
+- Key decisions:
+  - 화면마다 여백을 다시 넣지 않도록 공용 class에서 한 번에 해결했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (soft surface design system 전환)
 
 - What was done:

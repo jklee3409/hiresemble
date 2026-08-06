@@ -4,6 +4,20 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-06] Session Summary (공고 상세 header에 동작 자리 추가)
+
+- What was done:
+  - `JobDetailLayout.vue`의 header aside에 `#job-detail-actions` 자리를 만들어 "원본 공고 보기" 바로 아래에 공고 편집·삭제 동작이 오도록 했다. 비어 있으면 `:empty`로 자리를 차지하지 않는다.
+  - 좁은 화면에서 badge·원본 링크·동작이 겹치지 않도록 aside에 `flex-wrap`을 넣었다.
+- Key decisions:
+  - 동작의 상태와 handler는 `JobOverviewPage`에 그대로 두고 Teleport 대상만 layout이 제공한다. 상태를 layout으로 끌어올리지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (app shell 알약 navigation과 계정 dropdown 개편)
 
 - What was done:
