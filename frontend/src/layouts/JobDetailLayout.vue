@@ -77,6 +77,8 @@ const analysisLabel = computed(() => {
           원본 공고 보기
           <AppIcon name="arrow-right" />
         </a>
+        <!-- 공고 정보 화면의 편집·삭제 동작이 Teleport로 들어오는 자리. 비어 있으면 자리를 차지하지 않는다. -->
+        <div id="job-detail-actions" class="job-resource-header__actions" />
       </div>
     </header>
     <nav class="job-detail-tabs" aria-label="공고 상세 탭">
@@ -208,6 +210,18 @@ const analysisLabel = computed(() => {
   color: var(--color-brand-strong);
 }
 
+.job-resource-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.job-resource-header__actions:empty {
+  display: none;
+}
+
 .job-detail-back:hover {
   color: var(--color-brand);
 }
@@ -271,6 +285,7 @@ const analysisLabel = computed(() => {
   .job-resource-header__aside {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);

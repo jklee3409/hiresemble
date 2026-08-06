@@ -13,10 +13,8 @@ import {
   useCoverLetterListQuery,
   useCreateCoverLetterMutation,
 } from '@/features/cover-letters/queries'
-import { jobDisplayTitle } from '@/features/jobs/presentation'
 import { useJobDetailQuery } from '@/features/jobs/queries'
 import { normalizeApiError } from '@/shared/api/errors'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -89,17 +87,8 @@ async function createCoverLetter(reapply = false): Promise<void> {
 
 <template>
   <section class="job-cover-letter app-page" aria-labelledby="job-cover-letter-heading">
-    <PageHeader
-      heading-id="job-cover-letter-heading"
-      title="자기소개서"
-      :description="
-        job.data.value
-          ? `${jobDisplayTitle(job.data.value)}의 자기소개서 진행 상황을 확인하세요.`
-          : '공고별 자기소개서 진행 상황을 확인하세요.'
-      "
-      :level="2"
-      variant="compact"
-    />
+    <!-- 공고 상세 탭이 이미 "자기소개서"를 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+    <h2 id="job-cover-letter-heading" class="sr-only">자기소개서</h2>
 
     <StatePanel
       v-if="job.isLoading.value || coverLetters.isLoading.value"
@@ -236,12 +225,15 @@ async function createCoverLetter(reapply = false): Promise<void> {
 </template>
 
 <style scoped>
+/* 제목 줄이 없으므로 카드 사이 간격은 컨테이너가 직접 만든다. */
 .job-cover-letter {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
   min-width: 0;
 }
 
 .job-cover-letter__error {
-  margin-bottom: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--color-danger-soft);
   color: var(--color-danger-strong);

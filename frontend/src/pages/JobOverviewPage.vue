@@ -394,11 +394,8 @@ function extractionTone(
       </p>
       <JobPreparationJourney :job="job.data.value" />
 
-      <section class="job-overview__toolbar" aria-labelledby="job-overview-toolbar-heading">
-        <div>
-          <h2 id="job-overview-toolbar-heading">공고 정보</h2>
-          <p>읽기 편한 본문과 지원 상태를 한곳에서 확인하세요.</p>
-        </div>
+      <!-- 공고 이름 옆 "원본 공고 보기" 아래로 보내 별도 제목 줄을 없앤다. -->
+      <Teleport to="#job-detail-actions">
         <div class="job-overview__actions">
           <button
             type="button"
@@ -436,7 +433,7 @@ function extractionTone(
             {{ deleteMutation.isPending.value ? '삭제 중…' : '삭제' }}
           </button>
         </div>
-      </section>
+      </Teleport>
 
       <div class="job-overview__statuses" aria-label="공고 상태">
         <StatusBadge
@@ -701,27 +698,6 @@ function extractionTone(
   margin-bottom: var(--space-4);
 }
 
-.job-overview__toolbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-5);
-  margin-top: var(--layout-section-gap);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.job-overview__toolbar h2 {
-  font-size: var(--font-size-xl);
-  font-weight: 780;
-}
-
-.job-overview__toolbar p {
-  margin-top: var(--space-1);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
 .job-overview__actions,
 .job-overview__statuses {
   display: flex;
@@ -848,11 +824,6 @@ function extractionTone(
 }
 
 @media (max-width: 40rem) {
-  .job-overview__toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .job-editor__grid {
     grid-template-columns: 1fr;
   }
