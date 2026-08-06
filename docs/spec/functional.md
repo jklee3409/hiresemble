@@ -312,7 +312,7 @@ JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를
 - 사용자가 공고 본문과 마감일을 직접 수정 가능
 - URL 등록 화면에는 OCR 여부나 이미지 공고 여부를 선택하는 control을 두지 않으며 수동 입력은 모든 자동 경로 뒤의 최종 fallback이다.
 - `NEEDS_MANUAL_INPUT`에서는 분석을 접수하지 않는다. 사용자가 usable 본문을 보완해 extraction run이 재개·완료되면 같은 공고의 새 revision에 대한 자동 분석을 이어간다.
-- 추출 성공과 자동 분석 접수는 서로 다른 상태·Agent Run이다. 분석 접수의 예산·일시 오류가 공고 등록이나 추출 결과를 rollback하지 않는다.
+- 추출 성공과 자동 분석 접수는 서로 다른 상태·Agent Run이다. Provider 호출 직전의 전역 예산 부족이나 일시 오류가 공고 등록·추출 결과·접수된 Run을 rollback하지 않는다.
 
 terminal `FAILED|INTERRUPTED` 공고 추출 retry는 predecessor의 workflow version과 무관하게 최신 canonical `job-posting-extraction-v3` successor를 만들고 현재 Job version·canonical URL·사용자 override로 input snapshot/hash를 다시 만든다. v1·v2 checkpoint는 v3 input으로 재사용하지 않는다. 공고 전용 retry와 범용 Agent Run retry는 predecessor unique를 공유해 compatible 요청에는 같은 successor를 반환한다. `WAITING_USER`에서 사용자가 본문을 입력하는 흐름은 기존 run을 그대로 재개한다.
 
@@ -400,7 +400,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 
 > 적합도 점수는 합격 가능성이 아니라 등록된 정보와 공고 요구사항의 일치도를 나타냅니다.
 
-분석 접수 전 예산 한도·본문 부족·상태 충돌은 공고와 추출 결과를 보존하고 안전한 복구 상태로 표시한다. 일시 오류는 제한된 횟수만 재조정하며, revision이 바뀐 후속 의도는 `SUPERSEDED`로 종료한다. 사용자가 명시적으로 재분석하면 기본 선택은 `BALANCED`이고 현재 결과와 분석 이력은 보존한다.
+본문 부족·상태 충돌은 분석 접수 전에, 전역 예산 부족은 실제 Provider 호출 직전에 판정하며 모두 공고와 추출 결과를 보존하고 안전한 복구 상태로 표시한다. 일시 오류는 제한된 횟수만 재조정하며, revision이 바뀐 후속 의도는 `SUPERSEDED`로 종료한다. 사용자가 명시적으로 재분석하면 기본 선택은 `BALANCED`이고 현재 결과와 분석 이력은 보존한다.
 
 ## JOB-005 공고 정보 수정
 
@@ -621,7 +621,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - 기술적으로 잘못된 답변은 근거와 함께 지적
 - 최대 질문 수 또는 사용자의 종료 요청으로 완료
 - start/message 요청은 HTTP deadline 20초, 요청당 chat 호출 1회, search 0회, embedding 0회다.
-- turn당 최대 비용은 USD 0.03, session의 동기 turn 누적 상한은 USD 0.30이다.
+- 모의 면접도 다른 AI 기능과 동일한 전역 일일 비용 예산을 사용하며 turn·session별 별도 비용 상한은 두지 않는다.
 - 각 요청은 `clientRequestId`와 session version을 사용한다. 동일 ID/hash가 처리 중이면 처리 상태를, terminal이면 성공 또는 실패의 저장된 안전 응답을 복구한다. 실패 replay도 유료 호출을 다시 하지 않으며 새 유료 호출은 명시적으로 새 ID를 받은 경우에만 수행한다.
 - timeout 또는 structured output 실패 시 서버가 자동으로 모델을 다시 호출하지 않는다.
 - 동기 turn은 Agent Run을 만들지 않고 session/turn usage로 기록한다.
@@ -687,11 +687,11 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 ## SYS-003 비용 제어
 
 - 작업별 모델 정책과 immutable provider price catalog version
-- 사용자 기본 일일 예산 USD 1.00, 사용자별 시스템 최대 일일 예산 USD 2.00
-- 최대 비동기 Agent Run 비용 USD 0.30
+- 전체 AI 사용량 전역 일일 예산 USD 10.00
+- workflow·run·turn·session별 별도 비용 상한 없음
 - 예산 reset zone `Asia/Seoul`
 - chat·embedding·search usage를 모두 가격 catalog와 예산에 포함
-- 실행·turn 접수 전에 비용을 원자 reserve하고 실제 usage로 settle한 뒤 미사용액을 release
+- Agent Run은 0원으로 접수하고 각 Provider 호출 직전에 최악 비용을 원자 reserve한 뒤 실제 usage로 settle하며 미사용액을 release
 - 외부 provider 가격은 명세 금액으로 고정하지 않고 immutable price catalog version에 저장
 - 값은 운영 설정과 versioned policy로 관리하고 비즈니스 코드 상수로 하드코딩하지 않음
 - 중복 분석 캐시

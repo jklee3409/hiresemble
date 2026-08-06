@@ -4,6 +4,14 @@
 
 P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P8 typed resource 연결이 구현됐으며 deleted owner visibility와 domain 결과 보존을 유지한다.
 
+## [2026-08-06] Session Summary (Agent Run 전역 비용 예약 정책)
+
+- What was done: launch·retry·resume의 분야별 고정 예약을 0원 시작으로 바꾸고 활성 budget/price version을 중앙 port에서 snapshot하도록 변경했다.
+- Key decisions: Provider 호출 비용만 호출 직전에 추가 예약하며 Agent Run별 절대 비용 상한은 두지 않는다.
+- Issues encountered: 기존 retry contributor와 persistence 생성 계약에 price version 인자가 없어 공통 port 계약을 확장했다.
+- Validation: 구현 중 메인·테스트 소스 컴파일과 전역 budget 통합 테스트가 통과했다. 최종 원장 소유 차원 제거 후 재검증은 요청에 따라 생략했다.
+- Next steps: 사용자 상품 한도는 Agent Run 비용 필드가 아니라 별도 entitlement reservation으로 연결한다.
+
 ## [2026-07-31] Session Summary (P8 typed resource·공통 retry claim)
 
 - What was done:

@@ -344,14 +344,14 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 
 ### 9.1 가격·reserve/settle
 
-- 초기 user default daily budget USD 1.00, system maximum daily budget per user USD 2.00, maximum async Agent Run USD 0.30, reset zone `Asia/Seoul`이다.
-- 값은 운영 설정과 versioned policy에 두고 비즈니스 코드 상수로 하드코딩하지 않는다.
+- 모든 사용자와 AI 기능이 공유하는 전역 daily budget은 USD 10.00이고 reset zone은 `Asia/Seoul`이다. 사용자·workflow·run·turn·session별 Provider 비용 상한은 두지 않는다.
+- 값은 DB의 versioned policy로만 관리하고 환경 변수나 분야별 비즈니스 코드 상수로 중복 정의하지 않는다.
 - 외부 provider 가격은 문서에 금액으로 고정하지 않고 immutable price catalog version/item에 저장한다.
 - chat input/cached input/output, embedding input unit, BASIC/ADVANCED search request를 모두 usage와 예산에 포함한다. 무료/cache hit도 0 cost row를 남긴다.
-- resource/run/turn을 만들기 전 worst-case 비용을 ledger에 원자 reserve하고 접수 당시 price version으로 settle한다.
+- Agent Run은 활성 price version을 snapshot하고 0원 reservation으로 시작한다. 각 외부 호출 직전에 model·prompt token ceiling·tool request 수와 immutable 가격 catalog로 산출한 worst-case 비용을 전역 ledger에 원자 reserve하고 실제 usage로 settle한다.
 - 실제액이 예약을 넘으면 top-up 성공 때만 다음 호출을 허용한다. terminal·`WAITING_USER`에는 미사용액을 release한다.
 - `actualCostUsd`는 provider invoice나 사용자 청구 금액이 아니라 고정 catalog로 계산한 내부 Provider 원가 estimate다.
-- 비용 부족은 resource/run 생성 전 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`이며 자동 재시도하지 않는다.
+- 비용 부족은 실제 Provider 호출 직전 `RATE_OR_BUDGET_LIMIT_EXCEEDED`로 Run을 안전하게 중단하며 자동 재시도하지 않는다. resource와 0원 reservation으로 접수된 Run은 이 실패로 rollback하지 않는다.
 
 ### 9.2 제품 기능 한도·usage·billing accounting (`PLANNED` P8.6~P8.7)
 
@@ -370,6 +370,10 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 - 사용자 청구 금액은 0이며 `ai_usage_records.cost_usd`를 고객 가격으로 사용하지 않는다.
 - 초기 aggregate는 PostgreSQL SQL read model이다. Redis/Kafka/aggregate table은 실측 근거 없이 추가하지 않는다.
 - Backend package는 `usage`, `billing`, `backoffice`로 나누고 Provider cost ledger는 기존 `agentrun`/`ai`에 유지한다.
+
+### 9.3 사용자 plan·credit 확장 방향
+
+전역 USD 예산은 서비스 전체의 Provider 비용을 차단하는 운영 안전장치로 유지하고 사용자 상품 권한이나 잔액으로 재사용하지 않는다. 장기적으로는 기존 `feature_usage_*`가 plan별 기능·기간 quota를 담당하고, 금액성 credit이 필요하면 별도의 append-only `credit_wallets`, `credit_ledger_entries`, `credit_reservations`를 추가한다. 요청 접수 transaction에서는 plan entitlement를 원자 reserve하고, 각 Provider 호출 직전 transaction에서는 사용자 credit worst-case와 전역 Provider 예산을 고정된 lock 순서로 함께 reserve한다. 어느 한쪽이 부족하면 두 reservation을 모두 rollback한다. idempotency key와 Agent Run ID를 각 원장에 함께 저장하면 retry·replay의 중복 차감을 방지할 수 있다. 실제 Provider USD 원가와 사용자 credit 단위는 서로 다른 policy version을 snapshot해 가격·마진 정책 변경이 과거 기록을 바꾸지 않게 한다.
 
 ---
 
@@ -411,7 +415,7 @@ API 요청
 ### 동기 모의 면접 경계
 
 - start/message는 Agent Run을 만들지 않는 bounded 동기 executor다.
-- HTTP deadline 20초, request당 chat 1회, search 0회, embedding 0회, turn USD 0.03, session 동기 합계 USD 0.30이다.
+- HTTP deadline 20초, request당 chat 1회, search 0회, embedding 0회이며 모든 비용은 공통 전역 일일 예산에 포함한다.
 - timeout·structured output 실패를 서버가 자동 재호출하지 않는다.
 - 동일 `clientRequestId`/hash는 처리 상태 또는 성공·실패 terminal의 원래 안전 응답을 복구하며 실패 replay도 재호출하지 않는다. 명시적으로 새 ID를 받은 경우만 새 유료 호출을 수행한다.
 - immediate feedback도 같은 structured 응답에서 만들고 별도 모델 호출을 하지 않는다.
@@ -521,10 +525,6 @@ AI_MODEL_BALANCED
 AI_MODEL_HIGH_QUALITY
 AI_EMBEDDING_MODEL
 AI_EMBEDDING_DIMENSION
-AI_DAILY_BUDGET_USD
-AI_RUN_MAX_COST_USD
-AI_BUDGET_RESET_ZONE
-
 TAVILY_API_KEY
 FRONTEND_ORIGIN
 ```

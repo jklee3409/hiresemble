@@ -47,6 +47,7 @@ public final class JobPostingExtractionRetryContributor implements AgentRunRetry
             AgentRunSnapshot predecessor,
             WorkflowRetryOptions options,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         if (!"JOB".equals(predecessor.resourceType()) || predecessor.resourceId() == null) {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
@@ -81,6 +82,6 @@ public final class JobPostingExtractionRetryContributor implements AgentRunRetry
         }
         var command = launchFactory.command(proposedId, job, qualityMode);
         return creationPort.createRetry(
-                proposedId, predecessor, command, budgetPolicyVersion, queuedAt);
+                proposedId, predecessor, command, budgetPolicyVersion, priceVersion, queuedAt);
     }
 }

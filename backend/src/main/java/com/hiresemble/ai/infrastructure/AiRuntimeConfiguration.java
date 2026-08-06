@@ -9,7 +9,9 @@ import com.hiresemble.agentrun.application.port.AiPreferenceQueryPort;
 import com.hiresemble.agentrun.application.port.DomainResultApplyPort;
 import com.hiresemble.agentrun.application.port.UsageRecorderPort;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
+import com.hiresemble.ai.budget.AiCallCostEstimator;
 import com.hiresemble.ai.budget.BudgetGuard;
+import com.hiresemble.ai.budget.PriceCatalogAiCallCostEstimator;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.CoverLetterGenerationContextBuilder;
 import com.hiresemble.ai.context.CoverLetterVerificationContextBuilder;
@@ -31,6 +33,7 @@ import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.ImageTextExtractionGateway;
 import com.hiresemble.ai.port.EmbeddingGateway;
 import com.hiresemble.ai.port.WebSearchGateway;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
 import com.hiresemble.ai.prompt.CanonicalPromptDefinitions;
 import com.hiresemble.ai.prompt.PromptRegistry;
 import com.hiresemble.ai.validation.OpenAiStrictSchemaCompatibilityValidator;
@@ -273,6 +276,15 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    AiCallCostEstimator aiCallCostEstimator(
+            AiPriceCatalogQueryPort priceCatalog, Environment environment) {
+        return new PriceCatalogAiCallCostEstimator(
+                priceCatalog,
+                environment.getProperty(
+                        "hiresemble.ai.embedding-model", "text-embedding-3-small"));
+    }
+
+    @Bean
     StepCompletionTransaction stepCompletionTransaction(
             PlatformTransactionManager transactionManager) {
         return new SpringStepCompletionTransaction(transactionManager);
@@ -325,6 +337,7 @@ public class AiRuntimeConfiguration {
             AgentRunCancellationPort cancellationPort,
             AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
             BudgetGuard budgetGuard,
+            AiCallCostEstimator callCostEstimator,
             ObjectMapper objectMapper,
             Clock clock,
             ObjectProvider<WorkflowFailureHandler> failureHandlers,
@@ -352,6 +365,7 @@ public class AiRuntimeConfiguration {
                 cancellationPort,
                 leaseHeartbeatPort,
                 budgetGuard,
+                callCostEstimator,
                 objectMapper,
                 clock,
                 failureHandlers.orderedStream().toList(),

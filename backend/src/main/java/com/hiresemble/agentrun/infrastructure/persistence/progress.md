@@ -4,6 +4,14 @@
 
 Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview Question Set·Answer Version typed resource owner resolution을 관리한다.
 
+## [2026-08-06] Session Summary (전역 AI budget ledger)
+
+- What was done: `JdbcBudgetStore`가 사용자 preference 대신 활성 전역 policy를 읽고 사용자 소유 차원이 없는 일자 ledger 한 행을 잠가 모든 사용자의 reserve·settle을 합산하도록 변경했다.
+- Key decisions: 기존 user ledger는 날짜·zone별 전역 합계로 병합하고 reservation FK를 이전해 배포 시점의 실행을 보존한다. run estimate는 호출 전 승인된 누적 reserve의 high-water mark다.
+- Issues encountered: 전역 ledger와 사용자 reservation의 기존 composite owner FK를 단일 ledger FK로 전환해야 했다.
+- Validation: 동시 예약·전역 한도·분야별 상한 제거·resume·settle·서울 날짜 경계 통합 테스트 7건은 구현 중 통과했으며, 최종 원장 소유 차원 제거 후 별도 재검증은 생략했다.
+- Next steps: 운영 reconcile 시 global ledger와 provider usage 합계 불일치를 감시한다.
+
 ## [2026-08-01] Session Summary (Job retry successor command persistence)
 
 - What was done:

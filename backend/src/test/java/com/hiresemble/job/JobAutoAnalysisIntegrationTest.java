@@ -42,8 +42,6 @@ class JobAutoAnalysisIntegrationTest extends PostgresIntegrationTest {
 
     @DynamicPropertySource
     static void deterministicAutomaticAnalysis(DynamicPropertyRegistry registry) {
-        registry.add("hiresemble.job.analysis-ai-cost.estimated-cost-usd", () -> "0.300000");
-        registry.add("hiresemble.job.analysis-ai-cost.price-version", () -> "2026073101");
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "1h");
         registry.add("hiresemble.job-deadline-scheduler.cron", () -> "0 0 0 1 1 *");
     }
@@ -127,11 +125,8 @@ class JobAutoAnalysisIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void budgetFailureKeepsTheJobAndProjectsARecoverableBlock() throws Exception {
+    void providerBudgetCheckIsDeferredUntilTheLaunchedRunCallsAProvider() throws Exception {
         Session owner = authenticated("auto-analysis-budget@example.com");
-        jdbcTemplate.update(
-                "UPDATE user_ai_preferences SET daily_budget_usd=0.100000 WHERE user_id=?",
-                owner.userId());
 
         MvcResult created = create(owner, "auto-analysis-budget-0001", """
                 {
@@ -151,8 +146,7 @@ class JobAutoAnalysisIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 """
                 SELECT count(*) FROM job_auto_analysis_requests
-                WHERE user_id=? AND job_posting_id=? AND status='BLOCKED'
-                  AND error_code='RATE_OR_BUDGET_LIMIT_EXCEEDED'
+                WHERE user_id=? AND job_posting_id=? AND status='LAUNCHED'
                 """,
                 Long.class,
                 owner.userId(),
@@ -161,12 +155,10 @@ class JobAutoAnalysisIntegrationTest extends PostgresIntegrationTest {
                 "SELECT count(*) FROM agent_runs WHERE user_id=? AND resource_id=?",
                 Long.class,
                 owner.userId(),
-                jobId)).isZero();
+                jobId)).isEqualTo(1L);
         mockMvc.perform(get("/api/v1/jobs/" + jobId).cookie(owner.cookie()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.automaticAnalysis.state").value("BLOCKED"))
-                .andExpect(jsonPath("$.automaticAnalysis.error.code")
-                        .value("RATE_OR_BUDGET_LIMIT_EXCEEDED"));
+                .andExpect(jsonPath("$.automaticAnalysis.state").value("QUEUED"));
     }
 
     private MvcResult create(Session session, String key, String body) throws Exception {

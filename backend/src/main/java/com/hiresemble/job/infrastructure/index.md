@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store·비용 설정, SSRF-safe HTTP(S) page/image fetch adapter를 소유한다.
+P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store, SSRF-safe HTTP(S) page/image fetch adapter를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,7 +11,7 @@ P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store·비용
 - `JobAutoAnalysisStore`: revision unique enqueue, `SKIP LOCKED` lease claim과 결정적 Run 연결 SQL
 - `SecureJobPageFetchAdapter`: DNS 검증 주소 고정, redirect 재검사, bounded HTML/JPEG/PNG/WebP fetch와 magic·decode·pixel 검증
 - `HtmlCharsetDecoder`: header→BOM→meta→strict UTF-8→제한적 MS949 fallback과 Korean alias 정규화
-- `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAiCostProperties`, `JobAnalysisAiCostProperties`, `JobAutoAnalysisProperties`: 검증된 설정
+- `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAutoAnalysisProperties`: 검증된 설정
 - `JobInfrastructureConfiguration`: Clock과 Job infrastructure bean 조립
 - [`progress.md`](progress.md): infrastructure 구현 상태
 

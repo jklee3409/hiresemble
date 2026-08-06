@@ -1,12 +1,13 @@
 package com.hiresemble.ai.infrastructure;
 
+import com.hiresemble.agentrun.application.port.AiPriceVersionPort;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
+import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import java.net.URI;
-import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import com.hiresemble.ai.port.AiPriceCatalogQueryPort;
-import com.hiresemble.ai.port.AiPriceCatalogQueryPort.AiPriceUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.core.env.Environment;
@@ -21,17 +22,22 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
 
     private final Environment environment;
     private final AiPriceCatalogQueryPort priceCatalog;
+    private final AiPriceVersionPort priceVersionPort;
 
     @Autowired
     public AiProviderActivationValidator(
-            Environment environment, AiPriceCatalogQueryPort priceCatalog) {
+            Environment environment,
+            AiPriceCatalogQueryPort priceCatalog,
+            AiPriceVersionPort priceVersionPort) {
         this.environment = environment;
         this.priceCatalog = priceCatalog;
+        this.priceVersionPort = priceVersionPort;
     }
 
     AiProviderActivationValidator(Environment environment) {
         this.environment = environment;
         this.priceCatalog = null;
+        this.priceVersionPort = null;
     }
 
     @Override
@@ -77,7 +83,6 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
                     || !"none".equals(property("spring.ai.vectorstore.type", "none"))) {
                 throw invalid("OpenAI retry, storage, or vector-store policy is invalid");
             }
-            validateWorstCaseReservations();
             validatePriceCatalog();
         }
         if ("tavily".equals(search)) {
@@ -98,8 +103,7 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
         if (priceCatalog == null) {
             return;
         }
-        long priceVersion = Long.parseLong(
-                property("hiresemble.document.ai-cost.price-version", "0"));
+        long priceVersion = priceVersionPort.currentPriceVersion(Instant.now());
         Set<String> chatModels = new java.util.LinkedHashSet<>();
         for (String name : List.of(
                 "hiresemble.ai.model-low-cost",
@@ -133,38 +137,6 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
                     priceVersion, "tavily", "advanced", AiPriceUnit.SEARCH_ADVANCED_REQUEST);
         } catch (RuntimeException exception) {
             throw invalid("required immutable AI price item is missing");
-        }
-    }
-
-    private void validateWorstCaseReservations() {
-        BigDecimal runMaximum = decimal("hiresemble.ai.run-max-cost-usd");
-        String[] estimates = {
-            "hiresemble.document.ai-cost.estimated-cost-usd",
-            "hiresemble.job.ai-cost.estimated-cost-usd",
-            "hiresemble.cover-letter.ai-cost.generation-estimated-cost-usd",
-            "hiresemble.cover-letter.ai-cost.verification-estimated-cost-usd",
-            "hiresemble.interview.ai-cost.preparation-estimated-cost-usd",
-            "hiresemble.interview.ai-cost.feedback-estimated-cost-usd"
-        };
-        String[] versions = {
-            "hiresemble.document.ai-cost.price-version",
-            "hiresemble.job.ai-cost.price-version",
-            "hiresemble.cover-letter.ai-cost.generation-price-version",
-            "hiresemble.cover-letter.ai-cost.verification-price-version",
-            "hiresemble.interview.ai-cost.preparation-price-version",
-            "hiresemble.interview.ai-cost.feedback-price-version"
-        };
-        long[] configuredVersions = Arrays.stream(versions)
-                .map(name -> property(name, "0"))
-                .mapToLong(this::longValue)
-                .toArray();
-        if (runMaximum.signum() <= 0
-                || Arrays.stream(estimates)
-                        .map(this::decimal)
-                        .anyMatch(value -> value.compareTo(runMaximum) < 0)
-                || Arrays.stream(configuredVersions).anyMatch(value -> value < 1)
-                || Arrays.stream(configuredVersions).distinct().count() != 1) {
-            throw invalid("workflow reservation does not cover the absolute run cost cap");
         }
     }
 
@@ -203,22 +175,6 @@ public final class AiProviderActivationValidator implements SmartInitializingSin
     private String property(String name, String fallback) {
         String value = environment.getProperty(name, fallback);
         return value == null ? fallback : value.trim().toLowerCase(java.util.Locale.ROOT);
-    }
-
-    private BigDecimal decimal(String name) {
-        try {
-            return new BigDecimal(property(name, "0"));
-        } catch (NumberFormatException exception) {
-            throw invalid("AI cost property is invalid");
-        }
-    }
-
-    private long longValue(String value) {
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException exception) {
-            throw invalid("AI price version is invalid");
-        }
     }
 
     private IllegalStateException invalid(String message) {

@@ -66,6 +66,7 @@ public class JdbcAgentRunRepository
             UUID agentRunId,
             WorkflowLaunchCommand command,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         String resourceType = command.resource() == null ? null : command.resource().resourceType();
         UUID resourceId = command.resource() == null ? null : command.resource().resourceId();
@@ -93,10 +94,10 @@ public class JdbcAgentRunRepository
                 .param("inputHash", command.canonicalInputHash())
                 .param("inputRefs", mapper.write(command.inputReferenceSnapshot()))
                 .param("budgetPolicyVersion", budgetPolicyVersion)
-                .param("priceVersion", command.priceVersion())
+                .param("priceVersion", priceVersion)
                 .param("qualityMode", command.requestedQualityMode() == null
                         ? null : command.requestedQualityMode().name())
-                .param("estimatedCost", command.estimatedCostUsd())
+                .param("estimatedCost", java.math.BigDecimal.ZERO)
                 .param("resourceType", resourceType)
                 .param("resourceId", resourceId)
                 .param("queuedAt", utc(queuedAt))
@@ -125,6 +126,7 @@ public class JdbcAgentRunRepository
             UUID successorId,
             AgentRunSnapshot predecessor,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         UUID retryVerificationId = "COVER_LETTER".equals(predecessor.resourceType())
                         && predecessor.workflowType()
@@ -141,8 +143,6 @@ public class JdbcAgentRunRepository
                 predecessor.canonicalInputHash(),
                 retryInput,
                 predecessor.requestedQualityMode(),
-                predecessor.estimatedCostUsd(),
-                predecessor.priceVersion(),
                 predecessor.resourceType() == null ? null : new ResourceReference(
                         predecessor.resourceType(), predecessor.resourceId(), null));
         return createRetry(
@@ -150,6 +150,7 @@ public class JdbcAgentRunRepository
                 predecessor,
                 command,
                 budgetPolicyVersion,
+                priceVersion,
                 queuedAt,
                 retryPartialResult,
                 retryVerificationId);
@@ -162,12 +163,14 @@ public class JdbcAgentRunRepository
             AgentRunSnapshot predecessor,
             WorkflowLaunchCommand successorCommand,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         return createRetry(
                 successorId,
                 predecessor,
                 successorCommand,
                 budgetPolicyVersion,
+                priceVersion,
                 queuedAt,
                 null,
                 null);
@@ -178,6 +181,7 @@ public class JdbcAgentRunRepository
             AgentRunSnapshot predecessor,
             WorkflowLaunchCommand command,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt,
             PartialResult retryPartialResult,
             UUID retryVerificationId) {
@@ -211,10 +215,10 @@ public class JdbcAgentRunRepository
                     .param("inputHash", command.canonicalInputHash())
                     .param("inputRefs", mapper.write(command.inputReferenceSnapshot()))
                     .param("budgetPolicyVersion", budgetPolicyVersion)
-                    .param("priceVersion", command.priceVersion())
+                    .param("priceVersion", priceVersion)
                     .param("qualityMode", command.requestedQualityMode() == null
                             ? null : command.requestedQualityMode().name())
-                    .param("estimatedCost", command.estimatedCostUsd())
+                    .param("estimatedCost", java.math.BigDecimal.ZERO)
                     .param("resourceType", resource == null ? null : resource.resourceType())
                     .param("resourceId", resource == null ? null : resource.resourceId())
                     .param("retryOf", predecessor.id())

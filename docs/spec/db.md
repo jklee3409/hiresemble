@@ -372,22 +372,22 @@ Unique `(user_id,agent_run_id,step_key,scope_key,attempt)`. `output_json`에는 
 
 ### 10.1 versioned policy
 
-`ai_model_policies`, `embedding_policy_versions`, `ai_budget_policy_versions`는 immutable version을 가진 전역 policy다. embedding active 값은 provider `OpenAI`, model `text-embedding-3-small`, dimension `1536`, cosine, active generation이다. budget policy는 user default/system maximum daily budget, async run·mock turn·mock session 상한과 reset zone을 한 version으로 묶는다. 공개 quality와 내부 tier를 별도 column으로 저장한다.
+`ai_model_policies`, `embedding_policy_versions`, `ai_budget_policy_versions`는 immutable version을 가진 전역 policy다. embedding active 값은 provider `OpenAI`, model `text-embedding-3-small`, dimension `1536`, cosine, active generation이다. budget policy는 전체 AI 사용량의 단일 일일 비용 한도와 reset zone을 한 version으로 묶는다. 공개 quality와 내부 tier를 별도 column으로 저장한다.
 
-`user_ai_preferences`: `id,user_id,default_quality_mode(ECONOMY|BALANCED),high_quality_enabled,daily_budget_usd,version,timestamps`; user당 active 1개. 초기 user budget 1.00, system max 2.00, reset zone `Asia/Seoul`은 versioned 운영 policy에서 관리한다.
+`user_ai_preferences`: `id,user_id,default_quality_mode(ECONOMY|BALANCED),high_quality_enabled,version,timestamps`; user당 active 1개. Provider 비용 예산은 사용자 preference와 분리해 전역 versioned 운영 policy에서 관리한다.
 
 ### 10.2 immutable 가격·ledger·reservation
 
 - `ai_price_versions`: immutable catalog header와 effective range.
 - `ai_price_items`: provider, product, unit, unit_price와 price version. 외부 provider 단가를 이 명세에 금액으로 고정하지 않는다.
 - 자기소개서 allowlist의 각 exact OpenAI chat model은 활성 price version에 `CHAT_INPUT|CHAT_CACHED_INPUT|CHAT_OUTPUT` item이 모두 있어야 하며, 모델 추가·폐기는 새 Flyway migration과 새 immutable price version으로 수행한다.
-- `ai_budget_ledgers`: `id,user_id,budget_date,budget_zone,spent_usd,reserved_usd,policy_version`; unique user/date/zone.
+- `ai_budget_ledgers`: `id,budget_date,budget_zone,spent_usd,reserved_usd,policy_version`; unique date/zone인 전역 원장이다. 기존 사용자별 원장은 migration에서 날짜·zone별 합계로 병합하고 reservation 연결을 전역 원장으로 이전한다.
 - `ai_budget_reservations`: `id,user_id,operation_type,agent_run_id NULL,mock_turn_id NULL,reserved_usd,settled_usd,status,expires_at,budget_policy_version,price_version,timestamps`.
 - `ai_usage_records`: `id,user_id,agent_run_id NULL,agent_step_id NULL,mock_session_id NULL,mock_turn_id NULL,operation_type,usage_type(CHAT|EMBEDDING|SEARCH),provider,product,model_tier,unit counts,price_version,price_item_id,provider_call_id NULL,cost_usd,duration_ms,created_at`.
 
 chat input/cached input/output, embedding unit, BASIC/ADVANCED search를 가격 item별 별도 row로 기록한다. 같은 provider 호출의 row는 `provider_call_id + price_item_id`로 중복 저장을 차단한다. 무료/cache hit도 0 cost usage row를 남긴다. 동기 mock turn usage는 run/step FK가 null이고 session/turn 복합 FK가 필수다.
 
-초기 상한은 user default daily 1.00, system daily max 2.00, async run max 0.30, mock turn 0.03, mock session sync total 0.30 USD다. 값은 code constant가 아니라 versioned policy다.
+현재 상한은 전체 AI 기능이 공유하는 일일 USD 10.00이다. 분야·run·turn·session별 비용 상한은 두지 않으며 값은 환경 변수가 아니라 versioned policy로 관리한다.
 
 ### 10.3 제품 기능 한도·metering (`PLANNED` P8.6)
 
@@ -459,7 +459,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 1. 공고 status와 history, timestamp는 한 transaction이다.
 2. current answer false/true와 cover DRAFT 전이는 한 transaction이다.
 3. Agent step checkpoint와 domain apply는 input hash·owner·version으로 멱등 처리한다.
-4. 비용은 resource/run/turn 생성 전 원자 reserve, catalog version으로 settle, terminal·WAITING_USER에 release한다.
+4. Agent Run은 0원 reservation으로 접수하고 각 Provider 호출 직전에 최악 비용을 원자 reserve한다. catalog version으로 settle하고 terminal·WAITING_USER에 미사용액을 release한다.
 5. Object upload 성공 뒤 DB 실패는 보상 삭제, DB logical delete 뒤 Object 삭제는 Outbox다.
 6. 질문은 soft delete하고 answer version·verification·provenance를 보존한다.
 7. document delete는 API 즉시 404, Object/text/chunk/embedding purge, 참조 evidence tombstone, 미참조 evidence 삭제다.

@@ -4,6 +4,14 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-06] Session Summary (활성 가격 catalog 자동 선택과 비용 설정 정리)
+
+- What was done: `JdbcAiPriceCatalogRepository`가 실행 시점의 활성 immutable price version을 선택하도록 하고 provider validator의 분야별 예약 환경 변수 검증을 제거했다.
+- Key decisions: startup은 실제 모델·embedding·검색 price item 존재만 fail-closed 검증하며 예산 금액은 DB budget policy만 신뢰한다.
+- Issues encountered: None.
+- Validation: 구현 중 메인·테스트 소스 컴파일과 초기 V24 적용 Spring context 테스트가 통과했다. 최종 원장 병합 보정 후 재검증은 요청에 따라 생략했다.
+- Next steps: 가격 변경은 새 Flyway price version으로만 반영한다.
+
 ## [2026-08-06] Session Summary (Cover Letter v4 runtime 등록)
 
 - What was done: generation·verification v4와 durable v3 executable을 runtime registry에 함께 등록했다.

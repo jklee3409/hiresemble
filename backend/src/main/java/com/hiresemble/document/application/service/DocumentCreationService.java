@@ -8,7 +8,6 @@ import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
 import com.hiresemble.document.domain.model.DocumentType;
-import com.hiresemble.document.infrastructure.config.DocumentAiCostProperties;
 import com.hiresemble.document.infrastructure.persistence.DocumentStore;
 import java.time.Clock;
 import java.time.Instant;
@@ -24,19 +23,16 @@ public class DocumentCreationService {
     private final DocumentStore store;
     private final WorkflowLauncher workflowLauncher;
     private final ObjectMapper objectMapper;
-    private final DocumentAiCostProperties aiCost;
     private final Clock clock;
 
     public DocumentCreationService(
             DocumentStore store,
             WorkflowLauncher workflowLauncher,
             ObjectMapper objectMapper,
-            DocumentAiCostProperties aiCost,
             Clock clock) {
         this.store = store;
         this.workflowLauncher = workflowLauncher;
         this.objectMapper = objectMapper;
-        this.aiCost = aiCost;
         this.clock = clock;
     }
 
@@ -76,7 +72,6 @@ public class DocumentCreationService {
         return workflowLauncher.launch(new WorkflowLaunchCommand(
                 document.userId(), WorkflowType.DOCUMENT_INGESTION, WORKFLOW_VERSION,
                 canonicalInputHash, input, AiQualityMode.ECONOMY,
-                aiCost.estimatedCostUsd(), aiCost.priceVersion(),
                 new ResourceReference("DOCUMENT", document.id(), document.displayName())));
     }
 

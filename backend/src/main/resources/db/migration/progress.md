@@ -25,7 +25,16 @@
 - `V21__classify_job_posting_periods.sql`은 기존 공고를 서울 기준 등록 연도·상하반기로 backfill한다.
 - `V22__finalize_job_posting_period_constraints.sql`은 기간 trigger·NOT NULL·CHECK와 owner 기간 index를 확정한다.
 - `V23__add_selectable_openai_model_prices.sql`은 선택 가능한 OpenAI chat model 10개와 기존 embedding·검색의 immutable 가격 version을 추가한다.
+- `V24__replace_scoped_ai_budgets_with_global_daily_budget.sql`은 분야별 비용 상한과 ledger 사용자 소유 차원을 제거하고 전역 일일 USD 10 policy와 날짜별 단일 ledger를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-06] Session Summary (V24 전역 AI 일일 budget)
+
+- What was done: active budget policy version 2의 단일 `daily_budget_usd=10`, 사용자 소유 차원이 없는 날짜별 전역 ledger, 사용자 preference budget column 제거를 forward migration으로 추가했다.
+- Key decisions: 기존 user ledger는 날짜·zone별 합계로 전역 ledger에 병합하고 reservation FK를 먼저 이전한 뒤 제거해 in-flight run의 settle 가능성과 총 비용을 보존한다.
+- Issues encountered: 초기 `GLOBAL` scope 방식은 신규 column CHECK 설치 순서와 기존 in-flight reservation 호환 문제가 있어 기존 원장을 합산·FK 이전한 뒤 사용자 소유 차원을 제거하는 방식으로 정리했다.
+- Validation: 초기 V24 migration은 실제 PostgreSQL Testcontainer에서 확인했으며, 최종 원장 병합 방식은 사용자 요청에 따라 별도 재검증하지 않았다.
+- Next steps: 사용자 plan·credit 제한은 Provider 원가 ledger를 재사용하지 않고 별도 entitlement/credit ledger로 도입한다.
 
 ## [2026-08-06] Session Summary (선택 가능 OpenAI 모델 가격 catalog)
 

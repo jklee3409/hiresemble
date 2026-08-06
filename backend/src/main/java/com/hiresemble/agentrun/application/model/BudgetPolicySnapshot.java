@@ -5,7 +5,5 @@ import java.time.ZoneId;
 
 public record BudgetPolicySnapshot(
         long version,
-        BigDecimal userDefaultDailyBudgetUsd,
-        BigDecimal systemMaxDailyBudgetUsd,
-        BigDecimal asyncRunMaxCostUsd,
+        BigDecimal dailyBudgetUsd,
         ZoneId resetZone) {}

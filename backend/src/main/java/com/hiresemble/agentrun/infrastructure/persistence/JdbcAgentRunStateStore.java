@@ -510,10 +510,10 @@ public class JdbcAgentRunStateStore implements AgentRunStatePort {
                         SET reserved_usd = reserved_usd - :reserved,
                             spent_usd = spent_usd + :actual,
                             version = version + 1, updated_at = :now
-                        WHERE user_id = :userId AND id = :ledgerId
+                        WHERE id = :ledgerId
                         """)
                 .param("reserved", reservation.reservedUsd()).param("actual", run.actualCostUsd())
-                .param("now", utc(now)).param("userId", run.userId())
+                .param("now", utc(now))
                 .param("ledgerId", reservation.ledgerId()).update();
         jdbcClient.sql("""
                         UPDATE ai_budget_reservations

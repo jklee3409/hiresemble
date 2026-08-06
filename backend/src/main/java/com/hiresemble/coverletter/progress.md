@@ -4,6 +4,14 @@
 
 P7 자기소개서 생성·문항 관리·immutable 답변 version·근거 provenance·검증·최종화·보관과 AI application port가 final-source actual 및 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (자기소개서 AI 비용 전역 정책 통합)
+
+- What was done: 생성·검증별 고정 비용 properties와 환경 변수를 제거하고 exact model별 호출 비용을 공통 price catalog estimator가 예약하도록 연결했다.
+- Key decisions: 사용자 model 선택은 유지하되 model 가격에 따른 별도 분야 상한은 두지 않고 전역 일일 USD 10만 적용한다.
+- Issues encountered: None.
+- Validation: 메인·테스트 소스 컴파일 통과.
+- Next steps: model별 실제 품질·원가 관측은 budget과 분리된 backoffice 집계로 제공한다.
+
 ## [2026-08-06] Session Summary (자기소개서 모델 직접 선택과 memo 반영)
 
 - What was done: 품질 모드 공개 계약을 제거하고 model catalog·요청별 exact model·memo-aware v4 generation/verification을 구현했다.

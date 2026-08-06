@@ -52,7 +52,6 @@ import com.hiresemble.coverletter.domain.TipTapCanonicalizer;
 import com.hiresemble.coverletter.domain.TipTapCanonicalizer.CanonicalContent;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
 import com.hiresemble.coverletter.domain.VerificationStatus;
-import com.hiresemble.coverletter.infrastructure.CoverLetterAiCostProperties;
 import com.hiresemble.coverletter.infrastructure.CoverLetterStore;
 import com.hiresemble.coverletter.infrastructure.CoverLetterStore.CoverRow;
 import com.hiresemble.coverletter.infrastructure.CoverLetterStore.QuestionRow;
@@ -114,7 +113,6 @@ public class CoverLetterApplicationService
     private final AgentRunQueryPort runQuery;
     private final AiPreferenceQueryPort preferenceQuery;
     private final IdempotencyService idempotency;
-    private final CoverLetterAiCostProperties aiCost;
     private final TipTapCanonicalizer canonicalizer;
     private final ObjectMapper objectMapper;
     private final Clock clock;
@@ -135,7 +133,6 @@ public class CoverLetterApplicationService
             AgentRunQueryPort runQuery,
             AiPreferenceQueryPort preferenceQuery,
             IdempotencyService idempotency,
-            CoverLetterAiCostProperties aiCost,
             TipTapCanonicalizer canonicalizer,
             ObjectMapper objectMapper,
             Clock clock) {
@@ -148,7 +145,6 @@ public class CoverLetterApplicationService
         this.runQuery = runQuery;
         this.preferenceQuery = preferenceQuery;
         this.idempotency = idempotency;
-        this.aiCost = aiCost;
         this.canonicalizer = canonicalizer;
         this.objectMapper = objectMapper;
         this.clock = clock;
@@ -1235,8 +1231,6 @@ public class CoverLetterApplicationService
                                 .toList())),
                 input,
                 null,
-                aiCost.generationEstimatedCostUsd(),
-                aiCost.generationPriceVersion(),
                 new ResourceReference(
                         RESOURCE_TYPE, snapshot.coverLetterId(), snapshot.title())));
     }
@@ -1259,8 +1253,6 @@ public class CoverLetterApplicationService
                         + snapshot.answerVersion().id()),
                 input,
                 null,
-                aiCost.verificationEstimatedCostUsd(),
-                aiCost.verificationPriceVersion(),
                 new ResourceReference(
                         RESOURCE_TYPE, snapshot.coverLetterId(), "자기소개서 검증")));
     }

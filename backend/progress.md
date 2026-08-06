@@ -4,8 +4,16 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 95 operations/70 paths가 구현되어 있다.
-- V1~V23 migration이 적용됐고 V23은 선택 가능 OpenAI chat model의 immutable 가격 catalog를 소유한다.
+- V1~V24 migration이 적용됐고 V24는 전체 AI 기능이 공유하는 전역 일일 USD 10 budget policy를 소유한다.
 - 최신 Backend 전체 `check`가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-06] Session Summary (AI 비용 정책 단일 전역 일일 한도 전환)
+
+- What was done: 분야별 고정 예약 설정·환경 변수·typed cost properties를 제거하고 활성 가격 version 자동 선택과 호출 직전 동적 예약을 연결했다.
+- Key decisions: 운영 비용 한도는 DB versioned policy의 전역 일일 USD 10 하나만 적용하며 사용자 preference와 비동기 run 상한은 사용하지 않는다.
+- Issues encountered: 기존 테스트 fixture와 budget 테스트가 삭제된 preference column·고정 시작 예약을 전제로 해 전역 ledger와 0원 시작 계약에 맞게 갱신했다.
+- Validation: 구현 중 `compileJava`, `compileTestJava`, 인증 통합 테스트 1건과 `AgentRunBudgetResumeIntegrationTest` 7건이 통과했다. 프로젝트에 Spotless task가 없어 `spotlessApply`는 실행할 수 없었고 diff whitespace 검사는 통과했다. 최종 원장 병합 보정 후 재검증과 전체 `check`는 요청에 따라 생략했다.
+- Next steps: plan·credit 계약 확정 후 Provider 원가 ledger와 분리된 entitlement/credit accounting을 추가한다.
 
 ## [2026-08-06] Session Summary (자기소개서 exact OpenAI 모델 선택과 memo context)
 

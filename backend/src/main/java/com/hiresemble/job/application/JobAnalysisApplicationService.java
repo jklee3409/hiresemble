@@ -41,7 +41,6 @@ import com.hiresemble.job.domain.JobPolicy;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
 import com.hiresemble.job.domain.OutdatedReason;
 import com.hiresemble.job.domain.StructuredProfileFactType;
-import com.hiresemble.job.infrastructure.JobAnalysisAiCostProperties;
 import com.hiresemble.job.infrastructure.JobAnalysisStore;
 import com.hiresemble.job.infrastructure.JobStore;
 import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
@@ -84,7 +83,6 @@ public class JobAnalysisApplicationService
     private final WorkflowLauncher workflowLauncher;
     private final AgentRunQueryPort runQuery;
     private final IdempotencyService idempotency;
-    private final JobAnalysisAiCostProperties aiCost;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
@@ -96,7 +94,6 @@ public class JobAnalysisApplicationService
             WorkflowLauncher workflowLauncher,
             AgentRunQueryPort runQuery,
             IdempotencyService idempotency,
-            JobAnalysisAiCostProperties aiCost,
             ObjectMapper objectMapper,
             Clock clock) {
         this.jobStore = jobStore;
@@ -106,7 +103,6 @@ public class JobAnalysisApplicationService
         this.workflowLauncher = workflowLauncher;
         this.runQuery = runQuery;
         this.idempotency = idempotency;
-        this.aiCost = aiCost;
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
@@ -441,8 +437,6 @@ public class JobAnalysisApplicationService
                 canonicalInputHash,
                 input,
                 snapshot.qualityMode(),
-                aiCost.estimatedCostUsd(),
-                aiCost.priceVersion(),
                 new ResourceReference(
                         "JOB",
                         snapshot.jobId(),

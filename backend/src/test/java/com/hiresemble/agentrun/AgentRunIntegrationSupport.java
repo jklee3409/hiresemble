@@ -1,6 +1,7 @@
 package com.hiresemble.agentrun;
 
 import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import com.hiresemble.agentrun.application.command.WorkflowLaunchCommand;
 import com.hiresemble.agentrun.application.model.WorkflowLaunchResult;
@@ -20,6 +21,7 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
 
     @Autowired protected WorkflowLauncher workflowLauncher;
     @Autowired protected AgentRunQueryPort queryPort;
+    @Autowired protected BudgetReservationPort budgetPort;
     @Autowired protected ObjectMapper objectMapper;
 
     protected UUID seedUser(String email) {
@@ -46,9 +48,9 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
                 """, UUID.randomUUID(), userId);
         jdbcTemplate.update("""
                 INSERT INTO user_ai_preferences (
-                    id,user_id,budget_policy_version,default_quality_mode,high_quality_enabled,
-                    daily_budget_usd,active,version,created_at,updated_at
-                ) VALUES (?,?,1,'ECONOMY',false,1.000000,true,0,now(),now())
+                    id,user_id,default_quality_mode,high_quality_enabled,
+                    active,version,created_at,updated_at
+                ) VALUES (?,?,'ECONOMY',false,true,0,now(),now())
                 """, UUID.randomUUID(), userId);
         return userId;
     }
@@ -58,7 +60,7 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
     }
 
     protected WorkflowLaunchResult launch(UUID userId, BigDecimal estimatedCost, Long priceVersion) {
-        return workflowLauncher.launch(new WorkflowLaunchCommand(
+        WorkflowLaunchResult launched = workflowLauncher.launch(new WorkflowLaunchCommand(
                 userId,
                 WorkflowType.JOB_ANALYSIS,
                 "fixture-v1",
@@ -67,9 +69,11 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
                         .put("fixtureRef", "safe-fixture")
                         .put("capturedAt", Instant.parse("2026-07-19T00:00:00Z").toString()),
                 AiQualityMode.ECONOMY,
-                estimatedCost,
-                priceVersion,
                 null));
+        if (estimatedCost.signum() > 0) {
+            budgetPort.topUp(userId, launched.agentRunId(), estimatedCost, Instant.now());
+        }
+        return launched;
     }
 
     protected AgentRunSnapshot run(UUID userId, UUID runId) {

@@ -6,6 +6,14 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-06] Session Summary (전역 일일 AI 비용과 plan·credit 확장 계약)
+
+- What was done: API·DB·화면·기능·기술 명세에서 사용자/system/run/mock 분야별 비용 상한을 제거하고 전체 서비스 일일 USD 10 정책으로 통일했다.
+- Key decisions: 운영 Provider 원가 안전장치와 사용자 plan·credit을 분리하고, 향후 `feature_usage_*` entitlement와 append-only credit wallet/reservation을 조합한다.
+- Issues encountered: 기존 문서에 사용자 설정 가능 예산과 mock turn/session 상한이 여러 위치에 중복돼 다섯 활성 명세를 함께 정리했다.
+- Validation: 관련 legacy 비용 키 검색과 변경 diff를 확인했다. 별도 문서 validator는 사용자 요청에 따라 생략했다.
+- Next steps: plan 종류·credit 단위·차감/환불 정책이 승인되면 API·DB 계약을 구체화한다.
+
 ## [2026-08-06] Session Summary (자기소개서 소재 선택·AI 작업 표시 계약 보정)
 
 - What was done:

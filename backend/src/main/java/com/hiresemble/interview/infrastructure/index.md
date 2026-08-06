@@ -2,13 +2,11 @@
 
 ## 디렉터리 목적
 
-P8 question set·question·answer version·feedback PostgreSQL 저장과 AI 비용 설정을 담당한다.
+P8 question set·question·answer version·feedback PostgreSQL 저장을 담당한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - `InterviewStore`: owner-scoped JDBC 조회·atomic persistence
-- `InterviewAiCostProperties`: preparation·feedback 비용/price 설정
-- `InterviewInfrastructureConfiguration`: 저장소·port bean 연결
 - [`progress.md`](progress.md): infrastructure 상태
 
 ## 구성 요소 역할

@@ -54,8 +54,6 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
         registry.add("hiresemble.ai.model-low-cost", () -> "fake-job-low-cost");
         registry.add("hiresemble.ai.model-balanced", () -> "fake-job-balanced");
         registry.add("hiresemble.ai.model-policy-version", () -> "1");
-        registry.add("hiresemble.job.ai-cost.estimated-cost-usd", () -> "0.000000");
-        registry.add("hiresemble.job.ai-cost.price-version", () -> "0");
         registry.add("hiresemble.job-page-fetch.min-dom-meaningful-characters", () -> "300");
         registry.add("hiresemble.job-page-fetch.min-description-meaningful-characters", () -> "80");
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "100ms");

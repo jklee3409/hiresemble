@@ -287,6 +287,7 @@ public class InterviewStore {
             AgentRunSnapshot predecessor,
             WorkflowLaunchCommand command,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         return jdbcClient.sql("""
                         INSERT INTO agent_runs (
@@ -315,9 +316,9 @@ public class InterviewStore {
                 .param("inputHash", command.canonicalInputHash())
                 .param("inputRefs", json(command.inputReferenceSnapshot()))
                 .param("budgetPolicyVersion", budgetPolicyVersion)
-                .param("priceVersion", command.priceVersion())
+                .param("priceVersion", priceVersion)
                 .param("qualityMode", command.requestedQualityMode().name())
-                .param("estimatedCost", command.estimatedCostUsd())
+                .param("estimatedCost", java.math.BigDecimal.ZERO)
                 .param("resourceType", command.resource().resourceType())
                 .param("resourceId", command.resource().resourceId())
                 .param("retryOf", predecessor.id())

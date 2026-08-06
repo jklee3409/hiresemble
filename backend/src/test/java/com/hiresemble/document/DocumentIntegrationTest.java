@@ -82,8 +82,6 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     static void slowerBackgroundScans(DynamicPropertyRegistry registry) {
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "1h");
         registry.add("hiresemble.object-deletion-outbox.scan-interval", () -> "1h");
-        registry.add("hiresemble.document.ai-cost.estimated-cost-usd", () -> "0.100000");
-        registry.add("hiresemble.document.ai-cost.price-version", () -> FAKE_PRICE_VERSION);
     }
 
     @BeforeEach
@@ -646,7 +644,7 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void uploadReportsSafePayloadMediaAndBudgetErrors() throws Exception {
+    void uploadReportsSafePayloadAndMediaErrorsAndRetryDefersBudgetCheck() throws Exception {
         Session owner = authenticated("document-safe-errors@example.com");
 
         JsonNode tooLarge = upload(
@@ -674,9 +672,6 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 202);
         UUID runId = UUID.fromString(accepted.get("agentRunId").asText());
         budgetReservations.releaseUnused(owner.userId(), runId, Instant.now());
-        jdbcTemplate.update(
-                "UPDATE user_ai_preferences SET daily_budget_usd=0 WHERE user_id=?",
-                owner.userId());
         jdbcTemplate.update("""
                 UPDATE agent_runs SET status='FAILED',completed_at=queued_at,
                     error_code='SAFE_RETRYABLE_FAILURE',error_message_safe='Retry this run',
@@ -689,14 +684,13 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                         .cookie(owner.cookie())
                         .header("X-CSRF-TOKEN", owner.csrfToken())
                         .header("Idempotency-Key", "document-budget-retry-01"))
-                .andExpect(status().isTooManyRequests())
+                .andExpect(status().isAccepted())
                 .andReturn();
-        assertThat(json(budget).get("code").asText())
-                .isEqualTo("RATE_OR_BUDGET_LIMIT_EXCEEDED");
+        assertThat(json(budget).get("agentRunId").asText()).isNotBlank();
         assertThat(storage.values).hasSize(1);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, owner.userId()))
-                .isEqualTo(1L);
+                .isEqualTo(2L);
     }
 
     @Test

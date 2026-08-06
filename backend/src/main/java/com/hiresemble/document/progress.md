@@ -4,6 +4,14 @@
 
 P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석과 P7 자기소개서용 active-generation 검색 adapter를 제공한다.
 
+## [2026-08-06] Session Summary (문서 workflow 고정 비용 설정 제거)
+
+- What was done: 문서 생성 service와 infrastructure에서 고정 예상 비용·price version properties를 제거했다.
+- Key decisions: 문서 Run도 공통 활성 price version과 호출 직전 전역 budget 예약을 사용한다.
+- Issues encountered: None.
+- Validation: 메인·테스트 소스 컴파일 통과.
+- Next steps: None.
+
 ## [2026-08-01] Session Summary (evidence apply 안전 통계 경계)
 
 - What was done:

@@ -776,7 +776,7 @@ Filter:
 
 중복 전송 방지를 위해 전송 중 입력을 잠그고 client request ID를 사용한다.
 
-start/message마다 새 UUID `clientRequestId`와 현재 session version을 보낸다. timeout이나 연결 단절 뒤 같은 ID를 유지해 성공 또는 실패 terminal 응답을 복구한다. `409 MOCK_TURN_IN_PROGRESS`는 처리 중 상태로 polling하고 새 ID를 자동 발급하지 않는다. 저장된 실패가 replay되면 안전 오류를 그대로 표시하며, 사용자가 명시적으로 새 유료 시도를 선택할 때만 새 ID를 만든다. 요청당 최대 chat 1회·20초·USD 0.03과 session USD 0.30 상한을 안내하고 search/embedding은 사용하지 않는다.
+start/message마다 새 UUID `clientRequestId`와 현재 session version을 보낸다. timeout이나 연결 단절 뒤 같은 ID를 유지해 성공 또는 실패 terminal 응답을 복구한다. `409 MOCK_TURN_IN_PROGRESS`는 처리 중 상태로 polling하고 새 ID를 자동 발급하지 않는다. 저장된 실패가 replay되면 안전 오류를 그대로 표시하며, 사용자가 명시적으로 새 유료 시도를 선택할 때만 새 ID를 만든다. 요청당 최대 chat 1회·20초를 적용하고 search/embedding은 사용하지 않으며 비용은 공통 전역 일일 예산에 포함한다.
 
 ## 10.3 완료 COMPLETED
 
@@ -909,8 +909,7 @@ API:
 
 - 기본 품질 모드: 절약 / 균형
 - 고품질 최종 검토 사용 여부
-- 사용자 일일 비용 한도
-- 시스템 최대 비용 한도
+- AI 비용 정책 안내(전체 서비스 일일 USD 10.00, 사용자 변경 불가)
 - AI 데이터 처리 안내
 
 API:
@@ -918,7 +917,7 @@ API:
 - `GET /settings/ai`
 - `PUT /settings/ai`
 
-일반 사용자 화면에는 provider/model 실명을 표시하지 않는다. 단, 자기소개서 AI 초안·검증 화면은 사용자가 exact OpenAI model을 직접 선택하는 기능 계약이므로 서버 allowlist의 모델명과 ID를 표시한다. `HIGH_QUALITY` 설정은 면접 답변 feedback의 품질 모드에만 적용한다. reset zone은 `Asia/Seoul`, 초기 user daily 1.00/system max 2.00 USD를 표시한다.
+일반 사용자 화면에는 provider/model 실명을 표시하지 않는다. 단, 자기소개서 AI 초안·검증 화면은 사용자가 exact OpenAI model을 직접 선택하는 기능 계약이므로 서버 allowlist의 모델명과 ID를 표시한다. `HIGH_QUALITY` 설정은 면접 답변 feedback의 품질 모드에만 적용한다. 비용 정책은 reset zone `Asia/Seoul`, 전체 서비스 일일 USD 10.00이며 사용자가 변경할 수 없음을 안내한다.
 
 ## 13.3 `/settings/usage` (`PLANNED` P8.7)
 

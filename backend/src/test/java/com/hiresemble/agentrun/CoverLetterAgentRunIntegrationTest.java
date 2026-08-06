@@ -294,8 +294,6 @@ class CoverLetterAgentRunIntegrationTest extends AgentRunIntegrationSupport {
                 "c".repeat(64),
                 input,
                 AiQualityMode.ECONOMY,
-                BigDecimal.ZERO,
-                null,
                 new ResourceReference("COVER_LETTER", coverId, "Cover generation")));
     }
 
@@ -315,8 +313,6 @@ class CoverLetterAgentRunIntegrationTest extends AgentRunIntegrationSupport {
                 "e".repeat(64),
                 input,
                 AiQualityMode.ECONOMY,
-                BigDecimal.ZERO,
-                null,
                 new ResourceReference("COVER_LETTER", coverId, "Cover verification")));
     }
 

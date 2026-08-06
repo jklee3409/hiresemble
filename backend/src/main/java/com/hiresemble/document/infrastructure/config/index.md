@@ -8,7 +8,6 @@ com.hiresemble.document.infrastructure.config package는 해당 계층의 Spring
 
 | 파일 | 역할 |
 | ---- | ---- |
-| [DocumentAiCostProperties.java](DocumentAiCostProperties.java) | Configuration 책임 구현 |
 | [DocumentEmbeddingPolicyValidator.java](DocumentEmbeddingPolicyValidator.java) | Configuration 책임 구현 |
 | [DocumentEmbeddingProperties.java](DocumentEmbeddingProperties.java) | Configuration 책임 구현 |
 | [DocumentInfrastructureConfiguration.java](DocumentInfrastructureConfiguration.java) | Configuration 책임 구현 |

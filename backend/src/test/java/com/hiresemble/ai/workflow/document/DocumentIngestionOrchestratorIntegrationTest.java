@@ -46,11 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 import tools.jackson.databind.ObjectMapper;
 
 @Import(DocumentIngestionOrchestratorIntegrationTest.FakePorts.class)
-@TestPropertySource(properties = {
-        "hiresemble.ai.runtime.enabled=true",
-        "hiresemble.document.ai-cost.estimated-cost-usd=0.300000",
-        "hiresemble.document.ai-cost.price-version=2026073101"
-})
+@TestPropertySource(properties = "hiresemble.ai.runtime.enabled=true")
 class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired private DocumentApplicationService documentService;
@@ -449,9 +445,9 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
                 """, UUID.randomUUID(), id);
         jdbcTemplate.update("""
                 INSERT INTO user_ai_preferences (
-                    id,user_id,budget_policy_version,default_quality_mode,high_quality_enabled,
-                    daily_budget_usd,active,version,created_at,updated_at
-                ) VALUES (?,?,1,'ECONOMY',false,1.000000,true,0,now(),now())
+                    id,user_id,default_quality_mode,high_quality_enabled,
+                    active,version,created_at,updated_at
+                ) VALUES (?,?,'ECONOMY',false,true,0,now(),now())
                 """, UUID.randomUUID(), id);
         return id;
     }

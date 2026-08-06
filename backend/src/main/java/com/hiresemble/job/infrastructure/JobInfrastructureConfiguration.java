@@ -8,8 +8,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({
     JobPageFetchProperties.class,
     JobDeadlineSchedulerProperties.class,
-    JobAiCostProperties.class,
-    JobAnalysisAiCostProperties.class,
     JobAutoAnalysisProperties.class
 })
 public class JobInfrastructureConfiguration {

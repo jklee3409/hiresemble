@@ -33,7 +33,6 @@ import com.hiresemble.interview.application.model.InterviewModels.GeneratedQuest
 import com.hiresemble.interview.application.port.InterviewWorkflowCommandPort;
 import com.hiresemble.interview.application.port.InterviewWorkflowQueryPort;
 import com.hiresemble.interview.domain.InterviewQuestionType;
-import com.hiresemble.interview.infrastructure.InterviewAiCostProperties;
 import com.hiresemble.interview.infrastructure.InterviewStore;
 import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
 import com.hiresemble.research.application.model.ResearchModels.ResearchRunRow;
@@ -85,7 +84,6 @@ public class InterviewApplicationService
     private final WorkflowLauncher workflowLauncher;
     private final AiPreferenceQueryPort preferenceQuery;
     private final IdempotencyService idempotency;
-    private final InterviewAiCostProperties aiCost;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
@@ -95,7 +93,6 @@ public class InterviewApplicationService
             WorkflowLauncher workflowLauncher,
             AiPreferenceQueryPort preferenceQuery,
             IdempotencyService idempotency,
-            InterviewAiCostProperties aiCost,
             ObjectMapper objectMapper,
             Clock clock) {
         this.store = store;
@@ -103,7 +100,6 @@ public class InterviewApplicationService
         this.workflowLauncher = workflowLauncher;
         this.preferenceQuery = preferenceQuery;
         this.idempotency = idempotency;
-        this.aiCost = aiCost;
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
@@ -592,8 +588,6 @@ public class InterviewApplicationService
                         + prepared.questionCount()),
                 input,
                 prepared.qualityMode(),
-                aiCost.preparationEstimatedCostUsd(),
-                aiCost.preparationPriceVersion(),
                 new ResourceReference(
                         QUESTION_SET_RESOURCE,
                         prepared.questionSetId(),
@@ -616,8 +610,6 @@ public class InterviewApplicationService
                 sha256(context.answerVersionId() + "|" + contextHash),
                 input,
                 prepared.qualityMode(),
-                aiCost.feedbackEstimatedCostUsd(),
-                aiCost.feedbackPriceVersion(),
                 new ResourceReference(
                         ANSWER_VERSION_RESOURCE,
                         context.answerVersionId(),

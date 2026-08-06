@@ -45,9 +45,8 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
     @Autowired AgentRunCreationPort creationPort;
 
     @Test
-    void concurrentReservationsCannotExceedUserDailyLimitAndRejectedRunRollsBack() throws Exception {
+    void concurrentReservationsCannotExceedGlobalDailyLimit() throws Exception {
         UUID userId = seedUser("concurrent-budget@example.com");
-        jdbcTemplate.update("UPDATE user_ai_preferences SET daily_budget_usd=0.200000 WHERE user_id=?", userId);
         long priceVersion = seedPriceVersion();
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
@@ -73,62 +72,53 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
         }
 
         assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, userId)).isEqualTo(2L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT reserved_usd FROM ai_budget_ledgers",
+                BigDecimal.class)).isEqualByComparingTo("6.000000");
+    }
+
+    @Test
+    void insufficientGlobalBudgetRejectsTopUpWithoutChargingTheReservation() {
+        UUID userId = seedUser("insufficient-budget@example.com");
+        long priceVersion = seedPriceVersion();
+
+        assertThatThrownBy(() -> launch(userId, new BigDecimal("10.000001"), priceVersion))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode())
+                                .isEqualTo(ErrorCode.RATE_OR_BUDGET_LIMIT_EXCEEDED));
+        assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, userId)).isEqualTo(1L);
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT reserved_usd FROM ai_budget_ledgers WHERE user_id=?",
-                BigDecimal.class, userId)).isEqualByComparingTo("0.200000");
+                "SELECT reserved_usd FROM ai_budget_reservations WHERE user_id=?",
+                BigDecimal.class, userId)).isEqualByComparingTo("0.000000");
     }
 
     @Test
-    void insufficientBudgetCreatesNeitherRunNorReservation() {
-        UUID userId = seedUser("insufficient-budget@example.com");
-        jdbcTemplate.update("UPDATE user_ai_preferences SET daily_budget_usd=0.100000 WHERE user_id=?", userId);
-        long priceVersion = seedPriceVersion();
-
-        assertThatThrownBy(() -> launch(userId, new BigDecimal("0.200000"), priceVersion))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.errorCode())
-                                .isEqualTo(ErrorCode.RATE_OR_BUDGET_LIMIT_EXCEEDED));
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, userId)).isZero();
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM ai_budget_reservations WHERE user_id=?", Long.class, userId)).isZero();
-    }
-
-    @Test
-    void asyncRunAndSystemMaximumsApplyEvenWhenUserPreferenceIsHigher() {
+    void workflowAndUserSpecificCapsAreAbsentWhileUsersShareTheGlobalLimit() {
         UUID asyncUser = seedUser("async-run-max@example.com");
-        jdbcTemplate.update("UPDATE user_ai_preferences SET daily_budget_usd=9 WHERE user_id=?", asyncUser);
         long priceVersion = seedPriceVersion();
-        assertThatThrownBy(() -> launch(
-                asyncUser, new BigDecimal("0.300001"), priceVersion))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.errorCode())
-                                .isEqualTo(ErrorCode.RATE_OR_BUDGET_LIMIT_EXCEEDED));
+        launch(asyncUser, new BigDecimal("0.300001"), priceVersion);
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, asyncUser)).isZero();
+                "SELECT count(*) FROM agent_runs WHERE user_id=?", Long.class, asyncUser)).isEqualTo(1L);
 
-        UUID systemUser = seedUser("system-max@example.com");
-        jdbcTemplate.update("UPDATE user_ai_preferences SET daily_budget_usd=9 WHERE user_id=?", systemUser);
-        for (int index = 0; index < 6; index++) {
-            launch(systemUser, new BigDecimal("0.300000"), priceVersion);
-        }
-        launch(systemUser, new BigDecimal("0.200000"), priceVersion);
+        UUID finalUser = seedUser("global-limit@example.com");
+        launch(finalUser, new BigDecimal("9.699999"), priceVersion);
         assertThatThrownBy(() -> launch(
-                systemUser, new BigDecimal("0.000001"), priceVersion))
+                finalUser, new BigDecimal("0.000001"), priceVersion))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode())
                                 .isEqualTo(ErrorCode.RATE_OR_BUDGET_LIMIT_EXCEEDED));
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT reserved_usd FROM ai_budget_ledgers WHERE user_id=?",
-                BigDecimal.class, systemUser)).isEqualByComparingTo("2.000000");
+                "SELECT reserved_usd FROM ai_budget_ledgers",
+                BigDecimal.class)).isEqualByComparingTo("10.000000");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM agent_runs WHERE user_id=?",
-                Long.class, systemUser)).isEqualTo(7L);
+                Long.class, finalUser)).isEqualTo(2L);
     }
 
     @Test
-    void waitingUserReleasesUnusedReserveAndSameRunResumeReservesRemainingCost() {
+    void waitingUserReleasesUnusedReserveAndSameRunResumeStartsWithZeroReservation() {
         UUID userId = seedUser("waiting-resume@example.com");
         long priceVersion = seedPriceVersion();
         UUID runId = launch(userId, new BigDecimal("0.200000"), priceVersion).agentRunId();
@@ -150,7 +140,7 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
         assertThat(resumed.id()).isEqualTo(runId);
         assertThat(resumed.status()).isEqualTo(AgentRunStatus.QUEUED);
         assertThat(resumed.runAttemptNo()).isEqualTo(1);
-        assertThat(resumed.reservedCostUsd()).isEqualByComparingTo("0.200000");
+        assertThat(resumed.reservedCostUsd()).isEqualByComparingTo("0.000000");
         assertThat(jdbcTemplate.queryForList("""
                 SELECT status FROM ai_budget_reservations
                 WHERE agent_run_id=? ORDER BY created_at,id
@@ -185,8 +175,8 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
                 "SELECT status FROM ai_budget_reservations WHERE agent_run_id=?",
                 String.class, paidRunId)).isEqualTo("SETTLED");
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT spent_usd FROM ai_budget_ledgers WHERE user_id=?",
-                BigDecimal.class, userId)).isEqualByComparingTo("0.050000");
+                "SELECT spent_usd FROM ai_budget_ledgers",
+                BigDecimal.class)).isEqualByComparingTo("0.050000");
 
         UUID zeroRunId = launch(userId).agentRunId();
         ClaimedAgentRun zeroClaim = statePort.claim(
@@ -240,12 +230,15 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
                 userId, runId, new BigDecimal("0.150000"), Instant.now()).status())
                 .isEqualTo("SETTLED");
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT spent_usd FROM ai_budget_ledgers WHERE user_id=?",
-                BigDecimal.class, userId)).isEqualByComparingTo("0.150000");
+                "SELECT spent_usd FROM ai_budget_ledgers",
+                BigDecimal.class)).isEqualByComparingTo("0.150000");
 
         UUID cappedRunId = launch(userId, new BigDecimal("0.290000"), priceVersion).agentRunId();
+        assertThat(budgetPort.topUp(
+                userId, cappedRunId, new BigDecimal("0.020000"), Instant.now()).reservedUsd())
+                .isEqualByComparingTo("0.310000");
         assertThatThrownBy(() -> budgetPort.topUp(
-                userId, cappedRunId, new BigDecimal("0.020000"), Instant.now()))
+                userId, cappedRunId, new BigDecimal("9.540001"), Instant.now()))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode())
                                 .isEqualTo(ErrorCode.RATE_OR_BUDGET_LIMIT_EXCEEDED));
@@ -261,8 +254,8 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
 
         assertThat(jdbcTemplate.queryForList("""
                 SELECT budget_date FROM ai_budget_ledgers
-                WHERE user_id=? ORDER BY budget_date
-                """, LocalDate.class, userId))
+                ORDER BY budget_date
+                """, LocalDate.class))
                 .containsExactly(LocalDate.of(2026, 7, 19), LocalDate.of(2026, 7, 20));
     }
 
@@ -274,7 +267,7 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
         ready.countDown();
         try {
             start.await();
-            return launch(userId, new BigDecimal("0.200000"), priceVersion);
+            return launch(userId, new BigDecimal("6.000000"), priceVersion);
         } catch (BusinessException exception) {
             return exception;
         } catch (InterruptedException exception) {
@@ -305,9 +298,9 @@ class AgentRunBudgetResumeIntegrationTest extends AgentRunIntegrationSupport {
         WorkflowLaunchCommand command = new WorkflowLaunchCommand(
                 userId, WorkflowType.JOB_ANALYSIS, "fixture-v1", INPUT_HASH,
                 objectMapper.createObjectNode().put("fixtureRef", runId.toString()),
-                AiQualityMode.ECONOMY, BigDecimal.ZERO, null, null);
-        BudgetPolicySnapshot policy = budgetPort.activePolicy(userId);
-        creationPort.createQueued(runId, command, policy.version(), requestedAt);
+                AiQualityMode.ECONOMY, null);
+        BudgetPolicySnapshot policy = budgetPort.activePolicy();
+        creationPort.createQueued(runId, command, policy.version(), 2026080601L, requestedAt);
         budgetPort.reserve(new BudgetReservationRequest(
                 userId, runId, WorkflowType.JOB_ANALYSIS.name(),
                 BigDecimal.ZERO, null, requestedAt));

@@ -11,8 +11,10 @@ import com.hiresemble.agentrun.application.port.AgentRunCreationPort;
 import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
 import com.hiresemble.agentrun.application.port.AgentRunEventPublisher;
 import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
+import com.hiresemble.agentrun.application.port.AiPriceVersionPort;
 import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.agentrun.application.port.WorkflowLauncher;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,6 +29,7 @@ public class WorkflowLauncherService implements WorkflowLauncher {
     private final AgentRunCreationPort creationPort;
     private final AgentRunQueryPort queryPort;
     private final BudgetReservationPort budgetPort;
+    private final AiPriceVersionPort priceVersionPort;
     private final AgentRunDispatchPort dispatchPort;
     private final AgentRunEventPublisher eventPublisher;
     private final Clock clock;
@@ -35,12 +38,14 @@ public class WorkflowLauncherService implements WorkflowLauncher {
             AgentRunCreationPort creationPort,
             AgentRunQueryPort queryPort,
             BudgetReservationPort budgetPort,
+            AiPriceVersionPort priceVersionPort,
             AgentRunDispatchPort dispatchPort,
             AgentRunEventPublisher eventPublisher,
             Clock clock) {
         this.creationPort = creationPort;
         this.queryPort = queryPort;
         this.budgetPort = budgetPort;
+        this.priceVersionPort = priceVersionPort;
         this.dispatchPort = dispatchPort;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -50,14 +55,15 @@ public class WorkflowLauncherService implements WorkflowLauncher {
     @Transactional
     public WorkflowLaunchResult launch(WorkflowLaunchCommand command) {
         Instant now = clock.instant();
-        BudgetPolicySnapshot policy = budgetPort.activePolicy(command.userId());
+        BudgetPolicySnapshot policy = budgetPort.activePolicy();
+        long priceVersion = priceVersionPort.currentPriceVersion(now);
         UUID runId = command.requestedAgentRunId() == null
                 ? UUID.randomUUID()
                 : command.requestedAgentRunId();
-        creationPort.createQueued(runId, command, policy.version(), now);
+        creationPort.createQueued(runId, command, policy.version(), priceVersion, now);
         budgetPort.reserve(new BudgetReservationRequest(
                 command.userId(), runId, command.workflowType().name(),
-                command.estimatedCostUsd(), command.priceVersion(), now));
+                BigDecimal.ZERO, priceVersion, now));
         AgentRunSnapshot run = queryPort.findByOwner(command.userId(), runId).orElseThrow();
         eventPublisher.publishAfterCommit(new AgentRunCommittedEvent(
                 AgentRunEventType.SNAPSHOT, run, null, now));

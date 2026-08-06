@@ -22,6 +22,7 @@ com.hiresemble.agentrun.infrastructure.persistence package는 JDBC/JPA 기반 �
 - JDBC/JPA 기반 저장·조회 구현과 mapping을 소유한다.
 - `JdbcAgentRunRepository`는 Document·Job·Cover Letter·Answer Version typed resource의 owner-scoped 목록·상세·SSE 조회와 retry seed를 해석하고, terminal history를 audit·lineage 보존 soft delete한다.
 - `JdbcUsageRecorder`는 provider call/price item identity별 usage를 저장하고 실제 비용을 Run에 정확히 한 번 누적한다.
+- `JdbcBudgetStore`는 모든 사용자와 AI 기능이 공유하는 일일 전역 ledger를 잠그고 호출별 reserve·settle·release를 원자 적용한다.
 
 ## 다른 디렉터리와의 의존 관계
 

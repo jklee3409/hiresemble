@@ -100,8 +100,6 @@ class P4BrowserE2eTest extends PostgresIntegrationTest {
         registry.add("hiresemble.ai.model-low-cost", () -> "fake-document-low-cost");
         registry.add("hiresemble.ai.model-balanced", () -> "fake-document-balanced");
         registry.add("hiresemble.ai.model-policy-version", () -> "1");
-        registry.add("hiresemble.document.ai-cost.estimated-cost-usd", () -> "0.100000");
-        registry.add("hiresemble.document.ai-cost.price-version", () -> FAKE_PRICE_VERSION);
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "100ms");
         registry.add("hiresemble.agent-runtime.reconciliation-interval", () -> "1s");
         registry.add("hiresemble.agent-runtime.heartbeat-interval", () -> "1s");

@@ -102,10 +102,10 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
                 .isEqualTo("USER:ACTIVE");
         assertThat(jdbcTemplate.queryForObject("""
                         SELECT default_quality_mode || ':' || high_quality_enabled || ':'
-                               || daily_budget_usd || ':' || active || ':' || version
+                               || active || ':' || version
                         FROM user_ai_preferences WHERE user_id = ?
                         """, String.class, userId))
-                .isEqualTo("ECONOMY:false:1.000000:true:0");
+                .isEqualTo("ECONOMY:false:true:0");
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT principal_name FROM spring_session", String.class))
                 .isEqualTo(userId.toString())

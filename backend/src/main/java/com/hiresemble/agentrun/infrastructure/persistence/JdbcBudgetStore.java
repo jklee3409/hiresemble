@@ -29,13 +29,11 @@ public class JdbcBudgetStore implements BudgetReservationPort {
 
     @Override
     @Transactional(readOnly = true)
-    public BudgetPolicySnapshot activePolicy(UUID userId) {
-        BudgetContext context = context(userId);
+    public BudgetPolicySnapshot activePolicy() {
+        BudgetContext context = context();
         return new BudgetPolicySnapshot(
                 context.policyVersion(),
-                context.userDefaultDailyBudget(),
-                context.systemMaxDailyBudget(),
-                context.asyncRunMaxCost(),
+                context.dailyBudget(),
                 ZoneId.of(context.resetZone()));
     }
 
@@ -54,16 +52,13 @@ public class JdbcBudgetStore implements BudgetReservationPort {
     private BudgetReservationSnapshot reserveInternal(
             BudgetReservationRequest request, boolean updateRunProjection) {
         validateRequest(request);
-        BudgetContext context = context(request.userId());
+        BudgetContext context = context();
         BigDecimal amount = money(request.worstCaseCostUsd());
-        if (amount.compareTo(context.asyncRunMaxCost()) > 0) {
-            throw budgetExceeded();
-        }
         requirePriceIfPaid(amount, request.priceVersion());
 
         LocalDate date = LocalDate.ofInstant(request.requestedAt(), ZoneId.of(context.resetZone()));
-        UUID ledgerId = ensureLedger(request.userId(), date, context, request.requestedAt());
-        Ledger ledger = lockLedger(request.userId(), ledgerId);
+        UUID ledgerId = ensureLedger(date, context, request.requestedAt());
+        Ledger ledger = lockLedger(ledgerId);
         assertAvailable(ledger, context, amount);
 
         jdbcClient.sql("""
@@ -71,11 +66,10 @@ public class JdbcBudgetStore implements BudgetReservationPort {
                         SET reserved_usd = reserved_usd + :amount,
                             version = version + 1,
                             updated_at = :now
-                        WHERE user_id = :userId AND id = :ledgerId
+                        WHERE id = :ledgerId
                         """)
                 .param("amount", amount)
                 .param("now", utc(request.requestedAt()))
-                .param("userId", request.userId())
                 .param("ledgerId", ledgerId)
                 .update();
 
@@ -134,20 +128,17 @@ public class JdbcBudgetStore implements BudgetReservationPort {
             throw new IllegalArgumentException("top-up amount must be positive");
         }
         Reservation reservation = lockActiveReservation(userId, agentRunId);
-        BudgetContext context = context(userId);
-        Ledger ledger = lockLedger(userId, reservation.ledgerId());
+        BudgetContext context = context();
+        Ledger ledger = lockLedger(reservation.ledgerId());
         BigDecimal newRunReserve = reservation.reservedUsd().add(amount);
-        if (newRunReserve.compareTo(context.asyncRunMaxCost()) > 0) {
-            throw budgetExceeded();
-        }
         assertAvailable(ledger, context, amount);
         jdbcClient.sql("""
                         UPDATE ai_budget_ledgers
                         SET reserved_usd = reserved_usd + :amount, version = version + 1, updated_at = :now
-                        WHERE user_id = :userId AND id = :ledgerId
+                        WHERE id = :ledgerId
                         """)
                 .param("amount", amount).param("now", utc(requestedAt))
-                .param("userId", userId).param("ledgerId", reservation.ledgerId()).update();
+                .param("ledgerId", reservation.ledgerId()).update();
         int reservationUpdated = jdbcClient.sql("""
                         UPDATE ai_budget_reservations
                         SET reserved_usd = reserved_usd + :amount, updated_at = :now
@@ -160,7 +151,10 @@ public class JdbcBudgetStore implements BudgetReservationPort {
         }
         int runUpdated = jdbcClient.sql("""
                         UPDATE agent_runs
-                        SET reserved_cost_usd = reserved_cost_usd + :amount, updated_at = :now
+                        SET estimated_cost_usd = GREATEST(
+                                estimated_cost_usd, reserved_cost_usd + :amount),
+                            reserved_cost_usd = reserved_cost_usd + :amount,
+                            updated_at = :now
                         WHERE user_id = :userId AND id = :agentRunId AND status IN ('QUEUED','RUNNING')
                         """)
                 .param("amount", amount).param("now", utc(requestedAt))
@@ -207,19 +201,18 @@ public class JdbcBudgetStore implements BudgetReservationPort {
         if (actual.compareTo(reservation.reservedUsd()) > 0) {
             throw budgetExceeded();
         }
-        Ledger ledger = lockLedger(userId, reservation.ledgerId());
+        Ledger ledger = lockLedger(reservation.ledgerId());
         jdbcClient.sql("""
                         UPDATE ai_budget_ledgers
                         SET reserved_usd = reserved_usd - :reserved,
                             spent_usd = spent_usd + :actual,
                             version = version + 1,
                             updated_at = :now
-                        WHERE user_id = :userId AND id = :ledgerId
+                        WHERE id = :ledgerId
                         """)
                 .param("reserved", reservation.reservedUsd())
                 .param("actual", actual)
                 .param("now", utc(occurredAt))
-                .param("userId", userId)
                 .param("ledgerId", reservation.ledgerId())
                 .update();
         String timeColumn = terminalStatus.equals("SETTLED") ? "settled_at" : "released_at";
@@ -247,58 +240,48 @@ public class JdbcBudgetStore implements BudgetReservationPort {
                 ledger.budgetDate(), reservation.reservedUsd(), actual, terminalStatus);
     }
 
-    private UUID ensureLedger(UUID userId, LocalDate date, BudgetContext context, Instant now) {
+    private UUID ensureLedger(LocalDate date, BudgetContext context, Instant now) {
         UUID id = UUID.randomUUID();
         jdbcClient.sql("""
                         INSERT INTO ai_budget_ledgers (
-                            id, user_id, budget_date, budget_zone, spent_usd, reserved_usd,
+                            id, budget_date, budget_zone, spent_usd, reserved_usd,
                             policy_version, version, created_at, updated_at
-                        ) VALUES (:id, :userId, :date, :zone, 0, 0, :policyVersion, 0, :now, :now)
-                        ON CONFLICT (user_id, budget_date, budget_zone) DO NOTHING
+                        ) VALUES (:id, :date, :zone, 0, 0, :policyVersion, 0, :now, :now)
+                        ON CONFLICT (budget_date, budget_zone) DO NOTHING
                         """)
-                .param("id", id).param("userId", userId).param("date", date)
+                .param("id", id).param("date", date)
                 .param("zone", context.resetZone()).param("policyVersion", context.policyVersion())
                 .param("now", utc(now)).update();
         return jdbcClient.sql("""
                         SELECT id FROM ai_budget_ledgers
-                        WHERE user_id = :userId AND budget_date = :date AND budget_zone = :zone
+                        WHERE budget_date = :date AND budget_zone = :zone
                         """)
-                .param("userId", userId).param("date", date).param("zone", context.resetZone())
+                .param("date", date).param("zone", context.resetZone())
                 .query(UUID.class).single();
     }
 
-    private BudgetContext context(UUID userId) {
+    private BudgetContext context() {
         return jdbcClient.sql("""
-                        SELECT p.version AS policy_version,
-                               p.user_default_daily_budget_usd,
-                               p.system_max_daily_budget_usd,
-                               p.async_run_max_cost_usd,
-                               p.reset_zone,
-                               pref.daily_budget_usd
-                        FROM user_ai_preferences pref
-                        JOIN ai_budget_policy_versions p ON p.version = pref.budget_policy_version
-                        WHERE pref.user_id = :userId AND pref.active
+                        SELECT version AS policy_version, daily_budget_usd, reset_zone
+                        FROM ai_budget_policy_versions
+                        WHERE active
                         """)
-                .param("userId", userId)
                 .query((rs, row) -> new BudgetContext(
                         rs.getLong("policy_version"),
-                        rs.getBigDecimal("user_default_daily_budget_usd"),
-                        rs.getBigDecimal("system_max_daily_budget_usd"),
-                        rs.getBigDecimal("async_run_max_cost_usd"),
-                        rs.getString("reset_zone"),
-                        rs.getBigDecimal("daily_budget_usd")))
+                        rs.getBigDecimal("daily_budget_usd"),
+                        rs.getString("reset_zone")))
                 .optional()
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new IllegalStateException("active AI budget policy is missing"));
     }
 
-    private Ledger lockLedger(UUID userId, UUID ledgerId) {
+    private Ledger lockLedger(UUID ledgerId) {
         return jdbcClient.sql("""
                         SELECT id, budget_date, spent_usd, reserved_usd
                         FROM ai_budget_ledgers
-                        WHERE user_id = :userId AND id = :ledgerId
+                        WHERE id = :ledgerId
                         FOR UPDATE
                         """)
-                .param("userId", userId).param("ledgerId", ledgerId)
+                .param("ledgerId", ledgerId)
                 .query((rs, row) -> new Ledger(
                         rs.getObject("id", UUID.class), rs.getObject("budget_date", LocalDate.class),
                         rs.getBigDecimal("spent_usd"), rs.getBigDecimal("reserved_usd")))
@@ -323,8 +306,8 @@ public class JdbcBudgetStore implements BudgetReservationPort {
     }
 
     private void assertAvailable(Ledger ledger, BudgetContext context, BigDecimal additional) {
-        BigDecimal effectiveLimit = context.dailyBudget().min(context.systemMaxDailyBudget());
-        if (ledger.spentUsd().add(ledger.reservedUsd()).add(additional).compareTo(effectiveLimit) > 0) {
+        if (ledger.spentUsd().add(ledger.reservedUsd()).add(additional)
+                .compareTo(context.dailyBudget()) > 0) {
             throw budgetExceeded();
         }
     }
@@ -365,11 +348,8 @@ public class JdbcBudgetStore implements BudgetReservationPort {
 
     private record BudgetContext(
             long policyVersion,
-            BigDecimal userDefaultDailyBudget,
-            BigDecimal systemMaxDailyBudget,
-            BigDecimal asyncRunMaxCost,
-            String resetZone,
-            BigDecimal dailyBudget) {}
+            BigDecimal dailyBudget,
+            String resetZone) {}
 
     private record Ledger(UUID id, LocalDate budgetDate, BigDecimal spentUsd, BigDecimal reservedUsd) {}
 

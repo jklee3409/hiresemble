@@ -4,6 +4,14 @@
 
 P5 Job 등록·추출·상태·Scheduler와 P6 immutable 분석·결정론적 점수·RAG·OUTDATED·typed Agent Run 연결, revision별 durable 자동 분석 orchestration이 구현됐다.
 
+## [2026-08-06] Session Summary (공고 AI 고정 비용 설정 제거)
+
+- What was done: 공고 추출·분석 launch와 retry에서 분야별 예상 비용·price version properties를 제거했다.
+- Key decisions: 자동 분석 접수는 0원 reservation으로 Run을 만들고 실제 Provider 호출 직전에 전역 budget을 확인한다.
+- Issues encountered: 기존 budget 실패 테스트의 접수 시점 가정이 달라져 deferred preflight 계약으로 갱신했다.
+- Validation: 메인·테스트 소스 컴파일 통과.
+- Next steps: UI는 Provider 호출 단계의 budget terminal failure를 공통 Run 오류로 안내한다.
+
 ## [2026-08-05] Session Summary (공고 등록 반기와 owner 기간 목록)
 
 - What was done:

@@ -82,18 +82,6 @@ class P8BrowserE2eTest extends PostgresIntegrationTest {
         registry.add("hiresemble.ai.model-high-quality", () -> "fake-p8-high-quality");
         registry.add("hiresemble.ai.model-policy-version", () -> "1");
         registry.add("hiresemble.search.provider", () -> "none");
-        registry.add(
-                "hiresemble.interview.ai-cost.preparation-estimated-cost-usd",
-                () -> "0.000000");
-        registry.add(
-                "hiresemble.interview.ai-cost.preparation-price-version",
-                () -> "0");
-        registry.add(
-                "hiresemble.interview.ai-cost.feedback-estimated-cost-usd",
-                () -> "0.000000");
-        registry.add(
-                "hiresemble.interview.ai-cost.feedback-price-version",
-                () -> "0");
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "100ms");
         registry.add("hiresemble.agent-runtime.reconciliation-interval", () -> "1s");
         registry.add("hiresemble.agent-runtime.heartbeat-interval", () -> "1s");
@@ -559,11 +547,11 @@ class P8BrowserE2eTest extends PostgresIntegrationTest {
         jdbcTemplate.update(
                 """
                 INSERT INTO user_ai_preferences (
-                    id,user_id,budget_policy_version,default_quality_mode,
-                    high_quality_enabled,daily_budget_usd,active,version,
+                    id,user_id,default_quality_mode,
+                    high_quality_enabled,active,version,
                     created_at,updated_at
                 ) VALUES (
-                    ?,?,1,'BALANCED',true,2.000000,true,0,now(),now()
+                    ?,?,'BALANCED',true,true,0,now(),now()
                 )
                 """,
                 UUID.randomUUID(),

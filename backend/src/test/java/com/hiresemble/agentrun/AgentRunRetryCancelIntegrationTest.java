@@ -239,8 +239,8 @@ class AgentRunRetryCancelIntegrationTest extends AgentRunIntegrationSupport {
                 "SELECT settled_usd FROM ai_budget_reservations WHERE agent_run_id=?",
                 BigDecimal.class, runId)).isEqualByComparingTo("0.050000");
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT spent_usd FROM ai_budget_ledgers WHERE user_id=?",
-                BigDecimal.class, userId)).isEqualByComparingTo("0.050000");
+                "SELECT spent_usd FROM ai_budget_ledgers",
+                BigDecimal.class)).isEqualByComparingTo("0.050000");
     }
 
     private UUID failRetryableRun(UUID userId) {
@@ -292,7 +292,7 @@ class AgentRunRetryCancelIntegrationTest extends AgentRunIntegrationSupport {
         return workflowLauncher.launch(new WorkflowLaunchCommand(
                 userId, WorkflowType.JOB_ANALYSIS, "fixture-v1", INPUT_HASH,
                 objectMapper.createObjectNode().put("fixtureRef", resourceId.toString()),
-                AiQualityMode.ECONOMY, BigDecimal.ZERO, null,
+                AiQualityMode.ECONOMY,
                 new ResourceReference("FIXTURE_RESOURCE", resourceId, "Test fixture")));
     }
 

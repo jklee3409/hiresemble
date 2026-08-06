@@ -81,30 +81,7 @@ class AiProviderActivationValidatorTest {
                 .withProperty("hiresemble.search.provider", "tavily")
                 .withProperty(
                         "hiresemble.search.tavily-endpoint",
-                        "https://api.tavily.com/search")
-                .withProperty("hiresemble.ai.run-max-cost-usd", "0.300000");
-        String[] estimates = {
-            "hiresemble.document.ai-cost.estimated-cost-usd",
-            "hiresemble.job.ai-cost.estimated-cost-usd",
-            "hiresemble.cover-letter.ai-cost.generation-estimated-cost-usd",
-            "hiresemble.cover-letter.ai-cost.verification-estimated-cost-usd",
-            "hiresemble.interview.ai-cost.preparation-estimated-cost-usd",
-            "hiresemble.interview.ai-cost.feedback-estimated-cost-usd"
-        };
-        String[] versions = {
-            "hiresemble.document.ai-cost.price-version",
-            "hiresemble.job.ai-cost.price-version",
-            "hiresemble.cover-letter.ai-cost.generation-price-version",
-            "hiresemble.cover-letter.ai-cost.verification-price-version",
-            "hiresemble.interview.ai-cost.preparation-price-version",
-            "hiresemble.interview.ai-cost.feedback-price-version"
-        };
-        for (String estimate : estimates) {
-            environment.withProperty(estimate, "0.300000");
-        }
-        for (String version : versions) {
-            environment.withProperty(version, "2026073101");
-        }
+                        "https://api.tavily.com/search");
         environment.setActiveProfiles("local");
         return environment;
     }

@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public interface BudgetReservationPort {
-    BudgetPolicySnapshot activePolicy(UUID userId);
+    BudgetPolicySnapshot activePolicy();
     BudgetReservationSnapshot reserve(BudgetReservationRequest request);
     BudgetReservationSnapshot reserveForResume(BudgetReservationRequest request);
     BudgetReservationSnapshot topUp(

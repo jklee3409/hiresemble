@@ -55,6 +55,7 @@ public class InterviewPreparationRetryContributor implements AgentRunRetryContri
             AgentRunSnapshot predecessor,
             WorkflowRetryOptions options,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt) {
         ResearchRunRow predecessorResearch = researchStore
                 .findByAgentRun(predecessor.userId(), predecessor.id())
@@ -99,7 +100,7 @@ public class InterviewPreparationRetryContributor implements AgentRunRetryContri
                 candidate.retryOfResearchRunId());
         WorkflowLaunchCommand command = service.preparationLaunchCommand(prepared);
         boolean inserted = store.insertPreparationRetryAgentRun(
-                proposedId, predecessor, command, budgetPolicyVersion, queuedAt);
+                proposedId, predecessor, command, budgetPolicyVersion, priceVersion, queuedAt);
         if (inserted) {
             researchStore.createQueued(
                     prepared.researchRunId(),

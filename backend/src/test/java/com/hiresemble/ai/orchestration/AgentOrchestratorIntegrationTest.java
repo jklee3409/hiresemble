@@ -211,8 +211,6 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                                 .createObjectNode()
                                 .put("fixtureRef", "p7-fan-out"),
                         AiQualityMode.BALANCED,
-                        BigDecimal.ZERO.setScale(6),
-                        null,
                         null));
 
         execute(
@@ -255,8 +253,6 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                         "8".repeat(64),
                         objectMapper.createObjectNode().put("fixtureRef", "partial-success"),
                         AiQualityMode.BALANCED,
-                        BigDecimal.ZERO.setScale(6),
-                        null,
                         null));
 
         execute(
@@ -915,8 +911,6 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 canonicalInputHash,
                 objectMapper.createObjectNode().put("fixtureRef", "safe-fixture-ref"),
                 quality,
-                BigDecimal.ZERO.setScale(6),
-                null,
                 null));
     }
 
@@ -965,9 +959,9 @@ class AgentOrchestratorIntegrationTest extends PostgresIntegrationTest {
                 """, UUID.randomUUID(), id);
         jdbcTemplate.update("""
                 INSERT INTO user_ai_preferences (
-                    id,user_id,budget_policy_version,default_quality_mode,high_quality_enabled,
-                    daily_budget_usd,active,version,created_at,updated_at
-                ) VALUES (?,?,1,'ECONOMY',false,1.000000,true,0,now(),now())
+                    id,user_id,default_quality_mode,high_quality_enabled,
+                    active,version,created_at,updated_at
+                ) VALUES (?,?,'ECONOMY',false,true,0,now(),now())
                 """, UUID.randomUUID(), id);
         return id;
     }

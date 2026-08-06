@@ -7,7 +7,6 @@ import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.job.domain.JobDescriptionSource;
 import com.hiresemble.job.domain.JobRecords.JobRecord;
-import com.hiresemble.job.infrastructure.JobAiCostProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -22,11 +21,9 @@ final class JobExtractionLaunchFactory {
     private static final String INPUT_POLICY_VERSION = "job-extraction-input-policy-v3";
 
     private final ObjectMapper objectMapper;
-    private final JobAiCostProperties aiCost;
 
-    JobExtractionLaunchFactory(ObjectMapper objectMapper, JobAiCostProperties aiCost) {
+    JobExtractionLaunchFactory(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.aiCost = aiCost;
     }
 
     WorkflowLaunchCommand command(
@@ -57,8 +54,6 @@ final class JobExtractionLaunchFactory {
                 canonicalInputHash,
                 input,
                 qualityMode,
-                aiCost.estimatedCostUsd(),
-                aiCost.priceVersion(),
                 new ResourceReference("JOB", job.id(), job.positionName()));
     }
 

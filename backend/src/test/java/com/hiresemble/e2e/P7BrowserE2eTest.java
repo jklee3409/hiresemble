@@ -144,22 +144,6 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
         registry.add("hiresemble.ai.model-balanced", () -> "fake-p7-balanced");
         registry.add("hiresemble.ai.model-high-quality", () -> "fake-p7-high-quality");
         registry.add("hiresemble.ai.model-policy-version", () -> "1");
-        registry.add("hiresemble.document.ai-cost.estimated-cost-usd", () -> "0.000000");
-        registry.add("hiresemble.document.ai-cost.price-version", () -> "0");
-        registry.add("hiresemble.job.analysis-ai-cost.estimated-cost-usd", () -> "0.000000");
-        registry.add("hiresemble.job.analysis-ai-cost.price-version", () -> "0");
-        registry.add(
-                "hiresemble.cover-letter.ai-cost.generation-estimated-cost-usd",
-                () -> "0.000000");
-        registry.add(
-                "hiresemble.cover-letter.ai-cost.generation-price-version",
-                () -> "0");
-        registry.add(
-                "hiresemble.cover-letter.ai-cost.verification-estimated-cost-usd",
-                () -> "0.000000");
-        registry.add(
-                "hiresemble.cover-letter.ai-cost.verification-price-version",
-                () -> "0");
         registry.add("hiresemble.agent-runtime.dispatch-interval", () -> "100ms");
         registry.add("hiresemble.agent-runtime.reconciliation-interval", () -> "1s");
         registry.add("hiresemble.agent-runtime.heartbeat-interval", () -> "1s");

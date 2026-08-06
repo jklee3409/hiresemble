@@ -50,10 +50,9 @@ public class AgentRunResumeService implements AgentRunResumePort {
         if (waiting.stateVersion() != expectedStateVersion) {
             throw new BusinessException(ErrorCode.RESOURCE_VERSION_CONFLICT);
         }
-        BigDecimal remaining = waiting.estimatedCostUsd().subtract(waiting.actualCostUsd()).max(BigDecimal.ZERO);
         BudgetReservationSnapshot reservation = budgetPort.reserveForResume(
                 new BudgetReservationRequest(
-                        userId, agentRunId, waiting.workflowType().name(), remaining,
+                        userId, agentRunId, waiting.workflowType().name(), BigDecimal.ZERO,
                         waiting.priceVersion(), requestedAt));
         AgentRunSnapshot resumed = statePort.resumeWaiting(
                 userId, agentRunId, expectedStateVersion, reservation.reservedUsd(), requestedAt);

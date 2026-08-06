@@ -15,5 +15,6 @@ public interface AgentRunRetryContributor {
             AgentRunSnapshot predecessor,
             WorkflowRetryOptions options,
             long budgetPolicyVersion,
+            long priceVersion,
             Instant queuedAt);
 }

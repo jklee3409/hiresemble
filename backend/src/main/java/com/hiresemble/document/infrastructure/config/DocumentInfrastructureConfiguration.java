@@ -16,8 +16,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
     ObjectStorageProperties.class,
     DocumentParserProperties.class,
     ObjectDeletionOutboxProperties.class,
-    DocumentEmbeddingProperties.class,
-    DocumentAiCostProperties.class
+    DocumentEmbeddingProperties.class
 })
 public class DocumentInfrastructureConfiguration {
 

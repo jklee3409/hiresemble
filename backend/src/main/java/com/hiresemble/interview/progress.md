@@ -4,6 +4,14 @@
 
 P8 면접 준비·예상 질문·답변 version·feedback 수직 기능이 구현되어 있다.
 
+## [2026-08-06] Session Summary (면접 AI 비용 전역 정책 통합)
+
+- What was done: 준비·feedback별 고정 예상 비용과 price version 설정을 제거하고 retry를 공통 활성 가격 version 계약에 맞췄다.
+- Key decisions: 면접 준비·feedback과 향후 mock turn/session은 별도 USD 상한 없이 같은 전역 일일 budget을 사용한다.
+- Issues encountered: None.
+- Validation: 메인·테스트 소스 컴파일 통과.
+- Next steps: mock interview 구현 시 turn/session 비용 상수를 다시 만들지 않는다.
+
 ## [2026-07-31] Session Summary (P8 면접 준비·답변 피드백 구현)
 
 - What was done:

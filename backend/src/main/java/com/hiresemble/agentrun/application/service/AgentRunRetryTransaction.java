@@ -11,15 +11,17 @@ import com.hiresemble.agentrun.application.port.AgentRunCreationPort;
 import com.hiresemble.agentrun.application.port.AgentRunDispatchPort;
 import com.hiresemble.agentrun.application.port.AgentRunEventPublisher;
 import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
-import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.agentrun.application.port.AgentRunRetryContributor;
+import com.hiresemble.agentrun.application.port.AiPriceVersionPort;
+import com.hiresemble.agentrun.application.port.BudgetReservationPort;
 import com.hiresemble.agentrun.domain.model.AgentRunStatus;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -31,6 +33,7 @@ public class AgentRunRetryTransaction {
     private final AgentRunQueryPort queryPort;
     private final AgentRunCreationPort creationPort;
     private final BudgetReservationPort budgetPort;
+    private final AiPriceVersionPort priceVersionPort;
     private final AgentRunEventPublisher eventPublisher;
     private final AgentRunDispatchPort dispatchPort;
     private final Clock clock;
@@ -40,6 +43,7 @@ public class AgentRunRetryTransaction {
             AgentRunQueryPort queryPort,
             AgentRunCreationPort creationPort,
             BudgetReservationPort budgetPort,
+            AiPriceVersionPort priceVersionPort,
             AgentRunEventPublisher eventPublisher,
             AgentRunDispatchPort dispatchPort,
             Clock clock,
@@ -47,6 +51,7 @@ public class AgentRunRetryTransaction {
         this.queryPort = queryPort;
         this.creationPort = creationPort;
         this.budgetPort = budgetPort;
+        this.priceVersionPort = priceVersionPort;
         this.eventPublisher = eventPublisher;
         this.dispatchPort = dispatchPort;
         this.clock = clock;
@@ -71,21 +76,23 @@ public class AgentRunRetryTransaction {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
         Instant now = clock.instant();
-        BudgetPolicySnapshot policy = budgetPort.activePolicy(userId);
+        BudgetPolicySnapshot policy = budgetPort.activePolicy();
+        long priceVersion = priceVersionPort.currentPriceVersion(now);
         UUID proposedId = UUID.randomUUID();
         AgentRunRetryContributor contributor = retryContributors.stream()
                 .filter(candidate -> candidate.supports(predecessor.workflowType()))
                 .findFirst()
                 .orElse(null);
         AgentRunSnapshot successor = contributor == null
-                ? creationPort.createRetry(proposedId, predecessor, policy.version(), now)
+                ? creationPort.createRetry(
+                        proposedId, predecessor, policy.version(), priceVersion, now)
                 : contributor.createRetry(
-                        proposedId, predecessor, options, policy.version(), now);
+                        proposedId, predecessor, options, policy.version(), priceVersion, now);
         boolean created = successor.id().equals(proposedId);
         if (created) {
             budgetPort.reserve(new BudgetReservationRequest(
                     userId, successor.id(), successor.workflowType().name(),
-                    successor.estimatedCostUsd(), successor.priceVersion(), now));
+                    BigDecimal.ZERO, successor.priceVersion(), now));
             successor = queryPort.findByOwner(userId, successor.id()).orElseThrow();
             eventPublisher.publishAfterCommit(new AgentRunCommittedEvent(
                     AgentRunEventType.SNAPSHOT, successor, null, now));

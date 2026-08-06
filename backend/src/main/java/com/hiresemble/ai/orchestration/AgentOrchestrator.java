@@ -23,6 +23,7 @@ import com.hiresemble.agentrun.domain.model.ModelTier;
 import com.hiresemble.agentrun.domain.model.PartialResult;
 import com.hiresemble.agentrun.domain.model.ResourceReference;
 import com.hiresemble.agentrun.domain.model.SafeError;
+import com.hiresemble.ai.budget.AiCallCostEstimator;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.context.ContextBuilder;
 import com.hiresemble.ai.context.ContextBuilder.ContextRequest;
@@ -92,6 +93,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
     private final AgentRunCancellationPort cancellationPort;
     private final AgentRunLeaseHeartbeatPort leaseHeartbeatPort;
     private final BudgetGuard budgetGuard;
+    private final AiCallCostEstimator callCostEstimator;
     private final StepCompletionTransaction stepCompletionTransaction;
     private final ObjectMapper objectMapper;
     private final Clock clock;
@@ -114,6 +116,7 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             AgentRunCancellationPort cancellationPort,
             AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
             BudgetGuard budgetGuard,
+            AiCallCostEstimator callCostEstimator,
             ObjectMapper objectMapper,
             Clock clock,
             List<WorkflowFailureHandler> failureHandlers,
@@ -134,11 +137,57 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
         this.cancellationPort = cancellationPort;
         this.leaseHeartbeatPort = leaseHeartbeatPort;
         this.budgetGuard = budgetGuard;
+        this.callCostEstimator = java.util.Objects.requireNonNull(callCostEstimator);
         this.stepCompletionTransaction = java.util.Objects.requireNonNull(
                 stepCompletionTransaction);
         this.objectMapper = objectMapper;
         this.clock = clock;
         this.failureHandlers = failureHandlers == null ? List.of() : List.copyOf(failureHandlers);
+    }
+
+    public AgentOrchestrator(
+            WorkflowRegistry workflowRegistry,
+            ContextBuilder contextBuilder,
+            ModelRouter modelRouter,
+            PromptRegistry promptRegistry,
+            StructuredOutputValidator outputValidator,
+            ChatGateway chatGateway,
+            EmbeddingGateway embeddingGateway,
+            WebSearchGateway webSearchGateway,
+            AgentRunQueryPort runQueryPort,
+            AgentRunStatePort runStatePort,
+            AgentStepCheckpointPort stepCheckpointPort,
+            UsageRecorderPort usageRecorderPort,
+            DomainResultApplyPort domainResultApplyPort,
+            AgentRunCancellationPort cancellationPort,
+            AgentRunLeaseHeartbeatPort leaseHeartbeatPort,
+            BudgetGuard budgetGuard,
+            ObjectMapper objectMapper,
+            Clock clock,
+            List<WorkflowFailureHandler> failureHandlers,
+            StepCompletionTransaction stepCompletionTransaction) {
+        this(
+                workflowRegistry,
+                contextBuilder,
+                modelRouter,
+                promptRegistry,
+                outputValidator,
+                chatGateway,
+                embeddingGateway,
+                webSearchGateway,
+                runQueryPort,
+                runStatePort,
+                stepCheckpointPort,
+                usageRecorderPort,
+                domainResultApplyPort,
+                cancellationPort,
+                leaseHeartbeatPort,
+                budgetGuard,
+                (run, route, prompt, input) -> BigDecimal.ZERO,
+                objectMapper,
+                clock,
+                failureHandlers,
+                stepCompletionTransaction);
     }
 
     @Override
@@ -535,11 +584,10 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             String currentCorrectionGuidance = correctionGuidance;
             try {
                 AgentRunSnapshot beforeCall = current(run.userId(), run.id());
-                BigDecimal remainingWorstCase = beforeCall.estimatedCostUsd()
-                        .subtract(beforeCall.actualCostUsd())
-                        .max(BigDecimal.ZERO);
                 budgetGuard.ensureNextCallCovered(
-                        beforeCall, remainingWorstCase, clock.instant());
+                        beforeCall,
+                        callCostEstimator.maximumCallCost(beforeCall, route, prompt, input),
+                        clock.instant());
                 AiGatewayResponse response = leaseHeartbeatPort.maintain(
                         run.userId(), run.id(), claimed.claimToken(),
                         () -> executor.invoke(new GatewayInvocation(

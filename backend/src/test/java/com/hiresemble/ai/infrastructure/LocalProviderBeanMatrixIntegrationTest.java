@@ -20,19 +20,7 @@ import org.springframework.test.context.TestPropertySource;
     "spring.ai.model.chat=openai",
     "spring.ai.model.embedding=openai",
     "spring.ai.openai.api-key=synthetic-local-wiring-key",
-    "hiresemble.search.tavily-api-key=synthetic-local-wiring-key",
-    "hiresemble.document.ai-cost.estimated-cost-usd=0.300000",
-    "hiresemble.document.ai-cost.price-version=2026073101",
-    "hiresemble.job.ai-cost.estimated-cost-usd=0.300000",
-    "hiresemble.job.ai-cost.price-version=2026073101",
-    "hiresemble.cover-letter.ai-cost.generation-estimated-cost-usd=0.300000",
-    "hiresemble.cover-letter.ai-cost.generation-price-version=2026073101",
-    "hiresemble.cover-letter.ai-cost.verification-estimated-cost-usd=0.300000",
-    "hiresemble.cover-letter.ai-cost.verification-price-version=2026073101",
-    "hiresemble.interview.ai-cost.preparation-estimated-cost-usd=0.300000",
-    "hiresemble.interview.ai-cost.preparation-price-version=2026073101",
-    "hiresemble.interview.ai-cost.feedback-estimated-cost-usd=0.300000",
-    "hiresemble.interview.ai-cost.feedback-price-version=2026073101"
+    "hiresemble.search.tavily-api-key=synthetic-local-wiring-key"
 })
 class LocalProviderBeanMatrixIntegrationTest extends PostgresIntegrationTest {
 

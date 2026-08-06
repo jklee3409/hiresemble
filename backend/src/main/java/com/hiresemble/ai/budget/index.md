@@ -7,11 +7,13 @@ AI 호출 전 reserve coverage와 terminal settle·release를 Backend budget por
 ## 주요 파일 및 하위 디렉터리
 
 - `BudgetGuard`: top-up, settle, release 해석
+- `AiCallCostEstimator`: 외부 호출 1회의 최악 비용 산정 계약
+- `PriceCatalogAiCallCostEstimator`: model·prompt token ceiling·tool request 수와 immutable 가격 catalog를 사용하는 구현
 - [`progress.md`](progress.md): 구현 상태
 
 ## 구성 요소 역할
 
-금액 원자성은 Agent Run persistence가 소유하고 이 package는 orchestration 순서만 표현한다.
+금액 원자성은 Agent Run persistence가 소유하고 이 package는 orchestration 순서만 표현한다. 분야별 고정 금액은 두지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
