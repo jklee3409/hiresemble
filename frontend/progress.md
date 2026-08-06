@@ -7,6 +7,21 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 69 files/308 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-06] Session Summary (완료 배너 숨김과 소재 고르기 분리)
+
+- What was done:
+  - 성공한 AI 작업의 완료 배너를 자기소개서 편집 화면에서 노출하지 않도록 하고 진행 중·실패만 남겼다.
+  - `답변에 사용할 소재`를 편집기 아래 펼침 영역으로 분리하고 작성 도움 tab에서 제거했다.
+  - 작성 도움 열 높이를 편집 영역과 동일하게 맞췄다.
+- Key decisions:
+  - 완료 배너만 숨기고 실패·부분 실패는 재시도 경로 때문에 계속 표시한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - eslint, prettier `--check`, `vue-tsc -b --force`, Vitest 69 files/310 tests, `vite build` 통과(node:24 컨테이너).
+- Next steps:
+  - 브라우저 시각 확인이 남아 있다.
+
 ## [2026-08-06] Session Summary (자기소개서 exact AI model 선택)
 
 - What was done: 서버 model catalog를 사용하는 dropdown과 exact model 기반 생성·검증 client·화면 흐름을 구현했다.

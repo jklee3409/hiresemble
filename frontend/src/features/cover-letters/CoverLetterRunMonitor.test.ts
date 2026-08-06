@@ -16,7 +16,7 @@ vi.mock('@tanstack/vue-query', () => ({
 }))
 
 vi.mock('@/features/agent-runs/presentation', () => ({
-  STATUS_LABELS: { SUCCEEDED: '완료' },
+  STATUS_LABELS: { RUNNING: '진행 중', SUCCEEDED: '완료' },
 }))
 
 vi.mock('@/features/agent-runs/queries', () => ({
@@ -37,9 +37,9 @@ describe('CoverLetterRunMonitor', () => {
       workflowType: 'COVER_LETTER_GENERATION',
       resourceType: 'COVER_LETTER',
       resourceId: 'cover-letter-id',
-      status: 'SUCCEEDED',
+      status: 'RUNNING',
       stateVersion: 2,
-      progressPercent: 100,
+      progressPercent: 60,
       partialResult: {
         succeededScopeKeys: ['question-id'],
         failedScopeKeys: [],
@@ -70,5 +70,30 @@ describe('CoverLetterRunMonitor', () => {
     expect(preview.text()).toMatch(/…$/)
     expect(preview.attributes('aria-label')).toBe(fullQuestion)
     expect(preview.attributes('title')).toBe(fullQuestion)
+  })
+
+  it('shows nothing once the run finished successfully', () => {
+    runMocks.detail.data.value = {
+      id: 'run-id',
+      workflowType: 'COVER_LETTER_GENERATION',
+      resourceType: 'COVER_LETTER',
+      resourceId: 'cover-letter-id',
+      status: 'SUCCEEDED',
+      stateVersion: 3,
+      progressPercent: 100,
+      partialResult: { succeededScopeKeys: ['question-id'], failedScopeKeys: [] },
+    }
+    const wrapper = mount(CoverLetterRunMonitor, {
+      props: {
+        userId: 'user-id',
+        coverLetterId: 'cover-letter-id',
+        agentRunId: 'run-id',
+      },
+      global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
+    })
+
+    expect(wrapper.find('.cover-run-monitor__box').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('초안을 다 썼어요')
+    expect(wrapper.emitted('terminal')).toHaveLength(1)
   })
 })

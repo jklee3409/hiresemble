@@ -13,13 +13,14 @@ P7 자기소개서 목록·편집 화면이 사용하는 URL filter, Vue Query, 
 - `editorFlow.ts`: 문항별 작성·검토 상태, 작성 완료까지 남은 조건, 단일 primary 행동 판정
 - `conflict.ts`, `CoverLetterConflictPanel.vue`: 409 server snapshot·draft 비교/재적용
 - `CoverLetterQuestionRail.vue`: 세로 tablist 문항 목록과 문항별 상태
-- `CoverLetterAssistPanel.vue`: 공고 요구사항·이 답변에 쓰인 경험·아직 쓰지 않은 경험·AI 검토 결과 tab
+- `CoverLetterAssistPanel.vue`: 공고 요구사항·AI 검토 결과 tab
+- `CoverLetterMaterialPicker.vue`: 답변에 쓸 소재 선택과 이미 쓴 소재 구분
 - `CoverLetterSheet.vue`: focus 가둠과 Escape 닫기를 가진 보조 sheet 껍데기
 - `CoverLetterGenerationPanel.vue`: 초안 대상 문항·서버 제공 OpenAI model dropdown·비파괴 안내를 담은 AI 설정
 - `CoverLetterVersionPanel.vue`: 버전 목록·비교·복원과 과거 저장본 검토 결과
 - `CoverLetterCompletionPanel.vue`: 작성 완료까지 남은 조건, 문항 이동과 확인 필요 동의
 - `CoverLetterTipTapEditor.vue`: 답변 작업대 전체 너비를 사용하고 wrapper focus ring 없이 본문 focus를 표시하는 접근 가능한 제한 node/mark editor
-- `CoverLetterRunMonitor.vue`: generation·verification Run 진행과 결과 link
+- `CoverLetterRunMonitor.vue`: 진행 중·실패한 generation·verification Run만 노출하는 한 줄 진행 표시와 결과 link
 - [`progress.md`](progress.md): P7 feature 상태
 
 ## 구성 요소 역할

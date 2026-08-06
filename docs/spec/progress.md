@@ -6,6 +6,21 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-06] Session Summary (자기소개서 소재 선택·AI 작업 표시 계약 보정)
+
+- What was done:
+  - `page.md` 8.1에서 답변 소재 선택을 편집기 아래 겹쳐 펼쳐지는 영역으로 분리하고, 우측 작성 도움은 공고 요구사항과 AI 검토 결과만 표시하도록 갱신했다.
+  - 성공한 AI 작업의 완료 배너는 남기지 않고 진행 중이거나 사용자의 조치가 필요한 작업만 표시하도록 명시했다.
+- Key decisions:
+  - API·DB·workflow 계약은 유지하고 자기소개서 편집 화면의 presentation 계약만 조정한다.
+- Issues encountered:
+  - `page.md` 단독 Prettier 검사는 기존 문서의 수기 줄바꿈 때문에 실패했다. 이번 UI 계약 변경과 무관한 문서 전체 재포맷은 수행하지 않았다.
+- Validation:
+  - Frontend `corepack pnpm check` 통과: lint·Prettier·typecheck·Vitest 69 files/310 tests·production build 성공.
+  - `docs/spec/progress.md` Prettier와 `git diff --check`, staged whitespace 검증 통과. `page.md` 단독 Prettier는 위 기존 포맷 문제로 미통과했다.
+- Next steps:
+  - 실제 브라우저에서 소재 펼침 영역의 겹침·스크롤을 확인한다.
+
 ## [2026-08-06] Session Summary (자기소개서 exact model v4 계약)
 
 - What was done: API·DB·페이지·기술 명세를 model catalog, 요청별 exact model, memo-aware v4 snapshot과 legacy replay에 맞췄다.

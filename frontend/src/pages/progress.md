@@ -4,6 +4,21 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (완료 배너 숨김·소재 펼침 영역·작성 도움 높이)
+
+- What was done:
+  - 성공으로 끝난 AI 작업의 완료 배너를 편집 화면에서 제거했다. 진행 중과 실패만 한 줄로 노출한다.
+  - 편집기 아래에 `답변에 사용할 소재` button과 겹쳐 펼쳐지는 선택 영역을 추가했다. 열려도 아래 내용이 밀리지 않고 바깥 클릭·Escape·문항 이동으로 닫힌다.
+  - 우측 작성 도움에서 소재 tab을 없애고 `공고 요구사항`·`AI 검토 결과`만 남겼으며, 열 높이를 편집 영역과 같게 맞춰 아래로 더 내려가지 않게 했다.
+- Key decisions:
+  - 작성 도움 열은 내용을 흐름에서 빼고 `align-self: stretch`로 채워 grid 행 높이를 늘리지 않는다.
+- Issues encountered:
+  - jsdom은 scoped style을 적용하지 않아 겹침 여부는 DOM 구조로 검증했다.
+- Validation:
+  - 컨테이너(node:24)에서 eslint, prettier, `vue-tsc -b --force`, Vitest 69 files/310 tests, `vite build` 통과.
+- Next steps:
+  - 브라우저에서 펼침 영역의 겹침·스크롤을 확인한다.
+
 ## [2026-08-06] Session Summary (편집 페이지 model 선택 연결)
 
 - What was done: 자기소개서 편집 페이지가 model catalog를 조회해 추천값을 초기화하고 선택 모델로 생성·검증을 접수하도록 연결했다.

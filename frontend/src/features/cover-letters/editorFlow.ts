@@ -57,7 +57,7 @@ export interface WarningAcknowledgement {
 }
 
 /** 작성 도움 패널이 한 번에 하나만 보여 주는 보조 정보 묶음. */
-export type AssistTab = 'JOB' | 'MATERIAL' | 'REVIEW'
+export type AssistTab = 'JOB' | 'REVIEW'
 
 export interface PrimaryAction {
   readonly kind: PrimaryActionKind

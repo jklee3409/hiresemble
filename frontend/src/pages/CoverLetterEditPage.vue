@@ -11,6 +11,7 @@ import type {
   CoverLetterConflictKind,
 } from '@/features/cover-letters/conflict'
 import CoverLetterGenerationPanel from '@/features/cover-letters/CoverLetterGenerationPanel.vue'
+import CoverLetterMaterialPicker from '@/features/cover-letters/CoverLetterMaterialPicker.vue'
 import CoverLetterQuestionRail from '@/features/cover-letters/CoverLetterQuestionRail.vue'
 import CoverLetterRunMonitor from '@/features/cover-letters/CoverLetterRunMonitor.vue'
 import CoverLetterSheet from '@/features/cover-letters/CoverLetterSheet.vue'
@@ -246,7 +247,9 @@ const conflict = ref<CoverLetterConflict | null>(null)
 const conflictRetry = ref<ConflictRetry | null>(null)
 const conflictCancel = ref<ConflictCancel | null>(null)
 const conflictReapplying = ref(false)
-const assistTab = ref<AssistTab>('MATERIAL')
+const assistTab = ref<AssistTab>('JOB')
+const materialOpen = ref(false)
+const materialAnchor = ref<HTMLElement | null>(null)
 const activeSheet = ref<SheetKind>('')
 const assistCollapsed = ref(false)
 
@@ -540,8 +543,16 @@ watch(selectedQuestionId, () => {
   if (activeSheet.value === 'QUESTIONS') activeSheet.value = ''
 })
 
-onMounted(() => window.addEventListener('beforeunload', onBeforeUnload))
-onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload))
+watch(selectedQuestionId, () => (materialOpen.value = false))
+
+onMounted(() => {
+  window.addEventListener('beforeunload', onBeforeUnload)
+  document.addEventListener('mousedown', onDocumentPointerDown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnload)
+  document.removeEventListener('mousedown', onDocumentPointerDown)
+})
 
 onBeforeRouteLeave(async () => {
   if (!editorDirty.value) return true
@@ -1191,6 +1202,23 @@ function toggleEvidence(id: string): void {
 function clearSelectedEvidence(): void {
   if (readOnly.value) return
   selectedEvidenceIds.value = new Set<string>()
+}
+
+/* 소재 고르기는 편집기 아래에서 펼쳐지며 다른 내용을 밀어내지 않는다. */
+function toggleMaterialPicker(): void {
+  materialOpen.value = !materialOpen.value
+}
+
+function closeMaterialPicker(): void {
+  materialOpen.value = false
+}
+
+function onDocumentPointerDown(event: MouseEvent): void {
+  if (!materialOpen.value) return
+  const anchor = materialAnchor.value
+  if (anchor && event.target instanceof Node && !anchor.contains(event.target)) {
+    materialOpen.value = false
+  }
 }
 
 function toggleGenerationQuestion(id: string): void {
@@ -1906,6 +1934,42 @@ function coverLetterActionMessage(error: ApiClientError): string {
                 </button>
               </div>
             </div>
+
+            <div v-if="!readOnly" ref="materialAnchor" class="material-anchor">
+              <button
+                type="button"
+                class="button button--ghost button--compact material-anchor__trigger"
+                :aria-expanded="materialOpen"
+                aria-controls="cover-letter-material-picker"
+                data-testid="open-material-picker"
+                @click="toggleMaterialPicker()"
+              >
+                <AppIcon name="evidence" />
+                답변에 사용할 소재
+                <span v-if="selectedEvidenceIds.size">{{ selectedEvidenceIds.size }}개 선택</span>
+                <AppIcon :name="materialOpen ? 'arrow-left' : 'arrow-right'" />
+              </button>
+              <div
+                v-if="materialOpen"
+                id="cover-letter-material-picker"
+                class="material-anchor__panel"
+                role="group"
+                aria-label="답변에 사용할 소재"
+                @keydown.esc.stop.prevent="closeMaterialPicker()"
+              >
+                <CoverLetterMaterialPicker
+                  :used-evidence="usedEvidence"
+                  :evidence-items="evidenceItems"
+                  :recommended-evidence-ids="recommendedEvidenceIds"
+                  :selected-evidence-ids="selectedEvidenceIds"
+                  :loading="evidence.isLoading.value"
+                  :error="evidence.isError.value"
+                  :read-only="readOnly"
+                  @toggle="toggleEvidence"
+                  @clear="clearSelectedEvidence()"
+                />
+              </div>
+            </div>
           </template>
 
           <StatePanel
@@ -1928,43 +1992,37 @@ function coverLetterActionMessage(error: ApiClientError): string {
         </main>
 
         <aside class="cover-workspace__assist" :data-collapsed="assistCollapsed">
-          <button
-            type="button"
-            class="cover-workspace__assist-toggle"
-            :aria-expanded="!assistCollapsed"
-            @click="assistCollapsed = !assistCollapsed"
-          >
-            {{ assistCollapsed ? '작성 도움 펴기' : '작성 도움 접기' }}
-          </button>
-          <CoverLetterAssistPanel
-            v-if="!assistCollapsed"
-            :tab="assistTab"
-            :requirements="requirementHighlights"
-            :gaps="analysisGaps"
-            :analysis-outdated="job.data.value?.analysisOutdated ?? false"
-            :job-id="jobId"
-            :used-evidence="usedEvidence"
-            :evidence-items="evidenceItems"
-            :recommended-evidence-ids="recommendedEvidenceIds"
-            :selected-evidence-ids="selectedEvidenceIds"
-            :evidence-loading="evidence.isLoading.value"
-            :evidence-error="evidence.isError.value"
-            :verifications="verifications.data.value?.items ?? []"
-            :verifications-loading="verifications.isLoading.value"
-            :has-answer="selectedQuestion?.currentAnswer !== null"
-            :reviewed-version-label="
-              selectedQuestion?.currentAnswer
-                ? `지금 답변(v${selectedQuestion.currentAnswer.versionNo}) 기준 결과예요.`
-                : ''
-            "
-            :read-only="readOnly"
-            :can-apply-suggestion="!answerLocked"
-            @update:tab="assistTab = $event"
-            @toggle-evidence="toggleEvidence"
-            @clear-evidence="clearSelectedEvidence()"
-            @apply-suggestion="applySuggestion"
-            @verify="verifyCurrentAnswer()"
-          />
+          <div class="cover-workspace__assist-inner">
+            <button
+              type="button"
+              class="cover-workspace__assist-toggle"
+              :aria-expanded="!assistCollapsed"
+              @click="assistCollapsed = !assistCollapsed"
+            >
+              {{ assistCollapsed ? '작성 도움 펴기' : '작성 도움 접기' }}
+            </button>
+            <CoverLetterAssistPanel
+              v-if="!assistCollapsed"
+              :tab="assistTab"
+              :requirements="requirementHighlights"
+              :gaps="analysisGaps"
+              :analysis-outdated="job.data.value?.analysisOutdated ?? false"
+              :job-id="jobId"
+              :verifications="verifications.data.value?.items ?? []"
+              :verifications-loading="verifications.isLoading.value"
+              :has-answer="selectedQuestion?.currentAnswer !== null"
+              :reviewed-version-label="
+                selectedQuestion?.currentAnswer
+                  ? `지금 답변(v${selectedQuestion.currentAnswer.versionNo}) 기준 결과예요.`
+                  : ''
+              "
+              :read-only="readOnly"
+              :can-apply-suggestion="!answerLocked"
+              @update:tab="assistTab = $event"
+              @apply-suggestion="applySuggestion"
+              @verify="verifyCurrentAnswer()"
+            />
+          </div>
         </aside>
       </div>
 
@@ -1998,20 +2056,12 @@ function coverLetterActionMessage(error: ApiClientError): string {
           :gaps="analysisGaps"
           :analysis-outdated="job.data.value?.analysisOutdated ?? false"
           :job-id="jobId"
-          :used-evidence="usedEvidence"
-          :evidence-items="evidenceItems"
-          :recommended-evidence-ids="recommendedEvidenceIds"
-          :selected-evidence-ids="selectedEvidenceIds"
-          :evidence-loading="evidence.isLoading.value"
-          :evidence-error="evidence.isError.value"
           :verifications="verifications.data.value?.items ?? []"
           :verifications-loading="verifications.isLoading.value"
           :has-answer="selectedQuestion?.currentAnswer !== null"
           :read-only="readOnly"
           :can-apply-suggestion="!answerLocked"
           @update:tab="assistTab = $event"
-          @toggle-evidence="toggleEvidence"
-          @clear-evidence="clearSelectedEvidence()"
           @apply-suggestion="applySuggestion"
           @verify="verifyCurrentAnswer()"
         />
@@ -2475,20 +2525,31 @@ function coverLetterActionMessage(error: ApiClientError): string {
   gap: var(--space-2);
 }
 
+/*
+ * 작성 도움은 편집 영역과 정확히 같은 높이를 쓴다.
+ * 안쪽 내용을 흐름에서 빼 두어 이 열이 grid 행 높이를 늘리지 않게 한다.
+ */
 .cover-workspace__assist {
-  position: sticky;
-  top: calc(var(--global-header-height) + var(--space-4));
-  display: grid;
-  gap: var(--space-2);
-  max-height: calc(100dvh - var(--global-header-height) - var(--space-8));
-  overflow: auto;
+  position: relative;
+  align-self: stretch;
   min-width: 0;
+  min-height: 0;
   border-left: 1px solid var(--color-border);
+}
+
+.cover-workspace__assist-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-2);
+  min-height: 0;
+  overflow: hidden;
   padding-left: var(--space-4);
 }
 
-.cover-workspace__assist[data-collapsed='true'] {
-  max-height: none;
+.cover-workspace__assist[data-collapsed='true'] .cover-workspace__assist-inner {
+  grid-template-rows: auto;
 }
 
 .cover-workspace__assist-toggle {
@@ -2631,6 +2692,67 @@ function coverLetterActionMessage(error: ApiClientError): string {
 .answer-actions__buttons :deep(.icon) {
   width: 1rem;
   height: 1rem;
+}
+
+/* ---------------------------------------------------- 답변에 사용할 소재 */
+
+.material-anchor {
+  position: relative;
+  justify-self: start;
+}
+
+.material-anchor__trigger {
+  gap: var(--space-2);
+}
+
+.material-anchor__trigger :deep(.icon) {
+  width: 1rem;
+  height: 1rem;
+}
+
+.material-anchor__trigger span {
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  padding: 0.1rem 0.45rem;
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+}
+
+/*
+ * 다른 영역 위로 펼쳐진다. 열려도 아래 내용이 밀려나지 않도록 흐름에서 뺀다.
+ */
+.material-anchor__panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-md);
+  animation: material-panel-enter var(--motion-fast) both;
+}
+
+@keyframes material-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .material-anchor__panel {
+    animation: none;
+  }
 }
 
 /* ---------------------------------------------------------- 미저장 내용 복구 */

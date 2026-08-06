@@ -385,6 +385,15 @@ describe('CoverLetterEditPage', () => {
   it('confirms AI settings and the non-destructive rewrite before generating', async () => {
     const wrapper = await mountPage()
 
+    // 소재는 편집기 아래에서 펼쳐 고른다.
+    await wrapper.get('[data-testid="open-material-picker"]').trigger('click')
+    await flushPromises()
+    const availableEvidence = wrapper.findAll('.material-picker__list label')
+    expect(availableEvidence).toHaveLength(1)
+    expect(availableEvidence[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
+    await availableEvidence[0]?.get('input[type="checkbox"]').setValue(true)
+    await flushPromises()
+
     expect(wrapper.get('[data-testid="open-generation"]').text()).toBe('AI로 다시 쓰기')
     await wrapper.get('[data-testid="open-generation"]').trigger('click')
     await flushPromises()
@@ -398,11 +407,6 @@ describe('CoverLetterEditPage', () => {
     const modelSelect = () =>
       wrapper.get<HTMLSelectElement>('[data-testid="cover-letter-model-select"]')
     expect(modelSelect().element.value).toBe(RECOMMENDED_MODEL)
-
-    const availableEvidence = wrapper.findAll('.assist__evidence label')
-    expect(availableEvidence).toHaveLength(1)
-    expect(availableEvidence[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
-    await availableEvidence[0]?.get('input[type="checkbox"]').setValue(true)
     await modelSelect().setValue(HIGH_CAPABILITY_MODEL)
     await flushPromises()
     expect(modelSelect().element.value).toBe(HIGH_CAPABILITY_MODEL)
@@ -529,24 +533,15 @@ describe('CoverLetterEditPage', () => {
     })
   })
 
-  it('separates the material picker, the job requirements and the review result', async () => {
+  it('keeps the job requirements and the review result in the side panel', async () => {
     const wrapper = await mountPage()
     const assist = wrapper.get('.assist')
 
-    // 기본 tab은 소재 고르기다. 공고 요구사항과 섞이지 않는다.
-    expect(assist.text()).toContain('AI 초안')
-    expect(assist.text()).toContain('이 답변에 이미 쓴 소재')
-    expect(assist.text()).toContain('프로젝트 성과')
-    expect(assist.text()).not.toContain('Vue 경험')
-    const available = wrapper.findAll('.assist__evidence label')
-    expect(available).toHaveLength(1)
-    expect(available[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
-
-    await wrapper.get('[data-testid="assist-tab-job"]').trigger('click')
-    await flushPromises()
+    // 소재 선택은 작성 도움에 없다.
     expect(assist.text()).toContain('Vue 경험')
     expect(assist.text()).toContain('대규모 트래픽 경험을 보강하면 좋아요.')
-    expect(wrapper.findAll('.assist__evidence label')).toHaveLength(0)
+    expect(wrapper.find('.material-picker').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="assist-tab-material"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="assist-tab-review"]').trigger('click')
     await flushPromises()
@@ -554,6 +549,37 @@ describe('CoverLetterEditPage', () => {
     expect(assist.text()).toContain('새 초안·검토에서는 쓰지 않아요')
     expect(assist.text()).toContain('지금은 사용 안 함')
     expect(assist.text()).toContain('확인 필요')
+  })
+
+  it('opens the material picker over the editor without pushing content down', async () => {
+    const wrapper = await mountPage()
+
+    const trigger = wrapper.get('[data-testid="open-material-picker"]')
+    expect(trigger.text()).toContain('답변에 사용할 소재')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('.material-picker').exists()).toBe(false)
+
+    await trigger.trigger('click')
+    await flushPromises()
+    const picker = wrapper.get('.material-picker')
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    // 이미 근거로 쓰인 소재와 아직 쓰지 않은 소재를 구분한다.
+    expect(picker.text()).toContain('이 답변에 이미 쓴 소재')
+    expect(picker.text()).toContain('프로젝트 성과')
+    const available = picker.findAll('.material-picker__list label')
+    expect(available).toHaveLength(1)
+    expect(available[0]?.text()).toContain('아직 쓰지 않은 협업 경험')
+
+    // 겹쳐 띄우기 위해 anchor 안에 두고 다른 영역과 형제로 만들지 않는다.
+    const anchor = wrapper.get('.material-anchor')
+    expect(anchor.element.contains(wrapper.get('.material-anchor__panel').element)).toBe(true)
+    expect(
+      anchor.element.contains(wrapper.get('[data-testid="save-answer-version"]').element),
+    ).toBe(false)
+
+    await available[0]?.get('input[type="checkbox"]').setValue(true)
+    await flushPromises()
+    expect(trigger.text()).toContain('1개 선택')
   })
 
   it('updates, reorders and soft-deletes questions through aggregate versions', async () => {

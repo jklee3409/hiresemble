@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { AssistTab } from '@/features/cover-letters/editorFlow'
 import {
   ISSUE_CODE_LABELS,
@@ -8,31 +6,22 @@ import {
   VERIFICATION_STATUS_LABELS,
   evidenceCurrentState,
 } from '@/features/cover-letters/presentation'
-import type { EvidenceDto } from '@/shared/api/contracts'
 import type { VerificationDto } from '@/shared/api/coverLetterContracts'
-import type { EvidenceRefDto } from '@/shared/api/jobContracts'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 /*
- * 작성 도움. 공고 요구사항, 이 답변에 실제로 쓰인 경험, 아직 쓰지 않은 경험,
- * 보완할 내용과 AI 검토 결과를 한 영역에서 tab으로 번갈아 본다.
- * 세 종류를 동시에 펼치지 않아 편집기 옆 공간을 과하게 쓰지 않는다.
+ * 작성 도움. 공고가 요구하는 역량·보완점과 AI 검토 결과를 tab으로 번갈아 본다.
+ * 답변에 쓸 소재 고르기는 편집기 아래 별도 영역에서 처리한다.
  */
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     tab: AssistTab
     requirements: readonly { category: string; text: string }[]
     gaps: readonly string[]
     analysisOutdated?: boolean
     jobId?: string
-    usedEvidence: readonly EvidenceRefDto[]
-    evidenceItems: readonly EvidenceDto[]
-    recommendedEvidenceIds: ReadonlySet<string>
-    selectedEvidenceIds: ReadonlySet<string>
-    evidenceLoading?: boolean
-    evidenceError?: boolean
     verifications: readonly VerificationDto[]
     verificationsLoading?: boolean
     hasAnswer?: boolean
@@ -43,8 +32,6 @@ const props = withDefaults(
   {
     analysisOutdated: false,
     jobId: '',
-    evidenceLoading: false,
-    evidenceError: false,
     verificationsLoading: false,
     hasAnswer: false,
     reviewedVersionLabel: '',
@@ -54,23 +41,9 @@ const props = withDefaults(
 )
 const emit = defineEmits<{
   'update:tab': [value: AssistTab]
-  'toggle-evidence': [evidenceId: string]
-  'clear-evidence': []
   'apply-suggestion': [suggestion: string]
   verify: []
 }>()
-
-const usedEvidenceIds = computed(() => new Set(props.usedEvidence.map((item) => item.id)))
-const unusedEvidence = computed(() =>
-  props.evidenceItems.filter((item) => !usedEvidenceIds.value.has(item.id)),
-)
-const selectedCount = computed(
-  () => unusedEvidence.value.filter((item) => props.selectedEvidenceIds.has(item.id)).length,
-)
-function snippet(item: EvidenceDto): string {
-  const content = (item.content ?? '').replace(/\s+/g, ' ').trim()
-  return content.length > 80 ? `${content.slice(0, 80)}…` : content
-}
 
 function tone(status: VerificationDto['status']) {
   return ({ PENDING: 'neutral', PASSED: 'success', WARNING: 'warning', FAILED: 'danger' } as const)[
@@ -82,17 +55,6 @@ function tone(status: VerificationDto['status']) {
 <template>
   <section class="assist" aria-label="작성 도움">
     <div class="assist__tabs" role="tablist" aria-label="작성 도움 보기">
-      <button
-        type="button"
-        role="tab"
-        class="assist__tab"
-        :class="{ 'assist__tab--active': tab === 'MATERIAL' }"
-        :aria-selected="tab === 'MATERIAL'"
-        data-testid="assist-tab-material"
-        @click="emit('update:tab', 'MATERIAL')"
-      >
-        쓸 소재
-      </button>
       <button
         type="button"
         role="tab"
@@ -117,83 +79,7 @@ function tone(status: VerificationDto['status']) {
       </button>
     </div>
 
-    <div v-if="tab === 'MATERIAL'" class="assist__body">
-      <section class="assist__block">
-        <div class="assist__lead">
-          <p>
-            여기서 고른 소재를 다음 <strong>AI 초안</strong>에 먼저 써요. 고르지 않으면 확인해 둔
-            경험 전체에서 알맞은 것을 골라 써요.
-          </p>
-          <p v-if="selectedCount > 0" class="assist__lead-state">
-            <strong>{{ selectedCount }}개 선택함</strong>
-            <button
-              v-if="!readOnly"
-              type="button"
-              class="button button--ghost button--compact"
-              @click="emit('clear-evidence')"
-            >
-              모두 해제
-            </button>
-          </p>
-        </div>
-
-        <p v-if="evidenceLoading" class="assist__note">확인해 둔 경험을 불러오는 중이에요…</p>
-        <p v-else-if="evidenceError" class="assist__note assist__note--warn">
-          경험 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
-        </p>
-        <template v-else-if="unusedEvidence.length">
-          <ul class="assist__evidence">
-            <li v-for="item in unusedEvidence" :key="item.id">
-              <label :class="{ 'assist__evidence--on': selectedEvidenceIds.has(item.id) }">
-                <input
-                  type="checkbox"
-                  class="checkbox-control"
-                  :checked="selectedEvidenceIds.has(item.id)"
-                  :disabled="readOnly"
-                  @change="emit('toggle-evidence', item.id)"
-                />
-                <span>
-                  <strong>{{ item.title }}</strong>
-                  <em v-if="recommendedEvidenceIds.has(item.id)">이 공고와 잘 맞아요</em>
-                  <small v-if="snippet(item)">{{ snippet(item) }}</small>
-                </span>
-              </label>
-            </li>
-          </ul>
-        </template>
-        <p v-else-if="evidenceItems.length" class="assist__note">
-          확인해 둔 경험을 이 답변에 모두 썼어요.
-        </p>
-        <p v-else class="assist__note">
-          아직 확인해 둔 경험이 없어요. 이력서·자료를 올리고 경험을 확인하면 소재로 쓸 수 있어요.
-        </p>
-        <RouterLink v-if="evidenceItems.length === 0" :to="{ name: 'documents' }" class="text-link">
-          이력서·자료 올리러 가기
-        </RouterLink>
-      </section>
-
-      <section class="assist__block">
-        <h3>이 답변에 이미 쓴 소재</h3>
-        <ul v-if="usedEvidence.length" class="assist__list assist__list--used">
-          <li v-for="reference in usedEvidence" :key="reference.id">
-            <AppIcon name="evidence" />
-            <span>
-              {{ reference.title }}
-              <small>{{ evidenceCurrentState(reference).label }}</small>
-              <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
-                새 초안·검토에서는 쓰지 않아요
-              </small>
-            </span>
-          </li>
-        </ul>
-        <p v-else class="assist__note">
-          아직 이 답변에 연결된 소재가 없어요. AI 검토를 받으면 어떤 경험이 근거가 됐는지 알려
-          드려요.
-        </p>
-      </section>
-    </div>
-
-    <div v-else-if="tab === 'JOB'" class="assist__body">
+    <div v-if="tab === 'JOB'" class="assist__body">
       <section class="assist__block">
         <h3>공고가 원하는 것</h3>
         <p v-if="analysisOutdated" class="assist__note assist__note--warn">
@@ -325,6 +211,8 @@ function tone(status: VerificationDto['status']) {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .assist__tabs {
@@ -348,10 +236,13 @@ function tone(status: VerificationDto['status']) {
   color: var(--color-ink-title);
 }
 
+/* 편집 영역과 같은 높이 안에서만 스크롤한다. */
 .assist__body {
   display: grid;
   align-content: start;
   gap: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
   padding-top: var(--space-4);
 }
 

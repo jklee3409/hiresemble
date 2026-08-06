@@ -99,6 +99,18 @@ const runHeadline = computed(() => {
 
 const failedScopes = computed(() => detail.data.value?.partialResult?.failedScopeKeys ?? [])
 const succeededScopes = computed(() => detail.data.value?.partialResult?.succeededScopeKeys ?? [])
+/*
+ * 진행 중이거나 사용자가 손봐야 하는 실패만 보여 준다.
+ * 성공으로 끝난 작업의 완료 배너는 화면에 남기지 않고 결과는 답변·검토 상태로 전달한다.
+ * 표시하지 않는 동안에도 terminal 통지는 그대로 emit한다.
+ */
+const running = computed(() =>
+  ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(detail.data.value?.status ?? ''),
+)
+const needsAttention = computed(() =>
+  ['FAILED', 'CANCELLED', 'INTERRUPTED'].includes(detail.data.value?.status ?? ''),
+)
+const visible = computed(() => running.value || needsAttention.value)
 
 const connectionLabel = computed(
   () =>
@@ -132,16 +144,17 @@ function completedScopePreview(scopeKey: string): string {
     aria-label="자기소개서 AI 작업 진행"
     data-testid="cover-letter-run-monitor"
   >
-    <p v-if="detail.isLoading.value" class="cover-run-monitor__line">
-      AI 작업 진행 상황을 확인하는 중…
-    </p>
-    <p v-else-if="detail.isError.value" class="cover-run-monitor__line cover-run-monitor__warning">
+    <p
+      v-if="detail.isError.value"
+      class="cover-run-monitor__line cover-run-monitor__warning"
+      data-testid="cover-letter-run-error"
+    >
       진행 연결이 잠시 끊겼어요. 저장된 답변은 그대로 남아 있어요.
     </p>
     <details
-      v-else-if="detail.data.value"
+      v-else-if="visible && detail.data.value"
       class="cover-run-monitor__box"
-      :open="failedScopes.length > 0"
+      :open="failedScopes.length > 0 || needsAttention"
     >
       <summary>
         <span class="cover-run-monitor__avatar" aria-hidden="true"><AppIcon name="sparkle" /></span>
