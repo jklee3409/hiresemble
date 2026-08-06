@@ -177,12 +177,6 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
-  transition: border-color var(--motion-fast);
-}
-
-.cover-tiptap:focus-within {
-  border-color: var(--color-brand);
-  box-shadow: var(--focus-ring);
 }
 
 .cover-tiptap--readonly {
@@ -222,13 +216,18 @@ function toEditorContent(value: TipTapDocumentDto): EditorJsonContent {
 }
 
 :deep(.cover-tiptap__content) {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 22rem;
-  max-width: 46rem;
   padding: var(--space-6);
   outline: none;
   font-size: var(--font-size-md);
   line-height: 1.85;
   overflow-wrap: anywhere;
+}
+
+:deep(.cover-tiptap__content:focus-visible) {
+  background: var(--color-surface-subtle);
 }
 
 :deep(.cover-tiptap__content p + p),

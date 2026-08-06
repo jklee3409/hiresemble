@@ -596,15 +596,18 @@ API:
 ```text
 [1] 작업 Header(공고 · 제목 · 상태 · 답변/검토 진행)
 [2] AI 코치 Panel(현재 상태 문장 · 단일 primary 다음 행동 · 5단계 진행)
-[3] 문항 Tab Bar(가로 문항 tab · 문항 추가 · AI 초안 받기 · 이 답변 검토받기 · 접힌 AI 설정)
-[4] 참고 자료 3열 Dropdown(1 공고가 원하는 것 · 2 내 강점과 보완할 점 · 3 쓸 경험 고르기)
-[5] 답변 작업대(문항 등록 Form / 선택 문항 Brief / TipTap Editor / 저장 / 검토 결과)
-[6] 저장 기록과 제출 전 마지막 점검
+[3] 참고 자료 3열 Panel(1 공고가 원하는 것 · 2 내 강점과 보완할 점 · 3 쓸 경험 고르기)
+[4] 문항 Tab Bar(번호 전용 가로 문항 tab · 문항 추가 · AI 초안 받기 · 이 답변 검토받기)
+[5] AI 설정(초안을 받을 문항 · 작성 방식 · 문항마다 다른 경험 쓰기)
+[6] 답변 작업대(문항 등록 Form / 선택 문항 Brief / TipTap Editor / 저장 / 검토 결과)
+[7] 저장 기록과 제출 전 마지막 점검
 ```
 
-문항은 좌측 rail 목록이 아니라 상단 가로 tab(`role="tablist"`)으로 두어 문항 원문을 한 눈에 보여 준다. tab은 `ArrowLeft`·`ArrowRight`·`Home`·`End` 이동과 roving `tabindex`를 지원하고, 선택한 문항의 작업대가 `role="tabpanel"`이 된다. AI 초안·검토 실행 button은 tab bar 우측에 함께 두고 대상 문항·작성 방식·중복 최소화는 같은 줄의 접힌 disclosure에서 조정한다.
+문항은 좌측 rail 목록이 아니라 상단 가로 tab(`role="tablist"`)으로 두되 tab 본문에는 `1번`, `2번`처럼 번호만 표시한다. 전체 질문은 선택 문항 Brief와 tab의 접근성 이름으로 제공한다. tab은 `ArrowLeft`·`ArrowRight`·`Home`·`End` 이동과 roving `tabindex`를 지원하고, 선택한 문항의 작업대가 `role="tabpanel"`이 된다. AI 초안·검토 실행 button은 tab bar 우측에 함께 둔다.
 
-참고 자료 세 종류는 세로로 길게 나열하지 않고 요약 preview와 개수를 가진 3열 dropdown으로 제공한다. AI 코치 Panel은 새 API를 만들지 않고 자기소개서 상세, 최신 공고 분석, 확인한 경험, Agent Run 상태에서 유도한 문장과 단계만 보여 준다. 오른쪽 dropdown의 1~3 번호는 코치 Panel 단계 번호와 같은 순서를 가리킨다.
+참고 자료 세 종류는 문항과 AI 초안 실행 영역보다 먼저 배치한다. 요약 preview와 개수를 가진 3열 panel의 내용을 처음부터 펼쳐 두되 각 panel의 높이를 제한하고 내부 scroll을 허용해 화면을 과도하게 차지하지 않는다. AI 설정은 disclosure나 select로 감추지 않고 초안을 받을 문항 checkbox, 작성 방식 radio, 문항마다 다른 경험 checkbox를 compact 영역에 바로 보여 준다. AI 코치 Panel은 새 API를 만들지 않고 자기소개서 상세, 최신 공고 분석, 확인한 경험, Agent Run 상태에서 유도한 문장과 단계만 보여 준다. 참고 자료의 1~3 번호는 코치 Panel 단계 번호와 같은 순서를 가리킨다.
+
+TipTap 편집 본문은 답변 작업대의 사용 가능한 너비를 모두 사용한다. 편집기 focus는 바깥 wrapper를 파란 선으로 둘러싸지 않고 본문 배경의 미세한 변화로만 표시하며, 키보드 사용자가 focus 위치를 잃지 않게 한다.
 
 `COVER_LETTER_GENERATION` run이 진행 중이면 답변 편집기를 읽기 전용으로 두고 저장과 제안 적용을 막는다. 사용자가 편집한 내용과 도착한 초안이 같은 문항에서 서로를 덮어쓰지 않게 하기 위해서이며, 진행 중 안내 문구를 편집기 위에 함께 표시한다.
 

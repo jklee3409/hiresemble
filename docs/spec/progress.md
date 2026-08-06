@@ -6,6 +6,20 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-06] Session Summary (자기소개서 소재 우선 편집 계약)
+
+- What was done:
+  - `page.md` 8.1의 편집 흐름을 참고 자료→문항→AI 설정→답변 작업대로 바꾸고 참고 자료와 AI 설정을 접힘 없이 직접 표시하도록 명시했다.
+  - 문항 tab의 시각 label은 번호만 사용하고 전체 질문은 접근 가능한 이름으로 보존하며, 편집기는 panel 전체 폭을 쓰고 focus 시 외곽 파란 ring을 추가하지 않는 계약을 반영했다.
+- Key decisions:
+  - API·상태 enum·생성 동작 계약은 변경하지 않고 화면 순서와 presentation 계약만 갱신했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 구현·component test·전체 `check`와 Chromium desktop/mobile 확인 결과를 대조했다.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (자기소개서 편집 tab 구조와 사용자 문구 계약)
 
 - What was done:

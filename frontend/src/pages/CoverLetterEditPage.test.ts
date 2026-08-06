@@ -253,6 +253,29 @@ describe('CoverLetterEditPage', () => {
     window.sessionStorage.clear()
   })
 
+  it('shows source selection before compact question and visible AI settings', async () => {
+    const wrapper = await mountPage()
+    const referenceStrip = wrapper.get('.reference-strip')
+    const questionBar = wrapper.get('.question-bar')
+    const question = questionFixture()
+
+    expect(
+      referenceStrip.element.compareDocumentPosition(questionBar.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(wrapper.findAll('details.reference-card')).toHaveLength(0)
+    expect(wrapper.findAll('.reference-card__body')).toHaveLength(3)
+    expect(wrapper.get('#ai-settings-title').text()).toBe('AI 설정')
+    expect(wrapper.find('details.ai-settings').exists()).toBe(false)
+    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.findAll('.quality-options input[type="radio"]')).toHaveLength(3)
+
+    const tab = wrapper.get('.question-tab')
+    expect(tab.text()).toBe('1번')
+    expect(tab.attributes('aria-label')).toContain(question.questionText)
+    expect(tab.text()).not.toContain(question.questionText)
+  })
+
   it('keeps browser drafts separate, explicitly saves versions, and sends bounded AI commands', async () => {
     const wrapper = await mountPage()
 
@@ -283,7 +306,10 @@ describe('CoverLetterEditPage', () => {
     expect(window.sessionStorage.length).toBe(0)
 
     await wrapper.get('.evidence-options input').setValue(true)
-    await wrapper.get('select').setValue('HIGH_QUALITY')
+    await wrapper
+      .findAll('.quality-options input[type="radio"]')
+      .find((input) => input.attributes('value') === 'HIGH_QUALITY')
+      ?.setValue(true)
     await wrapper.get('[data-testid="generate-cover-letter"]').trigger('click')
     await flushPromises()
     expect(mocks.generate.mutateAsync).toHaveBeenCalledWith({
@@ -416,7 +442,7 @@ describe('CoverLetterEditPage', () => {
 
     const secondSelect = wrapper
       .findAll('.question-tab')
-      .find((button) => button.text().includes('두 번째 문항'))
+      .find((button) => button.attributes('aria-label')?.includes('두 번째 문항'))
     await secondSelect?.trigger('click')
     await flushPromises()
     const questionForm = wrapper.get('.question-meta__form')
@@ -686,7 +712,9 @@ describe('CoverLetterEditPage', () => {
 
     expect(mocks.reorder.mutateAsync).toHaveBeenCalledTimes(1)
     expect(wrapper.find('.cover-conflict').exists()).toBe(false)
-    expect(wrapper.findAll('.question-tab')[0]!.text()).toContain('서버 첫 순서 문항')
+    expect(wrapper.findAll('.question-tab')[0]!.attributes('aria-label')).toContain(
+      '서버 첫 순서 문항',
+    )
   })
 
   it('compares the current answer ID, version and content then reapplies the saved editor document', async () => {
@@ -888,7 +916,9 @@ function versionConflict(): ApiClientError {
 }
 
 async function selectQuestionTab(wrapper: VueWrapper, text: string): Promise<void> {
-  const tab = wrapper.findAll('.question-tab').find((button) => button.text().includes(text))
+  const tab = wrapper
+    .findAll('.question-tab')
+    .find((button) => button.attributes('aria-label')?.includes(text))
   if (!tab) throw new Error(`Question tab not found: ${text}`)
   await tab.trigger('click')
   await flushPromises()

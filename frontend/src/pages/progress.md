@@ -4,6 +4,20 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-06] Session Summary (자기소개서 소재 우선 작성 흐름)
+
+- What was done:
+  - 참고 자료 세 영역을 문항 bar와 작성 workspace 위로 옮기고 접힘 없이 직접 보이되 내부 scroll로 높이를 제한했다.
+  - `AI에게 맡길 문항과 방식`을 `AI 설정`으로 바꾸고 대상 문항·작성 방식·문항별 별도 경험 선택을 compact checkbox/radio로 항상 표시했다. 문항 tab의 화면 text는 `N번`만 남겼다.
+- Key decisions:
+  - 전체 질문은 `aria-label`에 유지하고 질문 선택·초안 생성·저장 동작은 변경하지 않는다.
+- Issues encountered:
+  - 모바일에서 tab이 세로로 과도하게 늘어나 flex container 폭 규칙을 추가했다.
+- Validation:
+  - component test와 Frontend 전체 `check` 통과. Chromium에서 참고 자료가 문항보다 먼저 나오고 375px에서 horizontal overflow 없이 약 56×40px tab으로 표시됨을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (자기소개서 편집 page test 정합성 보정)
 
 - What was done:

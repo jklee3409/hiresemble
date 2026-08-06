@@ -667,11 +667,6 @@ function questionStatus(question: CoverLetterQuestionDto): { label: string; tone
   }
 }
 
-function questionLengthLabel(question: CoverLetterQuestionDto): string {
-  const count = question.currentAnswer?.characterCount ?? 0
-  return question.maxLength === null ? `${count}자` : `${count} / ${question.maxLength}자`
-}
-
 function evidenceSnippet(item: EvidenceDto): string {
   const content = (item.content ?? '').replace(/\s+/g, ' ').trim()
   return content.length > 90 ? `${content.slice(0, 90)}…` : content
@@ -1911,134 +1906,18 @@ function verificationTone(
         @terminal="handleRunTerminal"
       />
 
-      <section class="question-bar" data-testid="cover-letter-editor">
-        <div class="question-bar__row">
-          <div
-            v-if="questionCount > 0"
-            class="question-bar__tabs"
-            role="tablist"
-            aria-label="자기소개서 문항"
-          >
-            <button
-              v-for="(question, index) in activeQuestions"
-              :id="`question-tab-${question.id}`"
-              :key="question.id"
-              type="button"
-              role="tab"
-              class="question-tab"
-              :class="{ 'question-tab--active': selectedQuestionId === question.id }"
-              :aria-selected="selectedQuestionId === question.id"
-              :aria-controls="`question-panel-${question.id}`"
-              :tabindex="selectedQuestionId === question.id ? 0 : -1"
-              :data-question-tab="question.id"
-              @click="selectedQuestionId = question.id"
-              @keydown="onQuestionTabKeydown($event, index)"
-            >
-              <span class="question-tab__order">{{ question.questionOrder }}</span>
-              <span class="question-tab__body">
-                <strong>{{ question.questionText }}</strong>
-                <span class="question-tab__meta">
-                  <StatusBadge
-                    :label="questionStatus(question).label"
-                    :tone="questionStatus(question).tone"
-                  />
-                  <small>{{ questionLengthLabel(question) }}</small>
-                </span>
-              </span>
-            </button>
-          </div>
-          <p v-else class="question-bar__empty">
-            아직 등록한 문항이 없어요. 공고에 적힌 문항을 추가하면 작성을 시작할 수 있어요.
-          </p>
-
-          <div class="question-bar__actions">
-            <button
-              v-if="!readOnly && questionCount < 20"
-              type="button"
-              class="button button--secondary button--compact"
-              :aria-expanded="addingQuestion"
-              @click="toggleAddQuestion()"
-            >
-              <AppIcon name="plus" />문항 추가
-            </button>
-            <template v-if="!readOnly">
-              <button
-                type="button"
-                class="button button--primary button--compact"
-                :disabled="generationQuestionIds.size === 0 || aiActionUnavailable"
-                data-testid="generate-cover-letter"
-                @click="generateAnswers()"
-              >
-                <AppIcon name="sparkle" />
-                {{ aiActionUnavailable ? 'AI 작업 중…' : 'AI 초안 받기' }}
-              </button>
-              <button
-                type="button"
-                class="button button--secondary button--compact"
-                :disabled="!selectedQuestion?.currentAnswer || aiActionUnavailable"
-                data-testid="verify-answer-version"
-                @click="verifyCurrentAnswer"
-              >
-                {{ aiActionUnavailable ? 'AI 작업 중…' : '이 답변 검토받기' }}
-              </button>
-            </template>
-          </div>
-        </div>
-
-        <details v-if="!readOnly" class="ai-settings">
-          <summary>
-            <span>AI에게 맡길 문항과 방식</span>
-            <small>
-              {{ generationQuestionIds.size }}개 문항 · {{ QUALITY_MODE_LABELS[qualityMode] }}
-            </small>
-          </summary>
-          <div class="ai-settings__body">
-            <fieldset v-if="questionCount > 0" class="generation-questions">
-              <legend>초안을 받을 문항</legend>
-              <label v-for="question in activeQuestions" :key="`generate-${question.id}`">
-                <input
-                  type="checkbox"
-                  class="checkbox-control"
-                  :checked="generationQuestionIds.has(question.id)"
-                  @change="toggleGenerationQuestion(question.id)"
-                />
-                {{ question.questionOrder }}번
-              </label>
-            </fieldset>
-            <label class="field">
-              <span class="field__label">작성 방식</span>
-              <select v-model="qualityMode" class="control control--compact">
-                <option value="ECONOMY">빠르게 초안만</option>
-                <option value="BALANCED">적당한 속도와 완성도</option>
-                <option value="HIGH_QUALITY">천천히, 더 꼼꼼하게</option>
-              </select>
-            </label>
-            <label class="check-field">
-              <input
-                v-model="avoidExperienceDuplication"
-                type="checkbox"
-                class="checkbox-control"
-              />
-              문항마다 다른 경험을 쓰도록 하기
-            </label>
-            <p class="ai-settings__hint">
-              초안은 지금 쓰던 글을 덮어쓰지 않고 새 답변으로 도착해요. 검토는 저장된 답변을
-              기준으로 해요.
-            </p>
-          </div>
-        </details>
-      </section>
-
-      <div class="reference-strip">
-        <details class="reference-card">
-          <summary>
+      <div class="reference-strip" aria-label="초안에 참고할 내용">
+        <section class="reference-card" aria-labelledby="requirements-reference-title">
+          <header class="reference-card__header">
             <span class="reference-card__step" aria-hidden="true">1</span>
             <span class="reference-card__title">
-              <strong><AppIcon name="target" />공고가 원하는 것</strong>
+              <strong id="requirements-reference-title"
+                ><AppIcon name="target" />공고가 원하는 것</strong
+              >
               <small>{{ requirementSummary }}</small>
             </span>
             <span class="reference-card__count">{{ requirementHighlights.length }}개</span>
-          </summary>
+          </header>
           <div class="reference-card__body">
             <p v-if="job.data.value?.analysisOutdated" class="reference-card__warning">
               공고 분석 이후에 공고나 내 정보가 바뀌었어요. 지금 내용도 참고할 수 있지만 다시
@@ -2065,19 +1944,21 @@ function verificationTone(
               공고 분석 전체 보기
             </RouterLink>
           </div>
-        </details>
+        </section>
 
-        <details class="reference-card">
-          <summary>
+        <section class="reference-card" aria-labelledby="strengths-reference-title">
+          <header class="reference-card__header">
             <span class="reference-card__step" aria-hidden="true">2</span>
             <span class="reference-card__title">
-              <strong><AppIcon name="spark" />내 강점과 보완할 점</strong>
+              <strong id="strengths-reference-title"
+                ><AppIcon name="spark" />내 강점과 보완할 점</strong
+              >
               <small>{{ strengthSummary }}</small>
             </span>
             <span class="reference-card__count">
               {{ analysisStrengths.length + analysisGaps.length }}개
             </span>
-          </summary>
+          </header>
           <div class="reference-card__body">
             <ul v-if="analysisStrengths.length" class="insight-list">
               <li v-for="strength in analysisStrengths" :key="strength">
@@ -2095,17 +1976,19 @@ function verificationTone(
               </li>
             </ul>
           </div>
-        </details>
+        </section>
 
-        <details class="reference-card">
-          <summary>
+        <section class="reference-card" aria-labelledby="evidence-reference-title">
+          <header class="reference-card__header">
             <span class="reference-card__step" aria-hidden="true">3</span>
             <span class="reference-card__title">
-              <strong><AppIcon name="evidence" />쓸 경험 고르기</strong>
+              <strong id="evidence-reference-title"
+                ><AppIcon name="evidence" />쓸 경험 고르기</strong
+              >
               <small>{{ evidenceSummary }}</small>
             </span>
             <span class="reference-card__count">{{ selectedEvidenceIds.size }}개 선택</span>
-          </summary>
+          </header>
           <div class="reference-card__body">
             <p class="reference-card__hint">
               내가 확인해 둔 경험만 근거로 써요. 고르지 않으면 확인한 경험 전체를 참고해요.
@@ -2147,8 +2030,124 @@ function verificationTone(
               수 있어요.
             </p>
           </div>
-        </details>
+        </section>
       </div>
+
+      <section class="question-bar" data-testid="cover-letter-editor">
+        <div class="question-bar__row">
+          <div
+            v-if="questionCount > 0"
+            class="question-bar__tabs"
+            role="tablist"
+            aria-label="자기소개서 문항"
+          >
+            <button
+              v-for="(question, index) in activeQuestions"
+              :id="`question-tab-${question.id}`"
+              :key="question.id"
+              type="button"
+              role="tab"
+              class="question-tab"
+              :class="{ 'question-tab--active': selectedQuestionId === question.id }"
+              :aria-label="`${question.questionOrder}번 문항: ${question.questionText}`"
+              :aria-selected="selectedQuestionId === question.id"
+              :aria-controls="`question-panel-${question.id}`"
+              :tabindex="selectedQuestionId === question.id ? 0 : -1"
+              :data-question-tab="question.id"
+              @click="selectedQuestionId = question.id"
+              @keydown="onQuestionTabKeydown($event, index)"
+            >
+              {{ question.questionOrder }}번
+            </button>
+          </div>
+          <p v-else class="question-bar__empty">
+            아직 등록한 문항이 없어요. 공고에 적힌 문항을 추가하면 작성을 시작할 수 있어요.
+          </p>
+
+          <div class="question-bar__actions">
+            <button
+              v-if="!readOnly && questionCount < 20"
+              type="button"
+              class="button button--secondary button--compact"
+              :aria-expanded="addingQuestion"
+              @click="toggleAddQuestion()"
+            >
+              <AppIcon name="plus" />문항 추가
+            </button>
+            <template v-if="!readOnly">
+              <button
+                type="button"
+                class="button button--primary button--compact"
+                :disabled="generationQuestionIds.size === 0 || aiActionUnavailable"
+                data-testid="generate-cover-letter"
+                @click="generateAnswers()"
+              >
+                <AppIcon name="sparkle" />
+                {{ aiActionUnavailable ? 'AI 작업 중…' : 'AI 초안 받기' }}
+              </button>
+              <button
+                type="button"
+                class="button button--secondary button--compact"
+                :disabled="!selectedQuestion?.currentAnswer || aiActionUnavailable"
+                data-testid="verify-answer-version"
+                @click="verifyCurrentAnswer"
+              >
+                {{ aiActionUnavailable ? 'AI 작업 중…' : '이 답변 검토받기' }}
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <section v-if="!readOnly" class="ai-settings" aria-labelledby="ai-settings-title">
+          <header class="ai-settings__header">
+            <strong id="ai-settings-title">AI 설정</strong>
+            <small>
+              {{ generationQuestionIds.size }}개 문항 · {{ QUALITY_MODE_LABELS[qualityMode] }}
+            </small>
+          </header>
+          <div class="ai-settings__body">
+            <fieldset v-if="questionCount > 0" class="generation-questions">
+              <legend>초안을 받을 문항</legend>
+              <label v-for="question in activeQuestions" :key="`generate-${question.id}`">
+                <input
+                  type="checkbox"
+                  class="checkbox-control"
+                  :checked="generationQuestionIds.has(question.id)"
+                  @change="toggleGenerationQuestion(question.id)"
+                />
+                {{ question.questionOrder }}번
+              </label>
+            </fieldset>
+            <fieldset class="quality-options">
+              <legend>작성 방식</legend>
+              <label>
+                <input v-model="qualityMode" type="radio" value="ECONOMY" />
+                빠르게 초안만
+              </label>
+              <label>
+                <input v-model="qualityMode" type="radio" value="BALANCED" />
+                속도와 완성도 균형
+              </label>
+              <label>
+                <input v-model="qualityMode" type="radio" value="HIGH_QUALITY" />
+                더 꼼꼼하게
+              </label>
+            </fieldset>
+            <label class="check-field ai-settings__experience-option">
+              <input
+                v-model="avoidExperienceDuplication"
+                type="checkbox"
+                class="checkbox-control"
+              />
+              문항마다 다른 경험 쓰기
+            </label>
+            <p class="ai-settings__hint">
+              초안은 지금 쓰던 글을 덮어쓰지 않고 새 답변으로 도착해요. 검토는 저장된 답변을
+              기준으로 해요.
+            </p>
+          </div>
+        </section>
+      </section>
 
       <main class="cover-editor__workspace">
         <section v-if="addingQuestion && !readOnly" class="question-add-panel">
@@ -2669,7 +2668,7 @@ function verificationTone(
  *   - 정보는 카드를 중첩하지 않고 하나의 면 안에서 구분선과 여백으로 나눈다.
  *   - 상태 색은 항상 한글 라벨과 함께 쓰고 색만으로 의미를 전달하지 않는다.
  * 배치는 위에서 아래로 한 줄기로 읽힌다.
- *   header → 코치 → 문항 tab과 AI 실행 → 참고 자료 dropdown → 답변 작업대 → 저장 기록 → 마지막 점검
+ *   header → 코치 → 참고 자료 → 문항 tab과 AI 설정·실행 → 답변 작업대 → 저장 기록 → 마지막 점검
  * 참고 자료 3장의 1~3 번호는 코치 패널 단계와 같은 순서를 가리킨다.
  */
 
@@ -3014,7 +3013,7 @@ function verificationTone(
 .question-bar {
   display: grid;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-4) clamp(var(--space-4), 2.5vw, var(--space-5));
@@ -3038,7 +3037,7 @@ function verificationTone(
 .question-bar__tabs {
   display: flex;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 12rem;
   gap: var(--space-2);
   overflow-x: auto;
   scroll-snap-type: x proximity;
@@ -3053,17 +3052,20 @@ function verificationTone(
 }
 
 .question-tab {
-  display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr);
-  gap: var(--space-2);
-  min-width: 15.5rem;
-  flex: 1 1 15.5rem;
+  display: inline-grid;
+  min-width: 3.5rem;
+  min-height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
   scroll-snap-align: start;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  padding: var(--space-3);
-  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  white-space: nowrap;
   transition:
     border-color var(--motion-fast),
     background var(--motion-fast);
@@ -3074,56 +3076,11 @@ function verificationTone(
   background: var(--color-brand-soft);
 }
 
-.question-tab__order {
-  display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-fill);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 800;
-}
-
-.question-tab__body {
-  display: grid;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.question-tab__body strong {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.question-tab__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.question-tab__meta small {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
 .question-tab--active {
   border-color: var(--color-brand);
   background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
   box-shadow: inset 0 -3px 0 var(--color-brand);
-}
-
-.question-tab--active .question-tab__order {
-  background: var(--color-brand);
-  color: white;
 }
 
 .question-bar__actions {
@@ -3145,39 +3102,29 @@ function verificationTone(
   padding-top: var(--space-3);
 }
 
-.ai-settings > summary {
+.ai-settings__header {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2) var(--space-3);
-  cursor: pointer;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  list-style: none;
 }
 
-.ai-settings > summary::-webkit-details-marker {
-  display: none;
+.ai-settings__header strong {
+  font-weight: 800;
+  color: var(--color-ink-title);
 }
 
-.ai-settings > summary::before {
-  content: '▸';
-  color: var(--color-text-muted);
-  transition: transform var(--motion-fast);
-}
-
-.ai-settings[open] > summary::before {
-  content: '▾';
-}
-
-.ai-settings > summary small {
+.ai-settings__header small {
   color: var(--color-text-muted);
   font-weight: 500;
 }
 
 .ai-settings__body {
   display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(20rem, 1.45fr) minmax(13rem, 0.8fr);
+  align-items: start;
   gap: var(--space-3);
   margin-top: var(--space-3);
   border-radius: var(--radius-md);
@@ -3186,19 +3133,20 @@ function verificationTone(
 }
 
 .ai-settings__hint {
+  grid-column: 1 / -1;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   line-height: 1.6;
 }
 
-/* -------------------------------------------------- 참고 자료 dropdown */
+/* -------------------------------------------------------- 참고 자료 */
 
 .reference-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: var(--space-3);
-  margin-top: var(--space-4);
+  margin-top: var(--space-6);
 }
 
 .reference-card {
@@ -3208,28 +3156,13 @@ function verificationTone(
   box-shadow: var(--shadow-panel);
 }
 
-.reference-card > summary {
+.reference-card__header {
   display: grid;
-  grid-template-columns: 1.375rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 1.375rem minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-4);
-  list-style: none;
-}
-
-.reference-card > summary::-webkit-details-marker {
-  display: none;
-}
-
-.reference-card > summary::after {
-  content: '▸';
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.reference-card[open] > summary::after {
-  content: '▾';
 }
 
 .reference-card__step {
@@ -3284,17 +3217,12 @@ function verificationTone(
   white-space: nowrap;
 }
 
-.reference-card[open] > summary {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.reference-card[open] .reference-card__title small {
-  white-space: normal;
-}
-
 .reference-card__body {
   display: grid;
+  align-content: start;
   gap: var(--space-3);
+  max-height: 22rem;
+  overflow-y: auto;
   padding: var(--space-4);
 }
 
@@ -3377,6 +3305,49 @@ function verificationTone(
   gap: var(--space-2);
   max-height: 22rem;
   overflow-y: auto;
+}
+
+.quality-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border: 0;
+  padding: 0;
+}
+
+.quality-options legend {
+  width: 100%;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.quality-options label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  padding: 0.4rem 0.7rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quality-options label:has(input:checked) {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+}
+
+.ai-settings__experience-option {
+  align-self: center;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-3);
 }
 
 .evidence-options label {
@@ -4034,6 +4005,14 @@ function verificationTone(
     grid-template-columns: 1fr;
   }
 
+  .ai-settings__body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-settings__experience-option {
+    grid-column: 1 / -1;
+  }
+
   .coach__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4059,6 +4038,11 @@ function verificationTone(
     flex-wrap: nowrap;
   }
 
+  .question-bar__tabs {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
   .question-bar__actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -4069,9 +4053,13 @@ function verificationTone(
     width: 100%;
   }
 
-  .question-tab {
-    min-width: 13.5rem;
-    flex-basis: 13.5rem;
+  .ai-settings__body {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-settings__experience-option,
+  .ai-settings__hint {
+    grid-column: auto;
   }
 
   .coach__body {

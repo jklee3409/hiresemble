@@ -40,18 +40,12 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     await exerciseQuestionConflict(page, coverLetterId, firstQuestion)
     await exerciseTitleConflict(page, coverLetterId)
 
-    await openDisclosure(
-      page,
-      '.reference-card:has(.evidence-options) > summary',
-      '.evidence-options',
-    )
     const preferredEvidence = page
       .locator('.evidence-options li')
       .filter({ hasText: evidence.title })
       .getByRole('checkbox')
     await expect(preferredEvidence).toBeVisible()
     await preferredEvidence.check()
-    await openDisclosure(page, '.ai-settings > summary', '.generation-questions')
     const generationTargets = page.locator('.generation-questions input[type="checkbox"]')
     await expect(generationTargets).toHaveCount(2)
     for (let index = 0; index < (await generationTargets.count()); index += 1) {
@@ -652,17 +646,6 @@ async function moveQuestionUp(page: Page, question: Question): Promise<void> {
   ).toBeVisible()
 }
 
-async function openDisclosure(
-  page: Page,
-  summarySelector: string,
-  bodySelector: string,
-): Promise<void> {
-  const body = page.locator(bodySelector).first()
-  if (await body.isVisible()) return
-  await page.locator(summarySelector).first().click()
-  await expect(body).toBeVisible()
-}
-
 async function openQuestionSettings(page: Page): Promise<void> {
   const settings = page.locator('.question-meta')
   if (await settings.evaluate((element) => (element as HTMLDetailsElement).open)) return
@@ -827,7 +810,7 @@ async function ensureQuestionHasFreshVerification(
 }
 
 async function selectQuestion(page: Page, questionText: string): Promise<void> {
-  await page.locator('.question-tab').filter({ hasText: questionText }).click()
+  await page.getByRole('tab', { name: questionText }).click()
 }
 
 async function getCoverLetter(page: Page, coverLetterId: string): Promise<CoverLetter> {

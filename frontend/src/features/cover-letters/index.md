@@ -11,7 +11,7 @@ P7 자기소개서 목록·편집 화면이 사용하는 URL filter, Vue Query, 
 - `drafts.ts`: user/resource/question/base version별 24시간 sessionStorage draft
 - `editorContent.ts`: 제한된 TipTap JSON과 글자 수 preview
 - `conflict.ts`, `CoverLetterConflictPanel.vue`: 409 server snapshot·draft 비교/재적용
-- `CoverLetterTipTapEditor.vue`: 접근 가능한 제한 node/mark editor
+- `CoverLetterTipTapEditor.vue`: 답변 작업대 전체 너비를 사용하고 wrapper focus ring 없이 본문 focus를 표시하는 접근 가능한 제한 node/mark editor
 - `CoverLetterRunMonitor.vue`: generation·verification Run 진행과 결과 link
 - [`progress.md`](progress.md): P7 feature 상태
 

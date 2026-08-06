@@ -4,6 +4,20 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-06] Session Summary (자기소개서 편집기 전체 폭과 초점 표현)
+
+- What was done:
+  - 편집 wrapper의 `focus-within` 파란 border·ring을 제거하고 실제 TipTap 입력 영역의 46rem 최대 폭을 없애 wrapper 전체 폭을 사용하도록 했다.
+  - 입력 면은 focus 시 미세한 배경 변화만 사용하고 `box-sizing`과 `width: 100%`를 명시했다.
+- Key decisions:
+  - keyboard focus 자체는 편집 caret과 내용 면 변화로 유지하면서 중첩 panel 전체를 파란 선으로 둘러싸지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - component test와 Frontend 전체 `check` 통과. Chromium 측정에서 wrapper와 content 폭이 모두 991px이고 focus border가 gray로 유지됨을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (충돌 안내 component test 정합성 보정)
 
 - What was done:
