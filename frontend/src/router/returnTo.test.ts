@@ -8,6 +8,7 @@ describe('safeReturnTo', () => {
     ['/onboarding?step=welcome#intro', '/onboarding?step=welcome#intro'],
     ['/profile/basic', '/profile/basic'],
     ['/profile/education?page=1', '/profile/education?page=1'],
+    ['/profile/experiences?selected=experience-id', '/profile/experiences?selected=experience-id'],
     ['/documents?parseStatus=PARSED', '/documents?parseStatus=PARSED'],
     ['/jobs?status=CLOSED', '/jobs?status=CLOSED'],
     ['/jobs/new', '/jobs/new'],

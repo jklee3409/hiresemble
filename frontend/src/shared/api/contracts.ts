@@ -62,9 +62,14 @@ export type EvidenceSourceType =
   | 'CAREER'
   | 'ACTIVITY'
   | 'DOCUMENT_CHUNK'
+  | 'EXPERIENCE'
   | 'MANUAL'
 
 export type EvidenceVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'SOURCE_DELETED'
+
+export type ExperienceLinkKind = 'PRIMARY_SOURCE' | 'CORROBORATING'
+export type ExperienceMatchKind = 'NEW' | 'SAME_EXPERIENCE' | 'RELATED_DIFFERENT' | 'CONFLICT'
+export type ExperienceMatchResolution = 'KEEP_SEPARATE' | 'MERGE_WITH_TARGET'
 
 export type EvidenceMetadataValue = string | number | boolean | null
 
@@ -298,6 +303,9 @@ export interface EvidenceDto extends VersionedProfileResource {
   sourceType: EvidenceSourceType
   sourceEntityId: string | null
   documentId: string | null
+  experienceItemId: string | null
+  experienceLinkKind: ExperienceLinkKind | null
+  experienceMatchKind: ExperienceMatchKind | null
   sourceDeletedAt: string | null
   evidenceCategory: string
   title: string
@@ -323,6 +331,54 @@ export interface EvidenceVerificationRequest {
 export interface EvidenceVerificationBatchRequest {
   items: Array<{ id: string; version: number }>
   status: Extract<EvidenceVerificationStatus, 'PENDING' | 'VERIFIED' | 'REJECTED'>
+}
+
+export interface ExperienceItemDto extends VersionedProfileResource {
+  evidenceCategory: string
+  title: string
+  content: string
+  verificationStatus: EvidenceVerificationStatus
+  matchKind: ExperienceMatchKind
+  matchedExperienceItemId: string | null
+  matchSimilarity: number | null
+  reviewRequired: boolean
+  sourceCount: number
+  documentSourceCount: number
+  /* 가장 먼저 이 경험을 추출한 문서의 이름. 문서 출처가 없거나 원본이 지워졌으면 null이다. */
+  primaryDocumentName: string | null
+}
+
+export interface ExperienceSourceDto {
+  evidenceId: string
+  sourceType: EvidenceSourceType
+  documentId: string | null
+  verificationStatus: EvidenceVerificationStatus
+  relationKind: ExperienceLinkKind
+  similarity: number | null
+  sourceDeletedAt: string | null
+  createdAt: string
+}
+
+export interface ExperienceItemDetailDto {
+  item: ExperienceItemDto
+  sources: ExperienceSourceDto[]
+}
+
+export interface ExperienceItemUpdateRequest {
+  title: string
+  content: string
+  version: number
+}
+
+export interface ExperienceVerificationRequest {
+  status: Extract<EvidenceVerificationStatus, 'PENDING' | 'VERIFIED' | 'REJECTED'>
+  version: number
+}
+
+export interface ExperienceMatchResolutionRequest {
+  resolution: ExperienceMatchResolution
+  targetExperienceItemId: string | null
+  version: number
 }
 
 export type StructuredProfileDto =

@@ -121,6 +121,11 @@ public interface WorkflowStepExecutor<T> {
         return true;
     }
 
+    /** Marks a deterministic branch as a durable SKIPPED step without invoking a provider. */
+    default boolean skip(StepExecutionContext context) {
+        return false;
+    }
+
     /** Allows deterministic inspection to request user input discovered during the step. */
     default Optional<RequiredUserAction> requiredUserAction(
             T validatedOutput, JsonNode minimalOutput, StepExecutionContext context) {

@@ -125,7 +125,7 @@ describe('P2 profile API contract', () => {
     })
   })
 
-  it('uses only the three approved evidence operations and activates documentId filter', async () => {
+  it('uses the evidence operations and activates documentId filter', async () => {
     await profileApi.listEvidence({
       verificationStatus: 'VERIFIED',
       evidenceCategory: 'CAREER',
@@ -170,6 +170,56 @@ describe('P2 profile API contract', () => {
       items: [{ id: 'evidence-id', version: 2 }],
       status: 'VERIFIED',
     })
+  })
+
+  it('uses the canonical experience library operations exactly', async () => {
+    await profileApi.listExperiences({
+      verificationStatus: 'PENDING',
+      matchKind: 'CONFLICT',
+      page: 1,
+      size: 10,
+      sort: 'updatedAt,desc',
+    })
+    await profileApi.getExperience('experience-id')
+    await profileApi.updateExperience('experience-id', {
+      title: '주문 처리 개선',
+      content: '처리 시간을 35% 줄였습니다.',
+      version: 3,
+    })
+    await profileApi.verifyExperience('experience-id', { status: 'VERIFIED', version: 4 })
+    await profileApi.resolveExperienceMatch('experience-id', {
+      resolution: 'MERGE_WITH_TARGET',
+      targetExperienceItemId: 'target-id',
+      version: 5,
+    })
+
+    expect(apiClient.get).toHaveBeenCalledWith('/profile/experiences', {
+      params: {
+        verificationStatus: 'PENDING',
+        matchKind: 'CONFLICT',
+        page: 1,
+        size: 10,
+        sort: 'updatedAt,desc',
+      },
+    })
+    expect(apiClient.get).toHaveBeenCalledWith('/profile/experiences/experience-id')
+    expect(apiClient.put).toHaveBeenCalledWith('/profile/experiences/experience-id', {
+      title: '주문 처리 개선',
+      content: '처리 시간을 35% 줄였습니다.',
+      version: 3,
+    })
+    expect(apiClient.patch).toHaveBeenCalledWith(
+      '/profile/experiences/experience-id/verification',
+      { status: 'VERIFIED', version: 4 },
+    )
+    expect(apiClient.patch).toHaveBeenCalledWith(
+      '/profile/experiences/experience-id/match-resolution',
+      {
+        resolution: 'MERGE_WITH_TARGET',
+        targetExperienceItemId: 'target-id',
+        version: 5,
+      },
+    )
   })
 })
 

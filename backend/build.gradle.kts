@@ -86,6 +86,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("spring.ai.model.embedding", "none")
     systemProperty("spring.ai.vectorstore.type", "none")
     systemProperty("hiresemble.ai.allow-test-provider", "true")
+    systemProperty("hiresemble.github.enabled", "true")
     systemProperty("spring.datasource.hikari.maximum-pool-size", "3")
 }
 

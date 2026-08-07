@@ -43,6 +43,11 @@ const sections = [
     label: '대외활동',
     icon: 'spark',
   },
+  {
+    to: '/profile/experiences',
+    label: '경험 보관함',
+    icon: 'evidence',
+  },
 ] as const
 
 const currentSection = computed(

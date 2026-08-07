@@ -1049,6 +1049,135 @@ public class ProfileStore {
                 .single();
     }
 
+    public UUID createOrRefreshGitHubEvidence(
+            UUID id,
+            UUID userId,
+            UUID githubSourceId,
+            UUID githubRepositoryId,
+            UUID githubSnapshotId,
+            String claimKey,
+            UUID primarySourceUnitId,
+            List<UUID> supportingSourceUnitIds,
+            String category,
+            String title,
+            String content,
+            Map<String, Object> metadata,
+            java.math.BigDecimal confidence,
+            Instant now) {
+        UUID evidenceId = jdbcClient.sql("""
+                        INSERT INTO profile_evidence (
+                            id,user_id,source_type,source_entity_id,document_id,evidence_category,
+                            title,content,metadata,confidence,verification_status,verified_at,
+                            source_deleted_at,version,created_at,updated_at,
+                            github_source_id,github_repository_id,github_snapshot_id,github_claim_key
+                        ) VALUES (
+                            :id,:userId,'GITHUB_REPOSITORY',:repositoryId,NULL,:category,
+                            :title,:content,CAST(:metadata AS jsonb),:confidence,'PENDING',NULL,
+                            NULL,0,:now,:now,:sourceId,:repositoryId,:snapshotId,:claimKey
+                        )
+                        ON CONFLICT (user_id,github_repository_id,github_claim_key)
+                            WHERE source_type='GITHUB_REPOSITORY' AND source_deleted_at IS NULL
+                        DO UPDATE SET
+                            github_source_id=EXCLUDED.github_source_id,
+                            github_snapshot_id=EXCLUDED.github_snapshot_id,
+                            source_entity_id=EXCLUDED.source_entity_id,
+                            evidence_category=EXCLUDED.evidence_category,
+                            title=EXCLUDED.title,
+                            content=EXCLUDED.content,
+                            metadata=EXCLUDED.metadata,
+                            confidence=EXCLUDED.confidence,
+                            version=profile_evidence.version+1,
+                            updated_at=EXCLUDED.updated_at
+                        RETURNING id
+                        """)
+                .param("id", id)
+                .param("userId", userId)
+                .param("sourceId", githubSourceId)
+                .param("repositoryId", githubRepositoryId)
+                .param("snapshotId", githubSnapshotId)
+                .param("claimKey", claimKey)
+                .param("category", category)
+                .param("title", title)
+                .param("content", content)
+                .param("metadata", json(metadata))
+                .param("confidence", confidence)
+                .param("now", utc(now))
+                .query(UUID.class)
+                .single();
+        jdbcClient.sql("""
+                        DELETE FROM github_evidence_unit_links
+                        WHERE user_id=:userId AND profile_evidence_id=:evidenceId
+                        """)
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        addGitHubEvidenceUnitLink(userId, evidenceId, primarySourceUnitId, "PRIMARY", now);
+        for (UUID sourceUnitId : supportingSourceUnitIds == null ? List.<UUID>of() : supportingSourceUnitIds) {
+            if (!sourceUnitId.equals(primarySourceUnitId)) {
+                addGitHubEvidenceUnitLink(userId, evidenceId, sourceUnitId, "SUPPORTING", now);
+            }
+        }
+        return evidenceId;
+    }
+
+    public List<EvidenceRecord> findGitHubEvidence(UUID userId, UUID githubSourceId) {
+        return jdbcClient.sql("""
+                        SELECT evidence.*,evidence.metadata::text AS metadata_text
+                        FROM profile_evidence evidence
+                        WHERE evidence.user_id=:userId
+                          AND evidence.github_source_id=:sourceId
+                          AND evidence.source_type='GITHUB_REPOSITORY'
+                          AND evidence.source_deleted_at IS NULL
+                        ORDER BY evidence.created_at,evidence.id
+                        """)
+                .param("userId", userId)
+                .param("sourceId", githubSourceId)
+                .query(this::evidence)
+                .list();
+    }
+
+    public void deleteGitHubEvidence(UUID userId, UUID evidenceId) {
+        jdbcClient.sql("""
+                        DELETE FROM github_evidence_unit_links
+                        WHERE user_id=:userId AND profile_evidence_id=:evidenceId
+                        """)
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        deleteEvidence(userId, evidenceId);
+    }
+
+    public void tombstoneGitHubEvidence(UUID userId, UUID evidenceId, Instant now) {
+        jdbcClient.sql("""
+                        UPDATE profile_evidence
+                        SET title='[deleted GitHub evidence]',content='[The source repository was removed.]',
+                            metadata='{}'::jsonb,confidence=NULL,verification_status='SOURCE_DELETED',
+                            verified_at=NULL,source_deleted_at=:now,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:evidenceId
+                          AND source_type='GITHUB_REPOSITORY' AND source_deleted_at IS NULL
+                        """)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+    }
+
+    private void addGitHubEvidenceUnitLink(
+            UUID userId, UUID evidenceId, UUID sourceUnitId, String relationKind, Instant now) {
+        jdbcClient.sql("""
+                        INSERT INTO github_evidence_unit_links (
+                            id,user_id,profile_evidence_id,source_unit_id,relation_kind,created_at
+                        ) VALUES (:id,:userId,:evidenceId,:sourceUnitId,:relationKind,:now)
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .param("sourceUnitId", sourceUnitId)
+                .param("relationKind", relationKind)
+                .param("now", utc(now))
+                .update();
+    }
+
     public void synchronizeExperienceEvidenceContent(
             UUID userId, UUID evidenceId, String title, String content, Instant now) {
         int updated = jdbcClient.sql("""

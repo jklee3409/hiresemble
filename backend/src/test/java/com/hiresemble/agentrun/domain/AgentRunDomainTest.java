@@ -191,6 +191,7 @@ class AgentRunDomainTest {
                 Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.WAITING_USER),
                 Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.SUCCEEDED),
                 Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.FAILED),
+                Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.SKIPPED),
                 Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.CANCELLED),
                 Arguments.of(AgentStepStatus.RUNNING, AgentStepStatus.INTERRUPTED),
                 Arguments.of(AgentStepStatus.WAITING_USER, AgentStepStatus.PENDING),

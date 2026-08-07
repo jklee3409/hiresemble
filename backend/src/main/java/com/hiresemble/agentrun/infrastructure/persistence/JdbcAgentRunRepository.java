@@ -108,7 +108,8 @@ public class JdbcAgentRunRepository
                                 "JOB",
                                 "COVER_LETTER",
                                 "QUESTION_SET",
-                                "INTERVIEW_ANSWER_VERSION")
+                                "INTERVIEW_ANSWER_VERSION",
+                                "GITHUB_SOURCE")
                         .contains(command.resource().resourceType())) {
             insertTypedLink(
                     command.userId(),
@@ -263,6 +264,47 @@ public class JdbcAgentRunRepository
                         .update();
                 if (attached != 1) {
                     throw new IllegalStateException("document retry resource is not active");
+                }
+            } else if ("GITHUB_SOURCE".equals(predecessor.resourceType())) {
+                if (predecessor.workflowType() != WorkflowType.GITHUB_INGESTION) {
+                    throw new IllegalStateException(
+                            "unsupported workflow owns a GitHub source retry resource");
+                }
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,github_source_id,
+                                    primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,github_source_id,
+                                       true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='GITHUB_SOURCE' AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException(
+                            "GitHub source retry is missing its typed resource link");
+                }
+                int attached = jdbcClient.sql("""
+                                UPDATE github_sources
+                                SET latest_agent_run_id=:successorId,source_status='QUEUED',
+                                    version=version+1,updated_at=:updatedAt
+                                WHERE user_id=:userId AND id=:sourceId AND deleted_at IS NULL
+                                  AND source_status='FAILED'
+                                """)
+                        .param("successorId", successorId)
+                        .param("updatedAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("sourceId", predecessor.resourceId())
+                        .update();
+                if (attached != 1) {
+                    throw new IllegalStateException("GitHub retry source is not retryable");
                 }
             } else if ("JOB".equals(predecessor.resourceType())) {
                 int linked = jdbcClient.sql("""
@@ -622,6 +664,7 @@ public class JdbcAgentRunRepository
             case "COVER_LETTER" -> "cover_letter_id";
             case "QUESTION_SET" -> "question_set_id";
             case "INTERVIEW_ANSWER_VERSION" -> "interview_answer_version_id";
+            case "GITHUB_SOURCE" -> "github_source_id";
             default -> throw new IllegalArgumentException("unsupported typed resource");
         };
         String insertSql = """

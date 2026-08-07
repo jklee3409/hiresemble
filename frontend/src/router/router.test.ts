@@ -240,6 +240,7 @@ describe('authentication route policy', () => {
     const detailRoute = children.find((route) => route.name === 'agent-run-detail')
     const documentsRoute = children.find((route) => route.name === 'documents')
     const profileActivitiesRoute = children.find((route) => route.name === 'profile-activities')
+    const profileExperiencesRoute = children.find((route) => route.name === 'profile-experiences')
     const documentDetailRoute = children.find((route) => route.name === 'document-detail')
     const jobsRoute = children.find((route) => route.name === 'jobs')
     const jobNewRoute = children.find((route) => route.name === 'job-new')
@@ -252,6 +253,8 @@ describe('authentication route policy', () => {
 
     expect(typeof documentsRoute?.component).toBe('function')
     expect(profileActivitiesRoute?.meta?.title).toBe('대외활동')
+    expect(profileExperiencesRoute?.meta?.title).toBe('경험 보관함')
+    expect(typeof profileExperiencesRoute?.component).toBe('function')
     expect(typeof documentDetailRoute?.component).toBe('function')
     expect(typeof listRoute?.component).toBe('function')
     expect(typeof detailRoute?.component).toBe('function')
@@ -277,6 +280,7 @@ describe('authentication route policy', () => {
         'profile-basic',
         'profile-education',
         'profile-activities',
+        'profile-experiences',
         'documents',
         'document-detail',
         'jobs',

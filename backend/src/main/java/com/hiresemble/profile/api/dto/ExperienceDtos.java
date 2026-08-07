@@ -27,6 +27,8 @@ public final class ExperienceDtos {
             boolean reviewRequired,
             int sourceCount,
             int documentSourceCount,
+            int githubRepositorySourceCount,
+            @Schema(nullable = true, maxLength = 255) String primaryDocumentName,
             long version,
             Instant createdAt,
             Instant updatedAt) {}
@@ -39,6 +41,13 @@ public final class ExperienceDtos {
             EvidenceVerificationStatus verificationStatus,
             ExperienceLinkKind relationKind,
             @Schema(nullable = true, minimum = "0", maximum = "1") BigDecimal similarity,
+            @Schema(nullable = true) UUID githubSourceId,
+            @Schema(nullable = true) UUID githubRepositoryId,
+            @Schema(nullable = true, maxLength = 201) String repositoryName,
+            @Schema(nullable = true, maxLength = 500) String repositoryUrl,
+            @Schema(nullable = true, minLength = 7, maxLength = 12) String commitShaShort,
+            @Schema(nullable = true) Instant capturedAt,
+            @Schema(nullable = true, maxLength = 500) String sourceExcerpt,
             @Schema(nullable = true) Instant sourceDeletedAt,
             Instant createdAt) {}
 

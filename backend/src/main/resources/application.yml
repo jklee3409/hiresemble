@@ -83,6 +83,23 @@ springdoc:
 
 hiresemble:
   frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  github:
+    enabled: ${GITHUB_INGESTION_ENABLED:false}
+    api-base-url: https://api.github.com
+    api-version: ${GITHUB_API_VERSION:2026-03-10}
+    retrieval-policy-version: github-snapshot-v1
+    connect-timeout: ${GITHUB_CONNECT_TIMEOUT:3s}
+    response-timeout: ${GITHUB_RESPONSE_TIMEOUT:10s}
+    max-response-bytes: 8388608
+    max-concurrent-requests: 2
+    max-discovered-repositories: 200
+    max-selected-repositories: 10
+    max-candidate-files: 80
+    max-text-file-bytes: 65536
+    max-sanitized-code-points: 400000
+    max-candidates-per-repository: 12
+    max-candidates-per-run: 40
+    deletion-scan-interval: 30s
   idempotency:
     current-hash-key-version: ${IDEMPOTENCY_HASH_KEY_VERSION:1}
     hmac-keys:

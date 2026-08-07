@@ -24,6 +24,8 @@ public final class ExperienceRecords {
             String canonicalFingerprint,
             int sourceCount,
             int documentSourceCount,
+            int githubRepositorySourceCount,
+            String primaryDocumentName,
             long version,
             Instant createdAt,
             Instant updatedAt) {}
@@ -35,6 +37,13 @@ public final class ExperienceRecords {
             EvidenceVerificationStatus verificationStatus,
             ExperienceLinkKind relationKind,
             BigDecimal similarity,
+            UUID githubSourceId,
+            UUID githubRepositoryId,
+            String repositoryName,
+            String repositoryUrl,
+            String commitShaShort,
+            Instant capturedAt,
+            String sourceExcerpt,
             Instant sourceDeletedAt,
             Instant createdAt) {}
 

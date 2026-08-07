@@ -30,6 +30,7 @@ public enum AgentStepStatus {
             case RUNNING -> target == WAITING_USER
                     || target == SUCCEEDED
                     || target == FAILED
+                    || target == SKIPPED
                     || target == CANCELLED
                     || target == INTERRUPTED;
             case WAITING_USER -> target == PENDING || target == CANCELLED;

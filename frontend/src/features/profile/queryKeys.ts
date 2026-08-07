@@ -1,4 +1,4 @@
-import type { EvidenceListParams, PageParams } from '@/shared/api/profileApi'
+import type { EvidenceListParams, ExperienceListParams, PageParams } from '@/shared/api/profileApi'
 
 export const profileQueryKeys = {
   profile(userId: string) {
@@ -27,5 +27,14 @@ export const profileQueryKeys = {
   },
   evidenceRoot(userId: string) {
     return ['user', userId, 'evidence'] as const
+  },
+  experiences(userId: string, filters: ExperienceListParams) {
+    return ['user', userId, 'experiences', filters] as const
+  },
+  experience(userId: string, experienceId: string) {
+    return ['user', userId, 'experiences', experienceId] as const
+  },
+  experiencesRoot(userId: string) {
+    return ['user', userId, 'experiences'] as const
   },
 }

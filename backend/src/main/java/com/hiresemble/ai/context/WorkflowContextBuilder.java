@@ -15,6 +15,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
     private final ContextBuilder coverLetterVerification;
     private final ContextBuilder interviewPreparation;
     private final ContextBuilder interviewFeedback;
+    private final ContextBuilder githubIngestion;
 
     public WorkflowContextBuilder(
             ContextBuilder documentIngestion,
@@ -24,6 +25,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
                 documentIngestion,
                 jobPostingExtraction,
                 jobAnalysis,
+                unsupported(),
                 unsupported(),
                 unsupported(),
                 unsupported(),
@@ -43,6 +45,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
                 coverLetterGeneration,
                 coverLetterVerification,
                 unsupported(),
+                unsupported(),
                 unsupported());
     }
 
@@ -54,6 +57,26 @@ public final class WorkflowContextBuilder implements ContextBuilder {
             ContextBuilder coverLetterVerification,
             ContextBuilder interviewPreparation,
             ContextBuilder interviewFeedback) {
+        this(
+                documentIngestion,
+                jobPostingExtraction,
+                jobAnalysis,
+                coverLetterGeneration,
+                coverLetterVerification,
+                interviewPreparation,
+                interviewFeedback,
+                unsupported());
+    }
+
+    public WorkflowContextBuilder(
+            ContextBuilder documentIngestion,
+            ContextBuilder jobPostingExtraction,
+            ContextBuilder jobAnalysis,
+            ContextBuilder coverLetterGeneration,
+            ContextBuilder coverLetterVerification,
+            ContextBuilder interviewPreparation,
+            ContextBuilder interviewFeedback,
+            ContextBuilder githubIngestion) {
         this.documentIngestion = Objects.requireNonNull(documentIngestion);
         this.jobPostingExtraction = Objects.requireNonNull(jobPostingExtraction);
         this.jobAnalysis = Objects.requireNonNull(jobAnalysis);
@@ -61,6 +84,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
         this.coverLetterVerification = Objects.requireNonNull(coverLetterVerification);
         this.interviewPreparation = Objects.requireNonNull(interviewPreparation);
         this.interviewFeedback = Objects.requireNonNull(interviewFeedback);
+        this.githubIngestion = Objects.requireNonNull(githubIngestion);
     }
 
     @Override
@@ -74,6 +98,7 @@ public final class WorkflowContextBuilder implements ContextBuilder {
             case COVER_LETTER_VERIFICATION -> coverLetterVerification.build(request);
             case INTERVIEW_PREPARATION -> interviewPreparation.build(request);
             case INTERVIEW_ANSWER_FEEDBACK -> interviewFeedback.build(request);
+            case GITHUB_INGESTION -> githubIngestion.build(request);
             default -> throw AiExecutionException.nonRetryable(
                     FailureKind.CONFIGURATION,
                 "AI_CONTEXT_NOT_CONFIGURED",

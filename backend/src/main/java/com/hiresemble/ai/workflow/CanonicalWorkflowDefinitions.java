@@ -45,6 +45,7 @@ public final class CanonicalWorkflowDefinitions {
             "interview-preparation-v1";
     public static final String INTERVIEW_ANSWER_FEEDBACK_VERSION =
             "interview-answer-feedback-v1";
+    public static final String GITHUB_INGESTION_VERSION = "github-ingestion-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -72,6 +73,7 @@ public final class CanonicalWorkflowDefinitions {
                 coverLetterVerificationLegacy(),
                 interviewPreparation(),
                 interviewAnswerFeedback(),
+                githubIngestion(),
                 definition(WorkflowType.MOCK_INTERVIEW_FEEDBACK, Set.of(AiQualityMode.BALANCED),
                         "LOAD_SESSION_SNAPSHOT", "ANALYZE_TURNS", "SYNTHESIZE_SESSION_FEEDBACK",
                         "VALIDATE_FEEDBACK", "PERSIST_FEEDBACK"));
@@ -188,6 +190,64 @@ public final class CanonicalWorkflowDefinitions {
                 INTERVIEW_ANSWER_FEEDBACK_VERSION,
                 true,
                 allQuality(),
+                steps);
+    }
+
+    private static WorkflowDefinition githubIngestion() {
+        String[] keys = {
+            "VALIDATE_GITHUB_SOURCE",
+            "DISCOVER_REPOSITORIES",
+            "WAIT_FOR_REPOSITORY_SELECTION",
+            "CAPTURE_REPOSITORY_SNAPSHOTS",
+            "SANITIZE_AND_SELECT_SOURCE_UNITS",
+            "EXTRACT_GITHUB_CANDIDATES",
+            "VALIDATE_GITHUB_CANDIDATES",
+            "EMBED_GITHUB_CANDIDATES",
+            "APPLY_CANONICAL_EXPERIENCES",
+            "FINALIZE_GITHUB_SOURCE"
+        };
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
+        List<StepDefinition> steps = new ArrayList<>(keys.length);
+        for (int index = 0; index < keys.length; index++) {
+            String key = keys[index];
+            boolean extract = "EXTRACT_GITHUB_CANDIDATES".equals(key);
+            boolean embed = "EMBED_GITHUB_CANDIDATES".equals(key);
+            boolean fetch = "DISCOVER_REPOSITORIES".equals(key)
+                    || "CAPTURE_REPOSITORY_SNAPSHOTS".equals(key);
+            boolean repositoryFanOut = switch (key) {
+                case "CAPTURE_REPOSITORY_SNAPSHOTS",
+                        "SANITIZE_AND_SELECT_SOURCE_UNITS",
+                        "EXTRACT_GITHUB_CANDIDATES",
+                        "VALIDATE_GITHUB_CANDIDATES",
+                        "EMBED_GITHUB_CANDIDATES",
+                        "APPLY_CANONICAL_EXPERIENCES" -> true;
+                default -> false;
+            };
+            steps.add(new StepDefinition(
+                    key,
+                    agentName(key),
+                    "github-ingestion-input-v1",
+                    "github-" + key.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
+                            + "-output-v1",
+                    embed ? Set.of("EMBEDDING") : Set.of(),
+                    extract || embed ? 1 : 0,
+                    repositoryFanOut ? 10 : 1,
+                    extract ? ModelTier.BALANCED : ModelTier.LOW_COST,
+                    extract || embed ? RETRYABLE
+                            : fetch
+                                    ? EnumSet.of(
+                                            FailureKind.RATE_LIMIT,
+                                            FailureKind.PROVIDER_5XX,
+                                            FailureKind.NETWORK,
+                                            FailureKind.TIMEOUT)
+                                    : Set.of(),
+                    weights.get(index)));
+        }
+        return new WorkflowDefinition(
+                WorkflowType.GITHUB_INGESTION,
+                GITHUB_INGESTION_VERSION,
+                true,
+                economyBalanced(),
                 steps);
     }
 

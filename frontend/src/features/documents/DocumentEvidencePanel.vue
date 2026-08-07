@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, reactive, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import type {
@@ -10,6 +11,7 @@ import type {
 } from '@/shared/api/contracts'
 import { normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
+import AppIcon from '@/shared/ui/AppIcon.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -37,16 +39,22 @@ const evidence = useQuery({
 })
 const items = computed(() => evidence.data.value?.items ?? [])
 const reviewableItems = computed(() =>
-  items.value.filter((item) => item.verificationStatus !== 'SOURCE_DELETED'),
+  items.value.filter(
+    (item) =>
+      item.verificationStatus !== 'SOURCE_DELETED' && item.experienceLinkKind !== 'CORROBORATING',
+  ),
 )
 const pendingCount = computed(
-  () => items.value.filter((item) => item.verificationStatus === 'PENDING').length,
+  () => reviewableItems.value.filter((item) => item.verificationStatus === 'PENDING').length,
 )
 const approvedCount = computed(
-  () => items.value.filter((item) => item.verificationStatus === 'VERIFIED').length,
+  () => reviewableItems.value.filter((item) => item.verificationStatus === 'VERIFIED').length,
 )
 const excludedCount = computed(
-  () => items.value.filter((item) => item.verificationStatus === 'REJECTED').length,
+  () => reviewableItems.value.filter((item) => item.verificationStatus === 'REJECTED').length,
+)
+const corroboratingCount = computed(
+  () => items.value.filter((item) => item.experienceLinkKind === 'CORROBORATING').length,
 )
 const selectedItems = computed(() =>
   reviewableItems.value.filter((item) => selectedIds.value.includes(item.id)),
@@ -232,11 +240,14 @@ function categoryLabel(value: string): string {
       </div>
       <div class="evidence-review__summary" aria-label="소재 검토 현황">
         <strong>{{ pendingCount > 0 ? `${pendingCount}개 확인 필요` : '검토 완료' }}</strong>
-        <span>승인 {{ approvedCount }} · 제외 {{ excludedCount }}</span>
+        <span>
+          승인 {{ approvedCount }} · 제외 {{ excludedCount }}
+          <template v-if="corroboratingCount"> · 기존 경험 출처 {{ corroboratingCount }}</template>
+        </span>
       </div>
     </header>
 
-    <div v-if="items.length" class="review-progress">
+    <div v-if="reviewableItems.length" class="review-progress">
       <span :class="{ 'review-progress__step--active': pendingCount > 0 }">내용 확인</span>
       <span aria-hidden="true">→</span>
       <span :class="{ 'review-progress__step--complete': pendingCount === 0 }">활용 여부 결정</span>
@@ -269,7 +280,7 @@ function categoryLabel(value: string): string {
     />
 
     <template v-else>
-      <div class="review-toolbar" aria-label="소재 일괄 작업">
+      <div v-if="reviewableItems.length" class="review-toolbar" aria-label="소재 일괄 작업">
         <label class="review-toolbar__selection">
           <input type="checkbox" :checked="allSelected" @change="toggleAll" />
           전체 선택
@@ -300,7 +311,7 @@ function categoryLabel(value: string): string {
             @click="
               changeSelected(
                 'VERIFIED',
-                items.filter((item) => item.verificationStatus === 'PENDING'),
+                reviewableItems.filter((item) => item.verificationStatus === 'PENDING'),
               )
             "
           >
@@ -316,7 +327,36 @@ function categoryLabel(value: string): string {
           class="evidence-card"
           :class="`evidence-card--${item.verificationStatus.toLowerCase()}`"
         >
-          <template v-if="editingId === item.id">
+          <template v-if="item.experienceLinkKind === 'CORROBORATING' && item.experienceItemId">
+            <div class="evidence-card__existing-header">
+              <span class="icon-tile icon-tile--success" aria-hidden="true">
+                <AppIcon name="check" />
+              </span>
+              <div>
+                <div class="evidence-card__title">
+                  <h4>{{ item.title }}</h4>
+                  <StatusBadge label="기존 경험에 출처 추가됨" tone="info" />
+                </div>
+                <p>
+                  {{ categoryLabel(item.evidenceCategory) }} · {{ documentName ?? '업로드 자료' }}
+                </p>
+              </div>
+            </div>
+            <p class="evidence-card__content">{{ item.content }}</p>
+            <div class="evidence-card__existing-note">
+              <p>
+                이미 보관한 경험과 같은 내용으로 확인되어 새 카드로 만들지 않았어요. 이 자료는 기존
+                경험의 보강 출처로 연결됐어요.
+              </p>
+              <RouterLink
+                class="button button--secondary button--compact"
+                :to="{ path: '/profile/experiences', query: { selected: item.experienceItemId } }"
+              >
+                경험 보관함에서 보기
+              </RouterLink>
+            </div>
+          </template>
+          <template v-else-if="editingId === item.id">
             <form class="evidence-editor" @submit.prevent="save(item)">
               <label class="field"
                 ><span class="field__label">소재 제목</span
@@ -540,6 +580,7 @@ function categoryLabel(value: string): string {
   transform: none;
 }
 .evidence-card__header,
+.evidence-card__existing-header,
 .evidence-card__title,
 .evidence-card__actions {
   display: flex;
@@ -547,6 +588,17 @@ function categoryLabel(value: string): string {
 }
 .evidence-card__header {
   gap: var(--space-3);
+}
+.evidence-card__existing-header {
+  gap: var(--space-3);
+}
+.evidence-card__existing-header > div {
+  min-width: 0;
+}
+.evidence-card__existing-header p {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 .evidence-card__check {
   align-self: flex-start;
@@ -606,6 +658,22 @@ function categoryLabel(value: string): string {
 .evidence-card__readonly {
   margin-top: var(--space-3);
 }
+.evidence-card__existing-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+  padding: var(--space-3) var(--space-4);
+}
+.evidence-card__existing-note p {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
 .evidence-editor {
   display: grid;
   gap: var(--space-3);
@@ -631,6 +699,13 @@ function categoryLabel(value: string): string {
   }
   .review-toolbar__actions .button {
     flex: 1 1 auto;
+  }
+  .evidence-card__existing-note {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .evidence-card__existing-note .button {
+    width: 100%;
   }
 }
 </style>

@@ -20,10 +20,10 @@ import org.junit.jupiter.api.Test;
 class WorkflowRegistryTest {
 
     @Test
-    void canonicalRegistryCoversExactlyEightTypesWithoutPretendingTheyAreExecutable() {
+    void canonicalRegistryCoversExactlyNineTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(17);
+        assertThat(registry.definitions()).hasSize(18);
         assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
                 .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());
@@ -70,6 +70,22 @@ class WorkflowRegistryTest {
                         org.assertj.core.groups.Tuple.tuple(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_V3_VERSION));
+
+        assertThat(registry.definition(
+                        WorkflowType.GITHUB_INGESTION,
+                        CanonicalWorkflowDefinitions.GITHUB_INGESTION_VERSION).steps())
+                .extracting(StepDefinition::stepKey)
+                .containsExactly(
+                        "VALIDATE_GITHUB_SOURCE",
+                        "DISCOVER_REPOSITORIES",
+                        "WAIT_FOR_REPOSITORY_SELECTION",
+                        "CAPTURE_REPOSITORY_SNAPSHOTS",
+                        "SANITIZE_AND_SELECT_SOURCE_UNITS",
+                        "EXTRACT_GITHUB_CANDIDATES",
+                        "VALIDATE_GITHUB_CANDIDATES",
+                        "EMBED_GITHUB_CANDIDATES",
+                        "APPLY_CANONICAL_EXPERIENCES",
+                        "FINALIZE_GITHUB_SOURCE");
     }
 
     @Test

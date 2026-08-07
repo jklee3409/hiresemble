@@ -44,6 +44,39 @@ public final class ExperienceSimilarityPolicy {
         }
     }
 
+    /**
+     * Returns the comparison-only category group without rewriting persisted labels.
+     * Existing Korean labels remain valid rows while GitHub's strict English output
+     * can still be compared against them.
+     */
+    public static String comparisonGroup(String category) {
+        String normalized = normalize(category);
+        if (normalized.equals(normalize("PROJECT")) || normalized.equals(normalize("프로젝트"))) {
+            return "PROJECT";
+        }
+        if (normalized.equals(normalize("STRENGTH"))
+                || normalized.equals(normalize("강점"))
+                || normalized.equals(normalize("역량"))) {
+            return "STRENGTH";
+        }
+        return category;
+    }
+
+    public static List<String> comparisonCategories(String category) {
+        return switch (comparisonGroup(category)) {
+            case "PROJECT" -> List.of("PROJECT", "프로젝트");
+            case "STRENGTH" -> List.of("STRENGTH", "강점", "역량");
+            default -> List.of(category);
+        };
+    }
+
+    public static List<String> comparisonFingerprints(String category, String title, String content) {
+        return comparisonCategories(category).stream()
+                .map(value -> fingerprint(value, title, content))
+                .distinct()
+                .toList();
+    }
+
     public static MatchDecision decide(
             String title, String content, List<SimilarExperienceRecord> candidates) {
         if (candidates == null || candidates.isEmpty()) {

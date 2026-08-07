@@ -47,7 +47,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyOneHundredOperationsAndSeventyFourPaths() {
+    void liveSpringMappingsHaveExactlyOneHundredSevenOperationsAndSeventyNinePaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -63,12 +63,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(74);
-        assertThat(operations[0]).isEqualTo(100);
+        assertThat(paths).hasSize(79);
+        assertThat(operations[0]).isEqualTo(107);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyOneHundredOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyOneHundredSevenOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -84,7 +84,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "Dashboard",
                         "Cover Letters",
                         "Interview preparation",
-                        "Interview research");
+                        "Interview research",
+                        "GitHub Sources");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -124,6 +125,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/profile/experiences/{experienceItemId}",
                         "/api/v1/profile/experiences/{experienceItemId}/verification",
                         "/api/v1/profile/experiences/{experienceItemId}/match-resolution",
+                        "/api/v1/github-sources",
+                        "/api/v1/github-sources/{sourceId}",
+                        "/api/v1/github-sources/{sourceId}/repositories",
+                        "/api/v1/github-sources/{sourceId}/repository-selection",
+                        "/api/v1/github-sources/{sourceId}/refresh",
                         "/api/v1/agent-runs",
                         "/api/v1/agent-runs/{agentRunId}",
                         "/api/v1/agent-runs/bulk-delete",
@@ -168,7 +174,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(100);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(107);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -232,6 +238,13 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "put", "updateExperienceItem");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/verification", "patch", "verifyExperienceItem");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/match-resolution", "patch", "resolveExperienceMatch");
+        assertTaggedOperation(document, "/api/v1/github-sources", "post", "createGitHubSource", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources", "get", "listGitHubSources", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}", "get", "getGitHubSource", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}", "delete", "deleteGitHubSource", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/repositories", "get", "listGitHubRepositories", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/repository-selection", "put", "selectGitHubRepositories", "GitHub Sources");
+        assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/refresh", "post", "refreshGitHubSource", "GitHub Sources");
         assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "get", "getAgentRun");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "delete", "deleteAgentRun");
@@ -675,6 +688,23 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "experienceItemId",
                         "experienceLinkKind",
                         "experienceMatchKind");
+        assertThat(fieldNames(schemas.at("/ExperienceItemDto/properties")))
+                .contains("githubRepositorySourceCount");
+        assertThat(fieldNames(schemas.at("/ExperienceSourceDto/properties")))
+                .contains(
+                        "githubSourceId",
+                        "githubRepositoryId",
+                        "repositoryName",
+                        "repositoryUrl",
+                        "commitShaShort",
+                        "capturedAt",
+                        "sourceExcerpt")
+                .doesNotContain("sourceUnitId", "snapshotId", "storageKey", "commitSha");
+        assertThat(fieldNames(schemas.at("/GitHubRepositoryDto/properties")))
+                .doesNotContain("externalRepositoryId", "metadataEtag", "storageKey", "commitSha");
+        assertThat(fieldNames(schemas.at("/GitHubSourceSummaryDto/properties")))
+                .contains("repositoryDiscoveryTruncated", "latestAgentRunId", "version")
+                .doesNotContain("storageKey", "etag", "commitSha");
         assertThat(schemas.at("/EvidenceDto/properties/experienceLinkKind/description")
                         .asText())
                 .contains("CORROBORATING", "existing experience source");
@@ -902,6 +932,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.get("description").asText()).isNotBlank();
+        assertThat(operation.at("/tags/0").asText()).isEqualTo(tag);
+    }
+
+    private void assertTaggedOperation(
+            JsonNode document, String path, String method, String operationId, String tag) {
+        JsonNode operation = document.get("paths").get(path).get(method);
+        assertThat(operation).isNotNull();
+        assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
+        assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.at("/tags/0").asText()).isEqualTo(tag);
     }
 

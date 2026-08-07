@@ -385,12 +385,14 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 owner,
                 "semantic-dedupe-upload-01",
                 "first-resume.txt",
+                "먼저 올린 이력서",
                 longText("first-semantic@example.com").getBytes(StandardCharsets.UTF_8),
                 202);
         JsonNode secondUpload = upload(
                 owner,
                 "semantic-dedupe-upload-02",
                 "portfolio.txt",
+                "나중에 올린 포트폴리오",
                 longText("second-semantic@example.com").getBytes(StandardCharsets.UTF_8),
                 202);
         UUID firstDocumentId = UUID.fromString(firstUpload.get("documentId").asText());
@@ -451,7 +453,9 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.items[0].sourceCount").value(2))
-                .andExpect(jsonPath("$.items[0].documentSourceCount").value(2));
+                .andExpect(jsonPath("$.items[0].documentSourceCount").value(2))
+                // 같은 경험이 두 문서에서 나와도 가장 먼저 추출한 문서 이름만 보여 준다.
+                .andExpect(jsonPath("$.items[0].primaryDocumentName").value("먼저 올린 이력서"));
         mockMvc.perform(get("/api/v1/profile/evidence").cookie(owner.cookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -921,10 +925,21 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
 
     private JsonNode upload(
             Session session, String key, String filename, byte[] content, int expectedStatus) throws Exception {
+        return upload(session, key, filename, "Safe resume", content, expectedStatus);
+    }
+
+    private JsonNode upload(
+            Session session,
+            String key,
+            String filename,
+            String displayName,
+            byte[] content,
+            int expectedStatus)
+            throws Exception {
         MvcResult result = mockMvc.perform(multipart("/api/v1/documents")
                         .file(new MockMultipartFile("file", filename, "text/plain", content))
                         .param("documentType", DocumentType.RESUME.name())
-                        .param("displayName", "Safe resume")
+                        .param("displayName", displayName)
                         .cookie(session.cookie())
                         .header("X-CSRF-TOKEN", session.csrfToken())
                         .header("Idempotency-Key", key))

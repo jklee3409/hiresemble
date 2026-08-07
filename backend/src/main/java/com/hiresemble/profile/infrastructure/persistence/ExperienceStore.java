@@ -43,7 +43,24 @@ public class ExperienceStore {
                ON evidence.user_id=link.user_id AND evidence.id=link.profile_evidence_id
              WHERE link.user_id=item.user_id AND link.experience_item_id=item.id
                AND evidence.document_id IS NOT NULL AND evidence.source_deleted_at IS NULL)
-                AS document_source_count
+                 AS document_source_count,
+            (SELECT count(DISTINCT evidence.github_repository_id)
+             FROM experience_evidence_links link
+             JOIN profile_evidence evidence
+               ON evidence.user_id=link.user_id AND evidence.id=link.profile_evidence_id
+             WHERE link.user_id=item.user_id AND link.experience_item_id=item.id
+               AND evidence.github_repository_id IS NOT NULL
+               AND evidence.source_deleted_at IS NULL) AS github_repository_source_count,
+            (SELECT document.display_name
+             FROM experience_evidence_links link
+             JOIN profile_evidence evidence
+               ON evidence.user_id=link.user_id AND evidence.id=link.profile_evidence_id
+             JOIN documents document
+               ON document.user_id=link.user_id AND document.id=evidence.document_id
+             WHERE link.user_id=item.user_id AND link.experience_item_id=item.id
+               AND evidence.source_deleted_at IS NULL AND document.deleted_at IS NULL
+             ORDER BY evidence.created_at, evidence.id
+             LIMIT 1) AS primary_document_name
             """;
 
     private final JdbcClient jdbc;
@@ -70,12 +87,18 @@ public class ExperienceStore {
 
     public Optional<ExperienceItemRecord> findActiveExact(
             UUID userId, String category, String fingerprint) {
+        return findActiveExact(userId, List.of(category), List.of(fingerprint));
+    }
+
+    public Optional<ExperienceItemRecord> findActiveExact(
+            UUID userId, List<String> categories, List<String> fingerprints) {
         return jdbc.sql("SELECT " + ITEM_COLUMNS + " FROM experience_items item "
-                        + "WHERE item.user_id=:userId AND item.evidence_category=:category "
-                        + "AND item.canonical_fingerprint=:fingerprint AND item.deleted_at IS NULL")
+                        + "WHERE item.user_id=:userId AND item.evidence_category IN (:categories) "
+                        + "AND item.canonical_fingerprint IN (:fingerprints) AND item.deleted_at IS NULL "
+                        + "ORDER BY item.created_at,item.id LIMIT 1")
                 .param("userId", userId)
-                .param("category", category)
-                .param("fingerprint", fingerprint)
+                .param("categories", categories)
+                .param("fingerprints", fingerprints)
                 .query(this::item)
                 .optional();
     }
@@ -83,6 +106,15 @@ public class ExperienceStore {
     public List<SimilarExperienceRecord> findSimilar(
             UUID userId,
             String category,
+            List<Double> query,
+            EmbeddingPolicy policy,
+            int limit) {
+        return findSimilar(userId, List.of(category), query, policy, limit);
+    }
+
+    public List<SimilarExperienceRecord> findSimilar(
+            UUID userId,
+            List<String> categories,
             List<Double> query,
             EmbeddingPolicy policy,
             int limit) {
@@ -96,7 +128,7 @@ public class ExperienceStore {
                         + "JOIN embedding_policy_versions policy "
                         + "  ON policy.version=embedding.embedding_policy_version "
                         + "WHERE item.user_id=:userId AND item.deleted_at IS NULL "
-                        + "AND item.evidence_category=:category "
+                        + "AND item.evidence_category IN (:categories) "
                         + "AND embedding.embedding_policy_version=:policyVersion "
                         + "AND embedding.embedding_generation=:generation "
                         + "AND embedding.embedding_provider=policy.provider_key "
@@ -106,7 +138,7 @@ public class ExperienceStore {
                         + "ORDER BY embedding.embedding <=> CAST(:query AS vector), item.id LIMIT :limit")
                 .param("query", vector(query))
                 .param("userId", userId)
-                .param("category", category)
+                .param("categories", categories)
                 .param("policyVersion", policy.version())
                 .param("generation", policy.generation())
                 .param("limit", limit)
@@ -306,12 +338,35 @@ public class ExperienceStore {
                 jdbc.sql("""
                                 SELECT evidence.id AS evidence_id,evidence.source_type,
                                        evidence.document_id,evidence.verification_status,
-                                       link.relation_kind,link.similarity,evidence.source_deleted_at,
-                                       evidence.created_at
+                                        link.relation_kind,link.similarity,evidence.source_deleted_at,
+                                        evidence.created_at,evidence.github_source_id,
+                                        evidence.github_repository_id,
+                                        CASE WHEN repository.id IS NULL THEN NULL
+                                             ELSE repository.owner_login || '/' || repository.repository_name END
+                                            AS github_repository_name,
+                                        repository.canonical_url AS github_repository_url,
+                                        CASE WHEN snapshot.commit_sha IS NULL THEN NULL
+                                             ELSE substring(snapshot.commit_sha,1,10) END AS commit_sha_short,
+                                        snapshot.captured_at,
+                                        (SELECT unit.excerpt
+                                         FROM github_evidence_unit_links github_link
+                                         JOIN github_source_units unit
+                                           ON unit.user_id=github_link.user_id
+                                          AND unit.id=github_link.source_unit_id
+                                         WHERE github_link.user_id=evidence.user_id
+                                           AND github_link.profile_evidence_id=evidence.id
+                                           AND github_link.relation_kind='PRIMARY'
+                                         LIMIT 1) AS source_excerpt
                                 FROM experience_evidence_links link
                                 JOIN profile_evidence evidence
                                   ON evidence.user_id=link.user_id
                                  AND evidence.id=link.profile_evidence_id
+                                LEFT JOIN github_repositories repository
+                                  ON repository.user_id=evidence.user_id
+                                 AND repository.id=evidence.github_repository_id
+                                LEFT JOIN github_repository_snapshots snapshot
+                                  ON snapshot.user_id=evidence.user_id
+                                 AND snapshot.id=evidence.github_snapshot_id
                                 WHERE link.user_id=:userId AND link.experience_item_id=:itemId
                                 ORDER BY evidence.created_at,evidence.id
                                 """)
@@ -484,6 +539,8 @@ public class ExperienceStore {
                 resultSet.getString("canonical_fingerprint"),
                 resultSet.getInt("source_count"),
                 resultSet.getInt("document_source_count"),
+                resultSet.getInt("github_repository_source_count"),
+                resultSet.getString("primary_document_name"),
                 resultSet.getLong("version"),
                 instant(resultSet, "created_at"),
                 instant(resultSet, "updated_at"));
@@ -497,6 +554,13 @@ public class ExperienceStore {
                 EvidenceVerificationStatus.valueOf(resultSet.getString("verification_status")),
                 ExperienceLinkKind.valueOf(resultSet.getString("relation_kind")),
                 resultSet.getBigDecimal("similarity"),
+                resultSet.getObject("github_source_id", UUID.class),
+                resultSet.getObject("github_repository_id", UUID.class),
+                resultSet.getString("github_repository_name"),
+                resultSet.getString("github_repository_url"),
+                resultSet.getString("commit_sha_short"),
+                instantNullable(resultSet, "captured_at"),
+                resultSet.getString("source_excerpt"),
                 instantNullable(resultSet, "source_deleted_at"),
                 instant(resultSet, "created_at"));
     }

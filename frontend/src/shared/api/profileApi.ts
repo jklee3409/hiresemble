@@ -19,6 +19,12 @@ import type {
   EvidenceVerificationRequest,
   EvidenceVerificationBatchRequest,
   EvidenceVerificationStatus,
+  ExperienceItemDetailDto,
+  ExperienceItemDto,
+  ExperienceItemUpdateRequest,
+  ExperienceMatchKind,
+  ExperienceMatchResolutionRequest,
+  ExperienceVerificationRequest,
   LanguageScoreCreateRequest,
   LanguageScoreDto,
   LanguageScoreUpdateRequest,
@@ -40,6 +46,11 @@ export interface EvidenceListParams extends PageParams {
   verificationStatus?: EvidenceVerificationStatus
   evidenceCategory?: string
   documentId?: string
+}
+
+export interface ExperienceListParams extends PageParams {
+  verificationStatus?: EvidenceVerificationStatus
+  matchKind?: Exclude<ExperienceMatchKind, 'SAME_EXPERIENCE'>
 }
 
 function query<T extends object>(params: T): { params: T } {
@@ -200,4 +211,35 @@ export function verifyEvidenceBatch(
   request: EvidenceVerificationBatchRequest,
 ): Promise<EvidenceDto[]> {
   return apiClient.patch('/profile/evidence/verification', request)
+}
+
+export function listExperiences(
+  params: ExperienceListParams = {},
+): Promise<PageResponse<ExperienceItemDto>> {
+  return apiClient.get('/profile/experiences', query(params))
+}
+
+export function getExperience(id: string): Promise<ExperienceItemDetailDto> {
+  return apiClient.get(`/profile/experiences/${id}`)
+}
+
+export function updateExperience(
+  id: string,
+  request: ExperienceItemUpdateRequest,
+): Promise<ExperienceItemDetailDto> {
+  return apiClient.put(`/profile/experiences/${id}`, request)
+}
+
+export function verifyExperience(
+  id: string,
+  request: ExperienceVerificationRequest,
+): Promise<ExperienceItemDetailDto> {
+  return apiClient.patch(`/profile/experiences/${id}/verification`, request)
+}
+
+export function resolveExperienceMatch(
+  id: string,
+  request: ExperienceMatchResolutionRequest,
+): Promise<ExperienceItemDetailDto> {
+  return apiClient.patch(`/profile/experiences/${id}/match-resolution`, request)
 }

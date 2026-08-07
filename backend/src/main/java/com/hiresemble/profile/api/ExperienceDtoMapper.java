@@ -27,6 +27,8 @@ final class ExperienceDtoMapper {
                         || value.matchKind() == ExperienceMatchKind.CONFLICT,
                 value.sourceCount(),
                 value.documentSourceCount(),
+                value.githubRepositorySourceCount(),
+                value.primaryDocumentName(),
                 value.version(),
                 value.createdAt(),
                 value.updatedAt());
@@ -43,6 +45,13 @@ final class ExperienceDtoMapper {
                                 source.verificationStatus(),
                                 source.relationKind(),
                                 source.similarity(),
+                                source.githubSourceId(),
+                                source.githubRepositoryId(),
+                                source.repositoryName(),
+                                source.repositoryUrl(),
+                                source.commitShaShort(),
+                                source.capturedAt(),
+                                source.sourceExcerpt(),
                                 source.sourceDeletedAt(),
                                 source.createdAt()))
                         .toList());

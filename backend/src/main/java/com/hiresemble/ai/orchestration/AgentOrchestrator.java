@@ -410,6 +410,29 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
             String inputHash,
             StepExecutionContext executionContext) {
         AgentRunSnapshot run = executionContext.run();
+        if (executor.skip(executionContext)) {
+            JsonNode skippedOutput = objectMapper.createObjectNode().put("skipped", true);
+            Optional<AgentStepSnapshot> alreadySkipped =
+                    latestStep(run, stepDefinition.stepKey(), input.scopeKey())
+                            .filter(step -> step.status() == AgentStepStatus.SKIPPED);
+            if (alreadySkipped.isEmpty()) {
+                AgentStepSnapshot pending = latestStep(run, stepDefinition.stepKey(), input.scopeKey())
+                        .filter(step -> step.status() == AgentStepStatus.PENDING)
+                        .orElseGet(() -> stepCheckpointPort.start(startCommand(
+                                run,
+                                claimed.claimToken(),
+                                stepDefinition,
+                                prompt,
+                                input,
+                                inputHash,
+                                executionContext.contextSnapshot().modelPolicyVersion(),
+                                nextAttempt(run, stepDefinition.stepKey(), input.scopeKey()))));
+                stepCheckpointPort.checkpoint(new StepCheckpointCommand(
+                        run.userId(), run.id(), pending.id(), claimed.claimToken(),
+                        AgentStepStatus.SKIPPED, null, null, null, null, null, clock.instant()));
+            }
+            return new StepResult(skippedOutput, skippedOutput, null, null, false);
+        }
         Optional<ReusableStepSnapshot> reusable = executor.reusable()
                 ? runQueryPort.findReusableStep(
                         run.userId(),

@@ -7,6 +7,8 @@ spring:
       type: none
 
 hiresemble:
+  github:
+    enabled: true
   ai:
     provider: none
   search:

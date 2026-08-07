@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -39,6 +40,17 @@ public class GlobalExceptionHandler {
             BusinessException exception, HttpServletRequest request) {
         ErrorCode code = exception.errorCode();
         LOGGER.warn("business request failed code={} context={}", code.code(), exception.safeContext());
+        if (code == ErrorCode.GITHUB_RATE_LIMITED) {
+            String retryAfter = exception.safeContext().get("retryAfterSeconds");
+            if (retryAfter != null && retryAfter.matches("[1-9][0-9]{0,4}")) {
+                long seconds = Long.parseLong(retryAfter);
+                if (seconds <= 86_400) {
+                    return ResponseEntity.status(code.httpStatus())
+                            .header(HttpHeaders.RETRY_AFTER, retryAfter)
+                            .body(responseFactory.create(code, safeFieldErrors(exception), request));
+                }
+            }
+        }
         return response(code, safeFieldErrors(exception), request);
     }
 

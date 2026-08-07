@@ -16,6 +16,7 @@ describe('Career Profile Workspace navigation', () => {
         '/profile/languages',
         '/profile/awards',
         '/profile/activities',
+        '/profile/experiences',
       ].map((path) => ({ path, component: { template: '<div />' } })),
     })
     await router.push('/profile/careers')
@@ -34,6 +35,7 @@ describe('Career Profile Workspace navigation', () => {
       '어학',
       '수상',
       '대외활동',
+      '경험 보관함',
     ])
     expect(wrapper.find('small').exists()).toBe(false)
     expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('경력')

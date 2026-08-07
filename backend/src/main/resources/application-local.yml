@@ -1,4 +1,6 @@
 hiresemble:
+  github:
+    enabled: true
   idempotency:
     hmac-keys:
       1: hiresemble-local-only-idempotency-key-change-in-production

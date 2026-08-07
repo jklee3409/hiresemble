@@ -1,55 +1,47 @@
 package com.hiresemble.profile.application.service;
 
-import com.hiresemble.profile.application.port.DocumentEvidenceCommandPort;
-import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
 import com.hiresemble.common.exception.BusinessException;
-import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
 import com.hiresemble.document.application.model.DocumentEvidenceApplyResult;
+import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
 import com.hiresemble.document.application.model.DocumentEvidenceRejectionReason;
 import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
-import com.hiresemble.profile.domain.model.ExperienceLinkKind;
+import com.hiresemble.profile.application.port.DocumentEvidenceCommandPort;
+import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
+import com.hiresemble.profile.application.service.CanonicalExperienceCandidateService.ApplyResult;
+import com.hiresemble.profile.application.service.CanonicalExperienceCandidateService.Candidate;
+import com.hiresemble.profile.application.service.CanonicalExperienceCandidateService.RejectionReason;
 import com.hiresemble.profile.domain.model.ExperienceMatchKind;
-import com.hiresemble.profile.domain.policy.ExperienceSimilarityPolicy;
-import com.hiresemble.profile.domain.policy.ExperienceSimilarityPolicy.MatchDecision;
-import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
 import com.hiresemble.profile.infrastructure.persistence.ExperienceStore;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.EnumMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
 
-    private static final Pattern NUMBER = Pattern.compile("(?<![\\p{L}\\p{N}])\\d+(?:[.,]\\d+)?%?");
     private final ProfileStore store;
     private final ExperienceStore experienceStore;
     private final List<EvidenceReferenceQueryPort> referenceQueries;
-    private final ObjectMapper objectMapper;
+    private final DocumentCandidateProvenanceValidator validator;
+    private final CanonicalExperienceCandidateService canonicalService;
 
     public DocumentEvidenceService(
             ProfileStore store,
             ExperienceStore experienceStore,
             List<EvidenceReferenceQueryPort> referenceQueries,
-            ObjectMapper objectMapper) {
+            DocumentCandidateProvenanceValidator validator,
+            CanonicalExperienceCandidateService canonicalService) {
         this.store = store;
         this.experienceStore = experienceStore;
         this.referenceQueries = List.copyOf(referenceQueries);
-        this.objectMapper = objectMapper;
+        this.validator = validator;
+        this.canonicalService = canonicalService;
     }
 
     @Override
@@ -72,258 +64,73 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
             List<DocumentEvidenceCandidate> candidates,
             EmbeddingPolicy embeddingPolicy,
             Instant now) {
-        List<UUID> applied = new ArrayList<>();
-        Set<String> dedupe = new HashSet<>();
+        List<Candidate> validated = new ArrayList<>();
         EnumMap<DocumentEvidenceRejectionReason, Integer> rejected =
                 new EnumMap<>(DocumentEvidenceRejectionReason.class);
-        EnumMap<ExperienceMatchKind, Integer> matches =
-                new EnumMap<>(ExperienceMatchKind.class);
-        experienceStore.lockUserMatching(userId);
-        for (DocumentEvidenceCandidate candidate : candidates == null ? List.<DocumentEvidenceCandidate>of() : candidates) {
-            ValidatedCandidate value;
+        for (DocumentEvidenceCandidate candidate : candidates == null
+                ? List.<DocumentEvidenceCandidate>of()
+                : candidates) {
             try {
-                value = validate(userId, documentId, sourceRevision, candidate);
-            } catch (CandidateRejectionException exception) {
+                validated.add(validator.validate(userId, documentId, sourceRevision, candidate));
+            } catch (DocumentCandidateProvenanceValidator.Rejection exception) {
                 rejected.merge(exception.reason(), 1, Integer::sum);
-                continue;
             } catch (BusinessException | IllegalArgumentException exception) {
-                rejected.merge(
-                        DocumentEvidenceRejectionReason.OTHER_SAFE_REJECTION,
-                        1,
-                        Integer::sum);
-                continue;
+                rejected.merge(DocumentEvidenceRejectionReason.OTHER_SAFE_REJECTION, 1, Integer::sum);
             }
-            String fingerprint = ExperienceSimilarityPolicy.fingerprint(
-                    value.category(), value.title(), value.content());
-            if (!dedupe.add(fingerprint)) {
-                rejected.merge(DocumentEvidenceRejectionReason.DUPLICATE, 1, Integer::sum);
-                continue;
-            }
-            if (embeddingPolicy != null && !validEmbedding(candidate.embedding(), embeddingPolicy)) {
-                rejected.merge(DocumentEvidenceRejectionReason.INVALID_EMBEDDING, 1, Integer::sum);
-                continue;
-            }
-            MatchDecision decision = experienceStore
-                    .findActiveExact(userId, value.category(), fingerprint)
-                    .map(existing -> new MatchDecision(
-                            ExperienceMatchKind.SAME_EXPERIENCE,
-                            existing.id(),
-                            java.math.BigDecimal.ONE.setScale(5)))
-                    .orElseGet(() -> semanticDecision(
-                            userId, value, candidate.embedding(), embeddingPolicy));
-            UUID evidenceId = UUID.randomUUID();
-            store.createDocumentEvidence(
-                    evidenceId, userId, documentId, value.primaryChunkId(), value.category(), value.title(),
-                    value.content(), value.metadata(), candidate.confidence(), now);
-            if (decision.kind() == ExperienceMatchKind.SAME_EXPERIENCE) {
-                experienceStore.addEvidenceLink(
-                        userId,
-                        decision.matchedExperienceItemId(),
-                        evidenceId,
-                        ExperienceLinkKind.CORROBORATING,
-                        decision.similarity(),
-                        ExperienceSimilarityPolicy.VERSION,
-                        now);
-            } else {
-                UUID experienceItemId = UUID.randomUUID();
-                UUID canonicalEvidenceId = UUID.randomUUID();
-                ExperienceMatchKind storedKind = decision.kind();
-                experienceStore.createItem(
-                        experienceItemId,
-                        userId,
-                        canonicalEvidenceId,
-                        value.category(),
-                        value.title(),
-                        value.content(),
-                        storedKind,
-                        decision.matchedExperienceItemId(),
-                        decision.similarity(),
-                        ExperienceSimilarityPolicy.VERSION,
-                        fingerprint,
-                        now);
-                store.createExperienceEvidence(
-                        canonicalEvidenceId,
-                        userId,
-                        experienceItemId,
-                        value.category(),
-                        value.title(),
-                        value.content(),
-                        value.metadata(),
-                        candidate.confidence(),
-                        now);
-                experienceStore.addEvidenceLink(
-                        userId,
-                        experienceItemId,
-                        evidenceId,
-                        ExperienceLinkKind.PRIMARY_SOURCE,
-                        null,
-                        ExperienceSimilarityPolicy.VERSION,
-                        now);
-                if (embeddingPolicy != null) {
-                    experienceStore.storeEmbedding(
-                            userId,
-                            experienceItemId,
-                            0,
-                            candidate.embedding(),
-                            embeddingPolicy,
-                            now);
-                }
-            }
-            applied.add(evidenceId);
-            matches.merge(decision.kind(), 1, Integer::sum);
         }
+        ApplyResult result = canonicalService.apply(
+                userId,
+                validated,
+                embeddingPolicy,
+                (ownerId, evidenceId, candidate, appliedAt) -> {
+                    store.createDocumentEvidence(
+                            evidenceId,
+                            ownerId,
+                            documentId,
+                            candidate.primarySourceReference(),
+                            candidate.category(),
+                            candidate.title(),
+                            candidate.content(),
+                            candidate.metadata(),
+                            candidate.confidence(),
+                            appliedAt);
+                    return evidenceId;
+                },
+                now);
+        result.rejectionReasonCounts().forEach((reason, count) -> rejected.merge(
+                reason == RejectionReason.DUPLICATE
+                        ? DocumentEvidenceRejectionReason.DUPLICATE
+                        : DocumentEvidenceRejectionReason.INVALID_EMBEDDING,
+                count,
+                Integer::sum));
         int rejectedCount = rejected.values().stream().mapToInt(Integer::intValue).sum();
-        return new DocumentEvidenceApplyResult(applied, rejectedCount, rejected, matches);
+        return new DocumentEvidenceApplyResult(
+                result.appliedEvidenceIds(),
+                rejectedCount,
+                rejected,
+                result.experienceMatchCounts());
     }
 
     @Override
     @Transactional
     public void retireDocumentEvidence(UUID userId, UUID documentId, Instant retiredAt) {
         for (EvidenceRecord evidence : store.findDocumentEvidence(userId, documentId)) {
-            if (referenceQueries.stream()
-                    .anyMatch(query -> query.isReferenced(userId, evidence.id()))) {
+            if (referenceQueries.stream().anyMatch(query -> query.isReferenced(userId, evidence.id()))) {
                 store.tombstoneEvidence(userId, evidence.id(), retiredAt);
             } else {
                 store.deleteEvidence(userId, evidence.id());
             }
         }
+        deleteOrphanUnverifiedItems(userId, retiredAt);
+    }
+
+    private void deleteOrphanUnverifiedItems(UUID userId, Instant retiredAt) {
         for (UUID itemId : experienceStore.findOrphanUnverifiedItems(userId)) {
             experienceStore.findActive(userId, itemId).ifPresent(item -> {
                 experienceStore.clearInboundMatches(userId, itemId, retiredAt);
                 experienceStore.deleteItem(userId, itemId);
                 store.deleteExperienceEvidence(userId, item.canonicalEvidenceId());
             });
-        }
-    }
-
-    private MatchDecision semanticDecision(
-            UUID userId,
-            ValidatedCandidate candidate,
-            List<Double> embedding,
-            EmbeddingPolicy embeddingPolicy) {
-        if (embeddingPolicy == null || embedding == null || embedding.isEmpty()) {
-            return MatchDecision.newExperience();
-        }
-        return ExperienceSimilarityPolicy.decide(
-                candidate.title(),
-                candidate.content(),
-                experienceStore.findSimilar(
-                        userId,
-                        candidate.category(),
-                        embedding,
-                        embeddingPolicy,
-                        ExperienceSimilarityPolicy.TOP_K));
-    }
-
-    private boolean validEmbedding(List<Double> embedding, EmbeddingPolicy policy) {
-        return embedding != null
-                && embedding.size() == policy.dimension()
-                && embedding.stream().allMatch(value -> value != null && Double.isFinite(value));
-    }
-
-    private ValidatedCandidate validate(
-            UUID userId,
-            UUID documentId,
-            long sourceRevision,
-            DocumentEvidenceCandidate candidate) {
-        if (candidate == null
-                || candidate.sourceRevision() != sourceRevision
-                || candidate.sourceChunkIds().isEmpty()
-                || candidate.sourceChunkIds().size() > 20) {
-            throw rejected(DocumentEvidenceRejectionReason.INVALID_PROVENANCE);
-        }
-        if (candidate.confidence() == null
-                || candidate.confidence().signum() < 0
-                || candidate.confidence().compareTo(java.math.BigDecimal.ONE) > 0) {
-            throw rejected(DocumentEvidenceRejectionReason.INVALID_CONFIDENCE);
-        }
-        String category = requiredLabel(
-                candidate.evidenceCategory(), 80,
-                DocumentEvidenceRejectionReason.INVALID_CATEGORY);
-        if (ProfilePolicy.isEducationEvidenceCategory(category)) {
-            throw rejected(DocumentEvidenceRejectionReason.EDUCATION_CATEGORY);
-        }
-        String title = requiredLabel(
-                candidate.title(), 250,
-                DocumentEvidenceRejectionReason.INVALID_CONTENT);
-        String content = requiredContent(candidate.content());
-        Map<String, Object> metadata = metadata(candidate.metadata(), candidate.validationWarning());
-        StringBuilder sources = new StringBuilder();
-        for (UUID chunkId : candidate.sourceChunkIds()) {
-            if (chunkId == null || !store.documentChunkExists(
-                    userId, documentId, sourceRevision, chunkId)) {
-                throw rejected(DocumentEvidenceRejectionReason.INVALID_PROVENANCE);
-            }
-            sources.append(store.documentChunkContent(userId, documentId, sourceRevision, chunkId));
-        }
-        Matcher matcher = NUMBER.matcher(content);
-        while (matcher.find()) {
-            if (sources.indexOf(matcher.group()) < 0) {
-                throw rejected(DocumentEvidenceRejectionReason.UNGROUNDED_NUMBER);
-            }
-        }
-        return new ValidatedCandidate(
-                category, title, content, metadata, candidate.sourceChunkIds().getFirst());
-    }
-
-    private String requiredContent(String value) {
-        if (value == null || value.isBlank() || value.length() > 20_000 || value.indexOf('\0') >= 0) {
-            throw rejected(DocumentEvidenceRejectionReason.INVALID_CONTENT);
-        }
-        return value;
-    }
-
-    private String requiredLabel(
-            String value, int maxLength, DocumentEvidenceRejectionReason reason) {
-        try {
-            return ProfilePolicy.requiredLabel(value, maxLength);
-        } catch (BusinessException | IllegalArgumentException exception) {
-            throw rejected(reason);
-        }
-    }
-
-    private Map<String, Object> metadata(Map<String, Object> source, String warning) {
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        if (source != null) metadata.putAll(source);
-        if (warning != null && !warning.isBlank()) {
-            metadata.put("validationWarning", warning.length() > 500 ? warning.substring(0, 500) : warning);
-        }
-        if (metadata.values().stream().anyMatch(value -> value != null
-                && !(value instanceof String)
-                && !(value instanceof Number)
-                && !(value instanceof Boolean))) {
-            throw rejected(DocumentEvidenceRejectionReason.INVALID_METADATA);
-        }
-        try {
-            if (objectMapper.writeValueAsString(metadata).getBytes(StandardCharsets.UTF_8).length > 16_384) {
-                throw rejected(DocumentEvidenceRejectionReason.INVALID_METADATA);
-            }
-        } catch (JacksonException exception) {
-            throw rejected(DocumentEvidenceRejectionReason.INVALID_METADATA);
-        }
-        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
-    }
-
-    private CandidateRejectionException rejected(DocumentEvidenceRejectionReason reason) {
-        return new CandidateRejectionException(reason);
-    }
-
-    private record ValidatedCandidate(
-            String category,
-            String title,
-            String content,
-            Map<String, Object> metadata,
-            UUID primaryChunkId) {}
-
-    private static final class CandidateRejectionException extends RuntimeException {
-        private final DocumentEvidenceRejectionReason reason;
-
-        private CandidateRejectionException(DocumentEvidenceRejectionReason reason) {
-            this.reason = java.util.Objects.requireNonNull(reason);
-        }
-
-        private DocumentEvidenceRejectionReason reason() {
-            return reason;
         }
     }
 }

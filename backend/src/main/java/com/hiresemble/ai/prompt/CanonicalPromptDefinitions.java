@@ -12,6 +12,7 @@ public final class CanonicalPromptDefinitions {
     public static List<PromptDefinition> all() {
         var prompts = new ArrayList<PromptDefinition>();
         prompts.addAll(DocumentIngestionPromptDefinitions.all());
+        prompts.addAll(GitHubIngestionPromptDefinitions.all());
         prompts.addAll(JobPostingExtractionPromptDefinitions.all());
         prompts.addAll(JobAnalysisPromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationPromptDefinitions.all());

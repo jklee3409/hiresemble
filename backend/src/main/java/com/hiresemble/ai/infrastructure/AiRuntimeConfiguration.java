@@ -20,6 +20,7 @@ import com.hiresemble.ai.context.InterviewFeedbackContextBuilder;
 import com.hiresemble.ai.context.InterviewPreparationContextBuilder;
 import com.hiresemble.ai.context.JobAnalysisContextBuilder;
 import com.hiresemble.ai.context.JobPostingExtractionContextBuilder;
+import com.hiresemble.ai.context.GitHubIngestionContextBuilder;
 import com.hiresemble.ai.context.WorkflowContextBuilder;
 import com.hiresemble.ai.execution.AiExecutionException;
 import com.hiresemble.ai.model.ModelRouter;
@@ -54,6 +55,8 @@ import com.hiresemble.ai.workflow.WorkflowRegistry;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
+import com.hiresemble.ai.workflow.github.GitHubIngestionFailureHandler;
+import com.hiresemble.ai.workflow.github.GitHubIngestionWorkflow;
 import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
 import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
@@ -66,6 +69,8 @@ import com.hiresemble.job.application.port.JobWorkflowCommandPort;
 import com.hiresemble.job.application.port.JobWorkflowQueryPort;
 import com.hiresemble.interview.application.port.InterviewWorkflowCommandPort;
 import com.hiresemble.interview.application.port.InterviewWorkflowQueryPort;
+import com.hiresemble.githubsource.application.GitHubWorkflowCommandPort;
+import com.hiresemble.githubsource.application.GitHubWorkflowQueryPort;
 import java.time.Clock;
 import java.util.List;
 import java.util.Set;
@@ -167,6 +172,15 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    GitHubIngestionWorkflow gitHubIngestionWorkflow(
+            GitHubWorkflowQueryPort queryPort,
+            GitHubWorkflowCommandPort commandPort,
+            ObjectMapper objectMapper,
+            Clock clock) {
+        return new GitHubIngestionWorkflow(queryPort, commandPort, objectMapper, clock);
+    }
+
+    @Bean
     WorkflowRegistry workflowRegistry(
             DocumentIngestionWorkflow documentWorkflow,
             JobPostingExtractionWorkflow jobWorkflow,
@@ -174,7 +188,8 @@ public class AiRuntimeConfiguration {
             CoverLetterGenerationWorkflow coverLetterGenerationWorkflow,
             CoverLetterVerificationWorkflow coverLetterVerificationWorkflow,
             InterviewPreparationWorkflow interviewPreparationWorkflow,
-            InterviewAnswerFeedbackWorkflow interviewAnswerFeedbackWorkflow) {
+            InterviewAnswerFeedbackWorkflow interviewAnswerFeedbackWorkflow,
+            GitHubIngestionWorkflow gitHubIngestionWorkflow) {
         return new WorkflowRegistry(
                 CanonicalWorkflowDefinitions.all(),
                 List.of(
@@ -191,7 +206,8 @@ public class AiRuntimeConfiguration {
                         coverLetterVerificationWorkflow.v3Contribution(),
                         coverLetterVerificationWorkflow.v4Contribution(),
                         interviewPreparationWorkflow.contribution(),
-                        interviewAnswerFeedbackWorkflow.contribution()));
+                        interviewAnswerFeedbackWorkflow.contribution(),
+                        gitHubIngestionWorkflow.contribution()));
     }
 
     @Bean
@@ -226,6 +242,7 @@ public class AiRuntimeConfiguration {
             JobAnalysisQueryPort jobAnalysisQueryPort,
             CoverLetterQueryPort coverLetterQueryPort,
             InterviewWorkflowQueryPort interviewQueryPort,
+            GitHubWorkflowQueryPort gitHubQueryPort,
             AiPreferenceQueryPort preferenceQueryPort,
             Environment environment) {
         long version = environment.getProperty(
@@ -240,7 +257,8 @@ public class AiRuntimeConfiguration {
                         coverLetterQueryPort, preferenceQueryPort, version),
                 new InterviewPreparationContextBuilder(interviewQueryPort, version),
                 new InterviewFeedbackContextBuilder(
-                        interviewQueryPort, preferenceQueryPort, version));
+                        interviewQueryPort, preferenceQueryPort, version),
+                new GitHubIngestionContextBuilder(gitHubQueryPort, version));
     }
 
     @Bean
@@ -315,6 +333,12 @@ public class AiRuntimeConfiguration {
     WorkflowFailureHandler interviewPreparationFailureHandler(
             InterviewWorkflowCommandPort commandPort) {
         return new InterviewPreparationFailureHandler(commandPort);
+    }
+
+    @Bean
+    WorkflowFailureHandler gitHubWorkflowFailureHandler(
+            GitHubWorkflowCommandPort commandPort, Clock clock) {
+        return new GitHubIngestionFailureHandler(commandPort, clock);
     }
 
     @Bean

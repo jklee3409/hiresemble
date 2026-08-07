@@ -132,6 +132,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '대외활동', profileRecommended: true },
       },
       {
+        path: 'profile/experiences',
+        name: 'profile-experiences',
+        component: () => import('@/pages/ExperienceLibraryPage.vue'),
+        meta: { title: '경험 보관함', profileRecommended: true },
+      },
+      {
         path: 'profile/evidence',
         redirect: { name: 'profile-activities' },
       },

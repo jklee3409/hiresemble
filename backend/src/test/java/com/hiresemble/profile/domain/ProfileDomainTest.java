@@ -177,6 +177,8 @@ class ProfileDomainTest {
                 1,
                 1,
                 0,
+                "지원용 이력서.pdf",
+                0,
                 now,
                 now);
     }

@@ -9,5 +9,6 @@ public enum EvidenceSourceType {
     ACTIVITY,
     DOCUMENT_CHUNK,
     EXPERIENCE,
+    GITHUB_REPOSITORY,
     MANUAL
 }
