@@ -1896,7 +1896,7 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 }
 
 /*
- * 요건 하나 = 캡슐 하나. 개수를 세어 읽을 수 있도록 사이를 벌리고 알약 형태로 굴린다.
+ * 요건 하나 = 막대 하나. 개수를 세어 읽을 수 있도록 사이를 벌린다.
  * 요건이 많아도 줄바꿈하지 않고 같은 폭으로 나눠 전체 비율을 유지한다.
  */
 .analysis-overview__capsules {
@@ -1912,27 +1912,23 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
   }
 }
 
+/*
+ * 직사각형에 가까운 막대로 두고 모서리만 4px 굴린다.
+ * 파스텔 채움은 흰 면 위에서 대비가 낮으므로 1px 윤곽이 막대 경계를 지탱한다.
+ */
 .analysis-overview__capsules > span {
   position: relative;
   min-width: 0.25rem;
   flex: 1 1 0;
   overflow: hidden;
-  border-radius: var(--radius-pill);
+  border-radius: 0.25rem;
   transition:
     transform var(--motion-fast),
     filter var(--motion-fast);
 }
 
-/* 캡슐 윗면에 옅은 빛을 넣어 평평한 색 띠로 보이지 않게 한다. */
-.analysis-overview__capsules > span::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgb(255 255 255 / 26%), rgb(255 255 255 / 0%) 52%);
-  content: '';
-}
-
 .analysis-overview__capsules > span:hover {
-  filter: saturate(1.15);
+  filter: saturate(1.12);
   transform: translateY(-2px);
 }
 
@@ -1943,30 +1939,35 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
  */
 [data-match-level='MATCHED'] {
   --analysis-match-color: var(--chart-matched);
+  --analysis-match-line: var(--chart-matched-line);
   --analysis-match-strong: var(--chart-matched-strong);
   --analysis-match-soft: var(--chart-matched-soft);
 }
 
 [data-match-level='PARTIAL'] {
   --analysis-match-color: var(--chart-partial);
+  --analysis-match-line: var(--chart-partial-line);
   --analysis-match-strong: var(--chart-partial-strong);
   --analysis-match-soft: var(--chart-partial-soft);
 }
 
 [data-match-level='MISSING'] {
   --analysis-match-color: var(--chart-missing);
+  --analysis-match-line: var(--chart-missing-line);
   --analysis-match-strong: var(--chart-missing-strong);
   --analysis-match-soft: var(--chart-missing-soft);
 }
 
 [data-match-level='UNKNOWN'] {
   --analysis-match-color: var(--chart-unknown);
+  --analysis-match-line: var(--chart-unknown-line);
   --analysis-match-strong: var(--chart-unknown-strong);
   --analysis-match-soft: var(--chart-unknown-soft);
 }
 
 .analysis-overview__capsules > span {
   background-color: var(--analysis-match-color);
+  box-shadow: inset 0 0 0 1px var(--analysis-match-line);
 }
 
 /*
@@ -2000,7 +2001,9 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 }
 
 .analysis-overview__statuses > div[data-empty='true'] .analysis-overview__dot {
-  background: var(--color-border-strong);
+  background: var(--color-fill-strong);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+  color: var(--color-text-muted);
 }
 
 .analysis-overview__statuses dt {
@@ -2028,15 +2031,17 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
   font-variant-numeric: tabular-nums;
 }
 
+/* 파스텔 채움 위에서는 흰 아이콘이 보이지 않으므로 같은 계열의 진한 톤으로 그린다. */
 .analysis-overview__dot {
   display: grid;
   place-items: center;
   width: 2rem;
   height: 2rem;
   flex: 0 0 auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--analysis-match-color);
-  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--analysis-match-line);
+  color: var(--analysis-match-strong);
 }
 
 .analysis-overview__dot .icon {
@@ -2421,9 +2426,10 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
   width: 1.75rem;
   height: 1.75rem;
   flex: 0 0 auto;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--analysis-match-color);
-  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--analysis-match-line);
+  color: var(--analysis-match-strong);
 }
 
 .analysis-criterion__mark .icon {

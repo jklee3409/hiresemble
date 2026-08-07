@@ -174,19 +174,25 @@
   --shadow-panel: 0 1px 3px rgb(16 24 40 / 4%), 0 14px 34px -18px rgb(16 24 40 / 16%);
 
   /*
-   * 차트 마크(면) 채움 전용 status 팔레트.
-   * 텍스트·아이콘 색에는 위의 semantic 토큰(--color-success 등)을 계속 사용한다.
-   * 기존 semantic 조합은 색각 검증에서 적-주황 쌍이 deutan ΔE 1.7로 실패해 마크에 쓸 수 없다.
-   * 아래 4색은 일반 시각 ΔE 16.2 / surface 대비 3:1 통과, CVD 최악 쌍 ΔE 7.9(WARN)이므로
-   * 아이콘·한글 라벨·2px 간격·텍스처의 2차 인코딩을 항상 함께 사용한다.
+   * 차트 마크(면) 채움 전용 status 팔레트. 파스텔 톤이라 흰 면 위에서 채움만으로는
+   * 대비 3:1을 넘지 못하므로 마크에는 아래 `-line` 색의 1px 윤곽을 항상 함께 쓴다.
+   * 텍스트·아이콘 색에는 `-strong`을, 칩 배경에는 `-soft`를 쓴다.
+   * 색 hue는 sage·peach·blush·sky 네 계열로 나눠 두었지만 deutan에서 sage-blush 쌍이
+   * 가까우므로, 고정 정렬 순서와 아이콘·한글 라벨·개수 범례를 항상 2차 인코딩으로 함께 쓴다.
    */
-  --chart-matched: #12855f;
-  --chart-partial: #a16207;
-  --chart-missing: #a01b3c;
-  --chart-unknown: #8792a6;
+  --chart-matched: #a9d6b8;
+  --chart-partial: #ffd6a5;
+  --chart-missing: #ffaeb4;
+  --chart-unknown: #ccd6e8;
+
+  /* 파스텔 채움의 윤곽선. 모두 흰 면 대비 3.6:1 이상이라 마크 경계를 혼자 지탱한다. */
+  --chart-matched-line: #4f8f68;
+  --chart-partial-line: #b07d2c;
+  --chart-missing-line: #c24d5c;
+  --chart-unknown-line: #6b7a94;
 
   /*
-   * 위 네 마크 색의 진한 톤(텍스트용)과 옅은 톤(칩 배경용).
+   * 위 네 마크 색의 진한 톤(텍스트·아이콘용)과 옅은 톤(칩 배경용).
    * hue는 그대로 두고 명도만 움직여 검증된 색 구분을 유지한다.
    */
   --chart-matched-strong: #0d5f44;
