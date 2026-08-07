@@ -4,6 +4,19 @@
 
 P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P8 typed resource 연결이 구현됐으며 deleted owner visibility와 domain 결과 보존을 유지한다.
 
+## [2026-08-07] Session Summary (GITHUB_SOURCE Agent Run 연결)
+
+- What was done:
+  - `GITHUB_INGESTION`, `SELECT_GITHUB_REPOSITORIES`, `GITHUB_SOURCE` owner/resource link와 same-run resume·retry contributor·failure compensation을 연결했다.
+- Key decisions:
+  - account selection은 `WAITING_USER→QUEUED`로 같은 Run을 재개하고 direct repository의 wait step은 durable `SKIPPED`다.
+- Issues encountered:
+  - V27의 waiting action CHECK와 generic exactly-one/parity 제약을 함께 확장해야 했다.
+- Validation:
+  - workflow integration에서 resume·retry successor 단일성·cancel/reconciliation·SSE projection이 통과했다.
+- Next steps:
+  - Gate 2는 기존 Agent Run detail/SSE 계약을 그대로 소비한다.
+
 ## [2026-08-06] Session Summary (Agent Run 전역 비용 예약 정책)
 
 - What was done: launch·retry·resume의 분야별 고정 예약을 0원 시작으로 바꾸고 활성 budget/price version을 중앙 port에서 snapshot하도록 변경했다.

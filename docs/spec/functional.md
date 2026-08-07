@@ -1,7 +1,7 @@
 # 기능 명세서
 
-- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-02
+- 문서 버전: 1.3 (GitHub 경험 수집·Career Artifact 목표 계약)
+- 기준일: 2026-08-07
 - 대상: 핵심 MVP
 - 사용자 역할: 현재 `USER`; P8.9-A 목표 `USER`, `ADMIN` (`PLANNED`, 공개 ADMIN 가입 없음)
 - 공고 상태: `IN_PROGRESS`, `SUBMITTED`, `CLOSED`
@@ -13,8 +13,9 @@
 ```text
 회원 가입
 → 기본 프로필 입력
-→ 이력서·포트폴리오 업로드
-→ 추출된 근거 검토
+→ 이력서·포트폴리오 업로드 또는 GitHub URL 등록
+→ 추출된 근거와 정규 경험 검토
+→ 필요하면 승인 경험으로 이력서·포트폴리오 초안 생성·다운로드
 → 공고 URL 등록·본문 확인·자동 분석
 → 적합도와 다음 준비 확인
 → 자기소개서 문항 등록
@@ -45,6 +46,11 @@
 15. 사용자별 제품 사용량, 내부 Provider 원가와 과금 가능 usage unit을 집계하되 현재 고객 청구 금액은 0이다.
 16. AI 실패는 내부 technical code와 분리된 사용자 category·복구 CTA·데이터 보존 안내를 제공한다.
 17. ADMIN 운영 조회는 별도 Backoffice와 Backend 인가·접근 audit를 사용하며 사용자 원문을 기본 노출하지 않는다.
+18. GitHub repository content는 사용자 사실이 아니라 신뢰하지 않는 외부 입력이며, 사용자가 승인한 정규 경험으로 투영되기 전에는 후속 산출물에 사용하지 않는다.
+19. GitHub URL만으로 사용자의 계정 소유권·개인 기여·역할·성과를 확정하지 않고 신규 경험·강점은 `PENDING`으로 시작한다.
+20. 생성한 이력서·포트폴리오는 입력 문서와 별도 수명주기의 Career Artifact이며 기존 문서 분석 pipeline에 자동 등록하지 않는다.
+21. 이력서·포트폴리오 생성은 사용자가 유형·활용 경험·exact model을 선택해 명시적으로 요청할 때만 실행한다.
+22. 이력서·포트폴리오가 없는 사용자에게 생성 기능을 제안할 수 있으나 자동 생성, 강제 modal과 강제 route 이동은 금지한다.
 
 ---
 
@@ -260,6 +266,83 @@
 - 참조되지 않은 document evidence는 삭제한다.
 - 승인된 정규 경험은 독립 `EXPERIENCE` 근거로 유지하고 삭제된 문서 출처만 제거하거나 tombstone 처리한다.
 - 보존된 과거 버전·검증·근거 링크는 삭제하지 않으며 raw excerpt를 반환하지 않는다.
+
+## GH-001 GitHub URL 등록과 repository 선택 (`IMPLEMENTED`, Gate 1)
+
+- `https://github.com/{owner}` 계정 URL과 `https://github.com/{owner}/{repository}` 저장소 URL을 지원한다.
+- scheme은 HTTPS, host는 `github.com|www.github.com`만 허용하고 user-info, 임의 port, query, fragment, encoded slash와 추가 repository 하위 path를 거부한다.
+- 입력 URL을 직접 fetch하지 않고 파싱한 owner/repository로 서버가 GitHub REST API endpoint를 구성한다.
+- 첫 구현은 공개 repository만 지원하고 Personal Access Token을 입력·저장하지 않는다. private repository는 후속 GitHub App 연결 범위다.
+- 계정 URL은 공개 repository를 발견한 뒤 AI 호출 전에 `WAITING_USER`와 `SELECT_GITHUB_REPOSITORIES`로 전환한다. 사용자는 최대 10개 repository를 선택하고 같은 Agent Run을 재개한다.
+- 계정 discovery는 최근 push 기준 최대 200개 public repository metadata만 저장하고 초과 여부를 사용자에게 표시한다.
+- 저장소 URL은 해당 repository를 선택하고 사용자 선택 step을 건너뛴다.
+- 사용자는 등록 시 본인 또는 실제 참여 프로젝트이고 추출 결과를 직접 검토한다는 확인을 제공한다.
+
+## GH-002 GitHub snapshot과 안전한 수집 (`IMPLEMENTED`, Gate 1)
+
+- repository default branch의 commit SHA와 retrieval policy version을 immutable snapshot identity로 사용한다.
+- metadata, language summary, README, manifest, Docker/compose, CI, test, 설계 문서와 제한된 대표 source만 수집한다.
+- binary, image, archive, dependency/vendor/generated/build/cache, lock/minified file과 secret·credential 경로는 제외한다.
+- repository를 clone하거나 code·script·build를 실행하지 않는다.
+- README와 source는 instruction이 아닌 untrusted data로 구분하며 GitHub 추출 단계는 tool을 호출하지 않는다.
+- upstream tree가 잘리거나 일부 repository만 처리되면 `PARTIAL`을 표시하고 전체 분석으로 표현하지 않는다.
+- 같은 commit SHA와 retrieval policy의 성공 snapshot은 재사용한다.
+
+## GH-003 프로젝트 경험·강점 추출과 중복 방지 (`IMPLEMENTED`, Gate 1)
+
+- AI는 strict schema의 프로젝트 경험과 강점 후보, confidence, source unit reference와 limitation만 반환한다.
+- 서버는 프로젝트 경험 category를 `PROJECT`, 강점을 `STRENGTH`로 지정하고 model이 user/source/status를 정하지 못하게 한다.
+- GitHub candidate도 현재 문서 candidate와 같은 canonical fingerprint, active embedding policy, cosine Top-K, 의미 anchor와 수치 충돌 정책을 사용한다.
+- `PROJECT|프로젝트`, `STRENGTH|강점|역량`처럼 기존 category alias를 같은 비교 group으로 취급하되 기존 row를 첫 도입에서 일괄 변경하지 않는다.
+- exact 또는 `SAME_EXPERIENCE`는 새 경험 카드를 만들지 않고 distinct GitHub repository 출처만 보강한다.
+- `NEW|RELATED_DIFFERENT|CONFLICT`는 `PENDING` 정규 경험으로 만들며 유사·충돌은 사용자가 분리 유지 또는 병합을 선택한다.
+- repository 소유, commit 수, star 수, language 비율만으로 사용자의 개인 역할·성과·역량을 단정하지 않는다.
+- 후속 생성·분석은 raw GitHub evidence가 아니라 사용자가 승인한 canonical `EXPERIENCE` evidence만 한 번 사용한다.
+
+## GH-004 GitHub refresh와 삭제 (`IMPLEMENTED`, Gate 1)
+
+- refresh에서 commit SHA와 retrieval policy가 같으면 새 AI 호출 없이 기존 성공 상태를 반환한다.
+- 새 snapshot의 동일 claim은 기존 source provenance를 갱신하고 같은 경험 카드를 반복 생성하지 않는다.
+- refresh는 기존 VERIFIED 정규 경험의 사용자 문구나 상태를 자동 변경하지 않는다.
+- source 삭제는 API에서 즉시 숨기고 snapshot Object는 outbox로 삭제한다.
+- 과거 산출물이 참조하는 raw evidence는 `SOURCE_DELETED` tombstone, 미참조 raw evidence는 삭제한다.
+- 승인된 canonical 경험은 유지하고 승인되지 않았으며 다른 활성 출처가 없는 orphan만 제거한다.
+
+## ART-001 Career Artifact 생성 요청 (`PLANNED`)
+
+- Career Artifact 유형은 `RESUME|PORTFOLIO`이고 업로드 `documents`와 별도 resource다.
+- 모든 사용자가 생성 기능을 사용할 수 있으며 이력서·포트폴리오 부재는 추천 표시 조건일 뿐 접근 권한 조건이 아니다.
+- hard precondition은 VERIFIED canonical 경험 최소 1개다. 프로젝트·경력 2개와 강점 1개 미만은 quality warning을 제공하되 생성을 강제로 막지 않는다.
+- 사용자는 artifact 유형, title, VERIFIED experience, 포함할 구조화 profile section, server model catalog의 exact model과 renderer profile을 확인한 뒤 요청한다.
+- 연락처·이메일 등 renderer profile은 LLM Context에 넣지 않고 최종 file renderer에서만 삽입한다.
+- 생성 실패 시 기존 성공 version과 download를 유지한다.
+
+## ART-002 이력서 DOCX 생성 (`PLANNED`)
+
+- `RESUME_GENERATION`은 검증된 경력 Context 구성, 구성 계획, structured draft, fact check, DOCX render·검증·version 저장의 고정 workflow다.
+- AI는 headline, summary, skill, 경력·프로젝트 bullet, warning과 evidence reference만 반환하고 DOCX byte나 OOXML을 만들지 않는다.
+- 서버는 Apache POI XWPF와 server-owned template으로 ATS 친화적 단일 column DOCX를 만든다.
+- source에 없는 조직, 기간, 역할, 수치와 성과를 생성하지 않는다.
+- 생성 파일은 1~2 page를 목표로 하며 core content에 text box, chart, 원격 image를 사용하지 않는다.
+
+## ART-003 포트폴리오 PPTX 생성과 디자인 (`PLANNED`)
+
+- `PORTFOLIO_GENERATION`은 검증된 경력 Context, 면접관 중심 story plan, strict slide draft, fact check, PPTX render·검증·version 저장의 고정 workflow다.
+- 내부 prompt는 `문제 → 내 역할 → 행동 → 기술적 판단 → 결과 → 드러난 강점`의 case study와 첫 60초 scanability를 우선한다.
+- 한 slide는 하나의 핵심 message를 가지며 긴 문단, 작은 글자, 과도한 장식과 근거 없는 수치를 금지한다.
+- model은 slide type, text, evidence ref와 제한된 visual type만 선택하고 좌표, font, 색상, 여백, 도형과 overflow는 server renderer가 결정한다.
+- 서버는 Apache POI XSLF와 16:9 server-owned template으로 6~12 slide PPTX를 생성한다.
+- 외부 image, README image, source screenshot, remote font와 arbitrary OOXML을 사용하지 않는다.
+
+## ART-004 Version·다운로드·선택적 제안 (`PLANNED`)
+
+- 검증·upload가 성공한 artifact version만 immutable row로 저장하고 current version으로 승격한다.
+- version은 생성 당시 experience/evidence version과 title/content snapshot을 provenance로 보존한다.
+- DOCX/PPTX는 private Object Storage에 저장하고 owner 검증 뒤 5분 download URL을 발급한다.
+- active artifact는 보관할 수 있고 보관본은 읽기·과거 version 다운로드만 허용한다. unarchive하면 이전 current version을 그대로 복구하며 새 생성은 명시적으로 다시 요청한다.
+- artifact 삭제는 API에서 즉시 404, Object 삭제는 전용 outbox로 처리한다.
+- 해당 유형의 uploaded document와 generated artifact가 없고 GitHub 유래 VERIFIED 경험이 있을 때만 Dashboard·자료 empty state·GitHub 완료 화면에 non-modal 제안을 표시한다.
+- 사용자가 유형·경험·model을 고르기 전에는 Agent Run을 만들지 않는다.
 
 ---
 
@@ -672,7 +755,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - `CANCELLED`
 - `INTERRUPTED`
 
-`WAITING_USER`는 모델 호출 전 필수 수동 입력이 없는 상태다. 미사용 비용 예약을 해제하고 사용자가 입력을 제공하면 같은 run을 `QUEUED`로 재개한다. terminal retry는 기존 run을 다시 열지 않고 lineage를 가진 새 run을 만든다.
+`WAITING_USER`는 모델 호출 전 필수 수동 입력이나 repository 선택이 없는 상태다. 미사용 비용 예약을 해제하고 사용자가 입력·선택을 제공하면 같은 run을 `QUEUED`로 재개한다. terminal retry는 기존 run을 다시 열지 않고 lineage를 가진 새 run을 만든다.
 
 사용자는 terminal Agent Run을 개별 또는 최대 100개 선택해 작업 내역에서 삭제할 수 있다. 삭제는 사용자 목록·상세·SSE·재시도에서 즉시 숨기는 soft delete이며 실행 lineage, 단계, 비용 예약·사용량과 연결 산출물 audit은 보존한다. active run은 취소·종료 전 삭제할 수 없다.
 
@@ -702,7 +785,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - 중복 분석 캐시
 - 문서 전체 대신 관련 근거만 Context에 포함
 
-공개 품질 모드는 `ECONOMY|BALANCED|HIGH_QUALITY`다. `HIGH_QUALITY`는 사용자 설정 활성화, 요청별 명시 선택과 비용 예약 성공을 모두 요구하며 자기소개서 생성·자기소개서 검증·면접 답변 피드백에만 허용한다. 모의 면접 종합 feedback은 `BALANCED`로 고정한다. 공고 분석, 문서·공고 추출과 면접 준비는 `ECONOMY|BALANCED`만 허용한다.
+공개 품질 모드는 `ECONOMY|BALANCED|HIGH_QUALITY`다. `HIGH_QUALITY`는 사용자 설정 활성화, 요청별 명시 선택과 비용 예약 성공을 모두 요구하며 자기소개서 생성·자기소개서 검증·면접 답변 피드백에만 허용한다. 모의 면접 종합 feedback은 `BALANCED`로 고정한다. 공고 분석, 문서·공고·GitHub 추출과 면접 준비는 `ECONOMY|BALANCED`만 허용한다. 이력서·포트폴리오 생성은 품질 모드 대신 자기소개서와 같은 server-owned catalog의 exact model을 사용한다.
 
 ## SYS-004 제품 기능 한도 (`PLANNED` P8.6)
 
@@ -728,9 +811,12 @@ INTERVIEW_ANSWER_FEEDBACK
 MOCK_INTERVIEW_SESSION_CREATE
 MOCK_INTERVIEW_TURN
 MOCK_INTERVIEW_SESSION_FEEDBACK
+GITHUB_INGESTION
+RESUME_GENERATION
+PORTFOLIO_GENERATION
 ```
 
-마지막 세 key는 P9가 구현한다.
+모의 면접 세 key는 P9가 구현한다. `GITHUB_INGESTION` workflow는 Gate 1에서 구현됐지만 이 절의 제품 기능 한도·metering은 P8.6까지 계획 상태이며 `RESUME_GENERATION|PORTFOLIO_GENERATION`은 Career Artifact Gate 3이 구현한다.
 
 ## SYS-005 사용자 사용량·내부 원가·과금 가능 usage (`PLANNED` P8.7)
 
@@ -784,3 +870,17 @@ MOCK_INTERVIEW_SESSION_FEEDBACK
 | AC-15 | 사용자별 기능 사용량·내부 AI 원가·과금 가능 unit을 기간별로 정확히 집계하고 reconcile할 수 있다. |
 | AC-16 | AI 기능 실패가 공통 사용자 category·복구 CTA·데이터 보존 안내로 표시된다.                        |
 | AC-17 | ADMIN만 Backoffice에서 사용자·사용량·AI 원가·실패·Agent Run을 안전하게 조회한다.                 |
+
+GitHub·Career Artifact vertical은 기존 AC-01~17 구현 완료 판정과 별도로 추적한다. Gate 1 Backend가 GH-AC-01~04를 구현했으며 `/profile/github` Frontend와 ART-AC-01~05는 계속 `PLANNED`다.
+
+| ID        | 인수 조건 |
+| --------- | --------- |
+| GH-AC-01  | 계정·repository URL을 owner scope로 등록하고 계정 URL에서는 같은 Run의 repository 선택을 완료한다. |
+| GH-AC-02  | public repository를 실행하지 않고 bounded snapshot으로 수집하며 prompt injection·secret·SSRF 입력을 차단한다. |
+| GH-AC-03  | 기존과 같은 경험은 새 카드를 만들지 않고 출처를 보강하며 유사·수치 충돌은 사용자 검토로 보낸다. |
+| GH-AC-04  | GitHub 신규 경험·강점은 승인 전 후속 산출물에 사용되지 않고 source 삭제 뒤 승인 canonical 경험은 유지된다. |
+| ART-AC-01 | 사용자가 VERIFIED 경험과 exact model을 선택해 이력서 DOCX 초안을 생성하고 version별로 다운로드한다. |
+| ART-AC-02 | 사용자가 VERIFIED 경험과 exact model을 선택해 면접관 중심 포트폴리오 PPTX 초안을 생성하고 version별로 다운로드한다. |
+| ART-AC-03 | AI 출력의 모든 claim이 생성 당시 evidence snapshot에 연결되고 source에 없는 역할·수치·성과가 file에 포함되지 않는다. |
+| ART-AC-04 | 생성 실패·재시도·삭제가 기존 문서 pipeline과 이전 성공 artifact version을 훼손하지 않는다. |
+| ART-AC-05 | 자료가 없는 사용자에게 생성 기능을 선택적으로 제안하되 사용자 확인 전 Run을 만들지 않는다. |

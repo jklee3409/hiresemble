@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1~P8.5 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock 검증 source set을 관리한다.
+P1~P8.5와 Phase 1 GitHub Backend 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock 검증 source set을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -12,7 +12,7 @@ P1~P8.5 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock 검�
 
 ## 구성 요소 역할
 
-- 실제 PostgreSQL과 Spring context를 사용하되 운영 DB·유료 외부 provider에 연결하지 않는다.
+- 실제 PostgreSQL과 Spring context를 사용하되 운영 DB·실제 GitHub·유료 외부 provider에 연결하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

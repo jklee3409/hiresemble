@@ -8,7 +8,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 
 - `WorkflowRegistry`: definition/contribution 검증
 - `TerminalPartialPolicy`: 실제 failed scope가 남은 terminal 결과의 workflow별 성공·실패·safe error·retry 정책
-- `CanonicalWorkflowDefinitions`: 8개 WorkflowType canonical definition과 Document·Cover Letter의 격리된 legacy version definition
+- `CanonicalWorkflowDefinitions`: 9개 WorkflowType canonical definition과 Document·Cover Letter의 격리된 legacy version definition
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
 - `JobPostingExtractionWorkflow`: P5 URL fetch, DOM/image inspection·JPEG·PNG·WebP fetch, provider-visible reference binding을 거친 trusted `imageRef` text extraction, item/aggregate source compose, 사용자 override, 품질 검증과 domain apply까지의 9단계 v3 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
@@ -19,6 +19,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `CoverLetterVerificationWorkflow`: P7 immutable answer verification v1~v3 durable contribution과 active v4 선택 모델·relevance evidence selection·exact claim grounding·한국어 fact/writing-quality·sibling truncation context를 포함한 6단계 contribution
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상
 - [`document/`](document/index.md): P4 active `DOCUMENT_INGESTION` 9단계·legacy 8단계 contribution과 실패 보상
+- [`github/`](github/index.md): Phase 1 `GITHUB_INGESTION` 10단계·same-run wait/resume·실패 보상
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할

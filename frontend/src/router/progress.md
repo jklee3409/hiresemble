@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-07] Session Summary (경험 보관함 보호 route)
+
+- What was done:
+  - `/profile/experiences` lazy route·title·profileRecommended metadata와 안전한 `returnTo` 허용을 추가했다.
+- Key decisions:
+  - 기존 `/profile/evidence` redirect는 직접 대외활동 호환 경로로 유지하고 새 canonical 경험 route를 별도로 등록했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - router·returnTo·profile navigation test와 전체 `pnpm check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-04] Session Summary (온보딩 eligibility route fixture 보강)
 
 - What was done:

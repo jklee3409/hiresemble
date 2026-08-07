@@ -9,7 +9,7 @@
 | 경로                           | 역할                                                         |
 | ------------------------------ | ------------------------------------------------------------ |
 | [`spec/`](spec/)               | 기능, API, DB, 페이지, 기술 스택의 기준 명세                 |
-| [`design/`](design/)           | 전체 시스템 설계, 명세 정합성 이슈와 단계별 구현 계획        |
+| [`design/`](design/)           | 전체 시스템 설계, 명세 정합성 이슈, 단계별 구현 계획과 승인된 목표 vertical 설계 |
 | [`operations/`](operations/)   | Provider 활성화, usage reconciliation과 Backoffice 운영 절차 |
 | [`agent-rules/`](agent-rules/) | 작업 절차와 백엔드·프론트엔드·인프라 세부 규칙               |
 | [`assets/`](assets/)           | 루트 README 서비스 소개에 사용하는 실제 화면 캡처            |

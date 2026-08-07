@@ -4,6 +4,19 @@
 
 P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
 
+## [2026-08-07] Session Summary (경험 보관함 navigation·query key)
+
+- What was done:
+  - `ProfileTabs`에 경험 보관함을 8번째 항목으로 추가하고 user-scoped 경험 목록·상세·root query key를 정의했다.
+- Key decisions:
+  - 직접 입력 대외활동과 AI 정규 경험을 별도 route로 유지하며 가상 완료 수치는 만들지 않는다.
+- Issues encountered:
+  - 기존 navigation test의 7개 항목 기대를 새 route와 함께 갱신했다.
+- Validation:
+  - Frontend 전체 `pnpm check` 70 files/317 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (프로필 navigation 항목 icon)
 
 - What was done:

@@ -2,9 +2,51 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 page 명세는 공개 Landing·첫 사용 흐름 계약 1.3으로 갱신됐다.
-- 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub Backend와 후속 Frontend·Career Artifact 상태를 구분한다.
+- 기능 명세는 핵심 MVP 여정과 AC-01~AC-17, 구현된 GH-AC-01~04 및 planned ART 인수 조건을 정의하고 나머지 명세는 V27·79 paths/107 operations 기준선과 미래 계약을 구분한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-07] Session Summary (GitHub Backend 계약 구현 승격)
+
+- What was done:
+  - GH-001~004, API 13.5.1~13.5.2·13.5.4, DB 13장과 기술 stack의 GitHub gateway/workflow를 implemented baseline으로 승격했다.
+- Key decisions:
+  - DB latest는 V27, 현재 WorkflowType은 9개, feature-enabled OpenAPI는 79 paths/107 operations다. 페이지 5.9와 Career Artifact 계약은 planned다.
+- Issues encountered:
+  - 제품 기능 한도 P8.6은 범위 밖이므로 `FeatureKey` 목표 계약을 구현 완료로 바꾸지 않았다.
+- Validation:
+  - OpenAPI contract test와 fresh/upgrade migration test가 문서의 path·operation·schema 상태를 고정했다.
+- Next steps:
+  - Gate 2 Frontend가 구현된 뒤 page 5.9 상태와 소비 계약을 갱신한다.
+
+## [2026-08-07] Session Summary (GitHub Source·Career Artifact 목표 계약 문서화)
+
+- What was done:
+  - 기능 명세에 GitHub 수집·중복 방지와 선택형 이력서/포트폴리오 생성 규칙·인수 조건을 추가했다.
+  - API 13.5에 완전한 planned DTO·endpoint·error·idempotency 계약, DB 13–15장에 source/snapshot/unit·artifact/version/provenance/outbox와 현재 V26 이후 migration 책임을 추가했다.
+  - 페이지에 `/profile/github`, `/career-artifacts/**`, 선택적 제안·wizard·preview/download·E2E를, 기술 명세에 GitHub gateway·세 planned workflow·POI renderer·보안·검증 경계를 반영했다.
+- Key decisions:
+  - 기존 8개 WorkflowType, 문서 pipeline, V26과 OpenAPI 74 paths/100 operations는 변경하지 않고 신규 범위를 phase 미배정 `PLANNED`로 분리했다.
+  - public repository만 지원하고 생성 file은 `documents`에 자동 등록하지 않으며 실패한 재생성이 이전 성공 version을 바꾸지 않게 했다.
+- Issues encountered:
+  - 기존 명세 파일들의 whole-file Prettier 검사는 수기 표·줄바꿈 형식 때문에 실패해 관련 없는 대량 재포맷을 하지 않았다. 신규 상세 설계 문서는 포맷 검사를 통과했다.
+- Validation:
+  - 상대 Markdown 링크, 다섯 명세 핵심 marker, 현재 V26/8 workflow/100 operation 분리와 `git diff --check`를 확인했다. 코드·migration·OpenAPI는 문서 전용 작업이라 실행하지 않았다.
+- Next steps:
+  - 구현 phase 승인 전 migration latest, 공개 GitHub quota, renderer template/font와 file visual fixture를 확정한다.
+
+## [2026-08-07] Session Summary (경험 보관함 Frontend 상태 동기화)
+
+- What was done:
+  - `page.md`의 `/profile/experiences` route tree와 구현 상태를 갱신하고, 기존 UI pattern·상세 출처·문서 `CORROBORATING` 표시 계약을 현재 Frontend와 맞췄다.
+- Key decisions:
+  - API·DB·semantic 판정 계약은 바꾸지 않고 화면 구현 상태만 동기화했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 명세 문구와 route/API consumer를 대조하고 Frontend 전체 `pnpm check`를 통과했다.
+- Next steps:
+  - actual browser 검증 결과가 생기면 화면 검증 상태를 추가 기록한다.
 
 ## [2026-08-07] Session Summary (canonical 경험·semantic 중복 계약)
 

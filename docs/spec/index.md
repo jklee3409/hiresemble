@@ -8,11 +8,11 @@
 
 | 경로                             | 역할                                                                                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [`functional.md`](functional.md) | 회원·프로필·문서·공고·자기소개서·면접·Agent Run·운영 기반의 비즈니스 규칙, 사용자 여정과 AC-01–AC-17을 정의한다.      |
-| [`api.md`](api.md)               | `/api/v1`, 현재 74 paths/100 operations와 phase별 `PLANNED` usage·failure·Backoffice 계약을 구분한다.               |
-| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 논리 상태, 테이블·관계·제약, 트랜잭션과 데이터 보존 정책을 정의한다.                         |
-| [`page.md`](page.md)             | Vue SPA의 공개 Landing·실제 제품 route와 `PLANNED` settings/mock/Backoffice route, layout, API 연결과 E2E를 정의한다. |
-| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스 아키텍처, 기술 선택, 보안, AI workflow, 비용 제어, 테스트·배포 원칙과 MVP 제외 범위를 정의한다.       |
+| [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다. |
+| [`api.md`](api.md)               | `/api/v1`, 현재 79 paths/107 operations와 `PLANNED` usage·failure·Backoffice·Career Artifact 계약을 구분한다.       |
+| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V27 GitHub schema와 planned artifact version을 포함한 관계·제약·보존 정책을 정의한다.  |
+| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice/GitHub/artifact route, layout, API 연결과 E2E를 정의한다.   |
+| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.          |
 | [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                              |
 
 현재 관리 대상 하위 디렉터리는 없다.
@@ -24,6 +24,21 @@
 - DB 명세는 기능 상태와 소유권·보존 규칙을 영속화하는 목표 데이터 계약을 정의한다.
 - 페이지 명세는 기능과 API를 사용자가 수행하는 route·화면·E2E 흐름으로 연결한다.
 - 기술 스택 명세는 네 문서를 구현할 때 지켜야 할 아키텍처와 품질·보안 제약을 정의한다.
+
+## GitHub·Career Artifact 확장
+
+2026-08-07 승인된 목표 설계 중 GitHub Gate 0~1은 구현됐고 Gate 2 GitHub Frontend와 Gate 3~4 Career Artifact는 `PLANNED`로 분리한다.
+
+| 관점 | 활성 목표 계약 |
+| --- | --- |
+| 비즈니스 규칙·인수 조건 | [`functional.md`](functional.md) GH-001–004, ART-001–004, GH-AC/ART-AC |
+| HTTP·DTO·오류 | [`api.md`](api.md) 13.5장 |
+| table·제약·migration | [`db.md`](db.md) 13–15장 |
+| route·화면·E2E | [`page.md`](page.md) 5.9, 6.3–6.5, 시나리오 E |
+| gateway·workflow·renderer·검증 | [`tech_stack.md`](tech_stack.md) 4.5, 6–12장 |
+| 모듈 변경 지점·도입 gate | [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md) |
+
+현재 기준선은 Flyway V27, canonical 경험 보관함과 GitHub provenance, 9개 WorkflowType과 OpenAPI 79 paths/107 operations다. Career Artifact migration 번호는 예약하지 않았으며 착수 시 latest 상태를 다시 확인한다.
 
 ## P0 승인 기준선과 결정 추적
 
@@ -65,7 +80,7 @@ Gate 항목은 다음 활성 계약 위치에서 닫힌다. 표의 A-1–A-6, B-
 | B-2 idempotency·outbox·lease·cancel        | [`api.md`](api.md) 1.5·11장, [`db.md`](db.md) 4.8·9장, [`tech_stack.md`](tech_stack.md) 10장                                       |
 | B-3 삭제·SOURCE_DELETED·version 보존       | [`functional.md`](functional.md) DOC-004·CL-004, [`api.md`](api.md) 6·8장, [`db.md`](db.md) 4·6·11–12장                            |
 | B-4 research/source provenance cardinality | [`functional.md`](functional.md) INT-001–003, [`api.md`](api.md) 9장, [`db.md`](db.md) 7장                                         |
-| B-5 embedding model·dimension              | [`db.md`](db.md) 4.3·4.7·12–13장, [`tech_stack.md`](tech_stack.md) 6.2장                                                           |
+| B-5 embedding model·dimension              | [`db.md`](db.md) 4.3·4.7·12·15장, [`tech_stack.md`](tech_stack.md) 6.2장                                                           |
 | C-1 retry·WAITING_USER·run identity        | [`functional.md`](functional.md) SYS-001–002, [`api.md`](api.md) 11장, [`db.md`](db.md) 9장                                        |
 | C-2 model mapping·가격·reserve             | [`functional.md`](functional.md) SYS-003, [`api.md`](api.md) 1.6·12장, [`db.md`](db.md) 10장, [`tech_stack.md`](tech_stack.md) 9장 |
 | C-3 미승인 chunk                           | [`functional.md`](functional.md) CL-003·INT-001, [`db.md`](db.md) 4.3장, [`tech_stack.md`](tech_stack.md) 8.2장                    |

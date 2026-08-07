@@ -4,8 +4,58 @@
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
-- `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 69 files/313 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- `/guide`, `/profile/experiences`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 70 files/317 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-07] Session Summary (경험 보관함 카드에서 바로 처리하기)
+
+- What was done:
+  - 경험 보관함의 페이지 설명을 아래 섹션과 같은 폭으로 넓히고, 중복 안내 aside를 없애 위 여백을 줄였다.
+  - 카드의 "상세와 출처" 버튼 자리에 활용 승인·활용 제외(또는 다시 검토)·수정을 두고, 수정은 카드 본문이 그대로 입력 폼으로 바뀌게 했다.
+  - 문서 출처를 개수 대신 실제 문서 이름으로 보여 주고(여러 곳이면 `외 N곳`), 목록을 5개씩으로 바꿨다.
+- Key decisions:
+  - 상세 패널은 유사 경험 비교·합치기와 출처 목록 전용으로 좁히고, `reviewRequired` 카드 안내 줄의 "비교해서 확인" 링크로만 들어가게 했다. 버튼만 지우면 중복 판정 흐름에 도달할 수 없다.
+  - 문서 이름은 서버 목록 DTO의 새 `primaryDocumentName`을 쓴다. 항목마다 상세를 조회하면 N+1이 된다.
+- Issues encountered:
+  - Node 20 환경이라 `vitest`를 실행하지 못했다. 변경 전에도 동일한 환경 제약이다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. fixture로 1440·390px와 카드 내 편집 상태를 직접 확인했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`를 재실행한다.
+
+## [2026-08-07] Session Summary (canonical 경험 보관함 Frontend)
+
+- What was done:
+  - `/profile/experiences` lazy route와 typed API/query, 경험 목록·filter·pagination·상세 출처·수정·활용 검증·유사 경험 병합/분리 화면을 기존 Career Profile Workspace UI로 구현했다.
+  - 문서 상세의 `CORROBORATING` 근거는 일괄/개별 승인 대상에서 빼고 `기존 경험에 출처 추가됨` 안내와 보관함 deep link로 표시했다.
+  - Node 24의 pnpm으로 이전 `pdfjs-dist` 추가분까지 lockfile을 동기화했다.
+- Key decisions:
+  - canonical 경험 한 건만 카드로 표시하고 최초·보강 출처는 상세에서 구분한다. 유사·충돌 경험만 비교·병합/분리 action을 제공한다.
+  - 별도 디자인 도구 산출물 없이 기존 `PageHeader`, `ProfileTabs`, `StatusBadge`, soft surface·44px control을 재사용했다.
+- Issues encountered:
+  - 브라우저 CLI의 다중 statement fixture 주입이 Windows에서 두 번 syntax error로 거부되어 재시도 상한에 따라 actual Chromium 검증은 완료하지 못했다.
+  - 최초 전체 check는 profile navigation의 7개 항목 기대가 실패했고, 8번째 경험 보관함 route/label을 반영한 뒤 재실행했다.
+- Validation:
+  - 집중 Vitest 6 files/59 tests 통과. 최종 `corepack pnpm check` 통과: ESLint, Prettier, typecheck, Vitest 70 files/317 tests, production build.
+- Next steps:
+  - 실제 Backend fixture가 준비된 브라우저 환경에서 경험 병합 confirmation과 390px mobile layout을 추가 확인한다.
+
+## [2026-08-07] Session Summary (요건 매칭 현황 파스텔·직사각형화)
+
+- What was done:
+  - 공고 분석의 요건 매칭 현황 막대를 알약에서 모서리 4px 직사각형으로 바꾸고, 채움을 sage·peach·blush·sky 파스텔로 교체했다. 윗면 흰 gradient는 없앴다.
+  - 파스텔 채움이 흰 면 위에서 대비 3:1을 넘지 못하므로 `--chart-*-line` 윤곽 토큰 4종을 추가해 막대·범례 dot·조건별 결과 mark에 1px 안쪽 윤곽으로 넣었다.
+  - 파스텔 위에서 보이지 않는 흰 아이콘을 `--chart-*-strong`으로 바꾸고 두 mark의 모서리도 함께 줄였다.
+- Key decisions:
+  - 파스텔을 진하게 만들어 대비를 맞추는 대신 윤곽선이 형태를 지탱하게 했다. 레퍼런스의 옅은 톤을 그대로 살리기 위해서다.
+  - 무늬를 넣지 않는 기존 결정과 고정 정렬 순서·아이콘·한글 라벨 범례의 2차 인코딩은 그대로 유지한다.
+- Issues encountered:
+  - 병행 중인 experience library 작업(router·contracts·profile API)이 typecheck를 깨고 있어, 해당 파일을 stash한 상태에서 이번 변경만 검증했다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. `job-analysis.spec.ts` 포함 Chromium 4건 통과.
+  - 네 상태를 모두 담은 fixture로 1440px 화면을 직접 확인했다.
+- Next steps:
+  - experience library 작업이 끝난 뒤 전체 `corepack pnpm check`를 다시 실행한다.
 
 ## [2026-08-07] Session Summary (작성 도움 항상 노출과 요구사항 카드화)
 

@@ -28,7 +28,34 @@
 - `V24__replace_scoped_ai_budgets_with_global_daily_budget.sql`은 분야별 비용 상한과 ledger 사용자 소유 차원을 제거하고 전역 일일 USD 10 policy와 날짜별 단일 ledger를 추가한다.
 - `V25__rewrite_career_guide_content.sql`은 취업 준비 가이드 5편의 제목·요약·본문을 해요체와 체크리스트 중심으로 다시 쓴다.
 - `V26__create_canonical_experience_library.sql`은 canonical 경험·다중 문서 출처 link·`vector(1536)` embedding과 `EXPERIENCE` evidence source를 추가한다.
+- `V27__create_github_source_ingestion.sql`은 GitHub source·repository·snapshot·provenance·전용 Object outbox와 typed Run link를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-07] Session Summary (V27 GitHub Source ingestion schema)
+
+- What was done:
+  - V27에 GitHub source/repository/selection/snapshot/unit/evidence/outbox와 `GITHUB_INGESTION` typed resource 확장을 추가했다.
+- Key decisions:
+  - V26은 수정하지 않고 모든 사용자 content table과 중요 교차 참조에 owner composite key/FK를 적용했다. Career Artifact column/table은 추가하지 않았다.
+- Issues encountered:
+  - 기존 Agent Run exactly-one·kind parity와 waiting action CHECK를 additive하게 재정의해야 했다.
+- Validation:
+  - fresh V27 및 populated V26→V27에서 checksum/SHA, owner FK, unique/shape, snapshot immutability, evidence, parity, outbox와 two-user 격리가 통과했다.
+- Next steps:
+  - 다음 migration은 착수 시 actual latest 뒤 next available 번호를 사용한다.
+
+## [2026-08-07] Session Summary (V26 populated upgrade pending trigger 보정)
+
+- What was done:
+  - `profile_evidence`의 EXPERIENCE source unique index를 canonical evidence backfill INSERT보다 먼저 생성하도록 V26 실행 순서를 조정했다.
+- Key decisions:
+  - 기존 `INITIALLY DEFERRED` constraint trigger를 비활성화하지 않고, DDL을 DML보다 앞에 배치해 populated V25→V26 upgrade에서도 pending trigger event가 인덱스 생성을 막지 않게 했다.
+- Issues encountered:
+  - 기존 문서 근거가 있는 DB에서는 backfill INSERT가 deferred trigger event를 만들고 후속 `CREATE INDEX`가 PostgreSQL SQLSTATE `55006`으로 실패했다. 빈 DB migration에서는 INSERT가 0건이라 드러나지 않았다.
+- Validation:
+  - 사용자 요청에 따라 별도 Flyway·Gradle·Testcontainers 검증은 실행하지 않았다. SQL 순서와 diff만 확인했다.
+- Next steps:
+  - 필요하면 populated V25 fixture를 구성한 V25→V26 upgrade 회귀 테스트를 추가한다.
 
 ## [2026-08-07] Session Summary (V26 canonical 경험 라이브러리)
 

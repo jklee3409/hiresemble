@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1 인증·공통부터 P8 Interview·Dashboard·migration·actual E2E 테스트를 기능별로 구성한다.
+P1 인증·공통부터 P8 Interview·Dashboard, Phase 1 GitHub Backend·migration·actual E2E 테스트를 기능별로 구성한다.
+
+## [2026-08-07] Session Summary (GitHub Source test package 추가)
+
+- What was done: GitHub source, workflow와 V27 migration 테스트 package를 상위 test 구조에 연결했다.
+- Key decisions: 운영 network와 유료 provider는 모든 자동 fixture에서 차단한다.
+- Issues encountered: None.
+- Validation: 관련 test class compile 및 focused execution 통과.
+- Next steps: Gate 2 Frontend E2E는 별도 추가한다.
 
 ## [2026-08-02] Session Summary (Dashboard·Career Guide Backend 회귀)
 

@@ -2,7 +2,35 @@
 
 ## Overview
 
-P1~P8 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
+P1~P8과 Phase 1 GitHub Backend 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
+
+## [2026-08-07] Session Summary (GitHub Backend Gate 0~1 회귀)
+
+- What was done:
+  - V27 fresh/upgrade, URL/gateway/sanitizer, canonical, 10-step workflow, 7개 API와 OpenAPI 회귀를 추가했다.
+- Key decisions:
+  - 실제 GitHub·OpenAI 호출 없이 Fake/WireMock/Testcontainers만 사용했다.
+- Issues encountered:
+  - 전체 610 tests에서는 GitHub와 무관한 Document·price fixture·Job timing 12건이 실패해 집중 결과와 분리했다.
+- Validation:
+  - GitHub focused 12 suites/189 tests와 gateway public error mapping이 통과했다.
+- Next steps:
+  - 비-GitHub 전체 test fixture 회귀는 별도 기준선 작업으로 처리한다.
+
+## [2026-08-07] Session Summary (최초 추출 문서 이름 회귀 추가)
+
+- What was done:
+  - `DocumentIntegrationTest`의 upload helper에 displayName 인자를 받는 overload를 추가하고, semantic dedupe 흐름의 두 문서에 서로 다른 이름을 줬다.
+  - 같은 경험이 두 문서에서 나왔을 때 `/api/v1/profile/experiences`가 먼저 올린 문서 이름을 `primaryDocumentName`으로 반환하는지 검증한다.
+  - `ProfileDomainTest`의 `ExperienceItemRecord` fixture에 새 필드를 채웠다.
+- Key decisions:
+  - 기존 23개 upload 호출부는 그대로 두고 overload만 추가했다. 이번 검증에 필요한 두 곳만 이름을 구분하면 충분하다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `./gradlew test --tests "*DocumentIntegrationTest.semanticDuplicateAcross..."`와 `*ProfileDomainTest` 모두 통과했다. 전체 `check`는 실행하지 않았다.
+- Next steps:
+  - 다음 backend 작업에서 `./gradlew check`를 실행한다.
 
 ## [2026-08-07] Session Summary (가이드 목록 제목 assertion 갱신)
 

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, optimistic conflict 비교·재적용과 P4 증빙 문서 선택 규칙을 관리한다.
+P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, optimistic conflict 비교·재적용, P4 증빙 문서 선택과 canonical 경험 cache 규칙을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -21,7 +21,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 ## 구성 요소 역할
 
 - 서버 상태는 page의 Vue Query가 소유하고 이 영역은 재사용 가능한 profile 규칙과 표현만 제공한다.
-- `/profile/activities`를 직접 대외활동 canonical route로 사용하고 기존 `/profile/evidence` deep link는 redirect하며 가상의 section 완료 count는 만들지 않는다.
+- `/profile/activities`는 직접 대외활동, `/profile/experiences`는 문서에서 정규화한 경험 보관함으로 분리하고 기존 `/profile/evidence` deep link는 대외활동으로 redirect한다. 가상의 section 완료 count는 만들지 않는다.
 - query key는 모든 profile cache에 인증 사용자 ID를 포함해 사용자 전환 경계를 유지한다.
 - 기본 프로필과 지원 자격 자기신고는 별도 query·version·save 경계로 관리하고 409를 자동 overwrite하지 않는다.
 

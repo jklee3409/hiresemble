@@ -14,13 +14,13 @@ PostgreSQL을 상태 원천으로 하는 Agent Run·Step 수명주기, 비용 �
 
 ## 구성 요소 역할
 
-DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P7은 자기소개서·답변 version을, P8은 question set·interview answer version을 typed resource로 연결하고 결과 본문은 복제하지 않는다.
+DB row와 application port가 실행 상태를 소유하며 AI workflow는 이 영역의 repository를 직접 사용하지 않는다. 공개 DTO는 claim, lease, hash, prompt와 provider 식별자를 노출하지 않는다. P7은 자기소개서·답변 version을, P8은 question set·interview answer version을, Phase 1은 `GITHUB_SOURCE`를 typed resource로 연결하고 결과 본문은 복제하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 
 - [`../ai/`](../ai/index.md)는 application port만 소비한다.
 - 인증 사용자 ID는 [`../auth/`](../auth/index.md)에서 받는다.
-- V4 schema는 [`../../../../resources/db/migration/`](../../../../resources/db/migration/index.md)이 소유한다.
+- V4 기본 schema와 V27 GitHub typed resource 확장은 [`../../../../resources/db/migration/`](../../../../resources/db/migration/index.md)이 소유한다.
 
 ## 변경 시 주의사항
 

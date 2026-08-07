@@ -1,6 +1,7 @@
 # 페이지 구조 명세서
 
-- 문서 버전: 1.3 (공개 Landing·첫 사용 흐름 계약)
+- 문서 버전: 1.4 (GitHub Source·Career Artifact 목표 화면 계약)
+- 기준일: 2026-08-07
 - Frontend: Vue 3 SPA
 - 기본 화면: Desktop First, 모바일 반응형
 - API Prefix: `/api/v1`
@@ -25,9 +26,14 @@
 │  ├─ /profile/languages
 │  ├─ /profile/awards
 │  ├─ /profile/careers
-│  └─ /profile/activities
+│  ├─ /profile/activities
+│  ├─ /profile/experiences
+│  └─ /profile/github
 ├─ /documents
 │  └─ /documents/:documentId
+├─ /career-artifacts
+│  ├─ /career-artifacts/new?type=RESUME|PORTFOLIO
+│  └─ /career-artifacts/:careerArtifactId
 ├─ /jobs
 │  ├─ /jobs/new
 │  └─ /jobs/:jobId
@@ -81,12 +87,14 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | Route group                                        | Implementation status | Phase     | prerequisite API                                 |
 | -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 74 paths/100 operations             |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 1 | 현재 OpenAPI 79 paths/107 operations          |
 | `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
 | account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
 | `/mock-interviews/:sessionId`                      | `PLANNED`             | P9        | mock session/start/message/complete/feedback     |
 | `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A    | `/api/v1/backoffice/**` ADMIN GET                |
+| `/profile/github`                                  | `PLANNED`             | Gate 2       | 구현된 GitHub source·Agent Run API             |
+| `/career-artifacts`와 모든 child                   | `PLANNED`             | phase 미배정 | readiness·model·artifact·download API          |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
 
@@ -127,6 +135,7 @@ PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아�
 ### Navigation과 상단 Header
 
 - Desktop은 상단에 `홈`, `내 정보`, `이력서·자료`, `관심 공고`, `자기소개서`, `면접 준비`의 사용자 여정 중심 navigation을 둔다.
+- `이력서·자료`는 `/documents`와 `/career-artifacts`에서 함께 active다. 두 root 화면은 각각 `업로드한 자료`, `AI로 만든 초안` switch를 제공하며 상대 화면으로 이동해도 navigation 맥락을 유지한다.
 - 모바일은 `홈`, `공고`, `자기소개서`, `면접 준비`, `더보기` bottom navigation을 사용한다. 더보기 dialog에서 내 정보, 자료, AI 작업과 가이드에 접근한다.
 - 상단 우측에는 진행 중 Agent Run 알림과 사람 아이콘+닉네임 account menu를 둔다. 사진 기능이 없으므로 이름 첫 글자 avatar와 별도 sidebar profile card를 사용하지 않는다.
 - account menu는 이용 가이드, AI 작업, 닉네임 변경, 로그아웃을 제공하고 header와 navigation에 사용자 정보를 중복 표시하지 않는다.
@@ -257,6 +266,7 @@ API:
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다. 각 카드에는 서버 값에서 직접 유도한 보조 문구(`등록한 공고 N건 중`, `분석 중 N건` 등)만 덧붙이고 추정치를 만들지 않는다. 조회 실패 카드는 `—`와 확인 실패 문구를 함께 표시한다.
 - 별도 `다음 할 일` 카드와 네 항목 빠른 실행 grid는 표시하지 않는다. 필요한 후속 행동은 커리어 카드의 프로필 CTA, Dashboard 상단의 자료·공고 등록, 마감 공고와 최근 활동의 resource link에서 직접 제공한다.
 - 최근 활동 항목에는 자료·공고·AI 작업을 구분하는 icon을 붙이고 색상에만 의존하지 않도록 기존 text label을 유지한다.
+- `CareerArtifactReadinessDto`가 해당 유형의 업로드·생성 문서 부재와 GitHub 유래 VERIFIED 경험 존재를 모두 확인한 경우에만 `AI로 이력서/포트폴리오 초안 만들기`를 작은 제안 카드로 표시한다(`PLANNED`). `나중에`를 제공하고 자동 생성, blocking modal, 강제 redirect와 영구 dismiss 추적은 사용하지 않는다.
 - 섹션 진입 motion, 카드 hover elevation, 요약 수치 count-up 같은 장식 동작은 `prefers-reduced-motion: reduce`에서 모두 정지하고 최종 값과 배치를 그대로 보여 준다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
 - Desktop에서는 바로가기 열을 제외한 quick entry·본문을 동일한 중앙 열에 배치한다. 중앙 열은 Dashboard viewport 중심에 맞추고 `자료 등록`·`공고 등록` CTA의 우측 끝도 중앙 열의 우측 경계에 맞춘다.
@@ -377,9 +387,44 @@ AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 
 - 기본 목록은 제목, category, 승인 상태, 연결 출처 수와 마지막 수정 시각을 표시한다.
 - 편집·승인·제외는 정규 경험에 적용하고 원본 문서 근거는 문서 상세에서 별도로 검토한다.
 - 승인된 정규 경험은 원본 문서 삭제 뒤에도 유지되며 삭제된 원문의 본문·미리보기는 제공하지 않는다.
-- Backend API 계약은 구현되었고 Frontend route·화면 연결은 별도 작업 범위다.
+- Backend API와 Frontend route·화면이 연결되어 있다. Frontend는 기존 Career Profile Workspace의 세로 outline/mobile selector, soft surface, 상태 badge와 pagination을 재사용한다.
+- 상세 영역에서 최초·보강 출처를 구분하고 문서 출처로 이동할 수 있다. 문서 상세의 `CORROBORATING` 항목은 승인 가능한 새 소재가 아니라 기존 경험에 추가된 출처로만 표시한다.
+- Backend 경험 DTO는 `GitHub` repository 이름·URL, 짧은 commit SHA, 수집 시각, sanitized excerpt와 distinct repository source count를 additive하게 제공한다. 이를 badge와 삭제 tombstone으로 표시하는 Frontend는 Gate 2에서 구현한다(`PLANNED`).
 
 API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
+
+## 5.9 `/profile/github` (`PLANNED`, Gate 2 Frontend)
+
+공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약은 구현됐지만 이 route, selector와 API client는 아직 구현하지 않았다. Career Profile Workspace의 기존 세로 outline/mobile selector에 `GitHub` 항목을 추가하되 현재 여덟 프로필 route의 이동·저장 동작은 바꾸지 않는다.
+
+### URL 등록
+
+- 입력은 `https://github.com/{owner}` 또는 `https://github.com/{owner}/{repository}`만 받는다. 화면 예시는 URL만 보여 주고 username만 입력하는 별도 mode는 만들지 않는다.
+- `본인 또는 실제 참여 프로젝트이며 AI 결과를 직접 검토합니다` 확인을 필수로 받는다.
+- 첫 구현은 공개 repository만 지원하며 private repository, Personal Access Token 입력과 GitHub 로그인 연결을 제안하지 않는다.
+- 제출 전에는 `모든 저장소를 자동 분석하지 않음`, `code를 실행하지 않음`, `추출 결과는 승인 전까지 사용되지 않음`을 간결하게 안내한다.
+- validation error는 field 옆에 표시하고 raw GitHub 응답이나 접근 제한 detail은 노출하지 않는다.
+
+### Source 목록과 상태
+
+- card는 source 종류, owner/repository, canonical URL, 상태, 선택 repository 수, 마지막 성공 수집 시각과 latest Agent Run 진입을 표시한다.
+- 상태는 `저장소 확인 중`, `저장소 선택 필요`, `작업 대기`, `분석 중`, `완료`, `일부만 확인`, `확인 실패`의 한국어 문구로 변환한다.
+- `READY|PARTIAL` 결과는 `새 경험`, `기존 경험 보강`, `검토 필요`, `제외` count를 분리하고 경험 보관함 CTA를 제공한다.
+- refresh는 현재 version을 사용하고 동일 commit이면 `변경된 내용이 없어 기존 결과를 유지했어요`로 표시한다. delete는 원천과 snapshot이 제거되지만 이미 승인한 canonical 경험은 유지된다는 확인 dialog를 사용한다.
+
+### Account repository 선택
+
+- account URL discovery가 끝나면 같은 Agent Run이 `WAITING_USER`이고 화면에 repository selector를 표시한다.
+- repository 이름·설명·최근 push·fork/archive 상태를 표시하고 non-fork, non-archived, 최근 push 순 추천은 시각 label일 뿐 자동 선택이 아니다.
+- 목록은 server pagination·검색을 사용한다. 계정의 public repository가 discovery 상한을 넘으면 최근 push 기준 200개만 확인했다는 경고를 숨기지 않는다.
+- 1~10개를 선택하며 전체 목록을 무조건 선택하는 action과 선택 전 AI 호출은 금지한다.
+- 선택 제출은 source version과 전체 repository ID 집합을 보내고 성공 뒤 같은 Run monitor로 돌아간다. version 충돌은 최신 repository 목록과 사용자 선택을 비교한다.
+
+### 필수 화면 상태
+
+`empty`, `URL validation`, `discovering`, `waiting repository selection`, `queued/running`, `ready`, `partial`, `rate limited`, `not accessible`, `failed`, `delete confirmation`을 각각 독립 상태로 설계한다. `PARTIAL`은 실패처럼 숨기지 않고 분석하지 못한 범위와 승인 전 검토 필요성을 표시한다. SSE 단절은 source 실패가 아니라 공통 연결 복구 상태를 사용한다.
+
+API: `POST|GET /github-sources`, `GET|DELETE /github-sources/:id`, `GET /github-sources/:id/repositories`, `PUT /github-sources/:id/repository-selection`, `POST /github-sources/:id/refresh`, Agent Run detail/SSE.
 
 ---
 
@@ -397,6 +442,7 @@ API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /pro
 - 근거 추출 상태
 - 업로드 일시
 - 다시 분석·원본 열기·삭제
+- 이력서/포트폴리오가 없고 readiness 조건을 만족하면 `AI로 초안 만들기`를 non-modal secondary action으로 표시한다(`PLANNED`). 업로드를 대체하는 강제 흐름이 아니며 `나중에`와 일반 업로드를 계속 제공한다.
 
 API:
 
@@ -430,6 +476,62 @@ API:
 `PARSED + evidenceExtractionStatus=FAILED`는 추출 text를 유지하고 문서 업로드 실패로 표시하지 않는다. safe error, Agent Run과 재처리 CTA를 제공한다. 문서 삭제 성공 즉시 상세·download·cache에서 제거하고 이후 404를 정상 삭제 결과로 처리한다.
 
 소재 영역은 승인된 내용만 자소서·면접 소재 후보로 사용한다는 정책과 남은 검토 수를 먼저 보여 준다. 활용 제외는 원본 자료나 분석 이력 삭제가 아니며 언제든 `PENDING`으로 돌려 재검토할 수 있다. 별도 `정리된 결과` 대형 section은 두지 않고 소재 card와 partial 경고에 통합한다.
+
+## 6.3 `/career-artifacts` (`PLANNED`, phase 미배정)
+
+사용자가 AI로 생성한 이력서 DOCX와 포트폴리오 PPTX 초안을 관리한다. 업로드 원천인 `documents`와 생성 출력인 Career Artifact를 같은 row나 상태 체계로 합치지 않는다.
+
+- 상단 switch는 `업로드한 자료`(`/documents`)와 `AI로 만든 초안`(`/career-artifacts`)을 제공한다.
+- 목록은 artifact type, 제목, 생성 상태, current version, 최근 수정 시각과 latest Agent Run을 표시한다.
+- filter는 `전체|이력서|포트폴리오`, lifecycle은 `사용 중|보관`으로 제공하고 URL query와 server pagination을 사용한다.
+- active card는 `보관`, archived card는 `다시 사용`을 제공한다. 보관본은 preview·version·download만 가능하고 새 생성 action은 unarchive 뒤에 제공한다.
+- active generation이 있어도 이전 성공 version의 상세·다운로드는 유지한다. current version이 없는 최초 생성 실패는 안전한 오류와 재생성 action을 표시한다.
+- empty state는 `이력서 초안 만들기`, `포트폴리오 초안 만들기`와 경험 보관함 확인을 제공한다. VERIFIED 경험이 없으면 생성 button 대신 승인할 경험으로 이동하는 설명을 보여 준다.
+
+API: `GET /career-artifacts`, `GET /career-artifacts/readiness`.
+
+## 6.4 `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, phase 미배정)
+
+한 화면의 긴 form 대신 상태를 URL과 local draft에 안전하게 보존하는 4단계 wizard를 사용한다. query의 `type`이 없으면 첫 단계에서 선택하고 허용하지 않은 값은 type 미선택으로 정규화한다.
+
+1. `만들 문서`: 이력서 또는 포트폴리오를 선택하고 각 파일 형식(DOCX/PPTX), 예상 구성과 AI 초안임을 설명한다.
+2. `경험 선택`: active `VERIFIED` canonical 경험·강점만 1~20개 선택한다. GitHub/document badge는 provenance 안내일 뿐 같은 canonical 경험을 중복 row로 보여 주지 않는다.
+3. `AI 모델`: artifact type별 server catalog의 exact model을 radio card로 고른다. 추천은 server `recommended` 값만 사용하며 catalog 실패 시 임의 기본 model로 제출하지 않는다.
+4. `표시 정보·확인`: 제목, server template, 포함할 profile section, 최종 파일에만 넣을 이름·이메일·전화·HTTPS link를 확인하고 생성 요청을 제출한다.
+
+선택 경험이 1개면 생성할 수 있다. project/career 2개 미만 또는 strength 1개 미만은 결과 품질 warning과 보완 CTA를 표시하지만 제출을 막지 않는다. 연락처는 `파일 생성에만 사용되며 AI 문맥으로 전송되지 않음`을 form 가까이에 설명한다.
+
+제출 성공은 preallocated artifact 상세로 replace하고 Agent Run monitor를 연다. 중복 click과 새로고침은 같은 `Idempotency-Key`를 재사용한다. 409 version/model/evidence 오류는 최신 readiness·catalog·경험을 다시 조회하고 사용자 선택을 가능한 범위에서 보존한다.
+
+API: `GET /career-artifacts/readiness`, `GET /career-artifacts/ai-models?type=`, `POST /career-artifacts`, `GET /profile/experiences?verificationStatus=VERIFIED`.
+
+## 6.5 `/career-artifacts/:careerArtifactId` (`PLANNED`, phase 미배정)
+
+### 공통 영역
+
+- artifact type·제목·lifecycle, current version과 latest Agent Run 상태
+- structured content 기반 HTML preview, version history, current 또는 선택 version 다운로드
+- `다시 생성`은 경험·model·template·표시 정보를 다시 확인한 뒤 새 Run을 만들며 이전 성공 version을 덮어쓰지 않음
+- `보관`·`다시 사용`은 current version과 provenance를 변경하지 않으며 보관 상태에서는 재생성을 숨기고 읽기·download만 제공
+- 실패·취소·중단은 safe error, retry 조건과 이전 성공 version을 함께 표시
+- 삭제 dialog는 생성 파일과 version이 제거되지만 원본 문서·경험 보관함은 유지된다고 설명
+
+### 이력서 preview와 DOCX
+
+- headline, summary, skills, 경력·프로젝트 section과 grounded bullet을 ATS 친화적 단일 column 순서로 보여 준다.
+- preview는 문서 모양을 과장해 재현하지 않고 heading/bullet 구조와 warning을 정확하게 읽을 수 있는 HTML로 제공한다.
+- download button은 `Word(.docx) 다운로드`, 파일명과 5분 만료를 표시하고 만료 URL은 자동으로 한 번 재발급할 수 있다.
+
+### 포트폴리오 preview와 PPTX
+
+- 6~12개 slide thumbnail과 선택 slide 상세를 제공한다. cover, 강점 요약, project case study, 기술적 판단, 영향·학습, closing의 이야기 흐름을 한눈에 확인할 수 있어야 한다.
+- 각 case study는 `문제 → 내 역할 → 행동 → 기술적 판단 → 결과 → 강점`을 명확히 구분하고 근거가 부족한 section은 warning으로 표시한다.
+- 한 slide 한 message, 긴 문단 금지, 최소 글자 크기·대비·overflow 검증 결과를 서버 계약으로 신뢰한다. 사용자가 browser에서 좌표·font·색상이나 OOXML을 직접 편집하는 기능은 초기 범위에 없다.
+- download button은 `PowerPoint(.pptx) 다운로드`이며 외부 image, repository screenshot과 remote font가 포함되지 않음을 안내한다.
+
+Preview는 DOCX/PPTX를 browser에서 parsing하지 않고 version의 안전한 structured projection을 사용한다. keyboard로 version·slide를 이동할 수 있고 thumbnail의 색상만으로 slide type이나 상태를 구분하지 않는다.
+
+API: `GET /career-artifacts/:id`, `GET /career-artifacts/:id/versions`, `POST /career-artifacts/:id/generations`, `POST /career-artifacts/:id/archive`, `POST /career-artifacts/:id/unarchive`, `POST /career-artifacts/:id/versions/:versionId/download-url`, `DELETE /career-artifacts/:id`, Agent Run detail/SSE.
 
 ---
 
@@ -1155,3 +1257,19 @@ authenticated `/`는 Landing을 mount하지 않고 `/dashboard`로 replace하며
 → ADMIN Backoffice에서 aggregate usage·내부 원가·failure·Agent Run 확인
 → USER의 Backoffice 접근 거부와 access audit 확인
 ```
+
+## 시나리오 E (GitHub Backend `IMPLEMENTED`, Frontend·Career Artifact `PLANNED`)
+
+```text
+GitHub 계정 URL과 참여 확인 등록
+→ repository 1~10개 선택
+→ 같은 Agent Run 재개와 완료 확인
+→ 경험 보관함에서 신규·유사 경험 검토 및 승인
+→ 선택적 이력서/포트폴리오 생성 제안
+→ 문서 유형·VERIFIED 경험·exact model·표시 정보 선택
+→ 생성 Agent Run 진행과 structured preview 확인
+→ 이력서는 DOCX, 포트폴리오는 PPTX로 5분 download URL 발급
+→ 재생성 실패 뒤에도 이전 성공 version 다운로드 확인
+```
+
+계정 URL이 아닌 repository URL은 선택 단계를 건너뛰고, 동일 commit refresh는 새 AI Run 없이 기존 결과를 유지한다. 제안은 dismiss 가능하며 사용자를 생성 route로 강제 이동시키지 않는다.

@@ -4,6 +4,60 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-07] Session Summary (경험 보관함 카드에서 바로 처리하기)
+
+- What was done:
+  - 페이지 설명 줄이 아래 섹션과 같은 폭까지 늘어나도록 `page-header__body`·`page-description`의 `max-width`를 이 화면에서만 풀었다.
+  - "같은 경험은 새 카드로 반복하지 않아요" 안내 aside를 없애고, 이어지는 요소들의 위 여백을 `--layout-heading-content-gap`(2rem)에서 `--space-5`(1.25rem)로 줄였다.
+  - 카드의 "상세와 출처" 버튼을 없애고 그 자리에 활용 승인·활용 제외(또는 다시 검토)·수정 버튼을 뒀다. 수정은 별도 영역을 열지 않고 카드 본문이 그대로 입력 폼으로 바뀐다.
+  - 문서 출처 칸이 개수 대신 실제 문서 이름을 보여 준다. 여러 문서에서 나온 경험은 `가장 먼저 추출한 문서 외 N곳`으로 적고, 이름 칸만 두 배 폭을 줘 한 줄로 줄인다.
+  - 목록을 10개에서 5개씩으로 바꿨다.
+- Key decisions:
+  - 상세 패널은 지우지 않고 역할만 좁혔다. 유사 경험 비교·합치기와 출처 목록은 여기에만 있으므로, `reviewRequired` 카드의 안내 줄에 "비교해서 확인" 링크를 남겨 진입로를 유지했다. 버튼만 지우면 V26 중복 판정 흐름에 도달할 수 없다.
+  - 편집 상태는 카드별 `editingId` 하나로 관리하고, 편집 중에는 제목 heading과 상단 동작 버튼을 감춰 같은 값이 두 번 보이지 않게 했다.
+  - 문서 이름은 프런트에서 문서 목록을 다시 부르지 않고 서버가 목록 DTO에 실어 준 `primaryDocumentName`을 그대로 쓴다.
+- Issues encountered:
+  - Node 20 환경이라 `vitest`를 실행하지 못했다. 변경 전 다른 test 파일에서도 같은 오류라 이번 변경과 무관한 환경 제약이다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - fixture로 1440·390px 화면과 카드 내 편집 상태를 직접 확인했다. 좌우 넘침 없음.
+  - `ExperienceLibraryPage.test.ts`에 카드 내 승인·편집과 문서 이름 표시 검증을 추가했지만 위 환경 제약으로 실행하지 못했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`를 재실행한다.
+
+## [2026-08-07] Session Summary (경험 보관함 목록·상세·유사 경험 검토)
+
+- What was done:
+  - `ExperienceLibraryPage.vue`에 canonical 경험 목록, 상태·유사도 filter, pagination, inline 상세·편집·검증과 최초/보강 출처 목록을 구현했다.
+  - `RELATED_DIFFERENT|CONFLICT`는 제안된 기존 경험과 나란히 비교하고 별도 유지 또는 병합하도록 했다.
+  - page/component 회귀로 canonical 카드 1개, 비교·별도 유지, 문서 보강 출처의 비검토 표현을 고정했다.
+- Key decisions:
+  - 기존 profile 화면처럼 desktop outline/mobile selector와 scoped soft-surface card를 사용하고 새 전역 style token은 추가하지 않았다.
+- Issues encountered:
+  - 브라우저 CLI fixture 주입이 syntax error로 중단되어 실제 viewport 확인은 미완료다.
+- Validation:
+  - 집중 Vitest와 Frontend 전체 `pnpm check` 70 files/317 tests·production build 통과.
+- Next steps:
+  - 실제 인증 fixture에서 desktop/mobile 핵심 흐름을 확인한다.
+
+## [2026-08-07] Session Summary (요건 매칭 현황 막대 파스텔·직사각형화)
+
+- What was done:
+  - 요건 매칭 현황의 알약 막대를 `border-radius: 0.25rem` 직사각형에 가깝게 바꾸고, 윗면 흰 gradient(`::after`)를 없앴다.
+  - 막대 채움을 새 파스텔 `--chart-*`로 바꾸고 `--chart-*-line` 1px 안쪽 윤곽을 넣어 흰 면 위에서 경계가 유지되게 했다.
+  - 파스텔 위에서 보이지 않는 흰 아이콘을 없애고, 범례 dot과 조건별 결과 mark의 아이콘 색을 `--analysis-match-strong`으로 바꿨다. 두 mark에도 같은 1px 윤곽을 넣고 모서리를 `--radius-sm`으로 줄였다.
+  - 0건 상태의 범례 dot은 채움면·윤곽·아이콘을 모두 muted 계열로 눌렀다.
+- Key decisions:
+  - 파스텔은 채움만으로 대비 3:1을 못 넘기므로 색을 옅게 두는 대신 윤곽선이 형태를 지탱하게 했다. 무늬를 추가하지 않는 기존 결정은 유지한다.
+  - 조건별 결과 mark는 같은 색 토큰을 공유하므로 함께 고쳤다. 안 고치면 파스텔 위 흰 아이콘이 사라진다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build`와 `job-analysis.spec.ts` 포함 Chromium 4건 통과. 병행 중인 experience library 작업 파일을 stash한 상태에서 검증해 이번 변경만 확인했다.
+  - 네 상태를 모두 담은 fixture로 1440px 화면을 직접 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-07] Session Summary (작성 도움 접기 버튼 제거)
 
 - What was done:

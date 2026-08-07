@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 인증·공통 기반부터 P8 면접 준비와 실제 cross-stack E2E까지 기능별로 구성한다.
+P1 인증·공통 기반부터 P8 면접 준비, Phase 1 GitHub Backend와 실제 cross-stack E2E까지 기능별로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,6 +13,7 @@ P1 인증·공통 기반부터 P8 면접 준비와 실제 cross-stack E2E까지 
 - [`agentrun/`](agentrun/index.md): 상태·claim·budget·retry·cancel·SSE 테스트
 - [`ai/`](ai/index.md): registry·router·validator·Fake workflow 테스트
 - [`document/`](document/index.md): 문서 API·parser·storage·embedding·outbox 테스트
+- [`githubsource/`](githubsource/index.md): GitHub URL·gateway·snapshot·canonical·API 통합 테스트
 - [`job/`](job/index.md): 공고 등록·분석·provenance 테스트
 - [`coverletter/`](coverletter/index.md): 자기소개서 domain·API·workflow 테스트
 - [`interview/`](interview/index.md): P8 migration·API·retry·답변·feedback 테스트
@@ -32,7 +33,7 @@ P1 인증·공통 기반부터 P8 면접 준비와 실제 cross-stack E2E까지 
 
 ## 변경 시 주의사항
 
-- 실제 유료 AI·검색 API와 운영 datasource를 호출하지 않는다.
+- 실제 GitHub·유료 AI·검색 API와 운영 datasource를 호출하지 않는다.
 
 ## 관련 규칙 및 문서
 

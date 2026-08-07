@@ -1,16 +1,16 @@
 # API 명세서
 
-- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-02
+- 문서 버전: 1.3 (GitHub Source·Career Artifact 목표 계약)
+- 기준일: 2026-08-07
 - Base URL: `/api/v1`
 - 인증: Spring Session Cookie + CSRF
 - 시간: ISO-8601 UTC
 - ID: UUID
 - 파일 업로드: `multipart/form-data`
 
-이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다.
+이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다. 사용자가 직접 선택하는 자기소개서와 planned Career Artifact의 server allowlist exact model ID만 명시적 예외다.
 
-현재 implemented baseline은 74 paths/100 operations다. 1~12장의 기존 endpoint 표는 이 기준선과 P9 이전에 이미 승인된 목표 계약을 함께 포함하며, 새 미래 경계는 13장에 phase와 `PLANNED`를 명시한다.
+현재 implemented baseline은 79 paths/107 operations다. 1~12장의 기존 endpoint와 13.5.1~13.5.2·13.5.4의 GitHub Source 계약이 이 기준선에 포함된다. 13장의 사용자 사용량·공통 AI 실패·Backoffice와 13.5.3의 Career Artifact API는 계속 `PLANNED`다.
 
 ## 1. 공통 HTTP 계약
 
@@ -62,14 +62,15 @@
 
 | HTTP | code                                                                                                                                                                                                                                                                                                                                                                                              |
 | ---: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|  400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `QUALITY_MODE_NOT_SUPPORTED`, `DOCUMENT_TEXT_TOO_SHORT`                                                                                                                                                                                                                                                                                                  |
+|  400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `QUALITY_MODE_NOT_SUPPORTED`, `DOCUMENT_TEXT_TOO_SHORT`, `GITHUB_URL_INVALID`                                                                                                                                                                                                                                                                             |
 |  401 | `AUTHENTICATION_REQUIRED`, `INVALID_CREDENTIALS`                                                                                                                                                                                                                                                                                                                                                  |
 |  403 | `CSRF_INVALID`, `ACCESS_DENIED`                                                                                                                                                                                                                                                                                                                                                                   |
 |  404 | `RESOURCE_NOT_FOUND`, `JOB_ANALYSIS_NOT_FOUND`                                                                                                                                                                                                                                                                                                                                                    |
-|  409 | `RESOURCE_VERSION_CONFLICT`, `RESOURCE_STATE_CONFLICT`, `DUPLICATE_RESOURCE`, `EMAIL_ALREADY_REGISTERED`, `DUPLICATE_JOB_URL`, `IDEMPOTENCY_REQUEST_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED`, `ACTIVE_COVER_LETTER_EXISTS`, `COVER_LETTER_NOT_FINALIZABLE`, `COVER_LETTER_ARCHIVED`, `EVIDENCE_SOURCE_DELETED`, `INSUFFICIENT_JOB_DATA`, `MOCK_TURN_IN_PROGRESS`, `AGENT_RUN_RETRY_ALREADY_CREATED` |
+|  409 | `RESOURCE_VERSION_CONFLICT`, `RESOURCE_STATE_CONFLICT`, `DUPLICATE_RESOURCE`, `EMAIL_ALREADY_REGISTERED`, `DUPLICATE_JOB_URL`, `IDEMPOTENCY_REQUEST_IN_PROGRESS`, `IDEMPOTENCY_KEY_REUSED`, `ACTIVE_COVER_LETTER_EXISTS`, `COVER_LETTER_NOT_FINALIZABLE`, `COVER_LETTER_ARCHIVED`, `EVIDENCE_SOURCE_DELETED`, `INSUFFICIENT_JOB_DATA`, `MOCK_TURN_IN_PROGRESS`, `AGENT_RUN_RETRY_ALREADY_CREATED`, `GITHUB_SOURCE_ALREADY_EXISTS`, `GITHUB_REPOSITORY_SELECTION_REQUIRED` |
+|  422 | `GITHUB_SOURCE_NOT_ACCESSIBLE`, `GITHUB_SOURCE_LIMIT_EXCEEDED`                                                                                                                                                                                                                                                                                                                                      |
 |  413 | `PAYLOAD_TOO_LARGE`                                                                                                                                                                                                                                                                                                                                                                               |
 |  415 | `UNSUPPORTED_MEDIA_TYPE`                                                                                                                                                                                                                                                                                                                                                                          |
-|  429 | `FEATURE_USAGE_LIMIT_EXCEEDED`, `RATE_OR_BUDGET_LIMIT_EXCEEDED`                                                                                                                                                                                                                                                                                                                                   |
+|  429 | `FEATURE_USAGE_LIMIT_EXCEEDED`, `RATE_OR_BUDGET_LIMIT_EXCEEDED`, `GITHUB_RATE_LIMITED`                                                                                                                                                                                                                                                                                                             |
 |  503 | `EXTERNAL_SERVICE_UNAVAILABLE`, `MOCK_TURN_TIMEOUT`, `MOCK_TURN_INVALID_OUTPUT`                                                                                                                                                                                                                                                                                                                   |
 |  500 | `INTERNAL_ERROR`                                                                                                                                                                                                                                                                                                                                                                                  |
 
@@ -81,7 +82,7 @@
 - scope는 사용자+HTTP method+route template+target aggregate다. canonical request/upload SHA-256 hash가 같은 완료 요청은 원래 status·DTO를 재생하고 `Idempotency-Replayed: true`를 반환한다.
 - 같은 key가 처리 중이면 `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`, 다른 hash면 `409 IDEMPOTENCY_KEY_REUSED`다.
 - 완료 record TTL은 24시간이다. validation·owner 실패는 record를 만들기 전에 반환한다.
-- 적용 범위: document upload/manual/reparse, job create/extraction retry/analysis, cover letter create/generate/verify, interview preparation/research retry/answer feedback, mock session create/complete, Agent Run retry.
+- 적용 범위: document upload/manual/reparse, job create/extraction retry/analysis, cover letter create/generate/verify, interview preparation/research retry/answer feedback, mock session create/complete, GitHub source create/repository selection/refresh, Agent Run retry.
 - 회원 탈퇴는 성공 transaction에서 모든 Session을 폐기해 인증 replay가 불가능하므로 지원하지 않는다.
 - mock start/message는 header 대신 `clientRequestId` 계약을 사용한다.
 
@@ -130,12 +131,18 @@
 | `AgentStepStatus`              | `PENDING`, `RUNNING`, `WAITING_USER`, `SUCCEEDED`, `FAILED`, `SKIPPED`, `REUSED`, `CANCELLED`, `INTERRUPTED`                                                                                            |
 | `AiQualityMode`                | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
 | `ModelTier`                    | `LOW_COST`, `BALANCED`, `HIGH_QUALITY` (읽기 전용)                                                                                                                                                      |
-| `WorkflowType`                 | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
+| `WorkflowType`                 | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK`, `GITHUB_INGESTION` |
+| `GitHubSourceKind`             | `ACCOUNT`, `REPOSITORY`                                                                                                                                                                                  |
+| `GitHubAccountType`            | `USER`, `ORGANIZATION`                                                                                                                                                                                  |
+| `GitHubSourceStatus`           | `DISCOVERING`, `WAITING_USER`, `QUEUED`, `RUNNING`, `READY`, `PARTIAL`, `FAILED`                                                                                                                        |
+| `CareerArtifactType` (`PLANNED`) | `RESUME`, `PORTFOLIO`                                                                                                                                                                                   |
+| `CareerArtifactLifecycleStatus` (`PLANNED`) | `ACTIVE`, `ARCHIVED`                                                                                                                                                                          |
+| `CareerArtifactGenerationStatus` (`PLANNED`) | `NOT_STARTED`, `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `INTERRUPTED`                                                                                                         |
 
 보조 enum:
 
 - `DocumentType`: `RESUME|PORTFOLIO|CAREER_DESCRIPTION|CERTIFICATE|TRANSCRIPT|OTHER`
-- `EvidenceSourceType`: `EDUCATION|CERTIFICATION|LANGUAGE_SCORE|AWARD|CAREER|ACTIVITY|DOCUMENT_CHUNK|EXPERIENCE|MANUAL`
+- `EvidenceSourceType`: 현재 `EDUCATION|CERTIFICATION|LANGUAGE_SCORE|AWARD|CAREER|ACTIVITY|DOCUMENT_CHUNK|EXPERIENCE|MANUAL|GITHUB_REPOSITORY`.
 - `DeadlineSource`: `USER_ENTERED|AUTO_EXTRACTED|UNKNOWN`
 - `ClosedReason`: `DEADLINE_PASSED|USER_CLOSED|URL_INACTIVE`
 - `JobDescriptionSource`: `AUTO_EXTRACTED|USER_ENTERED`
@@ -150,7 +157,7 @@
 - `MockFeedbackTiming`: `AFTER_EACH|END_ONLY`
 - `MockMessageRole`: `USER|INTERVIEWER`
 - `ProfileCompletionItem`: `LEGAL_NAME|DESIRED_ROLE|DESIRED_INDUSTRY|DESIRED_LOCATION|PRIMARY_EDUCATION`
-- `RequiredUserActionType`: `PROVIDE_DOCUMENT_TEXT|PROVIDE_JOB_TEXT|ENABLE_HIGH_QUALITY|INCREASE_BUDGET`
+- `RequiredUserActionType`: 현재 `PROVIDE_DOCUMENT_TEXT|PROVIDE_JOB_TEXT|ENABLE_HIGH_QUALITY|INCREASE_BUDGET|SELECT_GITHUB_REPOSITORIES`.
 - `VerificationIssueCode`: `UNVERIFIED_CLAIM|CONTRADICTION|REQUIREMENT_MISSING|LENGTH_VIOLATION|SOURCE_DELETED|OTHER`
 - `IssueSeverity`: `WARNING|ERROR`
 - `MockFeedbackCategory`: `CONTENT|STRUCTURE|EVIDENCE_USE|COMMUNICATION|OVERALL`
@@ -158,7 +165,7 @@
 - `EducationLevel`: `OTHER|HIGH_SCHOOL|ASSOCIATE|BACHELOR|MASTER|DOCTORATE`
 - `AnswerCreatedBy`: `USER|AI`
 - `CareerGuidePostStatus`: `DRAFT|PUBLISHED|ARCHIVED` (현재 사용자 read 응답은 `PUBLISHED`만 반환)
-- `FeatureKey` (`PLANNED` P8.6): `DOCUMENT_EVIDENCE_EXTRACTION|JOB_POSTING_EXTRACTION|JOB_ANALYSIS|COVER_LETTER_GENERATION|COVER_LETTER_VERIFICATION|INTERVIEW_PREPARATION|INTERVIEW_ANSWER_FEEDBACK|MOCK_INTERVIEW_SESSION_CREATE|MOCK_INTERVIEW_TURN|MOCK_INTERVIEW_SESSION_FEEDBACK`
+- `FeatureKey` (`PLANNED` P8.6): `DOCUMENT_EVIDENCE_EXTRACTION|JOB_POSTING_EXTRACTION|JOB_ANALYSIS|COVER_LETTER_GENERATION|COVER_LETTER_VERIFICATION|INTERVIEW_PREPARATION|INTERVIEW_ANSWER_FEEDBACK|MOCK_INTERVIEW_SESSION_CREATE|MOCK_INTERVIEW_TURN|MOCK_INTERVIEW_SESSION_FEEDBACK|GITHUB_INGESTION|RESUME_GENERATION|PORTFOLIO_GENERATION`; Gate 1은 별도 제품 기능 한도 subsystem을 추가하지 않았으며 이 enum 전체는 P8.6 구현 전까지 목표 계약이다.
 - `AiFailureCategory` (`PLANNED` P8.8): `INPUT_REQUIRED|INSUFFICIENT_SOURCE_DATA|FEATURE_LIMIT_REACHED|COST_BUDGET_REACHED|TEMPORARY_PROVIDER_FAILURE|CONNECTION_RECOVERING|OUTPUT_VALIDATION_FAILED|CONTENT_SAFETY_BLOCKED|CONFIGURATION_UNAVAILABLE|RESOURCE_CONFLICT|INTERNAL_FAILURE|CANCELLED`
 - `AiSuggestedAction` (`PLANNED` P8.8): `EDIT_INPUT|OPEN_USAGE|RETRY_SAME_REQUEST|CREATE_NEW_RETRY|RESUME_RUN|OPEN_RESOURCE|CONTACT_SUPPORT|WAIT_AND_REFRESH|NONE`
 
@@ -481,7 +488,7 @@ commit마다 stateVersion을 증가시키고 event ID로 사용한다. heartbeat
 
 ## 13. Planned future contracts
 
-다음 API는 현재 74 paths/100 operations에 포함되지 않는다. 각 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
+다음 API 중 13.5.1~13.5.2·13.5.4의 GitHub Source는 Gate 1에서 구현되어 현재 79 paths/107 operations에 포함된다. 나머지 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
 
 ### 13.1 사용자 사용량 (`PLANNED` P8.6~P8.7)
 
@@ -522,3 +529,102 @@ AI 기능의 `ErrorResponseDto`는 기존 field를 유지하고, 해당 오류�
 ### 13.4 Backoffice mutation (`PLANNED_LATER` P8.9-B)
 
 feature override, run cancel/retry, account lock/unlock과 Provider kill switch endpoint는 이 명세에서 확정하지 않는다. 별도 승인에서 reason, expected version, idempotency, before/after, admin/request ID, confirmation, audit와 rollback을 함께 계약한 뒤 추가한다.
+
+### 13.5 GitHub Source (`IMPLEMENTED`, Gate 1)·Career Artifact (`PLANNED`)
+
+이 절은 [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md)의 목표 HTTP 계약이다. GitHub 공개 DTO·7개 operation·오류·Agent Run 연동은 Gate 1에서 OpenAPI와 통합 테스트로 승격했다. Career Artifact DTO와 endpoint는 계속 목표 계약이며 현재 count에 포함하지 않는다.
+
+#### 13.5.1 공개 DTO
+
+GitHub source DTO (`IMPLEMENTED`):
+
+| DTO | 완전한 field set |
+| --- | --- |
+| `GitHubRepositoryDto` | `id:UUID`, `ownerLogin:string 1..100`, `repositoryName:string 1..100`, `canonicalUrl:https URL <=500`, `description:string? <=500`, `defaultBranch:string 1..255`, `fork:boolean`, `archived:boolean`, `selected:boolean`, `pushedAt:Instant?` |
+| `GitHubSourceSummaryDto` | `id:UUID`, `sourceKind:GitHubSourceKind`, `accountType:GitHubAccountType?`, `canonicalUrl:https URL <=500`, `ownerLogin:string 1..100`, `repositoryName:string? <=100`, `status:GitHubSourceStatus`, `discoveredRepositoryCount:int >=0`, `selectedRepositoryCount:int >=0`, `repositoryDiscoveryTruncated:boolean`, `newExperienceCount:int >=0`, `corroboratedExperienceCount:int >=0`, `reviewRequiredCount:int >=0`, `rejectedCandidateCount:int >=0`, `snapshotIncomplete:boolean`, `latestAgentRunId:UUID?`, `lastSuccessfulSyncAt:Instant?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant` |
+| `GitHubSourceDetailDto` | `source:GitHubSourceSummaryDto`, `requiredUserAction:RequiredUserActionDto?`; account source의 `WAITING_USER`에서만 repository 선택 action을 반환 |
+| `GitHubRefreshResultDto` | `changed:boolean`, `source:GitHubSourceDetailDto`, `run:RunAcceptedDto?`; commit SHA와 retrieval policy가 같으면 `changed=false`, `run=null` |
+
+Career Artifact DTO (`PLANNED`):
+
+| DTO | 완전한 field set |
+| --- | --- |
+| `CareerArtifactReadinessDto` | `hasUploadedResume:boolean`, `hasUploadedPortfolio:boolean`, `hasGeneratedResume:boolean`, `hasGeneratedPortfolio:boolean`, `verifiedExperienceCount:int >=0`, `verifiedGitHubExperienceCount:int >=0`, `verifiedStrengthCount:int >=0`, `canGenerateResume:boolean`, `canGeneratePortfolio:boolean`, `warnings:string[0..10]` 각 1..500 |
+| `CareerArtifactAiModelDto` | `id:string 1..64`, `displayName:string 1..100`, `description:string 1..200`, `recommended:boolean`; cover letter model catalog와 같은 공개 field 계약 |
+| `CareerArtifactSummaryDto` | `id:UUID`, `artifactType:CareerArtifactType`, `title:string 1..120`, `lifecycleStatus:CareerArtifactLifecycleStatus`, `generationStatus:CareerArtifactGenerationStatus`, `currentVersionId:UUID?`, `currentVersionNo:int? >=1`, `latestAgentRunId:UUID?`, `version:long`, `createdAt:Instant`, `updatedAt:Instant` |
+| `CareerArtifactVersionSummaryDto` | `id:UUID`, `artifactId:UUID`, `versionNo:int >=1`, `model:string 1..64`, `templateKey:string 1..80`, `mimeType`은 RESUME이면 `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, PORTFOLIO이면 `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `fileSizeBytes:long >0`, `createdAt:Instant` |
+| `CareerArtifactEvidenceRefDto` | `experienceItemId:UUID`, `evidenceId:UUID`, `usageType:PRIMARY_EXPERIENCE\|STRENGTH\|SUPPORTING_FACT`, `title:string 1..250`; 생성 당시의 owner-scoped provenance projection |
+| `ResumePreviewDto` | `headline:string? <=200`, `summary:string? <=2000`, `sections:ResumeSectionDto[1..12]`, `warnings:string[0..20]`; section은 `type:string 1..50`, `title:string 1..100`, `items:ResumeItemDto[0..30]`, item은 `heading:string? <=250`, `subheading:string? <=250`, `period:string? <=100`, `bullets:string[0..10]` 각 1..500, `evidenceRefs:CareerArtifactEvidenceRefDto[0..20]` |
+| `PortfolioPreviewDto` | `slides:PortfolioSlidePreviewDto[6..12]`, `warnings:string[0..20]`; slide는 `slideNo:int 1..12`, `slideType:COVER\|PROFILE_SUMMARY\|STRENGTH_OVERVIEW\|PROJECT_CASE_STUDY\|TECHNICAL_DECISION\|IMPACT_AND_LEARNING\|CLOSING`, `title:string 1..120`, `subtitle:string? <=200`, `items:string[0..10]` 각 1..500, `visualType:NONE\|PROCESS\|ARCHITECTURE\|TIMELINE\|IMPACT_METRICS`, `evidenceRefs:CareerArtifactEvidenceRefDto[0..20]` |
+| `CareerArtifactDetailDto` | `artifact:CareerArtifactSummaryDto`, `currentVersion:CareerArtifactVersionSummaryDto?`, `preview:ResumePreviewDto\|PortfolioPreviewDto?`, `latestRun:AgentRunSummaryDto?`; preview type은 artifact type과 일치 |
+| `CareerArtifactDownloadUrlDto` | `url:string 1..4096`, `expiresAt:Instant`, `filename:string 1..255`; URL TTL은 5분이고 attachment disposition 사용 |
+
+`GitHubRepositoryDto`는 secret, private repository content, external numeric ID, ETag, storage key와 commit SHA 전체를 노출하지 않는다. 경험 상세의 기존 DTO는 다음 field를 additive하게 확장한다.
+
+- `ExperienceItemDto`: `githubRepositorySourceCount:int >=0` 추가. `sourceCount`는 모든 active provenance의 distinct source 수다.
+- `ExperienceSourceDto`: `githubSourceId:UUID?`, `githubRepositoryId:UUID?`, `repositoryName:string? <=201`, `repositoryUrl:https URL? <=500`, `commitShaShort:string? 7..12`, `capturedAt:Instant?`, `sourceExcerpt:string? <=500` 추가. GitHub source가 아니면 전부 null이다.
+- GitHub raw snapshot, storage key, 전체 code/README, masking 결과와 내부 source unit ID는 어떤 공개 DTO에도 노출하지 않는다.
+
+#### 13.5.2 GitHub source endpoint (`IMPLEMENTED`, Gate 1)
+
+| Method·path | request·filter | version/I | 성공 | 주요 오류 |
+| --- | --- | --- | --- | --- |
+| `POST /github-sources` | `url:string 1..500`, `participationConfirmed:true` | I | 202 `RunAcceptedDto`; `resourceType=GITHUB_SOURCE`, `resourceId=sourceId`, account는 discovery 후 같은 Run이 `WAITING_USER` 가능 | 400/409/422/429/503 |
+| `GET /github-sources` | `status?:GitHubSourceStatus`, `sourceKind?:GitHubSourceKind`, page,size; sort `updatedAt,desc` 또는 `createdAt,desc` | 없음 | 200 `PageResponse<GitHubSourceSummaryDto>` | 400/401 |
+| `GET /github-sources/{id}` | 없음 | 없음 | 200 `GitHubSourceDetailDto` | 404 |
+| `GET /github-sources/{id}/repositories` | `query?:string <=200`, `selected?:boolean`, page,size; sort `pushedAt,desc` 또는 `repositoryName,asc` | 없음 | 200 `PageResponse<GitHubRepositoryDto>` | 400/404 |
+| `PUT /github-sources/{id}/repository-selection` | `repositoryIds:UUID[1..10]` unique, `version:long` | body version+I | 202 기존 `RunAcceptedDto`; 같은 Run을 `QUEUED`로 resume하고 `replayed`를 보존 | 400/404/409/429/503 |
+| `POST /github-sources/{id}/refresh` | `version:long` | body version+I | 변경 시 202 `GitHubRefreshResultDto{changed=true,run!=null}`, 동일 snapshot이면 200 `{changed=false,run=null}` | 404/409/422/429/503 |
+| `DELETE /github-sources/{id}` | query `version:long` | query version | 204, 즉시 owner API에서 404 | 404/409 |
+
+URL은 `https://github.com/{owner}` 또는 `https://github.com/{owner}/{repository}`만 허용한다. `www.github.com`은 canonical host로 정규화하고 user-info, port, query, fragment, percent-encoded slash, 제어문자, `.git` 외 추가 path segment를 거부한다. 입력 URL을 직접 fetch하지 않고 server가 GitHub API route를 구성한다. 첫 구현은 공개 repository만 지원하며 PAT를 request로 받지 않는다.
+
+account source는 repository discovery 뒤 AI 호출 전에 `WAITING_USER`와 `SELECT_GITHUB_REPOSITORIES`가 된다. discovery는 최근 push 기준 최대 200개 public repository metadata만 저장하고 더 많으면 `repositoryDiscoveryTruncated=true`로 알린다. selection command는 source에 연결되어 발견된 public repository만 허용하며 전체 선택 집합을 교체한다. repository source는 한 repository를 자동 선택한다. refresh의 commit SHA와 retrieval policy가 모두 동일하면 새 Agent Run과 AI 비용을 만들지 않는다.
+
+#### 13.5.3 Career Artifact endpoint (`PLANNED`)
+
+| Method·path | request·filter | version/I | 성공 | 주요 오류 |
+| --- | --- | --- | --- | --- |
+| `GET /career-artifacts/readiness` | 없음 | 없음 | 200 `CareerArtifactReadinessDto` | 401 |
+| `GET /career-artifacts/ai-models` | `type:CareerArtifactType` 필수 | 없음 | 200 `CareerArtifactAiModelDto[1..30]` | 400/401/503 |
+| `POST /career-artifacts` | `artifactType`, `title:string 1..120`, `experienceItemIds:UUID[1..20]` unique VERIFIED, `model:string 1..64` allowlisted, `templateKey:string 1..80` server allowlisted, `includeProfileSections:string[0..10]` unique, `renderProfile:CareerArtifactRenderProfileWrite` | I | 202 `RunAcceptedDto`; preallocated `resourceType=CAREER_ARTIFACT`, `resourceId=artifactId` | 400/404/409/429/503 |
+| `GET /career-artifacts` | `artifactType?`, `lifecycleStatus?`, page,size; sort `updatedAt,desc` 또는 `createdAt,desc` | 없음 | 200 `PageResponse<CareerArtifactSummaryDto>` | 400/401 |
+| `GET /career-artifacts/{id}` | 없음 | 없음 | 200 `CareerArtifactDetailDto` | 404 |
+| `GET /career-artifacts/{id}/versions` | page,size; sort `versionNo,desc` 또는 `createdAt,desc` | 없음 | 200 `PageResponse<CareerArtifactVersionSummaryDto>` | 404 |
+| `POST /career-artifacts/{id}/generations` | `experienceItemIds:UUID[1..20]` unique VERIFIED, `model:string 1..64` allowlisted, `templateKey:string 1..80` server allowlisted, `includeProfileSections:string[0..10]` unique, `renderProfile:CareerArtifactRenderProfileWrite`, `version:long` | body version+I | 202 새 `RunAcceptedDto`; 기존 current version 유지 | 400/404/409/429/503 |
+| `POST /career-artifacts/{id}/archive` | `version:long` | body version | 200 `CareerArtifactDetailDto` with ARCHIVED | 404/409 |
+| `POST /career-artifacts/{id}/unarchive` | `version:long` | body version | 200 `CareerArtifactDetailDto` with ACTIVE, current version 유지 | 404/409 |
+| `POST /career-artifacts/{id}/versions/{versionId}/download-url` | 없음 | 없음 | 200 `CareerArtifactDownloadUrlDto` | 404/409/503 |
+| `DELETE /career-artifacts/{id}` | query `version:long` | query version | 204, 즉시 owner API에서 404 | 404/409 |
+
+`CareerArtifactRenderProfileWrite`는 `displayName:string 1..100`, `email:string? 3..320`, `phone:string? <=30`, `links:[{label:string 1..50,url:absolute https URL <=500}][0..5]`, `includeContact:boolean`을 가진다. 이 값은 renderer-only snapshot이며 LLM Context, Agent Run 공개 DTO, log와 analytics에 포함하지 않는다.
+
+생성의 hard precondition은 선택한 canonical experience가 모두 현재 사용자의 active `VERIFIED`이고 최소 1개인 것이다. project/career 2개 또는 strength 1개 미만은 readiness warning일 뿐 생성 금지 사유가 아니다. POST 접수와 실제 workflow 시작에서 owner, verification, experience version과 exact model allowlist를 다시 검증한다. 실패한 재생성은 이전 `currentVersionId`와 다운로드를 유지하고, 검증·렌더·upload가 모두 성공한 version만 current가 된다.
+
+`ARCHIVED` artifact는 상세·version 목록·download만 허용하고 재생성·제목 변경 같은 mutation은 `409 CAREER_ARTIFACT_ARCHIVED`다. unarchive는 current version과 provenance를 변경하지 않는다.
+
+Resume preview는 DOCX byte를, Portfolio preview는 PPTX byte를 browser에서 parsing한 결과가 아니다. 두 preview는 성공 version의 structured `content_json`에서 만든 안전한 projection이다. 다운로드는 반드시 artifact/version owner, 성공 version, object metadata를 확인한 뒤 발급한다.
+
+#### 13.5.4 Idempotency·Agent Run·오류
+
+- `Idempotency-Key`는 GitHub source 생성·repository 선택·refresh에 구현됐고 Career Artifact 생성·재생성은 계획 상태다. same key/same hash replay와 same key/different hash 충돌은 1.5 계약을 따른다.
+- Gate 1은 `GITHUB_INGESTION`만 추가해 현재 `WorkflowType`을 9개로 만들었다. `RESUME_GENERATION`, `PORTFOLIO_GENERATION`은 계속 `PLANNED`이며 기존 durable run을 변경하지 않는다.
+- GitHub source는 기존 Agent Run list/detail/SSE/retry/cancel에 `resourceType=GITHUB_SOURCE`로 나타난다. account repository 선택은 새 Run이 아니라 같은 Run의 WAIT/resume다. `CAREER_ARTIFACT` resource는 계획 상태다.
+- GitHub extraction model은 server policy가 선택하며 사용자 model endpoint 대상이 아니다. Resume와 Portfolio는 사용자가 선택한 exact model을 immutable Run input에 고정하고 retry도 같은 model을 사용한다.
+- GitHub 오류는 Gate 1에서 공통 error allowlist에 추가됐고 Career Artifact 오류는 계획 상태다.
+
+| HTTP | code | 의미 |
+| ---: | --- | --- |
+| 400 | `GITHUB_URL_INVALID` | 허용 URL shape 또는 canonicalization 실패 |
+| 400 | `AI_MODEL_NOT_SUPPORTED` | artifact type에 허용되지 않은 exact model |
+| 409 | `GITHUB_SOURCE_ALREADY_EXISTS` | 같은 사용자의 active canonical URL 중복 |
+| 409 | `GITHUB_REPOSITORY_SELECTION_REQUIRED` | account source 선택 전 다음 단계 요청 |
+| 409 | `CAREER_ARTIFACT_GENERATION_IN_PROGRESS` | 같은 artifact의 active generation 존재 |
+| 409 | `CAREER_ARTIFACT_ARCHIVED` | 보관된 artifact에 생성 등 write 요청 |
+| 409 | `CAREER_ARTIFACT_VERSION_NOT_READY` | 성공·검증된 파일 version이 아님 |
+| 409 | `INSUFFICIENT_VERIFIED_EXPERIENCE` | VERIFIED canonical experience가 하나도 없거나 선택값이 유효하지 않음 |
+| 422 | `GITHUB_SOURCE_NOT_ACCESSIBLE` | public user·organization·repository로 확인할 수 없음 |
+| 422 | `GITHUB_SOURCE_LIMIT_EXCEEDED` | repository·file·sanitized input 제한 초과 또는 선택 불가 |
+| 429 | `GITHUB_RATE_LIMITED` | GitHub quota 제한; 안전한 `Retry-After` 제공 |
+
+타 사용자 source, artifact, version, repository 선택 ID와 experience ID는 모두 `404 RESOURCE_NOT_FOUND`로 숨긴다. GitHub upstream body, rate-limit token, raw repository content, prompt/provider detail, storage key와 renderer 내부 오류는 응답에 포함하지 않는다.

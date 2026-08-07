@@ -19,6 +19,8 @@
 - [`DashboardPage.test.ts`](DashboardPage.test.ts): 이름 강조·사람 icon·주말과 날짜별 건수·날짜 선택·장문 가이드 modal focus·오류·빈 상태 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력 단계·서버 계산 최종 학력, 경력·자격증·어학·수상 목록·form·삭제·409 재적용과 학력 상태 한국어 표시
 - [`ProfileActivitiesPage.vue`](ProfileActivitiesPage.vue): 문서 AI 추출 경험과 분리된 사용자 직접 대외활동 CRUD·소재 후보 사용 선택
+- [`ExperienceLibraryPage.vue`](ExperienceLibraryPage.vue): canonical 경험 목록·filter·pagination, 내용 수정·활용 검증, 다중 출처와 유사·충돌 경험 비교·병합/분리
+- [`ExperienceLibraryPage.test.ts`](ExperienceLibraryPage.test.ts): canonical 카드·유사 경험 비교·별도 유지와 문서 보강 출처의 비검토 표현 회귀
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort와 terminal 작업 개별·현재 페이지 선택 삭제
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록

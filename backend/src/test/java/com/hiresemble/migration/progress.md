@@ -2,7 +2,15 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V22 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V27 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-07] Session Summary (V27 fresh·V26 upgrade 검증)
+
+- What was done: fresh V27과 populated V26→V27 migration test를 추가했다.
+- Key decisions: V26 SHA/checksum을 고정하고 기존 migration은 test 편의를 위해 수정하지 않는다.
+- Issues encountered: Agent Run waiting action CHECK도 V27에서 함께 확장해야 account resume fixture가 통과했다.
+- Validation: owner composite FK, active URL·selection·snapshot·evidence·resource parity·outbox unique와 two-user 격리가 통과했다.
+- Next steps: None.
 
 ## [2026-08-05] Session Summary (V21~V22 공고 기간 upgrade 검증)
 

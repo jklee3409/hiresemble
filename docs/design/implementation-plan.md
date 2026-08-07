@@ -1,6 +1,6 @@
 # Hiresemble 구현 계획
 
-이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다.
+이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. 사용자 승인으로 Phase 1 Gate 0~1은 완료됐고 Gate 2~4는 `PLANNED`다.
 
 P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 strict schema·semantic 계약 보정 뒤 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 이를 가짜 failed scope로 만든 projection과 공용 자기소개서 partial error 하드코딩으로 Run terminal만 잘못 실패했다. terminal policy 보정은 offline 검증했고 이후 Provider를 재호출하지 않았으므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
@@ -35,8 +35,10 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] P8.9-A ADMIN 읽기 전용 Backoffice로 AC-17을 고정한다.
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
+- [x] Phase 1 Gate 0 기준선 보호와 Gate 1 GitHub Backend를 V27로 완료한다.
+- [ ] Gate 2 GitHub Frontend 뒤 Gate 3~4 Career Artifact Backend·Frontend를 순서대로 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. Backend 기준선은 70 suites/491 tests이며 Frontend 61 files/243 tests와 OpenAPI 63 paths/84 operations는 변경하지 않았다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. 이미지형 공고 v3 보정의 실제 Provider 호출은 0회다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0~1 `DONE`, Gate 2~4 `PLANNED`다. 현재 구현 기준선은 Flyway V27, canonical 경험 보관함과 GitHub provenance, 9개 WorkflowType과 OpenAPI 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. Phase 1 자동 검증의 실제 GitHub·OpenAI 호출은 0회다.
 
 ## 1. 전체 선행 관계
 
@@ -75,6 +77,16 @@ P0 계약 기준선
                     P10-C 출시 준비·전체 회귀
 ```
 
+phase 배정 전 별도 vertical의 내부 선행 관계는 다음과 같다. 이 흐름을 위 P8.6~P10 순서에 임의로 끼워 넣지 않는다.
+
+```text
+GitHub·Career Artifact Gate 0 기준선 보호
+ └─ Gate 1 GitHub Backend
+     └─ Gate 2 GitHub Frontend
+         └─ Gate 3 Career Artifact Backend
+             └─ Gate 4 Career Artifact Frontend
+```
+
 - P2와 P3은 P1 이후 파일 소유권이 겹치지 않으면 병렬화할 수 있다.
 - P4와 P5도 Agent Run 공개 계약이 고정된 뒤 병렬화할 수 있다.
 - P6은 최신 공고 본문, profile과 승인 근거가 필요하다.
@@ -84,6 +96,7 @@ P0 계약 기준선
 - P8.6~P8.9-A는 비용 예산과 별개인 기능 한도, 사용량·원가 집계, 실패 복구, 운영 관찰 경계를 순서대로 고정한다.
 - P9는 P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A가 모두 필요하다.
 - P8.9-B 운영 mutation은 별도 후속이며 P9의 필수 선행이 아니다.
+- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration으로 완료했다. Gate 2~4는 이 경계를 유지한 채 순서대로 착수한다.
 - Frontend는 각 phase의 OpenAPI/DTO와 상태 계약이 backend에서 먼저 고정된 뒤 같은 수직 단계로 진행한다.
 
 ## 2. 전 단계 공통 완료 조건
@@ -649,7 +662,7 @@ P0 계약 기준선
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: tentative V19 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`. V15는 사용자 직접 대외활동, V16은 공고 자동 분석 후속 의도, V17~V18은 Dashboard Career Guide에 사용됐다.
+- DB: 구현 착수 시 next available migration에 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`를 추가한다. 현재 latest V27 기준으로 즉시 착수하면 V28이지만 번호를 예약하지 않는다.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -662,7 +675,7 @@ P0 계약 기준선
 - Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
 - Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
 - Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
-- Migration responsibility: V19 `TENTATIVE`; 구현 완료된 V1~V18 수정 금지.
+- Migration responsibility: next available `TENTATIVE`; 구현 완료된 V1~V27 수정 금지.
 
 ### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -684,7 +697,7 @@ P0 계약 기준선
 ### 15.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `billing` module이 immutable zero-rate policy, SQL read model과 reconciliation을 소유하며 payment 책임은 갖지 않는다.
-- DB: tentative V20 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index. 별도 billing event ledger는 만들지 않는다.
+- DB: P8.6 migration 뒤 next available에 `billing_policy_versions/items`, feature event billing snapshot 제약과 집계 index를 추가한다. 별도 billing event ledger는 만들지 않는다.
 - API: P8.6의 `/settings/usage` summary/history를 완성한다.
 - Frontend/Page: `/settings/usage`에서 사용량·남은 횟수·reset·기간 내역·현재 무료/청구 없음만 표시한다.
 - Source: 내부 원가=`ai_usage_records`, 제품·과금 가능 unit=`feature_usage_events`.
@@ -696,7 +709,7 @@ P0 계약 기준선
 - State lifecycle: raw append→SQL projection→watermark/reconciliation finding→append-only correction.
 - Idempotency/Concurrency: provider call/price item와 feature event unique를 유지하며 집계 재실행은 동일 결과다.
 - Failure semantics: aggregation lag는 stale로 표시하고 reconciliation 불일치를 숨기지 않는다.
-- Migration responsibility: V20 `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
+- Migration responsibility: next available `TENTATIVE`; aggregate table은 실제 p95/raw scan 근거 뒤 별도 승인한다.
 
 ### 15.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -748,7 +761,7 @@ P0 계약 기준선
 ### 17.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `backoffice` query module, ADMIN Security, provisioning command, access audit; domain query port/read model만 사용한다.
-- DB: tentative V21로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
+- DB: 선행 phase 뒤 next available migration으로 `users.role USER|ADMIN`, provisioning/access audit를 추가하고 signup USER를 유지한다.
 - API: overview, users/detail/usage, ai-costs, agent-runs, failures, configuration GET을 `/api/v1/backoffice` 아래 `PLANNED`로 구현한다.
 - Frontend/Page: 별도 `BackofficeLayout`과 overview/users/usage/ai-costs/agent-runs/failures/configuration route. AppLayout에는 노출하지 않는다.
 
@@ -759,7 +772,7 @@ P0 계약 기준선
 - State lifecycle: provisioning/access audit append-only, readiness는 configuration/live 분리, aggregate watermark/lag 표시.
 - Idempotency/Concurrency: stable pagination/sort/snapshot; provisioning은 idempotency와 expected current role.
 - Failure semantics: audit 실패 시 민감 상세 조회 fail-closed, stale aggregate는 마지막 정상 시각 표시.
-- Migration responsibility: V21 `TENTATIVE`; P8.9-B 번호 예약 금지.
+- Migration responsibility: next available `TENTATIVE`; P8.9-B 번호 예약 금지.
 
 ### 17.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -792,7 +805,7 @@ P0 계약 기준선
 ### 19.1 Backend·DB·API·Frontend responsibility
 
 - Backend: session 상태/CAS, `clientRequestId`, message sequence, bounded synchronous turn, complete와 async feedback run.
-- DB: P8.9-A 완료 시 next available migration(현재 예상 V22, `TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
+- DB: P8.9-A 완료 시 next available migration(`TENTATIVE`)에 mock session/turn/message/feedback과 owner FK를 구현한다.
 - API: 기존 명세의 mock endpoints를 구현하며 merge될 때만 implemented path/operation 수를 갱신한다.
 - Frontend/Page: `/mock-interviews/:sessionId`, 생성 form, READY/IN_PROGRESS/COMPLETED/CANCELLED, feedback 상태.
 - AI: turn당 Chat 1회, Provider retry 0, structured `TurnDecision`, async aggregate feedback.
@@ -813,7 +826,7 @@ P0 계약 기준선
 - State lifecycle: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`; feedback 독립 상태.
 - Idempotency/Concurrency: session CAS, `(user,session,clientRequestId)` unique, message sequence, 다중 tab 경쟁 차단.
 - Failure semantics: timeout/invalid output의 원 terminal 응답을 replay하고 same ID로 재호출하지 않는다.
-- Migration responsibility: 현재 예상 V22는 tentative이며 시작 시 latest migration을 확인한다.
+- Migration responsibility: 번호를 예약하지 않고 시작 시 latest migration을 확인한다.
 
 ### 19.4 Test strategy·Actual E2E boundary
 
@@ -884,6 +897,16 @@ P0 계약 기준선
 - 완료 조건: AC-01~17, fresh/upgrade, OpenAPI/frontend, 접근성, backup/restore, rollback PASS.
 - 다음 phase handoff: release 승인. 미검증 actual 또는 `OPEN_DECISION_BLOCKER`가 있으면 출시하지 않는다.
 
+## 별도 Vertical — GitHub 경험·Career Artifact
+
+- 상태: Phase 1 Gate 0~1 `DONE`; Gate 2 GitHub Frontend와 Gate 3~4 Career Artifact는 `PLANNED`.
+- 목표: 공개 GitHub source에서 프로젝트 경험·강점을 추출해 V26 canonical 보관함에 중복 없이 연결하고, 사용자가 exact model을 골라 이력서 DOCX와 포트폴리오 PPTX 초안을 생성·다운로드한다.
+- Gate 0~1 결과: V26 checksum과 populated upgrade·문서 canonical characterization을 고정했고, V27 GitHub schema·public gateway·bounded snapshot·workflow·7개 API·GH-AC-01~04를 Fake/WireMock/Testcontainers로 검증했다.
+- 남은 구현 순서: GitHub UI·경험 provenance 표시 → artifact/version/provenance next-available migration·model catalog·renderer workflow → wizard·preview·download UI.
+- 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow, applied V1~V27과 향후 current artifact version을 파괴하지 않는다.
+- 전체 완료 조건: [`github-career-artifact-design.md`](github-career-artifact-design.md) Gate 2~4와 ART-AC-01~05가 Fake/WireMock·Testcontainers·POI 재개방·Frontend/E2E에서 통과한다.
+- 배치 결정: Gate 2는 구현된 79 paths/107 operations를 소비한다. Gate 3 migration 번호는 착수 직전 latest를 다시 확인한다.
+
 ## 23. 목표 package와 directory 생성 순서
 
 target 구조는 설계 경계이며 phase가 시작되기 전 빈 directory를 대량 생성하지 않는다.
@@ -902,6 +925,8 @@ com.hiresemble/
 ├─ coverletter/               # P7
 ├─ research/                  # P8
 ├─ interview/                 # P8~P9
+├─ githubsource/              # Gate 1 GitHub source·snapshot·provenance
+├─ careerartifact/            # phase 미배정 DOCX/PPTX artifact·version·renderer port
 ├─ usage/                     # P8.6 제품 기능 한도·metering
 ├─ billing/                   # P8.7 과금 가능 usage policy·집계, 결제 제외
 └─ backoffice/                # P8.9 ADMIN 운영 query/action
@@ -957,6 +982,7 @@ ai/
 
 - domain query/command port는 해당 기능 module의 backend 소유다.
 - `ai/port`는 Chat/Embedding/Search 같은 provider 경계만 소유한다.
+- GitHub·Career Artifact phase는 `workflow/github`, `workflow/careerartifact`, `prompt/github`, `prompt/careerartifact`의 실제 파일이 필요할 때만 추가한다.
 
 ### 23.3 Frontend
 
@@ -968,7 +994,7 @@ frontend/src/
 ├─ shared/                    # P1부터 실제 공용 사용처
 ├─ stores/                    # auth/ui/draft
 ├─ pages/                     # phase별 route page, P8.9 pages/backoffice
-└─ features/                  # phase별 feature, usage/ai-failures/backoffice
+└─ features/                  # phase별 feature, usage/ai-failures/backoffice/github/artifact
 ```
 
 page는 조합, feature는 상호작용, Vue Query는 서버 상태, Pinia는 최소 전역 상태만 맡는다. Provider 원가 ledger는 기존 `agentrun`/`ai`, 제품 횟수는 `usage`, 과금 가능 unit은 `billing`, 운영 query는 `backoffice`에 두며 실제 결제 package는 만들지 않는다.
@@ -1041,6 +1067,8 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 | TaskExecutor 유실·중복          | DB claim/reconciliation와 idempotent apply test           |
 | 비용 동시성 초과                | reserve/settle 경쟁 test                                  |
 | 문서·웹 prompt injection        | Tool allowlist, content delimiting, structured validation |
+| GitHub source 범위·개인 기여 과장 | public-only bounded snapshot, source ref 검증, PENDING 사용자 승인 |
+| DOCX/PPTX 손상·layout overflow  | server template, POI 재개방, relation·overflow·visual fixture |
 | 파일 parser/URL fetch 자원 고갈 | size/time/redirect/DNS/resource limit test                |
 | 편집 version 유실               | optimistic lock, current partial unique, multi-tab test   |
 | SSE 단절로 영구 진행 표시       | snapshot-first, terminal GET, polling fallback            |

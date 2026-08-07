@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter, P8 Interview와 Phase 1 GitHub ingestion workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+
+## [2026-08-07] Session Summary (GitHub strict extraction runtime 연결)
+
+- What was done:
+  - GitHub context builder, canonical prompt definition, 10단계 contribution과 runtime failure handler를 기존 registry/orchestrator에 연결했다.
+- Key decisions:
+  - Chat에는 opaque source unit과 untrusted content만 보내고 tool은 비활성화하며 model route는 server policy가 선택한다.
+- Issues encountered:
+  - repository fan-out scope와 durable minimal output에서 domain ID 소유 경계를 분리했다.
+- Validation:
+  - workflow registry·orchestrator·strict output·usage/budget 집중 테스트가 통과했다.
+- Next steps:
+  - 실제 provider 검증은 비용 호출 승인 전까지 Fake 경계로 유지한다.
 
 ## [2026-08-07] Session Summary (Document candidate embedding workflow)
 

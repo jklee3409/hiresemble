@@ -2,7 +2,35 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub Gate 0~1 Backend는 구현됐고 Gate 2 Frontend와 Career Artifact는 `PLANNED`다.
+
+## [2026-08-07] Session Summary (GitHub Gate 1 구현 상태 문서 동기화)
+
+- What was done:
+  - 다섯 활성 명세, 시스템 설계, 구현 계획과 관련 index를 V27·9개 WorkflowType·79 paths/107 operations 기준으로 동기화했다.
+- Key decisions:
+  - GitHub Backend와 GH-AC-01~04만 `IMPLEMENTED`로 승격하고 `/profile/github` Frontend·Career Artifact·Resume/Portfolio workflow는 `PLANNED`로 유지했다.
+- Issues encountered:
+  - 기존 문서와 코드가 함께 dirty 상태여서 관련 문장만 좁게 수정하고 과거 Session Summary는 변경하지 않았다.
+- Validation:
+  - 구현 코드·OpenAPI test·V27 migration과 문서 marker를 교차 확인했다.
+- Next steps:
+  - Gate 2 완료 시 페이지 계약과 Frontend 추적 문서만 추가 승격한다.
+
+## [2026-08-07] Session Summary (GitHub 경험·이력서·포트폴리오 설계 문서화)
+
+- What was done:
+  - GitHub URL에서 경험·강점을 안전하게 추출하고 기존 canonical 경험과 중복을 막는 흐름, 사용자가 model을 골라 DOCX/PPTX 초안을 생성·다운로드하는 목표 설계를 추가했다.
+  - `spec/` 다섯 문서와 전체 시스템 설계·구현 계획·상위 index를 연결하고, 구현 계획의 오래된 migration 예상 번호를 current V26 기준 next available 원칙으로 정리했다.
+- Key decisions:
+  - 신규 범위는 모두 `PLANNED`이고 기존 비즈니스 pipeline·V26·공개 API count를 구현 완료로 오인하지 않게 분리한다.
+  - 포트폴리오는 면접관 중심 story와 디자인을 prompt에 명시하되 layout·Office byte는 서버 renderer가 통제한다.
+- Issues encountered:
+  - 기존 명세 전체의 수기 Markdown 형식 때문에 whole-file Prettier는 통과하지 않아 대량 formatting을 피했다.
+- Validation:
+  - 신규 설계 포맷, 상대 링크, 명세 cross-contract marker와 whitespace diff 검사가 통과했다. 애플리케이션 코드는 변경·검증하지 않았다.
+- Next steps:
+  - 별도 구현 승인과 phase 배치 뒤 상세 설계의 Gate 0부터 진행한다.
 
 ## [2026-08-07] Session Summary (현재 Frontend UI 페이지 계약 동기화)
 

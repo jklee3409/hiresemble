@@ -20,6 +20,7 @@
 - 시각 언어는 "부드러운 표면"이다. 카드와 패널은 외곽 테두리 대신 옅은 회색 canvas 위에서 다층 그림자로 떠 있고, 실행 버튼과 상태 pill은 알약 형태를 쓰며, 1px 실선은 카드 내부 구분선에만 허용한다.
 - motion token은 `--motion-fast`·`--motion-base`·`--motion-slow`와 `--ease-emphasized`, elevation은 `--shadow-xs|sm|md|panel|lift`와 brand 전용 `--shadow-brand`·`--shadow-brand-hover`를 사용한다. `--color-onbrand-accent`계열은 어두운 brand surface 위 강조에만 쓰고 밝은 surface의 본문에는 사용하지 않는다.
 - `--color-notice` 계열은 "확인 권장"처럼 오류는 아니지만 한 번 봐 두면 좋은 상태에 쓴다. 제품 brand blue scale을 참조해 테마색과 어긋나지 않고, danger의 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분된다.
+- `--chart-*` 마크 채움은 sage·peach·blush·sky 파스텔이라 채움만으로 대비 3:1을 넘지 못한다. 마크에는 같은 계열의 `--chart-*-line` 1px 윤곽을 항상 함께 쓰고, 그 위 아이콘·텍스트에는 `--chart-*-strong`을 쓴다.
 - 최소 reset, focus ring, reduced motion, 44px button·input·select·checkbox·radio·switch·date·file, alert·status·skeleton·progress·section reveal·pagination처럼 여러 화면이 공유하는 pattern만 전역으로 제공한다.
 - 반복되는 조합은 공용 class로 승격한다. 아이콘 담는 `.icon-tile`(`--sm|lg|neutral|success|warning|danger|solid`), 떠 있는 menu 표면 `.menu-panel`·`.menu-panel__item`·`.menu-panel__divider`, 알약 tab `.pill-tabs`·`.pill-tab`을 화면마다 다시 만들지 않는다.
 - 본문 font는 [`../main.ts`](../main.ts)가 import하는 `@fontsource-variable/noto-sans-kr`가 담당하고, 사용자 환경에 있으면 Pretendard가 먼저 선택되도록 stack 앞에 둔다. 화면별로 font를 다시 import하지 않는다.

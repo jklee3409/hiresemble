@@ -24,9 +24,9 @@
 
 - `src/main.ts`가 공유 Pinia·QueryClient, Router와 401 reset을 조립한다. 현재 PrimeVue component 사용처가 없어 전역 theme plugin은 초기화하지 않는다.
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
-- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증·계정 닉네임 상태와 typed profile·Agent Run·Document·Job·Job Analysis·Cover Letter·Interview transport를 관리한다.
+- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증·계정 닉네임 상태와 typed profile·canonical experience·Agent Run·Document·Job·Job Analysis·Cover Letter·Interview transport를 관리한다.
 - `src/styles`와 `src/shared/ui`가 Hiresemble Blue 기반 제품 design token, BrandMark, 공통 form/action/status/state·motion pattern을 제공한다.
-- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace, AI 작업 drawer, 공고 document view·자동 분석 journey, 자기소개서 편집·검증·version, 면접 준비와 이용 가이드를 제공한다.
+- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace와 경험 보관함, AI 작업 drawer, 공고 document view·자동 분석 journey, 자기소개서 편집·검증·version, 면접 준비와 이용 가이드를 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 

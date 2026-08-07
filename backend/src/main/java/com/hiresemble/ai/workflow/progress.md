@@ -2,7 +2,20 @@
 
 ## Overview
 
-canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
+canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub executable contribution 분리가 구현됐다.
+
+## [2026-08-07] Session Summary (GitHub ingestion canonical workflow)
+
+- What was done:
+  - `github-ingestion-v1`의 고정 10단계, repository fan-out, strict extraction, server-owned validation·embedding·canonical apply와 finalization을 등록했다.
+- Key decisions:
+  - repository content는 `<untrusted_repository_content>` data이고 tool allowlist는 비어 있다. source/repository/snapshot ID는 server scope가 소유한다.
+- Issues encountered:
+  - account resume 후 source를 다시 RUNNING으로 전이하고 fan-out 성공 scope를 server가 전달하도록 보정했다.
+- Validation:
+  - exact step 순서, account wait/resume, repository skip, partial, invalid ref filtering, usage와 cancel/retry 통합 테스트가 통과했다.
+- Next steps:
+  - Resume/Portfolio workflow는 Gate 3 전까지 추가하지 않는다.
 
 ## [2026-08-07] Session Summary (Document ingestion canonical v2)
 

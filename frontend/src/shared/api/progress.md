@@ -4,6 +4,27 @@
 
 Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-07] Session Summary (경험 목록에 문서 이름 추가)
+
+- What was done: `ExperienceItemDto`에 `primaryDocumentName: string | null`을 추가했다. 경험 보관함 카드가 문서 출처 개수 대신 실제 문서 이름을 보여 주기 위해서다.
+- Key decisions: 문서 목록을 따로 부르지 않고 서버 목록 응답에서 이름을 받는다. 목록 항목마다 상세를 조회하면 N+1이 된다.
+- Issues encountered: None.
+- Validation: `vue-tsc -b --force`, `vite build` 통과.
+- Next steps: None.
+
+## [2026-08-07] Session Summary (canonical 경험 API client)
+
+- What was done:
+  - canonical 경험·출처·유사도 DTO와 목록·상세·수정·검증·병합/분리 5개 consumer를 추가하고 `EvidenceDto`의 경험 연결 필드를 반영했다.
+- Key decisions:
+  - nullable 연결 필드도 응답 계약의 필수 key로 유지하고 match/verification enum을 Backend와 동일하게 고정했다.
+- Issues encountered:
+  - 기존 evidence fixture가 새 nullable key를 빠뜨려 typecheck가 실패해 명시적 `null`을 보완했다.
+- Validation:
+  - API contract test와 Frontend 전체 `pnpm check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (자기소개서 AI model catalog client)
 
 - What was done: model catalog Zod schema·GET client를 추가하고 generate·verify 요청을 `model`로 변경했다.

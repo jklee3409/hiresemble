@@ -4,6 +4,19 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-07] Session Summary (문서·GitHub 공통 canonical 경험 적용)
+
+- What was done:
+  - 문서 provenance 검증과 canonical apply를 분리하고 GitHub candidate 검증·evidence link·경험 DTO provenance projection을 추가했다.
+- Key decisions:
+  - exact/SAME은 새 item 없이 corroborating source만 보강하고 NEW/RELATED/CONFLICT는 PENDING으로 유지한다. category alias는 비교 group에서만 정규화한다.
+- Issues encountered:
+  - 기존 document 결과를 바꾸지 않도록 characterization fixture 아래에서 서비스를 추출했다.
+- Validation:
+  - document characterization 및 GitHub NEW/SAME/RELATED/CONFLICT/source-delete/foreign-unit 통합 테스트가 통과했다.
+- Next steps:
+  - Gate 2에서 additive GitHub source projection을 화면에 표시한다.
+
 ## [2026-08-07] Session Summary (canonical 경험 라이브러리 Backend)
 
 - What was done:

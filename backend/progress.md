@@ -3,9 +3,43 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview와 canonical 경험 관리까지 총 100 operations/74 paths가 구현되어 있다.
-- V1~V26 migration이 적용됐고 V26은 canonical 경험·다중 문서 출처·semantic embedding을 소유한다.
-- 이번 변경 집중 52 tests는 통과했다. 전체 `check`는 별도 가격 catalog·비동기 fixture 회귀가 남아 `NOT_VERIFIED`다.
+- P1 인증부터 P8 Interview, canonical 경험 관리와 GitHub Source까지 총 107 operations/79 paths가 구현되어 있다.
+- V1~V27 migration이 적용됐고 V27은 GitHub source·snapshot·provenance·outbox와 typed Run link를 소유한다.
+- GitHub 집중 검증은 통과했다. 전체 `check`는 기존 가격 catalog·비동기 fixture·Document 보상 회귀 12건이 남아 범위별로 결과를 분리한다.
+
+## [2026-08-07] Session Summary (Phase 1 GitHub Backend 구현)
+
+- What was done:
+  - public GitHub Source 전 계층, V27, bounded REST/snapshot/sanitizer/outbox, canonical 경험 통합과 `GITHUB_INGESTION` Agent Run/API를 구현했다.
+- Key decisions:
+  - GitHub snapshot lifecycle은 document storage와 분리하고, 공통 canonical apply만 characterization 아래 추출했다. GitHub feature는 production 기본 비활성이다.
+- Issues encountered:
+  - 전체 `check`는 610 tests 중 GitHub와 무관한 비-GitHub 12건이 실패했다. 집중 GitHub·document characterization·workflow·OpenAPI 검증은 통과했다.
+- Validation:
+  - focused migration/domain/gateway/canonical/workflow/API/OpenAPI 12 suites/189 tests가 통과했다. 실제 외부 호출은 0회다.
+- Next steps:
+  - Gate 2 Frontend가 7개 operation과 기존 Agent Run SSE를 소비한다.
+
+## [2026-08-07] Session Summary (경험 목록에 최초 추출 문서 이름 노출)
+
+- What was done: `ExperienceItemDto`와 `ExperienceItemRecord`에 `primaryDocumentName`을 추가하고, `ExperienceStore.ITEM_COLUMNS`에 링크된 근거 중 가장 먼저 만들어진 문서의 `display_name`을 뽑는 상관 subquery를 넣었다.
+- Key decisions: 정렬은 `evidence.created_at, evidence.id`라 "가장 먼저 추출한 곳"이 결정적으로 정해진다. 원본이 지워진 문서는 제외하므로 문서 출처가 있어도 이름이 `null`일 수 있고, 화면은 그 경우를 따로 표시한다.
+- Issues encountered: None.
+- Validation: `DocumentIntegrationTest.semanticDuplicateAcrossDocumentsAddsAProvenanceLinkWithoutANewExperienceCard`가 두 문서에서 같은 경험이 나왔을 때 먼저 올린 문서 이름을 반환하는지 검증하며 Testcontainers PostgreSQL에서 통과했다. `ProfileDomainTest`도 통과했다.
+- Next steps: 다음 backend 작업에서 `./gradlew check` 전체를 실행한다.
+
+## [2026-08-07] Session Summary (V26 populated upgrade 순서 보정)
+
+- What was done:
+  - 기존 document evidence가 있는 DB에서 V26이 SQLSTATE `55006`으로 중단되지 않도록 `profile_evidence` EXPERIENCE unique index를 backfill보다 먼저 생성하게 조정했다.
+- Key decisions:
+  - schema 계약과 backfill 결과는 유지하고 V26 내부 DDL·DML 순서만 변경했다.
+- Issues encountered:
+  - `profile_evidence`의 deferred constraint trigger가 backfill INSERT 이후 pending event를 유지해 같은 테이블의 후속 인덱스 생성을 차단했다.
+- Validation:
+  - 사용자 요청에 따라 별도 Backend 검증은 실행하지 않았으며 SQL 순서와 diff만 확인했다.
+- Next steps:
+  - V26이 영구 DB에 이미 성공 적용된 환경이 있다면 변경된 checksum 처리 여부를 확인한다.
 
 ## [2026-08-07] Session Summary (canonical 경험 중복 제거 Backend)
 

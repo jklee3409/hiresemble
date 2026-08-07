@@ -6,6 +6,21 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-07] Session Summary (차트 status 색을 파스텔로 교체)
+
+- What was done:
+  - `--chart-matched|partial|missing|unknown`을 sage·peach·blush·sky 파스텔(`#a9d6b8`·`#ffd6a5`·`#ffaeb4`·`#ccd6e8`)로 바꿨다.
+  - 파스텔 채움만으로는 흰 면 대비 3:1을 넘지 못하므로 같은 계열의 진한 윤곽선 `--chart-*-line` 4종을 추가했다. 네 색 모두 흰 면 대비 3.6:1 이상이다.
+- Key decisions:
+  - `-strong`·`-soft`는 그대로 두고 채움만 바꿨다. 텍스트·아이콘 대비와 칩 배경 규칙이 이미 검증돼 있어서다.
+  - "확인되지 않음"은 peach와 붙어 보이지 않도록 coral 대신 blush 쪽으로 옮겼다. deutan에서 sage-blush 쌍이 여전히 가까우므로 고정 정렬 순서와 아이콘·한글 라벨 범례를 2차 인코딩으로 계속 함께 쓴다.
+- Issues encountered:
+  - 파스텔 채움 위에서는 기존 흰 아이콘이 보이지 않아 마크 아이콘 색을 `-strong`으로 옮겨야 했다. 해당 수정은 `pages/progress.md`에 기록했다.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check .`, `vue-tsc -b --force` 통과. 대비는 상대 휘도로 계산했고 1440px 렌더 화면에서 네 상태를 직접 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-07] Session Summary (notice status 색과 badge tone 추가)
 
 - What was done:

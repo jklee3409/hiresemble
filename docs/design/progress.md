@@ -2,7 +2,37 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 별도 GitHub·Career Artifact 설계는 Gate 0~1 구현과 Gate 2~4 계획을 구분한다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-08-07] Session Summary (GitHub 설계 Gate 0~1 실제 상태 반영)
+
+- What was done:
+  - GitHub·Career Artifact 설계와 구현 계획에 Gate 0~1 완료, V27, 9개 workflow와 79/107 OpenAPI 기준선을 반영했다.
+- Key decisions:
+  - 목표 설계는 유지하고 실제 적용 상태, feature flag, 외부 호출 0회와 Gate 2~4 잔여 범위만 별도 표기했다.
+- Issues encountered:
+  - roadmap P8.5-V~P10 선행 관계와 별도 GitHub vertical을 섞지 않았다.
+- Validation:
+  - 구현 package·migration·workflow registry·API 계약과 설계 변경 지점을 대조했다.
+- Next steps:
+  - Gate 3 착수 직전에 latest migration과 renderer fixture 결정을 다시 확인한다.
+
+## [2026-08-07] Session Summary (GitHub 경험·Career Artifact 목표 설계)
+
+- What was done:
+  - 공개 GitHub 계정·repository URL 수집, 안전한 immutable snapshot, canonical 경험 중복 처리, 사용자 exact model 선택, 이력서 DOCX·포트폴리오 PPTX 생성과 download를 하나의 상세 설계로 추가했다.
+  - 현재 V26·8개 WorkflowType·74 paths/100 operations 경계, 신규 package와 기존 additive 변경 지점, DB/API/page/storage, 도입 Gate와 검증 Matrix를 연결했다.
+  - 구현 계획의 과거 tentative V19~V22 번호를 current V26 기준 next available 원칙으로 고치고 phase 미배정 vertical·package·위험을 연결했다.
+  - 전체 시스템 설계의 오래된 구현 상태를 현재 P0–P8/V26/100 operations 기준으로 바로잡고 목표 확장 경계를 연결했다.
+- Key decisions:
+  - GitHub raw evidence는 승인 전 downstream에 쓰지 않고 문서와 같은 canonical 경험 정책으로 합류시킨다. 생성 output은 입력 `documents`와 분리하고 AI는 structured content, 서버는 Apache POI renderer와 파일 검증을 책임진다.
+  - 계정 repository 선택은 같은 Run의 `WAITING_USER` resume, 생성 제안은 non-modal 선택 사항이며 신규 계약은 모두 `PLANNED`로 유지한다.
+- Issues encountered:
+  - 현재 roadmap의 P8.6 이후 계획과 번호 충돌을 피하기 위해 구현 phase와 migration 번호를 예약하지 않았다.
+- Validation:
+  - 신규 설계 문서 Prettier, 상대 링크 15개 문서 검사, 다섯 명세 cross-contract marker와 `git diff --check`가 통과했다.
+- Next steps:
+  - 구현 승인 시 Gate 0에서 V26 checksum·populated upgrade·문서 canonical 회귀를 먼저 고정하고, GitHub Backend부터 순차 배치한다.
 
 ## [2026-08-07] Session Summary (canonical 경험 처리 설계)
 

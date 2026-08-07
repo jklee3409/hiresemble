@@ -11,7 +11,101 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 canonical 경험 관리 5개 operation을 포함해 총 100 operations·74 paths다.
+- 공개 Spring/OpenAPI는 GitHub Source 7개 operation을 포함해 총 107 operations·79 paths다.
+- Phase 1 Gate 0~1 GitHub Backend는 V27·`GITHUB_INGESTION`·canonical GitHub provenance까지 구현됐다. `/profile/github` Frontend와 Career Artifact는 `PLANNED`다.
+
+## [2026-08-07] Session Summary (Phase 1 GitHub Backend Gate 0~1)
+
+- What was done:
+  - V26 기준선과 문서 canonical 동작을 보호한 뒤 public GitHub source 등록·account discovery·same-run repository 선택·bounded snapshot·strict 추출·canonical dedupe·refresh/delete/outbox를 구현했다.
+  - V27, 7개 GitHub API operation, `github-ingestion-v1`, `GITHUB_SOURCE` Agent Run retry·cancel·SSE와 GitHub 경험 provenance projection을 추가했다.
+- Key decisions:
+  - production feature 기본값은 비활성이고 local·offline·test에서 명시적으로 활성화한다. private repository/PAT/clone/code 실행, Frontend와 Career Artifact는 범위에서 제외했다.
+  - V26은 수정하지 않았고 GitHub candidate는 문서와 같은 fingerprint·embedding tuple·SAME/RELATED/CONFLICT 정책을 사용한다.
+- Issues encountered:
+  - 전체 `check` 610 tests 중 기존 Document 보상 기대 1건, fixed clock보다 늦은 AI price catalog와 test 간 fake catalog 오염에 따른 Provider/Job 10건, Job auto-analysis timing 1건이 실패했다. GitHub 집중 검증과 무관한 기준선 실패로 분리했다.
+- Validation:
+  - fresh 및 populated V26→V27 migration, URL/gateway/sanitizer, canonical, workflow, API/OpenAPI 집중 12 suites/189 tests가 통과했고 실제 OpenAPI는 79 paths/107 operations였다. 실제 GitHub·OpenAI 호출은 0회다.
+- Next steps:
+  - Gate 2에서 `/profile/github` route, repository selector, SSE 진행 상태와 GitHub 경험 source 표시를 구현한다. 공용 전체 `check`의 기존 가격 fixture·Job timing·Document 보상 회귀는 별도 기준선 작업으로 정리한다.
+
+## [2026-08-07] Session Summary (GitHub 경험·Career Artifact 도입 설계 문서화)
+
+- What was done:
+  - 현재 V26 canonical 경험 보관함과 8개 AI workflow를 기준으로 GitHub URL 등록·공개 repository snapshot·경험/강점 추출·중복 처리 설계를 문서화했다.
+  - 사용자 선택 exact model, 이력서 DOCX·면접관 중심 포트폴리오 PPTX 생성, immutable version·5분 download·선택적 제안의 기능/API/DB/page/tech 계약을 추가했다.
+  - 전체 시스템 설계와 구현 계획의 current baseline 및 과거 tentative migration 번호를 V26 기준으로 동기화했다.
+- Key decisions:
+  - 이번 작업은 싱글 에이전트 문서 전용으로 수행했고 기존 Backend·Frontend·V26 작업 트리와 비즈니스 pipeline을 수정하지 않았다.
+  - 신규 endpoint·table·WorkflowType은 모두 `PLANNED`이며 기존 OpenAPI 74 paths/100 operations와 applied V1~V26을 기준선으로 유지한다.
+- Issues encountered:
+  - 기존 수기 표가 있는 명세 파일은 whole-file Prettier에 맞지 않아 무관한 대량 재포맷을 하지 않았다.
+- Validation:
+  - 신규 상세 설계 Prettier, 상대 Markdown 링크, 다섯 명세 핵심 계약 marker와 `git diff --check`가 통과했다. 문서만 변경했으므로 Backend/Frontend test는 실행하지 않았다.
+- Next steps:
+  - 구현을 승인·배치할 때 V26 checksum과 populated DB 회귀를 먼저 고정한 뒤 GitHub Backend→Frontend→Career Artifact Backend→Frontend Gate 순으로 진행한다.
+
+## [2026-08-07] Session Summary (경험 보관함 카드에서 바로 처리하기)
+
+- What was done:
+  - 경험 보관함 설명 줄을 아래 섹션과 같은 폭으로 넓히고, 중복되는 안내 aside를 없애 위 여백을 줄였다.
+  - 카드의 "상세와 출처" 버튼을 활용 승인·활용 제외(또는 다시 검토)·수정으로 바꾸고, 수정은 별도 영역 없이 카드 본문이 입력 폼으로 바뀌게 했다. 목록은 5개씩 보여 준다.
+  - 문서 출처를 개수 대신 실제 문서 이름으로 보여 주기 위해 Backend 목록 DTO에 `primaryDocumentName`을 추가했다. 여러 문서에서 나온 경험은 가장 먼저 추출한 문서 이름과 `외 N곳`을 함께 적는다.
+- Key decisions:
+  - 상세 패널은 지우지 않고 유사 경험 비교·합치기와 출처 목록 전용으로 좁혔다. `reviewRequired` 카드의 안내 줄에 "비교해서 확인" 링크를 남겨 V26 중복 판정 흐름의 진입로를 유지했다.
+  - 이름은 서버 목록 응답에 실어 준다. 화면에서 항목마다 상세를 조회하면 N+1이 된다.
+- Issues encountered:
+  - Node 20 환경이라 Frontend `vitest`를 실행하지 못했다. 변경 전에도 동일한 환경 제약이다.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. fixture로 1440·390px와 카드 내 편집 상태를 직접 확인했다.
+  - Backend는 `DocumentIntegrationTest`의 semantic dedupe 흐름에 최초 문서 이름 검증을 추가해 Testcontainers PostgreSQL에서 통과했고 `ProfileDomainTest`도 통과했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`, Testcontainers 환경에서 `./gradlew check`를 재실행한다.
+
+## [2026-08-07] Session Summary (canonical 경험 보관함 Frontend 연결)
+
+- What was done:
+  - Backend canonical 경험 API를 Vue typed client·query와 `/profile/experiences` 목록·상세·수정·검증·병합/분리 화면에 연결했다.
+  - 문서 상세에서 이미 존재하는 경험의 보강 출처를 새 소재와 구분하고 보관함으로 이동할 수 있게 했다.
+  - 사용자가 원하지 않은 별도 디자인 도구 관련 저장소 산출물은 모두 제거하고 기존 UI 코드만 기준으로 구현했다.
+- Key decisions:
+  - 같은 경험은 카드 하나와 여러 출처로 표현하고, 자동 병합하지 않은 유사·충돌만 사용자 비교 대상으로 남긴다.
+  - 이번 Frontend 작업도 싱글 에이전트로 수행하고 병행 중인 공고 분석·V26 변경을 보존했다.
+- Issues encountered:
+  - 브라우저 CLI fixture 주입이 Windows syntax error로 두 번 실패해 actual Chromium 검증은 미완료다.
+  - 최초 전체 check의 profile navigation 회귀 1건을 새 8번째 route 계약으로 보정했다.
+- Validation:
+  - 집중 Vitest 6 files/59 tests와 최종 Frontend `corepack pnpm check`(70 files/317 tests, production build) 통과.
+- Next steps:
+  - 실제 Backend와 인증 fixture에서 경험 병합·mobile route를 브라우저로 확인한다.
+
+## [2026-08-07] Session Summary (요건 매칭 현황 파스텔·직사각형화)
+
+- What was done:
+  - 공고 분석의 요건 매칭 현황 막대를 알약에서 모서리 4px 직사각형으로 바꾸고, 채움을 sage·peach·blush·sky 파스텔로 교체했다.
+  - 파스텔 채움이 흰 면 위에서 대비 3:1을 넘지 못하므로 같은 계열의 진한 윤곽 토큰 `--chart-*-line` 4종을 추가해 막대·범례 dot·조건별 결과 mark에 1px 안쪽 윤곽으로 넣고, 파스텔 위에서 사라지는 흰 아이콘을 `--chart-*-strong`으로 바꿨다.
+- Key decisions:
+  - 파스텔을 진하게 만들어 대비를 맞추는 대신 윤곽선이 형태를 지탱하게 했다. 레퍼런스의 옅은 톤을 살리면서 마크 경계를 유지하기 위해서다.
+  - 무늬를 넣지 않는 기존 결정과 고정 정렬 순서·아이콘·한글 라벨 범례의 2차 인코딩은 그대로 유지한다. deutan에서 sage-blush 쌍이 여전히 가깝기 때문이다.
+- Issues encountered:
+  - 병행 중인 experience library 작업(router·contracts·profile API)이 typecheck를 깨고 있어 해당 파일을 stash한 상태에서 이번 변경만 검증했다. stash는 검증 후 되돌렸다.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. `job-analysis.spec.ts` 포함 Chromium 4건 통과.
+- Next steps:
+  - experience library 작업이 끝난 뒤 전체 `corepack pnpm check`를 다시 실행한다.
+
+## [2026-08-07] Session Summary (V26 populated DB migration 실패 보정)
+
+- What was done:
+  - 기존 문서 근거를 canonical 경험으로 backfill할 때 발생하던 PostgreSQL pending trigger 오류를 V26 인덱스 생성 순서 조정으로 보정했다.
+- Key decisions:
+  - 공개 API·DB 최종 schema·데이터 변환 계약은 바꾸지 않고 migration 내부 순서만 변경했다.
+- Issues encountered:
+  - 빈 DB에서는 재현되지 않지만 기존 `DOCUMENT_CHUNK` 근거가 있으면 deferred trigger event 때문에 `profile_evidence`의 후속 `CREATE INDEX`가 SQLSTATE `55006`으로 실패했다.
+- Validation:
+  - 사용자 요청에 따라 별도 자동 검증은 실행하지 않았고 변경 SQL과 diff만 확인했다.
+- Next steps:
+  - 이미 V26을 성공 적용한 영구 DB가 있다면 Flyway checksum 호환성을 확인한다.
 
 ## [2026-08-07] Session Summary (canonical 경험 중복 제거 Backend)
 

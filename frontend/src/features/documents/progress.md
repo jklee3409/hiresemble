@@ -4,6 +4,20 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-08-07] Session Summary (기존 경험 보강 출처 표시)
+
+- What was done:
+  - `DocumentEvidencePanel`이 `CORROBORATING` 근거를 새 소재의 선택·승인·제외·편집 대상에서 제외하고 기존 경험에 추가된 출처로 표시하도록 했다.
+  - 경험 보관함 상세 deep link와 보강 출처 수 요약을 추가했다.
+- Key decisions:
+  - 원본 문서 provenance는 유지하되 canonical 경험 카드는 반복 생성하지 않는 Backend 계약을 UI 행동에도 그대로 적용한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 보강 출처 component 회귀와 Frontend 전체 `pnpm check` 통과.
+- Next steps:
+  - 실제 문서 분석 결과에서 같은 경험 표현이 여러 개 나올 때의 표시 밀도를 확인한다.
+
 ## [2026-08-07] Session Summary (원본 페이지 미리보기와 소재 5개 pagination)
 
 - What was done:

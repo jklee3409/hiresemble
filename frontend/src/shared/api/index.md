@@ -6,10 +6,10 @@ Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`contracts.ts`](contracts.ts): 인증·프로필 request·response, 학력 단계·상태 enum과 error type
+- [`contracts.ts`](contracts.ts): 인증·프로필·canonical 경험 request·response, 학력 단계·상태 enum과 error type
 - [`http.ts`](http.ts): baseURL·cookie·CSRF interceptor
 - [`authApi.ts`](authApi.ts): 다섯 인증 endpoint와 계정 닉네임 변경 consumer
-- [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD·direct/document evidence batch 검토 consumer
+- [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD, direct/document evidence batch 검토와 canonical 경험 목록·상세·수정·검증·병합/분리 consumer
 - [`agentRunContracts.ts`](agentRunContracts.ts): P3 enum·DTO·SSE event Zod 계약
 - [`agentRunApi.ts`](agentRunApi.ts): Agent Run 목록·상세·retry·cancel·개별/선택 history delete consumer
 - [`documentContracts.ts`](documentContracts.ts): 원본 파일명을 포함한 문서·parse·evidence enum과 공개 DTO Zod 계약

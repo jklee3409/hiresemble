@@ -1,6 +1,6 @@
 # DB 명세서
 
-- 문서 버전: 1.3 (정규 경험·의미 중복 판정 계약)
+- 문서 버전: 1.4 (GitHub Source·Career Artifact 목표 계약)
 - 기준일: 2026-08-07
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
@@ -8,7 +8,7 @@
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 정규 경험 보관함과 의미 중복 판정을 추가한 V26이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 GitHub Source ingestion을 추가한 V27이며, 미래 계약은 별도로 `PLANNED`를 표시한다. 적용된 V26은 변경하지 않았다.
 
 ## 1. 공통 무결성·소유권
 
@@ -55,9 +55,17 @@
 | `interview_questions.question_type`                  | `COVER_LETTER`, `RESUME`, `PORTFOLIO`, `TECHNICAL`, `PROJECT_DEEP_DIVE`, `BEHAVIORAL`, `COMPANY_MOTIVATION`, `FOLLOW_UP`                                                                                |
 | 공개 품질                                            | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
 | 내부 tier                                            | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
-| `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
+| `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK`, `GITHUB_INGESTION` |
+| `agent_runs.workflow_type` (`PLANNED`)               | 기존 값에 `RESUME_GENERATION`, `PORTFOLIO_GENERATION` 추가                                                                                                                                            |
 | `documents.document_type`                            | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
-| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `EXPERIENCE`, `MANUAL`                                                                                 |
+| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `EXPERIENCE`, `MANUAL`, `GITHUB_REPOSITORY`                                                            |
+| `github_sources.source_kind`                         | `ACCOUNT`, `REPOSITORY`                                                                                                                                                                                  |
+| `github_sources.account_type`                        | `USER`, `ORGANIZATION`; repository source에서는 `NULL`                                                                                                                                                   |
+| `github_sources.source_status`                       | `DISCOVERING`, `WAITING_USER`, `QUEUED`, `RUNNING`, `READY`, `PARTIAL`, `FAILED`                                                                                                                        |
+| `github_evidence_unit_links.relation_kind`           | `PRIMARY`, `SUPPORTING`                                                                                                                                                                                  |
+| `career_artifacts.artifact_type` (`PLANNED`)         | `RESUME`, `PORTFOLIO`                                                                                                                                                                                    |
+| `career_artifacts.lifecycle_status` (`PLANNED`)      | `ACTIVE`, `ARCHIVED`                                                                                                                                                                                     |
+| `career_artifact_evidence_links.usage_type` (`PLANNED`) | `PRIMARY_EXPERIENCE`, `STRENGTH`, `SUPPORTING_FACT`                                                                                                                                                   |
 | `job_postings.deadline_source`                       | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
 | `job_postings.closed_reason`                         | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
 | `job_postings.description_source`                    | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
@@ -100,6 +108,8 @@
 - 모의 면접: `READY→IN_PROGRESS|CANCELLED`, `IN_PROGRESS→COMPLETED|CANCELLED`. feedback은 `NOT_REQUESTED→QUEUED→RUNNING→SUCCEEDED|FAILED|CANCELLED`이고 FAILED retry는 새 run projection이다.
 - Agent Run: `QUEUED→RUNNING|CANCELLED`, `RUNNING→WAITING_USER|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`, `WAITING_USER→QUEUED|CANCELLED`. terminal row는 다시 열지 않는다.
 - Agent Step: `PENDING→RUNNING|SKIPPED|REUSED|CANCELLED`, `RUNNING→WAITING_USER|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`, `WAITING_USER→PENDING|CANCELLED`; retry는 새 attempt다.
+- GitHub source: 생성 직후 `DISCOVERING`; repository URL은 `DISCOVERING→QUEUED→RUNNING→READY|PARTIAL|FAILED`, account URL은 `DISCOVERING→WAITING_USER→QUEUED→RUNNING→READY|PARTIAL|FAILED`다. refresh는 같은 aggregate의 `source_revision`을 올리고 `READY|PARTIAL|FAILED→QUEUED`로 시작하며 삭제 row는 전이 대상에서 제외한다.
+- Career Artifact (`PLANNED`): aggregate lifecycle은 `ACTIVE↔ARCHIVED`이고 generation 상태는 latest linked Agent Run에서 `NOT_STARTED|QUEUED|RUNNING|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`로 projection한다. 실패·취소·중단은 이미 성공한 `current_version_id`를 변경하지 않는다.
 
 ## 3. 사용자·프로필
 
@@ -488,9 +498,122 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 10. Agent Run history delete는 terminal row의 `deleted_at`만 원자 갱신하고 audit·lineage FK row는 보존한다.
 11. model·dimension 변경은 새 generation과 typed vector column/index 생성→backfill→검증→active switch→cleanup 순서다.
 
-## 13. 향후 migration 책임
+## 13. GitHub Source (`IMPLEMENTED`, V27)
 
-현재 latest implemented migration은 취업 준비 가이드 본문을 보강한 V18이다. V1~V18은 수정하지 않는다. 아래 미래 번호와 filename은 V19부터 `TENTATIVE`이며 실제 착수 시 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+이 절은 [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md)의 목표 schema이며 [`V27__create_github_source_ingestion.sql`](../../backend/src/main/resources/db/migration/V27__create_github_source_ingestion.sql)에서 구현됐다. V26과 이전 migration은 수정하지 않았다.
+
+### 13.1 `github_sources`
+
+`id,user_id`, `source_kind varchar(20)`, `account_type varchar(20) NULL`, `original_url varchar(500)`, `canonical_url varchar(500)`, `owner_login varchar(100)`, `repository_name varchar(100) NULL`, `source_status varchar(30)`, `repository_discovery_truncated boolean DEFAULT false`, `latest_agent_run_id uuid NULL`, `source_revision bigint DEFAULT 0`, `last_successful_sync_at NULL`, `version`, timestamps, `deleted_at NULL`.
+
+- active `UNIQUE(user_id,canonical_url) WHERE deleted_at IS NULL`이며 canonical URL은 application에서 `https://github.com/{owner}[/{repository}]` 형태로만 만든다.
+- `ACCOUNT`는 `account_type IS NOT NULL AND repository_name IS NULL`, `REPOSITORY`는 `account_type IS NULL AND repository_name IS NOT NULL`이다.
+- `source_revision>=0`, optimistic `version>=0`을 분리한다. refresh 접수는 aggregate lock 아래 revision과 version을 각각 증가시킨다.
+- account discovery는 최근 push 기준 최대 200개 link만 저장하고 초과 여부를 `repository_discovery_truncated`로 보존한다. repository source는 false다.
+- `latest_agent_run_id`는 resource link 생성 뒤 같은 사용자 Run을 가리키며 source 삭제가 Run history를 삭제하지 않는다.
+- 일반 조회 index는 `(user_id,updated_at DESC,id DESC) WHERE deleted_at IS NULL`, worker/reconciliation index는 `(source_status,updated_at)`이다.
+
+### 13.2 repository·선택
+
+`github_repositories`: `id,user_id,external_repository_id bigint,node_id varchar(100),owner_login varchar(100),repository_name varchar(100),canonical_url varchar(500),default_branch varchar(255),is_private boolean,is_fork boolean,is_archived boolean,description varchar(500) NULL,pushed_at NULL`, timestamps.
+
+- `UNIQUE(user_id,external_repository_id)`와 `UNIQUE(user_id,id)`를 두며 최초 vertical은 `is_private=false`만 source selection에 허용한다.
+- rename은 external ID 기준으로 metadata와 canonical URL을 갱신하되 이전 immutable snapshot identity는 유지한다.
+
+`github_source_repository_links`: `id,user_id,github_source_id,github_repository_id,selected boolean,selection_order integer NULL,discovered_at,updated_at`.
+
+- 두 parent에 `(user_id,id)` 복합 FK, `UNIQUE(user_id,github_source_id,github_repository_id)`를 둔다.
+- selected이면 `selection_order 1..10`, 아니면 null이고 active source별 selected order는 unique다.
+- account selection command는 source row lock 아래 전체 selected 집합을 원자 교체한다. repository source는 정확히 한 링크가 selected다.
+
+### 13.3 immutable snapshot·source unit
+
+`github_repository_snapshots`: `id,user_id,github_repository_id,commit_sha char(40),tree_sha char(40) NULL,github_api_version varchar(30),retrieval_policy_version varchar(80),selection_complete boolean,upstream_truncated boolean,snapshot_storage_key varchar(500) UNIQUE,checksum_sha256 char(64),sanitized_bytes bigint,captured_at`.
+
+- `UNIQUE(user_id,github_repository_id,commit_sha,retrieval_policy_version)`이며 update를 금지하는 immutable row다.
+- SHA와 checksum은 lowercase hexadecimal, `sanitized_bytes 1..4000000`이다. API별 Unicode code point 상한은 DB byte 상한보다 작게 application에서 강제한다.
+- snapshot object는 private storage의 gzip JSON이며 DB에는 raw file content를 저장하지 않는다.
+
+`github_source_units`: `id,user_id,snapshot_id,unit_type varchar(40),repository_path varchar(1000),blob_sha char(40) NULL,language varchar(80) NULL,line_start/line_end integer NULL,content_hash char(64),excerpt varchar(500),snapshot_ordinal integer,created_at`.
+
+- snapshot 복합 FK, `UNIQUE(user_id,snapshot_id,snapshot_ordinal)`, `UNIQUE(user_id,id)`를 둔다.
+- line은 둘 다 null이거나 `1<=line_start<=line_end`; path는 정규화한 relative path이며 `..`, NUL과 backslash를 허용하지 않는다.
+- excerpt는 secret masking과 source selection을 통과한 짧은 표시용 문자열이다. 전체 repository text와 prompt는 row에 저장하지 않는다.
+
+`github_evidence_unit_links`: `id,user_id,profile_evidence_id,source_unit_id,relation_kind,created_at`.
+
+- evidence와 unit에 owner 복합 FK, `UNIQUE(user_id,profile_evidence_id,source_unit_id,relation_kind)`를 둔다.
+- 같은 evidence에는 `PRIMARY`가 최소 1개 있어야 하며 application apply transaction과 deferred validation으로 보장한다.
+
+### 13.4 canonical 경험 연결
+
+`profile_evidence`에 `github_repository_id uuid NULL`, `github_snapshot_id uuid NULL`, `github_claim_key char(64) NULL`을 additive하게 추가하고 `source_type` CHECK에 `GITHUB_REPOSITORY`를 추가한다.
+
+- GitHub shape는 `source_type=GITHUB_REPOSITORY`, `source_entity_id=github_repository_id`, `document_id IS NULL`, 세 GitHub column non-null이다.
+- 비 GitHub shape는 세 GitHub column이 모두 null이다.
+- repository와 snapshot에 owner 복합 FK를 두고 snapshot이 해당 repository의 row인지 trigger 또는 composite alternate key FK로 강제한다.
+- active raw claim은 `UNIQUE(user_id,github_repository_id,github_claim_key) WHERE source_type='GITHUB_REPOSITORY' AND source_deleted_at IS NULL`이다.
+- canonical 적용은 기존 `experience_items`, `experience_evidence_links`, `experience_item_embeddings`의 fingerprint·0.94/0.82 정책과 사용자 advisory lock을 그대로 사용한다. GitHub 전용 canonical table이나 별도 threshold를 만들지 않는다.
+- 신규·유사·충돌 항목은 `PENDING`; `SAME_EXPERIENCE`는 새 item 없이 기존 item의 `CORROBORATING` link만 추가한다.
+
+### 13.5 Snapshot Object 삭제
+
+`github_snapshot_object_deletion_outbox`: `id,user_id,github_source_id uuid NULL,snapshot_id uuid NULL,storage_key varchar(500),reason varchar(50),status,attempt_count,next_attempt_at,claim_token/lease_expires_at NULL,last_error_code varchar(100) NULL,created_at,completed_at NULL`.
+
+- status와 claim/lease 규칙은 기존 `object_deletion_outbox`와 같고 active `UNIQUE(storage_key,reason) WHERE status IN ('PENDING','PROCESSING')`를 둔다.
+- 정상 source 삭제는 source/snapshot ID를 보존하고, DB 반영 전 orphan upload 보상은 둘 다 null일 수 있다. storage key는 사용자 ID prefix 검증을 통과해야 한다.
+- source soft delete, GitHub raw evidence tombstone/삭제, orphan canonical 정리는 한 DB transaction이고 object 삭제는 outbox worker가 수행한다.
+- 승인된 canonical item은 source 삭제 뒤에도 유지한다. 참조된 GitHub raw evidence는 `SOURCE_DELETED` 최소 tombstone, 미참조 raw evidence와 다른 active source가 없는 미승인 orphan item은 제거한다.
+
+## 14. Career Artifact (`PLANNED`, phase 미배정)
+
+### 14.1 `career_artifacts`
+
+`id,user_id`, `artifact_type varchar(20)`, `title varchar(120)`, `lifecycle_status varchar(20)`, `current_version_id uuid NULL`, `latest_agent_run_id uuid NULL`, `version`, timestamps, `deleted_at NULL`.
+
+- `current_version_id`는 같은 `(user_id,artifact_id)`의 성공 immutable version만 가리킨다. circular FK는 version table 생성 뒤 추가하고 deferred constraint trigger로 parent 일치를 강제한다.
+- generation 진행·실패 상태는 별도 mutable column에 복제하지 않고 latest linked Agent Run에서 projection한다.
+- 실패·취소·중단한 재생성은 `current_version_id`를 바꾸지 않는다.
+- 목록 index는 `(user_id,updated_at DESC,id DESC) WHERE deleted_at IS NULL`, type filter index는 `(user_id,artifact_type,updated_at DESC) WHERE deleted_at IS NULL`이다.
+
+### 14.2 `career_artifact_versions`
+
+`id,user_id,career_artifact_id,version_no integer,content_schema_version varchar(80),content_json jsonb,template_key varchar(80),template_version varchar(40),model_id varchar(64),agent_run_id uuid,render_profile_snapshot jsonb,storage_key varchar(500) UNIQUE,mime_type varchar(100),size_bytes bigint,checksum_sha256 char(64),created_at`.
+
+- immutable row이며 `UNIQUE(user_id,career_artifact_id,version_no)`, `UNIQUE(user_id,id)`와 owner 복합 FK를 둔다. `version_no>=1`, `size_bytes>0`이다.
+- artifact type과 MIME은 RESUME/DOCX, PORTFOLIO/PPTX 조합만 허용하고 storage key extension도 같은 조합인지 application과 integration test에서 검증한다.
+- strict structured output, renderer 완료, OOXML 재개방·관계·overflow 검증, private object upload가 모두 성공한 뒤에만 row를 생성한다.
+- `content_json`은 안전한 HTML preview projection의 source이며 schema version으로 검증한다. prompt/provider response, OOXML byte와 raw evidence 원문은 넣지 않는다.
+- `render_profile_snapshot`은 최종 파일에 실제 삽입한 최소 display/contact/link와 포함 여부만 보존한다. LLM input, log, analytics에 복제하지 않고 artifact/account 삭제 시 함께 purge한다.
+
+### 14.3 version provenance
+
+`career_artifact_evidence_links`: `id,user_id,artifact_version_id,experience_item_id,profile_evidence_id,experience_version bigint,evidence_version bigint,usage_type,title_snapshot varchar(250),content_snapshot varchar(20000),snapshot_hash char(64),created_at`.
+
+- version, experience, evidence에 owner 복합 FK를 두고 `UNIQUE(user_id,artifact_version_id,experience_item_id,profile_evidence_id,usage_type)`를 둔다.
+- 입력은 접수와 workflow 실행 시 모두 active `VERIFIED` canonical experience인지 검증한다.
+- snapshot은 생성 당시 fact check와 재현을 위한 immutable provenance다. GitHub raw source unit이나 문서 chunk를 직접 연결하지 않는다.
+- artifact version 저장, provenance link 삽입과 `career_artifacts.current_version_id/latest_agent_run_id/version` 갱신은 한 transaction이다.
+
+### 14.4 Artifact Object 삭제
+
+`career_artifact_object_deletion_outbox`: `id,user_id,career_artifact_id uuid NULL,artifact_version_id uuid NULL,storage_key varchar(500),reason varchar(50),status,attempt_count,next_attempt_at,claim_token/lease_expires_at NULL,last_error_code varchar(100) NULL,created_at,completed_at NULL`.
+
+- status·lease와 active storage key/reason unique는 13.5와 같다. DB apply 전 orphan upload에서는 artifact/version ID가 null일 수 있다.
+- artifact delete는 즉시 owner API에서 404가 되고 모든 version object를 outbox에 넣는다. 과거 성공 version은 aggregate가 active인 동안 current가 아니어도 다운로드 가능하다.
+- account deletion task는 GitHub snapshot outbox와 artifact outbox가 terminal 성공한 뒤 owner row를 purge한다.
+
+### 14.5 Agent Run·멱등성 확장
+
+- V27은 `agent_runs.workflow_type` CHECK에 `GITHUB_INGESTION`을 additive하게 추가했다. `RESUME_GENERATION|PORTFOLIO_GENERATION`은 planned다.
+- V27은 `agent_run_resource_links`에 `github_source_id uuid NULL`, owner 복합 FK, exactly-one resource column CHECK와 `GITHUB_SOURCE` parity를 추가했다. `career_artifact_id|CAREER_ARTIFACT`는 planned다.
+- GitHub retry successor는 같은 source에 정확히 하나 연결한다. Career Artifact retry 계약은 planned다.
+- GitHub source 생성·선택·refresh와 artifact 생성·재생성은 기존 `idempotency_records`를 사용한다. request hash에는 canonical URL 또는 선택 ID/version/model/template/evidence version을 포함하고 renderer-only 연락처 원문은 넣지 않는다.
+- GitHub snapshot fetch와 artifact render/upload는 transaction 밖에서 수행한다. apply transaction은 owner, source/artifact revision, active policy/model, evidence version, input/output hash를 재검증한다.
+
+## 15. 향후 migration 책임
+
+현재 latest implemented migration은 GitHub Source ingestion을 추가한 V27이다. 적용된 V1~V27은 수정하지 않는다. 아래 `PLANNED` 번호는 예약값이 아니며 실제 착수 직전 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -505,12 +628,22 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | additional implemented V16   | 공고 revision별 자동 분석 의도, lease reconciliation, Agent Run 연결             |
 | additional implemented V17   | 전역 취업 준비 가이드 게시 상태·노출 순서·초기 콘텐츠                           |
 | additional implemented V18   | 미수정 초기 가이드 5개의 장문 본문·content version 2 보강                        |
-| P8.6, tentative V19          | feature policy/assignment/override/period/reservation/event                      |
-| P8.7, tentative V20          | immutable billing policy, feature billing snapshot 제약, 집계 index              |
-| P8.8                         | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
-| P8.9-A, tentative V21        | USER/ADMIN role 확장, provisioning/access audit                                  |
-| P8.9-B                       | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
-| P9                           | P8.9-A 완료 시 next available, 현재 예상 V22                                     |
-| vector index 조건부          | 측정 기준을 넘을 때만 HNSW                                                       |
+| additional implemented V19   | 프로필 지원 자격과 구조화 사실 provenance                                        |
+| additional implemented V20   | 공고 분석 evidence coverage                                                       |
+| additional implemented V21   | 공고 상·하반기 분류                                                               |
+| additional implemented V22   | 공고 기간 제약 최종화                                                             |
+| additional implemented V23   | 선택 가능한 OpenAI exact model 가격                                               |
+| additional implemented V24   | 분야별 예산을 전역 일일 budget ledger로 교체                                      |
+| additional implemented V25   | 취업 준비 가이드 본문 전면 개편                                                   |
+| additional implemented V26   | canonical 경험·근거 link·embedding·문서 candidate apply                          |
+| additional implemented V27   | GitHub source/repository/snapshot/unit/evidence/outbox와 typed Run link           |
+| Career Artifact (`PLANNED`)   | 착수 시 next available; artifact/version/provenance/outbox/run link               |
+| P8.6 (`PLANNED`)              | feature policy/assignment/override/period/reservation/event; 착수 시 next available |
+| P8.7 (`PLANNED`)              | immutable billing policy, feature billing snapshot 제약, 집계 index              |
+| P8.8                          | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |
+| P8.9-A (`PLANNED`)            | USER/ADMIN role 확장, provisioning/access audit; 착수 시 next available          |
+| P8.9-B                        | 번호 예약 없음; 실제 승인·착수 시 next available                                 |
+| P9                            | 선행 승인 범위 완료 뒤 next available                                             |
+| vector index 조건부           | 측정 기준을 넘을 때만 HNSW                                                       |
 
 각 migration은 owner composite FK·unique·CHECK를 같은 단계에서 만들고 빈 DB와 직전 production-like schema upgrade를 검증한다.
