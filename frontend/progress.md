@@ -7,6 +7,60 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 69 files/313 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-07] Session Summary (작성 도움 항상 노출과 요구사항 카드화)
+
+- What was done:
+  - "작성 도움 접기" 버튼과 `assistCollapsed` 상태를 없앴다. 작성 도움은 항상 보이고, 버튼이 차지하던 줄만큼 tab과 내용이 위로 올라가 편집기 상단과 같은 높이에서 시작한다.
+  - 공고 요구사항을 아이콘 + 텍스트 목록에서 분류 알약을 얹은 카드로 바꿨다. "보완하면 좋은 점"은 알약 없이 같은 카드 모양만 쓴다.
+  - `--color-notice`를 보라에서 제품 brand blue 계열로 바꾸고, `UNVERIFIED_CLAIM` 라벨을 "확인이 필요한 내용"으로 고쳤다.
+- Key decisions:
+  - notice 색은 새 hex 대신 기존 `--hs-blue-*` scale을 참조해 테마 팔레트를 늘리지 않았다.
+  - 요구사항 카드에는 아이콘을 넣지 않는다. 한 열에 여러 장이 쌓이므로 요소가 늘어날수록 훑기 어려워진다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - fixture Chromium 13건 통과. `ui-shell.spec.ts`의 프로필 추천 흐름 1건은 기존 인증 fixture 문제로 변경 전과 동일하게 실패한다.
+  - 1440px에서 두 tab을 직접 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (AI 검토 결과를 편집기 옆 넓은 열로)
+
+- What was done:
+  - 자기소개서 편집 화면에서 "AI 검토 결과" tab을 열면 오른쪽 열이 19rem에서 28rem까지 넓어지도록 했다. 별도 modal을 띄우지 않아 편집기와 나란히 두고 바로 고칠 수 있다.
+  - 지적 사항 카드의 왼쪽 심각도 색 띠를 없애고, "확인 권장"과 "확인 필요"의 겨자색을 새 `--color-notice` 보라 계열로 바꿨다. 인용문도 왼쪽 선 대신 안쪽 흰 면으로 표시한다.
+  - `StatusBadge`에 `notice` tone을 추가하고 검토 상태 tone을 `VERIFICATION_STATUS_TONES` 한곳으로 모아 편집·버전·목록 화면의 색을 맞췄다.
+- Key decisions:
+  - 폭은 tab에 따라 자동으로 바뀐다. 공고 요구사항은 짧은 목록이라 좁은 열로 충분하고 검토 결과만 넓은 폭이 필요하다.
+  - notice에 보라를 고른 이유는 danger와 같은 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분되기 때문이다. 전역 `warning`은 그대로 뒀다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - 신규 `cover-letter-review.spec.ts` 포함 fixture Chromium 13건 통과. `ui-shell.spec.ts`의 프로필 추천 흐름 1건은 기존 인증 fixture 문제로 실패하며 변경 전에도 동일하다.
+  - 1200·1440·1920px에서 좌우 넘침 없이 편집기와 검토 결과가 함께 보이는 것을 직접 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (원본 페이지 미리보기와 소재 pagination)
+
+- What was done:
+  - 이력서·포트폴리오 상세의 자료 미리보기를 추출 텍스트에서 원본 PDF 페이지 렌더링으로 바꾸고, 한 번에 한 페이지만 보여 주며 앞뒤로 넘기게 했다. 비PDF와 렌더링 실패는 텍스트 미리보기로 되돌린다.
+  - "AI가 찾은 경험" 목록을 5개씩 나눠 보여 주고 `PaginationNav`를 붙였다.
+  - `document-preview.spec.ts` fixture 회귀 2건을 추가했다.
+- Key decisions:
+  - PDF 렌더링에 `pdfjs-dist` 6.2.108을 추가했다. 기존 Vue/PrimeVue/TanStack/Zod로는 원본 페이지를 그릴 수 없고, 동적 import로 분리해 진입 번들에는 영향이 없다(별도 427KB, gzip 127KB chunk).
+  - 소재 pagination은 화면에서만 나누고 요약 수치와 일괄 승인은 전체 소재 기준을 유지했다.
+- Issues encountered:
+  - 이 환경은 Node 20이고 `pnpm@11`은 Node 22 이상을 요구해 실행되지 않는다. `package.json`에만 의존성을 기록했고 `pnpm-lock.yaml`은 갱신하지 못했다. 검증은 npm tarball을 `node_modules`에 임시로 풀어 수행한 뒤 사본을 지웠다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - `document-preview.spec.ts` Chromium 2건 통과. 1440px에서 페이지 넘김과 소재 5개 분할을 직접 확인했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm install` 후 `corepack pnpm check`를 실행한다.
+  - 운영 Object Storage presigned GET에 브라우저 CORS 허용을 설정한다.
+
 ## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계)
 
 - What was done:

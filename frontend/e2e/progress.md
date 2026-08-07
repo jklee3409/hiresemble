@@ -15,6 +15,22 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-07] Session Summary (자기소개서 AI 검토 표시 회귀 추가)
+
+- What was done: `cover-letter-review.spec.ts`를 추가해 검토 tab에서 오른쪽 열이 넓어지는지, modal 없이 편집기가 그대로 남는지, 지적 사항에 왼쪽 border가 없는지, "확인 권장" 알약·면이 notice 보라인지를 computed style로 검증한다.
+- Key decisions: `**/api/v1/**` 하나를 가로채 필요한 경로만 분기하고 나머지는 빈 page로 응답해 fixture 길이를 줄였다.
+- Issues encountered: None.
+- Validation: Chromium 1건 통과.
+- Next steps: None.
+
+## [2026-08-07] Session Summary (자료 원본 미리보기 회귀 추가)
+
+- What was done: `document-preview.spec.ts`를 추가해 원본 PDF가 한 페이지씩 그려지고 앞뒤로 넘어가는지, 한 페이지가 화면 높이 안에 들어오는지, 비PDF는 추출 텍스트로 되돌아가는지, 찾은 경험이 5개씩 나뉘는지를 fixture로 검증한다.
+- Key decisions: 실제 PDF 파일을 저장소에 두지 않고 spec 안에서 xref offset까지 맞춘 3쪽 PDF를 만들어 `data:` URL로 download-url 응답에 넣는다. 외부 저장소와 CORS 없이 pdf.js 경로를 그대로 지난다.
+- Issues encountered: 인증 fixture에서 `**/api/v1/profile/evidence*`를 가로채지 않으면 401이 `/login` 이동을 일으켜 화면에 도달하지 못했다.
+- Validation: Chromium 2건 통과. `UI_SCREENSHOTS=true`에서 미리보기 캡처를 확인했다.
+- Next steps: None.
+
 ## [2026-08-07] Session Summary (가이드 fixture를 재작성한 본문에 맞춤)
 
 - What was done: `ui-shell.spec.ts`의 `career-guides` fixture 제목 5개를 V25로 재작성한 실제 본문 제목에 맞추고, 본문에 `- ` 체크리스트 문단을 넣어 modal의 `ul` 렌더링을 함께 검증하도록 했다.

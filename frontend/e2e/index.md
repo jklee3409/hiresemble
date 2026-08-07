@@ -15,6 +15,8 @@
 | [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                                             |
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                                                    |
 | [`job-analysis.spec.ts`](job-analysis.spec.ts)                                 | P6 결과·OUTDATED·이력·접근성·1440/390px fixture                                                                              |
+| [`document-preview.spec.ts`](document-preview.spec.ts)                         | 원본 PDF 한 페이지 렌더·페이지 넘김, 비PDF 텍스트 대체와 찾은 경험 5개 pagination fixture                                    |
+| [`cover-letter-review.spec.ts`](cover-letter-review.spec.ts)                   | AI 검토 tab의 열 확장, modal 미사용, 지적 사항 좌측 border 제거와 notice 색 fixture                                          |
 | [`job-auto-analysis.spec.ts`](job-auto-analysis.spec.ts)                       | 등록→서버 자동 BALANCED 분석→결과→자기소개서 이동·desktop/mobile fixture                                                     |
 | [`ui-redesign.visual.spec.ts`](ui-redesign.visual.spec.ts)                     | 안전한 고정 fixture의 주요 화면 1440/390px 전후 full-page 캡처                                                               |
 | [`landing.spec.ts`](landing.spec.ts)                                           | anonymous Landing·Hero 2줄·자동 DOM demo lifecycle·reduced motion·1440/390/320px, auth-aware `/`와 Dashboard 0/3~3/3 fixture |

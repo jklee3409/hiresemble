@@ -11,7 +11,69 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 자기소개서 AI model catalog를 포함해 총 95 operations·70 paths다.
+- 공개 Spring/OpenAPI는 canonical 경험 관리 5개 operation을 포함해 총 100 operations·74 paths다.
+
+## [2026-08-07] Session Summary (canonical 경험 중복 제거 Backend)
+
+- What was done:
+  - 새 이력서·포트폴리오 경험 후보에 semantic embedding을 생성하고 기존 경험과 exact·cosine 유사도를 비교해 canonical 경험으로 통합하는 Backend를 구현했다.
+  - 경험 목록·상세·수정·검증·병합/분리 API, V26 schema, 다중 문서 출처와 downstream canonical evidence 소비를 추가했다.
+- Key decisions:
+  - 자동 동일은 cosine 0.94 이상·공통 anchor 2개·수치 충돌 없음으로 제한하며 0.82 이상은 사용자 검토 대상으로 남긴다. 승인 경험은 원본 문서가 삭제돼도 유지한다.
+  - 이번 작업은 사용자 지시에 따라 싱글 에이전트로 수행했고 동시에 변경 중인 Frontend는 수정하지 않았다.
+- Issues encountered:
+  - 최초 Backend 전체 검사 582개 중 이번 변경 관련 3개를 한 차례 보정했다. 별도 가격 catalog 고정 시각과 upload/자동 분석 fixture 타이밍에서 12개가 남아 전체 상태는 `NOT_VERIFIED`다.
+- Validation:
+  - compile, domain·OpenAPI·semantic Document integration 집중 검증과 보정 후 AI workflow·strict schema 2 suites/52 tests가 통과했다. 실제 유료 AI 호출은 0회다.
+- Next steps:
+  - 경험 관리 Frontend를 연결하고, 별도 Backend 기준선 회귀 보정 뒤 전체 `check`를 재실행한다.
+
+## [2026-08-07] Session Summary (작성 도움 항상 노출과 요구사항 카드화)
+
+- What was done:
+  - 자기소개서 편집 화면에서 "작성 도움 접기" 버튼을 없애 노출 여부를 사용자가 고르지 않게 하고, 버튼이 차지하던 줄만큼 공고 요구사항·AI 검토 결과를 위로 올렸다.
+  - 공고 요구사항을 아이콘 + 텍스트 목록에서 분류 알약을 얹은 카드로 바꿨다. "보완하면 좋은 점"은 알약 없이 같은 카드 모양만 쓴다.
+  - "확인 권장"의 `--color-notice`를 보라에서 제품 brand blue 계열로 바꾸고, 지적 사항 라벨 "근거를 찾지 못한 내용"을 "확인이 필요한 내용"으로 고쳤다.
+- Key decisions:
+  - notice 색은 새 hex 대신 기존 `--hs-blue-*` scale을 참조해 테마 팔레트를 늘리지 않았다. 대비는 soft 면 위 7.2:1, 흰 면 위 8.8:1이다.
+  - 요구사항 카드에는 아이콘을 넣지 않는다. 한 열에 카드가 여러 장 쌓이므로 요소가 늘어날수록 훑기 어려워진다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. fixture Chromium 13건 통과하고 기존 프로필 추천 흐름 1건만 변경 전과 동일하게 실패했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (자기소개서 AI 검토 표시 개선)
+
+- What was done:
+  - 자기소개서 편집 화면에서 AI 검토 결과를 별도 modal 없이 같은 자리의 넓어진 열(19rem → 최대 28rem)에서 보여 주도록 했다. 편집기는 그대로 남아 검토 내용을 보면서 바로 고칠 수 있다.
+  - 지적 사항의 왼쪽 심각도 색 띠를 없애고 "확인 권장"·"확인 필요" 색을 새 `--color-notice` 보라 계열로 바꿨다. `StatusBadge`에 `notice` tone을 추가하고 검토 상태 tone을 한곳으로 모아 편집·버전·목록 화면의 색을 맞췄다.
+- Key decisions:
+  - 열 폭은 tab에 따라 자동으로 바뀐다. 공고 요구사항은 짧은 목록이라 좁은 열로 충분하고 검토 결과만 인용문·제안 때문에 넓은 폭이 필요하다. 상한 28rem은 1200px에서도 편집기가 약 600px를 유지하도록 정했다.
+  - notice에 보라를 고른 이유는 danger와 같은 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분되기 때문이다. 전역 `warning` 색은 바꾸지 않아 다른 화면의 경고 표시는 그대로다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. 신규 `cover-letter-review.spec.ts`를 포함한 fixture Chromium 13건 통과하고 기존 프로필 추천 흐름 1건만 변경 전과 동일하게 실패했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (자료 원본 페이지 미리보기와 소재 pagination)
+
+- What was done:
+  - 이력서·포트폴리오 상세의 자료 미리보기를 추출 텍스트에서 원본 PDF 페이지 렌더링으로 바꿨다. 한 화면에 한 페이지만 보여 주고 이전·다음으로 넘긴다. 비PDF와 렌더링 실패는 기존 텍스트 미리보기로 되돌린다.
+  - "AI가 찾은 경험" 목록에 5개씩 pagination을 적용했다.
+- Key decisions:
+  - PDF 렌더링에만 `pdfjs-dist` 6.2.108을 추가하고 동적 import로 분리했다. 진입 번들은 그대로이고 미리보기를 여는 화면에서만 427KB(gzip 127KB) chunk를 내려받는다.
+  - 소재 pagination은 이미 받아 둔 목록을 화면에서만 나눈다. 서버 pagination으로 바꾸면 요약 수치와 일괄 승인 범위가 현재 쪽으로 좁아지기 때문이다. API·DB 계약은 변경하지 않았다.
+- Issues encountered:
+  - 이 환경은 Node 20이고 `pnpm@11`은 Node 22 이상을 요구해 실행되지 않는다. `frontend/package.json`에만 의존성을 기록했고 `pnpm-lock.yaml`은 갱신하지 못했다. 검증은 npm tarball을 `node_modules`에 임시로 풀어 수행한 뒤 사본을 삭제했다.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. 신규 `document-preview.spec.ts` Chromium 2건 통과.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm install`로 lock을 갱신한 뒤 `corepack pnpm check`를 실행한다. 그 전에는 CI의 frozen lockfile 설치가 실패한다.
+  - 운영 Object Storage presigned GET에 브라우저 CORS 허용을 설정한다. 로컬 MinIO는 기본값으로 허용한다.
 
 ## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계와 콘텐츠 재작성)
 

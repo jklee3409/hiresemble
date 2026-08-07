@@ -4,6 +4,49 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-07] Session Summary (작성 도움 접기 버튼 제거)
+
+- What was done:
+  - `CoverLetterEditPage`에서 "작성 도움 접기" 버튼과 `assistCollapsed` 상태를 없앴다. 작성 도움은 항상 보이며 노출 여부를 사용자가 고르지 않는다.
+  - 버튼이 차지하던 줄만큼 tab과 내용이 위로 올라가 편집기 상단과 같은 높이에서 시작한다.
+- Key decisions:
+  - `assistLayout`은 이제 tab만 보고 `normal`/`wide`를 정한다. `collapsed` 상태는 남기지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. `cover-letter-review.spec.ts`가 접기 버튼이 없고 작성 도움 열 상단이 편집기 상단과 4px 이내로 맞는지 검증한다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (자기소개서 AI 검토 열 넓히기)
+
+- What was done:
+  - `CoverLetterEditPage`의 작업 영역이 `data-assist-layout`으로 오른쪽 열 폭을 바꾸도록 했다. "AI 검토 결과" tab에서는 `minmax(16rem, 19rem)`에서 `minmax(22rem, 28rem)`으로 넓어지고, "공고 요구사항"으로 돌아가면 다시 좁아진다.
+  - 목록 화면의 검토 상태 badge tone을 공용 `VERIFICATION_STATUS_TONES`로 바꿔 편집 화면과 색을 맞췄다.
+- Key decisions:
+  - 별도 modal을 띄우지 않는다. 편집기를 가리면 검토 내용을 보면서 고칠 수 없기 때문이다. 대신 같은 자리의 열만 넓혀 편집기와 나란히 둔다.
+  - 폭은 tab에 따라 자동으로 바뀐다. 공고 요구사항은 짧은 목록이라 좁은 열로 충분하고, 검토 결과만 인용문·제안이 붙어 넓은 폭이 필요하다.
+  - 상한을 28rem으로 둔 이유는 1200px에서도 편집기가 약 600px를 유지해 그대로 쓸 수 있기 때문이다. 74rem 미만에서는 기존대로 열이 sheet로 내려간다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build`와 신규 `cover-letter-review.spec.ts` Chromium 1건 통과. 1200·1440·1920px에서 좌우 넘침 없이 편집기와 검토 결과가 함께 보이는 것을 직접 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (자료 미리보기를 원본 페이지 단위로 전환)
+
+- What was done:
+  - `DocumentDetailPage`의 "자료 미리보기"가 PDF일 때 추출 텍스트 대신 `DocumentPagePreview`로 원본을 한 페이지씩 보여 주게 했다. 비PDF와 렌더링 실패는 기존 텍스트 미리보기로 되돌리고 이유를 한 줄로 알린다.
+- Key decisions:
+  - 되돌아갈 조건을 `mimeType`과 자식이 올린 `unavailable` 이벤트 두 가지로만 두고, 문서를 바꿔 이동하면 상태를 초기화한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build`와 `document-preview.spec.ts` Chromium 2건 통과. `pdfjs-dist`는 임시로 풀어 검증했고 정식 설치는 후속 작업이다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm install`로 `pnpm-lock.yaml`을 갱신한다.
+
 ## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계)
 
 - What was done:
