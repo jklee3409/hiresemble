@@ -25,7 +25,7 @@ val pdfboxVersion = "3.0.8"
 val poiVersion = "5.5.1"
 val jsoupVersion = "1.22.2"
 val webpImageIoVersion = "0.3.3"
-val awsSdkVersion = "2.48.2"
+val awsSdkVersion = "2.50.3"
 val testcontainersVersion = "2.0.5"
 val wiremockVersion = "3.13.2"
 
