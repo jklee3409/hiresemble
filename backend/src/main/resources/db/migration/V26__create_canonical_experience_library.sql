@@ -32,6 +32,12 @@ ALTER TABLE profile_evidence
             AND document_id IS NULL)
     );
 
+-- profile_evidence has an INITIALLY DEFERRED constraint trigger. Create this index before
+-- the backfill INSERT queues trigger events on populated upgrade databases.
+CREATE UNIQUE INDEX profile_evidence_one_experience_source_ix
+    ON profile_evidence (user_id, source_type, source_entity_id)
+    WHERE source_type = 'EXPERIENCE';
+
 CREATE TABLE experience_items (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
@@ -252,7 +258,3 @@ ALTER TABLE experience_items
         FOREIGN KEY (user_id, canonical_evidence_id)
         REFERENCES profile_evidence(user_id, id)
         DEFERRABLE INITIALLY DEFERRED;
-
-CREATE UNIQUE INDEX profile_evidence_one_experience_source_ix
-    ON profile_evidence (user_id, source_type, source_entity_id)
-    WHERE source_type = 'EXPERIENCE';
