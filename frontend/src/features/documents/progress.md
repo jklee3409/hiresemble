@@ -4,6 +4,25 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-08-07] Session Summary (원본 페이지 미리보기와 소재 5개 pagination)
+
+- What was done:
+  - `DocumentPagePreview.vue`를 추가해 presigned 원본 PDF를 pdf.js로 canvas에 직접 그리고, 한 화면에 한 페이지만 보여 주며 `PaginationNav`로 앞뒤로 넘기게 했다. 원본은 처음 한 번만 내려받아 페이지 이동에서 재요청하지 않는다.
+  - 페이지가 스크롤 없이 통째로 보이도록 프레임 폭과 화면 높이(74%) 중 더 빡빡한 쪽에 맞춰 배율을 정하고, devicePixelRatio(최대 2배)로 canvas를 그린다. 창 크기 변경은 180ms debounce로 다시 그린다.
+  - `DocumentEvidencePanel`의 소재 목록을 5개씩 나눠 보여 주고 목록 아래에 `PaginationNav`를 붙였다. 소재가 줄어 마지막 쪽이 사라지면 현재 쪽을 당긴다.
+- Key decisions:
+  - pagination은 이미 받아 둔 목록을 화면에서만 나누는 방식이다. 서버 pagination으로 바꾸면 요약 수치(확인 필요·승인·제외)와 "검토 전 모두 승인"이 현재 쪽만 대상으로 좁아지므로 기존 의미를 유지했다.
+  - pdf.js는 `import('pdfjs-dist')` 동적 import로 분리해 실제 미리보기를 여는 화면에서만 내려받게 했다. worker는 `?url`로 함께 번들해 외부 CDN을 쓰지 않는다.
+  - DOCX·TXT는 브라우저에서 원본을 그릴 수 없고 렌더링이 실패할 수도 있으므로, 두 경우 모두 기존 추출 텍스트 미리보기로 되돌리고 이유를 한 줄로 알린다.
+- Issues encountered:
+  - 처음에는 프레임 폭에만 맞춰 그려 세로로 긴 페이지가 화면을 넘어갔다. 높이 기준을 함께 넣어 한 페이지가 다 보이도록 고쳤다.
+  - Node 20 환경에서 `pnpm`이 실행되지 않아 `pdfjs-dist`를 정식으로 설치하지 못했다. `package.json`에만 `6.2.108`을 기록했고 `pnpm-lock.yaml`은 갱신하지 못했다.
+- Validation:
+  - 검증 동안에는 npm tarball을 `node_modules`에 임시로 풀어 `eslint`, `prettier --check`, `vue-tsc -b --force`, `vite build`와 신규 Playwright spec 2건을 통과시킨 뒤 임시 사본을 지웠다. pdf.js는 427KB(gzip 127KB) 별도 chunk로 분리되고 진입 번들 크기는 그대로다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm install`로 `pnpm-lock.yaml`을 갱신한다.
+  - 운영 Object Storage에서는 presigned GET에 브라우저 CORS 허용이 필요하다. 로컬 MinIO는 기본값으로 허용한다.
+
 ## [2026-08-01] Session Summary (문서 소재 검토 작업대)
 
 - What was done:

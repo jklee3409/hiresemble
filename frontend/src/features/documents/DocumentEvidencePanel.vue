@@ -10,13 +10,18 @@ import type {
 } from '@/shared/api/contracts'
 import { normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
+import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useNotifications } from '@/shared/ui/notifications'
 
+/* 한 화면에서 검토에 집중할 수 있도록 목록만 나눠 보여 준다. 요약 수치와 일괄 작업은 전체 소재 기준이다. */
+const EVIDENCE_PAGE_SIZE = 5
+
 const props = defineProps<{ userId: string; documentId: string; documentName?: string }>()
 const notifications = useNotifications()
 const selectedIds = ref<string[]>([])
+const page = ref(0)
 const editingId = ref('')
 const actionError = ref('')
 const edit = reactive({ title: '', content: '' })
@@ -50,10 +55,25 @@ const allSelected = computed(
   () =>
     reviewableItems.value.length > 0 && selectedItems.value.length === reviewableItems.value.length,
 )
+const totalPages = computed(() => Math.max(1, Math.ceil(items.value.length / EVIDENCE_PAGE_SIZE)))
+const pageStart = computed(() => page.value * EVIDENCE_PAGE_SIZE)
+const visibleItems = computed(() =>
+  items.value.slice(pageStart.value, pageStart.value + EVIDENCE_PAGE_SIZE),
+)
+const rangeLabel = computed(() =>
+  items.value.length === 0
+    ? '0개 소재'
+    : `${items.value.length}개 소재 중 ${pageStart.value + 1}–${pageStart.value + visibleItems.value.length}번째`,
+)
 
 watch(items, (next) => {
   const valid = new Set(next.map((item) => item.id))
   selectedIds.value = selectedIds.value.filter((id) => valid.has(id))
+})
+
+/* 소재가 줄어 마지막 쪽이 사라지면 빈 목록이 남지 않도록 마지막 쪽으로 당긴다. */
+watch(totalPages, (next) => {
+  if (page.value > next - 1) page.value = next - 1
 })
 
 const updateMutation = useMutation({
@@ -254,9 +274,7 @@ function categoryLabel(value: string): string {
           <input type="checkbox" :checked="allSelected" @change="toggleAll" />
           전체 선택
         </label>
-        <span>{{
-          selectedItems.length ? `${selectedItems.length}개 선택` : `${items.length}개 소재`
-        }}</span>
+        <span>{{ selectedItems.length ? `${selectedItems.length}개 선택` : rangeLabel }}</span>
         <div class="review-toolbar__actions">
           <button
             type="button"
@@ -293,7 +311,7 @@ function categoryLabel(value: string): string {
 
       <ul class="evidence-review__list">
         <li
-          v-for="item in items"
+          v-for="item in visibleItems"
           :key="item.id"
           class="evidence-card"
           :class="`evidence-card--${item.verificationStatus.toLowerCase()}`"
@@ -401,6 +419,14 @@ function categoryLabel(value: string): string {
           </template>
         </li>
       </ul>
+
+      <PaginationNav
+        v-if="totalPages > 1"
+        :page="page"
+        :total-pages="totalPages"
+        label="찾은 경험 페이지"
+        @change="page = $event"
+      />
     </template>
   </section>
 </template>

@@ -21,6 +21,7 @@ import { useAgentRunDetailQuery } from '@/features/agent-runs/queries'
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import DocumentRunMonitor from '@/features/documents/DocumentRunMonitor.vue'
 import DocumentEvidencePanel from '@/features/documents/DocumentEvidencePanel.vue'
+import DocumentPagePreview from '@/features/documents/DocumentPagePreview.vue'
 import {
   createDocumentDownloadUrl,
   createDocumentIdempotencyKey,
@@ -52,6 +53,11 @@ const manualError = ref('')
 const actionError = ref('')
 const message = ref('')
 const activeRunId = ref(typeof route.query.run === 'string' ? route.query.run : '')
+/* PDF는 원본을 페이지 단위로 그려 보여 주고, 렌더링할 수 없는 형식과 실패는 추출한 텍스트로 되돌린다. */
+const pageViewerUnavailable = ref(false)
+const pageViewerSupported = computed(
+  () => document.data.value?.mimeType === 'application/pdf' && !pageViewerUnavailable.value,
+)
 const monitoredRunId = computed(
   () => activeRunId.value || document.data.value?.latestAgentRunId || '',
 )
@@ -64,6 +70,10 @@ let reparseIdempotencyKey = ''
 
 watch(manualText, () => {
   if (!manualMutation.isPending.value) manualIdempotencyKey = ''
+})
+
+watch(documentId, () => {
+  pageViewerUnavailable.value = false
 })
 
 const manualMutation = useMutation({
@@ -440,20 +450,34 @@ function fileTypeLabel(mimeType: string): string {
             원본 파일 열기
           </button>
         </div>
-        <p v-if="documentText.isPending.value" class="document-text__status" role="status">
-          자료 내용을 불러오는 중…
-        </p>
-        <p
-          v-else-if="documentText.isError.value"
-          class="alert alert--warning document-text__status"
-          role="alert"
-        >
-          자료 내용을 아직 불러올 수 없어요.
-        </p>
-        <pre v-else-if="documentText.data.value" class="document-text__preview">{{
-          documentText.data.value.text
-        }}</pre>
-        <p v-else class="document-text__status">문서를 다 읽으면 내용 미리보기가 표시돼요.</p>
+        <DocumentPagePreview
+          v-if="pageViewerSupported"
+          :document-id="documentId"
+          @unavailable="pageViewerUnavailable = true"
+        />
+        <template v-else>
+          <p class="document-text__status">
+            {{
+              document.data.value.mimeType === 'application/pdf'
+                ? '원본을 페이지로 보여 주지 못해 읽어 낸 내용을 대신 보여 드려요.'
+                : 'PDF가 아닌 자료는 원본 대신 읽어 낸 내용을 보여 드려요. 원본은 위에서 열 수 있어요.'
+            }}
+          </p>
+          <p v-if="documentText.isPending.value" class="document-text__status" role="status">
+            자료 내용을 불러오는 중…
+          </p>
+          <p
+            v-else-if="documentText.isError.value"
+            class="alert alert--warning document-text__status"
+            role="alert"
+          >
+            자료 내용을 아직 불러올 수 없어요.
+          </p>
+          <pre v-else-if="documentText.data.value" class="document-text__preview">{{
+            documentText.data.value.text
+          }}</pre>
+          <p v-else class="document-text__status">문서를 다 읽으면 내용 미리보기가 표시돼요.</p>
+        </template>
       </section>
 
       <DocumentEvidencePanel
