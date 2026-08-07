@@ -27,7 +27,6 @@ import type {
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
@@ -275,22 +274,15 @@ function emptyForm(): ProfileFormValues {
   >
     <ProfileTabs />
     <div class="profile-workspace-shell__content">
-      <PageHeader
-        heading-id="profile-basic-heading"
-        title="프로필 기본 정보"
-        description="지원서에 공통으로 사용할 정보와 희망 조건을 관리하세요."
-        variant="compact"
-      >
-        <template #actions>
-          <div v-if="profileQuery.data.value" class="completion-inline" aria-label="프로필 완료율">
-            <span>프로필 완성도</span>
-            <strong>{{ completionPercent }}%</strong>
-            <progress class="progress-track" :value="completionPercent" max="100">
-              {{ completionPercent }}%
-            </progress>
-          </div>
-        </template>
-      </PageHeader>
+      <!-- 좌측 outline이 이미 현재 항목을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+      <h1 id="profile-basic-heading" class="sr-only">프로필 기본 정보</h1>
+      <div v-if="profileQuery.data.value" class="completion-inline" aria-label="프로필 완료율">
+        <span>프로필 완성도</span>
+        <strong>{{ completionPercent }}%</strong>
+        <progress class="progress-track" :value="completionPercent" max="100">
+          {{ completionPercent }}%
+        </progress>
+      </div>
 
       <StatePanel
         v-if="profileQuery.isPending.value"
@@ -624,12 +616,15 @@ function emptyForm(): ProfileFormValues {
   margin-top: var(--space-6);
 }
 
+/* 제목 줄이 사라진 자리를 대신해 완성도만 오른쪽 위에 남긴다. */
 .completion-inline {
   display: grid;
   width: 12rem;
   grid-template-columns: 1fr auto;
   gap: var(--space-1) var(--space-3);
   align-items: center;
+  justify-self: end;
+  margin-left: auto;
 }
 
 .completion-inline span {

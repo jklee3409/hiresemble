@@ -4,6 +4,20 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다.
 
+## [2026-08-07] Session Summary (현재 Frontend UI 페이지 계약 동기화)
+
+- What was done:
+  - `spec/page.md`의 공통 제목, Dashboard, 마감 캘린더, 공고 Overview·분석·tab 계약을 현재 Vue UI에 맞췄다.
+- Key decisions:
+  - 현재 UI를 기준으로 presentation 계약만 변경하고 API·DB·Workflow 계약은 유지했다.
+- Issues encountered:
+  - 기존 명세가 제거된 Dashboard 다음 할 일 카드, 공고 분석 텍스처 누적 막대·전체 이력, 제출 이력 보조 배지를 계속 요구하고 있었다.
+  - `page.md` 단독 Prettier 검사는 기존 수기 줄바꿈 때문에 실패했으며 문서 전체 재포맷은 수행하지 않았다.
+- Validation:
+  - Frontend 전체 check 69 files/313 tests와 production build, `git diff --check`가 통과했고 관련 문구를 구현·test와 대조했다. Chromium 프로필·자료 흐름은 인증 fixture timeout으로 미통과했다.
+- Next steps:
+  - 프로필 E2E 인증 fixture를 안정화해 남은 브라우저 회귀를 재실행한다.
+
 ## [2026-08-06] Session Summary (자기소개서 모델 선택·품질 개선 계약 정리)
 
 - What was done: 공식 OpenAI 모델 검증 보고서를 추가하고 API·DB·페이지·기술·운영 문서를 exact model과 memo-aware v4 구현에 맞췄다.

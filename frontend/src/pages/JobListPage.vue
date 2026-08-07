@@ -26,7 +26,6 @@ import {
 import { JOB_SORTS } from '@/shared/api/jobApi'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -212,32 +211,25 @@ function currentSeoulDate(): string {
 
 <template>
   <section class="jobs-page app-page" aria-labelledby="jobs-heading">
-    <PageHeader
-      heading-id="jobs-heading"
-      title="관심 공고"
-      description="관심 있는 공고를 모아 두고 지원 상태를 이어서 확인하세요."
-      variant="list"
-    >
-      <template #actions>
-        <RouterLink class="button button--primary" :to="{ name: 'job-new' }">
-          공고 등록
-        </RouterLink>
-      </template>
-    </PageHeader>
+    <!-- 상단 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+    <h1 id="jobs-heading" class="sr-only">관심 공고</h1>
 
-    <div class="job-tabs" role="tablist" aria-label="공고 지원 상태">
-      <button
-        v-for="status in JOB_STATUSES"
-        :key="status"
-        type="button"
-        role="tab"
-        class="job-tab"
-        :class="{ 'job-tab--active': filters.status === status }"
-        :aria-selected="filters.status === status"
-        @click="selectTab(status)"
-      >
-        {{ JOB_STATUS_LABELS[status] }}
-      </button>
+    <div class="jobs-page__bar">
+      <div class="job-tabs" role="tablist" aria-label="공고 지원 상태">
+        <button
+          v-for="status in JOB_STATUSES"
+          :key="status"
+          type="button"
+          role="tab"
+          class="job-tab"
+          :class="{ 'job-tab--active': filters.status === status }"
+          :aria-selected="filters.status === status"
+          @click="selectTab(status)"
+        >
+          {{ JOB_STATUS_LABELS[status] }}
+        </button>
+      </div>
+      <RouterLink class="button button--primary" :to="{ name: 'job-new' }">공고 등록</RouterLink>
     </div>
 
     <details class="filter-disclosure jobs-page__filters" open>
@@ -426,11 +418,20 @@ function currentSeoulDate(): string {
 
 <style scoped>
 .job-tabs,
-.jobs-page__filters,
-.jobs-page__message,
-.jobs-page__state,
-.job-list {
-  margin-top: var(--space-5);
+.jobs-page {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* 상태 tab과 등록 동작을 한 줄에 둔다. */
+.jobs-page__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
 .job-tabs {
@@ -476,7 +477,7 @@ function currentSeoulDate(): string {
 }
 
 .jobs-page__filters > .job-filters {
-  margin-top: var(--space-5);
+  margin-top: var(--space-3);
 }
 
 .job-filters__search {

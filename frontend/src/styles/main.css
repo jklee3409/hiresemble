@@ -173,6 +173,19 @@
   --chart-partial: #a16207;
   --chart-missing: #a01b3c;
   --chart-unknown: #8792a6;
+
+  /*
+   * 위 네 마크 색의 진한 톤(텍스트용)과 옅은 톤(칩 배경용).
+   * hue는 그대로 두고 명도만 움직여 검증된 색 구분을 유지한다.
+   */
+  --chart-matched-strong: #0d5f44;
+  --chart-matched-soft: #e4f4ec;
+  --chart-partial-strong: #7a4a05;
+  --chart-partial-soft: #fdf1d8;
+  --chart-missing-strong: #7c1630;
+  --chart-missing-soft: #fdeaef;
+  --chart-unknown-strong: #566072;
+  --chart-unknown-soft: #eef0f5;
   --chart-brand: var(--hs-blue-500);
   --chart-track: var(--color-fill-strong);
   --chart-grid: #eef0f4;

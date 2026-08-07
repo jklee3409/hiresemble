@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-07] Session Summary (현재 UI 기준 page 계약 보정)
+
+- What was done:
+  - `page.md`에서 navigation이 이름을 전달하는 화면의 시각 제목 생략, Dashboard quick entry·3영역 커리어 카드·격자 캘린더, 공고 최초 제출 시각, 요건 캡슐·현재 분석 결과 중심 기록, 밑줄 tab 계약을 현재 UI와 일치시켰다.
+- Key decisions:
+  - Dashboard 다음 할 일 카드, 분석 이력 전체 목록·pagination과 텍스처 누적 막대, Overview 제출 이력 보조 배지는 현재 UI에 맞춰 활성 계약에서 제거했다.
+- Issues encountered:
+  - `page.md` 단독 Prettier 검사는 기존 수기 줄바꿈 때문에 실패했다. 이번 UI 계약 변경과 무관한 문서 전체 재포맷은 수행하지 않았다.
+- Validation:
+  - 관련 Vue·unit·E2E locator와 문구를 대조했고 Frontend `corepack pnpm run check`가 69 files/313 tests와 production build까지 통과했다. 변경 추적 문서와 test의 Prettier 검사 및 `git diff --check`는 통과했고 프로필·자료 Chromium 흐름은 인증 fixture timeout으로 미통과했다.
+- Next steps:
+  - 남은 Chromium fixture 안정화 후 presentation 계약을 다시 대조한다.
+
 ## [2026-08-06] Session Summary (전역 일일 AI 비용과 plan·credit 확장 계약)
 
 - What was done: API·DB·화면·기능·기술 명세에서 사용자/system/run/mock 분야별 비용 상한을 제거하고 전체 서비스 일일 USD 10 정책으로 통일했다.

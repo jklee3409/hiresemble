@@ -24,7 +24,6 @@ import {
   type ResearchRunStatus,
   type SourceCoverage,
 } from '@/shared/api/interviewContracts'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -100,12 +99,8 @@ function normalizedSearch(): string | undefined {
 
 <template>
   <section class="interview-list app-page" aria-labelledby="interview-list-heading">
-    <PageHeader
-      heading-id="interview-list-heading"
-      title="면접 준비"
-      description="공고별 회사 조사와 예상 질문 세트를 한곳에서 확인하세요."
-      variant="list"
-    />
+    <!-- 상단 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+    <h1 id="interview-list-heading" class="sr-only">면접 준비</h1>
 
     <form class="interview-list__filters filter-toolbar" @submit.prevent="applyFilters">
       <label class="field">
@@ -253,6 +248,9 @@ function normalizedSearch(): string | undefined {
 
 <style scoped>
 .interview-list {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
   min-width: 0;
 }
 
@@ -268,7 +266,6 @@ function normalizedSearch(): string | undefined {
 .interview-list__items {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-5);
 }
 
 .question-set-card {

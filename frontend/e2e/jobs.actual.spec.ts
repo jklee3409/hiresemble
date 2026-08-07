@@ -277,21 +277,18 @@ async function createJob(page: Page, input: CreateInput): Promise<CreatedJob> {
 
 async function changeStatus(page: Page, status: JobDetail['status'], label: string): Promise<void> {
   const select = page.locator('#job-status-select')
-  const submit = page.locator('#job-status-submit')
-  await expect(submit).toHaveText('상태 변경')
-  await select.selectOption(status)
-  await expect(select).toHaveValue(status)
-  await expect(submit).toBeEnabled()
+  await expect(select).toBeEnabled()
   const responsePromise = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname.endsWith('/status') &&
       response.request().method() === 'PATCH' &&
       response.status() === 200,
   )
-  await submit.click()
+  await select.selectOption(status)
   expect((await responsePromise).status()).toBe(200)
+  await expect(select).toHaveValue(status)
+  await expect(select).toBeEnabled()
   await expect(page.getByTestId('job-business-status')).toContainText(label)
-  await expect(submit).toHaveText('상태 변경')
 }
 
 async function latestJobExtractionRunId(page: Page, jobId: string): Promise<string | null> {

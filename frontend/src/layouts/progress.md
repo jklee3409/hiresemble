@@ -4,6 +4,20 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-06] Session Summary (공고 상세 여백과 상태 배지 식별자 정리)
+
+- What was done:
+  - `JobDetailLayout`의 탭과 본문 사이 간격을 `--layout-tabs-body-gap`(2rem)에서 `--space-4`(1rem)로 줄였다.
+  - header의 지원 상태 배지에 `data-testid="job-business-status"`를 붙여 상태 변경 e2e가 상세 화면에서도 결과를 확인할 수 있게 했다.
+- Key decisions:
+  - 탭은 계속 sticky로 두고 간격만 줄여 스크롤 중 탭 위치가 바뀌지 않게 했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (공고 상세 header에 동작 자리 추가)
 
 - What was done:

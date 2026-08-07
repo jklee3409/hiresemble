@@ -72,8 +72,6 @@ const userId = computed(() => authStore.currentUser?.id ?? '')
 const jobId = computed(() => String(route.params.jobId ?? ''))
 const acceptedRunId = ref('')
 const actionError = ref<ApiClientError | null>(null)
-const historyPage = ref(0)
-const selectedHistoryId = ref<string | null>(null)
 const criterionFilter = ref<MatchLevel | 'ALL'>('ALL')
 const criterionPage = ref(0)
 const connectionState = ref<AgentRunConnectionState>('connecting')
@@ -86,7 +84,7 @@ const profile = useQuery({
 })
 const latestAnalysis = useLatestJobAnalysisQuery(userId, jobId)
 const historyFilters = computed<JobAnalysisListParams>(() => ({
-  page: historyPage.value,
+  page: 0,
   size: 10,
   sort: 'analysisVersion,desc',
 }))
@@ -137,10 +135,6 @@ watch(
   },
   { immediate: true },
 )
-
-watch(historyPage, () => {
-  selectedHistoryId.value = null
-})
 
 watch(criterionFilter, () => {
   criterionPage.value = 0
@@ -221,12 +215,7 @@ const insufficientData = computed(
     actionError.value?.code === 'INSUFFICIENT_JOB_DATA' ||
     currentRun.data.value?.safeError?.code === 'INSUFFICIENT_JOB_DATA',
 )
-const selectedHistory = computed(
-  () =>
-    history.data.value?.items.find((item) => item.id === selectedHistoryId.value) ??
-    latestAnalysis.data.value ??
-    null,
-)
+const selectedHistory = computed(() => latestAnalysis.data.value ?? null)
 const hasEvidenceWithChangedState = computed(() => {
   const analysis = latestAnalysis.data.value
   if (analysis === undefined) return false
@@ -309,12 +298,31 @@ const formatCoverage = (value: number | null) =>
 const matchDistributionLabel = computed(() =>
   matchOverview.value.map((item) => `${MATCH_LEVEL_LABELS[item.level]} ${item.count}개`).join(', '),
 )
-const matchDistribution = computed(() => {
+/*
+ * 요건 하나를 캡슐 하나로 보여 준다. 길이 비율이 아니라 "몇 개 중 몇 개"를 세어 읽게 한다.
+ * 캡슐은 언제나 일치 → 일부 일치 → 확인되지 않음 → 판단 정보 부족 순으로 늘어놓아
+ * 색을 구분하지 못해도 위치만으로 어디까지가 무엇인지 읽을 수 있게 한다.
+ */
+const MATCH_LEVEL_ORDER = ['MATCHED', 'PARTIAL', 'MISSING', 'UNKNOWN'] as const
+
+const matchCapsules = computed(() =>
+  (latestAnalysis.data.value?.scoreBreakdown ?? [])
+    .map((criterion, index) => ({
+      key: `${criterion.category}/${criterion.criterion}/${index}`,
+      level: criterion.matchLevel,
+      label: `${FIT_CRITERION_CATEGORY_LABELS[criterion.category]} · ${criterion.criterion} — ${
+        MATCH_LEVEL_LABELS[criterion.matchLevel]
+      }`,
+    }))
+    .sort(
+      (left, right) =>
+        MATCH_LEVEL_ORDER.indexOf(left.level) - MATCH_LEVEL_ORDER.indexOf(right.level),
+    ),
+)
+const matchedRatio = computed(() => {
   const total = latestAnalysis.data.value?.scoreBreakdown.length ?? 0
-  return matchOverview.value.map((item) => ({
-    ...item,
-    percentage: total > 0 ? (item.count / total) * 100 : 0,
-  }))
+  const matched = matchOverview.value.find((item) => item.level === 'MATCHED')?.count ?? 0
+  return { total, matched, percent: total > 0 ? Math.round((matched / total) * 100) : null }
 })
 
 // 적합도 게이지: 중심 (100,100), 270° 아크. 외부 r=76(적합도), 내부 r=62(분석 커버리지).
@@ -859,31 +867,35 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
             </h3>
             <span>총 {{ latestAnalysis.data.value.scoreBreakdown.length }}개 기준</span>
           </div>
+          <p class="analysis-overview__headline">
+            <strong>{{ matchedRatio.matched }}</strong>
+            <span>/ {{ matchedRatio.total }}개 요건이 내 정보와 일치해요</span>
+            <em v-if="matchedRatio.percent !== null">{{ matchedRatio.percent }}%</em>
+          </p>
           <div
-            class="analysis-overview__distribution"
+            class="analysis-overview__capsules"
             role="img"
             :aria-label="`요건 분포: ${matchDistributionLabel}`"
           >
             <span
-              v-for="item in matchDistribution"
-              v-show="item.count > 0"
-              :key="item.level"
-              :data-match-level="item.level"
-              :style="{ width: `${item.percentage}%` }"
-            >
-              <b v-if="item.percentage >= 8">{{ item.count }}</b>
-            </span>
+              v-for="capsule in matchCapsules"
+              :key="capsule.key"
+              :data-match-level="capsule.level"
+              :title="capsule.label"
+            />
           </div>
           <dl class="analysis-overview__statuses">
-            <div v-for="item in matchOverview" :key="item.level">
+            <div
+              v-for="item in matchOverview"
+              :key="item.level"
+              :data-match-level="item.level"
+              :data-empty="item.count === 0"
+            >
               <dt>
-                <span class="analysis-overview__dot" :data-match-level="item.level">
+                <span class="analysis-overview__dot">
                   <AppIcon :name="matchIcon(item.level)" />
                 </span>
-                <StatusBadge
-                  :label="MATCH_LEVEL_LABELS[item.level]"
-                  :tone="matchTone(item.level)"
-                />
+                {{ MATCH_LEVEL_LABELS[item.level] }}
               </dt>
               <dd>
                 <strong>{{ item.count }}</strong
@@ -1298,40 +1310,8 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
           </g>
         </svg>
         <div class="analysis-history__layout">
-          <ol class="analysis-history__list">
-            <li v-for="item in history.data.value.items" :key="item.id">
-              <button
-                type="button"
-                :class="{
-                  'analysis-history__button--selected': selectedHistory?.id === item.id,
-                }"
-                :aria-pressed="selectedHistory?.id === item.id"
-                @click="selectedHistoryId = item.id"
-              >
-                <span>
-                  {{
-                    latestAnalysis.data.value?.id === item.id
-                      ? '현재 결과'
-                      : formatAnalysisInstant(item.createdAt)
-                  }}
-                </span>
-                <small>
-                  {{ formatFitScore(item.fitScore) }} ·
-                  {{ ELIGIBILITY_LABELS[item.eligibility] }}
-                </small>
-              </button>
-            </li>
-          </ol>
           <article v-if="selectedHistory" class="analysis-history__selection">
-            <div>
-              <h4>
-                {{
-                  latestAnalysis.data.value?.id === selectedHistory.id
-                    ? '현재 분석 결과'
-                    : formatAnalysisInstant(selectedHistory.createdAt)
-                }}
-              </h4>
-            </div>
+            <h4>현재 분석 결과</h4>
             <dl>
               <div>
                 <dt>지원 가능 여부</dt>
@@ -1367,17 +1347,10 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
                 params: { agentRunId: selectedHistory.agentRunId },
               }"
             >
-              이 결과가 만들어진 과정 보기
+              분석 과정
             </RouterLink>
           </article>
         </div>
-        <PaginationNav
-          v-if="history.data.value.totalPages > 1"
-          :page="historyPage"
-          :total-pages="history.data.value.totalPages"
-          label="공고 분석 이력 페이지"
-          @change="historyPage = $event"
-        />
       </details>
       <p v-else-if="history.isLoading.value" class="analysis-history-state" role="status">
         과거 분석 이력을 불러오는 중이에요.
@@ -1886,67 +1859,123 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
   font-weight: 600;
 }
 
-.analysis-overview__distribution {
+/* 몇 개 중 몇 개가 맞았는지를 문장보다 먼저 읽는다. */
+.analysis-overview__headline {
   display: flex;
-  gap: 2px;
-  height: 2.5rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
-.analysis-overview__distribution > span {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-width: 2px;
-  border-radius: 4px;
+.analysis-overview__headline strong {
+  color: var(--chart-matched-strong);
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
-.analysis-overview__distribution b {
-  color: #fff;
-  font-size: var(--font-size-xs);
+.analysis-overview__headline span {
+  color: var(--color-muted-strong);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.analysis-overview__headline em {
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--chart-matched-soft);
+  color: var(--chart-matched-strong);
+  padding: 0.25rem 0.75rem;
+  font-size: var(--font-size-sm);
+  font-style: normal;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 /*
- * 색 외 2차 인코딩. CVD와 흑백 인쇄에서도 네 상태를 구분할 수 있어야 한다.
+ * 요건 하나 = 캡슐 하나. 개수를 세어 읽을 수 있도록 사이를 벌리고 알약 형태로 굴린다.
+ * 요건이 많아도 줄바꿈하지 않고 같은 폭으로 나눠 전체 비율을 유지한다.
+ */
+.analysis-overview__capsules {
+  display: flex;
+  gap: 0.375rem;
+  height: 3rem;
+}
+
+@media (max-width: 40rem) {
+  .analysis-overview__capsules {
+    gap: 0.25rem;
+    height: 2.25rem;
+  }
+}
+
+.analysis-overview__capsules > span {
+  position: relative;
+  min-width: 0.25rem;
+  flex: 1 1 0;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  transition:
+    transform var(--motion-fast),
+    filter var(--motion-fast);
+}
+
+/* 캡슐 윗면에 옅은 빛을 넣어 평평한 색 띠로 보이지 않게 한다. */
+.analysis-overview__capsules > span::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(255 255 255 / 26%), rgb(255 255 255 / 0%) 52%);
+  content: '';
+}
+
+.analysis-overview__capsules > span:hover {
+  filter: saturate(1.15);
+  transform: translateY(-2px);
+}
+
+/*
+ * 색 외 2차 인코딩.
+ * 캡슐에는 무늬를 넣지 않는다. 대신 항상 같은 순서로 정렬한 위치와,
+ * 아이콘·한글 라벨·개수를 함께 적은 범례로 네 상태를 구분한다.
  */
 [data-match-level='MATCHED'] {
   --analysis-match-color: var(--chart-matched);
-  --analysis-match-texture: none;
+  --analysis-match-strong: var(--chart-matched-strong);
+  --analysis-match-soft: var(--chart-matched-soft);
 }
 
 [data-match-level='PARTIAL'] {
   --analysis-match-color: var(--chart-partial);
-  --analysis-match-texture: repeating-linear-gradient(
-    45deg,
-    rgb(255 255 255 / 34%) 0 3px,
-    transparent 3px 7px
-  );
+  --analysis-match-strong: var(--chart-partial-strong);
+  --analysis-match-soft: var(--chart-partial-soft);
 }
 
 [data-match-level='MISSING'] {
   --analysis-match-color: var(--chart-missing);
-  --analysis-match-texture: repeating-linear-gradient(
-    135deg,
-    rgb(255 255 255 / 30%) 0 2px,
-    transparent 2px 6px
-  );
+  --analysis-match-strong: var(--chart-missing-strong);
+  --analysis-match-soft: var(--chart-missing-soft);
 }
 
 [data-match-level='UNKNOWN'] {
   --analysis-match-color: var(--chart-unknown);
-  --analysis-match-texture: radial-gradient(rgb(255 255 255 / 55%) 1.1px, transparent 1.2px);
+  --analysis-match-strong: var(--chart-unknown-strong);
+  --analysis-match-soft: var(--chart-unknown-soft);
 }
 
-.analysis-overview__distribution > span {
+.analysis-overview__capsules > span {
   background-color: var(--analysis-match-color);
-  background-image: var(--analysis-match-texture);
-  background-size: 6px 6px;
 }
 
+/*
+ * 캡슐 색이 무슨 뜻인지 바로 옆에서 읽는 범례.
+ * 칩 하나에 아이콘·한글 라벨·개수를 함께 두어 색만으로 뜻을 전달하지 않는다.
+ */
 .analysis-overview__statuses {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
@@ -1954,19 +1983,47 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 .analysis-overview__statuses > div {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  border-radius: var(--radius-pill);
+  gap: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--analysis-match-soft);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+}
+
+/* 0건인 상태는 있는 그대로 두되 시선을 덜 끌게 한다. */
+.analysis-overview__statuses > div[data-empty='true'] {
   background: var(--color-fill);
-  padding: var(--space-1) var(--space-3);
+}
+
+.analysis-overview__statuses > div[data-empty='true'] dt,
+.analysis-overview__statuses > div[data-empty='true'] dd strong {
+  color: var(--color-text-muted);
+}
+
+.analysis-overview__statuses > div[data-empty='true'] .analysis-overview__dot {
+  background: var(--color-border-strong);
+}
+
+.analysis-overview__statuses dt {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--analysis-match-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
 }
 
 .analysis-overview__statuses dd {
   color: var(--color-muted-strong);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
 }
 
 .analysis-overview__statuses dd strong {
-  color: var(--color-ink-title);
+  margin-right: 0.0625rem;
+  color: var(--analysis-match-strong);
+  font-size: var(--font-size-lg);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -1974,23 +2031,17 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 .analysis-overview__dot {
   display: grid;
   place-items: center;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 2rem;
+  height: 2rem;
   flex: 0 0 auto;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   background: var(--analysis-match-color);
   color: #fff;
 }
 
 .analysis-overview__dot .icon {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-.analysis-overview__statuses dt {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  width: 1rem;
+  height: 1rem;
 }
 
 /* 카테고리별 충족도 */
@@ -2557,49 +2608,7 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 }
 
 .analysis-history__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: var(--space-5);
-  margin-top: var(--space-5);
-}
-
-.analysis-history__list {
-  display: grid;
-  gap: 2px;
-  border-radius: var(--radius-lg);
-  background: var(--color-border);
-  overflow: hidden;
-}
-
-.analysis-history__list button {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  border: 0;
-  background: var(--color-surface);
-  padding: var(--space-3) var(--space-4);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-
-.analysis-history__list button span {
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-}
-
-.analysis-history__list button small {
-  color: var(--color-muted-strong);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.analysis-history__button--selected {
-  background: var(--color-brand-soft);
+  margin-top: var(--space-4);
 }
 
 .analysis-history__selection {
@@ -2615,7 +2624,7 @@ function matchIcon(value: MatchLevel): (typeof MATCH_ICONS)[MatchLevel] {
 .analysis-history__selection dl {
   display: grid;
   gap: var(--space-2);
-  margin: var(--space-4) 0;
+  margin: var(--space-3) 0;
 }
 
 .analysis-history__selection dl > div {

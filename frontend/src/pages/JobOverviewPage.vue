@@ -397,6 +397,21 @@ function extractionTone(
       <!-- 공고 이름 옆 "원본 공고 보기" 아래로 보내 별도 제목 줄을 없앤다. -->
       <Teleport to="#job-detail-actions">
         <div class="job-overview__actions">
+          <!-- 지원 상태는 별도 form 없이 고르는 즉시 저장한다. -->
+          <label class="job-status-picker">
+            <span class="sr-only">지원 상태</span>
+            <select
+              id="job-status-select"
+              v-model="selectedStatus"
+              class="control control--compact"
+              :disabled="statusMutation.isPending.value"
+              @change="changeStatus"
+            >
+              <option v-for="status in JOB_STATUSES" :key="status" :value="status">
+                {{ JOB_STATUS_LABELS[status] }}
+              </option>
+            </select>
+          </label>
           <button
             type="button"
             class="button button--secondary button--compact"
@@ -435,21 +450,11 @@ function extractionTone(
         </div>
       </Teleport>
 
-      <div class="job-overview__statuses" aria-label="공고 상태">
-        <StatusBadge
-          data-testid="job-extraction-status"
-          prefix="공고 본문"
-          :label="JOB_EXTRACTION_STATUS_LABELS[job.data.value.extractionStatus]"
-          :tone="extractionTone(job.data.value.extractionStatus)"
-        />
-        <StatusBadge
-          v-if="job.data.value.status === 'CLOSED' && job.data.value.submittedAt"
-          label="서류 제출 이력 있음"
-          tone="success"
-        />
-      </div>
-
-      <p class="alert alert--info job-overview__notice">
+      <!-- 정상 상태의 안내는 본문 카드 안의 배지로 충분하다. 조치가 필요할 때만 알림을 띄운다. -->
+      <p
+        v-if="['NEEDS_MANUAL_INPUT', 'FAILED'].includes(job.data.value.extractionStatus)"
+        class="alert alert--info job-overview__notice"
+      >
         {{ jobExtractionGuidance(job.data.value.extractionStatus) }}
       </p>
       <p
@@ -575,13 +580,20 @@ function extractionTone(
               <p class="section-kicker">공고 내용</p>
               <h2 id="job-description-heading" class="section-title">공고 본문</h2>
             </div>
-            <button
-              type="button"
-              class="button button--ghost button--compact"
-              @click="beginEdit(true)"
-            >
-              본문 수정
-            </button>
+            <div class="job-description__tools">
+              <StatusBadge
+                data-testid="job-extraction-status"
+                :label="JOB_EXTRACTION_STATUS_LABELS[job.data.value.extractionStatus]"
+                :tone="extractionTone(job.data.value.extractionStatus)"
+              />
+              <button
+                type="button"
+                class="button button--ghost button--compact"
+                @click="beginEdit(true)"
+              >
+                본문 수정
+              </button>
+            </div>
           </div>
           <p class="job-description__source">
             출처:
@@ -651,31 +663,6 @@ function extractionTone(
             </dl>
           </section>
 
-          <section class="job-side-section section-surface">
-            <p class="section-kicker">지원 과정</p>
-            <h3 class="section-title">지원 상태</h3>
-            <form class="job-status-form" @submit.prevent="changeStatus">
-              <label class="field">
-                <span class="field__label">상태</span>
-                <select id="job-status-select" v-model="selectedStatus" class="control">
-                  <option v-for="status in JOB_STATUSES" :key="status" :value="status">
-                    {{ JOB_STATUS_LABELS[status] }}
-                  </option>
-                </select>
-              </label>
-              <button
-                id="job-status-submit"
-                type="submit"
-                class="button button--primary button--compact"
-                :disabled="
-                  selectedStatus === job.data.value.status || statusMutation.isPending.value
-                "
-              >
-                {{ statusMutation.isPending.value ? '변경 중…' : '상태 변경' }}
-              </button>
-            </form>
-          </section>
-
           <section v-if="monitoredRunId" class="job-side-section section-surface">
             <p class="section-kicker">공고 내용</p>
             <h3 class="section-title">공고 불러오기</h3>
@@ -698,14 +685,23 @@ function extractionTone(
   margin-bottom: var(--space-4);
 }
 
-.job-overview__actions,
-.job-overview__statuses {
+.job-overview__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 
-.job-overview__statuses,
+.job-status-picker {
+  min-width: 0;
+}
+
+.job-status-picker select {
+  width: auto;
+  min-width: 7.5rem;
+  font-weight: 680;
+}
+
 .job-overview__notice,
 .job-overview__conflict,
 .job-editor,
@@ -763,6 +759,14 @@ function extractionTone(
   gap: var(--space-4);
 }
 
+.job-description__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .job-overview__side {
   display: grid;
   align-content: start;
@@ -797,17 +801,6 @@ function extractionTone(
   color: var(--color-brand-strong);
   text-decoration: underline;
   text-underline-offset: 0.16em;
-}
-
-.job-status-form {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
-.job-status-form .field {
-  width: 100%;
 }
 
 .job-run-link {

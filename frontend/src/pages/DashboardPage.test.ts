@@ -34,9 +34,10 @@ describe('DashboardPage', () => {
   it('shows a natural heading, career facts and action-oriented summary labels', async () => {
     const wrapper = await mountDashboard()
 
+    // 제목 줄은 화면에 그리지 않고 낭독기용으로만 남긴다.
+    expect(wrapper.get('h1').classes()).toContain('sr-only')
     expect(wrapper.get('h1').text()).toBe('이종규님의 지원 준비 현황')
-    expect(wrapper.get('.dashboard-title__name').text()).toBe('이종규')
-    expect(wrapper.text()).toContain('마감 일정과 다음 할 일을 한눈에 확인하세요.')
+    expect(wrapper.get('.dashboard-quick-entry').text()).toContain('공고 등록')
     expect(wrapper.find('.career-card__person svg').exists()).toBe(true)
     expect(wrapper.find('.career-card__monogram').exists()).toBe(false)
     expect(wrapper.get('.career-card').text()).toContain('백엔드 개발자')

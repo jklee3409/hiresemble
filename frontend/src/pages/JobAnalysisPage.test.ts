@@ -356,10 +356,12 @@ describe('P6 Job analysis page', () => {
     expect(result.findAll('.analysis-result__metrics > div')).toHaveLength(3)
     expect(result.findAll('.analysis-insight li > span')).toHaveLength(0)
 
-    const olderButton = wrapper.findAll('.analysis-history__list button')[1]
-    await olderButton?.trigger('click')
-    expect(wrapper.get('.analysis-history__selection').text()).toContain('45점')
-    expect(wrapper.get('.analysis-history__selection').text()).toContain('이전에 저장된 결과')
+    // 기록 영역은 추이 그래프와 현재 결과만 보여 준다.
+    const selection = wrapper.get('.analysis-history__selection')
+    expect(selection.text()).toContain('현재 분석 결과')
+    expect(selection.text()).toContain('현재 사용 중인 결과')
+    expect(selection.text()).toContain('분석 과정')
+    expect(wrapper.find('.analysis-history__list').exists()).toBe(false)
 
     const partialFilter = wrapper
       .findAll('.analysis-breakdown__filters button')

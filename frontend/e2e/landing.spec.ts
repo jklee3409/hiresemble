@@ -215,9 +215,10 @@ test('root navigation waits for authentication and preserves protected returnTo'
 
   await page.goto('/')
   await expect(page).toHaveURL(/\/dashboard$/)
+  // 대시보드 제목은 낭독기용으로만 남아 있어 화면에는 보이지 않는다.
   await expect(
     page.getByRole('heading', { name: '랜딩 확인 사용자님의 지원 준비 현황' }),
-  ).toBeVisible()
+  ).toBeAttached()
   expect(
     await page.evaluate(
       () => (window as typeof window & { __landingObserved?: boolean }).__landingObserved,
@@ -245,7 +246,7 @@ for (const scenario of [
     await page.goto('/dashboard')
     await expect(
       page.getByRole('heading', { name: '랜딩 확인 사용자님의 지원 준비 현황' }),
-    ).toBeVisible()
+    ).toBeAttached()
     await expect(page.getByRole('heading', { name: '최근 활동' })).toBeVisible()
 
     if (scenario.count === null) {

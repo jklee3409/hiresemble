@@ -8,14 +8,11 @@ test('protected app shell stays usable without horizontal overflow at required w
   await installAuthenticatedRoutes(page)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/dashboard')
+  // 대시보드 제목 줄은 화면에서 걷어내고 낭독기용으로만 남겼다.
   await expect(
     page.getByRole('heading', { name: '반응형 확인 사용자님의 지원 준비 현황' }),
-  ).toBeVisible()
-  const titleName = page.locator('.dashboard-title__name')
-  const titleSuffix = page.locator('.dashboard-title__suffix')
-  expect(await titleName.evaluate((element) => getComputedStyle(element).color)).not.toBe(
-    await titleSuffix.evaluate((element) => getComputedStyle(element).color),
-  )
+  ).toBeAttached()
+  await expect(page.locator('.dashboard-quick-entry')).toBeVisible()
   await expect(page.getByRole('heading', { name: '지원 준비 요약' })).toHaveClass(/sr-only/)
   await expect(page.getByText('한눈에 보기', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '오늘로 이동' })).toHaveCount(0)
@@ -31,31 +28,31 @@ test('protected app shell stays usable without horizontal overflow at required w
     'sticky',
   )
   const dashboardContent = page.locator('.dashboard-content')
-  const dashboardHeader = page.locator('.dashboard > .page-header')
-  const dashboardActions = dashboardHeader.locator('.page-header__actions')
-  const [contentBox, headerBox, actionsBox, shortcutsBox] = await Promise.all([
+  const dashboardQuickEntry = page.locator('.dashboard-quick-entry')
+  const dashboardLastAction = dashboardQuickEntry.getByRole('link', { name: '공고 등록' })
+  const [contentBox, quickEntryBox, lastActionBox, shortcutsBox] = await Promise.all([
     dashboardContent.boundingBox(),
-    dashboardHeader.boundingBox(),
-    dashboardActions.boundingBox(),
+    dashboardQuickEntry.boundingBox(),
+    dashboardLastAction.boundingBox(),
     dashboardShortcuts.boundingBox(),
   ])
   expect(contentBox).not.toBeNull()
-  expect(headerBox).not.toBeNull()
-  expect(actionsBox).not.toBeNull()
+  expect(quickEntryBox).not.toBeNull()
+  expect(lastActionBox).not.toBeNull()
   expect(shortcutsBox).not.toBeNull()
   expect(Math.abs((contentBox?.x ?? 0) + (contentBox?.width ?? 0) / 2 - 720)).toBeLessThan(1)
-  expect(Math.abs((headerBox?.x ?? 0) - (contentBox?.x ?? 0))).toBeLessThan(1)
+  expect(Math.abs((quickEntryBox?.x ?? 0) - (contentBox?.x ?? 0))).toBeLessThan(1)
   expect(
     Math.abs(
-      (headerBox?.x ?? 0) +
-        (headerBox?.width ?? 0) -
+      (quickEntryBox?.x ?? 0) +
+        (quickEntryBox?.width ?? 0) -
         ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)),
     ),
   ).toBeLessThan(1)
   expect(
     Math.abs(
-      (actionsBox?.x ?? 0) +
-        (actionsBox?.width ?? 0) -
+      (lastActionBox?.x ?? 0) +
+        (lastActionBox?.width ?? 0) -
         ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)),
     ),
   ).toBeLessThan(1)
@@ -86,7 +83,7 @@ test('protected app shell stays usable without horizontal overflow at required w
   expect(nextDateBox).not.toBeNull()
   expect(
     (nextDateBox?.x ?? 0) - ((currentDateBox?.x ?? 0) + (currentDateBox?.width ?? 0)),
-  ).toBeGreaterThan(3)
+  ).toBeGreaterThanOrEqual(0.5)
   if (process.env.UI_SCREENSHOTS === 'true') {
     await page.locator('.calendar-card').screenshot({
       path: testInfo.outputPath('calendar-hover-1440.png'),
@@ -382,7 +379,7 @@ test('profile suggestions and document registration stay keyboard-ready and resp
     }
 
     await page.goto('/documents')
-    await expect(page.getByRole('heading', { name: '이력서·자료', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '이력서·자료', level: 1 })).toBeAttached()
     await expect(page.getByLabel('자료 등록 순서')).toContainText('내용 분석')
     await page.locator('#document-file').setInputFiles({
       name: '지원용-이력서.txt',

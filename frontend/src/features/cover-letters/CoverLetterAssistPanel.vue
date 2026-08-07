@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { AssistTab } from '@/features/cover-letters/editorFlow'
 import {
   ISSUE_CODE_LABELS,
@@ -15,7 +17,7 @@ import StatusBadge from '@/shared/ui/StatusBadge.vue'
  * 답변에 쓸 소재 고르기는 편집기 아래 별도 영역에서 처리한다.
  */
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     tab: AssistTab
     requirements: readonly { category: string; text: string }[]
@@ -44,6 +46,32 @@ const emit = defineEmits<{
   'apply-suggestion': [suggestion: string]
   verify: []
 }>()
+
+/*
+ * 검토 결과가 쌓이면 최신 한 건만 펼쳐 두고 나머지는 접는다.
+ * 지적 사항은 "수정 필요"를 먼저 보여 훑어보는 순서를 고정한다.
+ */
+const latestVerification = computed(() => props.verifications[0] ?? null)
+const olderVerifications = computed(() => props.verifications.slice(1))
+
+function sortedIssues(verification: VerificationDto) {
+  return [...verification.issues].sort(
+    (left, right) => severityRank(right.severity) - severityRank(left.severity),
+  )
+}
+
+function severityRank(severity: VerificationDto['issues'][number]['severity']): number {
+  return severity === 'ERROR' ? 1 : 0
+}
+
+function issueSummary(verification: VerificationDto): string {
+  const errors = verification.issues.filter((issue) => issue.severity === 'ERROR').length
+  const warnings = verification.issues.length - errors
+  if (verification.issues.length === 0) return '지적 사항 없음'
+  if (errors === 0) return `확인 권장 ${warnings}건`
+  if (warnings === 0) return `수정 필요 ${errors}건`
+  return `수정 필요 ${errors}건 · 확인 권장 ${warnings}건`
+}
 
 function tone(status: VerificationDto['status']) {
   return ({ PENDING: 'neutral', PASSED: 'success', WARNING: 'warning', FAILED: 'danger' } as const)[
@@ -136,30 +164,35 @@ function tone(status: VerificationDto['status']) {
       </template>
       <template v-else>
         <p v-if="reviewedVersionLabel" class="assist__note">{{ reviewedVersionLabel }}</p>
-        <article
-          v-for="verification in verifications"
-          :key="verification.id"
-          class="verification-card"
-        >
+        <article v-if="latestVerification" class="verification-card">
           <header>
             <StatusBadge
-              :label="VERIFICATION_STATUS_LABELS[verification.status]"
-              :tone="tone(verification.status)"
+              :label="VERIFICATION_STATUS_LABELS[latestVerification.status]"
+              :tone="tone(latestVerification.status)"
             />
+            <span class="verification-card__count">{{ issueSummary(latestVerification) }}</span>
             <RouterLink
-              v-if="verification.agentRunId"
-              :to="{ name: 'agent-run-detail', params: { agentRunId: verification.agentRunId } }"
+              v-if="latestVerification.agentRunId"
+              :to="{
+                name: 'agent-run-detail',
+                params: { agentRunId: latestVerification.agentRunId },
+              }"
               class="text-link"
             >
               검토 과정 보기
             </RouterLink>
           </header>
 
-          <ul v-if="verification.issues.length" class="verification-issues">
-            <li v-for="(issue, index) in verification.issues" :key="`${issue.code}-${index}`">
-              <strong>
-                {{ ISSUE_CODE_LABELS[issue.code] }} · {{ ISSUE_SEVERITY_LABELS[issue.severity] }}
-              </strong>
+          <ul v-if="latestVerification.issues.length" class="verification-issues">
+            <li
+              v-for="(issue, index) in sortedIssues(latestVerification)"
+              :key="`${issue.code}-${index}`"
+              :data-severity="issue.severity"
+            >
+              <p class="verification-issues__head">
+                <em>{{ ISSUE_SEVERITY_LABELS[issue.severity] }}</em>
+                <strong>{{ ISSUE_CODE_LABELS[issue.code] }}</strong>
+              </p>
               <blockquote v-if="issue.relatedText">{{ issue.relatedText }}</blockquote>
               <p>{{ issue.message }}</p>
               <ul v-if="issue.evidenceRefs.length" class="historical-evidence">
@@ -175,9 +208,9 @@ function tone(status: VerificationDto['status']) {
           </ul>
           <p v-else class="assist__note">고칠 곳을 찾지 못했어요.</p>
 
-          <div v-if="verification.suggestions.length" class="verification-suggestions">
+          <div v-if="latestVerification.suggestions.length" class="verification-suggestions">
             <h4>이렇게 고쳐 보면 어떨까요</h4>
-            <div v-for="suggestion in verification.suggestions" :key="suggestion">
+            <div v-for="suggestion in latestVerification.suggestions" :key="suggestion">
               <p>{{ suggestion }}</p>
               <button
                 v-if="canApplySuggestion"
@@ -185,14 +218,14 @@ function tone(status: VerificationDto['status']) {
                 class="button button--secondary button--compact"
                 @click="emit('apply-suggestion', suggestion)"
               >
-                편집기에 넣기
+                답변에 적용
               </button>
             </div>
-            <small>넣기만 해서는 저장되지 않아요. 다듬은 뒤 답변 저장을 눌러 주세요.</small>
+            <small>적용해도 바로 저장되지 않아요. 다듬은 뒤 답변 저장을 눌러 주세요.</small>
           </div>
 
-          <ul v-if="verification.evidenceRefs.length" class="historical-evidence">
-            <li v-for="reference in verification.evidenceRefs" :key="reference.id">
+          <ul v-if="latestVerification.evidenceRefs.length" class="historical-evidence">
+            <li v-for="reference in latestVerification.evidenceRefs" :key="reference.id">
               <span>{{ reference.title }}</span>
               <small>{{ evidenceCurrentState(reference).label }}</small>
               <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
@@ -201,6 +234,45 @@ function tone(status: VerificationDto['status']) {
             </li>
           </ul>
         </article>
+
+        <!-- 지난 검토는 접어 둔다. 최신 결과 하나만 읽으면 되도록 화면을 비운다. -->
+        <details v-if="olderVerifications.length" class="verification-archive">
+          <summary>지난 검토 {{ olderVerifications.length }}개</summary>
+          <article
+            v-for="verification in olderVerifications"
+            :key="verification.id"
+            class="verification-card verification-card--past"
+          >
+            <header>
+              <StatusBadge
+                :label="VERIFICATION_STATUS_LABELS[verification.status]"
+                :tone="tone(verification.status)"
+              />
+              <span class="verification-card__count">{{ issueSummary(verification) }}</span>
+              <RouterLink
+                v-if="verification.agentRunId"
+                :to="{ name: 'agent-run-detail', params: { agentRunId: verification.agentRunId } }"
+                class="text-link"
+              >
+                검토 과정 보기
+              </RouterLink>
+            </header>
+            <ul v-if="verification.issues.length" class="verification-issues">
+              <li
+                v-for="(issue, index) in sortedIssues(verification)"
+                :key="`${issue.code}-${index}`"
+                :data-severity="issue.severity"
+              >
+                <p class="verification-issues__head">
+                  <em>{{ ISSUE_SEVERITY_LABELS[issue.severity] }}</em>
+                  <strong>{{ ISSUE_CODE_LABELS[issue.code] }}</strong>
+                </p>
+                <p>{{ issue.message }}</p>
+              </li>
+            </ul>
+            <p v-else class="assist__note">고칠 곳을 찾지 못했어요.</p>
+          </article>
+        </details>
       </template>
     </div>
   </section>
@@ -240,7 +312,7 @@ function tone(status: VerificationDto['status']) {
 .assist__body {
   display: grid;
   align-content: start;
-  gap: var(--space-6);
+  gap: var(--space-4);
   min-height: 0;
   overflow-y: auto;
   padding-top: var(--space-4);
@@ -363,36 +435,135 @@ function tone(status: VerificationDto['status']) {
   line-height: 1.5;
 }
 
+/*
+ * 검토 결과는 개수가 많아질수록 경계가 흐려진다.
+ * 결과 한 건을 하나의 면으로 묶고, 지적 사항은 심각도 색 띠로 훑을 수 있게 한다.
+ */
 .verification-card {
   display: grid;
   gap: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
 }
 
 .verification-card header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
+}
+
+.verification-card__count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.verification-card header .text-link {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+}
+
+.verification-archive {
+  min-width: 0;
+}
+
+.verification-archive > summary {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.verification-archive > summary::-webkit-details-marker {
+  display: none;
+}
+
+.verification-archive > summary::after {
+  color: var(--color-brand);
+  content: '+';
+  font-size: var(--font-size-md);
+}
+
+.verification-archive[open] > summary::after {
+  content: '−';
+}
+
+.verification-archive .verification-card {
+  margin-top: var(--space-2);
+}
+
+.verification-card--past {
+  box-shadow: none;
+  background: var(--color-fill);
 }
 
 .verification-issues {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .verification-issues > li {
   display: grid;
   gap: var(--space-1);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--color-fill);
   padding: var(--space-3);
   font-size: var(--font-size-sm);
 }
 
+.verification-card--past .verification-issues > li {
+  background: var(--color-surface);
+}
+
+.verification-issues > li[data-severity='ERROR'] {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.verification-issues > li[data-severity='WARNING'] {
+  border-left-color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.verification-issues__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.verification-issues__head em {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 0.0625rem 0.5rem;
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  font-weight: 750;
+}
+
+.verification-issues > li[data-severity='ERROR'] .verification-issues__head em {
+  color: var(--color-danger-strong);
+}
+
+.verification-issues > li[data-severity='WARNING'] .verification-issues__head em {
+  color: var(--color-warning-strong);
+}
+
 .verification-issues strong {
+  color: var(--color-ink-title);
   font-weight: 750;
 }
 

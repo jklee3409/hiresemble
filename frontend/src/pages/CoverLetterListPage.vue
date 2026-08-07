@@ -28,7 +28,6 @@ import {
 } from '@/shared/api/coverLetterContracts'
 import { COVER_LETTER_SORTS } from '@/shared/api/coverLetterApi'
 import { normalizeApiError } from '@/shared/api/errors'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -170,12 +169,8 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
 
 <template>
   <section class="cover-list app-page" aria-labelledby="cover-list-heading">
-    <PageHeader
-      heading-id="cover-list-heading"
-      title="자기소개서"
-      description="공고에 맞춰 작성 중인 답변과 확인이 끝난 자기소개서를 이어서 준비하세요."
-      variant="list"
-    />
+    <!-- 상단 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+    <h1 id="cover-list-heading" class="sr-only">자기소개서</h1>
 
     <form class="cover-list__filters filter-toolbar" @submit.prevent="applyFilters">
       <label class="field">
@@ -338,6 +333,9 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
 
 <style scoped>
 .cover-list {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
   min-width: 0;
 }
 
@@ -350,8 +348,7 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
 
 .cover-list__notice,
 .cover-list__error {
-  margin-top: var(--space-4);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
 }
 
@@ -368,7 +365,6 @@ function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'w
 .cover-list__items {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-5);
 }
 
 .cover-card {

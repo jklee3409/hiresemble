@@ -4,6 +4,93 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-07] Session Summary (현재 화면 기준 공고·Dashboard 회귀 계약 보정)
+
+- What was done:
+  - 공고 Overview unit test가 header Teleport 안의 즉시 상태 변경·편집·재시도·삭제 동작을 검증하도록 mount를 보정했다.
+  - Dashboard quick entry와 1px 캘린더 격자 geometry에 맞춰 UI shell E2E locator·간격 기대를 갱신했다.
+- Key decisions:
+  - 제거된 제출 이력 보조 배지 대신 기본 정보의 `최초 서류 제출` 시각을 검증하고 현재 UI를 page 명세의 기준으로 확정했다.
+- Issues encountered:
+  - 프로필·자료 Chromium 흐름은 `/profile/basic` 진입 후 인증 fixture가 `/login`으로 이동해 combobox 대기에서 timeout됐다.
+- Validation:
+  - `jobPages.test.ts` 9건과 전체 Frontend check 69 files/313 tests·production build 통과.
+  - 격리 Dashboard Chromium은 통과했고 프로필·자료 Chromium 1건은 위 인증 timeout으로 미통과했다.
+- Next steps:
+  - 인증 fixture 안정화 후 프로필·자료 Chromium 흐름을 재실행한다.
+
+## [2026-08-06] Session Summary (캘린더 마감 표시를 알약으로 교체)
+
+- What was done:
+  - 캘린더 칸의 마감 건수 표시에서 왼쪽 색 띠(`border-left: 3px`)와 칸 전체를 채우던 가로 막대를 없앴다.
+  - 대신 칸 왼쪽 아래에 작은 알약 하나를 두고, 앞의 점이 긴급도를 색으로, 숫자가 건수를 글자로 전하게 했다. 선택한 날짜에서는 알약이 brand 채움으로 바뀐다.
+- Key decisions:
+  - 색 띠를 없애도 긴급도가 사라지지 않도록 점과 알약 배경에 기존 tone(위험·주의·기본)을 그대로 이어 썼다.
+  - 알약은 칸 폭을 채우지 않고 내용 크기만 차지하게 해 격자가 비어 보이도록 두었다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과. fixture로 렌더한 캘린더에서 일반·임박·선택 상태를 직접 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-06] Session Summary (Dashboard 마감 보정과 공고 카드 재설계)
+
+- What was done:
+  - 프로필 카드 재작업 때 함께 지워졌던 Dashboard 공용 카드 표면 규칙(`.career-card`·`.deadline-section`·`.dashboard-section`·`.workspace-note`·`.guide-section`의 모서리·배경·그림자)을 되살렸다. 마감 캘린더·최근 활동·취업 준비 가이드·준비 워크스페이스가 각지고 배경이 사라져 보이던 원인이다.
+  - 프로필 카드 본문에 `position: relative; z-index: 1`을 줘 아바타가 그라데이션 띠에 가려 잘리던 문제를 고쳤다. 띠 높이를 낮추고(최대 9rem → 6.5rem) 아바타 크기·겹침도 함께 줄였다.
+  - 세 칸 구분선이 들쭉날쭉하지 않도록 카드 본문을 `align-items: stretch`로 바꾸고, 중복 선언된 CTA 규칙을 정리했다.
+  - 캘린더 칸 높이를 5.25rem → 4.5rem으로 낮추고, 선택 날짜 패널이 캘린더와 같은 높이를 쓰도록 `align-items: stretch`로 바꿨다. 마감이 없는 날의 안내는 남는 면 한가운데로 모았다.
+  - 캘린더 우측 공고 카드에서 왼쪽 색 띠(`::before`)를 없앴다. 흰 면 + 옅은 그림자 카드로 바꾸고, 마감 임박은 D-day 알약 색이 알리며, "공고 상세" 링크는 얇은 구분선 아래 한 줄로 내렸다.
+- Key decisions:
+  - 색 띠를 없애도 정보가 사라지지 않도록 D-day 알약(색+숫자)과 상태 칩을 카드 위쪽에 남겼다.
+  - 카드 배경을 채움면에서 흰 면 + 그림자로 바꿔 다른 화면의 카드와 같은 표면 언어를 쓰게 했다.
+- Issues encountered:
+  - `pnpm check`를 돌릴 수 없어 Playwright를 임시 설정으로 직접 실행해 Dashboard를 렌더하고 화면을 눈으로 확인한 뒤 여백·높이를 조정했다. 확인용 파일은 작업 후 삭제했다.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과. fixture로 렌더한 Dashboard 화면을 직접 확인했다. Node 20 환경이라 `vitest`와 저장소 Playwright suite는 실행하지 못했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`와 Playwright E2E를 재실행한다.
+
+## [2026-08-06] Session Summary (프로필 카드·마감 캘린더·요건 매칭 그래프 재설계)
+
+- What was done:
+  - Dashboard hero에서 "다음 할 일" 카드를 없애고 프로필 카드가 그 폭까지 차지하게 했다. 카드는 위쪽 aurora 띠 + 걸친 아바타 + 세 칸 본문(누구인가 / 무엇을 원하는가 / 얼마나 준비됐는가) 구조다. 띠는 brand blue를 중심에 두고 보라·시안으로 번지는 다중 radial gradient로 만들었고, 아바타는 사진 대신 기존 `person-card` 아이콘을 쓴다.
+  - 카드 안쪽 글자를 흰색 계열에서 ink 계열로 전부 바꾸고, 준비도 막대는 brand→시안 gradient, 완료 항목은 success tone으로 정리했다.
+  - 마감 캘린더를 레퍼런스의 격자형으로 바꿨다. 컨테이너 배경 + 1px gap으로 격자선을 만들고, 날짜 숫자는 칸 오른쪽 위, 마감 건수는 칸 아래 가로 막대(왼쪽 색 띠로 긴급도 표시), 다른 달 칸은 빗금으로 눌렀다. 월 이동 버튼은 달 이름 양옆 원형 버튼으로 옮겼다. 날짜 클릭 → 우측 목록 동작과 건수 표시는 그대로다.
+  - 공고 분석의 "요건 매칭 현황"을 요건 1개 = 캡슐 1개인 알약 띠로 바꿨다. 캡슐은 항상 일치 → 일부 일치 → 확인되지 않음 → 판단 정보 부족 순으로 정렬하고, 무늬(빗금·점)는 모두 뺐다. 위에 "N / M개 요건이 내 정보와 일치해요 + 비율"을 큰 숫자로 얹고, 범례는 아이콘·라벨·개수를 담은 칩 4개로 다시 만들었다.
+- Key decisions:
+  - 캡슐에서 무늬를 뺀 대신 고정 정렬 순서를 2차 인코딩으로 삼았다. 색을 구분하지 못해도 위치와 범례(아이콘·한글 라벨·개수)로 네 상태를 읽을 수 있다.
+  - 요건 색은 기존 CVD 검증을 통과한 네 hue를 유지하고 명도만 나눠 진한 톤(텍스트)·옅은 톤(칩 배경)을 추가했다. 레퍼런스의 라임·핑크·주황을 그대로 쓰면 검증된 색 구분과 blue 테마가 함께 깨지므로 채택하지 않았다.
+  - "다음 할 일"을 없애며 `nextTasks`와 그 계산에만 쓰이던 `documentNeedsAction`·`waitingRuns`도 함께 지웠다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과. Node 20 환경이라 `vitest`와 Playwright는 실행하지 못했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`와 Playwright E2E를 재실행한다.
+
+## [2026-08-06] Session Summary (화면 제목 줄 정리와 공고·분석 화면 조정)
+
+- What was done:
+  - Dashboard, 프로필 기본 정보, 이력서·자료, 관심 공고, 자기소개서 목록, 면접 준비 목록에서 제목·설명 줄을 화면에서 걷어내고 `sr-only` 제목만 남겼다. 상단 탐색이 이미 같은 이름을 보여 주기 때문이다. Dashboard의 자료·공고 등록 동작은 `.dashboard-quick-entry`, 관심 공고의 공고 등록은 상태 tab과 같은 줄(`.jobs-page__bar`)로 옮겼다.
+  - 목록 화면 컨테이너를 grid + gap으로 바꿔 필터와 목록·빈 상태 사이 여백을 일정하게 만들었다. 면접 준비에서 필터와 목록이 붙어 보이던 문제도 여기서 해결된다.
+  - Dashboard 세로 리듬을 줄였다(전체 gap 2~~3.5rem → 1.25~~1.75rem, 섹션 gap 2~~3.5rem → 1.5~~2.25rem).
+  - 공고 정보 화면에서 "공고 본문 · 불러오기 완료" 배지 줄과 항상 떠 있던 안내 알림을 없앴다. 배지는 공고 본문 카드 머리로 옮기고, 안내는 `NEEDS_MANUAL_INPUT`·`FAILED`처럼 조치가 필요할 때만 띄운다.
+  - 지원 상태 변경을 별도 form에서 빼내 편집 버튼 왼쪽의 select 하나로 바꾸고, 고르는 즉시 저장하도록 했다.
+  - 공고 분석의 "분석 결과 기록"에서 좌측 목록과 이력 pagination을 없애고 추이 그래프와 현재 분석 결과만 남겼다. 링크 문구는 "이 결과가 만들어진 과정 보기" → "분석 과정"으로 줄였다.
+  - 이력서·자료의 등록 안내 제목을 "경험을 보여줄 자료를 등록해 주세요."로 바꾸고, 설명 문구는 64rem 이상에서 한 줄로 읽히게 했다.
+- Key decisions:
+  - 제목을 삭제하지 않고 `sr-only`로 남겨 `aria-labelledby` 계약과 낭독기 사용자의 영역 인식을 유지했다.
+  - 공고 본문 상태 배지는 `data-testid="job-extraction-status"`를 유지한 채 위치만 옮겨 기존 e2e 기대를 깨지 않았다.
+  - 분석 이력 목록 제거는 과거 결과 열람을 줄이는 변경이라 추이 그래프에 과거 점수가 남는지 확인한 뒤 진행했다.
+- Issues encountered:
+  - 화면이 바뀌면서 기대가 어긋난 test를 함께 고쳤다. `DashboardPage.test.ts`(제목 가시성), `JobAnalysisPage.test.ts`(이력 선택), `landing.spec.ts`·`ui-shell.spec.ts`(제목 가시성), `jobs.actual.spec.ts`(상태 변경 절차), `cover-letter.actual.spec.ts`(버튼 문구).
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과. Node 20 환경이라 `vitest`와 Playwright는 실행하지 못했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`와 Playwright E2E를 재실행한다.
+
 ## [2026-08-06] Session Summary (공고·자기소개서 화면 중복 제목 제거)
 
 - What was done:

@@ -4,6 +4,38 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews feature까지 구현되어 있다.
 
+## [2026-08-06] Session Summary (경험 소재 카드에서 좌측 색 띠 제거)
+
+- What was done:
+  - `DocumentEvidencePanel`의 경험 소재 카드에서 `border-left: 4px` 색 띠를 없애고, 흰 면 + 옅은 그림자 + 큰 모서리 카드로 바꿨다. hover에서만 살짝 떠오른다.
+  - 제목을 한 단계 키우고, 동작 버튼은 얇은 구분선 아래 한 줄로 모았다.
+  - 활용에서 제외한 소재는 면을 눌러(`surface-subtle`, 그림자 없음) 앞으로 나오지 않게 했다.
+- Key decisions:
+  - 확인 여부는 제목 옆 상태 badge가 글자로 이미 알려 주므로 색 띠 없이도 정보가 줄지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
+## [2026-08-06] Session Summary (AI 검토 결과 가독성 개선)
+
+- What was done:
+  - `CoverLetterAssistPanel`에서 검토 결과를 최신 한 건만 펼치고 나머지는 "지난 검토 N개" 접이식으로 내렸다.
+  - 검토 카드에 지적 사항 요약(수정 필요·확인 권장 건수)을 붙이고, 카드 경계를 실선 대신 면과 그림자로 바꿨다.
+  - 지적 사항은 "수정 필요"를 먼저 정렬하고 심각도별 좌측 색 띠와 채움면, 심각도 chip을 붙여 훑어볼 수 있게 했다.
+  - 제안 적용 버튼 문구를 "편집기에 넣기" → "답변에 적용"으로, 안내 문구도 그에 맞게 바꿨다.
+  - 좌측 profile outline·자기소개서 rail 등 기존 채움면 요소는 그대로 두었다.
+- Key decisions:
+  - 정렬과 접기는 표시 방식만 바꾸고 검토 데이터나 emit 계약은 건드리지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과. Node 20 환경이라 `vitest`는 실행하지 못했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (feature component soft surface 정렬)
 
 - What was done:

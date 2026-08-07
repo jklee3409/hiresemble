@@ -130,7 +130,7 @@ PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아�
 - 모바일은 `홈`, `공고`, `자기소개서`, `면접 준비`, `더보기` bottom navigation을 사용한다. 더보기 dialog에서 내 정보, 자료, AI 작업과 가이드에 접근한다.
 - 상단 우측에는 진행 중 Agent Run 알림과 사람 아이콘+닉네임 account menu를 둔다. 사진 기능이 없으므로 이름 첫 글자 avatar와 별도 sidebar profile card를 사용하지 않는다.
 - account menu는 이용 가이드, AI 작업, 닉네임 변경, 로그아웃을 제공하고 header와 navigation에 사용자 정보를 중복 표시하지 않는다.
-- 목록·상세·편집·분석·설정 성격에 맞는 PageHeader variant를 사용하며 모든 화면에 eyebrow와 대형 제목을 반복하지 않는다.
+- 목록·상세·편집·분석·설정 성격에 맞는 PageHeader variant를 사용하며 모든 화면에 eyebrow와 대형 제목을 반복하지 않는다. 상단 navigation 또는 좌측 outline이 화면 이름을 이미 전달하는 Dashboard·프로필 기본 정보·이력서와 자료·관심 공고·자기소개서·면접 준비 화면은 시각 제목 줄을 생략하고 screen reader용 `h1`을 유지한다. 주요 등록 action은 첫 content row에 둔다.
 
 ### 공통 상태 UI
 
@@ -237,7 +237,7 @@ API:
 
 # 4. 대시보드 `/dashboard`
 
-대시보드는 로그인 직후 사용자가 현재 준비 상태, 먼저 할 일, 이번 달 마감, 최근 활동과 짧은 가이드를 한 흐름에서 확인하는 지원 워크스페이스다. 요약과 마감은 `GET /dashboard?month=YYYY-MM`, 가이드는 `GET /career-guides`를 사용하며 최근 활동은 기존 owner-scoped Document·Job·Agent Run 목록을 조합한다.
+대시보드는 로그인 직후 사용자가 현재 준비 상태, 이번 달 마감, 최근 활동과 짧은 가이드를 한 흐름에서 확인하는 지원 워크스페이스다. 요약과 마감은 `GET /dashboard?month=YYYY-MM`, 가이드는 `GET /career-guides`를 사용하며 최근 활동은 기존 owner-scoped Document·Job·Agent Run 목록을 조합한다.
 
 첫 사용 체크리스트:
 
@@ -248,26 +248,26 @@ API:
 - 완료 항목 수를 `n / 3`으로 표시하고 하나를 완료해도 남은 항목을 유지한다.
 - 세 항목을 모두 완료했을 때만 체크리스트를 숨기며 AI 작업 수는 표시 여부에 영향을 주지 않는다.
 - Dashboard query 실패는 미완료나 0개로 계산하지 않고 `확인 필요`, `—`와 재조회 action을 제공한다.
-- 체크리스트와 일반 지원 현황, 다음 할 일, 최근 활동은 함께 표시한다. 영구 dismiss 상태와 profile 완료 route gate는 사용하지 않는다.
+- 체크리스트와 일반 지원 현황, 최근 활동은 함께 표시한다. 영구 dismiss 상태와 profile 완료 route gate는 사용하지 않는다.
 
 ## 정보 구조와 문구
 
-- 제목은 `{displayName}님의 지원 준비 현황`, 설명은 `마감 일정과 다음 할 일을 한눈에 확인하세요.`를 사용한다. 제목에서는 이름만 Hiresemble Blue로 강조한다.
-- 커리어 카드는 서버가 안전하게 제공하는 이름, 희망 직무·지역, 최종 학력, `지원 정보 준비도`와 프로필 CTA를 표시한다. 사진이나 이름 첫 글자 avatar 대신 별도 사람 SVG icon과 추상 CSS 장식을 사용하며 미입력 값은 명시한다.
+- screen reader용 제목은 `{displayName}님의 지원 준비 현황`을 사용하고 시각 제목·설명 줄은 노출하지 않는다. 자료 등록과 공고 등록 action은 Dashboard 본문 시작점의 우측 quick entry에 둔다.
+- 커리어 카드는 상단 brand aurora 띠와 별도 사람 SVG icon을 사용하고, 아래 흰 면을 이름·희망 직무와 지역·최종 학력·`지원 정보 준비도`·첫 지원 체크리스트·프로필 CTA의 세 영역으로 나눈다. 사진이나 이름 첫 글자 avatar는 사용하지 않으며 미입력 값은 명시한다.
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다. 각 카드에는 서버 값에서 직접 유도한 보조 문구(`등록한 공고 N건 중`, `분석 중 N건` 등)만 덧붙이고 추정치를 만들지 않는다. 조회 실패 카드는 `—`와 확인 실패 문구를 함께 표시한다.
-- 프로필 보완, 확인이 필요한 자료, 입력 대기 Agent Run, 가까운 마감을 우선순위 순으로 `다음 할 일`에 표시한다. `다음 할 일` 카드 하단에는 공고 등록·자료 등록·자기소개서·면접 준비로 이동하는 `빠른 실행` 링크를 고정해 할 일 수가 적을 때도 카드 하단 행동 위치를 유지한다.
+- 별도 `다음 할 일` 카드와 네 항목 빠른 실행 grid는 표시하지 않는다. 필요한 후속 행동은 커리어 카드의 프로필 CTA, Dashboard 상단의 자료·공고 등록, 마감 공고와 최근 활동의 resource link에서 직접 제공한다.
 - 최근 활동 항목에는 자료·공고·AI 작업을 구분하는 icon을 붙이고 색상에만 의존하지 않도록 기존 text label을 유지한다.
 - 섹션 진입 motion, 카드 hover elevation, 요약 수치 count-up 같은 장식 동작은 `prefers-reduced-motion: reduce`에서 모두 정지하고 최종 값과 배치를 그대로 보여 준다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
-- Desktop에서는 바로가기 열을 제외한 헤더·CTA·본문을 동일한 중앙 열에 배치한다. 중앙 열은 Dashboard viewport 중심에 맞추고 `자료 등록`·`공고 등록` CTA의 우측 끝도 중앙 열의 우측 경계에 맞춘다.
+- Desktop에서는 바로가기 열을 제외한 quick entry·본문을 동일한 중앙 열에 배치한다. 중앙 열은 Dashboard viewport 중심에 맞추고 `자료 등록`·`공고 등록` CTA의 우측 끝도 중앙 열의 우측 경계에 맞춘다.
 - 중복되는 `한눈에 보기`, `지원 준비 요약` 타이틀은 시각적으로 노출하지 않되 screen reader용 heading은 유지한다. 섹션 제목은 self-hosted variable `Noto Sans KR`, 절제된 굵기와 자간을 사용한다.
 - Desktop 오른쪽에는 지원 현황·마감 캘린더·최근 활동·취업 준비 가이드 anchor를 제공하는 작은 바로가기를 Dashboard container 안의 sticky sidebar로 배치해 스크롤 중에도 접근할 수 있게 한다. fixed positioning은 사용하지 않으며 좁은 화면에서는 일반 흐름의 가로형 탐색으로 전환한다.
 
 ## 마감 캘린더
 
 - 이전·다음 월 이동을 제공하고 날짜별 활성 마감 공고 수를 `N건` 배지로 표시한다. 별도 오늘 이동 버튼은 노출하지 않는다. 일요일 날짜는 red, 토요일 날짜는 Hiresemble Blue를 사용하되 선택·오늘 상태는 border와 label로도 구분한다.
-- 캘린더 header는 이번 달 마감 요약과 월·연도, 이전·다음 이동을 분리해 위계를 만들고, 날짜 grid는 명시적인 cell 간격과 부드러운 경계로 인접 hover·선택 강조가 서로 침범하지 않게 한다.
-- 일반·오늘·선택·마감 보유 날짜는 날짜 marker, soft surface, 내부 border와 작은 event chip을 조합해 구분하며 큰 외곽 outline이나 셀 밖으로 뜨는 badge를 사용하지 않는다.
+- 캘린더 header는 이번 달 마감 요약과 월·연도, 이전·다음 이동을 분리해 위계를 만들고, 날짜 grid는 container 배경과 1px gap으로 연결된 격자선을 만든다. hover·focus·선택 강조는 cell 내부에서만 표시한다.
+- 일반·오늘·선택·마감 보유 날짜는 날짜 marker, 내부 선택 ring과 작은 `N건` pill을 조합해 구분하며 큰 외곽 outline이나 셀 밖으로 뜨는 badge를 사용하지 않는다. pill 앞의 tone dot과 숫자를 함께 사용하고 선택한 날짜에서는 brand 채움으로 바꾼다.
 - 마감이 있는 날짜와 선택 날짜의 공고에는 서울 자정 기준으로 계산한 `D-n`·`D-DAY`·`D+n` 배지를 함께 표시한다. 3일 이내는 danger, 7일 이내는 warning, 그 밖은 brand tone을 사용하며 배지 text와 마감 시각을 항상 함께 노출한다.
 - 캘린더 하단에는 오늘·3일 이내·7일 이내·마감 예정을 설명하는 legend를 두어 색상 구분이 단독 정보가 되지 않게 한다.
 - 선택 날짜의 회사, 공고명, 상태, `Asia/Seoul` 마감 시각과 상세 링크를 같은 화면에 보여 준다. Desktop은 옆 패널, mobile은 접근 가능한 `details` 패널을 사용한다.
@@ -457,7 +457,7 @@ API:
 
 ### 상태 표시 규칙
 
-`CLOSED`로 변경돼도 `submittedAt`이 있으면 `서류 제출 이력 있음` 보조 배지를 표시한다.
+`CLOSED`로 변경돼도 `submittedAt`은 유지하며 Overview 기본 정보에 `최초 서류 제출` 시각을 표시한다. 별도 `서류 제출 이력 있음` 보조 배지는 중복 노출하지 않는다.
 
 업무 상태 `IN_PROGRESS|SUBMITTED|CLOSED`와 추출 상태를 별도 badge로 표시한다.
 
@@ -539,9 +539,9 @@ API:
 - 매칭 근거
 - 분석 결과 기록
 
-결과 전체는 한 개의 절제된 report panel로 구성하고 내부 판단, 요건 매칭, 공고 핵심, 강점·보완점, 활용 경험과 조건별 근거는 중첩 card 대신 1px 구분선과 여백으로 연결한다. 상단 판단 영역은 적합도 270° gauge, 지원 가능성, 분석 커버리지, 해석 문장과 `자기소개서 준비하기`를 함께 노출한다. `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건 수는 직접 라벨·아이콘·텍스처를 가진 100% 누적 막대로, category별 획득/배점은 공통 기준선의 가로 막대로 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 `핵심 요약`으로 먼저 표시하고 원문 bullet·항목 수는 기본 접힘 상태의 상세로 제공한다.
+결과 전체는 한 개의 절제된 report panel로 구성하고 내부 판단, 요건 매칭, 공고 핵심, 강점·보완점, 활용 경험과 조건별 근거는 중첩 card 대신 1px 구분선과 여백으로 연결한다. 상단 판단 영역은 적합도 270° gauge, 지원 가능성, 분석 커버리지, 해석 문장과 `자기소개서 준비하기`를 함께 노출한다. `MATCHED|PARTIAL|MISSING|UNKNOWN` 요건은 요건 1개당 캡슐 1개로 표시하고 일치→일부 일치→확인되지 않음→판단 정보 부족 순으로 고정 정렬한다. 캡슐은 무늬를 사용하지 않으며 바로 아래의 icon·한글 label·개수 legend와 고정 위치를 색 외 인코딩으로 사용한다. category별 획득/배점은 공통 기준선의 가로 막대로 표시한다. `UNKNOWN`은 0점 불일치가 아니라 분석 커버리지 부족으로 설명한다. 화면 점수는 API 원값을 바꾸지 않고 소수점 없이 가장 가까운 5점 단위로 반올림한다. 주요 업무·필수·우대는 `analysisSummary`를 `핵심 요약`으로 먼저 표시하고 원문 bullet·항목 수는 기본 접힘 상태의 상세로 제공한다.
 
-강점과 부족한 점은 넓은 의미 색상 배경이나 번호 원형을 사용하지 않고 `내 강점`과 `보완 포인트`의 구분선 목록으로 나눈다. 성공·주의 색상은 각 영역의 작은 상단선과 상태 text처럼 실제 의미가 있는 위치에만 쓴다. 기준별 점수는 전체와 `MATCHED|PARTIAL|MISSING|UNKNOWN` filter를 제공하고 한 페이지에 5개씩 표시한다. filter를 바꾸면 첫 페이지로 돌아가며 criterion 설명과 연결 근거는 `판단한 이유와 연결 경험`으로 기본 접힘 상태를 유지한다. 공고 핵심·criterion·분석 이력의 disclosure trigger는 44px 이상 target, visible label과 open 상태 회전 indicator를 제공한다. 분석 이력은 숫자 version을 주 제목으로 노출하지 않고 `현재 결과`와 분석 시각을 사용하며 전체 기록은 기본 접힘 상태로 제공한다.
+강점과 부족한 점은 넓은 의미 색상 배경이나 번호 원형을 사용하지 않고 `내 강점`과 `보완 포인트`의 구분선 목록으로 나눈다. 성공·주의 색상은 각 영역의 작은 상단선과 상태 text처럼 실제 의미가 있는 위치에만 쓴다. 기준별 점수는 전체와 `MATCHED|PARTIAL|MISSING|UNKNOWN` filter를 제공하고 한 페이지에 5개씩 표시한다. filter를 바꾸면 첫 페이지로 돌아가며 criterion 설명과 연결 근거는 `판단한 이유와 연결 경험`으로 기본 접힘 상태를 유지한다. 공고 핵심·criterion·분석 결과 기록의 disclosure trigger는 44px 이상 target, visible label과 open 상태 회전 indicator를 제공한다. 분석 결과 기록은 전체 version 목록과 pagination을 반복하지 않고 최근 결과의 추이 그래프와 `현재 분석 결과` 요약만 기본 접힘 상태로 제공하며 `분석 과정`에서 최신 Agent Run으로 이동한다.
 
 Desktop은 216px 2중 ring으로 적합도와 커버리지를 함께 표시하고 지원 가능성·분석 커버리지 요약을 유지한다. Mobile은 104px 단일 적합도 ring과 결정 문장을 나란히 배치하고 커버리지·분석 시각을 meta 한 줄로 흡수하며 나머지 요약 tile은 숨긴다. 단일 primary action은 52px 이상 전폭으로 첫 viewport에 노출하고 category 막대는 기본 접힘, 상태 legend는 네 label row로 전환한다. 가로 scroll은 상태 filter와 tab에만 허용한다.
 
@@ -549,7 +549,7 @@ Desktop은 216px 2중 ring으로 적합도와 커버리지를 함께 표시하�
 
 `analysisOutdated=true`이면 기존 분석을 유지하고 상단의 얇은 bordered disclosure에 변경 항목 수를 표시한다. reason은 기본 접힘 상태에서 사용자가 펼쳐 확인하며 재분석은 낮은 우선순위의 보조 행동으로 제공한다. 넓은 노란 배경이나 별도 `OUTDATED` badge로 판단 영역을 밀어내지 않고 downstream 기능도 일괄 차단하지 않는다. `Eligibility`와 `fitScore`는 서로 다른 행으로 표시하고 `INELIGIBLE` 점수도 그대로 표시한다.
 
-resource header 아래 상세 tab은 상단 header를 피한 sticky navigation layer로 표시하고 tab과 본문 사이에 공통 `layout-tabs-body-gap`을 둔다. active tab은 굵기·brand soft background·하단 indicator를 함께 사용하며 hover/focus에서도 유지한다. 모바일은 tab을 가로 scroll한다.
+resource header 아래 상세 tab은 상단 header를 피한 sticky navigation layer로 표시하고 tab과 본문 사이에 `--space-4` 간격을 둔다. active tab은 채움 배경 없이 굵기·brand text·하단 indicator로만 표시하며 hover/focus에서도 유지한다. 모바일은 tab을 가로 scroll한다.
 
 다음 문구를 점수 가까이에 항상 표시한다.
 

@@ -6,6 +6,19 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-06] Session Summary (차트 status 색의 톤 단계 추가)
+
+- What was done:
+  - `--chart-matched|partial|missing|unknown` 각각에 진한 톤(`-strong`)과 옅은 톤(`-soft`)을 추가했다. 공고 분석 범례 칩의 배경과 글자색이 마크 색과 같은 계열을 쓰도록 하기 위해서다.
+- Key decisions:
+  - 기존 네 mark 색의 hue는 그대로 두고 명도만 움직여, 색각 검증에서 확인한 색 구분을 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (목록 pagination 여백 보정)
 
 - What was done:

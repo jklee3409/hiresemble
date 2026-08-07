@@ -213,7 +213,7 @@ describe('P5 Job pages', () => {
     )
     const { wrapper } = await mountOverview()
 
-    expect(wrapper.text()).toContain('서류 제출 이력 있음')
+    expect(wrapper.text()).toContain('최초 서류 제출')
     expect(wrapper.text()).toContain('공고 내용을 자동으로 충분히 읽지 못했어요')
     expect(wrapper.text()).not.toContain('OCR 사용')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
@@ -225,9 +225,7 @@ describe('P5 Job pages', () => {
     expect(wrapper.text()).not.toContain('공고 다시 불러오기')
     expect(jobApi.retryJobExtraction).not.toHaveBeenCalled()
 
-    await wrapper.get('select').setValue('IN_PROGRESS')
-    const statusForm = wrapper.findAll('form').find((form) => form.find('select').exists())
-    await statusForm?.trigger('submit')
+    await wrapper.get('#job-status-select').setValue('IN_PROGRESS')
     await flushPromises()
     expect(jobApi.updateJobStatus).toHaveBeenCalledWith(JOB_ID, {
       status: 'IN_PROGRESS',
@@ -386,7 +384,7 @@ async function mountOverview() {
   const wrapper = mount(JobOverviewPage, {
     global: {
       plugins: [pinia, router, [VueQueryPlugin, { queryClient: cache }]],
-      stubs: { JobRunMonitor: true },
+      stubs: { JobRunMonitor: true, teleport: true },
     },
   })
   await flushPromises()

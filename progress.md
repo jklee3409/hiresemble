@@ -12,6 +12,22 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 자기소개서 AI model catalog를 포함해 총 95 operations·70 paths다.
+
+## [2026-08-07] Session Summary (현재 UI 기준 화면 계약과 회귀 정합성 확정)
+
+- What was done:
+  - Dashboard·공고 Overview/분석·목록 화면·AI 검토·경험 소재의 현재 UI를 기준으로 페이지 명세를 동기화하고 공고 unit/E2E 기대를 새 구조에 맞췄다.
+- Key decisions:
+  - 현재 UI를 최종 화면 계약으로 삼고 Dashboard의 별도 다음 할 일 카드, 공고 분석의 누적 텍스처 막대·전체 이력 목록, Overview의 제출 이력 보조 배지는 복원하지 않는다. API·DB·Workflow 계약은 변경하지 않았다.
+- Issues encountered:
+  - 최초 Frontend check에서 Teleport 이전 기대 때문에 공고 unit 5건이 실패했으나 test mount를 보정해 해결했다. Chromium 회귀에서는 Dashboard 흐름이 통과했지만 프로필·자료 흐름이 인증 fixture 단계에서 `/login`으로 이동해 timeout됐으며 재시도 상한에 따라 추가 실행하지 않았다.
+  - 변경 문서 대상 Prettier 검사에서 `docs/spec/page.md`의 기존 수기 줄바꿈 때문에 해당 파일만 실패했다. 이번 계약 변경과 무관한 문서 전체 재포맷은 수행하지 않았다.
+- Validation:
+  - `corepack pnpm run check` 통과: lint·Prettier·typecheck, Vitest 69 files/313 tests, production build 성공.
+  - 공고 집중 unit 9건과 격리 Dashboard Chromium 1건 통과. 변경 E2E 11건 최초 실행은 9건 통과·2건 실패, locator 보정 후 격리 2건은 1건 통과·프로필 1건 timeout이었다.
+  - `git diff --check` 통과. 변경 추적 문서·test의 Prettier 검사는 통과했고 `docs/spec/page.md`만 위 기존 포맷 문제로 실패했다.
+- Next steps:
+  - 프로필 E2E의 인증 route fixture가 `/profile/basic` 진입을 안정적으로 유지하도록 보정한 뒤 해당 프로필·자료 Chromium 흐름을 재검증한다. 실제 Backend가 필요한 P5/P7 actual E2E는 이번 작업에서 실행하지 않았다.
 - P8.5 local 실제 Provider 연결은 구현됐다. Tavily BASIC, 실제 문서 Embedding, Chat strict output, trusted ref mapping, evidence persistence와 document finalize가 실제 run에서 성공했다. candidate rejection terminal 분류 보정은 offline 검증됐지만 live 재검증 전이므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 - P8.5-V 사용자 로컬 검증 뒤 P8.6 기능 한도, P8.7 사용량·원가 집계, P8.8 실패 UX, P8.9-A 읽기 전용 Backoffice를 순서대로 진행한다. P9는 이 선행 기반이 완료될 때까지 차단된다.
 

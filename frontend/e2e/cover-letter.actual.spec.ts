@@ -171,7 +171,7 @@ test.describe('P7 actual Backend cover-letter lifecycle', () => {
     await expect(passedSuggestion).toBeVisible()
 
     const versionCountBeforeSuggestion = (await listVersions(page, firstQuestion.id)).totalElements
-    await passedSuggestion.getByRole('button', { name: '편집기에 넣기' }).click()
+    await passedSuggestion.getByRole('button', { name: '답변에 적용' }).click()
     await expect(
       page.getByText('제안을 편집기에 넣었어요. 내용을 다듬은 뒤 저장해 주세요.'),
     ).toBeVisible()

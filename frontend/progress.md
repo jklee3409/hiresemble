@@ -5,7 +5,23 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 69 files/308 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- Vitest 69 files/313 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-07] Session Summary (현재 UI 계약과 Frontend 회귀 정합성 확정)
+
+- What was done:
+  - 현재 Dashboard·공고·목록·AI 검토·경험 소재 UI를 최종 기준으로 `docs/spec/page.md`와 unit/E2E 기대를 동기화했다.
+  - `JobOverviewPage` unit mount에서 header action Teleport를 stub해 편집·재시도·삭제·즉시 상태 변경 흐름을 다시 검증할 수 있게 했다.
+- Key decisions:
+  - API·route·DB·Workflow는 유지하고 presentation과 test harness만 현재 UI에 맞췄다.
+- Issues encountered:
+  - 최초 check의 공고 unit 5건은 stale Teleport 기대를 보정해 해결했다. Chromium 프로필·자료 흐름은 인증 route fixture가 `/login`으로 이동해 timeout됐고 재시도 상한에 따라 추가 수정하지 않았다.
+- Validation:
+  - 공고 unit 9건 통과.
+  - `corepack pnpm run check` 통과: lint·Prettier·typecheck, Vitest 69 files/313 tests, production build 성공.
+  - Landing/UI shell Chromium 최초 11건 중 9건 통과·2건 실패. Dashboard locator 보정 후 격리 2건에서 Dashboard는 통과했고 프로필·자료 1건은 같은 인증 timeout으로 실패했다.
+- Next steps:
+  - 프로필·자료 E2E 인증 fixture를 안정화하고 해당 Chromium 흐름과 실제 Backend가 필요한 P5/P7 actual E2E를 재실행한다.
 
 ## [2026-08-06] Session Summary (프론트엔드 전면 design 개선)
 

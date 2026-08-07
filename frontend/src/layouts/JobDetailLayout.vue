@@ -62,7 +62,11 @@ const analysisLabel = computed(() => {
       </div>
       <div class="job-resource-header__aside">
         <div class="job-resource-header__badges">
-          <StatusBadge :label="JOB_STATUS_LABELS[job.data.value.status]" tone="brand" />
+          <StatusBadge
+            data-testid="job-business-status"
+            :label="JOB_STATUS_LABELS[job.data.value.status]"
+            tone="brand"
+          />
           <StatusBadge
             :label="analysisLabel"
             :tone="job.data.value.latestAnalysis ? 'success' : 'info'"
@@ -271,7 +275,7 @@ const analysisLabel = computed(() => {
 
 .job-detail-body {
   min-width: 0;
-  padding-top: var(--layout-tabs-body-gap);
+  padding-top: var(--space-4);
 }
 
 @media (max-width: 48rem) {

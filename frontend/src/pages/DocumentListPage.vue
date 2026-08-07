@@ -35,7 +35,6 @@ import {
 } from '@/shared/api/documentApi'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -289,18 +288,14 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 
 <template>
   <section class="documents-page app-page" aria-labelledby="documents-heading">
-    <PageHeader
-      heading-id="documents-heading"
-      title="이력서·자료"
-      description="이력서와 포트폴리오를 등록하면 AI가 경험을 정리하고, 활용할 소재를 직접 선택할 수 있어요."
-      variant="list"
-    />
+    <!-- 상단 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+    <h1 id="documents-heading" class="sr-only">이력서·자료</h1>
 
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
       <header class="upload-panel__heading">
         <div>
           <p class="section-kicker">자료 등록</p>
-          <h2 class="section-title">경력을 설명해 줄 자료를 등록하세요.</h2>
+          <h2 class="section-title">경험을 보여줄 자료를 등록해 주세요.</h2>
           <p>
             원본 파일은 그대로 보관하고, 읽어 낸 내용과 정리된 경력 정보는 등록 후 직접 확인할 수
             있어요.
@@ -562,12 +557,10 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 </template>
 
 <style scoped>
-.upload-panel,
-.documents-page__filters,
-.documents-page__message,
-.documents-page__state,
-.document-list {
-  margin-top: var(--space-6);
+.documents-page {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
 }
 
 .upload-panel {
@@ -596,10 +589,16 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 }
 
 .upload-panel__heading p:last-child {
-  max-width: 31rem;
   margin-top: var(--space-2);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+}
+
+/* 넓은 화면에서는 안내 문구를 한 줄로 읽는다. 좁아지면 다시 접힌다. */
+@media (min-width: 64rem) {
+  .upload-panel__heading p:last-child {
+    white-space: nowrap;
+  }
 }
 
 .upload-panel__steps {
@@ -831,7 +830,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
 }
 
 .documents-page__filters > .document-filters {
-  margin-top: var(--space-6);
+  margin-top: var(--space-3);
 }
 
 .document-row {

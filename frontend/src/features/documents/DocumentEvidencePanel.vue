@@ -486,20 +486,32 @@ function categoryLabel(value: string): string {
   gap: var(--space-3);
   margin-top: var(--space-4);
 }
+/*
+ * 경험 소재 카드. 왼쪽 색 띠 없이 흰 면과 옅은 그림자만으로 세운다.
+ * 확인 여부는 제목 옆 상태 badge가 이미 글자로 알려 준다.
+ */
 .evidence-card {
-  padding: var(--space-5);
+  padding: var(--space-6);
   border: 0;
-  border-left: 4px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
 }
-.evidence-card--verified {
-  border-left-color: var(--color-success);
+.evidence-card:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
 }
+/* 제외한 소재는 앞으로 나오지 않도록 면을 눌러 둔다. */
 .evidence-card--rejected {
-  border-left-color: var(--color-warning);
   background: var(--color-surface-subtle);
+  box-shadow: none;
+}
+.evidence-card--rejected:hover {
+  box-shadow: var(--shadow-sm);
+  transform: none;
 }
 .evidence-card__header,
 .evidence-card__title,
@@ -522,7 +534,10 @@ function categoryLabel(value: string): string {
   gap: var(--space-2);
 }
 .evidence-card__title h4 {
-  font-weight: 750;
+  color: var(--color-ink-title);
+  font-size: var(--font-size-md);
+  font-weight: 780;
+  letter-spacing: -0.015em;
 }
 .evidence-card__identity > p {
   margin-top: var(--space-1);
@@ -559,6 +574,8 @@ function categoryLabel(value: string): string {
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 .evidence-card__readonly {
   margin-top: var(--space-3);

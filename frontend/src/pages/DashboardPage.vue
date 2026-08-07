@@ -15,7 +15,6 @@ import type { DocumentSummaryDto } from '@/shared/api/documentContracts'
 import * as dashboardApi from '@/shared/api/dashboardApi'
 import type { CareerGuidePostDto, DashboardDeadlineJobDto } from '@/shared/api/dashboardContracts'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useQuery } from '@tanstack/vue-query'
@@ -116,17 +115,6 @@ const dashboardTitle = computed(() =>
 )
 const profile = computed(() => dashboardQuery.data.value?.profile ?? null)
 const dashboardUnavailable = computed(() => dashboardQuery.isError.value)
-const documentNeedsAction = computed(() =>
-  (recentDocumentsQuery.data.value?.items ?? []).filter(
-    (document) =>
-      document.parseStatus === 'NEEDS_MANUAL_TEXT' ||
-      document.parseStatus === 'FAILED' ||
-      document.evidenceExtractionStatus === 'FAILED',
-  ),
-)
-const waitingRuns = computed(() =>
-  (activeRunsQuery.data.value?.items ?? []).filter((run) => run.status === 'WAITING_USER'),
-)
 const deadlineDays = computed(() => dashboardQuery.data.value?.deadlineDays ?? [])
 const deadlineCount = computed(() =>
   deadlineDays.value.reduce((total, day) => total + day.count, 0),
@@ -362,88 +350,6 @@ const showStartChecklist = computed(
   () => !startItems.value.every((item) => item.state === 'completed'),
 )
 
-type NextTask = {
-  key: string
-  icon: 'profile' | 'documents' | 'jobs' | 'runs' | 'check'
-  title: string
-  description: string
-  to: string
-  action: string
-  tone?: 'warning' | 'success'
-}
-
-const nextTasks = computed<NextTask[]>(() => {
-  const tasks: NextTask[] = []
-  const dashboard = dashboardQuery.data.value
-
-  if (dashboard !== undefined && !dashboard.profile.completed) {
-    tasks.push({
-      key: 'profile',
-      icon: 'profile',
-      title: '지원 정보를 조금 더 채워 보세요',
-      description: `필수 항목 ${dashboard.profile.missingItems.length}개를 채우면 공고 분석에 활용할 기준이 선명해져요.`,
-      to: '/profile/basic',
-      action: '지원 정보 보완',
-    })
-  }
-
-  const document = documentNeedsAction.value[0]
-  if (document !== undefined) {
-    tasks.push({
-      key: `document-${document.id}`,
-      icon: 'documents',
-      title: '확인이 필요한 자료가 있어요',
-      description:
-        documentNeedsAction.value.length === 1
-          ? `${document.displayName}의 내용을 확인해 주세요.`
-          : `최근 자료 ${documentNeedsAction.value.length}개에 확인이 필요해요.`,
-      to: `/documents/${document.id}`,
-      action: '자료 확인',
-      tone: 'warning',
-    })
-  }
-
-  const waitingRun = waitingRuns.value[0]
-  if (waitingRun !== undefined) {
-    tasks.push({
-      key: `run-${waitingRun.id}`,
-      icon: 'runs',
-      title: 'AI 작업이 입력을 기다리고 있어요',
-      description:
-        waitingRun.requiredUserAction?.message ??
-        `${WORKFLOW_LABELS[waitingRun.workflowType]} 작업에 추가 정보가 필요해요.`,
-      to: `/agent-runs/${waitingRun.id}`,
-      action: '필요 정보 확인',
-      tone: 'warning',
-    })
-  }
-
-  const nearestDeadline = deadlineDays.value[0]?.items[0]
-  if (nearestDeadline !== undefined) {
-    tasks.push({
-      key: `deadline-${nearestDeadline.id}`,
-      icon: 'jobs',
-      title: '다가오는 공고 마감을 확인하세요',
-      description: `${jobCompanyLabel(nearestDeadline.companyName)} · ${deadlineTitle(nearestDeadline)}가 ${formatDeadlineDateTime(nearestDeadline.deadlineAt)} 마감이에요.`,
-      to: `/jobs/${nearestDeadline.id}/overview`,
-      action: '공고 확인',
-    })
-  }
-
-  if (tasks.length === 0 && !dashboardUnavailable.value) {
-    tasks.push({
-      key: 'complete',
-      icon: 'check',
-      title: '지금 바로 확인할 긴급 항목이 없어요',
-      description: '새 공고를 등록하거나 최근 준비 기록을 이어갈 수 있어요.',
-      to: '/jobs/new',
-      action: '공고 등록',
-      tone: 'success',
-    })
-  }
-  return tasks.slice(0, 4)
-})
-
 type ActivityItem = {
   key: string
   at: string
@@ -671,30 +577,18 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 
 <template>
   <section class="dashboard app-page" aria-labelledby="dashboard-heading">
-    <PageHeader
-      heading-id="dashboard-heading"
-      :title="dashboardTitle"
-      description="마감 일정과 다음 할 일을 한눈에 확인하세요."
-      variant="list"
-    >
-      <template #title>
-        <template v-if="dashboardName">
-          <span class="dashboard-title__name">{{ dashboardName }}</span
-          ><span class="dashboard-title__suffix">님의 지원 준비 현황</span>
-        </template>
-        <template v-else>지원 준비 현황</template>
-      </template>
-      <template #actions>
-        <RouterLink class="button button--secondary" to="/documents">
-          <AppIcon name="upload" />
-          자료 등록
-        </RouterLink>
-        <RouterLink class="button button--primary" to="/jobs/new">
-          <AppIcon name="plus" />
-          공고 등록
-        </RouterLink>
-      </template>
-    </PageHeader>
+    <!-- 제목 줄 없이 등록 동작만 남긴다. 화면 이름은 낭독기용으로만 유지한다. -->
+    <h1 id="dashboard-heading" class="sr-only">{{ dashboardTitle }}</h1>
+    <div class="dashboard-quick-entry">
+      <RouterLink class="button button--secondary" to="/documents">
+        <AppIcon name="upload" />
+        자료 등록
+      </RouterLink>
+      <RouterLink class="button button--primary" to="/jobs/new">
+        <AppIcon name="plus" />
+        공고 등록
+      </RouterLink>
+    </div>
 
     <StatePanel
       v-if="dashboardQuery.isPending.value"
@@ -725,162 +619,117 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
             aria-label="사용자 커리어와 다음 행동"
           >
             <article class="career-card">
-              <span class="career-card__sheen" aria-hidden="true" />
-              <div class="career-card__identity">
-                <span class="career-card__person" aria-hidden="true">
-                  <AppIcon name="person-card" />
-                </span>
-                <div>
-                  <p>MY CAREER</p>
+              <div class="career-card__cover" aria-hidden="true">
+                <span class="career-card__sheen" />
+              </div>
+
+              <div class="career-card__main">
+                <div class="career-card__profile">
+                  <span class="career-card__person" aria-hidden="true">
+                    <AppIcon name="person-card" />
+                  </span>
+                  <p class="career-card__eyebrow">MY CAREER</p>
                   <h2>{{ profile?.legalName || profile?.displayName || '지원자' }}</h2>
-                </div>
-                <span
-                  class="career-card__readiness"
-                  :class="{ 'career-card__readiness--unknown': dashboardUnavailable }"
-                >
-                  {{
-                    dashboardUnavailable
-                      ? '확인 필요'
-                      : `준비도 ${profile?.completionPercent ?? 0}%`
-                  }}
-                </span>
-              </div>
-
-              <div class="career-card__role">
-                <span class="career-card__role-icon"><AppIcon name="jobs" /></span>
-                <div>
-                  <small>희망 직무</small>
-                  <strong>{{ profile?.desiredRoles.join(', ') || '희망 직무 미입력' }}</strong>
-                </div>
-              </div>
-
-              <dl class="career-card__facts">
-                <div>
-                  <dt><AppIcon name="profile" /> 희망 지역</dt>
-                  <dd>{{ profile?.desiredLocations.join(', ') || '미입력' }}</dd>
-                </div>
-                <div>
-                  <dt><AppIcon name="documents" /> 최종 학력</dt>
-                  <dd>{{ primaryEducationLabel() }}</dd>
-                </div>
-              </dl>
-
-              <div class="career-card__progress">
-                <span>
-                  <strong>지원 정보 준비도</strong>
-                  <small v-if="!dashboardUnavailable">
+                  <span
+                    class="career-card__readiness"
+                    :class="{ 'career-card__readiness--unknown': dashboardUnavailable }"
+                  >
                     {{
-                      profile?.completed
-                        ? '지원에 필요한 기본 정보를 채웠어요.'
-                        : `${profile?.missingItems.length ?? 5}개 항목이 남아 있어요.`
+                      dashboardUnavailable
+                        ? '준비도 확인 필요'
+                        : `준비도 ${profile?.completionPercent ?? 0}%`
                     }}
-                  </small>
-                  <small v-else>현재 준비도를 확인하지 못했어요.</small>
-                </span>
-                <strong>{{
-                  dashboardUnavailable ? '—' : `${profile?.completionPercent ?? 0}%`
-                }}</strong>
-              </div>
-              <progress
-                v-if="!dashboardUnavailable"
-                class="career-card__track"
-                :value="profile?.completionPercent ?? 0"
-                max="100"
-              >
-                {{ profile?.completionPercent ?? 0 }}%
-              </progress>
-
-              <div
-                v-if="showStartChecklist"
-                class="start-checklist"
-                aria-labelledby="start-heading"
-              >
-                <div class="start-checklist__heading">
-                  <h3 id="start-heading">첫 지원 준비</h3>
-                  <span>{{ completedStartCount }} / 3 완료</span>
-                </div>
-                <ul>
-                  <li v-for="item in startItems" :key="item.key" :data-state="item.state">
-                    <AppIcon
-                      :name="
-                        item.state === 'completed'
-                          ? 'check'
-                          : item.state === 'unknown'
-                            ? 'alert'
-                            : 'plus'
-                      "
-                    />
-                    <span>{{ item.title }}</span>
-                    <button
-                      v-if="item.state === 'unknown'"
-                      type="button"
-                      @click="dashboardQuery.refetch()"
-                    >
-                      다시 확인
-                    </button>
-                    <RouterLink v-else-if="item.state === 'pending'" :to="item.to">{{
-                      item.action
-                    }}</RouterLink>
-                    <small v-else>완료</small>
-                  </li>
-                </ul>
-              </div>
-
-              <RouterLink to="/profile/basic" class="career-card__cta">
-                지원 정보 확인
-                <AppIcon name="arrow-right" />
-              </RouterLink>
-            </article>
-
-            <article class="priority-card">
-              <header>
-                <span class="priority-card__icon"><AppIcon name="sparkle" /></span>
-                <div>
-                  <p class="section-kicker">지금 먼저</p>
-                  <h2>다음 할 일</h2>
-                </div>
-              </header>
-              <ul v-if="nextTasks.length" class="task-list">
-                <li v-for="(task, index) in nextTasks" :key="task.key">
-                  <RouterLink :to="task.to" :class="`task-item--${task.tone ?? 'default'}`">
-                    <span class="task-item__order">{{ String(index + 1).padStart(2, '0') }}</span>
-                    <span class="task-item__icon"><AppIcon :name="task.icon" /></span>
-                    <span class="task-item__body">
-                      <strong>{{ task.title }}</strong>
-                      <small>{{ task.description }}</small>
-                    </span>
-                    <span class="task-item__action" :aria-label="task.action"
-                      ><AppIcon name="arrow-right"
-                    /></span>
+                  </span>
+                  <RouterLink to="/profile/basic" class="career-card__cta">
+                    지원 정보 확인
+                    <AppIcon name="arrow-right" />
                   </RouterLink>
-                </li>
-              </ul>
-              <div v-else class="compact-empty">
-                <AppIcon name="alert" />
-                <div>
-                  <strong>다음 할 일을 아직 정리하지 못했어요.</strong>
-                  <p>지원 준비 현황을 다시 불러오면 우선순위를 안내할게요.</p>
+                </div>
+
+                <div class="career-card__details">
+                  <div class="career-card__role">
+                    <span class="career-card__role-icon"><AppIcon name="jobs" /></span>
+                    <div>
+                      <small>희망 직무</small>
+                      <strong>{{ profile?.desiredRoles.join(', ') || '희망 직무 미입력' }}</strong>
+                    </div>
+                  </div>
+
+                  <dl class="career-card__facts">
+                    <div>
+                      <dt><AppIcon name="profile" /> 희망 지역</dt>
+                      <dd>{{ profile?.desiredLocations.join(', ') || '미입력' }}</dd>
+                    </div>
+                    <div>
+                      <dt><AppIcon name="documents" /> 최종 학력</dt>
+                      <dd>{{ primaryEducationLabel() }}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div class="career-card__status">
+                  <div class="career-card__progress">
+                    <span>
+                      <strong>지원 정보 준비도</strong>
+                      <small v-if="!dashboardUnavailable">
+                        {{
+                          profile?.completed
+                            ? '지원에 필요한 기본 정보를 채웠어요.'
+                            : `${profile?.missingItems.length ?? 5}개 항목이 남아 있어요.`
+                        }}
+                      </small>
+                      <small v-else>현재 준비도를 확인하지 못했어요.</small>
+                    </span>
+                    <strong>{{
+                      dashboardUnavailable ? '—' : `${profile?.completionPercent ?? 0}%`
+                    }}</strong>
+                  </div>
+                  <progress
+                    v-if="!dashboardUnavailable"
+                    class="career-card__track"
+                    :value="profile?.completionPercent ?? 0"
+                    max="100"
+                  >
+                    {{ profile?.completionPercent ?? 0 }}%
+                  </progress>
+
+                  <div
+                    v-if="showStartChecklist"
+                    class="start-checklist"
+                    aria-labelledby="start-heading"
+                  >
+                    <div class="start-checklist__heading">
+                      <h3 id="start-heading">첫 지원 준비</h3>
+                      <span>{{ completedStartCount }} / 3 완료</span>
+                    </div>
+                    <ul>
+                      <li v-for="item in startItems" :key="item.key" :data-state="item.state">
+                        <AppIcon
+                          :name="
+                            item.state === 'completed'
+                              ? 'check'
+                              : item.state === 'unknown'
+                                ? 'alert'
+                                : 'plus'
+                          "
+                        />
+                        <span>{{ item.title }}</span>
+                        <button
+                          v-if="item.state === 'unknown'"
+                          type="button"
+                          @click="dashboardQuery.refetch()"
+                        >
+                          다시 확인
+                        </button>
+                        <RouterLink v-else-if="item.state === 'pending'" :to="item.to">{{
+                          item.action
+                        }}</RouterLink>
+                        <small v-else>완료</small>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-
-              <nav class="quick-actions" aria-label="바로 실행">
-                <RouterLink to="/jobs/new">
-                  <span><AppIcon name="plus" /></span>
-                  공고 등록
-                </RouterLink>
-                <RouterLink to="/documents">
-                  <span><AppIcon name="upload" /></span>
-                  자료 등록
-                </RouterLink>
-                <RouterLink to="/cover-letters">
-                  <span><AppIcon name="pen" /></span>
-                  자기소개서
-                </RouterLink>
-                <RouterLink to="/interviews">
-                  <span><AppIcon name="interview" /></span>
-                  면접 준비
-                </RouterLink>
-              </nav>
             </article>
           </section>
 
@@ -1300,7 +1149,21 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   width: min(100%, 88rem);
   margin-inline: auto;
   display: grid;
-  gap: clamp(2rem, 4vw, 3.5rem);
+  gap: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+/* 제목 줄을 없앤 자리. 등록 동작만 오른쪽에 붙는다. */
+.dashboard-quick-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: calc(
+    100% - var(--dashboard-toc-width) - var(--dashboard-layout-gap) - var(--dashboard-toc-width) -
+      var(--dashboard-layout-gap)
+  );
+  margin-inline: auto;
 }
 
 .dashboard-layout {
@@ -1317,7 +1180,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   display: grid;
   grid-column: 2;
   min-width: 0;
-  gap: clamp(2rem, 4vw, 3.5rem);
+  gap: clamp(1.5rem, 2.4vw, 2.25rem);
 }
 
 .dashboard-content > [id] {
@@ -1377,14 +1240,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   flex: 0 0 auto;
 }
 
-.dashboard :deep(.page-header) {
-  width: calc(
-    100% - var(--dashboard-toc-width) - var(--dashboard-layout-gap) - var(--dashboard-toc-width) -
-      var(--dashboard-layout-gap)
-  );
-  margin-inline: auto;
-  align-items: center;
-}
 .dashboard > :deep(.state-panel),
 .dashboard-error {
   width: calc(
@@ -1392,9 +1247,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
       var(--dashboard-layout-gap)
   );
   margin-inline: auto;
-}
-.dashboard :deep(.page-header__description) {
-  max-width: 38rem;
 }
 .section-kicker {
   margin: 0 0 0.4rem;
@@ -1408,7 +1260,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 .dashboard p {
   margin-top: 0;
 }
-.dashboard :deep(.page-header h1),
 .dashboard h2 {
   font-family: var(--font-display);
   font-weight: 780;
@@ -1444,21 +1295,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   color: var(--color-muted);
   font-size: 0.875rem;
 }
-.dashboard-title__name {
-  color: var(--color-primary);
-}
-.dashboard-title__suffix {
-  color: var(--color-ink);
-}
-
 .dashboard-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(25rem, 1.1fr);
   gap: 1.25rem;
-  align-items: stretch;
 }
+
+/* Dashboard의 모든 큰 면은 같은 모서리와 그림자를 쓴다. */
 .career-card,
-.priority-card,
 .deadline-section,
 .dashboard-section,
 .workspace-note,
@@ -1468,204 +1311,306 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
 }
+
+/*
+ * 프로필 카드. 서비스의 첫인상을 담당하므로 다른 카드보다 한 단계 더 크게 다룬다.
+ * 위쪽 aurora 띠 위로 아바타가 걸치고, 아래 흰 면을 세 칸으로 나눠
+ * "나는 누구인가 / 무엇을 원하는가 / 얼마나 준비됐는가"를 왼쪽부터 읽게 한다.
+ * 띠 색은 제품 brand blue를 중심에 두고 보라·시안으로만 번지게 해 테마를 벗어나지 않는다.
+ */
 .career-card {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.5rem, 2.5vw, 2rem);
-  color: white;
+  color: var(--color-ink);
   border: 0;
-  background: linear-gradient(145deg, var(--hs-blue-900) 0%, var(--hs-blue-700) 58%, #3157ff 100%);
-  box-shadow: 0 18px 44px -18px rgb(22 58 170 / 55%);
+  background: var(--color-surface);
 }
-.career-card::before,
-.career-card::after {
+
+.career-card__cover {
+  position: relative;
+  height: clamp(5rem, 8vw, 6.5rem);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 150% at 4% 12%, var(--hs-blue-600) 0%, transparent 58%),
+    radial-gradient(110% 150% at 34% 108%, #6b4bff 0%, transparent 62%),
+    radial-gradient(95% 150% at 66% -14%, #12b8e6 0%, transparent 60%),
+    radial-gradient(120% 180% at 102% 74%, var(--hs-blue-300) 0%, transparent 62%),
+    linear-gradient(112deg, var(--hs-blue-800) 0%, var(--hs-blue-500) 48%, #37c8e8 100%);
+}
+
+/* 띠 위에 옅은 원 하나만 남겨 평면적인 색면으로 보이지 않게 한다. */
+.career-card__cover::after {
   position: absolute;
-  content: '';
-  border: 1px solid rgb(255 255 255 / 15%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.career-card::before {
+  right: -4rem;
+  bottom: -7rem;
   width: 15rem;
   height: 15rem;
-  top: -8rem;
-  right: -4rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
 }
-.career-card::after {
-  width: 9rem;
-  height: 9rem;
-  right: 2rem;
-  bottom: -6rem;
-  background: rgb(255 255 255 / 5%);
+
+.career-card__sheen {
+  position: absolute;
+  top: -40%;
+  left: 0;
+  width: 24%;
+  height: 180%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 24%), transparent);
+  pointer-events: none;
+  animation: career-sheen 6s ease-in-out 1.2s infinite;
 }
-.career-card > * {
+
+.career-card__main {
   position: relative;
   z-index: 1;
-}
-.career-card__identity {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.85rem;
-  align-items: center;
+  grid-template-columns: minmax(14rem, 0.95fr) minmax(0, 1.15fr) minmax(0, 1.15fr);
+  align-items: stretch;
+  gap: clamp(1.25rem, 2.4vw, 2.25rem);
+  padding: 0 clamp(1.5rem, 2.5vw, 2rem) clamp(1.5rem, 2.5vw, 2rem);
 }
+
+/* 가운데·오른쪽 칸은 얇은 선으로만 나눈다. */
+.career-card__details,
+.career-card__status {
+  min-width: 0;
+  padding-top: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.career-card__details {
+  padding-left: clamp(1.25rem, 2.4vw, 2.25rem);
+  border-left: 1px solid var(--color-border);
+}
+
+.career-card__status {
+  padding-left: clamp(1.25rem, 2.4vw, 2.25rem);
+  border-left: 1px solid var(--color-border);
+}
+
+.career-card__profile {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  justify-items: start;
+}
+
+/* 아바타는 띠 위로 걸치고 흰 링으로 배경과 분리한다. */
 .career-card__person {
   display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 5rem;
+  height: 5rem;
   place-items: center;
-  border: 0;
-  border-radius: var(--radius-lg);
-  background: rgb(255 255 255 / 16%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%);
+  margin-top: -2.5rem;
+  border-radius: 50%;
+  color: var(--color-brand);
+  background: linear-gradient(160deg, #ffffff, var(--hs-blue-50));
+  box-shadow:
+    0 0 0 0.375rem var(--color-surface),
+    0 12px 24px -12px rgb(32 51 152 / 45%);
 }
+
 .career-card__person :deep(.icon) {
-  width: 1.8rem;
-  height: 1.8rem;
-  stroke-width: 1.75;
+  width: 2.5rem;
+  height: 2.5rem;
+  stroke-width: 1.6;
 }
-.career-card__identity p {
-  margin-bottom: 0.1rem;
-  color: rgb(255 255 255 / 65%);
+
+.career-card__eyebrow {
+  margin: 1rem 0 0.25rem;
+  color: var(--color-muted);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
-.career-card__identity h2 {
+
+.career-card__profile h2 {
   margin: 0;
-  color: white;
-  font-size: clamp(1.25rem, 2vw, 1.55rem);
+  color: var(--color-ink-title);
+  font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+  overflow-wrap: anywhere;
 }
+
 .career-card__readiness {
-  padding: 0.38rem 0.65rem;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.8125rem;
   border-radius: 999px;
-  color: var(--hs-blue-900);
-  background: #dff9b8;
+  color: var(--color-success-strong);
+  background: var(--color-success-soft);
   font-size: 0.75rem;
   font-weight: 800;
 }
+
 .career-card__readiness--unknown {
-  color: white;
-  background: rgb(255 255 255 / 15%);
+  color: var(--color-muted-strong);
+  background: var(--color-fill);
 }
+
+.career-card__cta {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 1rem;
+  color: var(--color-brand);
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: gap var(--motion-base) var(--ease-emphasized);
+}
+
+.career-card__cta :deep(.icon) {
+  width: 1rem;
+  height: 1rem;
+}
+
+.career-card:hover .career-card__cta {
+  gap: 0.6rem;
+}
+
 .career-card__role {
   display: flex;
   gap: 0.75rem;
   align-items: center;
-  margin-top: 1.75rem;
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   border: 0;
   border-radius: var(--radius-lg);
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-fill);
 }
+
 .career-card__role-icon {
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
+  flex: 0 0 auto;
   place-items: center;
   border-radius: var(--radius-md);
-  color: var(--hs-blue-100);
-  background: rgb(255 255 255 / 10%);
+  color: #ffffff;
+  background: var(--color-brand);
+  box-shadow: var(--shadow-brand);
 }
+
 .career-card__role small,
 .career-card__facts dt,
 .career-card__progress small {
   display: block;
-  color: rgb(255 255 255 / 65%);
+  color: var(--color-muted);
   font-size: 0.75rem;
 }
+
+.career-card__role > div {
+  min-width: 0;
+}
+
 .career-card__role strong {
   display: block;
   margin-top: 0.18rem;
-  font-size: 1.05rem;
+  overflow: hidden;
+  color: var(--color-ink-title);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
 .career-card__facts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 1.35rem;
+  gap: 0.875rem;
+  margin: 1rem 0 0;
 }
+
 .career-card__facts div {
   min-width: 0;
 }
+
 .career-card__facts dt {
   display: flex;
   gap: 0.35rem;
   align-items: center;
 }
+
 .career-card__facts dt :deep(.icon) {
   width: 0.9rem;
   height: 0.9rem;
 }
+
 .career-card__facts dd {
   margin: 0.3rem 0 0;
   overflow: hidden;
-  font-size: 0.82rem;
+  color: var(--color-ink);
+  font-size: 0.875rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .career-card__progress {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: end;
 }
-.career-card__progress > strong {
-  font-size: 1.35rem;
+
+.career-card__progress > span strong {
+  color: var(--color-ink-title);
+  font-size: 0.9375rem;
 }
+
+.career-card__progress > strong {
+  color: var(--color-brand);
+  font-size: 1.625rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
 .career-card__track {
   width: 100%;
-  height: 0.42rem;
+  height: 0.5rem;
   margin-top: 0.6rem;
   overflow: hidden;
   border: 0;
   border-radius: 999px;
-  background: rgb(255 255 255 / 18%);
+  background: var(--color-fill-strong);
+  animation: career-track-fill 900ms var(--ease-emphasized) 200ms both;
 }
+
 .career-card__track::-webkit-progress-bar {
-  background: rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: var(--color-fill-strong);
 }
+
 .career-card__track::-webkit-progress-value {
   border-radius: 999px;
-  background: #dff9b8;
+  background: linear-gradient(90deg, var(--hs-blue-500), #37c8e8);
 }
+
 .career-card__track::-moz-progress-bar {
   border-radius: 999px;
-  background: #dff9b8;
-}
-.career-card__cta {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: center;
-  margin-top: 1.2rem;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 800;
-}
-.career-card__cta :deep(.icon) {
-  width: 1rem;
-  height: 1rem;
+  background: linear-gradient(90deg, var(--hs-blue-500), #37c8e8);
 }
 
 .start-checklist {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid rgb(255 255 255 / 14%);
+  border-top: 1px solid var(--color-border);
 }
+
 .start-checklist__heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .start-checklist__heading h3 {
   margin: 0;
-  color: white;
+  color: var(--color-ink-title);
   font-size: 0.9rem;
 }
+
 .start-checklist__heading span {
-  color: rgb(255 255 255 / 65%);
+  color: var(--color-muted);
   font-size: 0.75rem;
 }
+
 .start-checklist ul {
   display: grid;
   gap: 0.45rem;
@@ -1673,27 +1618,30 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   padding: 0;
   list-style: none;
 }
+
 .start-checklist li {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.5rem;
   align-items: center;
   min-height: 2rem;
-  color: rgb(255 255 255 / 78%);
+  color: var(--color-muted-strong);
   font-size: 0.78rem;
 }
+
 .start-checklist li :deep(.icon) {
   width: 0.95rem;
   height: 0.95rem;
 }
+
 .start-checklist li[data-state='completed'] {
-  color: #dff9b8;
+  color: var(--color-success-strong);
 }
+
 .start-checklist a,
-.start-checklist button,
-.start-checklist small {
+.start-checklist button {
   padding: 0;
-  color: white;
+  color: var(--color-brand);
   border: 0;
   background: none;
   font: inherit;
@@ -1702,166 +1650,9 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   text-underline-offset: 0.18rem;
 }
 
-.priority-card {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(1.25rem, 2.5vw, 2rem);
-  background:
-    radial-gradient(circle at 96% -8%, rgb(49 87 255 / 8%), transparent 42%),
-    linear-gradient(160deg, var(--color-surface) 0%, var(--hs-blue-50) 100%);
-}
-.priority-card > header {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-.priority-card__icon {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border-radius: var(--radius-md);
-  color: white;
-  background: var(--color-brand);
-  box-shadow: var(--shadow-brand);
-}
-.priority-card h2 {
-  margin: 0;
-  font-size: 1.35rem;
-}
-.task-list {
-  display: grid;
-  gap: 0.65rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-/* 할 일 수가 적어도 카드 하단 빠른 실행이 같은 위치에 오도록 남는 높이는 목록이 흡수한다. */
-.priority-card .task-list {
-  flex: 1 1 auto;
-  align-content: start;
-}
-.task-list a {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  min-height: 5rem;
-  padding: 0.9rem 1rem;
-  border: 0;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
-}
-.task-list a:hover {
-  box-shadow: var(--shadow-lift);
-  transform: translateY(-2px);
-}
-.task-item__order {
-  color: var(--color-subtle);
-  font-size: 0.7rem;
+.start-checklist small {
+  color: var(--color-success-strong);
   font-weight: 800;
-}
-.task-item__icon {
-  display: grid;
-  width: 2.35rem;
-  height: 2.35rem;
-  place-items: center;
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  background: var(--hs-blue-50);
-}
-.task-item--warning .task-item__icon {
-  color: var(--color-warning);
-  background: var(--color-warning-soft);
-}
-.task-item--success .task-item__icon {
-  color: var(--color-success);
-  background: var(--color-success-soft);
-}
-.task-item__body {
-  min-width: 0;
-}
-.task-item__body strong,
-.task-item__body small {
-  display: block;
-}
-.task-item__body strong {
-  color: var(--color-ink);
-  font-size: 0.9rem;
-}
-.task-item__body small {
-  margin-top: 0.22rem;
-  color: var(--color-muted);
-  line-height: 1.45;
-}
-.task-item__action {
-  color: var(--color-primary);
-}
-.task-item__action :deep(.icon) {
-  width: 1rem;
-  height: 1rem;
-}
-.task-list a:hover .task-item__action {
-  transform: translateX(2px);
-}
-.task-item__action {
-  transition: transform var(--motion-base) var(--ease-emphasized);
-}
-
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 1.1rem;
-}
-.quick-actions a {
-  display: grid;
-  min-height: 4.6rem;
-  align-content: center;
-  justify-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 0.4rem;
-  border: 0;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-ink-soft);
-  font-size: 0.75rem;
-  font-weight: 750;
-  text-align: center;
-  text-decoration: none;
-  transition:
-    color var(--motion-base),
-    transform var(--motion-base),
-    box-shadow var(--motion-base);
-}
-.quick-actions a > span {
-  display: grid;
-  width: 2.1rem;
-  height: 2.1rem;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  background: var(--hs-blue-50);
-  transition: background-color var(--motion-base);
-}
-.quick-actions a > span :deep(.icon) {
-  width: 1rem;
-  height: 1rem;
-}
-.quick-actions a:hover {
-  color: var(--color-brand-ink);
-  box-shadow: var(--shadow-lift);
-  transform: translateY(-2px);
-}
-.quick-actions a:hover > span {
-  background: var(--hs-blue-100);
 }
 
 .dashboard-section-heading,
@@ -2098,41 +1889,100 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   color: var(--color-ink);
   font-size: 1.05rem;
 }
-.calendar-controls {
-  display: flex;
-  gap: 0.55rem;
+/*
+ * 마감 캘린더. 레퍼런스처럼 얇은 격자 위에 날짜를 올린다.
+ * - 날짜 숫자는 칸 오른쪽 위, 마감 건수는 칸 왼쪽 아래 작은 알약으로 둔다.
+ * - 격자선은 컨테이너 배경 + 1px gap으로 만들어 칸마다 테두리를 그리지 않는다.
+ */
+.calendar-card__toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
+
+.calendar-card__month {
+  display: flex;
+  grid-column: 2;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-card__month-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: var(--hs-blue-50);
+}
+
+.calendar-card__month-icon :deep(.icon) {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.calendar-card__month small,
+.calendar-card__month strong {
+  display: block;
+}
+
+.calendar-card__month small {
+  color: var(--color-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.calendar-card__month strong {
+  margin-top: 0.08rem;
+  color: var(--color-ink-title);
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+
+/* 이전·다음 달 이동은 달 이름 양옆에 원형으로 붙인다. */
+.calendar-controls {
+  display: contents;
+}
+
+.calendar-controls__step {
+  display: contents;
+}
+
 .calendar-controls button {
   display: grid;
-  min-width: 2.35rem;
-  min-height: 2.35rem;
+  width: 2.5rem;
+  height: 2.5rem;
   place-items: center;
-  padding: 0 0.7rem;
   border: 0;
-  border-radius: var(--radius-pill);
-  color: var(--color-ink);
-  background: transparent;
+  border-radius: 50%;
+  color: var(--color-muted-strong);
+  background: var(--color-fill);
   transition:
     color 160ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+    background-color 160ms ease;
 }
+
+.calendar-controls button:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.calendar-controls button:last-child {
+  grid-column: 3;
+  grid-row: 1;
+}
+
 .calendar-controls button:hover {
-  color: var(--color-primary);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  color: #ffffff;
+  background: var(--color-primary);
 }
-.calendar-controls__step {
-  display: inline-flex;
-  padding: 0.25rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-fill);
-}
-.calendar-controls__step button + button {
-  margin-left: 0.1rem;
-}
+
 .calendar-state,
 .guide-state {
   display: flex;
@@ -2146,16 +1996,19 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   color: var(--color-muted);
   background: var(--color-fill);
 }
+
 .calendar-state--error {
   color: var(--color-danger);
 }
+
 .calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.75fr);
   gap: 1.15rem;
-  align-items: start;
+  align-items: stretch;
   margin-top: 1.25rem;
 }
+
 .calendar-card {
   min-width: 0;
   padding: clamp(0.85rem, 1.6vw, 1.25rem);
@@ -2164,166 +2017,165 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
-.calendar-card__toolbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 0.9rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--color-border);
-}
-.calendar-card__month {
-  display: flex;
-  gap: 0.7rem;
-  align-items: center;
-}
-.calendar-card__month-icon {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  background: var(--hs-blue-50);
-}
-.calendar-card__month-icon :deep(.icon) {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-.calendar-card__month small,
-.calendar-card__month strong {
-  display: block;
-}
-.calendar-card__month small {
-  color: var(--color-muted);
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-.calendar-card__month strong {
-  margin-top: 0.08rem;
-  color: var(--color-ink);
-  font-size: 1.08rem;
-}
+
+/* 격자: 컨테이너 배경이 선이 되고 칸은 흰 면으로 얹힌다. */
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.35rem;
+  gap: 1px;
+  background: var(--color-border);
 }
+
 .calendar-weekdays {
-  margin-bottom: 0.35rem;
-  padding: 0.22rem 0;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-fill);
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
+
+.calendar-grid {
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
 .calendar-weekdays span {
-  padding: 0.3rem 0.2rem;
-  color: var(--color-subtle);
+  background: var(--color-fill);
+  padding: 0.6rem 0.2rem;
+  color: var(--color-muted-strong);
   font-size: 0.7rem;
   font-weight: 800;
+  letter-spacing: 0.04em;
   text-align: center;
 }
+
 .calendar-weekdays span:first-child {
   color: var(--color-danger);
 }
+
 .calendar-weekdays span:last-child {
   color: var(--color-primary);
 }
+
 .calendar-day {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: 4.35rem;
-  align-content: start;
-  justify-items: start;
+  min-height: 4.5rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: end;
   overflow: hidden;
-  padding: 0.48rem;
+  padding: 0.5rem 0.5rem 0.4rem;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   color: var(--color-ink);
   background: var(--color-surface);
-  transition:
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+  transition: background-color 160ms ease;
 }
+
 .calendar-day:hover {
-  z-index: 1;
   background: var(--hs-blue-50);
-  box-shadow: var(--shadow-xs);
 }
+
 .calendar-day:focus-visible {
   z-index: 2;
-  outline: 3px solid rgb(49 87 255 / 24%);
-  outline-offset: 1px;
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
+
+/* 날짜 숫자는 칸 오른쪽 위. */
 .calendar-day > span {
   display: grid;
   min-width: 1.75rem;
   height: 1.75rem;
   place-items: center;
-  border-radius: var(--radius-pill);
-  font-size: 0.78rem;
-  font-weight: 800;
+  border-radius: 50%;
+  font-size: 0.8125rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
+
+/*
+ * 마감 건수는 색 띠 대신 작은 알약 하나로 알린다.
+ * 앞의 점이 긴급도를 색으로, 숫자가 건수를 글자로 전한다.
+ */
 .calendar-day > strong {
   display: inline-flex;
-  min-height: 1.3rem;
+  min-height: 1.375rem;
   align-items: center;
-  justify-content: center;
-  margin-top: auto;
-  padding: 0.14rem 0.4rem;
+  gap: 0.3rem;
+  grid-row: 3;
+  justify-self: start;
   border: 0;
   border-radius: 999px;
-  color: var(--color-primary);
+  color: var(--color-brand-ink);
   background: var(--hs-blue-50);
-  font-size: 0.65rem;
-  line-height: 1;
+  padding: 0.1rem 0.5rem 0.1rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
   white-space: nowrap;
 }
+
 .calendar-day > strong::before {
-  width: 0.3rem;
-  height: 0.3rem;
-  margin-right: 0.25rem;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: currentColor;
   content: '';
 }
+
+/* "오늘" 표식은 숫자 반대편인 왼쪽 위에 둔다. */
 .calendar-day > small {
   position: absolute;
-  top: 0.58rem;
-  right: 0.5rem;
-  padding: 0.12rem 0.3rem;
+  top: 0.5rem;
+  left: 0.5rem;
   border-radius: 999px;
   color: var(--color-primary);
   background: var(--hs-blue-50);
+  padding: 0.1rem 0.35rem;
   font-size: 0.58rem;
   font-weight: 800;
 }
-.calendar-day--has-deadline {
-  background: var(--hs-blue-50);
-}
-.calendar-day--urgent,
-.calendar-day--today.calendar-day--has-deadline {
-  background: var(--color-danger-soft);
-}
+
 .calendar-day--urgent > strong,
 .calendar-day--today.calendar-day--has-deadline > strong {
-  color: var(--color-danger);
-  background: var(--color-surface);
+  color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
 }
-.calendar-day--soon {
+
+.calendar-day--soon > strong {
+  color: var(--color-warning-strong);
   background: var(--color-warning-soft);
 }
-.calendar-day--soon > strong {
-  color: var(--color-warning);
-  background: var(--color-surface);
-}
+
 .calendar-day--passed {
   opacity: 0.72;
+}
+
+.calendar-day--sunday > span {
+  color: var(--color-danger);
+}
+
+.calendar-day--saturday > span {
+  color: var(--color-primary);
+}
+
+.calendar-day--today > span {
+  color: #ffffff;
+  background: var(--color-primary);
+}
+
+/* 다른 달의 칸은 빗금으로 눌러 둔다. */
+.calendar-day--blank {
+  display: block;
+  min-height: 4.5rem;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-fill) 0 6px,
+    var(--color-surface) 6px 12px
+  );
 }
 
 .calendar-legend {
@@ -2361,35 +2213,31 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   background: var(--hs-blue-200);
 }
 .calendar-day--selected {
+  z-index: 1;
   background: var(--hs-blue-50);
   box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 .calendar-day--selected > strong {
-  color: white;
+  color: #ffffff;
   background: var(--color-primary);
-}
-.calendar-day--sunday > span {
-  color: var(--color-danger);
-}
-.calendar-day--saturday > span {
-  color: var(--color-primary);
-}
-.calendar-day--today > span {
-  color: white;
-  background: var(--color-primary);
-}
-.calendar-day--blank {
-  display: block;
-  min-height: 4.35rem;
-  background: var(--color-fill);
-  opacity: 0.5;
 }
 .deadline-detail {
+  display: flex;
+  flex-direction: column;
   padding: 1.125rem;
   border: 0;
   border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
+}
+
+/* 고른 날짜에 마감이 없으면 안내를 남는 면 한가운데로 모은다. */
+.deadline-detail--desktop .compact-empty--calendar {
+  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block: auto;
+  text-align: center;
 }
 .deadline-detail > header {
   display: flex;
@@ -2423,41 +2271,26 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   overflow: auto;
   list-style: none;
 }
+/*
+ * 공고 카드. 왼쪽 색 띠 없이 흰 면과 옅은 그림자만으로 카드를 세운다.
+ * 마감 임박 여부는 카드가 아니라 D-day 알약이 색으로 알린다.
+ */
 .deadline-items li {
   position: relative;
   display: grid;
   gap: 0.2rem;
-  padding: 0.85rem 0.85rem 0.85rem 1.1rem;
-  overflow: hidden;
+  padding: 0.9rem 1rem;
   border: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-fill);
-  transition:
-    background-color var(--motion-base),
-    box-shadow var(--motion-base);
-}
-.deadline-items li::before {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 0.28rem;
-  background: var(--hs-blue-200);
-  content: '';
-}
-.deadline-items li:hover {
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
 }
-.deadline-items li[data-tone='today']::before,
-.deadline-items li[data-tone='urgent']::before {
-  background: var(--color-danger);
-}
-.deadline-items li[data-tone='soon']::before {
-  background: var(--color-warning);
-}
-.deadline-items li[data-tone='passed']::before {
-  background: var(--color-border-strong);
+.deadline-items li:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
 }
 .deadline-items__badges {
   display: flex;
@@ -2466,11 +2299,11 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   align-items: center;
 }
 .deadline-items__dday {
-  padding: 0.2rem 0.45rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 999px;
   color: white;
   background: var(--color-muted-strong);
-  font-size: 0.66rem;
+  font-size: 0.6875rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -2490,12 +2323,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 .deadline-items__status {
   width: fit-content;
-  padding: 0.2rem 0.4rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 999px;
-  color: var(--color-primary);
-  background: var(--hs-blue-50);
-  font-size: 0.66rem;
-  font-weight: 800;
+  color: var(--color-muted-strong);
+  background: var(--color-fill);
+  font-size: 0.6875rem;
+  font-weight: 750;
 }
 @keyframes dday-pulse {
   0%,
@@ -2507,20 +2340,30 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   }
 }
 .deadline-items strong {
-  margin-top: 0.2rem;
-  font-size: 0.88rem;
+  margin-top: 0.45rem;
+  color: var(--color-ink-title);
+  font-size: 0.9375rem;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
 }
 .deadline-items small,
 .deadline-items time {
   color: var(--color-muted);
   font-size: 0.75rem;
 }
+.deadline-items small {
+  margin-top: 0.1rem;
+  font-weight: 700;
+}
+/* 동작은 얇은 구분선 아래 한 줄로 모아 카드 바닥을 정리한다. */
 .deadline-items a {
   display: inline-flex;
   gap: 0.25rem;
   align-items: center;
-  width: fit-content;
-  margin-top: 0.35rem;
+  justify-content: flex-end;
+  margin-top: 0.65rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
   color: var(--color-primary);
   font-size: 0.78rem;
   font-weight: 800;
@@ -3021,34 +2864,15 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   left: 0;
   width: 28%;
   height: 180%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 12%), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 22%), transparent);
   pointer-events: none;
   animation: career-sheen 5.5s ease-in-out 1.2s infinite;
 }
 .career-card__track {
   animation: career-track-fill 900ms var(--ease-emphasized) 200ms both;
 }
-.career-card__readiness {
-  background: var(--color-onbrand-accent);
-}
-.career-card__track::-webkit-progress-value {
-  background: var(--color-onbrand-accent);
-}
-.career-card__track::-moz-progress-bar {
-  background: var(--color-onbrand-accent);
-}
-.start-checklist li[data-state='completed'] {
-  color: var(--color-onbrand-accent);
-}
-.career-card__cta {
-  transition: gap var(--motion-base) var(--ease-emphasized);
-}
-.career-card:hover .career-card__cta {
-  gap: 0.6rem;
-}
-
 @media (max-width: 87rem) {
-  .dashboard :deep(.page-header),
+  .dashboard-quick-entry,
   .dashboard > :deep(.state-panel),
   .dashboard-error {
     width: 100%;
@@ -3077,9 +2901,20 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     flex: 1 0 auto;
     white-space: nowrap;
   }
-  .dashboard-hero,
   .calendar-layout {
     grid-template-columns: 1fr;
+  }
+  /* 프로필 카드는 준비도 칸부터 아래로 내려 보낸다. */
+  .career-card__main {
+    grid-template-columns: minmax(12rem, 0.9fr) minmax(0, 1fr);
+  }
+  .career-card__status {
+    grid-column: 1 / -1;
+    margin-top: 0.25rem;
+    padding-top: 1.25rem;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
   }
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3117,9 +2952,23 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   }
 }
 
+@media (max-width: 52rem) {
+  .career-card__main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .career-card__details {
+    grid-column: 1 / -1;
+    margin-top: 0.25rem;
+    padding-top: 1.25rem;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+}
+
 @media (max-width: 40rem) {
   .dashboard {
-    gap: 2rem;
+    gap: 1.25rem;
   }
   .dashboard-error {
     grid-template-columns: auto 1fr;
@@ -3134,6 +2983,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   .career-card__readiness {
     grid-column: 1 / -1;
     width: fit-content;
+    align-self: start;
   }
   .career-card__facts {
     grid-template-columns: 1fr;
@@ -3143,9 +2993,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   }
   .summary-card {
     min-height: 5.6rem;
-  }
-  .quick-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .deadline-section__heading {
     align-items: stretch;
@@ -3164,15 +3011,10 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   .calendar-card {
     padding: 0.65rem;
   }
-  .calendar-weekdays,
-  .calendar-grid {
-    gap: 0.22rem;
-  }
   .calendar-day,
   .calendar-day--blank {
-    min-height: 3.65rem;
+    min-height: 3.85rem;
     padding: 0.3rem;
-    border-radius: 0.58rem;
   }
   .calendar-day > span {
     min-width: 1.4rem;
@@ -3181,11 +3023,13 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   }
   .calendar-day > strong {
     min-height: 1.05rem;
-    padding: 0.16rem 0.3rem;
+    gap: 0.2rem;
+    padding: 0.1rem 0.35rem 0.1rem 0.3rem;
     font-size: 0.58rem;
   }
   .calendar-day > strong::before {
-    display: none;
+    width: 0.25rem;
+    height: 0.25rem;
   }
   .calendar-day > small {
     display: none;
@@ -3228,10 +3072,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .task-list a,
   .guide-card,
   .summary-card,
-  .quick-actions a,
   .activity-list a,
   .deadline-items li {
     transition: none;
@@ -3246,8 +3088,7 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     display: none;
   }
   .summary-card:hover,
-  .guide-card:hover,
-  .quick-actions a:hover {
+  .guide-card:hover {
     transform: none;
   }
 }
