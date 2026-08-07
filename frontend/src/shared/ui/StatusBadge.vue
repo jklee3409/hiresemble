@@ -1,5 +1,6 @@
 <script setup lang="ts">
-type StatusTone = 'neutral' | 'brand' | 'info' | 'success' | 'warning' | 'danger'
+/* notice는 고쳐야 하는 오류는 아니지만 한 번 봐 두면 좋은 상태에 쓴다. */
+type StatusTone = 'neutral' | 'brand' | 'info' | 'success' | 'notice' | 'warning' | 'danger'
 
 withDefaults(
   defineProps<{

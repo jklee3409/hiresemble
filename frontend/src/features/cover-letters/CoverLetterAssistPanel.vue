@@ -6,10 +6,12 @@ import {
   ISSUE_CODE_LABELS,
   ISSUE_SEVERITY_LABELS,
   VERIFICATION_STATUS_LABELS,
+  VERIFICATION_STATUS_TONES,
   evidenceCurrentState,
 } from '@/features/cover-letters/presentation'
+import { FIT_CRITERION_CATEGORY_LABELS } from '@/features/jobs/analysisPresentation'
 import type { VerificationDto } from '@/shared/api/coverLetterContracts'
-import AppIcon from '@/shared/ui/AppIcon.vue'
+import type { FitCriterionCategory } from '@/shared/api/jobContracts'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 /*
@@ -20,7 +22,7 @@ import StatusBadge from '@/shared/ui/StatusBadge.vue'
 const props = withDefaults(
   defineProps<{
     tab: AssistTab
-    requirements: readonly { category: string; text: string }[]
+    requirements: readonly { category: FitCriterionCategory; text: string }[]
     gaps: readonly string[]
     analysisOutdated?: boolean
     jobId?: string
@@ -74,9 +76,7 @@ function issueSummary(verification: VerificationDto): string {
 }
 
 function tone(status: VerificationDto['status']) {
-  return ({ PENDING: 'neutral', PASSED: 'success', WARNING: 'warning', FAILED: 'danger' } as const)[
-    status
-  ]
+  return VERIFICATION_STATUS_TONES[status]
 }
 </script>
 
@@ -113,13 +113,15 @@ function tone(status: VerificationDto['status']) {
         <p v-if="analysisOutdated" class="assist__note assist__note--warn">
           공고나 내 정보가 바뀐 뒤로 다시 분석하지 않았어요. 지금 내용도 참고할 수 있어요.
         </p>
-        <ul v-if="requirements.length" class="assist__list">
+        <ul v-if="requirements.length" class="assist__cards">
           <li
             v-for="requirement in requirements"
             :key="`${requirement.category}-${requirement.text}`"
           >
-            <AppIcon name="check" />
-            <span>{{ requirement.text }}</span>
+            <span class="assist__card-tag">{{
+              FIT_CRITERION_CATEGORY_LABELS[requirement.category]
+            }}</span>
+            <p>{{ requirement.text }}</p>
           </li>
         </ul>
         <p v-else class="assist__note">
@@ -136,10 +138,9 @@ function tone(status: VerificationDto['status']) {
 
       <section v-if="gaps.length" class="assist__block">
         <h3>보완하면 좋은 점</h3>
-        <ul class="assist__list assist__list--gap">
+        <ul class="assist__cards">
           <li v-for="gap in gaps" :key="gap">
-            <AppIcon name="lift" />
-            <span>{{ gap }}</span>
+            <p>{{ gap }}</p>
           </li>
         </ul>
       </section>
@@ -364,35 +365,37 @@ function tone(status: VerificationDto['status']) {
   gap: var(--space-2);
 }
 
-.assist__list {
+/*
+ * 요구사항 한 줄을 카드 한 장으로 둔다. 앞에 붙은 분류 알약이 무엇에 대한 요구인지 먼저 알리고,
+ * 아이콘 없이 채움면과 여백만으로 항목 경계를 만든다.
+ */
+.assist__cards {
   display: grid;
   gap: var(--space-2);
 }
 
-.assist__list li {
+.assist__cards li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-2);
+  justify-items: start;
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
+  padding: var(--space-3) var(--space-4);
+}
+
+.assist__cards p {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
-.assist__list :deep(.icon) {
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.2rem;
-  color: var(--color-brand);
-}
-
-.assist__list--gap :deep(.icon) {
-  color: var(--color-warning);
-}
-
-.assist__list--used small {
-  display: block;
-  color: var(--color-text-muted);
+.assist__card-tag {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-brand-strong);
+  padding: 0.125rem 0.5rem;
   font-size: var(--font-size-xs);
+  font-weight: 750;
 }
 
 .assist__evidence {
@@ -513,14 +516,18 @@ function tone(status: VerificationDto['status']) {
   gap: var(--space-2);
 }
 
+/*
+ * 지적 사항 한 건. 왼쪽 색 띠 없이 옅은 채움면과 심각도 알약만으로 구분한다.
+ * 목록이 "수정 필요"를 먼저 정렬하므로 위치도 함께 심각도를 알린다.
+ */
 .verification-issues > li {
   display: grid;
-  gap: var(--space-1);
-  border-left: 3px solid var(--color-border-strong);
-  border-radius: var(--radius-xs);
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
   background: var(--color-fill);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-sm);
+  line-height: 1.65;
 }
 
 .verification-card--past .verification-issues > li {
@@ -528,13 +535,11 @@ function tone(status: VerificationDto['status']) {
 }
 
 .verification-issues > li[data-severity='ERROR'] {
-  border-left-color: var(--color-danger);
   background: var(--color-danger-soft);
 }
 
 .verification-issues > li[data-severity='WARNING'] {
-  border-left-color: var(--color-warning);
-  background: var(--color-warning-soft);
+  background: var(--color-notice-soft);
 }
 
 .verification-issues__head {
@@ -559,7 +564,7 @@ function tone(status: VerificationDto['status']) {
 }
 
 .verification-issues > li[data-severity='WARNING'] .verification-issues__head em {
-  color: var(--color-warning-strong);
+  color: var(--color-notice-strong);
 }
 
 .verification-issues strong {
@@ -567,10 +572,13 @@ function tone(status: VerificationDto['status']) {
   font-weight: 750;
 }
 
+/* 지적한 문장은 왼쪽 선 대신 안쪽 흰 면으로 원문임을 알린다. */
 .verification-issues blockquote {
-  border-left: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   color: var(--color-text-secondary);
-  padding-left: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.6;
 }
 
 .verification-suggestions {

@@ -2,6 +2,7 @@
 import {
   ANSWER_SOURCE_LABELS,
   VERIFICATION_STATUS_LABELS,
+  VERIFICATION_STATUS_TONES,
   evidenceCurrentState,
   formatCoverLetterInstant,
 } from '@/features/cover-letters/presentation'
@@ -40,9 +41,7 @@ withDefaults(
 const emit = defineEmits<{ select: [versionId: string]; restore: [] }>()
 
 function tone(status: VerificationDto['status']) {
-  return ({ PENDING: 'neutral', PASSED: 'success', WARNING: 'warning', FAILED: 'danger' } as const)[
-    status
-  ]
+  return VERIFICATION_STATUS_TONES[status]
 }
 </script>
 

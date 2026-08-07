@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-07] Session Summary (StatusBadge notice tone 추가)
+
+- What was done:
+  - `StatusBadge`의 tone union에 `notice`를 추가했다. 오류는 아니지만 확인해 두면 좋은 상태에 쓰며 색은 `main.css`의 `--color-notice` 계열을 따른다.
+- Key decisions:
+  - 마크업과 props 구조는 그대로 두고 tone 값만 늘려 기존 `uiComponents.test.ts` 기대를 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (공용 UI 표면 정리)
 
 - What was done:

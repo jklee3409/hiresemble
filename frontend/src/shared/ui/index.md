@@ -9,7 +9,7 @@
 - [`BrandMark.vue`](BrandMark.vue), [`hiresemble-logo.png`](hiresemble-logo.png): 승인된 두 번째 로고 자산과 full·compact·inverse lockup
 - [`AppIcon.vue`](AppIcon.vue): Dashboard calendar·guide·sparkle·career person과 rocket·flag·trend-up·bolt·pen·bookmark·trophy·compass를 포함한 currentColor 기반 자체 제작 SVG icon
 - [`PageHeader.vue`](PageHeader.vue): list·detail·editor·compact variant, 선택적 heading level과 부분 강조용 title slot을 지원하는 route page 제목·설명·action 영역
-- [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status
+- [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status. tone은 neutral·brand·info·success·notice·warning·danger이며 notice는 오류가 아닌 "확인 권장" 상태에 쓴다
 - [`productJourney.ts`](productJourney.ts): Landing과 보호 `/guide`가 공유하는 5단계 번호·아이콘·canonical 제목·핵심 설명
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
 - [`PaginationNav.vue`](PaginationNav.vue): 이전·현재·다음 공용 pagination

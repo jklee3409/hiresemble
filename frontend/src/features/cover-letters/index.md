@@ -13,7 +13,8 @@ P7 자기소개서 목록·편집 화면이 사용하는 URL filter, Vue Query, 
 - `editorFlow.ts`: 문항별 작성·검토 상태, 작성 완료까지 남은 조건, 단일 primary 행동 판정
 - `conflict.ts`, `CoverLetterConflictPanel.vue`: 409 server snapshot·draft 비교/재적용
 - `CoverLetterQuestionRail.vue`: 세로 tablist 문항 목록과 문항별 상태
-- `CoverLetterAssistPanel.vue`: 공고 요구사항·AI 검토 결과 tab
+- `CoverLetterAssistPanel.vue`: 공고 요구사항·AI 검토 결과 tab. 요구사항은 분류 알약을 얹은 카드로, 지적 사항은 왼쪽 색 띠 없이 채움면과 심각도 알약으로 구분하며, 검토 tab일 때 편집 화면이 이 열을 넓혀 준다. 접기 없이 항상 보인다
+- `presentation.ts`의 `VERIFICATION_STATUS_TONES`: 검토 상태 badge tone을 모든 화면이 공유하도록 한곳에서 정의
 - `CoverLetterMaterialPicker.vue`: 상단 주요 행동 아래에서 펼치는 답변 소재 선택과 이미 쓴 소재 구분
 - `CoverLetterSheet.vue`: focus 가둠과 Escape 닫기를 가진 보조 sheet 껍데기
 - `CoverLetterGenerationPanel.vue`: 초안 대상 문항·서버 제공 OpenAI model dropdown·비파괴 안내를 담은 AI 설정

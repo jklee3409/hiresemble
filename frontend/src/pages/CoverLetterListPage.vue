@@ -13,6 +13,7 @@ import {
 import {
   COVER_LETTER_STATUS_LABELS,
   VERIFICATION_STATUS_LABELS,
+  VERIFICATION_STATUS_TONES,
   coverLetterJobLabel,
   formatCoverLetterInstant,
 } from '@/features/cover-letters/presentation'
@@ -160,10 +161,8 @@ function statusTone(value: CoverLetterStatus): 'brand' | 'success' | 'neutral' {
   return ({ DRAFT: 'brand', FINALIZED: 'success', ARCHIVED: 'neutral' } as const)[value]
 }
 
-function verificationTone(value: VerificationStatus): 'neutral' | 'success' | 'warning' | 'danger' {
-  return ({ PENDING: 'neutral', PASSED: 'success', WARNING: 'warning', FAILED: 'danger' } as const)[
-    value
-  ]
+function verificationTone(value: VerificationStatus) {
+  return VERIFICATION_STATUS_TONES[value]
 }
 </script>
 

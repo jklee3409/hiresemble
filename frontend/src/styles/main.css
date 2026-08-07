@@ -85,6 +85,17 @@
   --color-info-strong: #0a5878;
   --color-info-border: #b2dbea;
 
+  /*
+   * "확인 권장"처럼 고쳐야 하는 오류는 아니지만 한 번 봐 두면 좋은 상태에 쓴다.
+   * warning의 겨자색 대신 제품 brand blue 계열을 써서 화면 전체 색과 어긋나지 않게 하고,
+   * danger의 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분되게 한다.
+   * -strong(#2039bd)은 -soft(#e3e8ff) 위에서 대비 7.2:1, 흰 면 위에서 8.8:1이다.
+   */
+  --color-notice: var(--hs-blue-500);
+  --color-notice-strong: var(--hs-blue-700);
+  --color-notice-soft: var(--hs-blue-100);
+  --color-notice-border: var(--hs-blue-200);
+
   --color-focus: var(--hs-blue-500);
   --focus-ring: 0 0 0 4px rgb(49 87 255 / 18%);
 
@@ -1104,6 +1115,11 @@ textarea.control {
 .status-badge--success {
   background: var(--color-success-soft);
   color: #115c41;
+}
+
+.status-badge--notice {
+  background: var(--color-notice-soft);
+  color: var(--color-notice-strong);
 }
 
 .status-badge--warning {

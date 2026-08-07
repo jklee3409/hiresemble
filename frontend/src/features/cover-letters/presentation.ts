@@ -20,6 +20,17 @@ export const VERIFICATION_STATUS_LABELS: Record<VerificationStatus, string> = {
   FAILED: '수정 필요',
 }
 
+/*
+ * "확인 필요"는 오류가 아니라 한 번 봐 두면 좋은 상태라 danger와 같은 적-주황 축을 쓰지 않는다.
+ * 검토 결과를 보여 주는 모든 화면이 같은 색을 쓰도록 여기 한곳에서 정한다.
+ */
+export const VERIFICATION_STATUS_TONES = {
+  PENDING: 'neutral',
+  PASSED: 'success',
+  WARNING: 'notice',
+  FAILED: 'danger',
+} as const satisfies Record<VerificationStatus, string>
+
 export const ANSWER_SOURCE_LABELS: Record<CoverLetterVersionSource, string> = {
   AI_GENERATED: 'AI 초안',
   USER_EDITED: '내가 쓴 글',
@@ -28,7 +39,7 @@ export const ANSWER_SOURCE_LABELS: Record<CoverLetterVersionSource, string> = {
 }
 
 export const ISSUE_CODE_LABELS: Record<VerificationIssueCode, string> = {
-  UNVERIFIED_CLAIM: '근거를 찾지 못한 내용',
+  UNVERIFIED_CLAIM: '확인이 필요한 내용',
   CONTRADICTION: '경험과 다른 내용',
   REQUIREMENT_MISSING: '문항이 요구한 내용 빠짐',
   LENGTH_VIOLATION: '글자 수 초과',

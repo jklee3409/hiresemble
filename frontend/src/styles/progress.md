@@ -6,6 +6,21 @@
 - Vite의 Tailwind plugin과 `main.ts`의 global import가 연결되어 있다.
 - 미사용 PrimeVue Aura theme은 전역 초기화하지 않으며 실제 화면은 공용 token과 scoped style을 사용한다.
 
+## [2026-08-07] Session Summary (notice status 색과 badge tone 추가)
+
+- What was done:
+  - `--color-notice`·`-strong`·`-soft`·`-border` semantic 색을 추가하고 `.status-badge--notice`를 함께 넣었다. "확인 권장"처럼 오류는 아니지만 한 번 봐 두면 좋은 상태에 쓴다.
+  - 값은 제품 brand blue scale(`--hs-blue-100`/`-200`/`-500`/`-700`)을 그대로 참조한다.
+- Key decisions:
+  - warning의 겨자색 대신 테마색 계열을 써서 화면 전체 색과 어긋나지 않게 하고, danger의 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분되게 했다. `-strong(#2039bd)`은 `-soft(#e3e8ff)` 위에서 대비 7.2:1, 흰 면 위에서 8.8:1이다.
+  - 기존 `warning` 색과 tone은 그대로 뒀다. 다른 화면의 경고 표시를 함께 바꾸지 않기 위해서다.
+- Issues encountered:
+  - 처음에는 보라 계열(`#5b21b6`/`#f2ecff`)로 넣었으나 서비스 테마색에서 벗어나 blue scale 참조로 바꿨다.
+- Validation:
+  - `vite build`, `eslint .`, `prettier --check .`, `vue-tsc -b --force` 통과. 대비는 상대 휘도로 계산하고 Chromium computed style로 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (차트 status 색의 톤 단계 추가)
 
 - What was done:

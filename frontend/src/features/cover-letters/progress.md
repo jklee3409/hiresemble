@@ -4,6 +4,38 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-07] Session Summary (공고 요구사항 카드화와 notice 색 테마 정렬)
+
+- What was done:
+  - 공고 요구사항 tab의 아이콘 + 텍스트 목록을 항목별 카드로 바꿨다. 카드 위에는 `FIT_CRITERION_CATEGORY_LABELS` 분류 알약을 두고 아이콘은 없앴다. "보완하면 좋은 점"은 알약 없이 같은 카드 모양만 쓴다.
+  - `--color-notice`를 보라에서 제품 brand blue 계열(`--hs-blue-100`/`-700`)로 바꿨다.
+  - `UNVERIFIED_CLAIM` 라벨을 "근거를 찾지 못한 내용"에서 "확인이 필요한 내용"으로 바꿨다.
+- Key decisions:
+  - `requirements` prop의 `category`를 `string`에서 `FitCriterionCategory`로 좁혀 분류 라벨 조회를 type으로 보장했다.
+  - 카드는 아이콘 없이 분류 알약과 채움면만 쓴다. 한 열에 여러 장이 쌓이므로 요소가 늘어날수록 훑기 어려워진다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. `cover-letter-review.spec.ts`의 notice 색 기대를 blue 값으로 갱신하고 Chromium 1건 통과했다. 1440px에서 두 tab을 직접 확인했다.
+- Next steps:
+  - None.
+
+## [2026-08-07] Session Summary (AI 검토 결과 가독성과 확인 권장 색 교체)
+
+- What was done:
+  - 지적 사항 카드에서 왼쪽 3px 심각도 색 띠를 없앴다. 심각도는 옅은 채움면과 제목 앞 알약 색으로만 알리고, 모서리를 `--radius-md`로 키우고 줄 간격·안쪽 여백을 늘렸다.
+  - "확인 권장"과 검토 상태 "확인 필요"의 겨자색을 새 `--color-notice` 보라 계열로 바꿨다. 지적한 원문 인용도 왼쪽 선 대신 안쪽 흰 면으로 표시한다.
+  - 검토 상태 tone을 `presentation.ts`의 `VERIFICATION_STATUS_TONES` 한곳으로 모아 assist panel·버전 패널·목록 화면이 같은 색을 쓰게 했다.
+- Key decisions:
+  - notice에 보라를 고른 이유는 두 가지다. danger와 같은 적-주황 축을 피해 색각 이상에서도 두 심각도가 구분되고, 노란 tint가 만들던 탁한 인상을 없앨 수 있다. 대비는 soft 면 위 7.8:1, 흰 면 위 9.0:1이다.
+  - 전역 `warning` tone은 그대로 두고 `notice` tone을 새로 추가했다. 다른 화면의 경고 색을 함께 바꾸지 않기 위해서다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. 신규 `cover-letter-review.spec.ts` Chromium 1건이 좌측 border 제거와 notice 색을 computed style로 확인한다.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (끝난 AI 작업 bar 제거와 소재 고르기 분리)
 
 - What was done:
