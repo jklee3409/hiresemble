@@ -84,7 +84,7 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
     }
 
     @Test
-    void actualEightStepRunUsesOnlyMaskedGatewayInputsAndCreatesPendingEvidence() {
+    void actualNineStepRunUsesOnlyMaskedGatewayInputsAndCreatesPendingEvidence() {
         String raw = longDocument("owner@example.com", "api_key=super-secret-value");
         var accepted = upload(raw, "document-ai-success-key");
 
@@ -103,6 +103,7 @@ class DocumentIngestionOrchestratorIntegrationTest extends PostgresIntegrationTe
                         DocumentIngestionWorkflow.CHUNK_TEXT,
                         DocumentIngestionWorkflow.EMBED_CHUNKS,
                         DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES,
+                        DocumentIngestionWorkflow.EMBED_EVIDENCE_CANDIDATES,
                         DocumentIngestionWorkflow.APPLY_EVIDENCE_CANDIDATES,
                         DocumentIngestionWorkflow.FINALIZE_DOCUMENT);
         assertThat(document.parseStatus()).isEqualTo(DocumentParseStatus.PARSED);

@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-07] Session Summary (semantic 중복 경험·문서 독립성 회귀)
+
+- What was done:
+  - 서로 다른 문서의 유사 표현이 하나의 canonical 경험과 두 출처로 연결되고 두 번째 문서 응답이 `CORROBORATING`으로 표시되며 승인 경험이 문서 삭제 뒤 유지되는 시나리오를 추가했다.
+- Key decisions:
+  - 문서별 evidence 조회는 source row, 전역 조회·분석은 canonical row를 검증한다.
+- Issues encountered:
+  - 전체 check에서 기존 upload compensation 타이밍 테스트 1건이 404 대신 202로 실패했다.
+- Validation:
+  - 신규 semantic duplicate·삭제·재분석 집중 시나리오는 각각 통과했고 Document 전체 suite는 `NOT_VERIFIED`다.
+- Next steps:
+  - upload compensation fixture의 fail-once 순서를 별도 안정화한다.
+
 ## [2026-08-02] Session Summary (자료 재분석 이전 경험 제거 회귀)
 
 - What was done:

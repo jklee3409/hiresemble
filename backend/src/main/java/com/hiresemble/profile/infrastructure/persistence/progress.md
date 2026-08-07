@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.infrastructure.persistence package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (canonical 경험 영속성과 조회 경계)
+
+- What was done:
+  - 경험·출처 link·embedding 저장, exact/cosine 검색과 canonical `EXPERIENCE` evidence 동기화를 구현했다.
+- Key decisions:
+  - 전역 조회·분석은 canonical만, 문서 filter 조회는 원본 `DOCUMENT_CHUNK`를 반환한다.
+- Issues encountered:
+  - item과 canonical evidence의 순환 생성은 deferrable owner FK와 단일 transaction으로 안전하게 처리했다.
+- Validation:
+  - PostgreSQL 통합 테스트에서 다중 문서 출처와 승인 경험 보존을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (최종 학력 lock·flag 교체)
 
 - What was done:

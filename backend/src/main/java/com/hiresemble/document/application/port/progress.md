@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (embedding policy 전달 경계)
+
+- What was done:
+  - workflow command가 후보 적용 시 immutable embedding policy를 함께 전달하도록 확장했다.
+- Key decisions:
+  - legacy 호출용 overload를 보존하고 active v2만 후보 embedding을 요구한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 workflow contract 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (공용 evidence apply result 반환)
 
 - What was done:

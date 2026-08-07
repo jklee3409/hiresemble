@@ -19,7 +19,8 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class DocumentCreationService {
 
-    public static final String WORKFLOW_VERSION = "p0-contract-v1";
+    public static final String WORKFLOW_VERSION =
+            com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION;
     private final DocumentStore store;
     private final WorkflowLauncher workflowLauncher;
     private final ObjectMapper objectMapper;

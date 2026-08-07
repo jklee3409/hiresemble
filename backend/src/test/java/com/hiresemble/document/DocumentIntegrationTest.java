@@ -28,6 +28,7 @@ import com.hiresemble.document.infrastructure.adapter.DocumentFileInspector;
 import com.hiresemble.document.infrastructure.persistence.DocumentStore;
 import com.hiresemble.profile.application.port.EvidenceReferenceQueryPort;
 import com.hiresemble.profile.application.port.ProfileAnalysisQueryPort;
+import com.hiresemble.profile.domain.model.ExperienceMatchKind;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -377,6 +378,95 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void semanticDuplicateAcrossDocumentsAddsAProvenanceLinkWithoutANewExperienceCard()
+            throws Exception {
+        Session owner = authenticated("semantic-dedupe-owner@example.com");
+        JsonNode firstUpload = upload(
+                owner,
+                "semantic-dedupe-upload-01",
+                "first-resume.txt",
+                longText("first-semantic@example.com").getBytes(StandardCharsets.UTF_8),
+                202);
+        JsonNode secondUpload = upload(
+                owner,
+                "semantic-dedupe-upload-02",
+                "portfolio.txt",
+                longText("second-semantic@example.com").getBytes(StandardCharsets.UTF_8),
+                202);
+        UUID firstDocumentId = UUID.fromString(firstUpload.get("documentId").asText());
+        UUID firstRunId = UUID.fromString(firstUpload.get("agentRunId").asText());
+        UUID secondDocumentId = UUID.fromString(secondUpload.get("documentId").asText());
+        UUID secondRunId = UUID.fromString(secondUpload.get("agentRunId").asText());
+
+        workflow.beginParsing(owner.userId(), firstDocumentId, firstRunId);
+        workflow.extractOrAcceptText(owner.userId(), firstDocumentId, firstRunId);
+        workflow.maskText(owner.userId(), firstDocumentId, firstRunId);
+        List<DocumentChunkRecord> firstChunks =
+                workflow.chunkText(owner.userId(), firstDocumentId, firstRunId);
+        workflow.beginEvidenceExtraction(owner.userId(), firstDocumentId, firstRunId);
+        var policy = workflow.activeEmbeddingPolicy();
+        var first = workflow.applyEvidenceCandidates(
+                owner.userId(),
+                firstDocumentId,
+                firstRunId,
+                List.of(new DocumentEvidenceCandidate(
+                        "PROJECT",
+                        "결제 API 성능 개선",
+                        "Redis 캐시로 결제 API 성과 42를 달성했습니다.",
+                        Map.of(),
+                        new BigDecimal("0.900"),
+                        List.of(firstChunks.getFirst().id()),
+                        1,
+                        null,
+                        vector(1d, 0d))),
+                policy);
+
+        workflow.beginParsing(owner.userId(), secondDocumentId, secondRunId);
+        workflow.extractOrAcceptText(owner.userId(), secondDocumentId, secondRunId);
+        workflow.maskText(owner.userId(), secondDocumentId, secondRunId);
+        List<DocumentChunkRecord> secondChunks =
+                workflow.chunkText(owner.userId(), secondDocumentId, secondRunId);
+        workflow.beginEvidenceExtraction(owner.userId(), secondDocumentId, secondRunId);
+        var second = workflow.applyEvidenceCandidates(
+                owner.userId(),
+                secondDocumentId,
+                secondRunId,
+                List.of(new DocumentEvidenceCandidate(
+                        "PROJECT",
+                        "결제 API 응답 개선",
+                        "결제 API에 Redis 캐시를 적용해 성과 42를 만들었습니다.",
+                        Map.of(),
+                        new BigDecimal("0.880"),
+                        List.of(secondChunks.getFirst().id()),
+                        1,
+                        null,
+                        vector(1d, 0d))),
+                policy);
+
+        assertThat(first.experienceMatchCounts())
+                .containsOnly(Map.entry(ExperienceMatchKind.NEW, 1));
+        assertThat(second.experienceMatchCounts())
+                .containsOnly(Map.entry(ExperienceMatchKind.SAME_EXPERIENCE, 1));
+        mockMvc.perform(get("/api/v1/profile/experiences").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].sourceCount").value(2))
+                .andExpect(jsonPath("$.items[0].documentSourceCount").value(2));
+        mockMvc.perform(get("/api/v1/profile/evidence").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].sourceType").value("EXPERIENCE"));
+        mockMvc.perform(get("/api/v1/profile/evidence")
+                        .cookie(owner.cookie())
+                        .queryParam("documentId", secondDocumentId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].experienceItemId").isNotEmpty())
+                .andExpect(jsonPath("$.items[0].experienceLinkKind").value("CORROBORATING"))
+                .andExpect(jsonPath("$.items[0].experienceMatchKind").value("NEW"));
+    }
+
+    @Test
     void shortTextManualInputResumesTheSameWaitingRunAndReplaysTheSameKey() throws Exception {
         Session owner = authenticated("manual-owner@example.com");
         JsonNode accepted = upload(owner, "manual-upload-key-01", "short.txt",
@@ -443,13 +533,23 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
         UUID documentId = UUID.fromString(accepted.get("documentId").asText());
         UUID originalRun = UUID.fromString(accepted.get("agentRunId").asText());
         UUID originalEvidence = createEvidence(owner, documentId, originalRun);
-        jdbcTemplate.update("""
-                UPDATE profile_evidence SET verification_status='VERIFIED',verified_at=now(),
-                    version=version+1,updated_at=now() WHERE user_id=? AND id=?
-                """, owner.userId(), originalEvidence);
+        mockMvc.perform(patch("/api/v1/profile/evidence/" + originalEvidence + "/verification")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"VERIFIED\",\"version\":0}"))
+                .andExpect(status().isOk());
+        UUID canonicalEvidence = jdbcTemplate.queryForObject("""
+                SELECT item.canonical_evidence_id
+                FROM experience_evidence_links link
+                JOIN experience_items item
+                  ON item.user_id=link.user_id AND item.id=link.experience_item_id
+                WHERE link.user_id=? AND link.profile_evidence_id=?
+                """, UUID.class, owner.userId(), originalEvidence);
         assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
                 .extracting(value -> value.id())
-                .contains(originalEvidence);
+                .contains(canonicalEvidence)
+                .doesNotContain(originalEvidence);
         mockMvc.perform(put("/api/v1/documents/" + documentId + "/manual-text")
                         .cookie(owner.cookie()).header("X-CSRF-TOKEN", owner.csrfToken())
                         .header("Idempotency-Key", "active-manual-key-01")
@@ -488,6 +588,7 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 Long.class, owner.userId(), originalEvidence)).isZero();
         assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
                 .extracting(value -> value.id())
+                .contains(canonicalEvidence)
                 .doesNotContain(originalEvidence);
 
         mockMvc.perform(post("/api/v1/documents/" + documentId + "/reparse")
@@ -761,6 +862,12 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
         UUID secondId = UUID.fromString(second.get("documentId").asText());
         UUID secondRun = UUID.fromString(second.get("agentRunId").asText());
         UUID secondEvidence = createEvidence(owner, secondId, secondRun);
+        mockMvc.perform(patch("/api/v1/profile/evidence/" + secondEvidence + "/verification")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"VERIFIED\",\"version\":0}"))
+                .andExpect(status().isOk());
         long secondVersion = documentStore.findActive(owner.userId(), secondId).orElseThrow().version();
         references.referenced.set(true);
         mockMvc.perform(delete("/api/v1/documents/" + secondId)
@@ -776,6 +883,15 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
         assertThat(tombstone.get("source_entity_id")).isNull();
         assertThat(tombstone.get("confidence")).isNull();
         assertThat(tombstone.get("metadata")).isEqualTo("{}");
+        mockMvc.perform(get("/api/v1/profile/experiences").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].verificationStatus").value("VERIFIED"))
+                .andExpect(jsonPath("$.items[0].sourceCount").value(0));
+        mockMvc.perform(get("/api/v1/profile/evidence").cookie(owner.cookie())
+                        .queryParam("verificationStatus", "VERIFIED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].sourceType").value("EXPERIENCE"));
     }
 
     private UUID createEvidence(Session owner, UUID documentId, UUID runId) {

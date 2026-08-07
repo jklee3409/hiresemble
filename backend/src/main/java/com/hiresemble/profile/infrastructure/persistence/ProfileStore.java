@@ -872,6 +872,14 @@ public class ProfileStore {
                           )
                           AND verification_status='VERIFIED'
                           AND source_deleted_at IS NULL
+                          AND (
+                              source_type <> 'DOCUMENT_CHUNK'
+                              OR NOT EXISTS (
+                                  SELECT 1 FROM experience_evidence_links experience_link
+                                  WHERE experience_link.user_id=profile_evidence.user_id
+                                    AND experience_link.profile_evidence_id=profile_evidence.id
+                              )
+                          )
                         ORDER BY id
                         """)
                 .param("userId", userId)
@@ -953,7 +961,11 @@ public class ProfileStore {
                 """
                 + "AND (:status='' OR verification_status=:status) "
                 + "AND (:category='' OR evidence_category=:category) "
-                + "AND (:documentId='' OR (source_type='DOCUMENT_CHUNK' AND document_id=CAST(:documentId AS uuid)))";
+                + "AND (:documentId='' OR (source_type='DOCUMENT_CHUNK' AND document_id=CAST(:documentId AS uuid))) "
+                + "AND (:documentId<>'' OR source_type<>'DOCUMENT_CHUNK' OR NOT EXISTS ("
+                + "SELECT 1 FROM experience_evidence_links experience_link "
+                + "WHERE experience_link.user_id=profile_evidence.user_id "
+                + "AND experience_link.profile_evidence_id=profile_evidence.id))";
         List<EvidenceRecord> items = jdbcClient
                 .sql("SELECT *, metadata::text AS metadata_text FROM profile_evidence WHERE %s ORDER BY %s LIMIT :size OFFSET :offset".formatted(where, order))
                 .param("userId", userId)
@@ -1001,6 +1013,95 @@ public class ProfileStore {
                 .param("documentId", documentId).param("category", category).param("title", title)
                 .param("content", content).param("metadata", json(metadata)).param("confidence", confidence)
                 .param("now", utc(now)).query(this::evidence).single();
+    }
+
+    public EvidenceRecord createExperienceEvidence(
+            UUID id,
+            UUID userId,
+            UUID experienceItemId,
+            String category,
+            String title,
+            String content,
+            Map<String, Object> metadata,
+            java.math.BigDecimal confidence,
+            Instant now) {
+        return jdbcClient.sql("""
+                        INSERT INTO profile_evidence (
+                            id,user_id,source_type,source_entity_id,document_id,evidence_category,
+                            title,content,metadata,confidence,verification_status,verified_at,
+                            source_deleted_at,version,created_at,updated_at
+                        ) VALUES (
+                            :id,:userId,'EXPERIENCE',:experienceItemId,NULL,:category,
+                            :title,:content,CAST(:metadata AS jsonb),:confidence,'PENDING',NULL,
+                            NULL,0,:now,:now
+                        ) RETURNING *,metadata::text AS metadata_text
+                        """)
+                .param("id", id)
+                .param("userId", userId)
+                .param("experienceItemId", experienceItemId)
+                .param("category", category)
+                .param("title", title)
+                .param("content", content)
+                .param("metadata", json(metadata))
+                .param("confidence", confidence)
+                .param("now", utc(now))
+                .query(this::evidence)
+                .single();
+    }
+
+    public void synchronizeExperienceEvidenceContent(
+            UUID userId, UUID evidenceId, String title, String content, Instant now) {
+        int updated = jdbcClient.sql("""
+                        UPDATE profile_evidence
+                        SET title=:title,content=:content,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:evidenceId AND source_type='EXPERIENCE'
+                          AND source_deleted_at IS NULL
+                        """)
+                .param("title", title)
+                .param("content", content)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("canonical experience evidence could not be updated");
+        }
+    }
+
+    public void synchronizeExperienceEvidenceVerification(
+            UUID userId,
+            UUID evidenceId,
+            EvidenceVerificationStatus status,
+            Instant now) {
+        int updated = jdbcClient.sql("""
+                        UPDATE profile_evidence
+                        SET verification_status=:status,
+                            verified_at=CASE WHEN :status='VERIFIED' THEN :now ELSE NULL END,
+                            version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:evidenceId AND source_type='EXPERIENCE'
+                          AND source_deleted_at IS NULL
+                        """)
+                .param("status", status.name())
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("canonical experience verification could not be updated");
+        }
+    }
+
+    public void deleteExperienceEvidence(UUID userId, UUID evidenceId) {
+        int deleted = jdbcClient.sql("""
+                        DELETE FROM profile_evidence
+                        WHERE user_id=:userId AND id=:evidenceId AND source_type='EXPERIENCE'
+                        """)
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        if (deleted != 1) {
+            throw new IllegalStateException("canonical experience evidence could not be deleted");
+        }
     }
 
     public List<EvidenceRecord> findDocumentEvidence(UUID userId, UUID documentId) {
@@ -1182,6 +1283,7 @@ public class ProfileStore {
                 uuid(resultSet, "id"), uuid(resultSet, "user_id"),
                 EvidenceSourceType.valueOf(resultSet.getString("source_type")),
                 uuidNullable(resultSet, "source_entity_id"), uuidNullable(resultSet, "document_id"),
+                null, null, null,
                 instantNullable(resultSet, "source_deleted_at"), resultSet.getString("evidence_category"),
                 resultSet.getString("title"), resultSet.getString("content"),
                 read(resultSet.getString("metadata_text"), METADATA), resultSet.getBigDecimal("confidence"),

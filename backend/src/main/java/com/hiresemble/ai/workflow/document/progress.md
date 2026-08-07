@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 `DOCUMENT_INGESTION`을 Backend port 기반의 고정 8단계 workflow로 구현했다.
+P4 `DOCUMENT_INGESTION`을 Backend port 기반 active v2 9단계와 durable legacy v1 8단계 workflow로 구현했다.
+
+## [2026-08-07] Session Summary (후보 embedding·canonical 경험 판정 단계)
+
+- What was done:
+  - 추출과 적용 사이에 후보 embedding 단계를 추가하고 masked 후보만 transaction 밖 gateway에 전달했다.
+- Key decisions:
+  - 동일 hash 후보는 한 번만 embedding하고 적용 단계에서 중복·semantic match를 각각 판정한다.
+- Issues encountered:
+  - 최초 전체 검사에서 중복 hash가 embedding 단계에서 실패해 deduplicate 보정 후 집중 재검증했다.
+- Validation:
+  - active 9단계·legacy 8단계와 partial rejection을 포함한 집중 테스트 통과.
+- Next steps:
+  - 실제 Provider 호출은 승인된 별도 검증에서만 수행한다.
 
 ## [2026-08-02] Session Summary (문서 추출 소재 한국어 검증)
 

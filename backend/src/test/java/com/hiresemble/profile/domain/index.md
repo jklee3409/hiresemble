@@ -2,11 +2,11 @@
 
 ## 디렉터리 목적
 
-P2 완료도·날짜·GPA·대표 학력·direct evidence 정책을 DB 없이 빠르게 검증한다.
+P2 완료도·날짜·GPA·대표 학력·direct evidence와 canonical 경험 유사도 정책을 DB 없이 빠르게 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`ProfileDomainTest.java`](ProfileDomainTest.java): 완료 항목, validation, source mapping과 evidence 재생성
+- [`ProfileDomainTest.java`](ProfileDomainTest.java): 완료 항목, validation, source mapping과 경험 fingerprint·동일/검토/충돌 판정
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

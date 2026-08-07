@@ -32,6 +32,8 @@
 | [`V22__finalize_job_posting_period_constraints.sql`](V22__finalize_job_posting_period_constraints.sql)                         | 공고 연도·상하반기 제약과 owner 기간 index 확정      |
 | [`V23__add_selectable_openai_model_prices.sql`](V23__add_selectable_openai_model_prices.sql)                                   | 자기소개서 선택 가능 OpenAI model의 immutable 가격 catalog |
 | [`V24__replace_scoped_ai_budgets_with_global_daily_budget.sql`](V24__replace_scoped_ai_budgets_with_global_daily_budget.sql)   | 분야별 상한을 단일 전역 일일 USD 10 budget으로 전환       |
+| [`V25__rewrite_career_guide_content.sql`](V25__rewrite_career_guide_content.sql)                                               | 취업 준비 가이드 5편 콘텐츠 재작성                         |
+| [`V26__create_canonical_experience_library.sql`](V26__create_canonical_experience_library.sql)                                 | canonical 경험·출처 link·semantic embedding 저장소         |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -60,6 +62,7 @@
 - V22는 backfill transaction 뒤 insert·`created_at` 변경 시 기간을 다시 계산하는 trigger, 연도·상하반기 NOT NULL·CHECK와 active owner 기간 조회 index를 확정한다.
 - V23은 OpenAI 공식 model ID 10개의 input·cached input·output 단가와 기존 embedding·검색 단가를 immutable price version `2026080601`로 고정한다.
 - V24는 사용자 preference와 분야별 비용 상한을 제거하고 기존 사용자별 ledger를 날짜·zone별 단일 전역 ledger로 병합하며 일일 USD 10 policy version 2를 추가한다.
+- V26은 `EXPERIENCE` evidence source와 canonical 경험, 다중 문서 출처 link, `vector(1536)` candidate embedding을 추가하고 기존 문서 근거를 보존하며 backfill한다.
 - P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

@@ -4,6 +4,19 @@
 
 P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter와 P8 Interview preparation·answer feedback workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
 
+## [2026-08-07] Session Summary (Document candidate embedding workflow)
+
+- What was done:
+  - active Document v2 9단계와 legacy v1 8단계 definition·prompt·runtime contribution을 등록했다.
+- Key decisions:
+  - 후보 vector는 Chat schema가 아니라 별도 embedding gateway output으로 생성하고 policy version을 apply까지 고정한다.
+- Issues encountered:
+  - legacy strict prompt completeness와 active orchestration 기대값을 함께 확장했다.
+- Validation:
+  - AI workflow·strict schema 집중 52 tests 통과.
+- Next steps:
+  - 실제 Provider 호출은 승인된 별도 UAT에서만 수행한다.
+
 ## [2026-08-06] Session Summary (자기소개서 v4 exact model workflow)
 
 - What was done: 중앙 OpenAI model catalog, exact chat routing, memo-aware generation과 generation·verification v4 executable을 연결했다.

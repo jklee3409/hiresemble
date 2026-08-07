@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01~AC-17을, 나머지 명세는 현재 구현 기준선과 P8.5-V–P10-C의 `PLANNED` 계약을 분리해 정의한다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-07] Session Summary (canonical 경험·semantic 중복 계약)
+
+- What was done:
+  - 기능·API·DB·페이지·기술 명세에 canonical 경험, 다중 문서 출처, semantic 중복 판정과 경험 관리 화면 계약을 반영했다.
+- Key decisions:
+  - 단순 문자열 비교 대신 cosine 0.94/0.82, 공통 anchor와 수치 충돌을 조합하고 자동 판정이 불확실하면 사용자 검토로 보낸다.
+- Issues encountered:
+  - Backend는 구현됐지만 경험 관리 Frontend는 아직 연결되지 않아 페이지 계약에 상태를 분리했다.
+- Validation:
+  - OpenAPI 74 paths/100 operations 계약과 관련 backend 집중 테스트 통과.
+- Next steps:
+  - Frontend 목록·상세·병합/분리 UI와 threshold golden set을 구현한다.
+
 ## [2026-08-07] Session Summary (현재 UI 기준 page 계약 보정)
 
 - What was done:

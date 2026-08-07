@@ -2405,6 +2405,7 @@ public final class JobAnalysisWorkflow {
                     && !evidenceTypes.isEmpty()
                     && evidenceTypes.stream().allMatch(value -> value == EvidenceSourceType.CAREER
                             || value == EvidenceSourceType.ACTIVITY
+                            || value == EvidenceSourceType.EXPERIENCE
                             || value == EvidenceSourceType.DOCUMENT_CHUNK);
             case GENERAL -> !evidenceTypes.isEmpty() || !usedFacts.isEmpty();
         };

@@ -12,11 +12,11 @@ com.hiresemble.document.application.service package는 use case, transaction 또
 | [DocumentCoverLetterEvidenceSearchAdapter.java](DocumentCoverLetterEvidenceSearchAdapter.java) | P7 masked chunk candidate 검색 adapter |
 | [DocumentJobAnalysisEmbeddingAdapter.java](DocumentJobAnalysisEmbeddingAdapter.java) | active embedding policy의 완전한 typed route와 exact cosine 검색 adapter |
 | [DocumentChunker.java](DocumentChunker.java) | Service 책임 구현 |
-| [DocumentCreationService.java](DocumentCreationService.java) | Service 책임 구현 |
+| [DocumentCreationService.java](DocumentCreationService.java) | 신규 문서의 canonical `document-ingestion-v2` Run 생성 |
 | [DocumentMutationService.java](DocumentMutationService.java) | Service 책임 구현 |
 | [DocumentPrivacyMasker.java](DocumentPrivacyMasker.java) | Service 책임 구현 |
 | [DocumentTextNormalizer.java](DocumentTextNormalizer.java) | Service 책임 구현 |
-| [DocumentWorkflowService.java](DocumentWorkflowService.java) | 문서 처리 command 조정과 evidence apply 통계 전달·최종화 |
+| [DocumentWorkflowService.java](DocumentWorkflowService.java) | 문서 처리 command 조정과 후보 embedding policy·evidence apply 통계 전달·최종화 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

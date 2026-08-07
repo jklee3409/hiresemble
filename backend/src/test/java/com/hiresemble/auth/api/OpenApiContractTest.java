@@ -47,7 +47,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyNinetyFiveOperationsAndSeventyPaths() {
+    void liveSpringMappingsHaveExactlyOneHundredOperationsAndSeventyFourPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -63,12 +63,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(70);
-        assertThat(operations[0]).isEqualTo(95);
+        assertThat(paths).hasSize(74);
+        assertThat(operations[0]).isEqualTo(100);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyNinetyFiveOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyOneHundredOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -120,6 +120,10 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/profile/evidence/verification",
                         "/api/v1/profile/evidence/{evidenceId}",
                         "/api/v1/profile/evidence/{evidenceId}/verification",
+                        "/api/v1/profile/experiences",
+                        "/api/v1/profile/experiences/{experienceItemId}",
+                        "/api/v1/profile/experiences/{experienceItemId}/verification",
+                        "/api/v1/profile/experiences/{experienceItemId}/match-resolution",
                         "/api/v1/agent-runs",
                         "/api/v1/agent-runs/{agentRunId}",
                         "/api/v1/agent-runs/bulk-delete",
@@ -164,7 +168,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(95);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(100);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -223,6 +227,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/evidence/verification", "patch", "verifyProfileEvidenceBatch");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}", "put", "updateProfileEvidence");
         assertProfileOperation(document, "/api/v1/profile/evidence/{evidenceId}/verification", "patch", "verifyProfileEvidence");
+        assertProfileOperation(document, "/api/v1/profile/experiences", "get", "listExperienceItems");
+        assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "get", "getExperienceItem");
+        assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "put", "updateExperienceItem");
+        assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/verification", "patch", "verifyExperienceItem");
+        assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/match-resolution", "patch", "resolveExperienceMatch");
         assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "get", "getAgentRun");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "delete", "deleteAgentRun");
@@ -661,6 +670,14 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "parseStatus", "evidenceExtractionStatus", "manualTextProvided",
                         "safeError", "latestAgentRunId", "version", "uploadedAt", "updatedAt",
                         "pageCount", "characterCount", "parsedAt");
+        assertThat(fieldNames(schemas.at("/EvidenceDto/properties")))
+                .contains(
+                        "experienceItemId",
+                        "experienceLinkKind",
+                        "experienceMatchKind");
+        assertThat(schemas.at("/EvidenceDto/properties/experienceLinkKind/description")
+                        .asText())
+                .contains("CORROBORATING", "existing experience source");
         assertThat(fieldNames(schemas.at("/JobCreationAcceptedDto/properties")))
                 .containsExactlyInAnyOrder(
                         "jobId", "status", "extractionStatus", "agentRunId");

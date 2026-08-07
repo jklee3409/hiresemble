@@ -9,13 +9,15 @@ com.hiresemble.profile.api.dto package는 외부 request·response와 event의 �
 | 파일                                         | 역할                        |
 | -------------------------------------------- | --------------------------- |
 | [PageResponse.java](PageResponse.java)       | DTO 책임 구현               |
+| [ExperienceDtos.java](ExperienceDtos.java)   | canonical 경험·출처·중복 판정 응답 계약 |
+| [ExperienceRequests.java](ExperienceRequests.java) | 경험 수정·검증·판정 해결 요청 계약 |
 | [ProfileDtos.java](ProfileDtos.java)         | DTO 책임 구현               |
 | [ProfileRequests.java](ProfileRequests.java) | DTO 책임 구현               |
 | [progress.md](progress.md)                   | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할
 
-- 외부 request·response와 event의 타입 안전한 전송 계약을 소유하며, 학력 write의 `educationLevel`과 response 전용 최종 학력 flag를 구분한다.
+- 외부 request·response와 event의 타입 안전한 전송 계약을 소유하며, 문서 evidence의 canonical 경험 ID·link kind·match kind로 신규 경험과 보강 출처를 구분한다.
 - 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

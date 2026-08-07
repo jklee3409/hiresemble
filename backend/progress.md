@@ -3,9 +3,22 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 95 operations/70 paths가 구현되어 있다.
-- V1~V25 migration이 적용됐고 V24는 전체 AI 기능이 공유하는 전역 일일 USD 10 budget policy를, V25는 취업 준비 가이드 5편의 현재 콘텐츠를 소유한다.
-- 최신 Backend 전체 `check`가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+- P1 인증부터 P8 Interview와 canonical 경험 관리까지 총 100 operations/74 paths가 구현되어 있다.
+- V1~V26 migration이 적용됐고 V26은 canonical 경험·다중 문서 출처·semantic embedding을 소유한다.
+- 이번 변경 집중 52 tests는 통과했다. 전체 `check`는 별도 가격 catalog·비동기 fixture 회귀가 남아 `NOT_VERIFIED`다.
+
+## [2026-08-07] Session Summary (canonical 경험 중복 제거 Backend)
+
+- What was done:
+  - 문서 후보 embedding과 유사도 정책, canonical 경험 저장·출처·API, V26 migration과 downstream canonical evidence 소비를 구현했다.
+- Key decisions:
+  - 자동 동일은 cosine 0.94 이상·공통 anchor 2개·수치 충돌 없음으로 제한하고 0.82 이상은 사용자 검토 대상으로 둔다. 승인 경험은 원본 문서 삭제 뒤에도 유지한다.
+- Issues encountered:
+  - 최초 전체 `check` 582 tests에서 이번 변경 관련 3건과 별도 기준선 12건이 실패했다. 중복 hash·9단계·strict registry 3건을 한 차례 보정했으며 가격 catalog 고정 시각, upload compensation, 자동 분석 타이밍 회귀는 범위 밖으로 남겼다.
+- Validation:
+  - compile, domain, OpenAPI, semantic Document integration과 수정 후 workflow·strict schema 집중 2 suites/52 tests 통과. 전체 재실행은 1회 수정-재검증 상한에 따라 수행하지 않았다.
+- Next steps:
+  - 별도 기준선 회귀를 보정한 뒤 `backend/./gradlew.bat check --no-daemon`을 재실행하고 경험 관리 Frontend를 연결한다.
 
 ## [2026-08-07] Session Summary (취업 준비 가이드 콘텐츠 재작성)
 

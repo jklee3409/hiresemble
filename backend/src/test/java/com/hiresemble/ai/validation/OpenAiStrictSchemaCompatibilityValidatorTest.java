@@ -94,6 +94,7 @@ class OpenAiStrictSchemaCompatibilityValidatorTest {
         PromptRegistry registry = new PromptRegistry(CanonicalPromptDefinitions.all());
         Set<String> expected = CanonicalWorkflowDefinitions.all().stream()
                 .filter(workflow -> workflow.canonical()
+                        || workflow.type() == WorkflowType.DOCUMENT_INGESTION
                         || workflow.type() == WorkflowType.COVER_LETTER_GENERATION
                         || workflow.type() == WorkflowType.COVER_LETTER_VERIFICATION)
                 .filter(workflow -> workflow.type() != WorkflowType.MOCK_INTERVIEW_FEEDBACK)

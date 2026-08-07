@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (후보 embedding 적용 계약)
+
+- What was done:
+  - document evidence command가 active embedding policy와 후보 vector를 받아 경험 match 집계를 반환하도록 확장했다.
+- Key decisions:
+  - 외부 공개 DTO와 분리된 내부 command 경계와 legacy overload를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 Document workflow contract 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (문서 evidence retire command 계약)
 
 - What was done:

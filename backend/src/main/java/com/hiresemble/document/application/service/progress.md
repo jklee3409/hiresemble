@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (Document ingestion v2 접수)
+
+- What was done:
+  - 신규 문서 Run을 `document-ingestion-v2`로 생성하고 후보 embedding policy를 profile command까지 전달했다.
+- Key decisions:
+  - 기존 v1 Run은 저장된 version으로 계속 재개할 수 있게 runtime 등록을 보존한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow registry·Document 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-02] Session Summary (재분석 시작 시 기존 경험 retire)
 
 - What was done:

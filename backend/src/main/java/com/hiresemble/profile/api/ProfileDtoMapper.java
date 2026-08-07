@@ -97,7 +97,9 @@ final class ProfileDtoMapper {
 
     static EvidenceDto evidence(EvidenceRecord value) {
         return new EvidenceDto(
-                value.id(), value.sourceType(), value.sourceEntityId(), value.documentId(), value.sourceDeletedAt(),
+                value.id(), value.sourceType(), value.sourceEntityId(), value.documentId(),
+                value.experienceItemId(), value.experienceLinkKind(), value.experienceMatchKind(),
+                value.sourceDeletedAt(),
                 value.evidenceCategory(), value.title(), value.content(), value.metadata(), value.confidence(),
                 value.verificationStatus(), value.verifiedAt(), value.version(), value.createdAt(), value.updatedAt());
     }

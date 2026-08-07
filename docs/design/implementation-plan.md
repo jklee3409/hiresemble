@@ -345,6 +345,16 @@ P0 계약 기준선
 - [x] parser 성공 뒤 AI 실패에도 text·chunk와 `PARSED` 상태를 보존한다.
 - [x] 최종 read-only Validator가 `PASS`를 반환한다.
 
+### 7.6 정규 경험·의미 중복 판정 확장 (2026-08-07 Backend)
+
+- [x] V26 `experience_items`, source link, policy-versioned `vector(1536)` 저장소와 기존 document evidence backfill
+- [x] `document-ingestion-v2` 후보 임베딩 step과 durable `p0-contract-v1` 레거시 실행기 동시 등록
+- [x] exact fingerprint, 사용자·category·policy 범위 cosine Top-K, anchor·숫자 충돌 보수적 판정
+- [x] 동일 경험은 보강 출처만 연결하고 유사·충돌은 사용자 match resolution 대상으로 보존
+- [x] `/profile/experiences` 조회·상세·편집·승인·match resolution 5 operations
+- [x] 승인된 정규 경험의 원본 삭제·reparse 생존과 후속 AI 단일 canonical evidence 사용
+- [ ] Frontend `/profile/experiences` 경험 보관함과 문서 상세 중복 표시 연결
+
 ## 8. P5 — 공고 등록·추출·상태·Scheduler
 
 - AC: AC-04~06

@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-07] Session Summary (Document v1·v2 runtime 병행 등록)
+
+- What was done:
+  - active v2와 durable legacy v1 Document contribution을 같은 runtime registry에 등록했다.
+- Key decisions:
+  - 신규 Run만 v2를 선택하고 저장된 v1 Run의 exact replay는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - workflow registry 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (활성 가격 catalog 자동 선택과 비용 설정 정리)
 
 - What was done: `JdbcAiPriceCatalogRepository`가 실행 시점의 활성 immutable price version을 선택하도록 하고 provider validator의 분야별 예약 환경 변수 검증을 제거했다.

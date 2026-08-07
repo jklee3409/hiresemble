@@ -4,6 +4,19 @@
 
 P5 Job과 P6 Job Analysis use case, transaction·Clock·Agent Run 조정 경계, durable 자동 분석 coordinator와 P8 preparation projection port가 구현됐다.
 
+## [2026-08-07] Session Summary (Job Analysis canonical 경험 소비)
+
+- What was done:
+  - 분석 snapshot과 source allowlist가 canonical `EXPERIENCE` evidence를 포함하도록 확장했다.
+- Key decisions:
+  - 연결된 원본 document evidence는 전역 분석에서 제외해 같은 경험의 다중 문서 중복 점수를 막는다.
+- Issues encountered:
+  - 전체 check의 Job 회귀는 고정 시각보다 늦은 가격 catalog 선택 문제로 실패해 이번 범위에서는 수정하지 않았다.
+- Validation:
+  - canonical 경험을 사용하는 Document 재분석 통합 시나리오는 통과했고 Job 전체 suite는 `NOT_VERIFIED`다.
+- Next steps:
+  - 가격 catalog 기준선 보정 뒤 Job 전체 회귀를 재실행한다.
+
 ## [2026-08-05] Session Summary (공고 목록 기간 검증)
 
 - What was done:

@@ -265,6 +265,31 @@ public class DocumentWorkflowService
 
     @Override
     @Transactional
+    public DocumentEvidenceApplyResult applyEvidenceCandidates(
+            UUID userId,
+            UUID documentId,
+            UUID agentRunId,
+            List<DocumentEvidenceCandidate> candidates,
+            EmbeddingPolicy embeddingPolicy) {
+        DocumentRecord document = snapshot(userId, documentId);
+        requireLatestRun(document, agentRunId);
+        EmbeddingPolicy active = store.activeEmbeddingPolicy();
+        if (!active.equals(embeddingPolicy)) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        var applied = evidencePort.applyCandidates(
+                userId,
+                documentId,
+                document.sourceRevision(),
+                candidates,
+                embeddingPolicy,
+                clock.instant());
+        store.markEvidenceSucceeded(userId, documentId, agentRunId, clock.instant());
+        return applied;
+    }
+
+    @Override
+    @Transactional
     public DocumentRecord finalizeDocument(UUID userId, UUID documentId, UUID agentRunId) {
         DocumentRecord document = snapshot(userId, documentId);
         requireLatestRun(document, agentRunId);

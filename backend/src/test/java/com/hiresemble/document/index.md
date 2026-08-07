@@ -13,7 +13,7 @@ P4 문서 API·수명주기·owner·idempotency와 application·infrastructure �
 
 ## 구성 요소 역할
 
-운영 DB·Object Storage·유료 provider를 사용하지 않고 격리 fixture로 정상·오류·동시성, 교육·학력 evidence 추출 차단과 batch 재검토 경계를 검증한다.
+운영 DB·Object Storage·유료 provider를 사용하지 않고 격리 fixture로 정상·오류·동시성, 교육·학력 evidence 차단, semantic 중복 경험과 문서 삭제 독립성을 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

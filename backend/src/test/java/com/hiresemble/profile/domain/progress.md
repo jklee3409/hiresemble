@@ -4,6 +4,19 @@
 
 P2 프로필 순수 도메인 정책 테스트가 구현되어 있다.
 
+## [2026-08-07] Session Summary (경험 유사도 정책 회귀)
+
+- What was done:
+  - fingerprint 안정성, exact·same·review·numeric conflict·new 판정을 단위 테스트로 고정했다.
+- Key decisions:
+  - 표현 유사도만으로 자동 병합하지 않고 anchor와 수치 불일치를 함께 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `ProfileDomainTest` 통과.
+- Next steps:
+  - golden set 기반 false-positive 회귀를 추가한다.
+
 ## [2026-07-31] Session Summary (비학력 direct evidence 도메인 회귀)
 
 - What was done:

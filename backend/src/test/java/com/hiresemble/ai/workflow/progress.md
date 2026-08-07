@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-08-07] Session Summary (Document v2 registry 회귀)
+
+- What was done:
+  - active 9단계·legacy 8단계 definition, provider/prompt count와 runtime executable 등록을 검증했다.
+- Key decisions:
+  - 새 canonical version과 기존 durable Run의 exact version을 함께 회귀한다.
+- Issues encountered:
+  - strict schema completeness가 Document legacy prompt도 포함하도록 기대값을 확장했다.
+- Validation:
+  - workflow·strict schema 집중 52 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (Cover Letter v4 workflow 회귀)
 
 - What was done: v4 registry·durable v3 계약, exact model과 memo plan context, 공개 step 불변식을 검증했다.

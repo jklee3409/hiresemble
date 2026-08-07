@@ -16,6 +16,8 @@ import java.util.Set;
 public final class CanonicalWorkflowDefinitions {
 
     public static final String VERSION = "p0-contract-v1";
+    public static final String DOCUMENT_INGESTION_VERSION = "document-ingestion-v2";
+    public static final String DOCUMENT_INGESTION_LEGACY_VERSION = VERSION;
     public static final String JOB_POSTING_EXTRACTION_VERSION =
             "job-posting-extraction-v3";
     public static final String JOB_POSTING_EXTRACTION_V2_VERSION =
@@ -54,10 +56,8 @@ public final class CanonicalWorkflowDefinitions {
 
     public static List<WorkflowDefinition> all() {
         return List.of(
-                definition(WorkflowType.DOCUMENT_INGESTION, economyBalanced(),
-                        "LOAD_DOCUMENT_SOURCE", "EXTRACT_OR_ACCEPT_TEXT", "MASK_TEXT", "CHUNK_TEXT",
-                        "EMBED_CHUNKS", "EXTRACT_EVIDENCE_CANDIDATES", "APPLY_EVIDENCE_CANDIDATES",
-                        "FINALIZE_DOCUMENT"),
+                documentIngestion(),
+                documentIngestionLegacy(),
                 jobPostingExtraction(),
                 jobPostingExtractionV2(),
                 jobPostingExtractionLegacy(),
@@ -75,6 +75,39 @@ public final class CanonicalWorkflowDefinitions {
                 definition(WorkflowType.MOCK_INTERVIEW_FEEDBACK, Set.of(AiQualityMode.BALANCED),
                         "LOAD_SESSION_SNAPSHOT", "ANALYZE_TURNS", "SYNTHESIZE_SESSION_FEEDBACK",
                         "VALIDATE_FEEDBACK", "PERSIST_FEEDBACK"));
+    }
+
+    private static WorkflowDefinition documentIngestion() {
+        return definition(
+                WorkflowType.DOCUMENT_INGESTION,
+                DOCUMENT_INGESTION_VERSION,
+                true,
+                economyBalanced(),
+                "LOAD_DOCUMENT_SOURCE",
+                "EXTRACT_OR_ACCEPT_TEXT",
+                "MASK_TEXT",
+                "CHUNK_TEXT",
+                "EMBED_CHUNKS",
+                "EXTRACT_EVIDENCE_CANDIDATES",
+                "EMBED_EVIDENCE_CANDIDATES",
+                "APPLY_EVIDENCE_CANDIDATES",
+                "FINALIZE_DOCUMENT");
+    }
+
+    private static WorkflowDefinition documentIngestionLegacy() {
+        return definition(
+                WorkflowType.DOCUMENT_INGESTION,
+                DOCUMENT_INGESTION_LEGACY_VERSION,
+                false,
+                economyBalanced(),
+                "LOAD_DOCUMENT_SOURCE",
+                "EXTRACT_OR_ACCEPT_TEXT",
+                "MASK_TEXT",
+                "CHUNK_TEXT",
+                "EMBED_CHUNKS",
+                "EXTRACT_EVIDENCE_CANDIDATES",
+                "APPLY_EVIDENCE_CANDIDATES",
+                "FINALIZE_DOCUMENT");
     }
 
     private static WorkflowDefinition interviewPreparation() {
@@ -160,12 +193,21 @@ public final class CanonicalWorkflowDefinitions {
 
     private static WorkflowDefinition definition(
             WorkflowType type, Set<AiQualityMode> allowedQuality, String... keys) {
-        return definition(type, VERSION, allowedQuality, keys);
+        return definition(type, VERSION, true, allowedQuality, keys);
     }
 
     private static WorkflowDefinition definition(
             WorkflowType type,
             String version,
+            Set<AiQualityMode> allowedQuality,
+            String... keys) {
+        return definition(type, version, true, allowedQuality, keys);
+    }
+
+    private static WorkflowDefinition definition(
+            WorkflowType type,
+            String version,
+            boolean canonical,
             Set<AiQualityMode> allowedQuality,
             String... keys) {
         List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
@@ -179,7 +221,9 @@ public final class CanonicalWorkflowDefinitions {
             };
             Set<String> tools = key.startsWith("SEARCH_")
                     ? Set.of("WEB_SEARCH")
-                    : key.equals("EMBED_CHUNKS") ? Set.of("EMBEDDING") : Set.of();
+                    : key.equals("EMBED_CHUNKS") || key.equals("EMBED_EVIDENCE_CANDIDATES")
+                            ? Set.of("EMBEDDING")
+                            : Set.of();
             int modelCalls = isModelStep(key) || !tools.isEmpty() ? 1 : 0;
             steps.add(new StepDefinition(
                     key,
@@ -189,8 +233,13 @@ public final class CanonicalWorkflowDefinitions {
                                     && "EXTRACT_EVIDENCE_CANDIDATES".equals(key)
                             ? "document-evidence-provider-output-v2"
                             : type == WorkflowType.DOCUMENT_INGESTION
+                                            && "EMBED_EVIDENCE_CANDIDATES".equals(key)
+                                    ? "document-evidence-embedding-output-v1"
+                            : type == WorkflowType.DOCUMENT_INGESTION
                                             && "APPLY_EVIDENCE_CANDIDATES".equals(key)
-                                    ? "document-evidence-apply-output-v2"
+                                    ? DOCUMENT_INGESTION_VERSION.equals(version)
+                                            ? "document-evidence-apply-output-v3"
+                                            : "document-evidence-apply-output-v2"
                             : "output-v1",
                     tools,
                     modelCalls,
@@ -199,7 +248,7 @@ public final class CanonicalWorkflowDefinitions {
                     modelCalls == 0 ? Set.of() : RETRYABLE,
                     weights.get(index)));
         }
-        return new WorkflowDefinition(type, version, true, allowedQuality, steps);
+        return new WorkflowDefinition(type, version, canonical, allowedQuality, steps);
     }
 
     private static WorkflowDefinition jobPostingExtraction() {

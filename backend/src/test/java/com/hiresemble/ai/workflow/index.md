@@ -20,7 +20,7 @@ canonical registry coverage와 Document·Job·Cover Letter metadata·contributio
 
 ## 구성 요소 역할
 
-8개 type, duplicate key, weight와 executable sequence를 고정하고 P7 generation 8단계·verification 6단계 contribution을 검증한다.
+8개 type, duplicate key, weight와 executable sequence를 고정하고 Document active 9단계·legacy 8단계 및 P7 generation 8단계·verification 6단계 contribution을 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

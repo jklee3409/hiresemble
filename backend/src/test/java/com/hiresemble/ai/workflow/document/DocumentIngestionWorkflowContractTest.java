@@ -21,7 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 
 class DocumentIngestionWorkflowContractTest {
 
-    private static final List<String> EXPECTED = List.of(
+    private static final List<String> LEGACY_EXPECTED = List.of(
             DocumentIngestionWorkflow.LOAD_DOCUMENT_SOURCE,
             DocumentIngestionWorkflow.EXTRACT_OR_ACCEPT_TEXT,
             DocumentIngestionWorkflow.MASK_TEXT,
@@ -31,8 +31,19 @@ class DocumentIngestionWorkflowContractTest {
             DocumentIngestionWorkflow.APPLY_EVIDENCE_CANDIDATES,
             DocumentIngestionWorkflow.FINALIZE_DOCUMENT);
 
+    private static final List<String> EXPECTED = List.of(
+            DocumentIngestionWorkflow.LOAD_DOCUMENT_SOURCE,
+            DocumentIngestionWorkflow.EXTRACT_OR_ACCEPT_TEXT,
+            DocumentIngestionWorkflow.MASK_TEXT,
+            DocumentIngestionWorkflow.CHUNK_TEXT,
+            DocumentIngestionWorkflow.EMBED_CHUNKS,
+            DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES,
+            DocumentIngestionWorkflow.EMBED_EVIDENCE_CANDIDATES,
+            DocumentIngestionWorkflow.APPLY_EVIDENCE_CANDIDATES,
+            DocumentIngestionWorkflow.FINALIZE_DOCUMENT);
+
     @Test
-    void canonicalSequenceIsExactAndOnlyEmbeddingAndEvidenceExtractionNeedProviders() {
+    void canonicalSequenceAddsCandidateEmbeddingAndPreservesTheLegacySequence() {
         var definition = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value -> value.type() == WorkflowType.DOCUMENT_INGESTION)
                 .findFirst()
@@ -45,7 +56,18 @@ class DocumentIngestionWorkflowContractTest {
                         .map(WorkflowRegistry.StepDefinition::stepKey))
                 .containsExactly(
                         DocumentIngestionWorkflow.EMBED_CHUNKS,
-                        DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES);
+                        DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES,
+                        DocumentIngestionWorkflow.EMBED_EVIDENCE_CANDIDATES);
+
+        var legacy = CanonicalWorkflowDefinitions.all().stream()
+                .filter(value -> value.type() == WorkflowType.DOCUMENT_INGESTION)
+                .filter(value -> value.version().equals(
+                        CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_LEGACY_VERSION))
+                .findFirst()
+                .orElseThrow();
+        assertThat(legacy.canonical()).isFalse();
+        assertThat(legacy.steps()).extracting(WorkflowRegistry.StepDefinition::stepKey)
+                .containsExactlyElementsOf(LEGACY_EXPECTED);
     }
 
     @Test
@@ -73,13 +95,13 @@ class DocumentIngestionWorkflowContractTest {
         for (var step : definition.steps()) {
             var prompt = prompts.require(
                     WorkflowType.DOCUMENT_INGESTION,
-                    CanonicalWorkflowDefinitions.VERSION,
+                    CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION,
                     step.stepKey());
             assertThat(prompt.outputSchemaVersion()).isEqualTo(step.outputSchemaVersion());
             assertThat(prompt.toolAllowlist()).isEqualTo(step.toolAllowlist());
             assertThat(prompt.maxModelCalls()).isEqualTo(step.maxModelCalls());
         }
-        assertThat(DocumentIngestionPromptDefinitions.all()).hasSize(8);
+        assertThat(DocumentIngestionPromptDefinitions.all()).hasSize(17);
     }
 
     @Test
@@ -87,7 +109,7 @@ class DocumentIngestionWorkflowContractTest {
         PromptRegistry prompts = new PromptRegistry(DocumentIngestionPromptDefinitions.all());
         String instructions = prompts.require(
                         WorkflowType.DOCUMENT_INGESTION,
-                        CanonicalWorkflowDefinitions.VERSION,
+                        CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION,
                         DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES)
                 .instructions();
 
@@ -108,7 +130,7 @@ class DocumentIngestionWorkflowContractTest {
                 .doesNotContain("sourceChunkIds", "sourceRevision");
         var prompt = prompts.require(
                 WorkflowType.DOCUMENT_INGESTION,
-                CanonicalWorkflowDefinitions.VERSION,
+                CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION,
                 DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES);
         assertThat(prompt.maxOutputTokens())
                 .isEqualTo(DocumentEvidenceOutputPolicy.MAX_OUTPUT_TOKENS);

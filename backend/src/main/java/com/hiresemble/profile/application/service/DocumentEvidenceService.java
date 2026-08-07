@@ -6,8 +6,14 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.document.application.model.DocumentEvidenceCandidate;
 import com.hiresemble.document.application.model.DocumentEvidenceApplyResult;
 import com.hiresemble.document.application.model.DocumentEvidenceRejectionReason;
+import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
+import com.hiresemble.profile.domain.model.ExperienceLinkKind;
+import com.hiresemble.profile.domain.model.ExperienceMatchKind;
+import com.hiresemble.profile.domain.policy.ExperienceSimilarityPolicy;
+import com.hiresemble.profile.domain.policy.ExperienceSimilarityPolicy.MatchDecision;
 import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.model.ProfileRecords.EvidenceRecord;
+import com.hiresemble.profile.infrastructure.persistence.ExperienceStore;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -31,14 +37,17 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
 
     private static final Pattern NUMBER = Pattern.compile("(?<![\\p{L}\\p{N}])\\d+(?:[.,]\\d+)?%?");
     private final ProfileStore store;
+    private final ExperienceStore experienceStore;
     private final List<EvidenceReferenceQueryPort> referenceQueries;
     private final ObjectMapper objectMapper;
 
     public DocumentEvidenceService(
             ProfileStore store,
+            ExperienceStore experienceStore,
             List<EvidenceReferenceQueryPort> referenceQueries,
             ObjectMapper objectMapper) {
         this.store = store;
+        this.experienceStore = experienceStore;
         this.referenceQueries = List.copyOf(referenceQueries);
         this.objectMapper = objectMapper;
     }
@@ -51,10 +60,25 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
             long sourceRevision,
             List<DocumentEvidenceCandidate> candidates,
             Instant now) {
+        return applyCandidates(userId, documentId, sourceRevision, candidates, null, now);
+    }
+
+    @Override
+    @Transactional
+    public DocumentEvidenceApplyResult applyCandidates(
+            UUID userId,
+            UUID documentId,
+            long sourceRevision,
+            List<DocumentEvidenceCandidate> candidates,
+            EmbeddingPolicy embeddingPolicy,
+            Instant now) {
         List<UUID> applied = new ArrayList<>();
         Set<String> dedupe = new HashSet<>();
         EnumMap<DocumentEvidenceRejectionReason, Integer> rejected =
                 new EnumMap<>(DocumentEvidenceRejectionReason.class);
+        EnumMap<ExperienceMatchKind, Integer> matches =
+                new EnumMap<>(ExperienceMatchKind.class);
+        experienceStore.lockUserMatching(userId);
         for (DocumentEvidenceCandidate candidate : candidates == null ? List.<DocumentEvidenceCandidate>of() : candidates) {
             ValidatedCandidate value;
             try {
@@ -69,21 +93,87 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
                         Integer::sum);
                 continue;
             }
-            String key = value.category().toLowerCase(java.util.Locale.ROOT) + "\u0000"
-                    + value.title().toLowerCase(java.util.Locale.ROOT) + "\u0000"
-                    + value.content() + "\u0000" + value.primaryChunkId();
-            if (!dedupe.add(key)) {
+            String fingerprint = ExperienceSimilarityPolicy.fingerprint(
+                    value.category(), value.title(), value.content());
+            if (!dedupe.add(fingerprint)) {
                 rejected.merge(DocumentEvidenceRejectionReason.DUPLICATE, 1, Integer::sum);
                 continue;
             }
-            UUID id = UUID.randomUUID();
+            if (embeddingPolicy != null && !validEmbedding(candidate.embedding(), embeddingPolicy)) {
+                rejected.merge(DocumentEvidenceRejectionReason.INVALID_EMBEDDING, 1, Integer::sum);
+                continue;
+            }
+            MatchDecision decision = experienceStore
+                    .findActiveExact(userId, value.category(), fingerprint)
+                    .map(existing -> new MatchDecision(
+                            ExperienceMatchKind.SAME_EXPERIENCE,
+                            existing.id(),
+                            java.math.BigDecimal.ONE.setScale(5)))
+                    .orElseGet(() -> semanticDecision(
+                            userId, value, candidate.embedding(), embeddingPolicy));
+            UUID evidenceId = UUID.randomUUID();
             store.createDocumentEvidence(
-                    id, userId, documentId, value.primaryChunkId(), value.category(), value.title(),
+                    evidenceId, userId, documentId, value.primaryChunkId(), value.category(), value.title(),
                     value.content(), value.metadata(), candidate.confidence(), now);
-            applied.add(id);
+            if (decision.kind() == ExperienceMatchKind.SAME_EXPERIENCE) {
+                experienceStore.addEvidenceLink(
+                        userId,
+                        decision.matchedExperienceItemId(),
+                        evidenceId,
+                        ExperienceLinkKind.CORROBORATING,
+                        decision.similarity(),
+                        ExperienceSimilarityPolicy.VERSION,
+                        now);
+            } else {
+                UUID experienceItemId = UUID.randomUUID();
+                UUID canonicalEvidenceId = UUID.randomUUID();
+                ExperienceMatchKind storedKind = decision.kind();
+                experienceStore.createItem(
+                        experienceItemId,
+                        userId,
+                        canonicalEvidenceId,
+                        value.category(),
+                        value.title(),
+                        value.content(),
+                        storedKind,
+                        decision.matchedExperienceItemId(),
+                        decision.similarity(),
+                        ExperienceSimilarityPolicy.VERSION,
+                        fingerprint,
+                        now);
+                store.createExperienceEvidence(
+                        canonicalEvidenceId,
+                        userId,
+                        experienceItemId,
+                        value.category(),
+                        value.title(),
+                        value.content(),
+                        value.metadata(),
+                        candidate.confidence(),
+                        now);
+                experienceStore.addEvidenceLink(
+                        userId,
+                        experienceItemId,
+                        evidenceId,
+                        ExperienceLinkKind.PRIMARY_SOURCE,
+                        null,
+                        ExperienceSimilarityPolicy.VERSION,
+                        now);
+                if (embeddingPolicy != null) {
+                    experienceStore.storeEmbedding(
+                            userId,
+                            experienceItemId,
+                            0,
+                            candidate.embedding(),
+                            embeddingPolicy,
+                            now);
+                }
+            }
+            applied.add(evidenceId);
+            matches.merge(decision.kind(), 1, Integer::sum);
         }
         int rejectedCount = rejected.values().stream().mapToInt(Integer::intValue).sum();
-        return new DocumentEvidenceApplyResult(applied, rejectedCount, rejected);
+        return new DocumentEvidenceApplyResult(applied, rejectedCount, rejected, matches);
     }
 
     @Override
@@ -97,6 +187,38 @@ public class DocumentEvidenceService implements DocumentEvidenceCommandPort {
                 store.deleteEvidence(userId, evidence.id());
             }
         }
+        for (UUID itemId : experienceStore.findOrphanUnverifiedItems(userId)) {
+            experienceStore.findActive(userId, itemId).ifPresent(item -> {
+                experienceStore.clearInboundMatches(userId, itemId, retiredAt);
+                experienceStore.deleteItem(userId, itemId);
+                store.deleteExperienceEvidence(userId, item.canonicalEvidenceId());
+            });
+        }
+    }
+
+    private MatchDecision semanticDecision(
+            UUID userId,
+            ValidatedCandidate candidate,
+            List<Double> embedding,
+            EmbeddingPolicy embeddingPolicy) {
+        if (embeddingPolicy == null || embedding == null || embedding.isEmpty()) {
+            return MatchDecision.newExperience();
+        }
+        return ExperienceSimilarityPolicy.decide(
+                candidate.title(),
+                candidate.content(),
+                experienceStore.findSimilar(
+                        userId,
+                        candidate.category(),
+                        embedding,
+                        embeddingPolicy,
+                        ExperienceSimilarityPolicy.TOP_K));
+    }
+
+    private boolean validEmbedding(List<Double> embedding, EmbeddingPolicy policy) {
+        return embedding != null
+                && embedding.size() == policy.dimension()
+                && embedding.stream().allMatch(value -> value != null && Double.isFinite(value));
     }
 
     private ValidatedCandidate validate(

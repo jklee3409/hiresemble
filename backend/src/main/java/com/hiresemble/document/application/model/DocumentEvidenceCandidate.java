@@ -13,12 +13,35 @@ public record DocumentEvidenceCandidate(
         BigDecimal confidence,
         List<UUID> sourceChunkIds,
         long sourceRevision,
-        String validationWarning) {
+        String validationWarning,
+        List<Double> embedding) {
 
     public DocumentEvidenceCandidate {
         metadata = metadata == null
                 ? Map.of()
                 : java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(metadata));
         sourceChunkIds = sourceChunkIds == null ? List.of() : List.copyOf(sourceChunkIds);
+        embedding = embedding == null ? List.of() : List.copyOf(embedding);
+    }
+
+    public DocumentEvidenceCandidate(
+            String evidenceCategory,
+            String title,
+            String content,
+            Map<String, Object> metadata,
+            BigDecimal confidence,
+            List<UUID> sourceChunkIds,
+            long sourceRevision,
+            String validationWarning) {
+        this(
+                evidenceCategory,
+                title,
+                content,
+                metadata,
+                confidence,
+                sourceChunkIds,
+                sourceRevision,
+                validationWarning,
+                List.of());
     }
 }

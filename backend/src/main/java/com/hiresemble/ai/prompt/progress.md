@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-07] Session Summary (Document ingestion v2 prompt identity)
+
+- What was done:
+  - active v2 prompt identity를 추가하고 legacy `p0-contract-v1` prompt를 durable replay용으로 보존했다.
+- Key decisions:
+  - 후보 embedding은 별도 gateway 단계이며 Chat output schema에는 vector를 노출하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - prompt registry와 strict schema 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-06] Session Summary (자기소개서 memo-aware v4 prompt)
 
 - What was done: generation plan·write prompt에 bounded memo를 전달하는 v4 identity를 추가하고 verification v4를 등록했다.

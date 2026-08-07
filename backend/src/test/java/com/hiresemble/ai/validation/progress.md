@@ -4,6 +4,19 @@
 
 P3 structured output validation 순서·분류와 OpenAI strict request schema 전수 검사가 구현됐다.
 
+## [2026-08-07] Session Summary (Document v1/v2 strict schema registry)
+
+- What was done:
+  - active v2뿐 아니라 실행 가능한 legacy v1 Document Chat 단계도 strict schema registry completeness에 포함했다.
+- Key decisions:
+  - durable replay 가능한 모든 Chat prompt는 canonical 여부와 무관하게 strict schema 검증 대상이다.
+- Issues encountered:
+  - None.
+- Validation:
+  - OpenAI strict schema compatibility 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (Cover Letter v1/v2 strict schema registry)
 
 - What was done:

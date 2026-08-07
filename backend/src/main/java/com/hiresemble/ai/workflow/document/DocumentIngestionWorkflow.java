@@ -33,6 +33,7 @@ import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentTextRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
 import com.hiresemble.document.domain.model.EvidenceExtractionStatus;
+import com.hiresemble.profile.domain.model.ExperienceMatchKind;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -60,11 +61,16 @@ public final class DocumentIngestionWorkflow {
     public static final String CHUNK_TEXT = "CHUNK_TEXT";
     public static final String EMBED_CHUNKS = "EMBED_CHUNKS";
     public static final String EXTRACT_EVIDENCE_CANDIDATES = "EXTRACT_EVIDENCE_CANDIDATES";
+    public static final String EMBED_EVIDENCE_CANDIDATES = "EMBED_EVIDENCE_CANDIDATES";
     public static final String EVIDENCE_OUTPUT_SCHEMA_VERSION =
             "document-evidence-provider-output-v2";
     public static final String APPLY_EVIDENCE_CANDIDATES = "APPLY_EVIDENCE_CANDIDATES";
     public static final String EVIDENCE_APPLY_OUTPUT_SCHEMA_VERSION =
             "document-evidence-apply-output-v2";
+    public static final String EVIDENCE_EMBEDDING_OUTPUT_SCHEMA_VERSION =
+            "document-evidence-embedding-output-v1";
+    public static final String EVIDENCE_APPLY_OUTPUT_V3_SCHEMA_VERSION =
+            "document-evidence-apply-output-v3";
     public static final String FINALIZE_DOCUMENT = "FINALIZE_DOCUMENT";
 
     private static final int EMBEDDING_DIMENSION = 1536;
@@ -87,7 +93,7 @@ public final class DocumentIngestionWorkflow {
     public ExecutableWorkflowContribution contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.DOCUMENT_INGESTION,
-                CanonicalWorkflowDefinitions.VERSION,
+                CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_LEGACY_VERSION,
                 TerminalPartialPolicy.rejectUnexpected(),
                 List.of(
                         step(LOAD_DOCUMENT_SOURCE, new LoadSourceExecutor()),
@@ -100,6 +106,24 @@ public final class DocumentIngestionWorkflow {
                         step(FINALIZE_DOCUMENT, new FinalizeDocumentExecutor())));
     }
 
+    /** Active v2 contribution. The legacy contribution remains executable for durable runs. */
+    public ExecutableWorkflowContribution v2Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.DOCUMENT_INGESTION,
+                CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION,
+                TerminalPartialPolicy.rejectUnexpected(),
+                List.of(
+                        step(LOAD_DOCUMENT_SOURCE, new LoadSourceExecutor()),
+                        step(EXTRACT_OR_ACCEPT_TEXT, new ExtractTextExecutor()),
+                        step(MASK_TEXT, new MaskTextExecutor()),
+                        step(CHUNK_TEXT, new ChunkTextExecutor()),
+                        step(EMBED_CHUNKS, new EmbedChunksExecutor()),
+                        step(EXTRACT_EVIDENCE_CANDIDATES, new ExtractEvidenceExecutor()),
+                        step(EMBED_EVIDENCE_CANDIDATES, new EmbedEvidenceCandidatesExecutor()),
+                        step(APPLY_EVIDENCE_CANDIDATES, new V2ApplyEvidenceExecutor()),
+                        step(FINALIZE_DOCUMENT, new FinalizeDocumentExecutor())));
+    }
+
     private ExecutableWorkflowStep step(String key, WorkflowStepExecutor<?> executor) {
         return new ExecutableWorkflowStep(key, executor);
     }
@@ -108,10 +132,17 @@ public final class DocumentIngestionWorkflow {
 
         private final String stepKey;
         private final Class<T> outputType;
+        private final String schemaVersion;
 
         private DocumentExecutor(String stepKey, Class<T> outputType) {
+            this(stepKey, outputType, defaultOutputSchemaVersion(stepKey));
+        }
+
+        private DocumentExecutor(
+                String stepKey, Class<T> outputType, String schemaVersion) {
             this.stepKey = stepKey;
             this.outputType = outputType;
+            this.schemaVersion = schemaVersion;
         }
 
         @Override
@@ -148,6 +179,10 @@ public final class DocumentIngestionWorkflow {
         protected void validateDomainOutput(T output, StepExecutionContext context) {}
 
         private String outputSchemaVersion() {
+            return schemaVersion;
+        }
+
+        private static String defaultOutputSchemaVersion(String stepKey) {
             if (EXTRACT_EVIDENCE_CANDIDATES.equals(stepKey)) {
                 return EVIDENCE_OUTPUT_SCHEMA_VERSION;
             }
@@ -672,6 +707,177 @@ public final class DocumentIngestionWorkflow {
         }
     }
 
+    private final class EmbedEvidenceCandidatesExecutor
+            extends DocumentExecutor<EvidenceCandidateEmbeddingBatch> {
+
+        private EmbedEvidenceCandidatesExecutor() {
+            super(
+                    EMBED_EVIDENCE_CANDIDATES,
+                    EvidenceCandidateEmbeddingBatch.class,
+                    EVIDENCE_EMBEDDING_OUTPUT_SCHEMA_VERSION);
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            DocumentState state = state(context);
+            EvidenceCandidateBatch batch = requiredCandidateBatch(context);
+            EmbeddingPolicy policy = queryPort.activeEmbeddingPolicy();
+            requireActivePolicy(policy);
+            var refs = objectMapper.createObjectNode()
+                    .put("documentId", state.document().id().toString())
+                    .put("sourceRevision", state.document().sourceRevision())
+                    .put("policyVersion", policy.version())
+                    .put("dimension", policy.dimension())
+                    .put("generation", policy.generation());
+            var hashes = refs.putArray("candidateHashes");
+            var maskedInputs = objectMapper.createArrayNode();
+            Map<String, String> uniqueInputs = new LinkedHashMap<>();
+            for (EvidenceCandidatePayload candidate : batch.candidates()) {
+                uniqueInputs.putIfAbsent(
+                        candidateHash(candidate),
+                        candidate.evidenceCategory() + "\n"
+                                + candidate.title() + "\n" + candidate.content());
+            }
+            uniqueInputs.forEach((hash, input) -> {
+                hashes.add(hash);
+                maskedInputs.add(input);
+            });
+            var payload = refs.deepCopy();
+            payload.set("maskedInputs", maskedInputs);
+            return new StepInput(
+                    revisionScope(state.document().sourceRevision()),
+                    refs,
+                    EMBED_EVIDENCE_CANDIDATES + "|" + candidateBatchHash(batch) + "|"
+                            + policy.version() + "|" + policy.generation(),
+                    payload,
+                    null,
+                    state.document().version());
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            EmbeddingPolicy policy = queryPort.activeEmbeddingPolicy();
+            requireActivePolicy(policy);
+            List<String> maskedInputs = new ArrayList<>();
+            invocation.input().gatewayPayload().path("maskedInputs")
+                    .forEach(value -> maskedInputs.add(value.asText()));
+            JsonNode hashes = invocation.input().gatewayPayload().path("candidateHashes");
+            if (maskedInputs.isEmpty()) {
+                return localResponse(new EvidenceCandidateEmbeddingBatch(
+                        UUID.fromString(invocation.input().gatewayPayload()
+                                .path("documentId").asText()),
+                        invocation.input().gatewayPayload().path("sourceRevision").asLong(),
+                        policy.version(),
+                        policy.dimension(),
+                        policy.generation(),
+                        List.of()));
+            }
+            AiGatewayResponse gateway = invocation.embeddingGateway().embed(new EmbeddingRequest(
+                    policy.provider(),
+                    policy.model(),
+                    maskedInputs,
+                    policy.dimension(),
+                    EMBEDDING_TIMEOUT,
+                    invocation.executionContext().run().priceVersion()));
+            try {
+                EmbeddingValuesOutput values = objectMapper.readValue(
+                        gateway.rawJson(), EmbeddingValuesOutput.class);
+                if (values.vectors().size() != hashes.size()) {
+                    throw structuredFailure("DOCUMENT_EVIDENCE_EMBEDDING_COUNT_INVALID");
+                }
+                List<CandidateEmbeddingVector> vectors = new ArrayList<>();
+                for (int index = 0; index < hashes.size(); index++) {
+                    vectors.add(new CandidateEmbeddingVector(
+                            hashes.get(index).asText(), values.vectors().get(index)));
+                }
+                var output = new EvidenceCandidateEmbeddingBatch(
+                        UUID.fromString(invocation.input().gatewayPayload()
+                                .path("documentId").asText()),
+                        invocation.input().gatewayPayload().path("sourceRevision").asLong(),
+                        policy.version(),
+                        policy.dimension(),
+                        policy.generation(),
+                        vectors);
+                return new AiGatewayResponse(objectMapper.writeValueAsString(output), gateway.usages());
+            } catch (AiExecutionException exception) {
+                throw exception;
+            } catch (Exception exception) {
+                throw structuredFailure("DOCUMENT_EVIDENCE_EMBEDDING_OUTPUT_INVALID");
+            }
+        }
+
+        @Override
+        public JsonNode minimalOutput(
+                EvidenceCandidateEmbeddingBatch output, ObjectMapper ignored) {
+            var result = objectMapper.createObjectNode()
+                    .put("documentId", output.documentId().toString())
+                    .put("sourceRevision", output.sourceRevision())
+                    .put("embeddedCandidateCount", output.vectors().size())
+                    .put("policyVersion", output.policyVersion())
+                    .put("dimension", output.dimension())
+                    .put("generation", output.generation());
+            var hashes = result.putArray("candidateHashes");
+            output.vectors().forEach(vector -> hashes.add(vector.candidateHash()));
+            return result;
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(
+                EvidenceCandidateEmbeddingBatch output, StepExecutionContext context) {
+            if (output.documentId() == null || output.sourceRevision() < 0
+                    || output.policyVersion() < 1 || output.dimension() != EMBEDDING_DIMENSION
+                    || output.generation() < 1 || output.vectors() == null) {
+                throw embeddingContractFailure(
+                        ValidationPhase.JAVA_RECORD,
+                        "AI_SO_RECORD_EVIDENCE_EMBEDDING_BATCH_INVALID");
+            }
+        }
+
+        @Override
+        protected void validateWorkflowOutput(
+                EvidenceCandidateEmbeddingBatch output, StepExecutionContext context) {
+            DocumentState state = state(context);
+            EmbeddingPolicy policy = queryPort.activeEmbeddingPolicy();
+            requireActivePolicy(policy);
+            if (!output.documentId().equals(state.document().id())
+                    || output.sourceRevision() != state.document().sourceRevision()
+                    || output.policyVersion() != policy.version()
+                    || output.dimension() != policy.dimension()
+                    || output.generation() != policy.generation()) {
+                throw embeddingContractFailure(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "AI_SO_WORKFLOW_EVIDENCE_EMBEDDING_POLICY_MISMATCH");
+            }
+            EvidenceCandidateBatch batch = requiredCandidateBatch(context);
+            Set<String> expected = batch.candidates().stream()
+                    .map(DocumentIngestionWorkflow.this::candidateHash)
+                    .collect(Collectors.toSet());
+            Set<String> actual = new HashSet<>();
+            for (CandidateEmbeddingVector vector : output.vectors()) {
+                if (vector == null || !isHash(vector.candidateHash())
+                        || !actual.add(vector.candidateHash())
+                        || vector.values() == null
+                        || vector.values().size() != policy.dimension()
+                        || vector.values().stream().anyMatch(
+                                value -> value == null || !Double.isFinite(value))) {
+                    throw embeddingContractFailure(
+                            ValidationPhase.WORKFLOW_CONTEXT,
+                            "AI_SO_WORKFLOW_EVIDENCE_EMBEDDING_VECTOR_INVALID");
+                }
+            }
+            if (!expected.equals(actual)) {
+                throw embeddingContractFailure(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "AI_SO_WORKFLOW_EVIDENCE_EMBEDDING_SET_INVALID");
+            }
+        }
+    }
+
     private final class ApplyEvidenceExecutor extends DocumentExecutor<EvidenceApplyOutput> {
 
         private ApplyEvidenceExecutor() {
@@ -767,6 +973,134 @@ public final class DocumentIngestionWorkflow {
         }
     }
 
+    private final class V2ApplyEvidenceExecutor extends DocumentExecutor<EvidenceApplyOutputV3> {
+
+        private V2ApplyEvidenceExecutor() {
+            super(
+                    APPLY_EVIDENCE_CANDIDATES,
+                    EvidenceApplyOutputV3.class,
+                    EVIDENCE_APPLY_OUTPUT_V3_SCHEMA_VERSION);
+        }
+
+        @Override
+        public StepInput prepare(StepExecutionContext context) {
+            DocumentState state = state(context);
+            EvidenceCandidateBatch batch = requiredCandidateBatch(context);
+            Object ephemeral = context.ephemeralOutputs().get(EMBED_EVIDENCE_CANDIDATES);
+            if (!(ephemeral instanceof EvidenceCandidateEmbeddingBatch embeddings)) {
+                throw AiExecutionException.nonRetryable(
+                        FailureKind.CONFIGURATION,
+                        "DOCUMENT_EVIDENCE_EMBEDDING_HANDOFF_MISSING",
+                        "문서 경험 후보의 유사도 정보를 안전하게 이어서 처리하지 못했습니다.");
+            }
+            JsonNode safeRefs = objectMapper.createObjectNode()
+                    .put("documentId", state.document().id().toString())
+                    .put("sourceRevision", state.document().sourceRevision())
+                    .put("candidateCount", batch.candidates().size())
+                    .put("candidateBatchHash", candidateBatchHash(batch))
+                    .put("policyVersion", embeddings.policyVersion())
+                    .put("generation", embeddings.generation());
+            return new StepInput(
+                    revisionScope(state.document().sourceRevision()),
+                    safeRefs,
+                    APPLY_EVIDENCE_CANDIDATES + "|" + candidateBatchHash(batch) + "|"
+                            + embeddings.policyVersion() + "|" + embeddings.generation(),
+                    tree(new EvidenceApplyHandoff(batch, embeddings)),
+                    null,
+                    state.document().version());
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            EvidenceApplyHandoff handoff;
+            try {
+                handoff = objectMapper.treeToValue(
+                        invocation.input().gatewayPayload(), EvidenceApplyHandoff.class);
+            } catch (Exception exception) {
+                throw domainFailure("DOCUMENT_EVIDENCE_EMBEDDING_HANDOFF_INVALID");
+            }
+            DocumentState state = state(invocation.executionContext());
+            EmbeddingPolicy policy = queryPort.activeEmbeddingPolicy();
+            if (handoff.embeddings().policyVersion() != policy.version()
+                    || handoff.embeddings().dimension() != policy.dimension()
+                    || handoff.embeddings().generation() != policy.generation()) {
+                throw domainFailure("DOCUMENT_EVIDENCE_EMBEDDING_POLICY_STALE");
+            }
+            Map<String, List<Double>> embeddings = handoff.embeddings().vectors().stream()
+                    .collect(Collectors.toMap(
+                            CandidateEmbeddingVector::candidateHash,
+                            CandidateEmbeddingVector::values));
+            Map<String, UUID> trustedChunks = trustedChunkRefs(state.document());
+            List<DocumentEvidenceCandidate> candidates = handoff.batch().candidates().stream()
+                    .map(value -> new DocumentEvidenceCandidate(
+                            value.evidenceCategory(),
+                            value.title(),
+                            value.content(),
+                            Map.of(),
+                            value.confidence(),
+                            DocumentEvidenceOutputPolicy.resolveSourceChunkRefs(
+                                    value.sourceChunkRefs(), trustedChunks),
+                            state.document().sourceRevision(),
+                            value.validationWarning(),
+                            embeddings.getOrDefault(candidateHash(value), List.of())))
+                    .toList();
+            var applied = commandPort.applyEvidenceCandidates(
+                    state.document().userId(),
+                    state.document().id(),
+                    state.agentRunId(),
+                    candidates,
+                    policy);
+            return localResponse(new EvidenceApplyOutputV3(
+                    state.document().id(),
+                    state.document().sourceRevision(),
+                    applied.candidateCount(),
+                    applied.appliedCount(),
+                    applied.rejectedCount(),
+                    applied.appliedEvidenceIds(),
+                    applied.rejectionReasonCounts(),
+                    applied.experienceMatchCounts()));
+        }
+
+        @Override
+        public JsonNode minimalOutput(EvidenceApplyOutputV3 output, ObjectMapper ignored) {
+            return tree(output);
+        }
+
+        @Override
+        public Optional<PartialResult> partialResult(
+                EvidenceApplyOutputV3 output,
+                JsonNode minimalOutput,
+                StepExecutionContext context) {
+            List<ResourceReference> refs = output.appliedEvidenceIds().stream()
+                    .map(id -> new ResourceReference("EVIDENCE", id, null))
+                    .toList();
+            return Optional.of(new PartialResult(List.of(), List.of(), refs));
+        }
+
+        @Override
+        protected void validateJavaRecord(
+                EvidenceApplyOutputV3 output, StepExecutionContext context) {
+            if (output.documentId() == null || output.sourceRevision() < 0
+                    || output.appliedEvidenceIds() == null
+                    || output.candidateCount() < 0
+                    || output.appliedCount() < 0
+                    || output.rejectedCount() < 0
+                    || output.appliedCount() + output.rejectedCount() != output.candidateCount()
+                    || output.appliedEvidenceIds().size() != output.appliedCount()
+                    || output.rejectionReasonCounts() == null
+                    || output.rejectionReasonCounts().values().stream()
+                            .mapToInt(Integer::intValue).sum() != output.rejectedCount()
+                    || output.experienceMatchCounts() == null
+                    || output.experienceMatchCounts().values().stream()
+                            .mapToInt(Integer::intValue).sum() != output.appliedCount()
+                    || output.appliedCount() > DocumentEvidenceOutputPolicy.ABSOLUTE_MAX_CANDIDATES
+                    || new HashSet<>(output.appliedEvidenceIds()).size()
+                            != output.appliedEvidenceIds().size()) {
+                throw new IllegalArgumentException("v3 evidence apply output is invalid");
+            }
+        }
+    }
+
     private final class FinalizeDocumentExecutor extends DocumentExecutor<FinalDocumentOutput> {
 
         private FinalizeDocumentExecutor() {
@@ -820,6 +1154,17 @@ public final class DocumentIngestionWorkflow {
                 queryPort.chunks(document.userId(), document.id(), document.sourceRevision());
         if (chunks.isEmpty()) throw domainFailure("DOCUMENT_CHUNKS_MISSING");
         return chunks;
+    }
+
+    private EvidenceCandidateBatch requiredCandidateBatch(StepExecutionContext context) {
+        Object ephemeral = context.ephemeralOutputs().get(EXTRACT_EVIDENCE_CANDIDATES);
+        if (ephemeral instanceof EvidenceCandidateBatch batch) {
+            return batch;
+        }
+        throw AiExecutionException.nonRetryable(
+                FailureKind.CONFIGURATION,
+                "DOCUMENT_EVIDENCE_HANDOFF_MISSING",
+                "문서 경험 후보를 안전하게 이어서 처리하지 못했습니다.");
     }
 
     private ChunkOutput chunkOutput(DocumentRecord document, List<DocumentChunkRecord> chunks) {
@@ -1005,6 +1350,27 @@ public final class DocumentIngestionWorkflow {
             @JsonPropertyDescription(DocumentEvidenceOutputPolicy.BATCH_DESCRIPTION)
                     List<EvidenceCandidatePayload> candidates) {}
 
+    public record CandidateEmbeddingVector(String candidateHash, List<Double> values) {
+        public CandidateEmbeddingVector {
+            values = values == null ? List.of() : List.copyOf(values);
+        }
+    }
+
+    public record EvidenceCandidateEmbeddingBatch(
+            UUID documentId,
+            long sourceRevision,
+            long policyVersion,
+            int dimension,
+            int generation,
+            List<CandidateEmbeddingVector> vectors) {
+        public EvidenceCandidateEmbeddingBatch {
+            vectors = vectors == null ? List.of() : List.copyOf(vectors);
+        }
+    }
+
+    public record EvidenceApplyHandoff(
+            EvidenceCandidateBatch batch, EvidenceCandidateEmbeddingBatch embeddings) {}
+
     public record EvidenceApplyOutput(
             UUID documentId,
             long sourceRevision,
@@ -1018,6 +1384,25 @@ public final class DocumentIngestionWorkflow {
                     ? List.of() : List.copyOf(appliedEvidenceIds);
             rejectionReasonCounts = rejectionReasonCounts == null
                     ? Map.of() : Map.copyOf(rejectionReasonCounts);
+        }
+    }
+
+    public record EvidenceApplyOutputV3(
+            UUID documentId,
+            long sourceRevision,
+            int candidateCount,
+            int appliedCount,
+            int rejectedCount,
+            List<UUID> appliedEvidenceIds,
+            Map<DocumentEvidenceRejectionReason, Integer> rejectionReasonCounts,
+            Map<ExperienceMatchKind, Integer> experienceMatchCounts) {
+        public EvidenceApplyOutputV3 {
+            appliedEvidenceIds = appliedEvidenceIds == null
+                    ? List.of() : List.copyOf(appliedEvidenceIds);
+            rejectionReasonCounts = rejectionReasonCounts == null
+                    ? Map.of() : Map.copyOf(rejectionReasonCounts);
+            experienceMatchCounts = experienceMatchCounts == null
+                    ? Map.of() : Map.copyOf(experienceMatchCounts);
         }
     }
 

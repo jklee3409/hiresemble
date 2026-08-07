@@ -205,12 +205,13 @@ MVP 구현체는 Tavily REST API를 사용한다.
 
 ### 6.2 pgvector
 
-- 문서 청크와 사용자 근거 검색에 사용
+- 문서 청크, 추출 후보와 정규 경험 검색에 사용
 - 모든 검색 쿼리에 `user_id` 조건 필수
 - MVP active policy: provider `OpenAI`, model `text-embedding-3-small`, dimension `1536`, cosine distance
 - provider·model·dimension·embedding generation을 하나의 immutable policy version으로 관리하고 Job Analysis·Cover Letter retrieval은 이 tuple을 typed route로 사용
 - `vector(1536)` typed column을 사용하고 boot 시 configured model dimension과 DB typmod가 다르면 fail fast
 - active document와 승인된 provider/model/dimension/generation을 모든 검색 조건에 포함
+- 문서 후보 중복 판정은 같은 사용자·category·policy tuple 안의 정규 경험 Top-K만 조회하고, 0.94 이상과 공통 의미 anchor를 자동 동일 경험의 보수적 기준으로 사용한다. 0.82 이상 경계와 숫자 충돌은 사용자 검토로 보낸다.
 - 초기 검색은 exact cosine이며 HNSW index를 만들지 않음
 - live chunk 50,000개 이상 또는 대표 query p95가 200ms를 넘을 때만 별도 forward migration으로 HNSW 검토
 - model·dimension을 같은 column/index에 혼합하지 않음

@@ -42,6 +42,15 @@ public interface DocumentWorkflowCommandPort {
             UUID agentRunId,
             List<DocumentEvidenceCandidate> candidates);
 
+    default DocumentEvidenceApplyResult applyEvidenceCandidates(
+            UUID userId,
+            UUID documentId,
+            UUID agentRunId,
+            List<DocumentEvidenceCandidate> candidates,
+            EmbeddingPolicy embeddingPolicy) {
+        return applyEvidenceCandidates(userId, documentId, agentRunId, candidates);
+    }
+
     DocumentRecord finalizeDocument(UUID userId, UUID documentId, UUID agentRunId);
 
     void failEvidenceExtraction(

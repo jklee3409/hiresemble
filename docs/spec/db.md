@@ -1,14 +1,14 @@
 # DB 명세서
 
-- 문서 버전: 1.2 (P8.5 이후 운영 기반 계약)
-- 기준일: 2026-08-02
+- 문서 버전: 1.3 (정규 경험·의미 중복 판정 계약)
+- 기준일: 2026-08-07
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
 - 시간: `timestamptz` UTC
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 대시보드 취업 준비 가이드 본문을 보강한 V18이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 정규 경험 보관함과 의미 중복 판정을 추가한 V26이며, 미래 계약은 별도로 `PLANNED`를 표시한다.
 
 ## 1. 공통 무결성·소유권
 
@@ -38,6 +38,9 @@
 | `documents.evidence_extraction_status`               | `NOT_STARTED`, `QUEUED`, `EXTRACTING`, `SUCCEEDED`, `FAILED`                                                                                                                                            |
 | `activities.activity_type`                           | `CLUB`, `VOLUNTEERING`, `CONTEST`, `SUPPORTERS`, `PRESS_CORPS`, `STUDENT_COUNCIL`, `EDUCATION_PROGRAM`, `INTERNATIONAL`, `OTHER`                                                                        |
 | `profile_evidence.verification_status`               | `PENDING`, `VERIFIED`, `REJECTED`, `SOURCE_DELETED`                                                                                                                                                     |
+| `experience_items.verification_status`               | `PENDING`, `VERIFIED`, `REJECTED`                                                                                                                                                                       |
+| `experience_items.match_kind`                        | `NEW`, `RELATED_DIFFERENT`, `CONFLICT`                                                                                                                                                                  |
+| `experience_evidence_links.relation_kind`            | `PRIMARY_SOURCE`, `CORROBORATING`                                                                                                                                                                       |
 | `cover_letters.status`                               | `DRAFT`, `FINALIZED`, `ARCHIVED`                                                                                                                                                                        |
 | `cover_letter_answer_versions.source_type`           | `AI_GENERATED`, `USER_EDITED`, `AI_REVISED`, `RESTORED`                                                                                                                                                 |
 | `interview_answer_versions.source_type`              | `USER_EDITED`                                                                                                                                                                                           |
@@ -54,7 +57,7 @@
 | 내부 tier                                            | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
 | `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK` |
 | `documents.document_type`                            | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
-| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `MANUAL`                                                                                               |
+| `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `EXPERIENCE`, `MANUAL`                                                                                 |
 | `job_postings.deadline_source`                       | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
 | `job_postings.closed_reason`                         | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
 | `job_postings.description_source`                    | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
@@ -176,9 +179,26 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 - 참조 여부는 job analysis, cover answer, interview question과 mock session의 typed evidence link 존재로 판정한다.
 - 직접 입력 evidence와 그 원본 대외활동은 document 삭제의 영향을 받지 않는다.
 - `SOURCE_DELETED` evidence는 terminal·read-only여서 content 수정이나 `VERIFIED|REJECTED` 전이를 허용하지 않는다.
+- `EXPERIENCE`는 `source_entity_id=experience_items.id`, `document_id=NULL`인 정규 근거다. 연결된 document evidence 대신 후속 AI snapshot에 한 번만 포함된다.
 - 학력 source와 교육·학력 category는 active evidence로 허용하지 않는다. 기존 row는 source/document 연결, title/content, metadata, confidence를 제거한 `SOURCE_DELETED` tombstone으로 전환해 provenance ID만 보존하며 일반 조회와 분석에서는 제외한다.
 
-### 4.5 `object_deletion_outbox`
+### 4.5 `experience_items`
+
+`id,user_id,canonical_evidence_id`, `evidence_category`, `title`, `content`, `verification_status`, `match_kind`, `matched_experience_item_id NULL`, `match_similarity NULL`, `match_policy_version`, `canonical_fingerprint`, `version`, timestamps, `deleted_at NULL`.
+
+- active `(user_id,evidence_category,canonical_fingerprint)`은 unique이며 사용자 단위 advisory transaction lock으로 동시 문서 적용을 직렬화한다.
+- `RELATED_DIFFERENT|CONFLICT`만 owner-matched `matched_experience_item_id`와 similarity를 가지며 `NEW`는 둘 다 null이다.
+- `canonical_evidence_id`는 같은 사용자의 `profile_evidence(EXPERIENCE)`를 가리키며 승인된 항목이 원문 삭제 뒤에도 유지되는 근거 원천이다.
+
+### 4.6 `experience_evidence_links`
+
+`id,user_id,experience_item_id,profile_evidence_id,relation_kind,similarity NULL,match_policy_version,created_at`. source evidence는 사용자당 하나의 경험에만 연결하고 두 FK 모두 `(user_id,id)`로 owner를 강제한다.
+
+### 4.7 `experience_item_embeddings`
+
+`user_id,experience_item_id,experience_version`, `embedding vector(1536)`, immutable embedding policy tuple, `created_at`. PK는 경험 version·policy version·generation을 포함한다. 조회는 active item version과 enabled policy tuple을 모두 일치시킨 exact cosine Top-K다.
+
+### 4.8 `object_deletion_outbox`
 
 `id,user_id,document_id,storage_key varchar(500),reason,status(PENDING|PROCESSING|SUCCEEDED|DEAD),attempt_count,next_attempt_at`, `claim_token/lease_expires_at NULL`, `last_error_code varchar(100) NULL,created_at,completed_at NULL`. Active unique `(document_id,storage_key,reason)`.
 

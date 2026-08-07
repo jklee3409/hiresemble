@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.domain.policy package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (경험 semantic 유사도 정책)
+
+- What was done:
+  - SHA-256 fingerprint, anchor·수치 추출과 cosine 기반 동일·검토·충돌 판정을 추가했다.
+- Key decisions:
+  - 자동 동일은 0.94 이상·공통 anchor 2개·수치 충돌 없음, 0.82 이상은 검토 대상으로 제한한다.
+- Issues encountered:
+  - 비슷한 표현의 다른 수치 경험이 합쳐지지 않도록 수치 집합 불일치를 `CONFLICT`로 우선 판정한다.
+- Validation:
+  - exact·same·review·conflict·new 단위 테스트 통과.
+- Next steps:
+  - 임계치는 정책 version과 평가 dataset으로만 조정한다.
+
 ## [2026-07-31] Session Summary (교육 evidence category 정책)
 
 - What was done:

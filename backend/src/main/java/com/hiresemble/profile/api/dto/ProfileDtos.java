@@ -8,6 +8,8 @@ import com.hiresemble.profile.domain.model.OverseasTravelEligibility;
 import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
+import com.hiresemble.profile.domain.model.ExperienceLinkKind;
+import com.hiresemble.profile.domain.model.ExperienceMatchKind;
 import com.hiresemble.profile.domain.model.ProfileCompletionItem;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -158,6 +160,12 @@ public final class ProfileDtos {
             @Schema(nullable = true) UUID sourceEntityId,
             @Schema(nullable = true, description = "Document source when the evidence was extracted from a document.")
                     UUID documentId,
+            @Schema(nullable = true, description = "Canonical experience item linked to this document evidence.")
+                    UUID experienceItemId,
+            @Schema(nullable = true, description = "PRIMARY_SOURCE is a new candidate; CORROBORATING is an existing experience source.")
+                    ExperienceLinkKind experienceLinkKind,
+            @Schema(nullable = true, description = "Current semantic review classification of the linked canonical experience.")
+                    ExperienceMatchKind experienceMatchKind,
             @Schema(nullable = true) Instant sourceDeletedAt,
             @Schema(minLength = 1, maxLength = 80) String evidenceCategory,
             @Schema(minLength = 1, maxLength = 250) String title,

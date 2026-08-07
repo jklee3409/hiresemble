@@ -23,7 +23,7 @@ class WorkflowRegistryTest {
     void canonicalRegistryCoversExactlyEightTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(16);
+        assertThat(registry.definitions()).hasSize(17);
         assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
                 .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());
@@ -37,12 +37,15 @@ class WorkflowRegistryTest {
             assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
         });
         assertThat(registry.definitions().stream().filter(definition -> !definition.canonical()))
-                .hasSize(8)
+                .hasSize(9)
                 .allSatisfy(definition -> {
                     assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
                 })
                 .extracting(WorkflowDefinition::type, WorkflowDefinition::version)
                 .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.DOCUMENT_INGESTION,
+                                CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_LEGACY_VERSION),
                         org.assertj.core.groups.Tuple.tuple(
                                 WorkflowType.JOB_POSTING_EXTRACTION,
                                 "job-posting-extraction-v1"),

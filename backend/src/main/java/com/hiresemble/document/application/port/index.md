@@ -8,7 +8,7 @@ com.hiresemble.document.application.port package는 application과 외부 구현
 
 | 파일 | 역할 |
 | ---- | ---- |
-| [DocumentWorkflowCommandPort.java](DocumentWorkflowCommandPort.java) | 문서 workflow command와 공용 evidence apply 결과 반환 경계 |
+| [DocumentWorkflowCommandPort.java](DocumentWorkflowCommandPort.java) | 문서 workflow command와 embedding policy 기반 evidence apply 결과 반환 경계 |
 | [DocumentWorkflowQueryPort.java](DocumentWorkflowQueryPort.java) | Port 책임 구현 |
 | [ObjectDeletionAlertPort.java](ObjectDeletionAlertPort.java) | Port 책임 구현 |
 | [ObjectStorageException.java](ObjectStorageException.java) | Port 책임 구현 |

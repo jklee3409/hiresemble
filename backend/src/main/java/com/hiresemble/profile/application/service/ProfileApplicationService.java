@@ -8,6 +8,8 @@ import com.hiresemble.profile.domain.model.ActivityType;
 import com.hiresemble.profile.domain.model.EducationStatus;
 import com.hiresemble.profile.domain.model.EvidenceSourceType;
 import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
+import com.hiresemble.profile.domain.model.ExperienceLinkKind;
+import com.hiresemble.profile.domain.model.ExperienceRecords.EvidenceExperienceLink;
 import com.hiresemble.profile.domain.model.ProfileCommands.AwardWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.ActivityWrite;
 import com.hiresemble.profile.domain.model.ProfileCommands.CareerWrite;
@@ -33,6 +35,7 @@ import com.hiresemble.profile.domain.model.ProfileRecords.ProfileView;
 import com.hiresemble.profile.domain.policy.ProfilePolicy;
 import com.hiresemble.profile.domain.service.DirectEvidenceFactory;
 import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
+import com.hiresemble.profile.infrastructure.persistence.ExperienceStore;
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -80,14 +83,17 @@ public class ProfileApplicationService {
     private final ProfileStore store;
     private final ObjectMapper objectMapper;
     private final DocumentWorkflowQueryPort documentQueryPort;
+    private final ExperienceStore experienceStore;
 
     public ProfileApplicationService(
             ProfileStore store,
             ObjectMapper objectMapper,
-            DocumentWorkflowQueryPort documentQueryPort) {
+            DocumentWorkflowQueryPort documentQueryPort,
+            ExperienceStore experienceStore) {
         this.store = store;
         this.objectMapper = objectMapper;
         this.documentQueryPort = documentQueryPort;
+        this.experienceStore = experienceStore;
     }
 
     @Transactional(readOnly = true)
@@ -414,7 +420,7 @@ public class ProfileApplicationService {
             String sort) {
         requireActiveDocument(userId, documentId);
         String normalizedCategory = category == null ? null : ProfilePolicy.requiredLabel(category, 80);
-        return store.listEvidence(
+        PageSlice<EvidenceRecord> result = store.listEvidence(
                 userId,
                 status,
                 normalizedCategory,
@@ -422,6 +428,16 @@ public class ProfileApplicationService {
                 page,
                 size,
                 sort(sort, EVIDENCE_SORTS, "updatedAt,desc"));
+        Map<UUID, EvidenceExperienceLink> links = experienceStore.findBySourceEvidence(
+                userId, result.items().stream().map(EvidenceRecord::id).toList());
+        return new PageSlice<>(
+                result.items().stream()
+                        .map(evidence -> withExperienceLink(evidence, links.get(evidence.id())))
+                        .toList(),
+                result.page(),
+                result.size(),
+                result.totalElements(),
+                result.totalPages());
     }
 
     @Transactional
@@ -429,13 +445,18 @@ public class ProfileApplicationService {
             UUID userId, UUID id, EvidenceWrite input, long version) {
         EvidenceRecord current = store.findEvidence(userId, id).orElseThrow(this::notFound);
         requireEditable(current);
+        if (current.sourceType() == EvidenceSourceType.EXPERIENCE) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
         requireVersion(current.version(), version);
         EvidenceWrite command = new EvidenceWrite(
                 ProfilePolicy.requiredLabel(input.title(), 250),
                 requiredContent(input.content()),
                 validMetadata(input.metadata()));
-        return store.updateEvidence(userId, id, command, version, Instant.now())
+        EvidenceRecord updated = store.updateEvidence(userId, id, command, version, Instant.now())
                 .orElseThrow(this::versionConflict);
+        return withExperienceLink(
+                updated, experienceStore.findBySourceEvidence(userId, id).orElse(null));
     }
 
     @Transactional
@@ -455,8 +476,19 @@ public class ProfileApplicationService {
             throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
         }
         requireVersion(current.version(), version);
-        return store.verifyEvidence(userId, id, status, version, Instant.now())
+        Instant now = Instant.now();
+        EvidenceRecord updated = store.verifyEvidence(userId, id, status, version, now)
                 .orElseThrow(this::versionConflict);
+        experienceStore.findBySourceEvidence(userId, id)
+                .filter(link -> link.relationKind() == ExperienceLinkKind.PRIMARY_SOURCE)
+                .ifPresent(link -> {
+                    experienceStore.synchronizeVerification(
+                            userId, link.experienceItemId(), status, now);
+                    store.synchronizeExperienceEvidenceVerification(
+                            userId, link.canonicalEvidenceId(), status, now);
+                });
+        return withExperienceLink(
+                updated, experienceStore.findBySourceEvidence(userId, id).orElse(null));
     }
 
     @Transactional
@@ -471,6 +503,30 @@ public class ProfileApplicationService {
         return items.stream()
                 .map(item -> verifyEvidence(userId, item.id(), status, item.version()))
                 .toList();
+    }
+
+    private EvidenceRecord withExperienceLink(
+            EvidenceRecord evidence, EvidenceExperienceLink link) {
+        return new EvidenceRecord(
+                evidence.id(),
+                evidence.userId(),
+                evidence.sourceType(),
+                evidence.sourceEntityId(),
+                evidence.documentId(),
+                link == null ? null : link.experienceItemId(),
+                link == null ? null : link.relationKind(),
+                link == null ? null : link.matchKind(),
+                evidence.sourceDeletedAt(),
+                evidence.evidenceCategory(),
+                evidence.title(),
+                evidence.content(),
+                evidence.metadata(),
+                evidence.confidence(),
+                evidence.verificationStatus(),
+                evidence.verifiedAt(),
+                evidence.version(),
+                evidence.createdAt(),
+                evidence.updatedAt());
     }
 
     private EducationWrite education(EducationWrite input) {

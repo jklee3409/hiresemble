@@ -8,7 +8,7 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 
 - `PromptRegistry`: immutable prompt definition lookup
 - `CanonicalPromptDefinitions`: 구현된 workflow prompt definition을 한 곳에서 열거해 runtime과 schema completeness 검사가 같은 목록을 사용하도록 한다.
-- `DocumentIngestionPromptDefinitions`: P4 문서 근거 output v2, local chunk ref·candidate/token cap과 학력 추출 금지 instruction
+- `DocumentIngestionPromptDefinitions`: legacy v1과 active v2 문서 근거 output, local chunk ref·candidate/token cap과 학력 추출 금지 instruction
 - `JobPostingExtractionPromptDefinitions`: P5 추출 prompt version·output schema·call/token cap
 - `JobAnalysisPromptDefinitions`: P6 단계별 prompt identity·token policy, block ID·원문·ordinal만 반환하는 source requirement v6와 eligibility·matching Provider schema, 모델 소유 필드 규칙과 외부 공고 instruction 격리. 변경 없는 upstream `BUILD_SNAPSHOT`은 기존 v6 identity를 유지해 전환 시 불필요한 checkpoint 무효화를 막는다.
 - `CoverLetterGenerationPromptDefinitions`: durable generation v1 Run용 legacy prompt key와 record schema

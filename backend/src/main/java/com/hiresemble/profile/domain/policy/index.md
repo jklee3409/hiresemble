@@ -9,11 +9,12 @@ com.hiresemble.profile.domain.policy package는 도메인 불변식과 계산 �
 | 파일                                     | 역할                                                  |
 | ---------------------------------------- | ----------------------------------------------------- |
 | [ProfilePolicy.java](ProfilePolicy.java) | 프로필 입력 불변식과 교육/학력 evidence category 판별 |
+| [ExperienceSimilarityPolicy.java](ExperienceSimilarityPolicy.java) | 경험 fingerprint, anchor·수치 충돌과 cosine 임계치 판정 |
 | [progress.md](progress.md)               | 이 package의 이동·검증 이력                           |
 
 ## 구성 요소 역할
 
-- 도메인 불변식과 계산 정책을 소유한다.
+- 도메인 불변식과 계산 정책을 소유한다. 경험 자동 동일 판정은 cosine 0.94 이상·공통 anchor 2개 이상·수치 충돌 없음 조건을 모두 요구하고 0.82 이상은 사용자 검토 대상으로만 분류한다.
 - 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

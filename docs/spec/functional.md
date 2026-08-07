@@ -248,12 +248,17 @@
 
 문서 근거 적용 단계의 candidate 단위 domain rejection은 정상적인 filtering이다. 일부 또는 전체 candidate가 교육 category, 근거 없는 수치, 중복 등으로 제외돼도 command와 문서 최종화가 완료되면 `parseStatus=PARSED`, `evidenceExtractionStatus=SUCCEEDED`, Agent Run `SUCCEEDED`로 끝난다. 저장할 evidence가 0건인 결과와 추출 시스템 실패를 구분한다. candidate/applied/rejected count와 값 없는 stable reason count만 안전한 step 통계로 남기며, 거절 candidate를 독립 실패 scope나 성공 evidence reference로 취급하지 않는다.
 
+문서 후보는 저장 전에 사용자 범위의 기존 정규 경험과 비교한다. 비교는 정규화 fingerprint만으로 끝내지 않고 같은 immutable embedding policy의 exact cosine Top-K, 의미 anchor, 숫자·날짜 충돌 검사를 함께 사용한다. 결과는 `NEW`, `SAME_EXPERIENCE`, `RELATED_DIFFERENT`, `CONFLICT`로 구분한다. `SAME_EXPERIENCE`는 새 경험 카드로 만들지 않고 기존 경험에 보강 출처만 연결한다. `RELATED_DIFFERENT|CONFLICT`는 자동 병합하지 않고 별도 `PENDING` 경험으로 만들어 사용자가 분리 유지 또는 제안 대상 병합을 결정한다.
+
+정규 경험은 `profile_evidence`의 원문 근거와 별도 수명주기를 가진다. 사용자가 승인한 정규 경험은 원본 문서가 삭제되거나 재분석돼도 `EXPERIENCE` 근거로 유지되며 후속 공고 분석·자기소개서·면접 준비에는 정규 근거 한 건만 전달한다. 승인하지 않았고 활성 출처도 없는 정규 경험은 제거한다.
+
 ## DOC-004 파일 삭제
 
 - 문서 metadata를 즉시 soft delete하고 API와 download URL에서는 곧바로 404로 처리한다.
 - 원본 Object, 추출 text, chunk와 embedding은 물리 삭제하며 Object 삭제 실패는 Outbox로 재시도한다.
 - 과거 자기소개서·면접 결과가 참조한 document evidence는 원문 없는 최소 tombstone으로 보존하고 `SOURCE_DELETED`로 표시한다.
 - 참조되지 않은 document evidence는 삭제한다.
+- 승인된 정규 경험은 독립 `EXPERIENCE` 근거로 유지하고 삭제된 문서 출처만 제거하거나 tombstone 처리한다.
 - 보존된 과거 버전·검증·근거 링크는 삭제하지 않으며 raw excerpt를 반환하지 않는다.
 
 ---

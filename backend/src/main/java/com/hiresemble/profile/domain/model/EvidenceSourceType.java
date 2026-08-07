@@ -8,5 +8,6 @@ public enum EvidenceSourceType {
     CAREER,
     ACTIVITY,
     DOCUMENT_CHUNK,
+    EXPERIENCE,
     MANUAL
 }

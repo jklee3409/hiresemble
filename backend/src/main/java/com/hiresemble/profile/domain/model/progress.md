@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.domain.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (canonical 경험 상태 모델)
+
+- What was done:
+  - 경험 record·command와 `NEW`, `SAME_EXPERIENCE`, `RELATED_DIFFERENT`, `CONFLICT` 및 해결 enum을 추가했다.
+- Key decisions:
+  - AI 제안 상태와 사용자 검증 상태를 별도 축으로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 Profile domain 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (EducationLevel model)
 
 - What was done:

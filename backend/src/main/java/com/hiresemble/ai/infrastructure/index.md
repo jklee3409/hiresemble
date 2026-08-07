@@ -12,7 +12,7 @@ local OpenAI Chat·Embedding/Tavily Search adapter, 명시적 disabled adapter, 
 - `TavilyWebSearchGateway`: HTTPS·bounded response 검색 adapter
 - `DisabledChatGateway`, `DisabledImageTextExtractionGateway`, `DisabledEmbeddingGateway`, `DisabledWebSearchGateway`: capability별 offline adapter
 - `AiProviderActivationValidator`, `JdbcAiPriceCatalogRepository`: 설정·immutable 가격 gate
-- `AiRuntimeConfiguration`: 고정 workflow contribution과 handler·registry 조립
+- `AiRuntimeConfiguration`: 신규 canonical contribution과 durable legacy contribution, handler·registry 조립
 - [`progress.md`](progress.md): adapter 상태
 
 ## 구성 요소 역할

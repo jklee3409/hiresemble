@@ -4,6 +4,19 @@
 
 P4 Document ingestion 고정 workflow의 contract와 PostgreSQL integration 시나리오를 검증한다.
 
+## [2026-08-07] Session Summary (active 9단계 후보 embedding 회귀)
+
+- What was done:
+  - active v2 step 순서, masked candidate embedding과 중복 hash deduplication 뒤 partial rejection 성공을 검증했다.
+- Key decisions:
+  - legacy 8단계 계약은 별도 contribution으로 계속 고정한다.
+- Issues encountered:
+  - 최초 실행에서 테스트가 이전 8단계를 기대했고 중복 hash vector를 거부해 구현·기대값을 함께 보정했다.
+- Validation:
+  - `DocumentIngestionOrchestratorIntegrationTest`를 포함한 집중 52 tests 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (일부·전체 candidate rejection 회귀)
 
 - What was done:

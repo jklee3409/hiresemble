@@ -4,6 +4,19 @@
 
 P2 공개 프로필·direct evidence 25개 operation과 DTO·validation 경계가 구현되어 있다.
 
+## [2026-08-07] Session Summary (canonical 경험 관리 API)
+
+- What was done:
+  - `/profile/experiences` 목록·상세·수정·검증·중복 판정 해결 5개 operation과 owner-scoped DTO를 추가했다.
+- Key decisions:
+  - 문서별 원본 소재와 전역 canonical 경험을 분리하고 병합은 서버가 제안한 미검증 항목에만 허용한다.
+- Issues encountered:
+  - 경험 수정 뒤 기존 embedding은 stale 처리해 잘못된 자동 병합을 막는다.
+- Validation:
+  - OpenAPI 집중 테스트와 관련 통합 테스트가 통과했다.
+- Next steps:
+  - 경험 관리 Frontend는 별도 작업으로 남는다.
+
 ## [2026-08-01] Session Summary (대외활동 CRUD·소재 batch API)
 
 - What was done:

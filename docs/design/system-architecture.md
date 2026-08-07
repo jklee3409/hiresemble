@@ -303,14 +303,21 @@ evidenceExtractionStatus: NOT_STARTED
 → masked embedding
 → ProfileExtractionAgent structured output
 → domain validation
-→ profile_evidence(PENDING)
+→ candidate embedding
+→ owner-scoped experience exact cosine Top-K
+→ fingerprint + semantic anchor + numeric conflict classification
+→ profile_evidence(PENDING provenance)
+→ experience_items canonicalization
 → SUCCEEDED 또는 FAILED
 ```
 
 - PDFBox/POI/Tika의 parser metadata와 페이지 범위를 남긴다.
 - embedding에는 `masked_content`를 사용하고 model과 dimension을 함께 기록한다.
 - 추출 근거는 자동 승인하지 않는다.
+- `SAME_EXPERIENCE`는 기존 `experience_items`에 보강 출처만 연결하고 새 카드를 만들지 않는다.
+- `RELATED_DIFFERENT|CONFLICT`는 자동 병합하지 않고 사용자 검토 대상으로 보존한다.
 - 사용자가 수정 후 `VERIFIED` 또는 `REJECTED`로 전환한다.
+- 승인된 경험은 독립 `EXPERIENCE` 근거로 후속 AI에 전달되어 원본 삭제 뒤에도 유지된다.
 - 직접 입력 profile record의 동기화 근거는 기본 `VERIFIED`다.
 
 ### 9.3 실패·수동 보완·삭제

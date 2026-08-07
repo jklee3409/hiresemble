@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.api.dto package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (경험 라이브러리 DTO 계약)
+
+- What was done:
+  - canonical 경험, 출처 수, match 종류·유사도와 수정·검증·해결 요청 DTO를 추가하고 문서 evidence에 canonical 경험 link projection을 연결했다.
+- Key decisions:
+  - source 원문과 embedding은 공개하지 않고 표시·검토에 필요한 값만 반환한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 OpenAPI contract 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (Education DTO 단계 계약)
 
 - What was done:

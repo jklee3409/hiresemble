@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P4 고정 ingestion workflow의 성공, WAITING_USER resume와 AI partial failure를 검증한다.
+P4 active 9단계·legacy 8단계 ingestion workflow의 성공, WAITING_USER resume와 AI partial failure를 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,7 +11,7 @@ P4 고정 ingestion workflow의 성공, WAITING_USER resume와 AI partial failur
 
 ## 구성 요소 역할
 
-Fake embedding·Chat을 사용해 8단계 순서, masked-only gateway, PENDING evidence와 안정 상태 보상을 고정한다. Provider metadata entry의 scalar 변환·중복/예약 key 거절·nullable warning과 기존 JSONB 의미 보존을 domain apply 전후로 검증한다.
+Fake embedding·Chat을 사용해 active 9단계 순서, masked-only gateway, 후보 embedding 중복 제거, PENDING evidence와 안정 상태 보상을 고정한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -13,6 +13,11 @@ com.hiresemble.profile.domain.model package는 해당 계층에서 사용하는 
 | [EducationStatus.java](EducationStatus.java)                       | Model 책임 구현                            |
 | [EvidenceSourceType.java](EvidenceSourceType.java)                 | Model 책임 구현                            |
 | [EvidenceVerificationStatus.java](EvidenceVerificationStatus.java) | Model 책임 구현                            |
+| [ExperienceCommands.java](ExperienceCommands.java)                 | 경험 수정·검증·판정 해결 command           |
+| [ExperienceRecords.java](ExperienceRecords.java)                   | canonical 경험·출처·유사 후보 record       |
+| [ExperienceMatchKind.java](ExperienceMatchKind.java)               | 신규·동일·관련·충돌 판정 enum              |
+| [ExperienceMatchResolution.java](ExperienceMatchResolution.java)   | 분리 유지·병합 해결 enum                   |
+| [ExperienceLinkKind.java](ExperienceLinkKind.java)                 | 대표·보강 출처 연결 enum                   |
 | [ProfileCommands.java](ProfileCommands.java)                       | Model 책임 구현                            |
 | [ProfileCompletion.java](ProfileCompletion.java)                   | Model 책임 구현                            |
 | [ProfileCompletionItem.java](ProfileCompletionItem.java)           | Model 책임 구현                            |

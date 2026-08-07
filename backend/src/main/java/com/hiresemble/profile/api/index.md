@@ -9,6 +9,8 @@
 - [dto/](dto/index.md): 공개 request·response DTO
 - [ProfileController.java](ProfileController.java): 프로필 공개 HTTP endpoint
 - [ProfileDtoMapper.java](ProfileDtoMapper.java): Controller와 package-private로 협력하는 DTO mapper
+- [ExperienceController.java](ExperienceController.java): canonical 경험 목록·상세·수정·검증·중복 판정 해결 endpoint
+- [ExperienceDtoMapper.java](ExperienceDtoMapper.java): 경험 application 결과의 공개 DTO 변환
 - [progress.md](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -17,6 +19,7 @@
 - 생성은 201, 조회·수정은 200, 삭제는 204를 사용한다.
 - 학력 write는 `educationLevel`을 받고, response의 `isPrimary`는 서버 계산 최종 학력을 read-only로 반환한다. 학력 CRUD는 구조화 프로필만 변경하고 evidence API는 학력 source/category를 반환하지 않는다.
 - 대외활동은 전용 5개 CRUD operation을 사용하고 문서 소재 검토는 단건 및 최대 100개 batch 상태 변경을 제공한다.
+- 경험 라이브러리는 문서별 원본 근거와 분리된 canonical 경험을 반환하며 동일·관련·충돌 판정을 사용자가 해결할 수 있게 한다.
 
 ## 다른 디렉터리와의 의존 관계
 

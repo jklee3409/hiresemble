@@ -4,6 +4,19 @@
 
 canonical workflow definition과 Document·Job·Cover Letter·Interview executable contribution 분리가 구현됐다.
 
+## [2026-08-07] Session Summary (Document ingestion canonical v2)
+
+- What was done:
+  - candidate embedding 단계를 포함한 active 9단계 v2 definition과 legacy 8단계 executable을 registry에 등록했다.
+- Key decisions:
+  - downstream Job Analysis는 원본 중복 row 대신 canonical `EXPERIENCE` source를 소비한다.
+- Issues encountered:
+  - strict registry와 실제 orchestration 테스트의 legacy/active 기대값을 함께 보정했다.
+- Validation:
+  - workflow·strict schema 집중 52 tests 통과.
+- Next steps:
+  - 전체 check의 별도 가격 카탈로그·타이밍 회귀는 후속 기준선 보정이 필요하다.
+
 ## [2026-08-06] Session Summary (Cover Letter workflow v4)
 
 - What was done: generation·verification 신규 canonical version을 v4로 올리고 exact model·memo context를 적용했다.

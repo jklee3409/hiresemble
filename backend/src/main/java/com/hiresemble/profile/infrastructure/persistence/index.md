@@ -9,12 +9,14 @@ com.hiresemble.profile.infrastructure.persistence package는 JDBC/JPA 기반 저
 | 파일                                   | 역할                        |
 | -------------------------------------- | --------------------------- |
 | [ProfileStore.java](ProfileStore.java) | Persistence 책임 구현       |
+| [ExperienceStore.java](ExperienceStore.java) | canonical 경험·출처·embedding의 owner-scoped 저장과 유사 검색 |
 | [progress.md](progress.md)             | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할
 
 - JDBC/JPA 기반 저장·조회 구현과 mapping, 사용자 profile row lock과 최종 학력 flag 교체를 소유한다.
 - evidence owner 조회와 분석 snapshot은 학력 source 및 교육·학력 category를 제외한다.
+- 전역 evidence·분석 snapshot은 canonical `EXPERIENCE`를 사용하고, 문서별 조회는 원본 `DOCUMENT_CHUNK`를 유지한다.
 - 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

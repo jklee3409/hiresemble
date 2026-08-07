@@ -27,7 +27,21 @@
 - `V23__add_selectable_openai_model_prices.sql`은 선택 가능한 OpenAI chat model 10개와 기존 embedding·검색의 immutable 가격 version을 추가한다.
 - `V24__replace_scoped_ai_budgets_with_global_daily_budget.sql`은 분야별 비용 상한과 ledger 사용자 소유 차원을 제거하고 전역 일일 USD 10 policy와 날짜별 단일 ledger를 추가한다.
 - `V25__rewrite_career_guide_content.sql`은 취업 준비 가이드 5편의 제목·요약·본문을 해요체와 체크리스트 중심으로 다시 쓴다.
+- `V26__create_canonical_experience_library.sql`은 canonical 경험·다중 문서 출처 link·`vector(1536)` embedding과 `EXPERIENCE` evidence source를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-07] Session Summary (V26 canonical 경험 라이브러리)
+
+- What was done:
+  - 경험 item·source link·embedding table과 owner FK·상태 CHECK·exact cosine index를 추가하고 기존 active 문서 근거를 backfill했다.
+- Key decisions:
+  - 적용된 migration은 수정하지 않고 V26 forward migration으로 추가했으며 item-canonical evidence 생성은 deferrable owner FK를 사용한다.
+- Issues encountered:
+  - 기존 fingerprint backfill은 SQL `md5` 32자, 신규 runtime은 SHA-256 64자를 사용해 CHECK가 둘을 수용하도록 했다.
+- Validation:
+  - Flyway V1~V26 적용과 PostgreSQL Document 통합 테스트에서 schema·backfill 경계를 확인했다.
+- Next steps:
+  - 운영 migration 전 백업과 일반 upgrade 절차를 따른다.
 
 ## [2026-08-07] Session Summary (V25 취업 준비 가이드 본문 재작성)
 

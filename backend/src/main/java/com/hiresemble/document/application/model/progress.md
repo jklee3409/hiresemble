@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (후보 embedding·경험 판정 결과)
+
+- What was done:
+  - evidence 후보에 semantic vector를, apply 결과에 경험 match count를 추가하고 invalid embedding reason을 고정했다.
+- Key decisions:
+  - legacy 생성자 호환을 유지해 기존 내부 호출을 깨지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile과 Document workflow·integration 집중 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (evidence apply 결과와 rejection reason 모델)
 
 - What was done:

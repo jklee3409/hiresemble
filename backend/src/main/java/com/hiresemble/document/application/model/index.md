@@ -9,9 +9,9 @@ com.hiresemble.document.application.model package는 해당 계층에서 사용�
 | 파일 | 역할 |
 | ---- | ---- |
 | [DocumentApplicationResults.java](DocumentApplicationResults.java) | Model 책임 구현 |
-| [DocumentEvidenceCandidate.java](DocumentEvidenceCandidate.java) | Model 책임 구현 |
-| [DocumentEvidenceApplyResult.java](DocumentEvidenceApplyResult.java) | 적용 evidence ID와 candidate/applied/rejected 및 stable reason 집계 |
-| [DocumentEvidenceRejectionReason.java](DocumentEvidenceRejectionReason.java) | 값 없는 안전한 candidate rejection 분류 |
+| [DocumentEvidenceCandidate.java](DocumentEvidenceCandidate.java) | 문서 후보와 후보 단위 semantic embedding |
+| [DocumentEvidenceApplyResult.java](DocumentEvidenceApplyResult.java) | 적용 evidence ID와 candidate/applied/rejected, stable reason·경험 판정 집계 |
+| [DocumentEvidenceRejectionReason.java](DocumentEvidenceRejectionReason.java) | 값 없는 안전한 candidate rejection과 embedding 오류 분류 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

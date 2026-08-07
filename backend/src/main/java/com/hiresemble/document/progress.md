@@ -4,6 +4,19 @@
 
 P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석과 P7 자기소개서용 active-generation 검색 adapter를 제공한다.
 
+## [2026-08-07] Session Summary (canonical 경험 추출 pipeline v2)
+
+- What was done:
+  - 신규 문서 ingestion을 후보 embedding이 포함된 v2로 전환하고 경험 match 통계를 apply 결과에 연결했다.
+- Key decisions:
+  - v1은 durable replay용으로 유지하고 v2 후보 embedding은 masked text만 외부 경계에 전달한다.
+- Issues encountered:
+  - 중복 후보 hash 입력은 한 번만 embedding하도록 보정했다.
+- Validation:
+  - workflow 집중 52 tests와 semantic Document 시나리오 통과.
+- Next steps:
+  - 전체 Document suite의 별도 upload fixture 타이밍 회귀를 안정화한다.
+
 ## [2026-08-06] Session Summary (문서 workflow 고정 비용 설정 제거)
 
 - What was done: 문서 생성 service와 infrastructure에서 고정 예상 비용·price version properties를 제거했다.

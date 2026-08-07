@@ -15,30 +15,36 @@ import tools.jackson.databind.JsonNode;
 public final class DocumentIngestionPromptDefinitions {
 
     public static final String PROMPT_VERSION = "document-ingestion-v3";
+    public static final String V2_PROMPT_VERSION = "document-ingestion-v4";
 
     private DocumentIngestionPromptDefinitions() {}
 
     public static List<PromptDefinition> all() {
-        var workflow = CanonicalWorkflowDefinitions.all().stream()
+        var workflows = CanonicalWorkflowDefinitions.all().stream()
                 .filter(value -> value.type() == WorkflowType.DOCUMENT_INGESTION)
-                .findFirst()
-                .orElseThrow();
+                .toList();
         List<PromptDefinition> prompts = new ArrayList<>();
-        for (StepDefinition step : workflow.steps()) {
-            prompts.add(new PromptDefinition(
-                    new PromptKey(
-                            WorkflowType.DOCUMENT_INGESTION,
-                            CanonicalWorkflowDefinitions.VERSION,
-                            step.stepKey()),
-                    PROMPT_VERSION,
-                    JsonNode.class,
-                    outputType(step.stepKey()),
-                    step.outputSchemaVersion(),
-                    step.toolAllowlist(),
-                    step.requiresProvider() ? 24_000 : 1,
-                    maxOutputTokens(step),
-                    step.maxModelCalls(),
-                    instructions(step.stepKey())));
+        for (var workflow : workflows) {
+            String promptVersion = CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION
+                            .equals(workflow.version())
+                    ? V2_PROMPT_VERSION
+                    : PROMPT_VERSION;
+            for (StepDefinition step : workflow.steps()) {
+                prompts.add(new PromptDefinition(
+                        new PromptKey(
+                                WorkflowType.DOCUMENT_INGESTION,
+                                workflow.version(),
+                                step.stepKey()),
+                        promptVersion,
+                        JsonNode.class,
+                        outputType(workflow.version(), step.stepKey()),
+                        step.outputSchemaVersion(),
+                        step.toolAllowlist(),
+                        step.requiresProvider() ? 24_000 : 1,
+                        maxOutputTokens(step),
+                        step.maxModelCalls(),
+                        instructions(step.stepKey())));
+            }
         }
         return List.copyOf(prompts);
     }
@@ -50,7 +56,7 @@ public final class DocumentIngestionPromptDefinitions {
         return step.requiresProvider() ? 12_000 : 1;
     }
 
-    private static Class<?> outputType(String stepKey) {
+    private static Class<?> outputType(String workflowVersion, String stepKey) {
         return switch (stepKey) {
             case DocumentIngestionWorkflow.LOAD_DOCUMENT_SOURCE ->
                     DocumentIngestionWorkflow.SourceOutput.class;
@@ -64,8 +70,12 @@ public final class DocumentIngestionPromptDefinitions {
                     DocumentIngestionWorkflow.EmbeddingBatch.class;
             case DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES ->
                     DocumentIngestionWorkflow.EvidenceCandidateBatch.class;
+            case DocumentIngestionWorkflow.EMBED_EVIDENCE_CANDIDATES ->
+                    DocumentIngestionWorkflow.EvidenceCandidateEmbeddingBatch.class;
             case DocumentIngestionWorkflow.APPLY_EVIDENCE_CANDIDATES ->
-                    DocumentIngestionWorkflow.EvidenceApplyOutput.class;
+                    CanonicalWorkflowDefinitions.DOCUMENT_INGESTION_VERSION.equals(workflowVersion)
+                            ? DocumentIngestionWorkflow.EvidenceApplyOutputV3.class
+                            : DocumentIngestionWorkflow.EvidenceApplyOutput.class;
             case DocumentIngestionWorkflow.FINALIZE_DOCUMENT ->
                     DocumentIngestionWorkflow.FinalDocumentOutput.class;
             default -> throw new IllegalArgumentException("unknown document step");
@@ -76,7 +86,8 @@ public final class DocumentIngestionPromptDefinitions {
         if (DocumentIngestionWorkflow.EXTRACT_EVIDENCE_CANDIDATES.equals(stepKey)) {
             return DocumentEvidenceOutputPolicy.instructions();
         }
-        if (DocumentIngestionWorkflow.EMBED_CHUNKS.equals(stepKey)) {
+        if (DocumentIngestionWorkflow.EMBED_CHUNKS.equals(stepKey)
+                || DocumentIngestionWorkflow.EMBED_EVIDENCE_CANDIDATES.equals(stepKey)) {
             return "Embed only the supplied masked inputs with the active immutable policy.";
         }
         return "Execute the deterministic document step and return only safe references and hashes.";

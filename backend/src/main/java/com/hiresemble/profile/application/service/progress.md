@@ -4,6 +4,19 @@
 
 com.hiresemble.profile.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-07] Session Summary (문서 후보 canonical 경험 적용)
+
+- What was done:
+  - 사용자 단위 lock 아래 exact fingerprint와 semantic 후보를 판정하고 동일 경험은 기존 항목에 출처만 연결하도록 구현했다.
+- Key decisions:
+  - 승인된 canonical 경험은 원본 문서 삭제·재분석 후에도 유지하고 미승인 orphan만 정리한다.
+- Issues encountered:
+  - 중복 후보 hash는 embedding 호출 전에 deduplicate해 적용 단계의 stable `DUPLICATE` 판정을 유지했다.
+- Validation:
+  - semantic 중복·삭제·재분석 통합 테스트와 workflow 집중 테스트 통과.
+- Next steps:
+  - 실제 사용자 데이터 임계치 평가는 offline golden set으로 보강한다.
+
 ## [2026-08-02] Session Summary (재분석·삭제 evidence 수명주기 통합)
 
 - What was done:

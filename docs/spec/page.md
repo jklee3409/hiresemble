@@ -81,7 +81,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | Route group                                        | Implementation status | Phase     | prerequisite API                                 |
 | -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 69 paths/94 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8     | 현재 OpenAPI 74 paths/100 operations             |
 | `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
 | account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
@@ -370,6 +370,17 @@ API:
 
 API: `GET|POST /profile/activities`, `GET|PUT|DELETE /profile/activities/:id`.
 
+## 5.8 `/profile/experiences`
+
+AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 곳에서 관리하는 `경험 보관함`이다. 같은 경험의 표현이 여러 문서에 있더라도 카드 하나만 표시하고, 상세에서 이력서·포트폴리오 등 보강 출처를 확인한다. `RELATED_DIFFERENT|CONFLICT`는 `비슷한 경험 확인` 영역에서 제안 대상과 비교한 뒤 `별도 경험으로 유지` 또는 `기존 경험에 합치기`를 선택한다.
+
+- 기본 목록은 제목, category, 승인 상태, 연결 출처 수와 마지막 수정 시각을 표시한다.
+- 편집·승인·제외는 정규 경험에 적용하고 원본 문서 근거는 문서 상세에서 별도로 검토한다.
+- 승인된 정규 경험은 원본 문서 삭제 뒤에도 유지되며 삭제된 원문의 본문·미리보기는 제공하지 않는다.
+- Backend API 계약은 구현되었고 Frontend route·화면 연결은 별도 작업 범위다.
+
+API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
+
 ---
 
 # 6. 문서
@@ -413,6 +424,8 @@ API:
 - `GET /documents/:id/text`
 - `PUT /documents/:id/manual-text`
 - `GET /profile/evidence?documentId=:id`
+
+같은 경험이 기존 보관함에 있으면 문서 상세에는 새 경험 카드가 아니라 `기존 경험에 출처가 추가됨`으로 표시한다. 자동 병합되지 않은 유사·충돌 후보는 경험 보관함의 검토 대상으로 이동할 수 있어야 한다.
 
 `PARSED + evidenceExtractionStatus=FAILED`는 추출 text를 유지하고 문서 업로드 실패로 표시하지 않는다. safe error, Agent Run과 재처리 CTA를 제공한다. 문서 삭제 성공 즉시 상세·download·cache에서 제거하고 이후 404를 정상 삭제 결과로 처리한다.
 

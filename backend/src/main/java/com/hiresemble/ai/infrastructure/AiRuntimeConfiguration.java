@@ -179,6 +179,7 @@ public class AiRuntimeConfiguration {
                 CanonicalWorkflowDefinitions.all(),
                 List.of(
                         documentWorkflow.contribution(),
+                        documentWorkflow.v2Contribution(),
                         jobWorkflow.contribution(),
                         jobAnalysisWorkflow.contribution(),
                         coverLetterGenerationWorkflow.contribution(),

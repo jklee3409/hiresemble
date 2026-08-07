@@ -4,6 +4,19 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-07] Session Summary (canonical 경험 라이브러리 Backend)
+
+- What was done:
+  - 다중 문서에서 추출한 경험을 canonical item으로 통합하고 출처·검증·semantic match를 관리하는 전 계층을 구현했다.
+- Key decisions:
+  - 자동 동일은 높은 cosine·공통 anchor·수치 무충돌을 모두 요구하며 전역 downstream은 canonical evidence만 소비한다.
+- Issues encountered:
+  - 문서 삭제와 사용자 승인 경험의 생명주기를 분리했다.
+- Validation:
+  - domain·OpenAPI·Document semantic integration 집중 테스트 통과.
+- Next steps:
+  - 경험 관리 Frontend와 golden-set 임계치 평가가 남는다.
+
 ## [2026-08-02] Session Summary (공고 분석용 구조화 학력·지원 자격 snapshot)
 
 - What was done:
