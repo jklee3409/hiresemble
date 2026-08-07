@@ -13,6 +13,22 @@
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 자기소개서 AI model catalog를 포함해 총 95 operations·70 paths다.
 
+## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계와 콘텐츠 재작성)
+
+- What was done:
+  - Dashboard 취업 준비 가이드 카드를 아이콘 타일 대신 글이 주인공인 표지로 다시 만들고, 가이드·요약 카드의 hover 상단 색 띠를 제거했다. 가이드 본문은 문단별 점·구분선을 없애고 `- ` 문단을 체크리스트 상자로 렌더링하며, 카드와 modal에 대략 분량(분)을 표시한다.
+  - 가이드 5편의 제목·요약·본문을 취준생이 바로 따라 할 수 있는 동작과 체크리스트 중심으로 다시 쓰고 서비스 UI와 같은 해요체로 맞췄다. 데이터 원천이 `career_guide_posts`이므로 Backend forward migration `V25`로 반영했다.
+- Key decisions:
+  - 화면 개선은 프론트엔드에 한정하되, 포스트 본문은 프론트엔드에 하드코딩하지 않고 기존 데이터 원천을 그대로 사용한다. API·DTO·route·DB schema는 변경하지 않았다.
+  - modal 하단에 노출되던 내부값 `콘텐츠 v{version}`은 사용자에게 의미가 없어 게시 날짜와 분량 표시로 대체했다.
+- Issues encountered:
+  - Node 20 환경이라 `vitest`가 `html-encoding-sniffer`의 `require(ESM)`으로 실패해 Frontend unit test를 실행하지 못했다. 변경 전 다른 test 파일에서도 동일해 이번 변경과 무관한 환경 제약이다.
+- Validation:
+  - Frontend `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과. `ui-shell.spec.ts` protected app shell Chromium 1건 통과하고 1440·1024·390px 화면을 직접 확인했다.
+  - `V25`는 임시 PostgreSQL DB에 V17 → V18 → V25를 적용해 5행 갱신·본문 보존을 확인했고 `./gradlew compileTestJava`가 통과했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`, Testcontainers 환경에서 `./gradlew check`를 재실행한다.
+
 ## [2026-08-07] Session Summary (현재 UI 기준 화면 계약과 회귀 정합성 확정)
 
 - What was done:

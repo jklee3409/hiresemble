@@ -4,6 +4,27 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계)
+
+- What was done:
+  - Dashboard 취업 준비 가이드 카드에서 아이콘 타일과 모서리 번호 배지를 걷어내고, 분류 태그 + 분량 → 큰 제목 → 요약 → 얇은 선 아래 "읽어보기" 순으로 읽히는 글 중심 표지로 바꿨다. 카드 오른쪽 위에는 순번을 큰 배경 숫자로 흐리게 깔았다.
+  - 카드 배경을 흰 면 + 그림자에서 `--color-fill` 채움면으로 바꾸고, hover에서 흰 면 + `--shadow-lift`로 떠오르게 했다. 카드 격자는 `grid` 5칸에서 `flex-wrap`으로 바꿔 마지막 줄에 빈칸이 남지 않게 했다.
+  - 가이드 카드와 요약 카드의 hover 상단 색 띠(`::before`·`::after`의 `scaleX` 전개)를 모두 제거했다.
+  - 가이드 본문에서 문단마다 붙던 점과 문단 사이 구분선을 없애고 읽는 글의 여백만 남겼다. 모든 줄이 `- `로 시작하는 문단은 `ul` 체크리스트 상자로 렌더링한다.
+  - 본문 글자 수로 대략적인 분량(분)을 계산해 카드와 modal 하단에 표시하고, modal 하단의 내부값 "콘텐츠 v{version}" 노출을 게시 날짜로 바꿨다.
+  - `GUIDE_CATEGORY_ICONS`에 실제 사용 중인 분류(경험 정리·강점 선택·최종 점검)를 추가해 index 기반 fallback 아이콘이 뜨지 않게 했다.
+- Key decisions:
+  - 카드 개수가 격자 열 수로 나누어떨어지지 않아도 빈칸이 생기지 않도록 `flex: 1 1 16rem`으로 마지막 줄을 늘리고, 대신 제목·요약에 `max-width`를 줘 넓어진 카드에서 글줄이 과하게 길어지지 않게 했다.
+  - 분량 표시는 공백 제외 350자/분 기준의 어림값이며, 서버 계약을 늘리지 않고 기존 `body`로만 계산한다.
+- Issues encountered:
+  - Node 20 환경이라 `vitest`가 `html-encoding-sniffer`의 `require(ESM)`에서 실패해 실행하지 못했다. 변경 전 다른 test 파일에서도 같은 오류가 나 이번 변경과 무관한 환경 제약임을 확인했다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - `ui-shell.spec.ts`의 protected app shell Chromium 1건 통과. 1440·1024·390px Dashboard와 가이드 modal 화면을 직접 확인했다.
+  - `DashboardPage.test.ts`의 modal 검증을 체크리스트 `li` 3개와 분량 문구 기준으로 갱신했지만 위 환경 제약으로 실행하지 못했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`를 재실행한다.
+
 ## [2026-08-07] Session Summary (현재 화면 기준 공고·Dashboard 회귀 계약 보정)
 
 - What was done:

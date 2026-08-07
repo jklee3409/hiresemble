@@ -7,6 +7,23 @@
 - `/guide`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Vitest 69 files/313 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
 
+## [2026-08-07] Session Summary (취업 준비 가이드 포스트 재설계)
+
+- What was done:
+  - Dashboard 취업 준비 가이드 카드를 글 중심 표지로 다시 만들고, 가이드 카드와 요약 카드의 hover 상단 색 띠를 제거했다. 가이드 본문은 문단별 점·구분선을 없애고 `- ` 문단을 체크리스트 상자로 렌더링한다.
+  - 카드와 modal에 본문 기준 대략 분량(분)을 표시하고, modal 하단의 내부값 `콘텐츠 v{version}` 노출을 게시 날짜로 바꿨다.
+  - `ui-shell.spec.ts`의 `career-guides` fixture 제목과 본문을 재작성한 시드 콘텐츠에 맞췄다.
+- Key decisions:
+  - 카드 격자를 `flex-wrap`으로 바꿔 카드 수가 열 수로 나누어떨어지지 않아도 마지막 줄에 빈칸이 남지 않게 했다.
+  - 포스트 본문 자체는 프론트엔드가 아니라 `career_guide_posts`가 원천이므로 Backend forward migration `V25`로 갱신했다.
+- Issues encountered:
+  - Node 20 환경에서 `vitest`가 `html-encoding-sniffer`의 `require(ESM)`으로 실패해 unit test를 실행하지 못했다. 변경 전 다른 test 파일에서도 동일해 이번 변경과 무관한 환경 제약이다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vite build` 통과.
+  - `ui-shell.spec.ts` protected app shell Chromium 1건 통과. 1440·1024·390px Dashboard와 가이드 modal 화면을 직접 확인했다.
+- Next steps:
+  - Node 22 이상에서 `corepack pnpm check`를 재실행한다.
+
 ## [2026-08-07] Session Summary (현재 UI 계약과 Frontend 회귀 정합성 확정)
 
 - What was done:

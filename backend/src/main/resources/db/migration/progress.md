@@ -26,7 +26,16 @@
 - `V22__finalize_job_posting_period_constraints.sql`은 기간 trigger·NOT NULL·CHECK와 owner 기간 index를 확정한다.
 - `V23__add_selectable_openai_model_prices.sql`은 선택 가능한 OpenAI chat model 10개와 기존 embedding·검색의 immutable 가격 version을 추가한다.
 - `V24__replace_scoped_ai_budgets_with_global_daily_budget.sql`은 분야별 비용 상한과 ledger 사용자 소유 차원을 제거하고 전역 일일 USD 10 policy와 날짜별 단일 ledger를 추가한다.
+- `V25__rewrite_career_guide_content.sql`은 취업 준비 가이드 5편의 제목·요약·본문을 해요체와 체크리스트 중심으로 다시 쓴다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-07] Session Summary (V25 취업 준비 가이드 본문 재작성)
+
+- What was done: `career_guide_posts` 5편의 title·summary·body를 실제 준비 동작 중심으로 다시 쓰고, 서비스 UI와 같은 해요체로 맞췄다. 본문에는 모든 줄이 `- `로 시작하는 체크리스트 문단을 4편에 넣었다.
+- Key decisions: V18과 같은 방식으로 시드 상태(`version = 2`, `updated_at = '2026-08-02T01:00:00Z'`)만 갱신해 관리자가 편집한 글을 덮어쓰지 않는다. slug·category·display_order·published_at은 그대로 두어 화면 순서와 아이콘 매핑을 유지했다.
+- Issues encountered: None.
+- Validation: 실제 PostgreSQL 컨테이너에 임시 DB를 만들어 V17 → V18 → V25를 순서대로 적용했다. 5행이 갱신되고 `version=3`, 본문 길이 628~788자, 체크리스트 줄바꿈이 보존되는 것을 확인한 뒤 임시 DB를 삭제했다.
+- Next steps: None.
 
 ## [2026-08-06] Session Summary (V24 전역 AI 일일 budget)
 

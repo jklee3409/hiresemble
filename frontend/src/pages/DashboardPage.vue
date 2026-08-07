@@ -27,13 +27,18 @@ const GUIDE_CATEGORY_ICONS: Record<string, GuideIconName> = {
   '공고 관리': 'flag',
   이력서: 'documents',
   '이력서·자료': 'documents',
+  '경험 정리': 'evidence',
   자기소개서: 'pen',
+  '강점 선택': 'trophy',
   면접: 'interview',
   '면접 준비': 'interview',
+  '최종 점검': 'check',
   '지원 관리': 'calendar',
   '커리어 설계': 'compass',
   성장: 'trend-up',
 } as const
+/* 한국어 본문을 꼼꼼히 읽을 때의 분당 글자 수(공백 제외). 카드에 표시할 대략적인 분량만 계산한다. */
+const GUIDE_CHARS_PER_MINUTE = 350
 const EDUCATION_LEVEL_LABELS = {
   OTHER: '기타 학력',
   HIGH_SCHOOL: '고등학교',
@@ -76,12 +81,7 @@ const selectedGuideNumber = computed(() => {
   )
   return index < 0 ? '01' : String(index + 1).padStart(2, '0')
 })
-const selectedGuideParagraphs = computed(() =>
-  (selectedGuide.value?.body ?? '')
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean),
-)
+const selectedGuideBlocks = computed(() => guideBlocks(selectedGuide.value?.body ?? ''))
 const recentDocumentsQuery = useDocumentListQuery(
   userId,
   computed(() => ({ page: 0, size: 5, sort: 'updatedAt,desc' as const })),
@@ -136,8 +136,11 @@ type GuideIconName =
   | 'target'
   | 'flag'
   | 'documents'
+  | 'evidence'
   | 'pen'
+  | 'trophy'
   | 'interview'
+  | 'check'
   | 'calendar'
   | 'compass'
   | 'trend-up'
@@ -253,6 +256,31 @@ function summaryValueLabel(card: SummaryCard): string {
 function guideIcon(category: string, index: number): GuideIconName {
   const fallbacks: GuideIconName[] = ['target', 'documents', 'pen', 'interview', 'calendar']
   return GUIDE_CATEGORY_ICONS[category.trim()] ?? fallbacks[index % fallbacks.length] ?? 'guide'
+}
+
+/* 본문은 빈 줄로 나뉜 문단이고, 모든 줄이 "- "로 시작하는 덩어리만 목록으로 읽는다. */
+type GuideBlock = { kind: 'paragraph'; text: string } | { kind: 'list'; items: string[] }
+
+function guideBlocks(body: string): GuideBlock[] {
+  return body
+    .split(/\n{2,}/)
+    .map((block) =>
+      block
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean),
+    )
+    .filter((lines) => lines.length > 0)
+    .map((lines) =>
+      lines.every((line) => line.startsWith('- '))
+        ? { kind: 'list', items: lines.map((line) => line.slice(2).trim()) }
+        : { kind: 'paragraph', text: lines.join(' ') },
+    )
+}
+
+function guideReadMinutes(post: CareerGuidePostDto): number {
+  const characters = post.body.replace(/\s/g, '').length
+  return Math.max(1, Math.round(characters / GUIDE_CHARS_PER_MINUTE))
 }
 
 type DeadlineTone = 'passed' | 'today' | 'urgent' | 'soon' | 'normal'
@@ -1048,14 +1076,22 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
                 class="guide-card"
                 @click="openGuide(post, $event)"
               >
-                <span class="guide-card__number">{{ String(index + 1).padStart(2, '0') }}</span>
-                <span class="guide-card__icon"
-                  ><AppIcon :name="guideIcon(post.category, index)"
-                /></span>
-                <small>{{ post.category }}</small>
-                <strong>{{ post.title }}</strong>
-                <span>{{ post.summary }}</span>
-                <em>읽어보기 <AppIcon name="arrow-right" /></em>
+                <span class="guide-card__mark" aria-hidden="true">{{
+                  String(index + 1).padStart(2, '0')
+                }}</span>
+                <span class="guide-card__meta">
+                  <span class="guide-card__tag">
+                    <AppIcon :name="guideIcon(post.category, index)" />
+                    {{ post.category }}
+                  </span>
+                  <span class="guide-card__time">{{ guideReadMinutes(post) }}분 분량</span>
+                </span>
+                <strong class="guide-card__title">{{ post.title }}</strong>
+                <span class="guide-card__summary">{{ post.summary }}</span>
+                <span class="guide-card__foot">
+                  <em>읽어보기</em>
+                  <AppIcon name="arrow-right" />
+                </span>
               </button>
             </div>
             <div v-else class="guide-state">
@@ -1109,23 +1145,26 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               <p class="guide-modal__summary">{{ selectedGuide.summary }}</p>
             </section>
             <div class="guide-modal__content" aria-label="가이드 본문">
-              <p v-for="(paragraph, index) in selectedGuideParagraphs" :key="index">
-                {{ paragraph }}
-              </p>
+              <template v-for="(block, index) in selectedGuideBlocks" :key="index">
+                <ul v-if="block.kind === 'list'">
+                  <li v-for="(item, itemIndex) in block.items" :key="itemIndex">{{ item }}</li>
+                </ul>
+                <p v-else>{{ block.text }}</p>
+              </template>
             </div>
           </div>
           <footer>
             <span class="guide-modal__meta">
-              <small
+              <small>{{ guideReadMinutes(selectedGuide) }}분이면 다 읽어요</small>
+              <em
                 >{{
                   new Intl.DateTimeFormat('ko-KR', {
                     timeZone: SEOUL_TIME_ZONE,
                     dateStyle: 'medium',
                   }).format(new Date(selectedGuide.publishedAt))
                 }}
-                게시</small
+                업데이트</em
               >
-              <em>콘텐츠 v{{ selectedGuide.version }}</em>
             </span>
             <button type="button" class="button button--primary" @click="closeGuide">
               확인했어요
@@ -1717,39 +1756,16 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     transform var(--motion-base),
     box-shadow var(--motion-base);
 }
-.summary-card::after {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 0.2rem;
-  background: var(--summary-accent, var(--hs-blue-300));
-  content: '';
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--motion-slow) var(--ease-emphasized);
-}
 .summary-card:hover,
 .summary-card:focus-visible {
   box-shadow: var(--shadow-lift);
   transform: translateY(-3px);
-}
-.summary-card:hover::after,
-.summary-card:focus-visible::after {
-  transform: scaleX(1);
-}
-.summary-card--success {
-  --summary-accent: var(--color-success);
-}
-.summary-card--neutral {
-  --summary-accent: var(--color-muted-strong);
 }
 .summary-card--primary {
   color: white;
   background:
     radial-gradient(circle at 88% 12%, rgb(255 255 255 / 16%), transparent 46%),
     linear-gradient(145deg, var(--hs-blue-800), var(--hs-blue-600));
-  --summary-accent: var(--color-onbrand-accent);
 }
 .summary-card__icon {
   display: grid;
@@ -2547,114 +2563,132 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   display: grid;
   gap: 1rem;
 }
+/*
+ * 가이드 카드. 아이콘 타일과 큰 번호 배지를 걷어내고 글이 주인공인 표지로 바꿨다.
+ * 위에서부터 분류 태그 → 제목 → 요약 → 얇은 선 아래 읽기 동작 순으로 읽힌다.
+ * 마지막 줄에 카드가 두세 장만 남아도 빈칸이 생기지 않도록 grid 대신 flex로 늘린다.
+ */
 .guide-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 .guide-card {
   position: relative;
-  display: grid;
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
   min-width: 0;
-  min-height: 16rem;
-  align-content: start;
-  justify-items: start;
-  padding: 1.125rem;
+  min-height: 12.5rem;
+  padding: 1.25rem;
   overflow: hidden;
   border: 0;
   border-radius: var(--radius-lg);
   color: var(--color-ink);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-fill);
   text-align: left;
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
+    transform var(--motion-base) var(--ease-emphasized),
+    box-shadow var(--motion-base),
+    background-color var(--motion-base);
 }
-.guide-card::before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 0.22rem;
-  background: linear-gradient(90deg, var(--color-primary), var(--hs-blue-300));
-  content: '';
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--motion-slow) var(--ease-emphasized);
-}
-.guide-card:hover {
+.guide-card:hover,
+.guide-card:focus-visible {
+  background: var(--color-surface);
   box-shadow: var(--shadow-lift);
   transform: translateY(-3px);
 }
-.guide-card:hover::before {
-  transform: scaleX(1);
-}
-.guide-card__number {
+
+/* 카드마다 다른 표지 역할만 하는 배경 숫자. 정보는 담지 않으므로 낭독기에서 감춘다. */
+.guide-card__mark {
   position: absolute;
-  top: 0.8rem;
-  right: 0.8rem;
+  top: -0.9rem;
+  right: 0.7rem;
   color: var(--hs-blue-100);
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-size: 4rem;
   font-weight: 900;
   line-height: 1;
+  letter-spacing: -0.06em;
+  pointer-events: none;
   transition: color var(--motion-base);
 }
-.guide-card:hover .guide-card__number {
-  color: var(--hs-blue-300);
+.guide-card:hover .guide-card__mark {
+  color: var(--hs-blue-200);
 }
-.guide-card__icon {
-  transition:
-    transform var(--motion-base) var(--ease-emphasized),
-    background-color var(--motion-base);
+
+.guide-card > *:not(.guide-card__mark) {
+  position: relative;
 }
-.guide-card:hover .guide-card__icon {
+.guide-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.guide-card__tag {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.22rem 0.55rem 0.22rem 0.42rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-ink);
   background: var(--hs-blue-100);
-  transform: translateY(-2px) rotate(-4deg);
-}
-.guide-card:hover em {
-  color: var(--color-brand-hover);
-}
-.guide-card__icon {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  margin-bottom: 1.2rem;
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  background: var(--hs-blue-50);
-}
-.guide-card small {
-  color: var(--color-primary);
   font-size: 0.7rem;
   font-weight: 800;
 }
-.guide-card > strong {
-  margin-top: 0.45rem;
-  font-size: 0.92rem;
-  line-height: 1.45;
+.guide-card__tag :deep(.icon) {
+  width: 0.85rem;
+  height: 0.85rem;
 }
-.guide-card > span:not(.guide-card__number, .guide-card__icon) {
-  margin-top: 0.55rem;
+.guide-card__time {
   color: var(--color-muted);
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
-.guide-card em {
-  display: inline-flex;
-  gap: 0.25rem;
+.guide-card__title {
+  max-width: 24rem;
+  margin-top: 0.85rem;
+  color: var(--color-ink-title);
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 780;
+  letter-spacing: -0.024em;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.guide-card__summary {
+  max-width: 26rem;
+  margin-top: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.guide-card__foot {
+  display: flex;
+  gap: 0.35rem;
   align-items: center;
-  align-self: end;
-  margin-top: 1rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-border-strong);
   color: var(--color-primary);
-  font-size: 0.76rem;
-  font-style: normal;
+  font-size: 0.78rem;
   font-weight: 800;
 }
-.guide-card em :deep(.icon) {
-  width: 0.9rem;
-  height: 0.9rem;
+.guide-card__foot em {
+  font-style: normal;
+}
+.guide-card__foot :deep(.icon) {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+.guide-card:hover .guide-card__foot,
+.guide-card:focus-visible .guide-card__foot {
+  color: var(--color-brand-hover);
+}
+.guide-card:hover .guide-card__foot :deep(.icon) {
+  transform: translateX(0.25rem);
 }
 
 .guide-modal-backdrop {
@@ -2754,36 +2788,44 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   font-size: 1rem;
   line-height: 1.7;
 }
+/* 문단마다 붙던 점과 구분선을 없애고 읽는 글에 맞는 여백만 남긴다. */
 .guide-modal__content {
   display: grid;
-  gap: 0;
+  gap: 1.15rem;
   padding: clamp(1.5rem, 5vw, 2.75rem);
-  color: var(--color-ink);
-  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  font-size: 0.98rem;
   line-height: 1.9;
 }
 .guide-modal__content p {
-  position: relative;
   margin: 0;
-  padding-left: 1.2rem;
 }
-.guide-modal__content p::before {
+.guide-modal__content ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.15rem 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  list-style: none;
+}
+.guide-modal__content li {
+  position: relative;
+  padding-left: 1.15rem;
+  color: var(--color-ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.guide-modal__content li::before {
   position: absolute;
-  top: 0.7em;
-  left: 0;
-  width: 0.38rem;
-  height: 0.38rem;
+  top: 0.72em;
+  left: 0.15rem;
+  width: 0.34rem;
+  height: 0.34rem;
   border-radius: 50%;
   background: var(--color-primary);
   content: '';
-}
-.guide-modal__content p + p {
-  margin-top: 1.35rem;
-  padding-top: 1.35rem;
-  border-top: 1px solid var(--color-border);
-}
-.guide-modal__content p + p::before {
-  top: calc(1.35rem + 0.7em);
 }
 .guide-modal > footer {
   position: sticky;
@@ -2919,9 +2961,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .guide-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .deadline-detail--desktop {
     display: none;
   }
@@ -2946,9 +2985,6 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
 @media (max-width: 52rem) {
   .dashboard-columns {
     grid-template-columns: 1fr;
-  }
-  .guide-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3042,11 +3078,12 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
     display: flex;
     justify-content: space-between;
   }
-  .guide-grid {
-    grid-template-columns: 1fr;
-  }
   .guide-card {
-    min-height: 12rem;
+    flex-basis: 100%;
+    min-height: 11.5rem;
+  }
+  .guide-card__mark {
+    font-size: 3.25rem;
   }
   .guide-modal-backdrop {
     align-items: end;

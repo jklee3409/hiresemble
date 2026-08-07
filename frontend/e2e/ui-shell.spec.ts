@@ -97,9 +97,10 @@ test('protected app shell stays usable without horizontal overflow at required w
 
   const guideTrigger = page.locator('.guide-card').first()
   await guideTrigger.click()
-  const guideDialog = page.getByRole('dialog', { name: '공고 분석 전에 확인할 항목' })
+  const guideDialog = page.getByRole('dialog', { name: '공고에서 진짜 봐야 할 다섯 줄' })
   await expect(guideDialog).toBeVisible()
   await expect(guideDialog.locator('.guide-modal__content p')).toHaveCount(3)
+  await expect(guideDialog.locator('.guide-modal__content li')).toHaveCount(4)
   if (process.env.UI_SCREENSHOTS === 'true') {
     await page.screenshot({ path: testInfo.outputPath('guide-modal-1440.png') })
   }
@@ -532,11 +533,11 @@ async function installAuthenticatedRoutes(page: Page): Promise<void> {
   })
   await page.route('**/api/v1/career-guides', async (route) => {
     const topics = [
-      ['공고 분석', '공고 분석 전에 확인할 항목'],
-      ['경험 정리', '경험을 자기소개서 소재로 정리하는 방법'],
-      ['강점 선택', '지원 직무에 맞는 강점 선택 방법'],
-      ['면접 준비', '면접 답변을 간결하게 구성하는 방법'],
-      ['최종 점검', '마감 전 최종 점검 체크리스트'],
+      ['공고 분석', '공고에서 진짜 봐야 할 다섯 줄'],
+      ['경험 정리', '평범한 경험을 쓸 만한 소재로 바꾸기'],
+      ['강점 선택', '어떤 강점을 앞에 둘지 고르는 법'],
+      ['면접 준비', '면접 답변, 90초 안에 끝내기'],
+      ['최종 점검', '제출 버튼 누르기 전 마지막 10분'],
     ]
     await route.fulfill({
       status: 200,
@@ -549,7 +550,7 @@ async function installAuthenticatedRoutes(page: Page): Promise<void> {
           category,
           title,
           summary: '핵심을 빠르게 확인하고 내 지원 준비에 바로 적용해 보세요.',
-          body: '담당 업무에서 반복되는 동사와 기대 결과를 찾아 역할의 중심을 정리해 보세요. 직무명만으로 판단하지 않고 실제로 해결할 문제를 확인하는 것이 먼저입니다.\n\n필수 조건과 우대 조건을 나누고, 각 항목에 연결할 수 있는 내 경험의 행동과 결과를 한 줄씩 남겨 보세요. 사용하지 않은 기술은 과장하지 않고 비슷한 문제를 해결한 근거를 찾습니다.\n\n마지막으로 근무 조건과 마감 시각을 다시 확인하고, 자기소개서와 면접에서 강조할 핵심 업무 세 가지를 골라 준비에 활용하세요.',
+          body: '담당 업무에서 반복되는 동사와 기대 결과를 찾아 역할의 중심을 정리해 보세요. 직무명만으로 판단하지 않고 실제로 해결할 문제를 확인하는 것이 먼저입니다.\n\n필수 조건과 우대 조건을 나누고, 각 항목에 연결할 수 있는 내 경험의 행동과 결과를 한 줄씩 남겨 보세요. 사용하지 않은 기술은 과장하지 않고 비슷한 문제를 해결한 근거를 찾습니다.\n\n- 근무 지역과 고용 형태\n- 경력으로 인정되는 범위\n- 전형이 몇 단계인지\n- 제출 서류와 마감 시각\n\n마지막으로 근무 조건과 마감 시각을 다시 확인하고, 자기소개서와 면접에서 강조할 핵심 업무 세 가지를 골라 준비에 활용하세요.',
           publishedAt: '2026-08-01T00:00:00Z',
           version: 2,
         })),

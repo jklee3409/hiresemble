@@ -15,6 +15,14 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-07] Session Summary (가이드 fixture를 재작성한 본문에 맞춤)
+
+- What was done: `ui-shell.spec.ts`의 `career-guides` fixture 제목 5개를 V25로 재작성한 실제 본문 제목에 맞추고, 본문에 `- ` 체크리스트 문단을 넣어 modal의 `ul` 렌더링을 함께 검증하도록 했다.
+- Key decisions: fixture는 실제 시드 콘텐츠를 대표해야 회귀가 의미 있으므로 제목을 DB migration과 같은 값으로 유지한다.
+- Issues encountered: None.
+- Validation: `UI_SCREENSHOTS=true playwright test -g "protected app shell"` Chromium 1건 통과.
+- Next steps: None.
+
 ## [2026-08-06] Session Summary (자기소개서 model request fixture)
 
 - What was done: P7 actual E2E의 생성·검증 요청을 exact model 계약으로 갱신했다.

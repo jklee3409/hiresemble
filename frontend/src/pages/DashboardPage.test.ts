@@ -109,7 +109,8 @@ describe('DashboardPage', () => {
     expect(dialog?.textContent).toContain('필수 역량을 먼저 표시하세요.')
     expect(dialog?.querySelector('.guide-modal__hero')).not.toBeNull()
     expect(dialog?.querySelectorAll('.guide-modal__content p')).toHaveLength(2)
-    expect(dialog?.textContent).toContain('콘텐츠 v2')
+    expect(dialog?.querySelectorAll('.guide-modal__content li')).toHaveLength(3)
+    expect(dialog?.textContent).toContain('1분이면 다 읽어요')
     expect(document.body.style.overflow).toBe('hidden')
     expect(document.activeElement?.getAttribute('aria-label')).toBe('가이드 닫기')
 
@@ -272,7 +273,7 @@ function guides(): CareerGuidePostDto[] {
       category: '공고 분석',
       title: '공고 분석 전에 확인할 항목',
       summary: '회사와 역할, 자격 요건을 나눠 읽어 보세요.',
-      body: '공고를 처음 읽을 때는 필수 역량을 먼저 표시하세요. 담당 업무의 동사와 기대 결과를 함께 적으면 역할의 중심이 선명해집니다.\n\n지원 전에는 우대 조건과 근무 조건을 분리해 확인하고, 내 경험에서 연결할 수 있는 근거를 한 줄씩 남겨 보세요.',
+      body: '공고를 처음 읽을 때는 필수 역량을 먼저 표시하세요. 담당 업무의 동사와 기대 결과를 함께 적으면 역할의 중심이 선명해집니다.\n\n- 근무 지역과 고용 형태\n- 전형 절차가 몇 단계인지\n- 제출 서류와 마감 시각\n\n지원 전에는 우대 조건과 근무 조건을 분리해 확인하고, 내 경험에서 연결할 수 있는 근거를 한 줄씩 남겨 보세요.',
       publishedAt: '2026-08-01T00:00:00Z',
       version: 2,
     },

@@ -102,7 +102,7 @@ class DashboardIntegrationTest extends PostgresIntegrationTest {
                 .andReturn();
 
         assertThat(result.getResponse().getContentAsString())
-                .contains("공고 분석 전에 확인할 항목", "마감 전 최종 점검 체크리스트")
+                .contains("공고에서 진짜 봐야 할 다섯 줄", "제출 버튼 누르기 전 마지막 10분")
                 .doesNotContain("게시 전 글");
     }
 

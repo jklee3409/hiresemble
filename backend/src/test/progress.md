@@ -4,6 +4,19 @@
 
 P1~P8 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
 
+## [2026-08-07] Session Summary (가이드 목록 제목 assertion 갱신)
+
+- What was done:
+  - `DashboardIntegrationTest`의 `/api/v1/career-guides` 응답 assertion을 V25에서 재작성한 제목("공고에서 진짜 봐야 할 다섯 줄", "제출 버튼 누르기 전 마지막 10분")으로 갱신했다.
+- Key decisions:
+  - `DashboardMigrationTest`는 target 16~19를 고정해 검증하므로 V25 추가와 무관하게 그대로 둔다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `./gradlew compileTestJava` 통과. Testcontainers가 필요한 `check`는 실행하지 않았다.
+- Next steps:
+  - 다음 backend 작업에서 `./gradlew check`로 통합 검증을 함께 실행한다.
+
 ## [2026-08-01] Session Summary (P8.5 Provider 격리 검증)
 
 - What was done:

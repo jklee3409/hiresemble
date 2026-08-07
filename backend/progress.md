@@ -4,8 +4,16 @@
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
 - P1 인증부터 P8 Interview, Dashboard·Career Guide read, profile eligibility와 Agent Run history delete까지 총 95 operations/70 paths가 구현되어 있다.
-- V1~V24 migration이 적용됐고 V24는 전체 AI 기능이 공유하는 전역 일일 USD 10 budget policy를 소유한다.
+- V1~V25 migration이 적용됐고 V24는 전체 AI 기능이 공유하는 전역 일일 USD 10 budget policy를, V25는 취업 준비 가이드 5편의 현재 콘텐츠를 소유한다.
 - 최신 Backend 전체 `check`가 통과했다. local은 실제 provider, local-offline/test는 network-disabled다.
+
+## [2026-08-07] Session Summary (취업 준비 가이드 콘텐츠 재작성)
+
+- What was done: `career_guide_posts` 5편의 제목·요약·본문을 실제 준비 동작과 체크리스트 중심으로 다시 쓰는 forward migration `V25`를 추가하고, `DashboardIntegrationTest`의 제목 assertion을 함께 갱신했다.
+- Key decisions: API·DTO·schema는 그대로 두고 데이터만 바꾼다. V18과 같은 시드 상태 가드로 관리자가 편집한 글은 덮어쓰지 않는다.
+- Issues encountered: None.
+- Validation: 임시 PostgreSQL DB에 V17 → V18 → V25를 적용해 5행 갱신과 본문 보존을 확인했고 `./gradlew compileTestJava`가 통과했다. Testcontainers가 필요한 `check`는 실행하지 않았다.
+- Next steps: 다음 backend 작업에서 `./gradlew check`를 실행한다.
 
 ## [2026-08-06] Session Summary (AI 비용 정책 단일 전역 일일 한도 전환)
 
