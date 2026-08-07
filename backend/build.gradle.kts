@@ -19,7 +19,7 @@ repositories {
 }
 
 val springAiVersion = "2.0.0"
-val springdocVersion = "3.0.3"
+val springdocVersion = "3.1.0"
 val tikaVersion = "3.3.1"
 val pdfboxVersion = "3.0.8"
 val poiVersion = "5.5.1"
