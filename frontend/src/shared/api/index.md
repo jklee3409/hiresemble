@@ -2,15 +2,18 @@
 
 ## 디렉터리 목적
 
-Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8와 Gate 2 GitHub Source OpenAPI 및 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`contracts.ts`](contracts.ts): 인증·프로필·canonical 경험 request·response, 학력 단계·상태 enum과 error type
+- [`contracts.ts`](contracts.ts): 인증·프로필·canonical 경험 request·response, 문서·GitHub evidence source와 error type
 - [`http.ts`](http.ts): baseURL·cookie·CSRF interceptor
 - [`authApi.ts`](authApi.ts): 다섯 인증 endpoint와 계정 닉네임 변경 consumer
 - [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD, direct/document evidence batch 검토와 canonical 경험 목록·상세·수정·검증·병합/분리 consumer
-- [`agentRunContracts.ts`](agentRunContracts.ts): P3 enum·DTO·SSE event Zod 계약
+- [`experienceContracts.ts`](experienceContracts.ts): canonical 경험·GitHub provenance 응답의 strict Zod 계약
+- [`githubSourceContracts.ts`](githubSourceContracts.ts): GitHub Source·repository page·refresh와 Run parity strict Zod 계약
+- [`githubSourceApi.ts`](githubSourceApi.ts): GitHub Source 7개 operation, typed sort·version·Idempotency-Key consumer
+- [`agentRunContracts.ts`](agentRunContracts.ts): 11개 workflow enum·DTO·SSE event Zod 계약
 - [`agentRunApi.ts`](agentRunApi.ts): Agent Run 목록·상세·retry·cancel·개별/선택 history delete consumer
 - [`documentContracts.ts`](documentContracts.ts): 원본 파일명을 포함한 문서·parse·evidence enum과 공개 DTO Zod 계약
 - [`documentApi.ts`](documentApi.ts): 문서 공개 API 8개 multipart·version·idempotency consumer
@@ -22,7 +25,7 @@ Backend P1~P8 OpenAPI와 일치하는 TypeScript DTO, Axios·CSRF와 typed 오�
 - [`interviewApi.ts`](interviewApi.ts): P8 공개 API 11개, CAS·Idempotency consumer
 - [`dashboardContracts.ts`](dashboardContracts.ts): Dashboard·Career Guide strict Zod 응답 계약과 날짜별 count 일치 검증
 - [`dashboardApi.ts`](dashboardApi.ts): 월별 Dashboard projection과 게시 Career Guide read consumer
-- [`errors.ts`](errors.ts): typed error·field mapping
+- [`errors.ts`](errors.ts): typed error·field mapping과 bounded `Retry-After` 초 파싱
 - [`http.test.ts`](http.test.ts): cookie·CSRF·401·409 transport test
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 

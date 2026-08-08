@@ -4,6 +4,7 @@
 
 - `profile.spec.ts`가 실제 Chromium에서 P2 가입·온보딩·프로필·두 사용자 격리·cache cleanup을 검증한다.
 - `agent-runs.spec.ts`가 test-local REST/SSE fixture로 P3 reconnect·polling·action cleanup을 검증한다.
+- `github-source.spec.ts`가 feature 활성 build에서 GitHub 등록·repository 선택·SSE·provenance·refresh/delete를 network fixture로 검증한다.
 - `ui-shell.spec.ts`가 fixture 인증으로 필수 viewport의 overflow, navigation과 drawer focus를 검증한다.
 - `documents.actual.spec.ts`가 격리 Backend·PostgreSQL·MinIO·Fake AI에서 P4 실제 pipeline 4개를 검증한다.
 - `jobs.actual.spec.ts`가 격리 Backend·PostgreSQL·Fake fetch/Chat에서 P5 실제 pipeline 5개를 검증한다.
@@ -14,6 +15,32 @@
 - `interview-preparation.actual.spec.ts`가 P8 실제 조사·coverage·질문·답변 CAS·feedback·retry·history delete·owner 격리를 검증한다.
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
+
+## [2026-08-08] Session Summary (GitHub Source focused Chromium 후속 통과)
+
+- What was done:
+  - 수정된 `alertdialog` locator로 Gate 2 GitHub Source 전체 fixture scenario를 다시 실행했다.
+- Key decisions:
+  - 이전 실패 기록은 당시 사실로 유지하고 새 검증 결과만 최신 Summary에 기록한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `VITE_GITHUB_SOURCE_ENABLED=true corepack pnpm exec playwright test e2e/github-source.spec.ts --project=chromium`: 후속 1 passed(8.6s), Gate 3 최종 회귀 1 passed(8.3s).
+- Next steps:
+  - None.
+
+## [2026-08-08] Session Summary (GitHub Source mocked browser 흐름)
+
+- What was done:
+  - account URL 등록, discovery/waiting, server 검색·pagination, repository 선택, Run SSE 완료, 경험 provenance, refresh unchanged와 delete 확인을 한 fixture scenario로 추가했다.
+- Key decisions:
+  - 실제 GitHub·AI·Backend를 호출하지 않고 `VITE_GITHUB_SOURCE_ENABLED=true`에서만 실행한다.
+- Issues encountered:
+  - 첫 실행은 desktop에서 숨긴 mobile option을 접근성 role로 찾은 locator, 수정 후 두 번째 실행은 실제 `alertdialog`를 `dialog`로 찾은 마지막 locator에서 실패했다. 둘 다 제품 응답이 아닌 테스트 locator 문제였고 최종 role은 코드에서 수정했다.
+- Validation:
+  - 두 번째 Chromium 실행은 등록→선택→SSE READY→경험 provenance→refresh unchanged→delete confirmation 렌더까지 도달했다. 재검증 상한 때문에 수정된 마지막 locator의 green 완료는 확인하지 않았다.
+- Next steps:
+  - 다음 명시적 검증에서 `VITE_GITHUB_SOURCE_ENABLED=true`로 focused Chromium 1건을 재실행한다.
 
 ## [2026-08-07] Session Summary (자기소개서 AI 검토 표시 회귀 추가)
 

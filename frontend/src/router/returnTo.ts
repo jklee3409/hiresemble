@@ -1,3 +1,5 @@
+import { featureFlags } from '@/app/featureFlags'
+
 const AUTH_REQUIRED_PATHS = new Set([
   '/dashboard',
   '/onboarding',
@@ -27,7 +29,11 @@ const JOB_DETAIL_PATH =
 const COVER_LETTER_EDIT_PATH =
   /^\/cover-letters\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/edit$/i
 
-export function safeReturnTo(value: unknown, origin = currentOrigin()): string | null {
+export function safeReturnTo(
+  value: unknown,
+  origin = currentOrigin(),
+  flags: Pick<typeof featureFlags, 'githubSourceEnabled'> = featureFlags,
+): string | null {
   if (typeof value !== 'string' || value.length === 0) {
     return null
   }
@@ -48,7 +54,7 @@ export function safeReturnTo(value: unknown, origin = currentOrigin()): string |
     if (
       target.origin !== origin ||
       rawPath !== target.pathname ||
-      !isAuthRequiredPath(target.pathname)
+      !isAuthRequiredPath(target.pathname, flags.githubSourceEnabled)
     ) {
       return null
     }
@@ -59,9 +65,10 @@ export function safeReturnTo(value: unknown, origin = currentOrigin()): string |
   }
 }
 
-function isAuthRequiredPath(path: string): boolean {
+function isAuthRequiredPath(path: string, githubSourceEnabled: boolean): boolean {
   return (
     AUTH_REQUIRED_PATHS.has(path) ||
+    (githubSourceEnabled && path === '/profile/github') ||
     AGENT_RUN_DETAIL_PATH.test(path) ||
     DOCUMENT_DETAIL_PATH.test(path) ||
     JOB_DETAIL_PATH.test(path) ||

@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { featureFlags } from '@/app/featureFlags'
+import { safeGitHubRepositoryUrl } from '@/features/github/presentation'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import type {
@@ -288,6 +290,7 @@ function sourceTypeLabel(value: EvidenceSourceType): string {
       CAREER: '경력',
       ACTIVITY: '대외활동',
       DOCUMENT_CHUNK: '업로드 자료',
+      GITHUB_REPOSITORY: 'GitHub',
       EXPERIENCE: '경험 보관함',
       MANUAL: '직접 입력',
     }[value] ?? '출처'
@@ -428,6 +431,11 @@ function similarityLabel(value: number | null): string {
                     :label="matchLabel(item.matchKind)"
                     :tone="matchTone(item.matchKind)"
                   />
+                  <StatusBadge
+                    v-if="item.githubRepositorySourceCount > 0"
+                    label="GitHub 출처"
+                    tone="info"
+                  />
                 </div>
                 <h3 v-if="editingId !== item.id">{{ item.title }}</h3>
               </div>
@@ -512,6 +520,10 @@ function similarityLabel(value: number | null): string {
                 <div>
                   <dt>출처</dt>
                   <dd>{{ item.sourceCount }}개</dd>
+                </div>
+                <div v-if="item.githubRepositorySourceCount > 0">
+                  <dt>GitHub 저장소</dt>
+                  <dd>{{ item.githubRepositorySourceCount }}곳</dd>
                 </div>
                 <div>
                   <dt>최근 수정</dt>
@@ -662,6 +674,30 @@ function similarityLabel(value: number | null): string {
                     >{{ formatDate(source.createdAt) }} ·
                     {{ similarityLabel(source.similarity) }}</small
                   >
+                  <template v-if="source.sourceType === 'GITHUB_REPOSITORY'">
+                    <p v-if="source.sourceDeletedAt" class="experience-source__tombstone">
+                      GitHub 연결은 삭제됐지만, 이 경험에 남은 provenance 기록은 보관됩니다.
+                    </p>
+                    <dl class="experience-source__github">
+                      <div v-if="source.repositoryName">
+                        <dt>저장소</dt>
+                        <dd>{{ source.repositoryName }}</dd>
+                      </div>
+                      <div v-if="source.commitShaShort">
+                        <dt>기준 commit</dt>
+                        <dd>
+                          <code>{{ source.commitShaShort }}</code>
+                        </dd>
+                      </div>
+                      <div v-if="source.capturedAt">
+                        <dt>확인 시각</dt>
+                        <dd>{{ formatDate(source.capturedAt) }}</dd>
+                      </div>
+                    </dl>
+                    <p v-if="source.sourceExcerpt" class="experience-source__excerpt">
+                      {{ source.sourceExcerpt }}
+                    </p>
+                  </template>
                 </div>
                 <RouterLink
                   v-if="source.documentId"
@@ -670,6 +706,27 @@ function similarityLabel(value: number | null): string {
                 >
                   자료 보기
                 </RouterLink>
+                <div
+                  v-else-if="source.sourceType === 'GITHUB_REPOSITORY'"
+                  class="experience-source__actions"
+                >
+                  <RouterLink
+                    v-if="featureFlags.githubSourceEnabled && source.githubSourceId"
+                    class="button button--ghost button--compact"
+                    :to="`/profile/github?source=${encodeURIComponent(source.githubSourceId)}`"
+                  >
+                    GitHub 연결 보기
+                  </RouterLink>
+                  <a
+                    v-if="safeGitHubRepositoryUrl(source.repositoryUrl)"
+                    class="button button--ghost button--compact"
+                    :href="safeGitHubRepositoryUrl(source.repositoryUrl)!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    공개 저장소 열기
+                  </a>
+                </div>
               </li>
             </ul>
           </section>
@@ -923,6 +980,44 @@ function similarityLabel(value: number | null): string {
 .experience-sources strong,
 .experience-sources small {
   display: block;
+}
+
+.experience-source__github {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.experience-source__github div {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.experience-source__github dt,
+.experience-source__tombstone {
+  color: var(--color-muted);
+}
+
+.experience-source__excerpt {
+  margin-top: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-fill);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  white-space: pre-wrap;
+}
+
+.experience-source__tombstone {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.experience-source__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .experience-sources strong {

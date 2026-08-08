@@ -3,9 +3,36 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P8 Interview typed client·Vue Query·답변 CAS·SSE terminal invalidation까지 구현되어 있다.
-- `/guide`, `/profile/experiences`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 70 files/317 tests와 공개 Landing·UI shell, P2~P8 actual E2E, 자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- P1 auth부터 P8 Interview와 Gate 2 GitHub Source typed client·Vue Query·SSE invalidation까지 구현되어 있다.
+- `/guide`, `/profile/experiences`, feature-gated `/profile/github`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 80 files/373 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-08] Session Summary (Gate 2 후속 검증과 Gate 3 Agent Run 호환성)
+
+- What was done:
+  - GitHub Source focused Chromium 흐름을 후속 재검증하고 Agent Run 계약에 Resume·Portfolio workflow와 16개 step label을 추가했다.
+- Key decisions:
+  - Career Artifact API client·route·wizard·preview는 Gate 4로 유지하고 generic Agent Run 화면의 parsing만 호환한다.
+- Issues encountered:
+  - 이전 Session Summary의 Playwright 미검증은 당시 사실로 보존하고 이번 기록에서 후속 통과를 추가했다.
+- Validation:
+  - `corepack pnpm check` 통과: ESLint, Prettier, vue-tsc, Vitest 80 files/373 tests, production build 성공.
+  - `VITE_GITHUB_SOURCE_ENABLED=true` focused Chromium 1/1 통과(후속 8.6s, 최종 회귀 8.3s).
+- Next steps:
+  - Gate 4에서 Career Artifact 전용 UI를 별도 구현한다.
+
+## [2026-08-08] Session Summary (GitHub Source Gate 2 Frontend)
+
+- What was done:
+  - build-time flag, strict GitHub DTO/API, source page·repository selector·Run monitor, 경험 provenance와 기존 Agent Run 화면을 하나의 Gate 2 흐름으로 연결했다.
+- Key decisions:
+  - GitHub 전역 store나 신규 dependency 없이 Vue Query server state와 page local form/selection state만 사용했다.
+- Issues encountered:
+  - 로컬 pnpm link와 focused Playwright 마지막 role locator 문제는 루트 진행 기록에 상세히 분리했다.
+- Validation:
+  - `corepack pnpm check` 통과: 80 test files/369 tests, production build 성공. focused Playwright는 최종 delete locator 재확인이 남았다.
+- Next steps:
+  - 수정된 `alertdialog` locator로 focused browser scenario를 다음 검증에서 재실행한다.
 
 ## [2026-08-07] Session Summary (경험 보관함 카드에서 바로 처리하기)
 

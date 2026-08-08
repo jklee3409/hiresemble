@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { describe, expect, it } from 'vitest'
 
+import { featureFlags } from '@/app/featureFlags'
 import ProfileTabs from './ProfileTabs.vue'
 
 describe('Career Profile Workspace navigation', () => {
@@ -46,5 +47,23 @@ describe('Career Profile Workspace navigation', () => {
     await wrapper.get('select[aria-label="프로필 항목 선택"]').setValue('/profile/languages')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/profile/languages')
+  })
+
+  it('adds the GitHub desktop and mobile item only when Gate 2 is enabled', async () => {
+    featureFlags.githubSourceEnabled = true
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/profile/basic', component: { template: '<div />' } },
+        { path: '/profile/github', component: { template: '<div />' } },
+      ],
+    })
+    await router.push('/profile/github')
+    await router.isReady()
+    const wrapper = mount(ProfileTabs, { global: { plugins: [router] } })
+
+    expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('GitHub')
+    expect(wrapper.get('option[value="/profile/github"]').text()).toBe('GitHub')
+    featureFlags.githubSourceEnabled = false
   })
 })

@@ -28,6 +28,22 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo('/agent-runs/not-a-uuid', 'https://hiresemble.example')).toBeNull()
   })
 
+  it('allows the GitHub route only while the Gate 2 build flag is enabled', () => {
+    expect(
+      safeReturnTo(
+        '/profile/github?source=10000000-0000-4000-8000-000000000001',
+        'https://hiresemble.example',
+      ),
+    ).toBeNull()
+    expect(
+      safeReturnTo(
+        '/profile/github?source=10000000-0000-4000-8000-000000000001',
+        'https://hiresemble.example',
+        { githubSourceEnabled: true },
+      ),
+    ).toBe('/profile/github?source=10000000-0000-4000-8000-000000000001')
+  })
+
   it('accepts only UUID document detail routes', () => {
     expect(
       safeReturnTo('/documents/10000000-0000-4000-8000-000000000001', 'https://hiresemble.example'),

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다.
+P2 프로필 Zod·query key·version conflict, 공용 입력 component와 feature-gated GitHub tab이 구현되어 있다.
+
+## [2026-08-08] Session Summary (GitHub profile tab)
+
+- What was done:
+  - desktop ProfileTabs와 mobile selector에 GitHub 항목을 feature 활성 시만 추가하고 active 상태를 연결했다.
+- Key decisions:
+  - 비활성 build의 기존 8개 profile 항목 순서·이동과 `/profile/evidence` 호환 redirect는 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - flag on/off·mobile navigation component test와 전체 `corepack pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (경험 보관함 navigation·query key)
 

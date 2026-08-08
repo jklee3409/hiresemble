@@ -21,7 +21,7 @@ import * as jobApi from '@/shared/api/jobApi'
 import { useAuthStore } from '@/stores/auth'
 import * as profileApi from '@/shared/api/profileApi'
 
-import { createAppRouter, routes } from './index'
+import { createAppRouter, gitHubProfileRoutes, routes } from './index'
 
 vi.mock('@/shared/api/authApi', () => ({
   getCurrentUser: vi.fn(),
@@ -293,6 +293,18 @@ describe('authentication route policy', () => {
         'agent-run-detail',
       ]),
     )
+  })
+
+  it('builds the lazy GitHub profile route only for an enabled Gate 2 flag', () => {
+    expect(gitHubProfileRoutes(false)).toEqual([])
+    const enabled = gitHubProfileRoutes(true)
+    expect(enabled).toHaveLength(1)
+    expect(enabled[0]).toMatchObject({
+      path: 'profile/github',
+      name: 'profile-github',
+      meta: { title: 'GitHub 연결', profileRecommended: true },
+    })
+    expect(typeof enabled[0]?.component).toBe('function')
   })
 })
 

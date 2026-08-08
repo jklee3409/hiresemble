@@ -2,7 +2,34 @@
 
 ## Overview
 
-Backend P1~P8 OpenAPI, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8와 Gate 2 GitHub Source OpenAPI, 11개 Agent Run WorkflowType, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-08-08] Session Summary (Agent Run 11개 WorkflowType 계약)
+
+- What was done:
+  - `RESUME_GENERATION`과 `PORTFOLIO_GENERATION`을 strict Zod enum에 추가했다.
+- Key decisions:
+  - Gate 3 Backend의 Career Artifact 공개 DTO/client는 Gate 4까지 Frontend에 추가하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - enum 11개 parsing·filter query와 전체 Frontend check 통과.
+- Next steps:
+  - None.
+
+## [2026-08-08] Session Summary (GitHub Source strict API 계약)
+
+- What was done:
+  - GitHub Source·repository page·refresh strict Zod 계약과 7개 client operation, 경험 GitHub provenance parser를 추가했다.
+  - create/selection/refresh Run의 `GITHUB_SOURCE` resource parity와 refresh `changed`/`run` invariant를 검증하고 `Retry-After`를 1~86400초 정수로 보존했다.
+- Key decisions:
+  - unknown enum·malformed 응답은 거부하고 Idempotency-Key 생성 책임은 mutation caller에 남겼다.
+- Issues encountered:
+  - 기존 경험 API fixture에 additive nullable provenance key를 명시해 strict parsing과 맞췄다.
+- Validation:
+  - GitHub/experience/API/error 포함 targeted Vitest와 전체 `corepack pnpm check` 80 files/369 tests 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (경험 목록에 문서 이름 추가)
 

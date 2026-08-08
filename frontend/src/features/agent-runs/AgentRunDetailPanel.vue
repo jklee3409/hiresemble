@@ -17,6 +17,7 @@ import {
   formatRunProgressLabel,
   formatStepName,
   formatUsage,
+  gitHubSourceResourceRoute,
   safeRequiredActionRoute,
   usagePercent,
 } from './presentation'
@@ -60,6 +61,9 @@ const coverLetterRoute = computed(() =>
         params: { coverLetterId: props.run.resourceId },
       }
     : null,
+)
+const gitHubSourceRoute = computed(() =>
+  gitHubSourceResourceRoute(props.run.resourceType, props.run.resourceId),
 )
 const connectionMessage = computed(() => {
   if (props.connectionState === 'reconnecting') {
@@ -146,6 +150,13 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
             :to="coverLetterRoute"
           >
             자기소개서 보기
+          </RouterLink>
+          <RouterLink
+            v-else-if="gitHubSourceRoute"
+            class="button button--secondary"
+            :to="gitHubSourceRoute"
+          >
+            GitHub 연결 보기
           </RouterLink>
           <button
             v-if="canRetry"

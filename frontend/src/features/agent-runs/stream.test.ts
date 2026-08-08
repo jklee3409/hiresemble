@@ -344,6 +344,60 @@ describe('AgentRunStreamController', () => {
     expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetters'])
     expect(invalidations).toContainEqual(['user', 'user-1', 'coverLetter', coverLetterId])
   })
+
+  it('invalidates GitHub source, repositories, runs, and profile provenance across wait and terminal', () => {
+    const sourceId = '00000000-0000-4000-8000-000000000014'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({
+      workflowType: 'GITHUB_INGESTION',
+      resourceType: 'GITHUB_SOURCE',
+      resourceId: sourceId,
+    })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('waiting_user', {
+      ...waitingEvent(2),
+      requiredUserAction: {
+        type: 'SELECT_GITHUB_REPOSITORIES',
+        resource: {
+          resourceType: 'GITHUB_SOURCE',
+          resourceId: sourceId,
+          displayLabel: 'https://github.com/openai',
+        },
+        route: '/profile/github',
+        message: '분석할 저장소를 선택해 주세요.',
+      },
+    })
+
+    expect(invalidations).toContainEqual(['user', 'user-1', 'githubSources'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'githubSources', 'detail', sourceId])
+    expect(invalidations).toContainEqual([
+      'user',
+      'user-1',
+      'githubSources',
+      'detail',
+      sourceId,
+      'repositories',
+    ])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'agentRuns'])
+
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(3, 'SUCCEEDED'),
+      resourceType: 'GITHUB_SOURCE',
+      resourceId: sourceId,
+    })
+    expect(invalidations).toContainEqual(['user', 'user-1', 'experiences'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'evidence'])
+    expect(sources[0]?.closed).toBe(true)
+  })
 })
 
 describe('mergeAgentRunEvent', () => {

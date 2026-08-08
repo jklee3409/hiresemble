@@ -10,7 +10,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 - [`queryKeys.ts`](queryKeys.ts): 사용자 ID가 포함된 profile query key factory
 - [`conflict.ts`](conflict.ts): 미저장 값과 최신 snapshot의 field별 비교·재적용
 - [`evidenceMetadata.ts`](evidenceMetadata.ts): 대외활동 primitive metadata를 key 손실 없이 항목형 편집 값으로 변환
-- [`ProfileTabs.vue`](ProfileTabs.vue): 부가 설명 없이 항목별 icon과 현재 위치를 강조하고 고정 헤더 아래 전체 항목을 노출하는 desktop 세로 navigation과 mobile selector
+- [`ProfileTabs.vue`](ProfileTabs.vue): 항목별 icon과 현재 위치를 강조하는 desktop 세로 navigation·mobile selector, feature 활성 시 GitHub 항목
 - [`ProfileSectionActions.vue`](ProfileSectionActions.vue): 저장 영역과 분리된 이전·다음 profile section 이동
 - [`StringListInput.vue`](StringListInput.vue): Enter·중복 방지·최대 10개·검색 추천·접을 수 있는 추천·접근 가능한 삭제를 제공하는 canonical 문자열 입력
 - [`preferenceOptions.ts`](preferenceOptions.ts): 한국 사용자용 희망 직무·산업·지역 빠른 선택과 포함 검색 후보
@@ -22,6 +22,7 @@ P2 프로필 화면이 공유하는 Zod validation, 사용자별 Vue Query key, 
 
 - 서버 상태는 page의 Vue Query가 소유하고 이 영역은 재사용 가능한 profile 규칙과 표현만 제공한다.
 - `/profile/activities`는 직접 대외활동, `/profile/experiences`는 문서에서 정규화한 경험 보관함으로 분리하고 기존 `/profile/evidence` deep link는 대외활동으로 redirect한다. 가상의 section 완료 count는 만들지 않는다.
+- `/profile/github` 항목은 `VITE_GITHUB_SOURCE_ENABLED=true`에서만 표시하고 비활성 build의 기존 section 순서와 이동을 유지한다.
 - query key는 모든 profile cache에 인증 사용자 ID를 포함해 사용자 전환 경계를 유지한다.
 - 기본 프로필과 지원 자격 자기신고는 별도 query·version·save 경계로 관리하고 409를 자동 overwrite하지 않는다.
 

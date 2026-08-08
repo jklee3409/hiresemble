@@ -3,9 +3,22 @@
 ## Overview
 
 - `index.ts`가 `createWebHistory(import.meta.env.BASE_URL)`로 router를 생성한다.
-- anonymous `/` 공개 Landing, 인증, onboarding, `/guide`, dashboard, profile과 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
-- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child만 허용한다.
+- anonymous `/` 공개 Landing, 인증, onboarding, `/guide`, dashboard, profile, feature-gated GitHub와 lazy Agent Run·Document·Job·Cover Letter·Interview route 및 전용 404가 구현되어 있다.
+- `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child를 허용하고 GitHub path는 flag 활성 시만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
+
+## [2026-08-08] Session Summary (GitHub Source route gate)
+
+- What was done:
+  - `/profile/github` lazy route를 build-time flag로 조건부 등록하고 `returnTo` allowlist에 같은 조건을 적용했다.
+- Key decisions:
+  - 비활성 build에서는 route record 자체가 없으며 AppLayout 최상위 menu는 추가하지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - router·returnTo flag on/off test와 전체 `corepack pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (경험 보관함 보호 route)
 

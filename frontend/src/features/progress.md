@@ -2,7 +2,33 @@
 
 ## Overview
 
-사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews feature까지 구현되어 있다.
+사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews와 Gate 2 GitHub feature까지 구현되어 있다.
+
+## [2026-08-08] Session Summary (Agent Run 신규 workflow 호환)
+
+- What was done:
+  - Agent Run feature가 Resume·Portfolio workflow와 16개 신규 step을 안전하게 표시하도록 확장했다.
+- Key decisions:
+  - Career Artifact 전용 feature directory는 Gate 4 전까지 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Agent Run list/detail/filter/presentation test와 전체 Frontend check 통과.
+- Next steps:
+  - Gate 4는 별도 사용자 journey로 구현한다.
+
+## [2026-08-08] Session Summary (GitHub Source feature 추가)
+
+- What was done:
+  - `features/github`에 owner-scoped query key, read/mutation, pending action idempotency와 focused Run monitor를 추가하고 기존 Agent Run·Profile feature를 확장했다.
+- Key decisions:
+  - query key factory를 순수 module로 분리해 GitHub mutation과 stream controller 사이 circular import를 만들지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - feature targeted Vitest와 전체 `corepack pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (경험 소재 카드에서 좌측 색 띠 제거)
 

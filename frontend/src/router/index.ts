@@ -8,6 +8,7 @@ import {
 } from 'vue-router'
 
 import { appPinia } from '@/app/pinia'
+import { featureFlags } from '@/app/featureFlags'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
@@ -137,6 +138,7 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/ExperienceLibraryPage.vue'),
         meta: { title: '경험 보관함', profileRecommended: true },
       },
+      ...gitHubProfileRoutes(featureFlags.githubSourceEnabled),
       {
         path: 'profile/evidence',
         redirect: { name: 'profile-activities' },
@@ -245,6 +247,19 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '페이지를 찾을 수 없어요' },
   },
 ]
+
+export function gitHubProfileRoutes(enabled: boolean): RouteRecordRaw[] {
+  return enabled
+    ? [
+        {
+          path: 'profile/github',
+          name: 'profile-github',
+          component: () => import('@/pages/GitHubSourcePage.vue'),
+          meta: { title: 'GitHub 연결', profileRecommended: true },
+        },
+      ]
+    : []
+}
 
 export function createAppRouter(options?: { history?: RouterHistory; pinia?: Pinia }): Router {
   const pinia = options?.pinia ?? appPinia

@@ -247,6 +247,7 @@ function sourceLabel(value: EvidenceDto['sourceType']): string {
       CAREER: '경력',
       ACTIVITY: '대외활동',
       DOCUMENT_CHUNK: '문서',
+      GITHUB_REPOSITORY: 'GitHub',
       EXPERIENCE: '경험 보관함',
       MANUAL: '수동',
     } as const

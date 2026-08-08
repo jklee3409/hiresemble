@@ -51,14 +51,18 @@ describe('Agent Run list URL filters', () => {
 
   it('serializes workflow and status filters as repeatable parameters', () => {
     const query = toAgentRunSearchParams({
-      workflowType: ['JOB_ANALYSIS', 'DOCUMENT_INGESTION'],
+      workflowType: ['JOB_ANALYSIS', 'RESUME_GENERATION', 'PORTFOLIO_GENERATION'],
       status: ['FAILED', 'INTERRUPTED'],
       retryable: true,
       page: 2,
       size: 20,
       sort: 'updatedAt,desc',
     })
-    expect(query.getAll('workflowType')).toEqual(['JOB_ANALYSIS', 'DOCUMENT_INGESTION'])
+    expect(query.getAll('workflowType')).toEqual([
+      'JOB_ANALYSIS',
+      'RESUME_GENERATION',
+      'PORTFOLIO_GENERATION',
+    ])
     expect(query.getAll('status')).toEqual(['FAILED', 'INTERRUPTED'])
     expect(query.get('retryable')).toBe('true')
     expect(query.get('sort')).toBe('updatedAt,desc')

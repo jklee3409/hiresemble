@@ -35,6 +35,8 @@ import type {
   ProfileWrite,
 } from './contracts'
 import { apiClient } from './http'
+import { ApiClientError } from './errors'
+import { experienceDetailSchema, experiencePageSchema } from './experienceContracts'
 
 export interface PageParams {
   page?: number
@@ -216,30 +218,53 @@ export function verifyEvidenceBatch(
 export function listExperiences(
   params: ExperienceListParams = {},
 ): Promise<PageResponse<ExperienceItemDto>> {
-  return apiClient.get('/profile/experiences', query(params))
+  return apiClient
+    .get<unknown>('/profile/experiences', query(params))
+    .then((value) => parseExperienceResponse(experiencePageSchema, value))
 }
 
 export function getExperience(id: string): Promise<ExperienceItemDetailDto> {
-  return apiClient.get(`/profile/experiences/${id}`)
+  return apiClient
+    .get<unknown>(`/profile/experiences/${id}`)
+    .then((value) => parseExperienceResponse(experienceDetailSchema, value))
 }
 
 export function updateExperience(
   id: string,
   request: ExperienceItemUpdateRequest,
 ): Promise<ExperienceItemDetailDto> {
-  return apiClient.put(`/profile/experiences/${id}`, request)
+  return apiClient
+    .put<unknown>(`/profile/experiences/${id}`, request)
+    .then((value) => parseExperienceResponse(experienceDetailSchema, value))
 }
 
 export function verifyExperience(
   id: string,
   request: ExperienceVerificationRequest,
 ): Promise<ExperienceItemDetailDto> {
-  return apiClient.patch(`/profile/experiences/${id}/verification`, request)
+  return apiClient
+    .patch<unknown>(`/profile/experiences/${id}/verification`, request)
+    .then((value) => parseExperienceResponse(experienceDetailSchema, value))
 }
 
 export function resolveExperienceMatch(
   id: string,
   request: ExperienceMatchResolutionRequest,
 ): Promise<ExperienceItemDetailDto> {
-  return apiClient.patch(`/profile/experiences/${id}/match-resolution`, request)
+  return apiClient
+    .patch<unknown>(`/profile/experiences/${id}/match-resolution`, request)
+    .then((value) => parseExperienceResponse(experienceDetailSchema, value))
+}
+
+function parseExperienceResponse<T>(
+  schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
+  value: unknown,
+): T {
+  const parsed = schema.safeParse(value)
+  if (parsed.success) return parsed.data
+  throw new ApiClientError({
+    status: 0,
+    code: 'INVALID_SERVER_RESPONSE',
+    message: '경험 정보를 불러오는 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.',
+  })
 }

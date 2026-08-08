@@ -173,6 +173,19 @@ describe('P2 profile API contract', () => {
   })
 
   it('uses the canonical experience library operations exactly', async () => {
+    const response = experienceDetail()
+    vi.mocked(apiClient.get)
+      .mockResolvedValueOnce({
+        items: [response.item],
+        page: 0,
+        size: 10,
+        totalElements: 1,
+        totalPages: 1,
+      })
+      .mockResolvedValueOnce(response)
+    vi.mocked(apiClient.put).mockResolvedValueOnce(response)
+    vi.mocked(apiClient.patch).mockResolvedValueOnce(response).mockResolvedValueOnce(response)
+
     await profileApi.listExperiences({
       verificationStatus: 'PENDING',
       matchKind: 'CONFLICT',
@@ -222,6 +235,49 @@ describe('P2 profile API contract', () => {
     )
   })
 })
+
+function experienceDetail() {
+  const now = '2026-08-08T00:00:00Z'
+  return {
+    item: {
+      id: '00000000-0000-4000-8000-000000000001',
+      evidenceCategory: 'PROJECT',
+      title: '주문 처리 개선',
+      content: '처리 시간을 35% 줄였습니다.',
+      verificationStatus: 'PENDING',
+      matchKind: 'NEW',
+      matchedExperienceItemId: null,
+      matchSimilarity: null,
+      reviewRequired: false,
+      sourceCount: 1,
+      documentSourceCount: 1,
+      githubRepositorySourceCount: 0,
+      primaryDocumentName: 'resume.pdf',
+      version: 3,
+      createdAt: now,
+      updatedAt: now,
+    },
+    sources: [
+      {
+        evidenceId: '00000000-0000-4000-8000-000000000002',
+        sourceType: 'DOCUMENT_CHUNK',
+        documentId: '00000000-0000-4000-8000-000000000003',
+        verificationStatus: 'PENDING',
+        relationKind: 'PRIMARY_SOURCE',
+        similarity: null,
+        githubSourceId: null,
+        githubRepositoryId: null,
+        repositoryName: null,
+        repositoryUrl: null,
+        commitShaShort: null,
+        capturedAt: null,
+        sourceExcerpt: null,
+        sourceDeletedAt: null,
+        createdAt: now,
+      },
+    ],
+  }
+}
 
 function education(): EducationCreateRequest {
   return {

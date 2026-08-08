@@ -2,17 +2,18 @@
 
 ## 디렉터리 목적
 
-Vue 애플리케이션이 공유하는 Pinia와 TanStack Query 인스턴스 구성을 관리한다.
+Vue 애플리케이션이 공유하는 Pinia와 TanStack Query 인스턴스 및 build-time feature flag 해석을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`pinia.ts`](pinia.ts): 애플리케이션 Pinia instance
 - [`queryClient.ts`](queryClient.ts): 4xx·mutation 재시도 정책을 가진 QueryClient
+- [`featureFlags.ts`](featureFlags.ts): 정확한 `true`만 허용하는 GitHub Source build-time flag
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
 
-- main.ts가 전역 plugin을 조립할 수 있도록 상태 container와 server cache 정책을 제공한다.
+- main.ts와 route·navigation이 사용할 상태 container, server cache 정책과 side-effect 없는 feature flag를 제공한다.
 
 ## 다른 디렉터리와의 의존 관계
 

@@ -3,9 +3,35 @@
 ## Overview
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
-- `env.d.ts`에 Vite API base/proxy 환경 변수 타입이 선언되어 있다.
+- `env.d.ts`에 Vite API base/proxy와 GitHub Source feature flag 환경 변수 타입이 선언되어 있다.
 - P1 auth·Session부터 P7 `features/cover-letters`, API·page·lazy route 구현·테스트가 있다.
-- 공개 Landing과 실제 인증·onboarding·dashboard·profile·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·게시 가이드 read가 연결되어 있고 AI 설정 기능은 아직 없다.
+- 공개 Landing과 실제 인증·onboarding·dashboard·profile·GitHub Source·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·게시 가이드 read가 연결되어 있고 AI 설정 기능은 아직 없다.
+
+## [2026-08-08] Session Summary (Career Artifact Agent Run 호환성)
+
+- What was done:
+  - 기존 Agent Run parser와 presentation에 두 generation workflow와 16개 step label을 additive하게 추가했다.
+- Key decisions:
+  - Career Artifact page·API client·route는 만들지 않았다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 check 80 files/373 tests와 build 통과.
+- Next steps:
+  - Gate 4가 전용 UI를 소유한다.
+
+## [2026-08-08] Session Summary (GitHub Source 소스 통합)
+
+- What was done:
+  - app flag, shared API, GitHub feature, profile/page/router와 기존 Agent Run·experience source 표시를 Gate 2 계약으로 통합했다.
+- Key decisions:
+  - route와 링크 허용 여부는 한 typed build-time flag를 공유하고 GitHub source server state는 Vue Query에만 둔다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Frontend 전체 `corepack pnpm check` 80 files/369 tests와 build 통과.
+- Next steps:
+  - focused Playwright의 수정된 delete dialog locator 재확인이 남았다.
 
 ## [2026-08-02] Session Summary (Dashboard source·layout·API 연결)
 

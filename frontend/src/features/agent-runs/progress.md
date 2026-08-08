@@ -2,7 +2,34 @@
 
 ## Overview
 
-P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
+P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
+
+## [2026-08-08] Session Summary (Resume·Portfolio Run 표시 호환)
+
+- What was done:
+  - 두 workflow 한국어 이름과 각 8개 step의 사용자용 label을 목록·상세·drawer presentation에 추가했다.
+- Key decisions:
+  - `CAREER_ARTIFACT` 전용 route button은 Gate 4 전까지 표시하지 않고 generic Run 상세만 제공한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - contract/filter/list/detail/drawer test와 Frontend 전체 check 80 files/373 tests 통과.
+- Next steps:
+  - Gate 4에서 artifact resource navigation을 연결한다.
+
+## [2026-08-08] Session Summary (GitHub ingestion Run 연결)
+
+- What was done:
+  - `GITHUB_INGESTION`, `SELECT_GITHUB_REPOSITORIES`, 10개 step 한국어 label과 source resource link를 목록·상세·monitor에 추가했다.
+  - WAITING_USER·terminal SSE에서 GitHub source/repository와 Agent Run, terminal에서 경험/evidence cache까지 갱신한다.
+- Key decisions:
+  - feature가 꺼지면 GitHub required-action/resource route를 허용하지 않고 SSE 단절은 기존처럼 business failure와 분리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - contract·presentation·list/detail·stream·monitor test와 전체 `corepack pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (AI 작업 상세 단계명 전면 정리)
 

@@ -8,6 +8,7 @@ export class ApiClientError extends Error {
   readonly fieldErrors: readonly FieldErrorDto[]
   readonly requestId: string | null
   readonly serverResponse: ErrorResponseDto | null
+  readonly retryAfterSeconds: number | null
 
   constructor(options: {
     message: string
@@ -16,6 +17,7 @@ export class ApiClientError extends Error {
     fieldErrors?: readonly FieldErrorDto[]
     requestId?: string | null
     serverResponse?: ErrorResponseDto | null
+    retryAfterSeconds?: number | null
   }) {
     super(options.message)
     this.name = 'ApiClientError'
@@ -24,9 +26,13 @@ export class ApiClientError extends Error {
     this.fieldErrors = [...(options.fieldErrors ?? [])]
     this.requestId = options.requestId ?? null
     this.serverResponse = options.serverResponse ?? null
+    this.retryAfterSeconds = options.retryAfterSeconds ?? null
   }
 
-  static fromServer(response: ErrorResponseDto): ApiClientError {
+  static fromServer(
+    response: ErrorResponseDto,
+    retryAfterSeconds: number | null = null,
+  ): ApiClientError {
     return new ApiClientError({
       message: response.message,
       status: response.status,
@@ -34,6 +40,7 @@ export class ApiClientError extends Error {
       fieldErrors: response.fieldErrors,
       requestId: response.requestId,
       serverResponse: response,
+      retryAfterSeconds,
     })
   }
 }
@@ -48,7 +55,10 @@ export function normalizeApiError(error: unknown): ApiClientError {
   }
 
   if (axios.isAxiosError(error) && isErrorResponseDto(error.response?.data)) {
-    return ApiClientError.fromServer(error.response.data)
+    return ApiClientError.fromServer(
+      error.response.data,
+      parseRetryAfterSeconds(error.response?.headers?.['retry-after']),
+    )
   }
 
   return new ApiClientError({
@@ -56,6 +66,15 @@ export function normalizeApiError(error: unknown): ApiClientError {
     status: 0,
     code: 'NETWORK_ERROR',
   })
+}
+
+export function parseRetryAfterSeconds(value: unknown): number | null {
+  const normalized = Array.isArray(value) ? value[0] : value
+  if (typeof normalized !== 'string' && typeof normalized !== 'number') return null
+  const text = String(normalized)
+  if (!/^\d+$/.test(text)) return null
+  const seconds = Number(text)
+  return Number.isSafeInteger(seconds) && seconds >= 1 && seconds <= 86_400 ? seconds : null
 }
 
 export function fieldErrorsToRecord(fieldErrors: readonly FieldErrorDto[]): Record<string, string> {

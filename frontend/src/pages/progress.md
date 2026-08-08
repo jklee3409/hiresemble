@@ -2,7 +2,21 @@
 
 ## Overview
 
-공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, Gate 2 GitHub Source, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-08-08] Session Summary (GitHub Source 페이지와 경험 provenance)
+
+- What was done:
+  - 공개 URL 등록·참여 확인, source 상태·결과 집계, account repository server 검색·pagination·선택, version 충돌 보존·재확인, focused Run, refresh/delete 화면을 구현했다.
+  - 경험 보관함에 GitHub badge·repository count/name·short SHA·captured time·sanitized excerpt·내부/안전한 외부 링크·삭제 tombstone을 추가했다.
+- Key decisions:
+  - 전체 repository를 memory에 적재하거나 자동 선택하지 않고 선택은 1~10개로 제한한다. raw code·전체 SHA·내부 path는 표시하지 않는다.
+- Issues encountered:
+  - 기존 경험 submit test의 비동기 button 탐색을 form submit으로 안정화했다.
+- Validation:
+  - page/component targeted test와 전체 `corepack pnpm check` 80 files/369 tests 통과. focused Playwright는 최종 delete locator 재확인이 남았다.
+- Next steps:
+  - 수정된 `alertdialog` locator로 browser delete 완료를 재확인한다.
 
 ## [2026-08-07] Session Summary (경험 보관함 카드에서 바로 처리하기)
 

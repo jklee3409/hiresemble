@@ -7,7 +7,7 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ErrorResponseDto } from './contracts'
-import { ApiClientError, fieldErrorsToRecord } from './errors'
+import { ApiClientError, fieldErrorsToRecord, parseRetryAfterSeconds } from './errors'
 import { HttpApiClient } from './http'
 
 describe('HttpApiClient', () => {
@@ -132,6 +132,25 @@ describe('HttpApiClient', () => {
     })
     expect(mutationRequests).toBe(1)
   })
+
+  it('preserves only a bounded integer Retry-After value', async () => {
+    const adapter: AxiosAdapter = async (config) => {
+      throw responseError(config, errorResponse({ status: 429, code: 'GITHUB_RATE_LIMITED' }), {
+        'retry-after': '120',
+      })
+    }
+    const client = new HttpApiClient({ adapter })
+
+    await expect(client.get('/github-sources')).rejects.toMatchObject({
+      status: 429,
+      code: 'GITHUB_RATE_LIMITED',
+      retryAfterSeconds: 120,
+    })
+    expect(parseRetryAfterSeconds('0')).toBeNull()
+    expect(parseRetryAfterSeconds('86401')).toBeNull()
+    expect(parseRetryAfterSeconds('1.5')).toBeNull()
+    expect(parseRetryAfterSeconds('Wed, 21 Oct 2026 07:28:00 GMT')).toBeNull()
+  })
 })
 
 function ok<T>(config: InternalAxiosRequestConfig, data: T): AxiosResponse<T> {
@@ -144,11 +163,15 @@ function ok<T>(config: InternalAxiosRequestConfig, data: T): AxiosResponse<T> {
   }
 }
 
-function responseError(config: InternalAxiosRequestConfig, data: ErrorResponseDto): AxiosError {
+function responseError(
+  config: InternalAxiosRequestConfig,
+  data: ErrorResponseDto,
+  headers: Record<string, string> = {},
+): AxiosError {
   return new AxiosError('Request failed', AxiosError.ERR_BAD_RESPONSE, config, undefined, {
     config,
     data,
-    headers: {},
+    headers,
     status: data.status,
     statusText: String(data.status),
   })

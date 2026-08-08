@@ -22,6 +22,7 @@ import {
   formatUsage,
   formatInstant,
   formatRunProgressLabel,
+  gitHubSourceResourceRoute,
 } from '@/features/agent-runs/presentation'
 import {
   useAgentRunListQuery,
@@ -353,6 +354,13 @@ async function removeSelected(): Promise<void> {
               :to="{ name: 'cover-letter-edit', params: { coverLetterId: run.resourceId } }"
             >
               자기소개서
+            </RouterLink>
+            <RouterLink
+              v-else-if="gitHubSourceResourceRoute(run.resourceType, run.resourceId)"
+              class="button button--secondary button--compact"
+              :to="gitHubSourceResourceRoute(run.resourceType, run.resourceId) ?? '/agent-runs'"
+            >
+              GitHub 연결
             </RouterLink>
             <button
               type="button"

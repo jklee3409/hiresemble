@@ -16,6 +16,7 @@ import { getAgentRun } from '@/shared/api/agentRunApi'
 import { coverLetterQueryKeys } from '@/features/cover-letters/queries'
 import { documentQueryKeys } from '@/features/documents/queries'
 import { jobQueryKeys } from '@/features/jobs/queries'
+import { gitHubSourceQueryKeys } from '@/features/github/queryKeys'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import {
   sessionCleanup,
@@ -225,7 +226,8 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
       run.status === 'WAITING_USER' &&
       (run.resourceType === 'DOCUMENT' ||
         run.resourceType === 'JOB' ||
-        run.resourceType === 'COVER_LETTER') &&
+        run.resourceType === 'COVER_LETTER' ||
+        run.resourceType === 'GITHUB_SOURCE') &&
       run.resourceId !== null
     ) {
       if (run.resourceType === 'DOCUMENT') {
@@ -253,12 +255,25 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
             queryKey: jobQueryKeys.latestAnalysis(this.options.userId, run.resourceId),
           })
         }
-      } else {
+      } else if (run.resourceType === 'COVER_LETTER') {
         void this.options.cache.invalidateQueries({
           queryKey: coverLetterQueryKeys.root(this.options.userId),
         })
         void this.options.cache.invalidateQueries({
           queryKey: coverLetterQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+      } else {
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.repositoryRoot(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: agentRunQueryKeys.root(this.options.userId),
         })
       }
     }
@@ -319,6 +334,22 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         })
         void this.options.cache.invalidateQueries({
           queryKey: coverLetterQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+      } else if (run.resourceType === 'GITHUB_SOURCE') {
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: gitHubSourceQueryKeys.repositoryRoot(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: profileQueryKeys.experiencesRoot(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: profileQueryKeys.evidenceRoot(this.options.userId),
         })
       }
     }

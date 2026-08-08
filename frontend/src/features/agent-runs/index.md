@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`AI 작업 내역` 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 Document·Job·Job Analysis·Cover Letter resource SSE 복구 상태 machine을 소유한다.
+`AI 작업 내역` 목록 filter, Vue Query, 안전한 상태 표현, Progress Drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact resource SSE 복구 상태 machine을 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,7 +16,7 @@
 
 ## 구성 요소 역할
 
-Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다. terminal·WAITING_USER에서 관련 REST query만 invalidate하고 Cover Letter 결과는 자기소개서 또는 answer version link로만 연결한다. history delete 성공 시 대상 detail cache를 제거하고 owner Run root query를 갱신한다.
+Backend DTO와 stateVersion을 그대로 소비하며 연결 상태와 Run business 상태를 분리한다. terminal·WAITING_USER에서 관련 REST query만 invalidate하고 GitHub Run은 feature flag가 허용할 때 source·repository·experience cache와 내부 route를 연결한다. Career Artifact Run은 Gate 4 전까지 generic 상세와 단계명만 표시하며 resource route button은 만들지 않는다. Cover Letter 결과는 자기소개서 또는 answer version link로만 연결하고 history delete 성공 시 대상 detail cache를 제거하고 owner Run root query를 갱신한다.
 
 ## 다른 디렉터리와의 의존 관계
 

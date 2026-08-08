@@ -4,6 +4,7 @@ import type {
   ModelTier,
   WorkflowType,
 } from '@/shared/api/agentRunContracts'
+import { featureFlags } from '@/app/featureFlags'
 
 const AGENT_RUN_DETAIL_PATH =
   /^\/agent-runs\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -21,6 +22,9 @@ export const WORKFLOW_LABELS: Record<WorkflowType, string> = {
   INTERVIEW_PREPARATION: '면접 준비 자료 만들기',
   INTERVIEW_ANSWER_FEEDBACK: '면접 답변 돌아보기',
   MOCK_INTERVIEW_FEEDBACK: '모의 면접 돌아보기',
+  GITHUB_INGESTION: 'GitHub 경험 확인',
+  RESUME_GENERATION: 'AI 이력서 초안 만들기',
+  PORTFOLIO_GENERATION: 'AI 포트폴리오 초안 만들기',
 }
 
 export const STATUS_LABELS: Record<AgentRunStatus, string> = {
@@ -115,6 +119,31 @@ const STEP_LABELS: Record<string, string> = {
   LOAD_SESSION_SNAPSHOT: '모의 면접 기록 확인',
   ANALYZE_TURNS: '질문과 답변 분석',
   SYNTHESIZE_SESSION_FEEDBACK: '종합 피드백 만들기',
+  VALIDATE_GITHUB_SOURCE: 'GitHub 주소와 공개 상태 확인',
+  DISCOVER_REPOSITORIES: '공개 저장소 목록 확인',
+  WAIT_FOR_REPOSITORY_SELECTION: '분석할 저장소 선택 기다리기',
+  CAPTURE_REPOSITORY_SNAPSHOTS: '선택한 저장소 기록 만들기',
+  SANITIZE_AND_SELECT_SOURCE_UNITS: '안전하게 확인할 내용 정리',
+  EXTRACT_GITHUB_CANDIDATES: '경험 후보 찾기',
+  VALIDATE_GITHUB_CANDIDATES: '경험 후보와 출처 확인',
+  EMBED_GITHUB_CANDIDATES: '비슷한 경험 비교 준비',
+  APPLY_CANONICAL_EXPERIENCES: '경험 보관함에 반영',
+  FINALIZE_GITHUB_SOURCE: 'GitHub 분석 결과 저장',
+  LOAD_RESUME_REQUEST: '이력서 생성 요청 확인',
+  BUILD_VERIFIED_CAREER_CONTEXT: '승인된 경력 근거 준비',
+  PLAN_RESUME: '이력서 구성 계획',
+  DRAFT_RESUME_CONTENT: '이력서 내용 작성',
+  FACT_CHECK_RESUME_CONTENT: '이력서 근거 확인',
+  RENDER_DOCX: 'Word 파일 생성',
+  VALIDATE_DOCX: 'Word 파일 안전성 확인',
+  PERSIST_RESUME_VERSION: '이력서 버전 저장',
+  LOAD_PORTFOLIO_REQUEST: '포트폴리오 생성 요청 확인',
+  PLAN_PORTFOLIO_STORY: '포트폴리오 흐름 계획',
+  DRAFT_PORTFOLIO_SLIDES: '포트폴리오 슬라이드 작성',
+  FACT_CHECK_PORTFOLIO_CONTENT: '포트폴리오 근거 확인',
+  RENDER_PPTX: 'PowerPoint 파일 생성',
+  VALIDATE_PPTX: 'PowerPoint 파일 안전성 확인',
+  PERSIST_PORTFOLIO_VERSION: '포트폴리오 버전 저장',
 }
 
 export function formatStepName(stepKey: string): string {
@@ -146,7 +175,20 @@ export function formatDuration(value: number | null): string {
   return minutes === 0 ? `${seconds}초` : `${minutes}분 ${remainder}초`
 }
 
-export function safeRequiredActionRoute(value: string | null): string | null {
+export function gitHubSourceResourceRoute(
+  resourceType: string | null,
+  resourceId: string | null,
+  githubSourceEnabled = featureFlags.githubSourceEnabled,
+): string | null {
+  return githubSourceEnabled && resourceType === 'GITHUB_SOURCE' && resourceId !== null
+    ? `/profile/github?source=${encodeURIComponent(resourceId)}`
+    : null
+}
+
+export function safeRequiredActionRoute(
+  value: string | null,
+  githubSourceEnabled = featureFlags.githubSourceEnabled,
+): string | null {
   if (
     value === null ||
     !value.startsWith('/') ||
@@ -171,6 +213,7 @@ export function safeRequiredActionRoute(value: string | null): string | null {
         '/profile/activities',
         '/profile/evidence',
         '/agent-runs',
+        ...(githubSourceEnabled ? ['/profile/github'] : []),
       ].includes(target.pathname) ||
       AGENT_RUN_DETAIL_PATH.test(target.pathname) ||
       DOCUMENT_DETAIL_PATH.test(target.pathname) ||

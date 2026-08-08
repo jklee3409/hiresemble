@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { featureFlags } from '@/app/featureFlags'
 import DocumentEvidencePanel from '@/features/documents/DocumentEvidencePanel.vue'
 import ExperienceLibraryPage from '@/pages/ExperienceLibraryPage.vue'
 import type {
@@ -28,7 +29,10 @@ vi.mock('@/shared/api/profileApi', () => ({
 }))
 
 describe('ExperienceLibraryPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    featureFlags.githubSourceEnabled = false
+  })
 
   it('shows one canonical card, compares a similar experience, and keeps it separate', async () => {
     const candidate = experience({
@@ -113,7 +117,7 @@ describe('ExperienceLibraryPage', () => {
 
     const editor = wrapper.get('.experience-card__editor')
     await editor.get('input.control').setValue('결제 지연 개선')
-    await clickButton(wrapper, '수정 저장')
+    await editor.trigger('submit')
     await flushPromises()
 
     expect(profileApi.updateExperience).toHaveBeenCalledWith(item.id, {
@@ -142,6 +146,59 @@ describe('ExperienceLibraryPage', () => {
     expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(0)
     expect(wrapper.findAll('button').some((button) => button.text().includes('활용 승인'))).toBe(
       false,
+    )
+  })
+
+  it('shows safe GitHub provenance, repository count, and a deleted-source tombstone', async () => {
+    const item = experience({
+      reviewRequired: false,
+      matchKind: 'NEW',
+      documentSourceCount: 0,
+      githubRepositorySourceCount: 2,
+      primaryDocumentName: null,
+    })
+    vi.mocked(profileApi.listExperiences).mockResolvedValue(pageOf([item]))
+    vi.mocked(profileApi.getExperience).mockResolvedValue({
+      item,
+      sources: [
+        {
+          evidenceId: 'github-evidence',
+          sourceType: 'GITHUB_REPOSITORY',
+          documentId: null,
+          verificationStatus: 'VERIFIED',
+          relationKind: 'PRIMARY_SOURCE',
+          similarity: null,
+          githubSourceId: '00000000-0000-4000-8000-000000000001',
+          githubRepositoryId: '00000000-0000-4000-8000-000000000002',
+          repositoryName: 'openai/hiresemble',
+          repositoryUrl: 'https://github.com/openai/hiresemble',
+          commitShaShort: 'abcdef123456',
+          capturedAt: '2026-08-08T00:00:00Z',
+          sourceExcerpt: '공개 README와 변경 기록에서 확인한 안전한 요약입니다.',
+          sourceDeletedAt: '2026-08-08T01:00:00Z',
+          createdAt: '2026-08-08T00:00:00Z',
+        },
+      ],
+    })
+    featureFlags.githubSourceEnabled = true
+
+    const wrapper = await mountWithApp(
+      ExperienceLibraryPage,
+      '/profile/experiences?selected=experience-candidate',
+    )
+
+    expect(wrapper.text()).toContain('GitHub 출처')
+    expect(wrapper.text()).toContain('GitHub 저장소')
+    expect(wrapper.text()).toContain('2곳')
+    expect(wrapper.text()).toContain('openai/hiresemble')
+    expect(wrapper.text()).toContain('abcdef123456')
+    expect(wrapper.text()).toContain('안전한 요약')
+    expect(wrapper.text()).toContain('GitHub 연결은 삭제됐지만')
+    expect(wrapper.get('a[href="https://github.com/openai/hiresemble"]').attributes('rel')).toBe(
+      'noopener noreferrer',
+    )
+    expect(wrapper.get('a[href^="/profile/github?source="]').attributes('href')).toContain(
+      '00000000-0000-4000-8000-000000000001',
     )
   })
 })
@@ -202,6 +259,7 @@ function experience(overrides: Partial<ExperienceItemDto> = {}): ExperienceItemD
     reviewRequired: true,
     sourceCount: 2,
     documentSourceCount: 2,
+    githubRepositorySourceCount: 0,
     primaryDocumentName: '지원용 이력서.pdf',
     version: 3,
     createdAt: '2026-08-01T00:00:00Z',
@@ -221,6 +279,13 @@ function detail(item: ExperienceItemDto): ExperienceItemDetailDto {
         verificationStatus: 'PENDING',
         relationKind: 'PRIMARY_SOURCE',
         similarity: null,
+        githubSourceId: null,
+        githubRepositoryId: null,
+        repositoryName: null,
+        repositoryUrl: null,
+        commitShaShort: null,
+        capturedAt: null,
+        sourceExcerpt: null,
         sourceDeletedAt: null,
         createdAt: '2026-08-01T00:00:00Z',
       },
@@ -231,6 +296,13 @@ function detail(item: ExperienceItemDto): ExperienceItemDetailDto {
         verificationStatus: 'VERIFIED',
         relationKind: 'CORROBORATING',
         similarity: 0.96,
+        githubSourceId: null,
+        githubRepositoryId: null,
+        repositoryName: null,
+        repositoryUrl: null,
+        commitShaShort: null,
+        capturedAt: null,
+        sourceExcerpt: null,
         sourceDeletedAt: null,
         createdAt: '2026-08-07T00:00:00Z',
       },

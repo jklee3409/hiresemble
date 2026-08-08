@@ -7,6 +7,7 @@ import {
   AGENT_STEP_STATUSES,
   AI_QUALITY_MODES,
   MODEL_TIERS,
+  REQUIRED_USER_ACTION_TYPES,
   WORKFLOW_TYPES,
   agentRunDetailSchema,
   runAcceptedSchema,
@@ -36,8 +37,28 @@ describe('Agent Run public contract parity', () => {
     ])
     expect(AI_QUALITY_MODES).toEqual(['ECONOMY', 'BALANCED', 'HIGH_QUALITY'])
     expect(MODEL_TIERS).toEqual(['LOW_COST', 'BALANCED', 'HIGH_QUALITY'])
-    expect(WORKFLOW_TYPES).toHaveLength(8)
+    expect(WORKFLOW_TYPES).toHaveLength(11)
+    expect(WORKFLOW_TYPES.slice(-3)).toEqual([
+      'GITHUB_INGESTION',
+      'RESUME_GENERATION',
+      'PORTFOLIO_GENERATION',
+    ])
+    expect(REQUIRED_USER_ACTION_TYPES.at(-1)).toBe('SELECT_GITHUB_REPOSITORIES')
   })
+
+  it.each(['RESUME_GENERATION', 'PORTFOLIO_GENERATION'] as const)(
+    'parses the Gate 3 %s workflow without exposing a Career Artifact contract',
+    (workflowType) => {
+      expect(
+        agentRunDetailSchema.parse({
+          ...agentRunDetail(),
+          workflowType,
+          resourceType: 'CAREER_ARTIFACT',
+          resourceId: RUN_ID,
+        }).workflowType,
+      ).toBe(workflowType)
+    },
+  )
 
   it('accepts the exact nullable P3 detail projection and strips internal fields', () => {
     const parsed = agentRunDetailSchema.parse({

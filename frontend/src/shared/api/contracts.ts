@@ -62,6 +62,7 @@ export type EvidenceSourceType =
   | 'CAREER'
   | 'ACTIVITY'
   | 'DOCUMENT_CHUNK'
+  | 'GITHUB_REPOSITORY'
   | 'EXPERIENCE'
   | 'MANUAL'
 
@@ -344,6 +345,7 @@ export interface ExperienceItemDto extends VersionedProfileResource {
   reviewRequired: boolean
   sourceCount: number
   documentSourceCount: number
+  githubRepositorySourceCount: number
   /* 가장 먼저 이 경험을 추출한 문서의 이름. 문서 출처가 없거나 원본이 지워졌으면 null이다. */
   primaryDocumentName: string | null
 }
@@ -355,6 +357,13 @@ export interface ExperienceSourceDto {
   verificationStatus: EvidenceVerificationStatus
   relationKind: ExperienceLinkKind
   similarity: number | null
+  githubSourceId: string | null
+  githubRepositoryId: string | null
+  repositoryName: string | null
+  repositoryUrl: string | null
+  commitShaShort: string | null
+  capturedAt: string | null
+  sourceExcerpt: string | null
   sourceDeletedAt: string | null
   createdAt: string
 }

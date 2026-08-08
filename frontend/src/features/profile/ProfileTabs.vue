@@ -2,12 +2,13 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { featureFlags } from '@/app/featureFlags'
 import AppIcon from '@/shared/ui/AppIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-const sections = [
+const baseSections = [
   {
     to: '/profile/basic',
     label: '기본 정보',
@@ -50,8 +51,15 @@ const sections = [
   },
 ] as const
 
+const sections = computed(() => [
+  ...baseSections,
+  ...(featureFlags.githubSourceEnabled
+    ? ([{ to: '/profile/github', label: 'GitHub', icon: 'evidence' }] as const)
+    : []),
+])
+
 const currentSection = computed(
-  () => sections.find((section) => route.path === section.to) ?? sections[0],
+  () => sections.value.find((section) => route.path === section.to) ?? sections.value[0],
 )
 
 function changeSection(event: Event): void {

@@ -8,6 +8,7 @@
 
 - [`auth/`](auth/index.md): P1 인증과 프로필 닉네임 Form 입력 schema·byte validation
 - [`profile/`](profile/index.md): P2 프로필 Zod·query key·version 충돌·공용 입력 UI
+- [`github/`](github/index.md): Gate 2 GitHub Source query·mutation·idempotency·focused Run 표시
 - [`agent-runs/`](agent-runs/index.md): P3 목록·상세 projection, SSE 복구와 Progress Drawer
 - [`documents/`](documents/index.md): P4 문서 upload·query·상태·SSE invalidation과 delete cleanup
 - [`jobs/`](jobs/index.md): P5 공고 filter·query·상태·version conflict·Agent Run monitor
@@ -19,6 +20,7 @@
 
 - 실제 구현된 기능 규칙만 하위 feature에 두고 빈 미래 기능 계층을 만들지 않는다.
 - profile feature는 서버 상태를 소유하지 않고 page가 Vue Query로 사용하는 schema·key·상호작용만 제공한다.
+- GitHub feature는 owner-scoped query key, 사용자 작업별 idempotency 수명주기와 source cache 갱신을 소유하고 서버 상태 전이는 API 응답을 따른다.
 - Agent Run feature는 DB snapshot을 반영한 Vue Query cache와 연결 복구 상태를 분리한다.
 - Documents feature는 user-scoped REST 상태를 원천으로 삼고 Agent Run stream을 query invalidation 신호로만 사용한다.
 - Jobs feature는 URL query를 filter 원천으로 삼고 업무 상태와 추출 상태를 별도 계약으로 유지한다.

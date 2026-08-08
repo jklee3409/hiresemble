@@ -1,8 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { featureFlags } from '@/app/featureFlags'
 import { agentRunSummary } from '@/features/agent-runs/testFixtures'
 import { useNotifications } from '@/shared/ui/notifications'
 
@@ -31,10 +32,22 @@ vi.mock('@/features/agent-runs/queries', () => ({
           resourceType: 'COVER_LETTER',
           resourceId: '60000000-0000-4000-8000-000000000001',
         }),
+        agentRunSummary('RUNNING', {
+          id: '10000000-0000-4000-8000-000000000003',
+          workflowType: 'GITHUB_INGESTION',
+          resourceType: 'GITHUB_SOURCE',
+          resourceId: '70000000-0000-4000-8000-000000000001',
+        }),
+        agentRunSummary('RUNNING', {
+          id: '10000000-0000-4000-8000-000000000004',
+          workflowType: 'RESUME_GENERATION',
+          resourceType: 'CAREER_ARTIFACT',
+          resourceId: '80000000-0000-4000-8000-000000000001',
+        }),
       ],
       page: 0,
       size: 20,
-      totalElements: 2,
+      totalElements: 4,
       totalPages: 2,
     }),
     error: ref(null),
@@ -55,6 +68,10 @@ describe('AgentRunListPage URL state', () => {
   beforeEach(() => {
     deleteRun.mockClear()
     deleteSelectedRuns.mockClear()
+    featureFlags.githubSourceEnabled = true
+  })
+  afterAll(() => {
+    featureFlags.githubSourceEnabled = false
   })
 
   it('canonicalizes invalid filters and drives sort and pagination through the URL', async () => {
@@ -73,6 +90,7 @@ describe('AgentRunListPage URL state', () => {
           name: 'cover-letter-edit',
           component: { template: '<div />' },
         },
+        { path: '/profile/github', component: { template: '<div />' } },
       ],
     })
     await router.push(
@@ -90,6 +108,15 @@ describe('AgentRunListPage URL state', () => {
     expect(
       wrapper.get('a[href="/cover-letters/60000000-0000-4000-8000-000000000001/edit"]').text(),
     ).toBe('자기소개서')
+    expect(
+      wrapper.get('a[href="/profile/github?source=70000000-0000-4000-8000-000000000001"]').text(),
+    ).toBe('GitHub 연결')
+    const careerArtifactRow = wrapper
+      .findAll('.run-row')
+      .find((row) => row.text().includes('AI 이력서 초안 만들기'))
+    expect(careerArtifactRow).toBeDefined()
+    expect(careerArtifactRow?.findAll('a')).toHaveLength(1)
+    expect(careerArtifactRow?.find('a').text()).toBe('상세 보기')
     expect(wrapper.text()).toContain('작업 한도의 33%')
     const rowCheckboxes = wrapper.findAll('.run-row__selection input')
     expect(rowCheckboxes[0]?.attributes('disabled')).toBeDefined()

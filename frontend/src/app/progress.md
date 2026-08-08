@@ -2,7 +2,20 @@
 
 ## Overview
 
-Vue 애플리케이션이 공유하는 Pinia와 TanStack Query 인스턴스 구성을 관리한다. 현재 P1 구현과 검증 상태만 기록한다.
+Vue 애플리케이션이 공유하는 Pinia, TanStack Query 인스턴스와 build-time feature flag 구성을 관리한다.
+
+## [2026-08-08] Session Summary (GitHub Source build-time flag)
+
+- What was done:
+  - `VITE_GITHUB_SOURCE_ENABLED`가 정확히 `true`일 때만 활성화되는 typed flag를 추가했다.
+- Key decisions:
+  - 누락·대소문자·공백·다른 값은 모두 false이며 Backend capability endpoint나 runtime store를 만들지 않는다.
+- Issues encountered:
+  - None.
+- Validation:
+  - flag on/off 단위 테스트와 Frontend 전체 `corepack pnpm check` 통과.
+- Next steps:
+  - None.
 
 ## [2026-07-19] Session Summary (P1 Pinia·QueryClient bootstrap 구현)
 
