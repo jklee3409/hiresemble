@@ -12,7 +12,23 @@
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
 - 공개 Spring/OpenAPI는 Career Artifact feature가 꺼지면 GitHub Source를 포함해 79 paths/107 operations이고, 켜지면 88 paths/118 operations다.
-- GitHub Gate 0–2와 Career Artifact Backend Gate 3는 V28·11개 WorkflowType 기준으로 완료됐다. Career Artifact Frontend Gate 4와 Private GitHub Gate 5는 `PLANNED`다.
+- GitHub·Career Artifact Gate 0–4는 V28·11개 WorkflowType과 독립 frontend flag 기준으로 완료됐다. Private GitHub Gate 5는 `PLANNED`다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 4 Frontend)
+
+- What was done:
+  - 독립 build flag 아래 Career Artifact 11-operation strict client, user-scoped query, 목록·4단계 wizard·상세·structured preview·version download·lifecycle·선택적 제안과 Agent Run 연동을 구현했다.
+  - Dashboard·자료·GitHub 완료 화면의 readiness 제안과 Document/GitHub/Agent Run terminal cache 연결을 기존 기능에 additive하게 반영했다.
+- Key decisions:
+  - 현재 API가 제공하는 current projection만 preview하고 과거 version은 summary와 download만 제공한다. 연락처·pending idempotency는 최대 24시간 `sessionStorage`에만 두며 flag off에서는 route·switch·link·readiness 요청이 모두 사라진다.
+  - Backend Java·API·DB·workflow·V1~V28과 dependency lock은 변경하지 않았다.
+- Issues encountered:
+  - 전체 check의 test fixture 타입 두 곳과 SSE fixture의 과거 연결 재생 시 상태 역행을 발견해 fixture typing과 idempotent 상태 전이로 보정했다. lifecycle mutation은 in-flight detail query를 취소해 stale 응답 race를 막았다.
+- Validation:
+  - `corepack pnpm check` 통과: 94 files/422 tests, lint·format·typecheck·production build 성공. Career Artifact+GitHub Chromium 4/4 통과(기존 5173을 보존하고 격리 5194 사용).
+  - `backend/.\gradlew.bat check` 95 suites/647 tests, `docker compose config --quiet`, `git diff --check`, `git diff --cached --check` 통과. V27·V28 checksum 불변, Backend와 package/lock diff 0, 실제 외부 API 호출 0이다.
+- Next steps:
+  - Gate 5 Private GitHub는 `PLANNED`로 유지한다. account deletion terminal purge와 운영 Office font 확인은 별도 승인·배포 검증 위험으로 남긴다.
 
 ## [2026-08-08] Session Summary (Career Artifact Gate 3 Backend)
 

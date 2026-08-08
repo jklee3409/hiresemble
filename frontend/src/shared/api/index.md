@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-Backend P1~P8와 Gate 2 GitHub Source OpenAPI 및 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8, Gate 2 GitHub Source와 Gate 3 Career Artifact OpenAPI 및 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -13,6 +13,8 @@ Backend P1~P8와 Gate 2 GitHub Source OpenAPI 및 11개 Agent Run WorkflowType�
 - [`experienceContracts.ts`](experienceContracts.ts): canonical 경험·GitHub provenance 응답의 strict Zod 계약
 - [`githubSourceContracts.ts`](githubSourceContracts.ts): GitHub Source·repository page·refresh와 Run parity strict Zod 계약
 - [`githubSourceApi.ts`](githubSourceApi.ts): GitHub Source 7개 operation, typed sort·version·Idempotency-Key consumer
+- [`careerArtifactContracts.ts`](careerArtifactContracts.ts): Career Artifact enum·projection·MIME·resource parity와 request strict Zod 계약
+- [`careerArtifactApi.ts`](careerArtifactApi.ts): Career Artifact 11개 operation, CSRF·query·version과 create/regenerate 전용 Idempotency-Key consumer
 - [`agentRunContracts.ts`](agentRunContracts.ts): 11개 workflow enum·DTO·SSE event Zod 계약
 - [`agentRunApi.ts`](agentRunApi.ts): Agent Run 목록·상세·retry·cancel·개별/선택 history delete consumer
 - [`documentContracts.ts`](documentContracts.ts): 원본 파일명을 포함한 문서·parse·evidence enum과 공개 DTO Zod 계약
@@ -41,7 +43,7 @@ Backend P1~P8와 Gate 2 GitHub Source OpenAPI 및 11개 Agent Run WorkflowType�
 ## 변경 시 주의사항
 
 - 성공 envelope를 가정하거나 활성 phase 밖 endpoint function을 추가하지 않는다. Dashboard 날짜별 count는 반환 items와 일치해야 한다.
-- Agent Run 생성은 별도 공개 client로 만들지 않고 domain 202 응답의 Run ID를 사용한다. storage key·hash·provider metadata와 P9 이후 DTO를 type에 추가하지 않는다.
+- Agent Run 생성은 별도 공개 client로 만들지 않고 domain 202 응답의 Run ID를 사용한다. Career Artifact create/regenerate도 기존 `runAcceptedSchema`와 resource ID parity를 추가 검증한다. storage key·hash·provider metadata와 P9 이후 DTO를 type에 추가하지 않는다.
 
 ## 관련 규칙 및 문서
 

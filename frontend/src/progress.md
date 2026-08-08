@@ -3,9 +3,22 @@
 ## Overview
 
 - `main.ts`가 Vue 앱과 Pinia, Router, Vue Query를 초기화하며 미사용 PrimeVue theme은 등록하지 않는다.
-- `env.d.ts`에 Vite API base/proxy와 GitHub Source feature flag 환경 변수 타입이 선언되어 있다.
-- P1 auth·Session부터 P7 `features/cover-letters`, API·page·lazy route 구현·테스트가 있다.
-- 공개 Landing과 실제 인증·onboarding·dashboard·profile·GitHub Source·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·게시 가이드 read가 연결되어 있고 AI 설정 기능은 아직 없다.
+- `env.d.ts`에 Vite API base/proxy와 서로 독립적인 GitHub Source·Career Artifact feature flag 환경 변수 타입이 선언되어 있다.
+- P1 auth·Session부터 P8 Interview와 Gate 4 `features/career-artifacts`, API·page·lazy route 구현·테스트가 있다.
+- 공개 Landing과 실제 인증·onboarding·dashboard·profile·GitHub Source·Career Artifact·Agent Run·Document·Job·Cover Letter·Interview 화면 및 공용 제품 UI 기반이 있으며 Dashboard 전용 집계·게시 가이드 read가 연결되어 있고 AI 설정 기능은 아직 없다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 4 소스 통합)
+
+- What was done:
+  - Career Artifact flag·route·page·feature·strict API를 조립하고 기존 layout, Agent Run, Document, GitHub, session cleanup에 필요한 연결을 추가했다.
+- Key decisions:
+  - 업로드 document와 생성 artifact의 route·cache·lifecycle을 합치지 않고 flag가 꺼지면 Career Artifact surface와 요청을 모두 제거한다.
+- Issues encountered:
+  - 상세 lifecycle refetch race와 browser fixture의 historical SSE replay를 실제 상태가 역행하지 않도록 보정했다.
+- Validation:
+  - 전체 Frontend check 94 files/422 tests와 production build, 통합 Chromium 4/4가 통과했다.
+- Next steps:
+  - Gate 5 private repository 연결은 현재 소스 범위에 추가하지 않는다.
 
 ## [2026-08-08] Session Summary (Career Artifact Agent Run 호환성)
 

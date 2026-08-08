@@ -6,14 +6,14 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                             | 역할                                                                                                                                    |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다.                |
-| [`api.md`](api.md)               | `/api/v1`, Career Artifact feature 활성 88 paths/118 operations·비활성 79 paths/107 operations와 planned 운영 API를 구분한다.           |
-| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V28 Career Artifact schema를 포함한 관계·제약·보존 정책을 정의한다.                                       |
-| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice/artifact route, feature-gated GitHub 화면, layout, API 연결과 E2E를 정의한다. |
-| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.                           |
-| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                                                |
+| 경로                             | 역할                                                                                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다.                 |
+| [`api.md`](api.md)               | `/api/v1`, Career Artifact feature 활성 88 paths/118 operations·비활성 79 paths/107 operations와 planned 운영 API를 구분한다.            |
+| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V28 Career Artifact schema를 포함한 관계·제약·보존 정책을 정의한다.                                        |
+| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice, feature-gated GitHub·Career Artifact 화면, layout, API 연결과 E2E를 정의한다. |
+| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.                            |
+| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                                                 |
 
 현재 관리 대상 하위 디렉터리는 없다.
 
@@ -27,7 +27,7 @@
 
 ## GitHub·Career Artifact 확장
 
-2026-08-08 기준 GitHub Gate 0–2와 Career Artifact Backend Gate 3는 구현됐다. Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub는 `PLANNED`로 분리한다.
+2026-08-08 기준 GitHub·Career Artifact Gate 0–4는 구현됐다. Gate 5 Private GitHub는 `PLANNED`로 분리한다.
 
 | 관점                           | 활성 목표 계약                                                                             |
 | ------------------------------ | ------------------------------------------------------------------------------------------ |

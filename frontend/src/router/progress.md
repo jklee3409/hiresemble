@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child를 허용하고 GitHub path는 flag 활성 시만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-08] Session Summary (Career Artifact route gate)
+
+- What was done:
+  - flag 활성 시 `/career-artifacts`, `/career-artifacts/new`, UUID 상세 lazy route와 canonical `returnTo`를 추가했다.
+- Key decisions:
+  - new route는 허용된 `type`·`step` query만, 상세는 UUID만 허용하고 flag off에서는 모두 거부한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - route/returnTo flag on/off test와 전체 Frontend check가 통과했다.
+- Next steps:
+  - Gate 5 route는 별도 승인 전 등록하지 않는다.
+
 ## [2026-08-08] Session Summary (GitHub Source route gate)
 
 - What was done:

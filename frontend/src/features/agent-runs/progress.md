@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-08] Session Summary (Career Artifact Run cache·resource 연결)
+
+- What was done:
+  - terminal Career Artifact Run에서 artifact root·readiness·detail·version과 Agent Run cache를 갱신하고 flag 활성 시 목록·상세 resource link를 제공했다.
+  - GitHub terminal에서도 readiness를 갱신하며 resource type별 explicit branch를 유지했다.
+- Key decisions:
+  - `resourceType`, artifact ID와 Resume/Portfolio workflow parity가 맞는 Run만 focused monitor가 추적한다. 연결 실패는 business failure로 바꾸지 않는다.
+- Issues encountered:
+  - historical SSE fixture replay가 terminal 상태를 되돌리는 test 경계를 idempotent 전이로 수정했다.
+- Validation:
+  - stream·panel·목록 회귀와 통합 Chromium Career Artifact/GitHub 4/4가 통과했다.
+- Next steps:
+  - flag off에서는 generic Run 상세만 유지한다.
+
 ## [2026-08-08] Session Summary (Resume·Portfolio Run 표시 호환)
 
 - What was done:

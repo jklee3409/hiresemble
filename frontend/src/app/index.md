@@ -8,7 +8,7 @@ Vue 애플리케이션이 공유하는 Pinia와 TanStack Query 인스턴스 및 
 
 - [`pinia.ts`](pinia.ts): 애플리케이션 Pinia instance
 - [`queryClient.ts`](queryClient.ts): 4xx·mutation 재시도 정책을 가진 QueryClient
-- [`featureFlags.ts`](featureFlags.ts): 정확한 `true`만 허용하는 GitHub Source build-time flag
+- [`featureFlags.ts`](featureFlags.ts): 정확한 `true`만 허용하는 서로 독립적인 GitHub Source·Career Artifact build-time flag
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

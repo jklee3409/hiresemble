@@ -1,13 +1,13 @@
 # GitHub 경험 수집과 Career Artifact 생성 설계
 
-- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_3_IMPLEMENTED`
+- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_4_IMPLEMENTED`
 - 기준일: 2026-08-08
-- 현재 구현 기준선: Flyway V28, canonical 경험 보관함과 GitHub provenance, GitHub Frontend, Career Artifact Backend, 11개 WorkflowType, feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
+- 현재 구현 기준선: Flyway V28, canonical 경험 보관함과 GitHub provenance, GitHub Frontend, Career Artifact Backend·Frontend, 11개 WorkflowType, feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
 - 활성 공개 계약: [`../spec/`](../spec/)
 
-이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–1 GitHub Backend, Gate 2 Frontend와 Gate 3 Career Artifact Backend는 구현됐고 Gate 4 Frontend와 Gate 5 Private GitHub는 목표 상태다. 실제 상태는 코드와 각 `progress.md`를 따른다.
+이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–1 GitHub Backend, Gate 2 GitHub Frontend, Gate 3 Career Artifact Backend와 Gate 4 Career Artifact Frontend는 구현됐고 Gate 5 Private GitHub는 목표 상태다. 실제 상태는 코드와 각 `progress.md`를 따른다.
 
-### Phase 1~3 실제 적용 상태
+### Phase 1~4 실제 적용 상태
 
 - Gate 0은 현재 V26 byte와 local Flyway 적용 checksum 일치, V26 SHA 고정, populated V26→V27 upgrade와 document canonical characterization으로 닫았다. V26 자체는 수정하지 않았다.
 - Gate 1은 V27, `com.hiresemble.githubsource`, `github-ingestion-v1`, GitHub 공개 API 7개 operation으로 구현했다.
@@ -15,7 +15,8 @@
 - Gate 2는 `VITE_GITHUB_SOURCE_ENABLED=true`일 때만 `/profile/github`, profile tab, required-action route를 노출하는 Frontend로 구현했다. 값이 없거나 다르면 기존 UI와 route를 유지한다.
 - GitHub Source 7개 operation, repository server 검색·pagination·선택, `GITHUB_INGESTION` SSE, refresh/delete와 경험 provenance 표시를 기존 API·DB·workflow 변경 없이 연결했다.
 - 자동 검증은 WireMock·Fake·Testcontainers만 사용하며 실제 GitHub와 OpenAI 호출은 0회다.
-- Gate 3는 V28, 조건부 Career Artifact 11개 operation, `RESUME_GENERATION|PORTFOLIO_GENERATION`, POI renderer, private object version·download/outbox를 구현했다. Career Artifact route·wizard·preview UI와 private GitHub 권한 연동은 추가하지 않았다.
+- Gate 3는 V28, 조건부 Career Artifact 11개 operation, `RESUME_GENERATION|PORTFOLIO_GENERATION`, POI renderer, private object version·download/outbox를 구현했다.
+- Gate 4는 독립 `VITE_CAREER_ARTIFACT_ENABLED` flag 아래 목록·4단계 wizard·현재 structured preview·과거 version 다운로드·lifecycle·SSE/REST monitor와 선택적 제안을 구현했다. Backend API·DB·workflow와 private GitHub 권한은 변경하지 않았다.
 
 ## 1. 목표와 비목표
 
@@ -53,7 +54,7 @@
 | 모델 선택  | 자기소개서 생성·검증만 server catalog의 exact model 선택                               | 이력서·포트폴리오 생성에도 같은 방식 확장                 |
 | 저장소     | document 전용 S3 adapter·5분 presigned URL·삭제 outbox                                 | GitHub snapshot과 career artifact는 별도 lifecycle로 추가 |
 | Office     | Apache POI 의존성 존재, DOCX 입력 parse                                                | XWPF DOCX·XSLF PPTX 출력 renderer 추가                    |
-| Frontend   | `/profile/github`, GitHub provenance, Agent Run monitor와 기존 profile/document 화면   | `/career-artifacts/**` 추가                               |
+| Frontend   | `/profile/github`, `/career-artifacts/**`, provenance, Agent Run monitor와 선택적 제안 | Gate 5 private GitHub 권한 UI만 후속                      |
 
 기존 `DocumentEvidenceService`는 문서 provenance 검증과 canonical 적용을 함께 소유한다. 구현 전 characterization test로 현재 결과를 고정한 뒤 다음 세 책임으로만 추출한다.
 
@@ -575,16 +576,16 @@ artifact/version delete와 DB 실패 orphan upload compensation을 담당한다.
 | POST   | `/api/v1/career-artifacts/{id}/versions/{versionId}/download-url` | 5분 URL                              |
 | DELETE | `/api/v1/career-artifacts/{id}?version=`                          | soft delete, 204                     |
 
-오류 code와 완전한 DTO field는 [`../spec/api.md`](../spec/api.md)의 planned 계약을 따른다.
+오류 code와 완전한 DTO field는 [`../spec/api.md`](../spec/api.md)의 활성 계약을 따른다.
 
 ## 13. Frontend 정보 구조
 
 ### 13.1 Route와 navigation
 
 - `/profile/github` (`IMPLEMENTED`, `VITE_GITHUB_SOURCE_ENABLED`)
-- `/career-artifacts` (`PLANNED`, Gate 4)
-- `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, Gate 4)
-- `/career-artifacts/:careerArtifactId` (`PLANNED`, Gate 4)
+- `/career-artifacts` (`IMPLEMENTED_FLAGGED`, Gate 4)
+- `/career-artifacts/new?type=RESUME|PORTFOLIO` (`IMPLEMENTED_FLAGGED`, Gate 4)
+- `/career-artifacts/:careerArtifactId` (`IMPLEMENTED_FLAGGED`, Gate 4)
 
 상단 `이력서·자료` navigation은 `/documents|/career-artifacts`에서 active다. `/documents`에는 `업로드한 자료`, `/career-artifacts`에는 `AI로 만든 초안` switch를 제공한다. GitHub는 Career Profile Workspace의 별도 section이다.
 
@@ -734,10 +735,12 @@ com.hiresemble.ai.prompt.careerartifact
 - POI DOCX/PPTX renderer, private object lifecycle와 5분 attachment download
 - feature 활성 88 paths/118 operations, 비활성 79 paths/107 operations OpenAPI 회귀
 
-### Gate 4 — Career Artifact frontend (`PLANNED`)
+### Gate 4 — Career Artifact frontend (`DONE`, feature flag)
 
-- readiness, wizard, preview, download, regeneration
-- 선택적 suggestion
+- 독립 build flag, strict DTO/API와 user-scoped query cache
+- readiness, 4단계 wizard, current structured preview, historical version download와 regeneration
+- SSE snapshot-first·reconnect·REST fallback, archive·unarchive·delete와 선택적 suggestion
+- Vitest 94 files/422 tests 전체 check와 Career Artifact·GitHub Chromium 4/4 회귀
 
 ### Gate 5 — Private GitHub (`PLANNED`)
 
@@ -788,9 +791,11 @@ com.hiresemble.ai.prompt.careerartifact
 - 409 자동 retry 없음
 - model catalog failure CTA disable
 - SSE reconnect와 REST fallback
-- structured preview와 version switch
+- current structured preview와 historical version download 구분
 - optional suggestion 조건과 `나중에`
 - active navigation `/documents|/career-artifacts`
+- feature flag off route·switch·returnTo·resource link·readiness 요청 부재
+- 1440px·390px overflow와 keyboard/focus
 
 실제 GitHub와 유료 AI Provider는 자동 test에서 호출하지 않는다. GitHub는 WireMock, AI는 Fake gateway, object storage는 local adapter/Testcontainers 경계로 검증한다.
 
@@ -823,7 +828,7 @@ com.hiresemble.ai.prompt.careerartifact
 2. 현재 `PROJECT|프로젝트` 등 category 실제 분포를 민감 content 없이 count로 확인한다.
 3. anonymous GitHub quota로 예상 traffic을 감당할 수 있는지 산정한다.
 4. GitHub App을 공개 MVP의 필수 연결로 할지 후속으로 둘지 운영 결정을 확정한다.
-5. 운영 배포 환경의 Office font 가용성과 선택적 시각 fixture는 Gate 4/배포 검증에서 확인한다. renderer는 원격 font를 내려받지 않는다.
+5. 운영 배포 환경의 Office font 가용성과 선택적 시각 fixture는 배포 검증에서 확인한다. renderer는 원격 font를 내려받지 않는다.
 6. Gate 4 preview는 Office byte를 browser에서 parse하지 않고 구현된 structured version projection을 사용한다.
 7. roadmap phase 번호는 기존 P8.5-V~P10 순서를 임의로 변경하지 않고 별도 승인으로 배치한다.
 

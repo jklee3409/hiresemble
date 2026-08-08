@@ -29,7 +29,7 @@
 - UI/UX·자동 분석 재설계 메모는 구현 전 감사와 선택 근거를 보존하며, 실제 공개 상태·idempotency 계약은 활성 명세와 코드를 따른다.
 - 공고 분석 페이지 디자인 가이드는 재설계 메모의 방향을 실제 구현 스펙으로 확정한 문서다. 화면 요소는 `JobAnalysisDetailDto`에 존재하는 필드로만 구성하며 새 공개 계약을 만들지 않는다.
 - 자기소개서 모델 선택 보고서는 공식 OpenAI 문서와 현재 코드 구조를 교차 검토한 판단 및 품질 개선 우선순위를 보존하며 활성 계약은 `docs/spec/**`에 둔다.
-- GitHub·Career Artifact 설계는 Gate 0–2의 GitHub vertical과 Gate 3의 V28 Career Artifact Backend를 11개 WorkflowType, feature 활성 88 paths/118 operations·비활성 79 paths/107 operations에 연결한다. Gate 4 Frontend와 Gate 5 Private GitHub는 `PLANNED`다.
+- GitHub·Career Artifact 설계는 Gate 0–2의 GitHub vertical, Gate 3의 V28 Career Artifact Backend와 Gate 4의 feature-gated Frontend를 11개 WorkflowType, feature 활성 88 paths/118 operations·비활성 79 paths/107 operations에 연결한다. Gate 5 Private GitHub는 `PLANNED`다.
 - 진행 문서는 설계가 실제 구현 완료를 의미하지 않음을 유지하고 문서 검증·후속 결정만 기록한다.
 
 ## 다른 디렉터리와의 의존 관계

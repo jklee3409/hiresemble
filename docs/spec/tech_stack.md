@@ -1,7 +1,7 @@
 # 기술 스택 명세서
 
-- 문서 버전: 1.4 (GitHub Source·Career Artifact Backend 기술 계약)
-- 기준일: 2026-08-07
+- 문서 버전: 1.5 (GitHub Source·Career Artifact Frontend 기술 계약)
+- 기준일: 2026-08-08
 - 대상 범위: 핵심 MVP
 - 아키텍처 원칙: Spring Boot 모듈러 모놀리스 + Spring AI 기반 통제형 멀티 에이전트 워크플로
 - 공통 API Prefix: `/api/v1`
@@ -101,21 +101,21 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 
 ### 4.1 Core
 
-| 기술                   | 용도                                         |
-| ---------------------- | -------------------------------------------- |
-| Spring Web MVC         | REST API                                     |
-| Spring Security        | 인증·인가·CSRF                               |
-| Spring Session JDBC    | DB 기반 로그인 세션                          |
-| Spring Data JPA        | 도메인 CRUD                                  |
-| JdbcClient             | pgvector 및 복잡 쿼리                        |
-| Bean Validation        | 입력 검증                                    |
-| Flyway                 | DB 마이그레이션                              |
+| 기술                   | 용도                                           |
+| ---------------------- | ---------------------------------------------- |
+| Spring Web MVC         | REST API                                       |
+| Spring Security        | 인증·인가·CSRF                                 |
+| Spring Session JDBC    | DB 기반 로그인 세션                            |
+| Spring Data JPA        | 도메인 CRUD                                    |
+| JdbcClient             | pgvector 및 복잡 쿼리                          |
+| Bean Validation        | 입력 검증                                      |
+| Flyway                 | DB 마이그레이션                                |
 | Spring Scheduling      | 공고 마감과 자동 분석 후속 의도 reconciliation |
-| Spring TaskExecutor    | DB claim으로 얻은 문서 분석·AI 워크플로 실행 |
-| Spring Actuator        | Health / Metrics                             |
-| Micrometer Observation | 지연시간·모델 사용량 관찰                    |
-| springdoc-openapi      | OpenAPI 문서                                 |
-| Jackson                | JSON / JSONB 직렬화                          |
+| Spring TaskExecutor    | DB claim으로 얻은 문서 분석·AI 워크플로 실행   |
+| Spring Actuator        | Health / Metrics                               |
+| Micrometer Observation | 지연시간·모델 사용량 관찰                      |
+| springdoc-openapi      | OpenAPI 문서                                   |
+| Jackson                | JSON / JSONB 직렬화                            |
 
 ### 4.2 AI
 
@@ -125,7 +125,7 @@ Spring AI 2.0.x와 Spring Boot 4.0/4.1 호환 범위를 기준으로 선택한�
 | Spring AI Structured Output        | Java DTO 기반 결과 생성                                    |
 | Spring AI Tool Calling             | 검색·근거 조회 등 제한된 도구 호출                         |
 | JdbcClient 중심 Vector Search port | user/model/dimension/generation 조건의 pgvector exact 검색 |
-| ModelRouter                        | Chat·image text 작업의 품질별 모델 선택                     |
+| ModelRouter                        | Chat·image text 작업의 품질별 모델 선택                    |
 | Embedding policy route             | 검색 embedding의 provider·product·dimension 선택           |
 | BudgetGuard                        | 호출 수·토큰·비용 상한                                     |
 | PromptRegistry                     | 버전이 있는 프롬프트 관리                                  |
@@ -145,7 +145,7 @@ Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGat
 | -------------------- | ----------------------------------------------------------- |
 | Apache Tika          | MIME 탐지 및 공통 텍스트 추출                               |
 | Apache PDFBox        | PDF 페이지별 텍스트 추출                                    |
-| Apache POI           | DOCX 텍스트 추출, XWPF DOCX·XSLF PPTX 결정론적 생성             |
+| Apache POI           | DOCX 텍스트 추출, XWPF DOCX·XSLF PPTX 결정론적 생성         |
 | Jsoup                | 채용 공고 URL HTML 검사·DOM 정제·이미지 후보 탐지           |
 | webp-imageio `0.3.3` | 정적 WebP의 pure-Java ImageIO read/decode와 dimensions 검증 |
 | SHA-256              | 중복 파일 및 중복 공고 감지                                 |
@@ -216,7 +216,7 @@ Office 생성은 LLM gateway 뒤의 application port와 Apache POI adapter로 �
 
 서버 데이터는 Vue Query가 관리하고, Pinia에는 로그인 사용자, UI 설정, 임시 작성 상태처럼 전역 공유가 필요한 최소 상태만 저장한다.
 
-GitHub source와 Career Artifact도 owner-scoped Vue Query cache를 사용하고 Agent Run SSE 종료 시 source/artifact/experience query를 invalidate한다(`PLANNED`). DOCX/PPTX preview는 browser library로 파일을 해석하지 않고 서버의 versioned structured projection을 렌더링한다. exact model ID는 frontend 상수로 고정하지 않으며 catalog 조회 실패 시 생성 submit을 fail closed한다.
+GitHub source와 Career Artifact는 owner-scoped Vue Query cache를 사용하고 Agent Run SSE 종료 시 source/artifact/readiness/version/experience query를 필요한 범위에서 invalidate한다(`IMPLEMENTED_FLAGGED`). DOCX/PPTX preview는 browser library로 파일을 해석하지 않고 서버의 current version structured projection을 렌더링하며 과거 version은 summary와 download만 제공한다. exact model ID는 frontend 상수로 고정하지 않으며 catalog 조회 실패 시 생성 submit을 fail closed한다. 생성·재생성 draft와 pending idempotency key는 최대 24시간의 user-scoped `sessionStorage`에만 두고 logout·401·사용자 변경 때 공용 cleanup으로 제거한다.
 
 ---
 
@@ -298,7 +298,7 @@ users/{userId}/career-artifacts/{artifactId}/versions/{versionId}/content.pptx
 - 매크로 포함 Office 파일 거부
 - HTML/SVG 업로드 금지
 - 파일 내용과 프롬프트를 일반 로그에 기록하지 않음
-- 생성 출력은 DOCX/PPTX만 허용하고 Apache POI 재개방, OOXML package MIME, macro·external relationship·remote media 부재, slide/section 구조와 file size를 확인한 뒤 성공 version으로 승격한다(`PLANNED`).
+- 생성 출력은 DOCX/PPTX만 허용하고 Apache POI 재개방, OOXML package MIME, macro·external relationship·remote media 부재, slide/section 구조와 file size를 확인한 뒤 성공 version으로 승격한다(`IMPLEMENTED_BACKEND`, Gate 3).
 
 ### LLM 개인정보 정책
 
@@ -326,23 +326,23 @@ LLM 전송 전 기본 마스킹 대상:
 
 Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. `WorkflowRegistry`는 아래 11개 `WorkflowType`, workflow version, 고정 step, input/output schema, 허용 tool·호출 상한과 실패 정책을 등록한다. `[*]`는 모델 자유 loop가 아니라 검증된 bounded ID 목록을 registry 순서대로 처리하는 fan-out이다.
 
-| WorkflowType                | 고정 step 순서                                                                                                                                                                                                                                                               |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DOCUMENT_INGESTION`        | `LOAD_DOCUMENT_SOURCE → EXTRACT_OR_ACCEPT_TEXT → MASK_TEXT → CHUNK_TEXT → EMBED_CHUNKS → EXTRACT_EVIDENCE_CANDIDATES → APPLY_EVIDENCE_CANDIDATES → FINALIZE_DOCUMENT`                                                                                                        |
-| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                       |
-| `JOB_ANALYSIS`              | `BUILD_JOB_SNAPSHOT → EXTRACT_REQUIREMENTS → ASSESS_ELIGIBILITY → RETRIEVE_VERIFIED_EVIDENCE → MATCH_EVIDENCE → SCORE_FIT → VALIDATE_ANALYSIS → PERSIST_ANALYSIS`                                                                                                            |
-| `COVER_LETTER_GENERATION`   | `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*] → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → WRITE_ANSWER[*] → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`                                                                                           |
-| `COVER_LETTER_VERIFICATION` | `LOAD_ANSWER_VERSION → BUILD_PROVENANCE_CONTEXT → CHECK_FACTS → CHECK_REQUIREMENTS_AND_LENGTH → AGGREGATE_VERIFICATION → PERSIST_VERIFICATION`                                                                                                                               |
-| `INTERVIEW_PREPARATION`     | `VALIDATE_PREREQUISITES → BUILD_PUBLIC_SEARCH_PLAN → SEARCH_OFFICIAL_SOURCES → SEARCH_INTERVIEW_SOURCES → DEDUPE_CLASSIFY_SOURCES → ASSESS_SOURCE_COVERAGE → BUILD_QUESTION_CONTEXT → GENERATE_QUESTIONS → VALIDATE_QUESTION_PROVENANCE → PERSIST_RESEARCH_AND_QUESTION_SET` |
-| `INTERVIEW_ANSWER_FEEDBACK` | `LOAD_ANSWER_VERSION → BUILD_FEEDBACK_CONTEXT → ANALYZE_ANSWER → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                       |
-| `MOCK_INTERVIEW_FEEDBACK`   | `LOAD_SESSION_SNAPSHOT → ANALYZE_TURNS → SYNTHESIZE_SESSION_FEEDBACK → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                 |
+| WorkflowType                | 고정 step 순서                                                                                                                                                                                                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DOCUMENT_INGESTION`        | `LOAD_DOCUMENT_SOURCE → EXTRACT_OR_ACCEPT_TEXT → MASK_TEXT → CHUNK_TEXT → EMBED_CHUNKS → EXTRACT_EVIDENCE_CANDIDATES → APPLY_EVIDENCE_CANDIDATES → FINALIZE_DOCUMENT`                                                                                                                        |
+| `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                                       |
+| `JOB_ANALYSIS`              | `BUILD_JOB_SNAPSHOT → EXTRACT_REQUIREMENTS → ASSESS_ELIGIBILITY → RETRIEVE_VERIFIED_EVIDENCE → MATCH_EVIDENCE → SCORE_FIT → VALIDATE_ANALYSIS → PERSIST_ANALYSIS`                                                                                                                            |
+| `COVER_LETTER_GENERATION`   | `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*] → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → WRITE_ANSWER[*] → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`                                                                                                           |
+| `COVER_LETTER_VERIFICATION` | `LOAD_ANSWER_VERSION → BUILD_PROVENANCE_CONTEXT → CHECK_FACTS → CHECK_REQUIREMENTS_AND_LENGTH → AGGREGATE_VERIFICATION → PERSIST_VERIFICATION`                                                                                                                                               |
+| `INTERVIEW_PREPARATION`     | `VALIDATE_PREREQUISITES → BUILD_PUBLIC_SEARCH_PLAN → SEARCH_OFFICIAL_SOURCES → SEARCH_INTERVIEW_SOURCES → DEDUPE_CLASSIFY_SOURCES → ASSESS_SOURCE_COVERAGE → BUILD_QUESTION_CONTEXT → GENERATE_QUESTIONS → VALIDATE_QUESTION_PROVENANCE → PERSIST_RESEARCH_AND_QUESTION_SET`                 |
+| `INTERVIEW_ANSWER_FEEDBACK` | `LOAD_ANSWER_VERSION → BUILD_FEEDBACK_CONTEXT → ANALYZE_ANSWER → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                                       |
+| `MOCK_INTERVIEW_FEEDBACK`   | `LOAD_SESSION_SNAPSHOT → ANALYZE_TURNS → SYNTHESIZE_SESSION_FEEDBACK → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                                 |
 | `GITHUB_INGESTION`          | `VALIDATE_GITHUB_SOURCE → DISCOVER_REPOSITORIES → WAIT_FOR_REPOSITORY_SELECTION → CAPTURE_REPOSITORY_SNAPSHOTS → SANITIZE_AND_SELECT_SOURCE_UNITS → EXTRACT_GITHUB_CANDIDATES → VALIDATE_GITHUB_CANDIDATES → EMBED_GITHUB_CANDIDATES → APPLY_CANONICAL_EXPERIENCES → FINALIZE_GITHUB_SOURCE` |
 
 다음 두 workflow는 Gate 3에서 registry와 durable Agent Run에 추가됐다.
 
-| WorkflowType | 고정 step 순서 |
-| --- | --- |
-| `RESUME_GENERATION` | `LOAD_RESUME_REQUEST → BUILD_VERIFIED_CAREER_CONTEXT → PLAN_RESUME → DRAFT_RESUME_CONTENT → FACT_CHECK_RESUME_CONTENT → RENDER_DOCX → VALIDATE_DOCX → PERSIST_RESUME_VERSION` |
+| WorkflowType           | 고정 step 순서                                                                                                                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESUME_GENERATION`    | `LOAD_RESUME_REQUEST → BUILD_VERIFIED_CAREER_CONTEXT → PLAN_RESUME → DRAFT_RESUME_CONTENT → FACT_CHECK_RESUME_CONTENT → RENDER_DOCX → VALIDATE_DOCX → PERSIST_RESUME_VERSION`                     |
 | `PORTFOLIO_GENERATION` | `LOAD_PORTFOLIO_REQUEST → BUILD_VERIFIED_CAREER_CONTEXT → PLAN_PORTFOLIO_STORY → DRAFT_PORTFOLIO_SLIDES → FACT_CHECK_PORTFOLIO_CONTENT → RENDER_PPTX → VALIDATE_PPTX → PERSIST_PORTFOLIO_VERSION` |
 
 - account GitHub source만 `WAIT_FOR_REPOSITORY_SELECTION`에서 같은 Run의 `WAITING_USER`가 되며 repository source는 step을 `SKIPPED`한다. 선택 전에는 AI 호출과 비용을 만들지 않는다.

@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, Gate 2 GitHub Source, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-08] Session Summary (Career Artifact 목록·wizard·상세 페이지)
+
+- What was done:
+  - server pagination 목록, VERIFIED 경험·exact model·renderer profile 4단계 wizard, current preview·Run·version download·lifecycle 상세를 구현했다.
+- Key decisions:
+  - 과거 version은 preview하지 않고 download만 제공하며 새 Run 중·실패 뒤에도 이전 성공 projection을 유지한다.
+- Issues encountered:
+  - archive/unarchive 직후 stale detail 응답이 lifecycle을 되돌릴 수 있어 mutation 전에 해당 in-flight query를 취소했다.
+- Validation:
+  - page component test와 Resume·Portfolio·409·lifecycle Playwright가 통과했다.
+- Next steps:
+  - 과거 structured preview는 Backend endpoint가 생기기 전 구현하지 않는다.
+
 ## [2026-08-08] Session Summary (GitHub Source 페이지와 경험 provenance)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-08] Session Summary (Career Artifact 자료 navigation)
+
+- What was done:
+  - `/documents`와 `/career-artifacts`에서 desktop `이력서·자료`와 mobile 더보기가 같은 active 맥락을 유지하도록 확장했다.
+- Key decisions:
+  - 기존 navigation 항목 수와 다른 route active 판정은 유지했다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - AppLayout component test와 전체 Frontend check가 통과했다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-06] Session Summary (공고 상세 여백과 상태 배지 식별자 정리)
 
 - What was done:

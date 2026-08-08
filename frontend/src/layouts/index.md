@@ -13,7 +13,7 @@
 
 ## 구성 요소 역할
 
-- Layout은 현재 구현 route의 active navigation, account 닉네임 Modal, logout과 최근 active Run query 기반 진행 중인 분석 drawer를 제공하고 page별 form 상태를 소유하지 않는다.
+- Layout은 현재 구현 route의 active navigation, account 닉네임 Modal, logout과 최근 active Run query 기반 진행 중인 분석 drawer를 제공하고 page별 form 상태를 소유하지 않는다. `이력서·자료`와 mobile 더보기는 `/documents`와 `/career-artifacts`에서 같은 navigation 맥락을 유지한다.
 - PublicLayout의 CSS node·orbit motion은 장식이며 `prefers-reduced-motion`에서 비활성화한다.
 - route meta title은 layout이 아니라 Router 공통 hook이 관리해 PublicLayout·AppLayout·404에서 같은 규칙을 사용한다.
 

@@ -2,9 +2,22 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub Gate 0–2, Career Artifact Backend Gate 3와 후속 Frontend·Private GitHub 상태를 구분한다.
-- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, 구현된 GH-AC-01–04 및 ART Backend 인수 조건을 정의한다. 현재 기준선은 V28·11 WorkflowType·feature 활성 88 paths/118 operations·비활성 79 paths/107 operations이며 ART 사용자 전체 journey는 Gate 4까지 계획 상태다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub·Career Artifact Gate 0–4와 후속 Private GitHub 상태를 구분한다.
+- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, 구현된 GH-AC-01–04 및 ART-AC-01–05를 정의한다. 현재 기준선은 V28·11 WorkflowType·feature 활성 88 paths/118 operations·비활성 79 paths/107 operations이며 ART 사용자 journey는 독립 frontend flag 아래 구현됐다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 4 화면 계약 구현 승격)
+
+- What was done:
+  - ART-001~~004·ART-AC-01~~05와 page·frontend 기술 상태를 Gate 4 `IMPLEMENTED_FLAGGED`로 갱신했다.
+- Key decisions:
+  - 현재 projection만 preview하고 과거 version은 download만 제공하는 API 한계를 명시했다. API·DB·workflow와 V28 계약은 변경하지 않았다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 94 files/422 Frontend tests, Chromium 4/4와 Backend 95 suites/647 tests 통과를 구현 상태 근거로 기록했다.
+- Next steps:
+  - Gate 5 Private GitHub와 account deletion terminal purge는 계획·후속 위험으로 유지한다.
 
 ## [2026-08-08] Session Summary (Career Artifact Gate 3 계약 구현 승격)
 

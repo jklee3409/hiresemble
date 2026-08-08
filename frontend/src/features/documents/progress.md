@@ -4,6 +4,19 @@
 
 P4 Documents의 user-scoped query·mutation·SSE invalidation과 두 상태 축 presentation을 구현했다.
 
+## [2026-08-08] Session Summary (Career Artifact 자료 switch·readiness 연동)
+
+- What was done:
+  - Document 목록에 flag 기반 자료 영역 switch와 선택적 생성 제안을 추가하고 upload/delete 뒤 Career Artifact readiness를 갱신했다.
+- Key decisions:
+  - 업로드 문서와 생성 artifact를 하나의 목록이나 상태 enum으로 합치지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 관련 component/query 회귀와 전체 Frontend check가 통과했다.
+- Next steps:
+  - readiness 실패는 문서 주 기능을 실패로 표시하지 않는다.
+
 ## [2026-08-07] Session Summary (기존 경험 보강 출처 표시)
 
 - What was done:

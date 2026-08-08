@@ -94,7 +94,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | `/mock-interviews/:sessionId`                      | `PLANNED`             | P9           | mock session/start/message/complete/feedback                          |
 | `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A       | `/api/v1/backoffice/**` ADMIN GET                                     |
 | `/profile/github`                                  | `IMPLEMENTED_FLAGGED` | Gate 2       | `VITE_GITHUB_SOURCE_ENABLED=true`, 구현된 GitHub source·Agent Run API |
-| `/career-artifacts`와 모든 child                   | `PLANNED`             | Gate 4       | Gate 3의 readiness·model·artifact·download API                        |
+| `/career-artifacts`와 모든 child                   | `IMPLEMENTED_FLAGGED` | Gate 4       | `VITE_CAREER_ARTIFACT_ENABLED=true`, Gate 3의 11개 공개 operation     |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
 
@@ -266,7 +266,7 @@ API:
 - 요약은 `준비 중인 공고`, `지원 완료`, `AI가 확인 중`, `등록한 이력서·자료`의 행동 중심 문구와 정확한 서버 count를 사용한다. 각 카드에는 서버 값에서 직접 유도한 보조 문구(`등록한 공고 N건 중`, `분석 중 N건` 등)만 덧붙이고 추정치를 만들지 않는다. 조회 실패 카드는 `—`와 확인 실패 문구를 함께 표시한다.
 - 별도 `다음 할 일` 카드와 네 항목 빠른 실행 grid는 표시하지 않는다. 필요한 후속 행동은 커리어 카드의 프로필 CTA, Dashboard 상단의 자료·공고 등록, 마감 공고와 최근 활동의 resource link에서 직접 제공한다.
 - 최근 활동 항목에는 자료·공고·AI 작업을 구분하는 icon을 붙이고 색상에만 의존하지 않도록 기존 text label을 유지한다.
-- `CareerArtifactReadinessDto`가 해당 유형의 업로드·생성 문서 부재와 GitHub 유래 VERIFIED 경험 존재를 모두 확인한 경우에만 `AI로 이력서/포트폴리오 초안 만들기`를 작은 제안 카드로 표시한다(`PLANNED`). `나중에`를 제공하고 자동 생성, blocking modal, 강제 redirect와 영구 dismiss 추적은 사용하지 않는다.
+- `CareerArtifactReadinessDto`가 해당 유형의 업로드·생성 문서 부재와 GitHub 유래 VERIFIED 경험 존재를 모두 확인한 경우에만 `AI로 이력서/포트폴리오 초안 만들기`를 작은 제안 카드로 표시한다(`IMPLEMENTED_FLAGGED`). `나중에`를 제공하고 자동 생성, blocking modal, 강제 redirect와 영구 dismiss 추적은 사용하지 않는다.
 - 섹션 진입 motion, 카드 hover elevation, 요약 수치 count-up 같은 장식 동작은 `prefers-reduced-motion: reduce`에서 모두 정지하고 최종 값과 배치를 그대로 보여 준다.
 - Dashboard에 한해 최대 88rem 폭을 허용하고 다른 앱 화면의 공통 폭은 유지한다.
 - Desktop에서는 바로가기 열을 제외한 quick entry·본문을 동일한 중앙 열에 배치한다. 중앙 열은 Dashboard viewport 중심에 맞추고 `자료 등록`·`공고 등록` CTA의 우측 끝도 중앙 열의 우측 경계에 맞춘다.
@@ -448,7 +448,7 @@ API: `POST|GET /github-sources`, `GET|DELETE /github-sources/:id`, `GET /github-
 - 근거 추출 상태
 - 업로드 일시
 - 다시 분석·원본 열기·삭제
-- 이력서/포트폴리오가 없고 readiness 조건을 만족하면 `AI로 초안 만들기`를 non-modal secondary action으로 표시한다(`PLANNED`). 업로드를 대체하는 강제 흐름이 아니며 `나중에`와 일반 업로드를 계속 제공한다.
+- 이력서/포트폴리오가 없고 readiness 조건을 만족하면 `AI로 초안 만들기`를 non-modal secondary action으로 표시한다(`IMPLEMENTED_FLAGGED`). 업로드를 대체하는 강제 흐름이 아니며 `나중에`와 일반 업로드를 계속 제공한다.
 
 API:
 
@@ -483,7 +483,7 @@ API:
 
 소재 영역은 승인된 내용만 자소서·면접 소재 후보로 사용한다는 정책과 남은 검토 수를 먼저 보여 준다. 활용 제외는 원본 자료나 분석 이력 삭제가 아니며 언제든 `PENDING`으로 돌려 재검토할 수 있다. 별도 `정리된 결과` 대형 section은 두지 않고 소재 card와 partial 경고에 통합한다.
 
-## 6.3 `/career-artifacts` (`PLANNED`, Gate 4)
+## 6.3 `/career-artifacts` (`IMPLEMENTED_FLAGGED`, Gate 4)
 
 사용자가 AI로 생성한 이력서 DOCX와 포트폴리오 PPTX 초안을 관리한다. 업로드 원천인 `documents`와 생성 출력인 Career Artifact를 같은 row나 상태 체계로 합치지 않는다.
 
@@ -496,7 +496,7 @@ API:
 
 API: `GET /career-artifacts`, `GET /career-artifacts/readiness`.
 
-## 6.4 `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, Gate 4)
+## 6.4 `/career-artifacts/new?type=RESUME|PORTFOLIO` (`IMPLEMENTED_FLAGGED`, Gate 4)
 
 한 화면의 긴 form 대신 상태를 URL과 local draft에 안전하게 보존하는 4단계 wizard를 사용한다. query의 `type`이 없으면 첫 단계에서 선택하고 허용하지 않은 값은 type 미선택으로 정규화한다.
 
@@ -511,7 +511,7 @@ API: `GET /career-artifacts`, `GET /career-artifacts/readiness`.
 
 API: `GET /career-artifacts/readiness`, `GET /career-artifacts/ai-models?type=`, `POST /career-artifacts`, `GET /profile/experiences?verificationStatus=VERIFIED`.
 
-## 6.5 `/career-artifacts/:careerArtifactId` (`PLANNED`, Gate 4)
+## 6.5 `/career-artifacts/:careerArtifactId` (`IMPLEMENTED_FLAGGED`, Gate 4)
 
 ### 공통 영역
 
@@ -1122,6 +1122,9 @@ Query Key 예시:
 ['user', userId, 'coverLetter', coverLetterId]
 ['user', userId, 'questionSet', questionSetId]
 ['user', userId, 'agentRun', runId]
+['user', userId, 'careerArtifacts', filters]
+['user', userId, 'careerArtifact', careerArtifactId]
+['user', userId, 'careerArtifact', careerArtifactId, 'versions', filters]
 ```
 
 목록 filter는 URL query가 공유 가능한 원천이다. Zod에서 유효하지 않은 값을 제거해 canonical URL로 replace하고 filter 변경 시 해당 page를 0으로 reset한다.
@@ -1131,6 +1134,7 @@ Query Key 예시:
 - jobs: `status`, `query`, preset `postingYear`+`postingHalf` 또는 직접 설정 `postingStartFrom`, `sort`, `page`, `size`
 - cover letters: `jobId`, `status`, `query`, `sort`, `page`, `size`
 - Agent Runs: repeatable `workflowType`, repeatable `status`, `resourceType`, `resourceId`, `retryable`, `sort`, `page`, `size`
+- Career Artifacts: `type`, `lifecycle`, `sort`, `page`, `size`; wizard URL에는 비민감 `type`, `step`만 사용
 - `/interviews`의 두 목록은 11.2의 `qs*`·`mock*` URL namespace를 API parameter로 변환한다.
 
 Browser draft는 `sessionStorage`만 사용한다.
@@ -1141,6 +1145,7 @@ Browser draft는 `sessionStorage`만 사용한다.
 - server save, question 삭제, archive, logout, 탈퇴, 인증 사용자 ID 변경 시 해당 draft 삭제
 - server base version과 다르면 자동 덮어쓰지 않고 server snapshot과 draft 비교·재적용 UI 제공
 - Session 만료 중에는 이전 draft를 render하지 않고 같은 user 재인증 뒤에만 복구 후보로 표시
+- Career Artifact create key는 `1/{userId}/career-artifact/new/generation/0`, regenerate key는 `1/{userId}/career-artifact/{artifactId}/generation/{artifactVersion}` 형식을 사용한다. 연락처·experience ID·model·idempotency key는 URL에 넣지 않고 성공·명시적 취소·artifact 삭제 때 draft와 함께 제거한다.
 
 logout·탈퇴·401 auth reset·user ID 변경 시 EventSource 종료→in-flight query 취소→`queryClient.clear()`→Pinia reset→해당 user draft purge 순으로 처리한다.
 
@@ -1264,7 +1269,7 @@ authenticated `/`는 Landing을 mount하지 않고 `/dashboard`로 replace하며
 → USER의 Backoffice 접근 거부와 access audit 확인
 ```
 
-## 시나리오 E (GitHub Gate 0~2·Career Artifact Backend Gate 3 `IMPLEMENTED`, Artifact Frontend Gate 4 `PLANNED`)
+## 시나리오 E (GitHub·Career Artifact Gate 0~4 `IMPLEMENTED_FLAGGED`)
 
 ```text
 GitHub 계정 URL과 참여 확인 등록
@@ -1280,4 +1285,4 @@ GitHub 계정 URL과 참여 확인 등록
 
 계정 URL이 아닌 repository URL은 선택 단계를 건너뛰고, 동일 commit refresh는 새 AI Run 없이 기존 결과를 유지한다. 제안은 dismiss 가능하며 사용자를 생성 route로 강제 이동시키지 않는다.
 
-현재 Gate 3은 위 흐름의 Career Artifact API·Agent Run·Office 생성·다운로드 수명주기만 제공한다. 선택 제안부터 wizard·structured preview·download button까지의 사용자 화면은 Gate 4 전까지 구현 완료로 판정하지 않는다.
+Gate 4는 위 흐름의 선택 제안·wizard·Agent Run monitor·현재 structured preview·version download·lifecycle을 `VITE_CAREER_ARTIFACT_ENABLED=true`에서 연결했다. 과거 version API는 summary와 download만 제공하므로 current preview를 과거 version처럼 표시하지 않는다. Backend API·DB·workflow는 Gate 3 계약 그대로다.

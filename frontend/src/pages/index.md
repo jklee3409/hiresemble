@@ -1,8 +1,8 @@
-# 공개·P1~P8·Gate 2 Page 안내
+# 공개·P1~P8·Gate 2·4 Page 안내
 
 ## 디렉터리 목적
 
-공개 서비스 소개 Landing과 P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedback, Gate 2 GitHub Source page 및 전용 404까지 관리한다.
+공개 서비스 소개 Landing과 P1 인증·보호 shell부터 P8 면접 준비·예상 질문 set·답변 feedback, Gate 2 GitHub Source, Gate 4 Career Artifact page 및 전용 404까지 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -23,6 +23,10 @@
 - [`ExperienceLibraryPage.test.ts`](ExperienceLibraryPage.test.ts): canonical 카드·유사 경험·문서 보강 출처와 GitHub badge·안전한 링크·삭제 tombstone 회귀
 - [`GitHubSourcePage.vue`](GitHubSourcePage.vue): 공개 GitHub 등록, source 상태·결과, account repository 검색·선택, focused Run, refresh/delete
 - [`GitHubSourcePage.test.ts`](GitHubSourcePage.test.ts): URL·참여 확인, 상태·선택 제한·version 충돌·refresh/delete·오류와 접근성 회귀
+- [`CareerArtifactListPage.vue`](CareerArtifactListPage.vue): 생성 자료의 type·lifecycle·sort·pagination 목록, readiness CTA와 archive/unarchive
+- [`CareerArtifactNewPage.vue`](CareerArtifactNewPage.vue): VERIFIED 경험·exact model·renderer profile을 확인하는 4단계 생성 wizard
+- [`CareerArtifactDetailPage.vue`](CareerArtifactDetailPage.vue): current structured preview, Run·version download·regenerate·archive/unarchive/delete 조정
+- [`CareerArtifactListPage.test.ts`](CareerArtifactListPage.test.ts), [`CareerArtifactNewPage.test.ts`](CareerArtifactNewPage.test.ts), [`CareerArtifactDetailPage.test.ts`](CareerArtifactDetailPage.test.ts): 목록·wizard·상세·409·이전 성공 version 보존 회귀
 - [`AgentRunListPage.vue`](AgentRunListPage.vue): filter·pagination·sort와 terminal 작업 개별·현재 페이지 선택 삭제
 - [`AgentRunDetailPage.vue`](AgentRunDetailPage.vue): REST snapshot, SSE 복구와 retry·cancel 조정
 - [`DocumentListPage.vue`](DocumentListPage.vue): upload·filter·pagination·sort와 두 상태 축 목록

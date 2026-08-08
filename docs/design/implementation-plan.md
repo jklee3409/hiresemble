@@ -1,6 +1,6 @@
 # Hiresemble 구현 계획
 
-이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01–AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. Gate 0–3은 완료됐고 Gate 4–5는 `PLANNED`다.
+이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01–AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. Gate 0–4는 완료됐고 Gate 5 Private GitHub는 `PLANNED`다.
 
 P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 strict schema·semantic 계약 보정 뒤 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 이를 가짜 failed scope로 만든 projection과 공용 자기소개서 partial error 하드코딩으로 Run terminal만 잘못 실패했다. terminal policy 보정은 offline 검증했고 이후 Provider를 재호출하지 않았으므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
@@ -38,9 +38,10 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] Phase 1 Gate 0 기준선 보호와 Gate 1 GitHub Backend를 V27로 완료한다.
 - [x] Gate 2 GitHub Frontend를 빌드 타임 feature flag 경계로 완료한다.
 - [x] Gate 3 Career Artifact Backend를 V28·조건부 API·두 workflow·Office renderer로 완료한다.
-- [ ] Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub를 별도 승인 뒤 순서대로 완료한다.
+- [x] Gate 4 Career Artifact Frontend를 독립 build flag와 기존 Gate 3 공개 계약 소비로 완료한다.
+- [ ] Gate 5 Private GitHub를 별도 승인 뒤 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–3 `DONE`, Gate 4–5 `PLANNED`다. 현재 구현 기준선은 Flyway V28, feature-gated `/profile/github`, 조건부 Career Artifact Backend, 11개 WorkflowType과 feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. 실제 외부 GitHub·OpenAI 호출 없이 Fake/WireMock/Testcontainers/POI로 검증한다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–4 `DONE`, Gate 5 `PLANNED`다. 현재 구현 기준선은 Flyway V28, feature-gated `/profile/github`와 `/career-artifacts/**`, 조건부 Career Artifact Backend, 11개 WorkflowType과 feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. 실제 외부 GitHub·OpenAI 호출 없이 Fake/WireMock/Testcontainers/POI·browser fixture로 검증한다.
 
 ## 1. 전체 선행 관계
 
@@ -87,6 +88,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
      └─ Gate 2 GitHub Frontend
          └─ Gate 3 Career Artifact Backend
              └─ Gate 4 Career Artifact Frontend
+                 └─ Gate 5 Private GitHub (별도 승인)
 ```
 
 - P2와 P3은 P1 이후 파일 소유권이 겹치지 않으면 병렬화할 수 있다.
@@ -98,7 +100,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - P8.6~P8.9-A는 비용 예산과 별개인 기능 한도, 사용량·원가 집계, 실패 복구, 운영 관찰 경계를 순서대로 고정한다.
 - P9는 P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A가 모두 필요하다.
 - P8.9-B 운영 mutation은 별도 후속이며 P9의 필수 선행이 아니다.
-- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration, Gate 2는 기존 7개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 3은 V28 Career Artifact Backend로 완료했고 Gate 4–5는 이 경계를 유지한 채 별도로 착수한다.
+- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration, Gate 2는 기존 7개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 3은 V28 Career Artifact Backend, Gate 4는 기존 11개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 5만 이 경계를 유지한 별도 승인 대상이다.
 - Frontend는 각 phase의 OpenAPI/DTO와 상태 계약이 backend에서 먼저 고정된 뒤 같은 수직 단계로 진행한다.
 
 ## 2. 전 단계 공통 완료 조건
@@ -901,12 +903,12 @@ GitHub·Career Artifact Gate 0 기준선 보호
 
 ## 별도 Vertical — GitHub 경험·Career Artifact
 
-- 상태: Gate 0–3 `DONE`; Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub는 `PLANNED`.
+- 상태: Gate 0–4 `DONE`; Gate 5 Private GitHub는 `PLANNED`.
 - 목표: 공개 GitHub source에서 프로젝트 경험·강점을 추출해 V26 canonical 보관함에 중복 없이 연결하고, 사용자가 exact model을 골라 이력서 DOCX와 포트폴리오 PPTX 초안을 생성·다운로드한다.
-- Gate 0–3 결과: V26 checksum과 canonical 회귀, V27 GitHub schema·workflow·7개 API·Gate 2 Frontend를 완료했다. V28은 artifact/version/provenance/private request/outbox, 11개 Career Artifact operation, exact model, 두 8단계 workflow와 POI renderer를 추가했다.
-- 남은 구현 순서: Gate 4 wizard·structured preview·version/download UI와 선택적 suggestion → 별도 승인된 Gate 5 private GitHub.
+- Gate 0–4 결과: V26 checksum과 canonical 회귀, V27 GitHub schema·workflow·7개 API·Gate 2 Frontend를 완료했다. V28은 artifact/version/provenance/private request/outbox, 11개 Career Artifact operation, exact model, 두 8단계 workflow와 POI renderer를 추가했다. Gate 4는 별도 flag 아래 wizard·structured preview·version/download·lifecycle·suggestion과 Agent Run 연동을 추가했다.
+- 남은 구현 순서: 별도 승인된 Gate 5 private GitHub.
 - 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow와 applied V1~V28을 파괴하지 않는다.
-- 전체 완료 조건: [`github-career-artifact-design.md`](github-career-artifact-design.md) Gate 4–5와 ART-AC-01–05의 사용자 journey가 Frontend/E2E 및 승인된 private GitHub 경계에서 통과한다.
+- 전체 완료 조건: ART-AC-01–05 사용자 journey는 Gate 4 Frontend/E2E에서 통과했다. 전체 vertical 종료는 [`github-career-artifact-design.md`](github-career-artifact-design.md)의 승인된 Gate 5 private GitHub 경계를 별도로 통과해야 한다.
 - 배치 결정: Career Artifact feature off는 기존 79 paths/107 operations를 유지하고 on은 88 paths/118 operations다. Gate 4는 새 Backend contract를 소비하되 새 공개 API를 임의로 늘리지 않는다.
 
 ## 23. 목표 package와 directory 생성 순서

@@ -308,7 +308,7 @@
 - 과거 산출물이 참조하는 raw evidence는 `SOURCE_DELETED` tombstone, 미참조 raw evidence는 삭제한다.
 - 승인된 canonical 경험은 유지하고 승인되지 않았으며 다른 활성 출처가 없는 orphan만 제거한다.
 
-## ART-001 Career Artifact 생성 요청 (`IMPLEMENTED_BACKEND`, Gate 3)
+## ART-001 Career Artifact 생성 요청 (`IMPLEMENTED`, Backend Gate 3·Frontend Gate 4)
 
 - Career Artifact 유형은 `RESUME|PORTFOLIO`이고 업로드 `documents`와 별도 resource다.
 - 모든 사용자가 생성 기능을 사용할 수 있으며 이력서·포트폴리오 부재는 추천 표시 조건일 뿐 접근 권한 조건이 아니다.
@@ -317,7 +317,7 @@
 - 연락처·이메일 등 renderer profile은 LLM Context에 넣지 않고 최종 file renderer에서만 삽입한다.
 - 생성 실패 시 기존 성공 version과 download를 유지한다.
 
-## ART-002 이력서 DOCX 생성 (`IMPLEMENTED_BACKEND`, Gate 3)
+## ART-002 이력서 DOCX 생성 (`IMPLEMENTED`, Backend Gate 3·Frontend Gate 4)
 
 - `RESUME_GENERATION`은 검증된 경력 Context 구성, 구성 계획, structured draft, fact check, DOCX render·검증·version 저장의 고정 workflow다.
 - AI는 headline, summary, skill, 경력·프로젝트 bullet, warning과 evidence reference만 반환하고 DOCX byte나 OOXML을 만들지 않는다.
@@ -325,7 +325,7 @@
 - source에 없는 조직, 기간, 역할, 수치와 성과를 생성하지 않는다.
 - 생성 파일은 1~2 page를 목표로 하며 core content에 text box, chart, 원격 image를 사용하지 않는다.
 
-## ART-003 포트폴리오 PPTX 생성과 디자인 (`IMPLEMENTED_BACKEND`, Gate 3)
+## ART-003 포트폴리오 PPTX 생성과 디자인 (`IMPLEMENTED`, Backend Gate 3·Frontend Gate 4)
 
 - `PORTFOLIO_GENERATION`은 검증된 경력 Context, 면접관 중심 story plan, strict slide draft, fact check, PPTX render·검증·version 저장의 고정 workflow다.
 - 내부 prompt는 `문제 → 내 역할 → 행동 → 기술적 판단 → 결과 → 드러난 강점`의 case study와 첫 60초 scanability를 우선한다.
@@ -334,7 +334,7 @@
 - 서버는 Apache POI XSLF와 16:9 server-owned template으로 6~12 slide PPTX를 생성한다.
 - 외부 image, README image, source screenshot, remote font와 arbitrary OOXML을 사용하지 않는다.
 
-## ART-004 Version·다운로드 (`IMPLEMENTED_BACKEND`, Gate 3)·선택적 제안 (`PLANNED`, Gate 4)
+## ART-004 Version·다운로드·선택적 제안 (`IMPLEMENTED`, Backend Gate 3·Frontend Gate 4)
 
 - 검증·upload가 성공한 artifact version만 immutable row로 저장하고 current version으로 승격한다.
 - version은 생성 당시 experience/evidence version과 title/content snapshot을 provenance로 보존한다.
@@ -364,7 +364,7 @@
 ### 등록 처리
 
 1. URL 정규화와 중복 확인
-2. 등록 시각을 공고 시작일로 보고 `Asia/Seoul` 기준 연도와 반기(`FIRST_HALF`=1~6월, `SECOND_HALF`=7~12월)를 분류해 `job_postings` 생성
+2. 등록 시각을 공고 시작일로 보고 `Asia/Seoul` 기준 연도와 반기(`FIRST_HALF`=1~~6월, `SECOND_HALF`=7~~12월)를 분류해 `job_postings` 생성
 3. 기본 상태 `IN_PROGRESS`
 4. 사용 가능한 공고 본문을 직접 입력했다면 `MANUAL_INPUT_PROVIDED`로 저장하고 URL 추출 Agent Run을 만들지 않음
 5. 직접 입력 본문이 없다면 `QUEUED`로 URL 본문 비동기 추출
@@ -871,16 +871,16 @@ PORTFOLIO_GENERATION
 | AC-16 | AI 기능 실패가 공통 사용자 category·복구 CTA·데이터 보존 안내로 표시된다.                        |
 | AC-17 | ADMIN만 Backoffice에서 사용자·사용량·AI 원가·실패·Agent Run을 안전하게 조회한다.                 |
 
-GitHub·Career Artifact vertical은 기존 AC-01~17 구현 완료 판정과 별도로 추적한다. Gate 0~2가 GH-AC-01~04의 Backend·Frontend 흐름을 구현했고 Gate 3가 ART-AC-01~04의 Backend 생성·검증·파일 수명주기를 구현했다. `/career-artifacts/**` 사용자 journey와 선택적 제안은 Gate 4 전까지 `PLANNED`이므로 ART-AC-01~05 전체를 완료로 판정하지 않는다.
+GitHub·Career Artifact vertical은 기존 AC-01~~17 구현 완료 판정과 별도로 추적한다. Gate 0~~2가 GH-AC-01~~04의 Backend·Frontend 흐름을 구현했고 Gate 3가 ART-AC-01~~04의 Backend 생성·검증·파일 수명주기를 구현했다. Gate 4는 독립 build flag 아래 `/career-artifacts/**` 사용자 journey와 선택적 제안을 기존 공개 계약에 연결해 ART-AC-01~05를 완료했다. Gate 5 Private GitHub는 이 판정과 분리된 `PLANNED` 범위다.
 
-| ID        | 인수 조건 |
-| --------- | --------- |
-| GH-AC-01  | 계정·repository URL을 owner scope로 등록하고 계정 URL에서는 같은 Run의 repository 선택을 완료한다. |
-| GH-AC-02  | public repository를 실행하지 않고 bounded snapshot으로 수집하며 prompt injection·secret·SSRF 입력을 차단한다. |
-| GH-AC-03  | 기존과 같은 경험은 새 카드를 만들지 않고 출처를 보강하며 유사·수치 충돌은 사용자 검토로 보낸다. |
-| GH-AC-04  | GitHub 신규 경험·강점은 승인 전 후속 산출물에 사용되지 않고 source 삭제 뒤 승인 canonical 경험은 유지된다. |
-| ART-AC-01 | 사용자가 VERIFIED 경험과 exact model을 선택해 이력서 DOCX 초안을 생성하고 version별로 다운로드한다. |
-| ART-AC-02 | 사용자가 VERIFIED 경험과 exact model을 선택해 면접관 중심 포트폴리오 PPTX 초안을 생성하고 version별로 다운로드한다. |
+| ID        | 인수 조건                                                                                                            |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| GH-AC-01  | 계정·repository URL을 owner scope로 등록하고 계정 URL에서는 같은 Run의 repository 선택을 완료한다.                   |
+| GH-AC-02  | public repository를 실행하지 않고 bounded snapshot으로 수집하며 prompt injection·secret·SSRF 입력을 차단한다.        |
+| GH-AC-03  | 기존과 같은 경험은 새 카드를 만들지 않고 출처를 보강하며 유사·수치 충돌은 사용자 검토로 보낸다.                      |
+| GH-AC-04  | GitHub 신규 경험·강점은 승인 전 후속 산출물에 사용되지 않고 source 삭제 뒤 승인 canonical 경험은 유지된다.           |
+| ART-AC-01 | 사용자가 VERIFIED 경험과 exact model을 선택해 이력서 DOCX 초안을 생성하고 version별로 다운로드한다.                  |
+| ART-AC-02 | 사용자가 VERIFIED 경험과 exact model을 선택해 면접관 중심 포트폴리오 PPTX 초안을 생성하고 version별로 다운로드한다.  |
 | ART-AC-03 | AI 출력의 모든 claim이 생성 당시 evidence snapshot에 연결되고 source에 없는 역할·수치·성과가 file에 포함되지 않는다. |
-| ART-AC-04 | 생성 실패·재시도·삭제가 기존 문서 pipeline과 이전 성공 artifact version을 훼손하지 않는다. |
-| ART-AC-05 | 자료가 없는 사용자에게 생성 기능을 선택적으로 제안하되 사용자 확인 전 Run을 만들지 않는다. |
+| ART-AC-04 | 생성 실패·재시도·삭제가 기존 문서 pipeline과 이전 성공 artifact version을 훼손하지 않는다.                           |
+| ART-AC-05 | 자료가 없는 사용자에게 생성 기능을 선택적으로 제안하되 사용자 확인 전 Run을 만들지 않는다.                           |

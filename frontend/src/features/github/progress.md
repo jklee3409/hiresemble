@@ -4,6 +4,19 @@
 
 Gate 2 공개 GitHub source의 owner-scoped query, mutation, focused Run 표시 기반을 관리한다.
 
+## [2026-08-08] Session Summary (Career Artifact suggestion readiness 연동)
+
+- What was done:
+  - READY/PARTIAL 성공 summary에 선택적 Career Artifact 제안을 연결하고 source 완료·삭제 뒤 readiness를 갱신했다.
+- Key decisions:
+  - Career Artifact flag off 또는 readiness 실패 시 제안과 요청만 숨기고 GitHub 주 흐름은 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 기존 `github-source.spec.ts`를 Career Artifact spec과 함께 Chromium에서 통과했다.
+- Next steps:
+  - Private GitHub는 Gate 5까지 추가하지 않는다.
+
 ## [2026-08-08] Session Summary (GitHub Source query·mutation·Run monitor)
 
 - What was done:

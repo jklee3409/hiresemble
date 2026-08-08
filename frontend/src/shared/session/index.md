@@ -12,7 +12,7 @@ logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 
 
 ## 구성 요소 역할
 
-- P3 Agent Run SSE controller와 향후 resource가 등록할 수 있는 close/reset/purge port를 제공한다.
+- P3 Agent Run SSE controller와 Career Artifact를 포함한 user-scoped resource가 등록할 수 있는 close/reset/purge port를 제공한다. 최소 6-segment draft key는 logout·401·사용자 ID 변경 때 해당 사용자 것만 제거한다.
 
 ## 다른 디렉터리와의 의존 관계
 

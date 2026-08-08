@@ -4,6 +4,19 @@
 
 사용자 기능별 form·상호작용 규칙을 page와 공용 기반에서 분리한다. 현재 P1 auth부터 P8 interviews와 Gate 2 GitHub feature까지 구현되어 있다.
 
+## [2026-08-08] Session Summary (Career Artifact feature 추가)
+
+- What was done:
+  - user-scoped query key, URL filter, session draft/idempotency, presentation, suggestion, form, Run monitor와 Resume/Portfolio preview feature를 추가했다.
+- Key decisions:
+  - module은 Agent Run query key를 역참조하지 않도록 query key를 분리하고 upload document lifecycle과 독립시켰다.
+- Issues encountered:
+  - form fixture 타입 추론을 공개 Experience DTO로 명시해 전체 typecheck를 통과시켰다.
+- Validation:
+  - Career Artifact feature unit/component와 전체 422개 Frontend test가 통과했다.
+- Next steps:
+  - 새 template·model fallback은 Backend catalog 없이 추가하지 않는다.
+
 ## [2026-08-08] Session Summary (Agent Run 신규 workflow 호환)
 
 - What was done:

@@ -16,6 +16,19 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-08] Session Summary (Career Artifact Gate 4 Chromium)
+
+- What was done:
+  - Resume wizard·exact model·final-only create·idempotency·SSE·preview·DOCX, Portfolio keyboard·PPTX·responsive, prior preview 보존·lifecycle·delete와 409 no-retry fixture를 추가했다.
+- Key decisions:
+  - 실제 Provider·S3를 호출하지 않고 route/SSE/download fixture만 사용하며 기존 GitHub spec을 같은 flag 조합에서 함께 실행한다.
+- Issues encountered:
+  - 5173 포트가 사용 중이라 기존 프로세스를 종료하지 않고 5194 격리 Vite 서버를 사용했다. SSE 재연결 fixture는 historical replay가 상태를 되돌리지 않도록 수정했다.
+- Validation:
+  - Chromium 4/4 통과: Career Artifact 3 scenario와 기존 GitHub 1 scenario.
+- Next steps:
+  - 운영 Office 렌더링 시각 확인은 배포 검증에서 별도로 수행한다.
+
 ## [2026-08-08] Session Summary (GitHub Source focused Chromium 후속 통과)
 
 - What was done:

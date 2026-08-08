@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 핵심 사용자 여정과 responsive shell을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 UI shell, P2 profile, P3 Agent Run·Gate 2 GitHub fixture와 P4~P8 실제 Backend pipeline이 구현되어 있다.
+이 디렉터리는 Hiresemble의 핵심 사용자 여정과 responsive shell을 실제 브라우저에서 검증하는 Playwright 테스트를 관리한다. 현재 UI shell, P2 profile, P3 Agent Run·Gate 2 GitHub·Gate 4 Career Artifact fixture와 P4~P8 실제 Backend pipeline이 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -12,6 +12,7 @@
 | [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                                                        |
 | [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                                                            |
 | [`github-source.spec.ts`](github-source.spec.ts)                               | feature-gated GitHub account 등록·검색·pagination·선택·SSE·provenance·refresh·delete fixture                                 |
+| [`career-artifacts.spec.ts`](career-artifacts.spec.ts)                         | Resume wizard·idempotency·SSE·preview·DOCX, Portfolio keyboard·PPTX, lifecycle·409·responsive fixture                        |
 | [`ui-shell.spec.ts`](ui-shell.spec.ts)                                         | 1920·1440·1280·1024·768·390px Dashboard overflow·focus·캘린더·가이드 dialog, 회원가입 동의 Modal, profile와 shell fixture    |
 | [`documents.actual.spec.ts`](documents.actual.spec.ts)                         | 실제 upload·SSE·Fake AI·manual resume·partial failure·owner 격리                                                             |
 | [`jobs.actual.spec.ts`](jobs.actual.spec.ts)                                   | 실제 201/202·상태·추출·manual resume·owner 격리·Scheduler                                                                    |
@@ -28,7 +29,7 @@
 | [`progress.md`](progress.md)                                                   | E2E 구현 상태와 검증 이력 추적                                                                                               |
 | [`../playwright.config.ts`](../playwright.config.ts)                           | test directory, Chromium project, Vite web server와 artifact 정책 설정                                                       |
 
-현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run·Gate 2 GitHub fixture와 P4~P8 actual spec을 관리한다.
+현재 하위 디렉터리는 없고 responsive UI shell, P2 profile, P3 Agent Run·Gate 2 GitHub·Gate 4 Career Artifact fixture와 P4~P8 actual spec을 관리한다.
 
 ## 구성 요소 역할
 
@@ -38,6 +39,7 @@
 - P7 actual spec은 Backend 주도 격리 PostgreSQL·MinIO·Fake AI 환경에서만 활성화한다.
 - P8 actual spec은 격리 PostgreSQL·Fake Chat/Search·Vue·Chromium만 사용하며 desktop/mobile·200% page scale과 DB provenance를 함께 검증한다.
 - GitHub spec은 실제 GitHub·AI 없이 Playwright route와 SSE fixture만 사용하고 `VITE_GITHUB_SOURCE_ENABLED=true`에서 실행한다.
+- Career Artifact spec은 실제 Provider·Object Storage 없이 route·SSE·download fixture만 사용하고 두 frontend flag를 명시해 기존 GitHub 회귀와 함께 실행한다.
 - unit/component test로 확인하기 어려운 route 이동, form 상호작용, 화면 상태 연결을 다룬다.
 - UI shell fixture는 Backend 없이 인증·Dashboard·Career Guide·profile·Document·Job·active Run 응답을 가로채 Dashboard 캘린더·modal·route focus, profile desktop navigation·mobile selector, 추천 keyboard 선택, focus 복원, password 표시와 reduced-motion을 검증한다.
 - Playwright 설정은 테스트 전에 Vite 개발 서버를 시작하고 Chromium desktop 환경을 사용한다.

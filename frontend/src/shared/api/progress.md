@@ -4,6 +4,19 @@
 
 Backend P1~P8와 Gate 2 GitHub Source OpenAPI, 11개 Agent Run WorkflowType, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-08] Session Summary (Career Artifact 11-operation strict client)
+
+- What was done:
+  - Career Artifact enum·nullable·preview union·MIME/template/resource parity Zod 계약과 11개 API method를 추가했다.
+- Key decisions:
+  - create/regenerate만 `Idempotency-Key`를 보내고 모든 mutation은 CSRF를 준비한다. download URL은 HTTP(S)만 허용하며 raw storage·renderer·provider metadata는 노출하지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - malformed response fail-closed, header/query/parity unit test와 전체 Frontend check가 통과했다.
+- Next steps:
+  - Backend 공개 DTO가 바뀌지 않는 한 field를 추측해 확장하지 않는다.
+
 ## [2026-08-08] Session Summary (Agent Run 11개 WorkflowType 계약)
 
 - What was done:

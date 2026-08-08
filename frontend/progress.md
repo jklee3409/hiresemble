@@ -3,9 +3,25 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P8 Interview와 Gate 2 GitHub Source typed client·Vue Query·SSE invalidation까지 구현되어 있다.
-- `/guide`, `/profile/experiences`, feature-gated `/profile/github`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 80 files/373 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- P1 auth부터 P8 Interview, Gate 2 GitHub Source와 Gate 4 Career Artifact typed client·Vue Query·SSE invalidation까지 구현되어 있다.
+- `/guide`, `/profile/experiences`, feature-gated `/profile/github`·`/career-artifacts/**`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 94 files/422 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·Career Artifact·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 4 Frontend)
+
+- What was done:
+  - `VITE_CAREER_ARTIFACT_ENABLED`로 격리한 목록·생성 wizard·상세 route와 Career Artifact API/query/draft/preview/Run monitor를 구현했다.
+  - 자료 영역 switch, Dashboard·Document·GitHub suggestion, Agent Run resource link와 cache invalidation을 연결했다.
+- Key decisions:
+  - exact server model, fixed template, current structured projection과 version별 download만 소비하고 Office byte를 browser에서 parse하지 않는다.
+  - 서버 상태는 Vue Query, 개인정보와 pending idempotency는 user-scoped `sessionStorage`에만 둔다.
+- Issues encountered:
+  - SSE fixture replay와 lifecycle refetch가 새 상태를 덮는 경계를 보정했고, 전체 typecheck가 찾은 test fixture 두 곳을 명시 타입으로 고쳤다.
+- Validation:
+  - `corepack pnpm check` 통과: 94 test files/422 tests, production build 성공.
+  - Career Artifact·기존 GitHub Chromium 4/4 통과. 실제 Provider·외부 Object Storage 호출은 없었다.
+- Next steps:
+  - Gate 5 Private GitHub와 account deletion terminal purge는 후속 범위다.
 
 ## [2026-08-08] Session Summary (Gate 2 후속 검증과 Gate 3 Agent Run 호환성)
 

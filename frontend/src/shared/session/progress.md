@@ -4,6 +4,19 @@
 
 logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 P3 Agent Run EventSource 등록을 관리한다.
 
+## [2026-08-08] Session Summary (Career Artifact draft 사용자 경계)
+
+- What was done:
+  - 기존 최소 6-segment user draft purge가 Career Artifact create/regenerate key도 logout·401·사용자 변경 때 제거함을 test로 고정했다.
+- Key decisions:
+  - 다른 사용자 draft와 무관한 sessionStorage key는 보존한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - session cleanup focused test와 전체 Frontend check가 통과했다.
+- Next steps:
+  - account deletion terminal purge는 Backend 후속 범위와 함께 별도 검증한다.
+
 ## [2026-07-19] Session Summary (P3 Agent Run EventSource cleanup 연결)
 
 - What was done:

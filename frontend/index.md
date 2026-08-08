@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 공개 Landing, P1 인증부터 P8 면접 준비 흐름과 Gate 2 GitHub Source, 상단·mobile bottom 사용자 여정 navigation, 공고 등록→자동 분석 UX와 재방문 가능한 이용 가이드가 구현되어 있다.
+이 디렉터리는 Hiresemble의 Vue 기반 단일 페이지 애플리케이션과 프론트엔드 개발·검증 설정을 관리한다. 현재 공개 Landing, P1 인증부터 P8 면접 준비 흐름, Gate 2 GitHub Source와 Gate 4 Career Artifact, 상단·mobile bottom 사용자 여정 navigation, 공고 등록→자동 분석 UX와 재방문 가능한 이용 가이드가 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -17,16 +17,16 @@
 | [`playwright.config.ts`](playwright.config.ts) | Chromium E2E project와 Vite web server 설정                                                         |
 | [`eslint.config.js`](eslint.config.js)         | TypeScript와 Vue lint 규칙                                                                          |
 | [`tsconfig.json`](tsconfig.json)               | 애플리케이션·도구 TypeScript 설정 연결                                                              |
-| [`.env.example`](.env.example)                 | API base URL, 개발 proxy target와 GitHub Source build-time flag 예시                                |
+| [`.env.example`](.env.example)                 | API base URL, 개발 proxy target와 GitHub Source·Career Artifact build-time flag 예시                |
 | [`progress.md`](progress.md)                   | 프론트엔드 모듈의 현재 상태와 검증 이력                                                             |
 
 ## 구성 요소 역할
 
 - `src/main.ts`가 공유 Pinia·QueryClient, Router와 401 reset을 조립한다. 현재 PrimeVue component 사용처가 없어 전역 theme plugin은 초기화하지 않는다.
 - `src/App.vue`는 layout과 page가 표시되는 최소 route outlet을 제공한다.
-- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증·계정 닉네임 상태와 typed profile·canonical experience·GitHub Source·Agent Run·Document·Job·Job Analysis·Cover Letter·Interview transport를 관리한다.
+- `src/shared/api`와 `src/stores`가 Session Cookie·CSRF, 인증·계정 닉네임 상태와 typed profile·canonical experience·GitHub Source·Career Artifact·Agent Run·Document·Job·Job Analysis·Cover Letter·Interview transport를 관리한다.
 - `src/styles`와 `src/shared/ui`가 Hiresemble Blue 기반 제품 design token, BrandMark, 공통 form/action/status/state·motion pattern을 제공한다.
-- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace·GitHub Source·경험 provenance, AI 작업 drawer, 공고 document view·자동 분석 journey, 자기소개서 편집·검증·version, 면접 준비와 이용 가이드를 제공한다.
+- `src/layouts`, `src/features`, `src/pages`는 responsive 인증·보호 shell, 지원 현황 대시보드, Career Profile Workspace·GitHub Source·경험 provenance, Career Artifact wizard·preview·version download, AI 작업 drawer, 공고 document view·자동 분석 journey, 자기소개서 편집·검증·version, 면접 준비와 이용 가이드를 제공한다.
 - Vite는 로컬 `/api` 요청을 Spring 서버로 전달하고, Vitest와 Playwright는 각각 단위·컴포넌트 테스트와 브라우저 사용자 여정을 담당한다.
 - `package.json`의 `check` script가 lint, Markdown을 포함한 format 검사, type 검사, unit test, production build를 묶는다.
 
