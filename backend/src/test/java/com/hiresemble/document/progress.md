@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-08] Session Summary (Upload 보상 fixture 결정성 보정)
+
+- What was done:
+  - upload 성공 뒤 DB apply 실패를 test-only trigger로 결정적으로 만들고 즉시 Object 삭제를 검증했다.
+- Key decisions:
+  - 운영 코드는 바꾸지 않고 fixture transaction 경계만 현행 DB 제약과 맞췄다.
+- Issues encountered:
+  - 이전 open-ended 가격 fixture는 더 이상 해당 실패 지점을 보장하지 않았다.
+- Validation:
+  - Document 집중 통합 test 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-07] Session Summary (semantic 중복 경험·문서 독립성 회귀)
 
 - What was done:

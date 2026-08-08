@@ -2,9 +2,22 @@
 
 ## Overview
 
-- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document`, P5~P6 `job`, P7 `coverletter`, P8 `research`·`interview`, Dashboard read package가 구현되어 있다.
+- [`HiresembleApplication.java`](HiresembleApplication.java)와 P1 `common`·`auth`, P2 `profile`, P3 `agentrun`·`ai`, P4 `document`, P5~P6 `job`, P7 `coverletter`, P8 `research`·`interview`, Dashboard, GitHub Source와 Career Artifact package가 구현되어 있다.
 - 공통 오류·인증·프로필, durable Run·Step, fixed workflow·network-disabled gateway와 P8까지의 수직 pipeline을 제공한다.
 - 성공 응답용 공통 envelope와 P9 mock interview domain은 존재하지 않는다.
+
+## [2026-08-08] Session Summary (Career Artifact domain package 추가)
+
+- What was done:
+  - feature-gated Career Artifact API·application·domain·infrastructure와 두 AI workflow를 추가했다.
+- Key decisions:
+  - immutable version과 private generation request를 분리하고 Office render·Object lifecycle은 server-owned로 유지했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - migration·API·workflow·renderer 집중 검증을 통과했다.
+- Next steps:
+  - Career Artifact Vue UI는 Gate 4에 남긴다.
 
 ## [2026-08-02] Session Summary (Dashboard Java read 경계 추가)
 

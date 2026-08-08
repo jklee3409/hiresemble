@@ -8,7 +8,7 @@ com.hiresemble.agentrun.application.service package는 use case, transaction 또
 
 | 파일                                                                         | 역할                                                         |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [AgentRunApplicationService.java](AgentRunApplicationService.java)           | owner 목록·상세와 terminal 작업 내역 개별/선택 삭제 use case |
+| [AgentRunApplicationService.java](AgentRunApplicationService.java)           | owner 목록·상세와 resource contributor 기반 terminal history 삭제 use case |
 | [AgentRunCancellationService.java](AgentRunCancellationService.java)         | Service 책임 구현                                            |
 | [AgentRunResumeService.java](AgentRunResumeService.java)                     | Service 책임 구현                                            |
 | [AgentRunRetryService.java](AgentRunRetryService.java)                       | Service 책임 구현                                            |

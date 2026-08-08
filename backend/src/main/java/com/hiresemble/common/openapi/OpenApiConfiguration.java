@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Hiresemble API",
-                version = "1.8",
-                description = "P8 authentication, profile, Agent Run, document, job analysis, cover letter, interview research, expected-question, answer-version, and feedback APIs. Successful DTOs are returned directly without an envelope."),
+                version = "1.9",
+                description = "Authentication, profile, Agent Run, document, job analysis, cover letter, interview, public GitHub ingestion, and feature-gated Career Artifact APIs. Successful DTOs are returned directly without an envelope."),
         tags = {
             @Tag(
                     name = "Authentication",
@@ -56,7 +56,10 @@ import org.springframework.context.annotation.Configuration;
                     description = "Owner-scoped interview question sets, immutable answer versions, and successful feedback history."),
             @Tag(
                     name = "Interview research",
-                    description = "Owner-scoped classified public sources, coverage, and lineage-preserving research retry.")
+                    description = "Owner-scoped classified public sources, coverage, and lineage-preserving research retry."),
+            @Tag(
+                    name = "Career Artifacts",
+                    description = "Feature-gated owner-scoped AI resume and portfolio artifacts.")
         })
 @SecuritySchemes({
     @SecurityScheme(
@@ -101,6 +104,10 @@ public class OpenApiConfiguration {
                             || (path.startsWith("/api/v1/interview-answer-versions")
                                     && method != HttpMethod.GET)
                             || (path.startsWith("/api/v1/research-runs")
+                                    && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/github-sources")
+                                    && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/career-artifacts")
                                     && method != HttpMethod.GET);
                     if (protectedMutation) {
                         operation.setSecurity(List.of(new SecurityRequirement()
@@ -119,7 +126,50 @@ public class OpenApiConfiguration {
                     if (isInterviewPath(path)) {
                         addInterviewErrorResponses(path, method, operation);
                     }
+                    if (path.startsWith("/api/v1/career-artifacts")) {
+                        addCareerArtifactErrorResponses(path, method, operation);
+                    }
                 }));
+    }
+
+    private void addCareerArtifactErrorResponses(
+            String path, HttpMethod method, Operation operation) {
+        addError(operation, "401");
+        if (method != HttpMethod.GET) addError(operation, "403");
+        if (method == HttpMethod.GET) {
+            if (path.equals("/api/v1/career-artifacts")
+                    || path.equals("/api/v1/career-artifacts/ai-models")
+                    || path.endsWith("/versions")) {
+                addError(operation, "400");
+            }
+            if (!path.equals("/api/v1/career-artifacts")
+                    && !path.equals("/api/v1/career-artifacts/readiness")
+                    && !path.equals("/api/v1/career-artifacts/ai-models")) {
+                addError(operation, "404");
+            }
+            if (path.equals("/api/v1/career-artifacts/ai-models")) {
+                addError(operation, "503");
+            }
+            return;
+        }
+        if (method == HttpMethod.POST
+                && path.equals("/api/v1/career-artifacts")) {
+            addError(operation, "400");
+            addError(operation, "404");
+            addError(operation, "409");
+            addError(operation, "429");
+            addError(operation, "503");
+            return;
+        }
+        addError(operation, "404");
+        addError(operation, "409");
+        if (path.endsWith("/generations")) {
+            addError(operation, "400");
+            addError(operation, "429");
+            addError(operation, "503");
+        } else if (path.endsWith("/download-url")) {
+            addError(operation, "503");
+        }
     }
 
     private boolean isInterviewPath(String path) {

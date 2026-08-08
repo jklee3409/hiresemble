@@ -48,7 +48,7 @@ class GitHubSourceMigrationTest extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT max(version::int) FROM flyway_schema_history WHERE success",
                         Integer.class))
-                .isEqualTo(27);
+                .isEqualTo(28);
         assertThat(jdbcTemplate.queryForList("""
                         SELECT table_name FROM information_schema.tables
                         WHERE table_schema='public' AND table_name LIKE 'github_%'

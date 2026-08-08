@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyOneHundredSevenOperationsAndSeventyNinePaths() {
+    void liveSpringMappingsHaveExactlyOneHundredEighteenOperationsAndEightyEightPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -63,17 +64,17 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(79);
-        assertThat(operations[0]).isEqualTo(107);
+        assertThat(paths).hasSize(88);
+        assertThat(operations[0]).isEqualTo(118);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyOneHundredSevenOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyOneHundredEighteenOperations()
             throws Exception {
         JsonNode document = openApi();
 
         assertThat(document.at("/info/title").asText()).isEqualTo("Hiresemble API");
-        assertThat(document.at("/info/version").asText()).isEqualTo("1.8");
+        assertThat(document.at("/info/version").asText()).isEqualTo("1.9");
         assertThat(fieldValues(document.get("tags"), "name"))
                 .containsExactlyInAnyOrder(
                         "Authentication",
@@ -85,7 +86,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "Cover Letters",
                         "Interview preparation",
                         "Interview research",
-                        "GitHub Sources");
+                        "GitHub Sources",
+                        "Career Artifacts");
         assertThat(findTag(document.get("tags"), "Authentication").get("description").asText())
                 .contains(
                         "GET /api/v1/auth/csrf",
@@ -130,6 +132,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/github-sources/{sourceId}/repositories",
                         "/api/v1/github-sources/{sourceId}/repository-selection",
                         "/api/v1/github-sources/{sourceId}/refresh",
+                        "/api/v1/career-artifacts/readiness",
+                        "/api/v1/career-artifacts/ai-models",
+                        "/api/v1/career-artifacts",
+                        "/api/v1/career-artifacts/{artifactId}",
+                        "/api/v1/career-artifacts/{artifactId}/versions",
+                        "/api/v1/career-artifacts/{artifactId}/generations",
+                        "/api/v1/career-artifacts/{artifactId}/archive",
+                        "/api/v1/career-artifacts/{artifactId}/unarchive",
+                        "/api/v1/career-artifacts/{artifactId}/versions/{versionId}/download-url",
                         "/api/v1/agent-runs",
                         "/api/v1/agent-runs/{agentRunId}",
                         "/api/v1/agent-runs/bulk-delete",
@@ -174,7 +185,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(107);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(118);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -245,6 +256,28 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/repositories", "get", "listGitHubRepositories", "GitHub Sources");
         assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/repository-selection", "put", "selectGitHubRepositories", "GitHub Sources");
         assertTaggedOperation(document, "/api/v1/github-sources/{sourceId}/refresh", "post", "refreshGitHubSource", "GitHub Sources");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/readiness", "get", "getCareerArtifactReadiness");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/ai-models", "get", "listCareerArtifactAiModels");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts", "post", "createCareerArtifact");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts", "get", "listCareerArtifacts");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}", "get", "getCareerArtifact");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}", "delete", "deleteCareerArtifact");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}/versions", "get", "listCareerArtifactVersions");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}/generations", "post", "generateCareerArtifactVersion");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}/archive", "post", "archiveCareerArtifact");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}/unarchive", "post", "unarchiveCareerArtifact");
+        assertCareerArtifactOperation(document, "/api/v1/career-artifacts/{artifactId}/versions/{versionId}/download-url", "post", "createCareerArtifactDownloadUrl");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1readiness/get"), "200", "401");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1ai-models/get"), "200", "400", "401", "503");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts/post"), "202", "400", "401", "403", "404", "409", "429", "503");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts/get"), "200", "400", "401");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}/get"), "200", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}/delete"), "204", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}~1versions/get"), "200", "400", "401", "404");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}~1generations/post"), "202", "400", "401", "403", "404", "409", "429", "503");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}~1archive/post"), "200", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}~1unarchive/post"), "200", "401", "403", "404", "409");
+        assertResponseCodes(document.at("/paths/~1api~1v1~1career-artifacts~1{artifactId}~1versions~1{versionId}~1download-url/post"), "200", "401", "403", "404", "409", "503");
         assertAgentRunOperation(document, "/api/v1/agent-runs", "get", "listAgentRuns");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "get", "getAgentRun");
         assertAgentRunOperation(document, "/api/v1/agent-runs/{agentRunId}", "delete", "deleteAgentRun");
@@ -568,6 +601,23 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(interviewMutationSecurity).hasSize(1);
         assertThat(fieldNames(interviewMutationSecurity.get(0)))
                 .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        for (String operationPath : List.of(
+                "/paths/~1api~1v1~1github-sources/post",
+                "/paths/~1api~1v1~1github-sources~1{sourceId}/delete",
+                "/paths/~1api~1v1~1github-sources~1{sourceId}~1repository-selection/put",
+                "/paths/~1api~1v1~1github-sources~1{sourceId}~1refresh/post",
+                "/paths/~1api~1v1~1career-artifacts/post",
+                "/paths/~1api~1v1~1career-artifacts~1{artifactId}/delete",
+                "/paths/~1api~1v1~1career-artifacts~1{artifactId}~1generations/post",
+                "/paths/~1api~1v1~1career-artifacts~1{artifactId}~1archive/post",
+                "/paths/~1api~1v1~1career-artifacts~1{artifactId}~1unarchive/post",
+                "/paths/~1api~1v1~1career-artifacts~1{artifactId}~1versions~1{versionId}~1download-url/post")) {
+            JsonNode security = document.at(operationPath + "/security");
+            assertThat(security).as(operationPath).hasSize(1);
+            assertThat(fieldNames(security.get(0)))
+                    .as(operationPath)
+                    .containsExactlyInAnyOrder("sessionCookie", "csrfToken");
+        }
     }
 
     @Test
@@ -617,6 +667,51 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "claimToken", "claimedBy", "leaseExpiresAt", "heartbeatAt",
                         "canonicalInputHash", "inputReferenceSnapshot", "priceVersion",
                         "provider", "model", "promptVersion", "reusedStepId", "outputJson");
+        assertThat(fieldNames(schemas.at("/CareerArtifactReadinessDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "hasUploadedResume", "hasUploadedPortfolio", "hasGeneratedResume",
+                        "hasGeneratedPortfolio", "verifiedExperienceCount",
+                        "verifiedGitHubExperienceCount", "verifiedStrengthCount",
+                        "canGenerateResume", "canGeneratePortfolio", "warnings");
+        assertThat(fieldNames(schemas.at("/CareerArtifactAiModelDto/properties")))
+                .containsExactlyInAnyOrder("id", "displayName", "description", "recommended");
+        assertThat(fieldNames(schemas.at("/CareerArtifactSummaryDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "artifactType", "title", "lifecycleStatus", "generationStatus",
+                        "currentVersionId", "currentVersionNo", "latestAgentRunId", "version",
+                        "createdAt", "updatedAt")
+                .doesNotContain("storageKey", "checksumSha256", "renderProfileSnapshot");
+        assertThat(fieldNames(schemas.at("/CareerArtifactVersionSummaryDto/properties")))
+                .containsExactlyInAnyOrder(
+                        "id", "artifactId", "versionNo", "model", "templateKey", "mimeType",
+                        "fileSizeBytes", "createdAt")
+                .doesNotContain(
+                        "storageKey", "checksumSha256", "contentJson", "renderProfileSnapshot",
+                        "templateVersion", "agentRunId");
+        assertThat(fieldNames(schemas.at("/CareerArtifactDetailDto/properties")))
+                .containsExactlyInAnyOrder("artifact", "currentVersion", "preview", "latestRun")
+                .doesNotContain("storageKey", "checksumSha256", "renderProfileSnapshot");
+        assertThat(fieldNames(schemas.at("/CareerArtifactDownloadUrlDto/properties")))
+                .containsExactlyInAnyOrder("url", "expiresAt", "filename");
+        assertThat(fieldNames(schemas.at("/CreateCareerArtifactRequest/properties")))
+                .containsExactlyInAnyOrder(
+                        "artifactType", "title", "experienceItemIds", "model", "templateKey",
+                        "includeProfileSections", "renderProfile");
+        assertThat(fieldNames(schemas.at("/GenerateCareerArtifactRequest/properties")))
+                .containsExactlyInAnyOrder(
+                        "experienceItemIds", "model", "templateKey", "includeProfileSections",
+                        "renderProfile", "version");
+        JsonNode createProfileSections = schemas.at(
+                "/CreateCareerArtifactRequest/properties/includeProfileSections");
+        JsonNode generateProfileSections = schemas.at(
+                "/GenerateCareerArtifactRequest/properties/includeProfileSections");
+        assertThat(createProfileSections.at("/maxItems").asInt()).isEqualTo(7);
+        assertThat(generateProfileSections.at("/maxItems").asInt()).isEqualTo(7);
+        assertThat(createProfileSections.at("/items/enum").size()).isEqualTo(7);
+        assertThat(createProfileSections.at("/items/enum").toString())
+                .contains(
+                        "PROFILE", "EDUCATIONS", "CERTIFICATIONS", "LANGUAGE_SCORES",
+                        "AWARDS", "CAREERS", "ACTIVITIES");
         JsonNode verificationSuggestions =
                 schemas.at("/VerificationDto/properties/suggestions");
         assertThat(verificationSuggestions.at("/maxItems").asInt()).isEqualTo(20);
@@ -942,6 +1037,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertThat(operation.get("operationId").asText()).isEqualTo(operationId);
         assertThat(operation.get("summary").asText()).isNotBlank();
         assertThat(operation.at("/tags/0").asText()).isEqualTo(tag);
+    }
+
+    private void assertCareerArtifactOperation(
+            JsonNode document, String path, String method, String operationId) {
+        assertTaggedOperation(document, path, method, operationId, "Career Artifacts");
     }
 
     private int operationCount(JsonNode paths) {

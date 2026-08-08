@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`com.hiresemble`은 Spring Boot component scan의 기준이자 Hiresemble 업무 기능을 도메인별로 구성할 기본 package다. 현재 P1 공통 HTTP·인증부터 P8 면접 조사·예상 질문·답변 피드백과 Phase 1 GitHub Source Backend까지 구현되어 있다.
+`com.hiresemble`은 Spring Boot component scan의 기준이자 Hiresemble 업무 기능을 도메인별로 구성할 기본 package다. 현재 P1 공통 HTTP·인증부터 P8 면접, GitHub Gate 0~2와 Career Artifact Backend Gate 3까지 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,6 +16,7 @@
 | [`ai/`](ai/)                                               | 고정 workflow, context·router·prompt·gateway 기반                 |
 | [`document/`](document/index.md)                           | 문서 upload·parse·text·chunk·storage·evidence·delete 수명주기     |
 | [`githubsource/`](githubsource/index.md)                   | 공개 GitHub source·repository·snapshot·provenance·delete 수명주기 |
+| [`careerartifact/`](careerartifact/index.md)               | AI 이력서·포트폴리오 생성·Office version·Object 수명주기          |
 | [`job/`](job/index.md)                                     | 공고 등록·추출·상태·분석·RAG·OUTDATED 수명주기                    |
 | [`coverletter/`](coverletter/index.md)                     | 자기소개서·문항·답변 version·검증·최종화·보관 수명주기            |
 | [`research/`](research/index.md)                           | 면접 공개 조사 run·topic·source·coverage·retry 수명주기           |
@@ -31,6 +32,7 @@
 - `agentrun`은 PostgreSQL 상태 원천과 application port를, `ai`는 repository 비의존 고정 orchestration을 소유한다.
 - `document`는 최초의 Agent Run typed aggregate와 Object Storage·parser·근거 pipeline을 소유한다.
 - `githubsource`는 public-only REST gateway, bounded snapshot·sanitizer, canonical 경험 provenance와 `GITHUB_SOURCE` Agent Run 경계를 소유한다.
+- `careerartifact`는 승인 canonical 경험과 exact model을 받아 결정론적 DOCX/PPTX version을 만들고 `CAREER_ARTIFACT` Agent Run·Object lifecycle을 소유한다.
 - `job`은 공고와 immutable 분석을, `coverletter`는 그 분석·현재 VERIFIED 근거를 소비하는 답변·검증 수명주기를 소유한다.
 - `research`와 `interview`는 공개 조사 provenance와 예상 질문·답변 version·feedback을 분리하되 하나의 preparation lineage로 연결한다.
 - `dashboard`는 기존 aggregate를 변경하지 않는 JDBC read projection과 게시 가이드 read 경계를 소유한다.

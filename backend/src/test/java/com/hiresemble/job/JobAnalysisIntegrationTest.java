@@ -53,7 +53,7 @@ import tools.jackson.databind.ObjectMapper;
 @Import(JobAnalysisIntegrationTest.TestPorts.class)
 class JobAnalysisIntegrationTest extends PostgresIntegrationTest {
 
-    private static final Instant NOW = Instant.parse("2026-07-29T00:00:00Z");
+    private static final Instant NOW = Instant.parse("2026-08-08T00:00:00Z");
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;

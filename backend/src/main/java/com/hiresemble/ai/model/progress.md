@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 legacy quality/tier 분리와 disabled provider routing, 자기소개서 exact model routing이 구현됐다.
+P3 legacy quality/tier 분리와 disabled provider routing, 자기소개서·Career Artifact exact model routing이 구현됐다.
+
+## [2026-08-08] Session Summary (Workflow별 exact model catalog)
+
+- What was done:
+  - `modelsFor`·`requireModel`을 추가하고 Resume·Portfolio를 기존 자기소개서 exact model catalog와 같은 목록으로 연결했다.
+- Key decisions:
+  - 기존 cover-letter wrapper는 호환성을 위해 유지하고 새 workflow도 접수·실행 시 두 번 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - model catalog·router와 세 Chat step 동일 model 계약이 통과했다.
+- Next steps:
+  - model 수명주기 변경은 가격 catalog와 함께 갱신한다.
 
 ## [2026-08-06] Session Summary (중앙 OpenAI chat model catalog)
 

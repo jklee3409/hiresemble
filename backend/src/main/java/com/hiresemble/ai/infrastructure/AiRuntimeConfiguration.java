@@ -13,6 +13,7 @@ import com.hiresemble.ai.budget.AiCallCostEstimator;
 import com.hiresemble.ai.budget.BudgetGuard;
 import com.hiresemble.ai.budget.PriceCatalogAiCallCostEstimator;
 import com.hiresemble.ai.context.ContextBuilder;
+import com.hiresemble.ai.context.CareerArtifactContextBuilder;
 import com.hiresemble.ai.context.CoverLetterGenerationContextBuilder;
 import com.hiresemble.ai.context.CoverLetterVerificationContextBuilder;
 import com.hiresemble.ai.context.DocumentIngestionContextBuilder;
@@ -57,6 +58,10 @@ import com.hiresemble.ai.workflow.document.DocumentIngestionFailureHandler;
 import com.hiresemble.ai.workflow.document.DocumentIngestionWorkflow;
 import com.hiresemble.ai.workflow.github.GitHubIngestionFailureHandler;
 import com.hiresemble.ai.workflow.github.GitHubIngestionWorkflow;
+import com.hiresemble.ai.workflow.careerartifact.CareerArtifactGenerationFailureHandler;
+import com.hiresemble.ai.workflow.careerartifact.CareerArtifactGenerationWorkflow;
+import com.hiresemble.careerartifact.application.CareerArtifactApplicationService;
+import com.hiresemble.careerartifact.application.CareerArtifactWorkflowPort;
 import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
 import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.document.application.port.DocumentWorkflowCommandPort;
@@ -181,6 +186,13 @@ public class AiRuntimeConfiguration {
     }
 
     @Bean
+    CareerArtifactGenerationWorkflow careerArtifactGenerationWorkflow(
+            CareerArtifactWorkflowPort workflowPort,
+            ObjectMapper objectMapper) {
+        return new CareerArtifactGenerationWorkflow(workflowPort, objectMapper);
+    }
+
+    @Bean
     WorkflowRegistry workflowRegistry(
             DocumentIngestionWorkflow documentWorkflow,
             JobPostingExtractionWorkflow jobWorkflow,
@@ -189,7 +201,8 @@ public class AiRuntimeConfiguration {
             CoverLetterVerificationWorkflow coverLetterVerificationWorkflow,
             InterviewPreparationWorkflow interviewPreparationWorkflow,
             InterviewAnswerFeedbackWorkflow interviewAnswerFeedbackWorkflow,
-            GitHubIngestionWorkflow gitHubIngestionWorkflow) {
+            GitHubIngestionWorkflow gitHubIngestionWorkflow,
+            CareerArtifactGenerationWorkflow careerArtifactGenerationWorkflow) {
         return new WorkflowRegistry(
                 CanonicalWorkflowDefinitions.all(),
                 List.of(
@@ -207,7 +220,9 @@ public class AiRuntimeConfiguration {
                         coverLetterVerificationWorkflow.v4Contribution(),
                         interviewPreparationWorkflow.contribution(),
                         interviewAnswerFeedbackWorkflow.contribution(),
-                        gitHubIngestionWorkflow.contribution()));
+                        gitHubIngestionWorkflow.contribution(),
+                        careerArtifactGenerationWorkflow.resumeContribution(),
+                        careerArtifactGenerationWorkflow.portfolioContribution()));
     }
 
     @Bean
@@ -243,6 +258,7 @@ public class AiRuntimeConfiguration {
             CoverLetterQueryPort coverLetterQueryPort,
             InterviewWorkflowQueryPort interviewQueryPort,
             GitHubWorkflowQueryPort gitHubQueryPort,
+            CareerArtifactWorkflowPort careerArtifactWorkflowPort,
             AiPreferenceQueryPort preferenceQueryPort,
             Environment environment) {
         long version = environment.getProperty(
@@ -258,7 +274,8 @@ public class AiRuntimeConfiguration {
                 new InterviewPreparationContextBuilder(interviewQueryPort, version),
                 new InterviewFeedbackContextBuilder(
                         interviewQueryPort, preferenceQueryPort, version),
-                new GitHubIngestionContextBuilder(gitHubQueryPort, version));
+                new GitHubIngestionContextBuilder(gitHubQueryPort, version),
+                new CareerArtifactContextBuilder(careerArtifactWorkflowPort, version));
     }
 
     @Bean
@@ -281,7 +298,9 @@ public class AiRuntimeConfiguration {
                 Set.of(
                         WorkflowType.COVER_LETTER_GENERATION,
                         WorkflowType.COVER_LETTER_VERIFICATION,
-                        WorkflowType.INTERVIEW_ANSWER_FEEDBACK)));
+                        WorkflowType.INTERVIEW_ANSWER_FEEDBACK,
+                        WorkflowType.RESUME_GENERATION,
+                        WorkflowType.PORTFOLIO_GENERATION)));
     }
 
     @Bean
@@ -339,6 +358,13 @@ public class AiRuntimeConfiguration {
     WorkflowFailureHandler gitHubWorkflowFailureHandler(
             GitHubWorkflowCommandPort commandPort, Clock clock) {
         return new GitHubIngestionFailureHandler(commandPort, clock);
+    }
+
+    @Bean
+    WorkflowFailureHandler careerArtifactWorkflowFailureHandler(
+            CareerArtifactWorkflowPort workflowPort,
+            CareerArtifactApplicationService artifacts) {
+        return new CareerArtifactGenerationFailureHandler(workflowPort, artifacts);
     }
 
     @Bean

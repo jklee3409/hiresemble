@@ -1,6 +1,6 @@
 # 기술 스택 명세서
 
-- 문서 버전: 1.3 (GitHub Source·Career Artifact 목표 기술 계약)
+- 문서 버전: 1.4 (GitHub Source·Career Artifact Backend 기술 계약)
 - 기준일: 2026-08-07
 - 대상 범위: 핵심 MVP
 - 아키텍처 원칙: Spring Boot 모듈러 모놀리스 + Spring AI 기반 통제형 멀티 에이전트 워크플로
@@ -44,7 +44,7 @@
     ├─ Auth / User / Profile
     ├─ Document / Evidence
     ├─ GitHub Source / Canonical Experience
-    ├─ Career Artifact / Office Renderer (PLANNED)
+    ├─ Career Artifact / Office Renderer
     ├─ Job Posting / Job Analysis
     ├─ Cover Letter
     ├─ Interview Preparation
@@ -145,7 +145,7 @@ Domain/Application은 Spring AI concrete API를 참조하지 않는다. `ChatGat
 | -------------------- | ----------------------------------------------------------- |
 | Apache Tika          | MIME 탐지 및 공통 텍스트 추출                               |
 | Apache PDFBox        | PDF 페이지별 텍스트 추출                                    |
-| Apache POI           | DOCX 텍스트 추출, XWPF DOCX·XSLF PPTX 결정론적 생성 (`PLANNED`) |
+| Apache POI           | DOCX 텍스트 추출, XWPF DOCX·XSLF PPTX 결정론적 생성             |
 | Jsoup                | 채용 공고 URL HTML 검사·DOM 정제·이미지 후보 탐지           |
 | webp-imageio `0.3.3` | 정적 WebP의 pure-Java ImageIO read/decode와 dimensions 검증 |
 | SHA-256              | 중복 파일 및 중복 공고 감지                                 |
@@ -172,7 +172,7 @@ MVP 구현체는 Tavily REST API를 사용한다.
 - 커뮤니티 정보와 공식 출처를 구분
 - 원문 전체를 영구 보관하지 않고 필요한 인용 스니펫과 메타데이터만 저장
 
-### 4.5 GitHub 수집 (`IMPLEMENTED`)과 Office renderer (`PLANNED`)
+### 4.5 GitHub 수집과 Office renderer (`IMPLEMENTED`)
 
 `GitHubRepositoryGateway`는 `WebSearchGateway`나 범용 URL fetcher를 재사용하지 않는다.
 
@@ -190,6 +190,9 @@ Office 생성은 LLM gateway 뒤의 application port와 Apache POI adapter로 �
 - model은 OOXML, 임의 좌표·font·색상·외부 image URL을 출력하지 않는다.
 - renderer는 macro·external relationship·remote media를 만들지 않고 생성 파일을 재개방해 MIME, section/slide 수, overflow와 relationship allowlist를 검증한다.
 - render/upload 실패는 기존 성공 artifact version을 변경하지 않고, upload 뒤 DB 실패는 즉시 보상 삭제 후 실패 시 전용 outbox로 넘긴다.
+- typed renderer 설정의 기본 최대 파일 크기는 10 MiB다. DOCX는 A4·단일 column·표준 heading/bullet이고 core content에 text box/chart/image를 두지 않는다. 1~2 page는 목표이며 POI로 실제 page count를 확정했다고 주장하지 않는다.
+- PPTX는 16:9·6~12 slides, title 최소 28pt, body 최소 18pt와 한 slide 한 핵심 message를 적용한다. HTTPS link도 hyperlink relationship 없이 일반 텍스트로 렌더링한다.
+- 한글은 `Noto Sans KR`을 우선 지정하고 비한글 fallback을 함께 지정하되 font file을 원격 다운로드하거나 OOXML에 임의 삽입하지 않는다. LibreOffice가 이미 있는 환경에서는 선택적 시각 fixture에만 사용한다.
 
 ---
 
@@ -315,13 +318,13 @@ LLM 전송 전 기본 마스킹 대상:
 - 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용한다.
 - 미승인 chunk만으로 긍정 사실을 작성하거나 score·interview 질문의 근거로 쓰지 않으며 PASSED 대신 `WARNING + UNVERIFIED_CLAIM`으로 처리한다.
 - Object key, 일반 log, analytics와 browser console에 사용자 filename·원문·전체 prompt/response를 남기지 않는다.
-- GitHub snapshot 전체와 source code excerpt는 downstream 생성 Context에 주입하지 않는다. Career Artifact의 생성 파일 연락처는 LLM Context 밖에서 renderer가 삽입한다(`PLANNED`).
+- GitHub snapshot 전체와 source code excerpt는 downstream 생성 Context에 주입하지 않는다. Career Artifact의 생성 파일 연락처는 LLM Context 밖에서 renderer가 삽입한다.
 
 ---
 
 ## 8. 통제형 AI 워크플로
 
-Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. `WorkflowRegistry`는 아래 9개 `WorkflowType`, workflow version, 고정 step, input/output schema, 허용 tool·호출 상한과 실패 정책을 등록한다. `[*]`는 모델 자유 loop가 아니라 검증된 bounded ID 목록을 registry 순서대로 처리하는 fan-out이다.
+Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. `WorkflowRegistry`는 아래 11개 `WorkflowType`, workflow version, 고정 step, input/output schema, 허용 tool·호출 상한과 실패 정책을 등록한다. `[*]`는 모델 자유 loop가 아니라 검증된 bounded ID 목록을 registry 순서대로 처리하는 fan-out이다.
 
 | WorkflowType                | 고정 step 순서                                                                                                                                                                                                                                                               |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -335,9 +338,9 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 | `MOCK_INTERVIEW_FEEDBACK`   | `LOAD_SESSION_SNAPSHOT → ANALYZE_TURNS → SYNTHESIZE_SESSION_FEEDBACK → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                 |
 | `GITHUB_INGESTION`          | `VALIDATE_GITHUB_SOURCE → DISCOVER_REPOSITORIES → WAIT_FOR_REPOSITORY_SELECTION → CAPTURE_REPOSITORY_SNAPSHOTS → SANITIZE_AND_SELECT_SOURCE_UNITS → EXTRACT_GITHUB_CANDIDATES → VALIDATE_GITHUB_CANDIDATES → EMBED_GITHUB_CANDIDATES → APPLY_CANONICAL_EXPERIENCES → FINALIZE_GITHUB_SOURCE` |
 
-다음 두 workflow는 Career Artifact 목표 계약이며 현재 9개 registry, durable run과 OpenAPI count에 포함하지 않는다.
+다음 두 workflow는 Gate 3에서 registry와 durable Agent Run에 추가됐다.
 
-| WorkflowType (`PLANNED`) | 고정 step 순서 |
+| WorkflowType | 고정 step 순서 |
 | --- | --- |
 | `RESUME_GENERATION` | `LOAD_RESUME_REQUEST → BUILD_VERIFIED_CAREER_CONTEXT → PLAN_RESUME → DRAFT_RESUME_CONTENT → FACT_CHECK_RESUME_CONTENT → RENDER_DOCX → VALIDATE_DOCX → PERSIST_RESUME_VERSION` |
 | `PORTFOLIO_GENERATION` | `LOAD_PORTFOLIO_REQUEST → BUILD_VERIFIED_CAREER_CONTEXT → PLAN_PORTFOLIO_STORY → DRAFT_PORTFOLIO_SLIDES → FACT_CHECK_PORTFOLIO_CONTENT → RENDER_PPTX → VALIDATE_PPTX → PERSIST_PORTFOLIO_VERSION` |
@@ -372,13 +375,15 @@ OpenAI text Chat와 image text adapter는 service status/code/param, request ID,
 
 우선순위는 요청·지시 → 최신 공고/analysis → 선택 VERIFIED evidence → 관련 VERIFIED evidence → current answer → research provenance → step allowlist의 미승인 masked chunk다. 모든 DB/vector 조회는 user scope와 active embedding generation을 포함한다. Context snapshot은 resource version/hash, evidence·chunk·source ID, page 범위, 당시 verification 상태와 truncation summary를 가진다.
 
-Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPERIENCE` evidence만 소비한다(`PLANNED`). GitHub raw evidence·source unit은 extraction과 provenance 검증에는 사용하지만 생성 Context에 직접 중복 주입하지 않는다. artifact Run snapshot은 experience/evidence ID·version·선택 model·template을 고정하고 contact/render profile 원문은 포함하지 않는다.
+Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPERIENCE` evidence만 소비한다. GitHub raw evidence·source unit은 extraction과 provenance 검증에는 사용하지만 생성 Context에 직접 중복 주입하지 않는다. artifact Run snapshot은 experience/evidence ID·version·선택 model·template과 `renderProfileHash`를 고정하고 contact/render profile 원문은 포함하지 않는다. 원문은 private generation request와 성공 version render snapshot에만 저장한다. canonical 경험·선택 profile의 incidental email·phone·secret은 기존 privacy masker로 가리고 HTTPS URL은 placeholder로 치환한 뒤 token/truncation을 적용한다.
+
+선택 가능한 profile section은 `PROFILE|EDUCATIONS|CERTIFICATIONS|LANGUAGE_SCORES|AWARDS|CAREERS|ACTIVITIES`다. profile legal/display name과 연락 정보, certification credential number를 제외하고 `ACTIVITIES`는 `use_as_material=true`만 포함한다. section별 ID/version을 재검증하고 빈 section은 warning으로 처리하며 전체 Context는 기존 token/truncation 정책으로 제한한다.
 
 ---
 
 ## 9. 모델 라우팅과 비용
 
-공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 exact model 선택 workflow를 제외한 AI 작업의 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 및 비용 집계 분류다. 현재 자기소개서 생성·검증 v4는 서버 소유 OpenAI 모델 카탈로그에서 사용자가 고른 exact model ID를 run input에 고정하고 모든 chat step에 그대로 전달한다. GitHub extraction은 server policy가 model을 선택하며 사용자 model 입력을 받지 않는다. 목표 확장의 Resume/Portfolio는 자기소개서와 같은 exact model 선택 계약을 사용한다(`PLANNED`). embedding step은 선택 chat model과 분리해 active embedding policy를 계속 사용한다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않지만 자기소개서와 Career Artifact model catalog·선택 UI는 명시적 예외다.
+공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 exact model 선택 workflow를 제외한 AI 작업의 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 및 비용 집계 분류다. 현재 자기소개서 생성·검증 v4와 Resume/Portfolio는 서버 소유 OpenAI 모델 카탈로그에서 사용자가 고른 exact model ID를 run input에 고정하고 모든 chat step에 그대로 전달한다. GitHub extraction은 server policy가 model을 선택하며 사용자 model 입력을 받지 않는다. embedding step은 선택 chat model과 분리해 active embedding policy를 계속 사용한다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않지만 자기소개서와 Career Artifact model catalog·선택 UI는 명시적 예외다.
 
 `ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다. Job Analysis는 criterion query를 embedding batch로 보내고 criterion별 hybrid retrieval을 수행하며, merged candidate에 허용 criterion index를 보존해 match 단계의 evidence 사용 범위를 검증한다.
 
@@ -390,7 +395,7 @@ Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPE
 
 `HIGH_QUALITY`는 `highQualityEnabled=true`, 요청별 명시 선택, 비용 예약 성공을 모두 요구하며 면접 답변 feedback에서만 공개 선택한다. 자기소개서 신규 요청은 품질 모드를 받지 않고 선택한 exact model의 가격과 기존 예산 reserve/settle 정책을 적용한다. 공고 분석과 면접 준비는 `ECONOMY|BALANCED`, 문서·공고 추출은 내부 저비용 정책만 사용한다. 모의 면접 종합 feedback은 `BALANCED` 고정이다.
 
-현재 자기소개서 모델 allowlist는 별도 상수 카탈로그 한 곳에서 ID·표시명·설명·내부 비용 tier·추천 여부를 관리한다. 목표 구현은 이를 `modelsFor(workflowType)`와 `requireModel(workflowType,model)`로 일반화하고 기존 cover-letter API를 wrapper로 유지한다. Resume/Portfolio API와 frontend는 type별 catalog를 조회하고 서버는 접수·실행 양쪽에서 allowlist와 활성 가격 item을 재검증한다. 선택 model은 idempotency hash, immutable Run input, 모든 chat step hash에 포함하며 retry에서 바꾸지 않는다. 자기소개서 신규 workflow version은 v4이고 기존 v1~v3 정의와 prompt는 이미 접수된 durable run 재생을 위해 읽기 호환으로 유지한다.
+중앙 exact model allowlist는 ID·표시명·설명·내부 비용 tier·추천 여부를 관리하며 `modelsFor(workflowType)`와 `requireModel(workflowType,model)`로 자기소개서·Resume·Portfolio를 지원하고 기존 cover-letter API wrapper를 유지한다. Resume/Portfolio API는 type별 catalog를 반환하고 서버는 접수·실행 양쪽에서 allowlist를 재검증한다. 선택 model은 idempotency hash, immutable Run input, 모든 chat step hash에 포함하며 retry에서 바꾸지 않는다. 자기소개서 신규 workflow version은 v4이고 기존 v1~v3 정의와 prompt는 이미 접수된 durable run 재생을 위해 읽기 호환으로 유지한다.
 
 ### 9.1 가격·reserve/settle
 
@@ -440,7 +445,7 @@ Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPE
 - 면접 답변 feedback
 - 모의 면접 session 종합 feedback
 - GitHub 공개 repository discovery·snapshot·경험 추출
-- 이력서 DOCX·포트폴리오 PPTX 생성·검증·저장 (`PLANNED`)
+- 이력서 DOCX·포트폴리오 PPTX 생성·검증·저장
 
 ### 처리 방식
 
@@ -463,7 +468,7 @@ API 요청
 - SSE는 연결 직후 DB `snapshot`, 이후 `progress|step|waiting_user|heartbeat|terminal`을 전송한다. durable replay는 만들지 않는다.
 - client는 `stateVersion`으로 중복을 제거하고 재연결 실패 시 REST polling으로 전환한다.
 - TaskExecutor queue와 SSE memory state는 상태 원천이 아니다.
-- GitHub account 선택은 새 Run 생성이 아닌 `WAITING_USER→QUEUED` same-run resume다. Career Artifact cancel/reconciliation은 진행 중인 새 version을 만들지 않고 이전 `current_version_id`를 안정 상태로 유지한다(`PLANNED`).
+- GitHub account 선택은 새 Run 생성이 아닌 `WAITING_USER→QUEUED` same-run resume다. Career Artifact cancel/reconciliation은 진행 중인 새 version을 만들지 않고 이전 `current_version_id`를 안정 상태로 유지한다.
 
 ### 동기 모의 면접 경계
 
@@ -504,7 +509,7 @@ API 요청
 - aggregation watermark / lag
 - Backoffice access type와 request ID
 - GitHub source/repository/snapshot 내부 correlation ID, upstream status class, selected unit/count와 partial flag
-- Career Artifact ID/type/version, renderer/template version, 검증 phase와 file size (`PLANNED`)
+- Career Artifact ID/type/version, renderer/template version, 검증 phase와 file size
 
 ### 로그 금지 항목
 
@@ -533,7 +538,7 @@ API 요청
 
 P8.6 이후 Repository 검증은 feature limit 동시 reserve/oversubscription, replay unique, budget과의 lock order, raw usage reconciliation을 포함한다. P8.8 Frontend 검증은 failure category/CTA/보존 안내와 접근성을, P8.9-A Security/E2E는 USER/ADMIN 격리와 Backoffice access audit·원문 비노출을 포함한다.
 
-GitHub·Career Artifact vertical 구현 시 다음 검증을 추가한다.
+GitHub·Career Artifact vertical은 다음 검증을 유지한다.
 
 - Domain/Repository: URL shape, account/repository CHECK, 선택 1..10, snapshot immutable unique, owner composite FK, raw claim unique, 기존 0.94/0.82 dedupe 회귀, artifact current version과 실패 보존, outbox race.
 - Gateway/Security: Fake/WireMock으로 GitHub 403·429·5xx·timeout·ETag·truncated tree, redirect/host 우회, file/byte 상한, binary·secret filtering, prompt injection을 재현하고 실제 GitHub/AI 호출은 CI에서 금지한다.
@@ -596,7 +601,7 @@ FRONTEND_ORIGIN
 
 환경 변수는 versioned DB policy를 선택·override하는 운영 입력이며 모델·비용 한도 자체를 business code에 하드코딩하지 않는다. active embedding policy는 provider/model/dimension/generation이 함께 검증돼야 boot가 성공한다.
 
-GitHub vertical의 production base host는 `api.github.com` allowlist로 고정하고 test profile에서만 Fake base URL을 주입한다. API version, connect/read timeout, global concurrency, repository/file/byte 상한, snapshot retention과 renderer template version은 typed `@ConfigurationProperties`로 관리한다. 첫 public-only 구현에는 GitHub token 환경 변수를 추가하지 않는다. 향후 GitHub App을 승인하면 App ID·private key·webhook secret은 secret manager에서 주입하고 source/Run/DB에 복사하지 않는다.
+GitHub vertical의 production base host는 `api.github.com` allowlist로 고정하고 test profile에서만 Fake base URL을 주입한다. API version, connect/read timeout, global concurrency, repository/file/byte 상한, snapshot retention과 renderer template/version/file-size limit은 typed `@ConfigurationProperties`로 관리한다. 초기 template catalog는 RESUME `resume-ats-v1` version `1`, PORTFOLIO `portfolio-interview-v1` version `1`로 고정한다. 첫 public-only 구현에는 GitHub token 환경 변수를 추가하지 않는다. 향후 GitHub App을 승인하면 App ID·private key·webhook secret은 secret manager에서 주입하고 source/Run/DB에 복사하지 않는다.
 
 ---
 

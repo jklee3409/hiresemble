@@ -8,6 +8,7 @@
 
 - [`workflow/`](workflow/index.md): canonical workflow definition과 executable contribution 경계
 - [`workflow/github/`](workflow/github/index.md): `GITHUB_INGESTION` 10단계와 failure compensation
+- [`workflow/careerartifact/`](workflow/careerartifact/index.md): Resume·Portfolio 8단계와 Office/Object failure compensation
 - [`orchestration/`](orchestration/index.md): bounded `AgentOrchestrator`
 - [`context/`](context/index.md), [`model/`](model/index.md), [`prompt/`](prompt/index.md)
 - [`validation/`](validation/index.md), [`budget/`](budget/index.md), [`execution/`](execution/index.md)
@@ -16,11 +17,11 @@
 
 ## 구성 요소 역할
 
-registry가 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. P4 `DOCUMENT_INGESTION` 신규 Run은 후보 embedding을 포함한 v2 9단계를 사용하고 durable v1 8단계 Run을 exact version으로 재개한다. P5~P8과 `GITHUB_INGESTION` workflow도 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다.
+registry가 11개 WorkflowType의 고정 step 순서를 결정하고 orchestrator가 Agent Run application port를 통해 checkpoint·usage·apply를 조정한다. P4 `DOCUMENT_INGESTION` 신규 Run은 후보 embedding을 포함한 v2 9단계를 사용하고 durable v1 8단계 Run을 exact version으로 재개한다. P5~P8, `GITHUB_INGESTION`, Resume·Portfolio workflow도 각 application port에 연결되며 자유 agent loop와 production Fake workflow는 없다.
 
 ## 다른 디렉터리와의 의존 관계
 
-- [`../agentrun/application/`](../agentrun/application/index.md), [`../document/application/`](../document/application/index.md), [`../githubsource/application/`](../githubsource/application/index.md), [`../job/application/`](../job/application/index.md), [`../coverletter/application/`](../coverletter/application/index.md)과 [`../interview/application/`](../interview/application/index.md)의 port만 소비하며 repository를 직접 참조하지 않는다.
+- [`../agentrun/application/`](../agentrun/application/index.md), [`../document/application/`](../document/application/index.md), [`../githubsource/application/`](../githubsource/application/index.md), [`../careerartifact/application/`](../careerartifact/application/index.md), [`../job/application/`](../job/application/index.md), [`../coverletter/application/`](../coverletter/application/index.md)과 [`../interview/application/`](../interview/application/index.md)의 port만 소비하며 repository를 직접 참조하지 않는다.
 - test-only Fake 3-step은 [`../../../../../test/java/com/hiresemble/ai/`](../../../../../test/java/com/hiresemble/ai/index.md)에만 있다.
 
 ## 변경 시 주의사항

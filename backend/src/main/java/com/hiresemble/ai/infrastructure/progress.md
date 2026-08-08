@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-08-08] Session Summary (Career Artifact runtime wiring)
+
+- What was done:
+  - 두 Career Artifact workflow contribution, context와 prompt를 runtime registry에 등록했다.
+- Key decisions:
+  - feature flag가 꺼져도 이미 존재하는 durable Run의 종료·보상 runtime은 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - application context·workflow registry·feature-off OpenAPI test 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-07] Session Summary (Document v1·v2 runtime 병행 등록)
 
 - What was done:

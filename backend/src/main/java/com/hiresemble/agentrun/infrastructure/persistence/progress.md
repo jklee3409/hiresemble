@@ -2,7 +2,20 @@
 
 ## Overview
 
-Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview Question Set·Answer Version typed resource owner resolution을 관리한다.
+Agent Run JDBC 저장·조회와 Document·Job·Cover Letter·Interview·GitHub Source·Career Artifact typed resource owner resolution을 관리한다.
+
+## [2026-08-08] Session Summary (Career Artifact typed resource persistence)
+
+- What was done:
+  - typed link insert/projection, owner resolver, retry link 복사와 latest Run 조회에 `CAREER_ARTIFACT`를 추가했다.
+- Key decisions:
+  - resourceType은 workflow와 artifact type parity를 DB·application 양쪽에서 검증한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - two-user owner·type parity와 list/detail/retry 회귀 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (전역 AI budget ledger)
 

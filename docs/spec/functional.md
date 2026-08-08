@@ -1,7 +1,7 @@
 # 기능 명세서
 
-- 문서 버전: 1.3 (GitHub 경험 수집·Career Artifact 목표 계약)
-- 기준일: 2026-08-07
+- 문서 버전: 1.4 (GitHub 경험 수집·Career Artifact Backend 계약)
+- 기준일: 2026-08-08
 - 대상: 핵심 MVP
 - 사용자 역할: 현재 `USER`; P8.9-A 목표 `USER`, `ADMIN` (`PLANNED`, 공개 ADMIN 가입 없음)
 - 공고 상태: `IN_PROGRESS`, `SUBMITTED`, `CLOSED`
@@ -308,7 +308,7 @@
 - 과거 산출물이 참조하는 raw evidence는 `SOURCE_DELETED` tombstone, 미참조 raw evidence는 삭제한다.
 - 승인된 canonical 경험은 유지하고 승인되지 않았으며 다른 활성 출처가 없는 orphan만 제거한다.
 
-## ART-001 Career Artifact 생성 요청 (`PLANNED`)
+## ART-001 Career Artifact 생성 요청 (`IMPLEMENTED_BACKEND`, Gate 3)
 
 - Career Artifact 유형은 `RESUME|PORTFOLIO`이고 업로드 `documents`와 별도 resource다.
 - 모든 사용자가 생성 기능을 사용할 수 있으며 이력서·포트폴리오 부재는 추천 표시 조건일 뿐 접근 권한 조건이 아니다.
@@ -317,7 +317,7 @@
 - 연락처·이메일 등 renderer profile은 LLM Context에 넣지 않고 최종 file renderer에서만 삽입한다.
 - 생성 실패 시 기존 성공 version과 download를 유지한다.
 
-## ART-002 이력서 DOCX 생성 (`PLANNED`)
+## ART-002 이력서 DOCX 생성 (`IMPLEMENTED_BACKEND`, Gate 3)
 
 - `RESUME_GENERATION`은 검증된 경력 Context 구성, 구성 계획, structured draft, fact check, DOCX render·검증·version 저장의 고정 workflow다.
 - AI는 headline, summary, skill, 경력·프로젝트 bullet, warning과 evidence reference만 반환하고 DOCX byte나 OOXML을 만들지 않는다.
@@ -325,7 +325,7 @@
 - source에 없는 조직, 기간, 역할, 수치와 성과를 생성하지 않는다.
 - 생성 파일은 1~2 page를 목표로 하며 core content에 text box, chart, 원격 image를 사용하지 않는다.
 
-## ART-003 포트폴리오 PPTX 생성과 디자인 (`PLANNED`)
+## ART-003 포트폴리오 PPTX 생성과 디자인 (`IMPLEMENTED_BACKEND`, Gate 3)
 
 - `PORTFOLIO_GENERATION`은 검증된 경력 Context, 면접관 중심 story plan, strict slide draft, fact check, PPTX render·검증·version 저장의 고정 workflow다.
 - 내부 prompt는 `문제 → 내 역할 → 행동 → 기술적 판단 → 결과 → 드러난 강점`의 case study와 첫 60초 scanability를 우선한다.
@@ -334,7 +334,7 @@
 - 서버는 Apache POI XSLF와 16:9 server-owned template으로 6~12 slide PPTX를 생성한다.
 - 외부 image, README image, source screenshot, remote font와 arbitrary OOXML을 사용하지 않는다.
 
-## ART-004 Version·다운로드·선택적 제안 (`PLANNED`)
+## ART-004 Version·다운로드 (`IMPLEMENTED_BACKEND`, Gate 3)·선택적 제안 (`PLANNED`, Gate 4)
 
 - 검증·upload가 성공한 artifact version만 immutable row로 저장하고 current version으로 승격한다.
 - version은 생성 당시 experience/evidence version과 title/content snapshot을 provenance로 보존한다.
@@ -816,7 +816,7 @@ RESUME_GENERATION
 PORTFOLIO_GENERATION
 ```
 
-모의 면접 세 key는 P9가 구현한다. `GITHUB_INGESTION` workflow는 Gate 1에서 구현됐지만 이 절의 제품 기능 한도·metering은 P8.6까지 계획 상태이며 `RESUME_GENERATION|PORTFOLIO_GENERATION`은 Career Artifact Gate 3이 구현한다.
+모의 면접 세 key는 P9가 구현한다. `GITHUB_INGESTION`, `RESUME_GENERATION`, `PORTFOLIO_GENERATION` workflow는 각각 Gate 1과 Gate 3에서 구현됐지만 이 절의 제품 기능 한도·metering은 P8.6까지 계획 상태다.
 
 ## SYS-005 사용자 사용량·내부 원가·과금 가능 usage (`PLANNED` P8.7)
 
@@ -871,7 +871,7 @@ PORTFOLIO_GENERATION
 | AC-16 | AI 기능 실패가 공통 사용자 category·복구 CTA·데이터 보존 안내로 표시된다.                        |
 | AC-17 | ADMIN만 Backoffice에서 사용자·사용량·AI 원가·실패·Agent Run을 안전하게 조회한다.                 |
 
-GitHub·Career Artifact vertical은 기존 AC-01~17 구현 완료 판정과 별도로 추적한다. Gate 1 Backend가 GH-AC-01~04를 구현했으며 `/profile/github` Frontend와 ART-AC-01~05는 계속 `PLANNED`다.
+GitHub·Career Artifact vertical은 기존 AC-01~17 구현 완료 판정과 별도로 추적한다. Gate 0~2가 GH-AC-01~04의 Backend·Frontend 흐름을 구현했고 Gate 3가 ART-AC-01~04의 Backend 생성·검증·파일 수명주기를 구현했다. `/career-artifacts/**` 사용자 journey와 선택적 제안은 Gate 4 전까지 `PLANNED`이므로 ART-AC-01~05 전체를 완료로 판정하지 않는다.
 
 | ID        | 인수 조건 |
 | --------- | --------- |

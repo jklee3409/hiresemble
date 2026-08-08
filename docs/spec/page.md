@@ -1,7 +1,7 @@
 # 페이지 구조 명세서
 
-- 문서 버전: 1.4 (GitHub Source·Career Artifact 목표 화면 계약)
-- 기준일: 2026-08-07
+- 문서 버전: 1.5 (GitHub Source Frontend 구현 상태 반영)
+- 기준일: 2026-08-08
 - Frontend: Vue 3 SPA
 - 기본 화면: Desktop First, 모바일 반응형
 - API Prefix: `/api/v1`
@@ -84,17 +84,17 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 
 현재 실제 router는 `/settings/*`, `/backoffice/*`, `/mock-interviews/*`, `/jobs/:jobId/interview/mock/new`를 구현하지 않았다. 다음 표의 미래 route는 구현 전까지 목표 계약이며 현재 route처럼 취급하지 않는다.
 
-| Route group                                        | Implementation status | Phase     | prerequisite API                                 |
-| -------------------------------------------------- | --------------------- | --------- | ------------------------------------------------ |
-| `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입 | 인증 API bootstrap                               |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 1 | 현재 OpenAPI 79 paths/107 operations          |
-| `/settings/usage`                                  | `PLANNED`             | P8.7      | `GET /settings/usage`, `/settings/usage/history` |
-| account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A     | account, settings AI/privacy API                 |
-| `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9        | mock session create                              |
-| `/mock-interviews/:sessionId`                      | `PLANNED`             | P9        | mock session/start/message/complete/feedback     |
-| `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A    | `/api/v1/backoffice/**` ADMIN GET                |
-| `/profile/github`                                  | `PLANNED`             | Gate 2       | 구현된 GitHub source·Agent Run API             |
-| `/career-artifacts`와 모든 child                   | `PLANNED`             | phase 미배정 | readiness·model·artifact·download API          |
+| Route group                                        | Implementation status | Phase        | prerequisite API                                                      |
+| -------------------------------------------------- | --------------------- | ------------ | --------------------------------------------------------------------- |
+| `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입    | 인증 API bootstrap                                                    |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 2 | Career Artifact flag off OpenAPI 79 paths/107 operations              |
+| `/settings/usage`                                  | `PLANNED`             | P8.7         | `GET /settings/usage`, `/settings/usage/history`                      |
+| account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A        | account, settings AI/privacy API                                      |
+| `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9           | mock session create                                                   |
+| `/mock-interviews/:sessionId`                      | `PLANNED`             | P9           | mock session/start/message/complete/feedback                          |
+| `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A       | `/api/v1/backoffice/**` ADMIN GET                                     |
+| `/profile/github`                                  | `IMPLEMENTED_FLAGGED` | Gate 2       | `VITE_GITHUB_SOURCE_ENABLED=true`, 구현된 GitHub source·Agent Run API |
+| `/career-artifacts`와 모든 child                   | `PLANNED`             | Gate 4       | Gate 3의 readiness·model·artifact·download API                        |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
 
@@ -389,13 +389,19 @@ AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 
 - 승인된 정규 경험은 원본 문서 삭제 뒤에도 유지되며 삭제된 원문의 본문·미리보기는 제공하지 않는다.
 - Backend API와 Frontend route·화면이 연결되어 있다. Frontend는 기존 Career Profile Workspace의 세로 outline/mobile selector, soft surface, 상태 badge와 pagination을 재사용한다.
 - 상세 영역에서 최초·보강 출처를 구분하고 문서 출처로 이동할 수 있다. 문서 상세의 `CORROBORATING` 항목은 승인 가능한 새 소재가 아니라 기존 경험에 추가된 출처로만 표시한다.
-- Backend 경험 DTO는 `GitHub` repository 이름·URL, 짧은 commit SHA, 수집 시각, sanitized excerpt와 distinct repository source count를 additive하게 제공한다. 이를 badge와 삭제 tombstone으로 표시하는 Frontend는 Gate 2에서 구현한다(`PLANNED`).
+- Backend 경험 DTO는 `GitHub` repository 이름·URL, 짧은 commit SHA, 수집 시각, sanitized excerpt와 distinct repository source count를 additive하게 제공한다. Gate 2 Frontend는 이를 badge·안전한 링크·삭제 tombstone으로 표시한다(`IMPLEMENTED_FLAGGED`).
 
 API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
 
-## 5.9 `/profile/github` (`PLANNED`, Gate 2 Frontend)
+## 5.9 `/profile/github` (`IMPLEMENTED_FLAGGED`, Gate 2 Frontend)
 
-공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약은 구현됐지만 이 route, selector와 API client는 아직 구현하지 않았다. Career Profile Workspace의 기존 세로 outline/mobile selector에 `GitHub` 항목을 추가하되 현재 여덟 프로필 route의 이동·저장 동작은 바꾸지 않는다.
+공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약을 typed API client, repository selector, focused Run monitor와 경험 provenance 화면으로 연결했다. Career Profile Workspace의 기존 세로 outline/mobile selector에 `GitHub` 항목을 추가하되 다른 프로필 route의 이동·저장 동작은 바꾸지 않는다.
+
+### Feature flag
+
+- `VITE_GITHUB_SOURCE_ENABLED`가 정확히 `true`일 때만 route, ProfileTabs, `returnTo`와 Agent Run required-action/resource link를 허용한다.
+- 값이 없거나 다르면 `/profile/github`를 등록하지 않고 기존 UI와 allowlist를 유지한다.
+- 이 build-time flag는 Backend capability endpoint를 대체하지 않으며 local 예시는 `.env.example`에서 명시적으로 활성화한다.
 
 ### URL 등록
 
@@ -477,7 +483,7 @@ API:
 
 소재 영역은 승인된 내용만 자소서·면접 소재 후보로 사용한다는 정책과 남은 검토 수를 먼저 보여 준다. 활용 제외는 원본 자료나 분석 이력 삭제가 아니며 언제든 `PENDING`으로 돌려 재검토할 수 있다. 별도 `정리된 결과` 대형 section은 두지 않고 소재 card와 partial 경고에 통합한다.
 
-## 6.3 `/career-artifacts` (`PLANNED`, phase 미배정)
+## 6.3 `/career-artifacts` (`PLANNED`, Gate 4)
 
 사용자가 AI로 생성한 이력서 DOCX와 포트폴리오 PPTX 초안을 관리한다. 업로드 원천인 `documents`와 생성 출력인 Career Artifact를 같은 row나 상태 체계로 합치지 않는다.
 
@@ -490,7 +496,7 @@ API:
 
 API: `GET /career-artifacts`, `GET /career-artifacts/readiness`.
 
-## 6.4 `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, phase 미배정)
+## 6.4 `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, Gate 4)
 
 한 화면의 긴 form 대신 상태를 URL과 local draft에 안전하게 보존하는 4단계 wizard를 사용한다. query의 `type`이 없으면 첫 단계에서 선택하고 허용하지 않은 값은 type 미선택으로 정규화한다.
 
@@ -505,7 +511,7 @@ API: `GET /career-artifacts`, `GET /career-artifacts/readiness`.
 
 API: `GET /career-artifacts/readiness`, `GET /career-artifacts/ai-models?type=`, `POST /career-artifacts`, `GET /profile/experiences?verificationStatus=VERIFIED`.
 
-## 6.5 `/career-artifacts/:careerArtifactId` (`PLANNED`, phase 미배정)
+## 6.5 `/career-artifacts/:careerArtifactId` (`PLANNED`, Gate 4)
 
 ### 공통 영역
 
@@ -1258,7 +1264,7 @@ authenticated `/`는 Landing을 mount하지 않고 `/dashboard`로 replace하며
 → USER의 Backoffice 접근 거부와 access audit 확인
 ```
 
-## 시나리오 E (GitHub Backend `IMPLEMENTED`, Frontend·Career Artifact `PLANNED`)
+## 시나리오 E (GitHub Gate 0~2·Career Artifact Backend Gate 3 `IMPLEMENTED`, Artifact Frontend Gate 4 `PLANNED`)
 
 ```text
 GitHub 계정 URL과 참여 확인 등록
@@ -1273,3 +1279,5 @@ GitHub 계정 URL과 참여 확인 등록
 ```
 
 계정 URL이 아닌 repository URL은 선택 단계를 건너뛰고, 동일 commit refresh는 새 AI Run 없이 기존 결과를 유지한다. 제안은 dismiss 가능하며 사용자를 생성 route로 강제 이동시키지 않는다.
+
+현재 Gate 3은 위 흐름의 Career Artifact API·Agent Run·Office 생성·다운로드 수명주기만 제공한다. 선택 제안부터 wizard·structured preview·download button까지의 사용자 화면은 Gate 4 전까지 구현 완료로 판정하지 않는다.

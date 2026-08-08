@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Registry와 P4~P8 workflow 계약·orchestrator 통합 테스트가 구현됐다.
+P3 Registry와 P4~P8, GitHub·Career Artifact workflow 계약·orchestrator 통합 테스트가 구현됐다.
+
+## [2026-08-08] Session Summary (Career Artifact workflow 회귀)
+
+- What was done:
+  - 11개 WorkflowType coverage와 Resume·Portfolio 8단계·prompt/schema/model/privacy 계약을 추가했다.
+- Key decisions:
+  - invalid reference와 owner/version/model 오류는 자동 correction 대상이 아니다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `WorkflowRegistryTest`와 `CareerArtifactWorkflowContractTest` 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (Document v2 registry 회귀)
 

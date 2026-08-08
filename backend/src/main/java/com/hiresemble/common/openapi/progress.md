@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P8 OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+P1~P8, GitHub와 Career Artifact OpenAPI metadata와 Session·CSRF, 공통 오류 응답 보강을 관리한다.
+
+## [2026-08-08] Session Summary (Career Artifact OpenAPI 1.9)
+
+- What was done:
+  - Career Artifact tag·operation/security/response/schema와 GitHub non-GET CSRF metadata를 보강했다.
+- Key decisions:
+  - feature on은 88 paths/118 operations, off는 기존 79 paths/107 operations를 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - enabled·disabled 별도 Spring context OpenAPI contract 통과.
+- Next steps:
+  - Gate 4는 공개 Backend operation을 추가하지 않는다.
 
 ## [2026-07-31] Session Summary (P8 OpenAPI security·schema)
 

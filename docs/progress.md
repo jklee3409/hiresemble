@@ -2,7 +2,22 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub Gate 0~1 Backend는 구현됐고 Gate 2 Frontend와 Career Artifact는 `PLANNED`다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub Gate 0–2와 Career Artifact Backend Gate 3는 구현됐고 Gate 4 Frontend·Gate 5 Private GitHub는 `PLANNED`다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 3 문서 동기화)
+
+- What was done:
+  - 다섯 활성 명세, GitHub·Career Artifact 설계, 시스템 architecture와 구현 계획을 V28·11 WorkflowType·조건부 88 paths/118 operations 구현 상태로 동기화했다.
+  - private generation request, idempotency digest, profile allowlist, renderer 한도, privacy scrub와 Object compensation 계약을 구현과 일치시켰다.
+- Key decisions:
+  - Career Artifact API·DB·workflow·renderer는 `IMPLEMENTED_BACKEND`로, 전용 사용자 journey와 제안은 Gate 4 `PLANNED`로 유지해 ART-AC 전체 완료로 오인하지 않는다.
+  - Gate 5 Private GitHub와 account deletion subsystem은 후속 의존성으로 남긴다.
+- Issues encountered:
+  - immutable version과 개인정보 삭제 요구는 parent soft delete 뒤 render snapshot만 `{}`로 scrub하는 좁은 예외로 명시했다.
+- Validation:
+  - Backend 전체 `check`, Frontend 전체 `check`, GitHub Chromium 1/1과 Compose config가 통과한 실제 상태를 기준으로 문서 marker를 대조했다.
+- Next steps:
+  - Gate 4 승인 전에는 Career Artifact page·wizard·preview 상태를 승격하지 않는다.
 
 ## [2026-08-07] Session Summary (GitHub Gate 1 구현 상태 문서 동기화)
 

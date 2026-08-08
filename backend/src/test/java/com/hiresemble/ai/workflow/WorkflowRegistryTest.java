@@ -20,10 +20,10 @@ import org.junit.jupiter.api.Test;
 class WorkflowRegistryTest {
 
     @Test
-    void canonicalRegistryCoversExactlyNineTypesWithoutPretendingTheyAreExecutable() {
+    void canonicalRegistryCoversExactlyElevenTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(18);
+        assertThat(registry.definitions()).hasSize(20);
         assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
                 .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());

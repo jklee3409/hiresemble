@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 인증·공통 기반부터 P8 면접 준비, Phase 1 GitHub Backend와 실제 cross-stack E2E까지 기능별로 구성한다.
+P1 인증·공통 기반부터 P8 면접 준비, GitHub Backend와 Career Artifact Gate 3 및 실제 cross-stack E2E까지 기능별로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -14,6 +14,7 @@ P1 인증·공통 기반부터 P8 면접 준비, Phase 1 GitHub Backend와 실�
 - [`ai/`](ai/index.md): registry·router·validator·Fake workflow 테스트
 - [`document/`](document/index.md): 문서 API·parser·storage·embedding·outbox 테스트
 - [`githubsource/`](githubsource/index.md): GitHub URL·gateway·snapshot·canonical·API 통합 테스트
+- [`careerartifact/`](careerartifact/index.md): Career Artifact API·domain·POI renderer·Object lifecycle 테스트
 - [`job/`](job/index.md): 공고 등록·분석·provenance 테스트
 - [`coverletter/`](coverletter/index.md): 자기소개서 domain·API·workflow 테스트
 - [`interview/`](interview/index.md): P8 migration·API·retry·답변·feedback 테스트

@@ -13,6 +13,7 @@ com.hiresemble.agentrun.application.port package는 application과 외부 구현
 | [AgentRunDispatchPort.java](AgentRunDispatchPort.java)                   | Port 책임 구현                            |
 | [AgentRunEventPublisher.java](AgentRunEventPublisher.java)               | Port 책임 구현                            |
 | [AgentRunHistoryDeletionPort.java](AgentRunHistoryDeletionPort.java)     | owner terminal 작업 내역 soft delete 경계 |
+| [AgentRunHistoryDeletionContributor.java](AgentRunHistoryDeletionContributor.java) | resource별 history 삭제 보상 확장 경계 |
 | [AgentRunLeaseHeartbeatPort.java](AgentRunLeaseHeartbeatPort.java)       | Port 책임 구현                            |
 | [AgentRunQueryPort.java](AgentRunQueryPort.java)                         | Port 책임 구현                            |
 | [AgentRunResourceOwnerResolver.java](AgentRunResourceOwnerResolver.java) | Port 책임 구현                            |

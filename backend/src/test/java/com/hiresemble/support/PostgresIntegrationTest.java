@@ -45,6 +45,11 @@ public abstract class PostgresIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             jdbcTemplate.execute("""
                     TRUNCATE TABLE
+                        career_artifact_object_deletion_outbox,
+                        career_artifact_evidence_links,
+                        career_artifact_generation_requests,
+                        career_artifact_versions,
+                        career_artifacts,
                         github_snapshot_object_deletion_outbox,
                         github_evidence_unit_links,
                         github_source_units,

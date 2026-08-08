@@ -29,7 +29,21 @@
 - `V25__rewrite_career_guide_content.sql`은 취업 준비 가이드 5편의 제목·요약·본문을 해요체와 체크리스트 중심으로 다시 쓴다.
 - `V26__create_canonical_experience_library.sql`은 canonical 경험·다중 문서 출처 link·`vector(1536)` embedding과 `EXPERIENCE` evidence source를 추가한다.
 - `V27__create_github_source_ingestion.sql`은 GitHub source·repository·snapshot·provenance·전용 Object outbox와 typed Run link를 추가한다.
+- `V28__create_career_artifacts.sql`은 Career Artifact·immutable version·private generation request·evidence provenance·전용 Object outbox와 두 typed Run workflow를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-08] Session Summary (V28 Career Artifact schema)
+
+- What was done:
+  - 5개 Career Artifact table, 두 workflow CHECK, typed resource parity, current version·last Run·immutable·owner·storage key 불변식을 forward migration으로 추가했다.
+- Key decisions:
+  - V1~V27은 수정하지 않고 기존 `assert_agent_run_document_resource_parity()` 이름을 유지한 채 `CREATE OR REPLACE`로 확장했다.
+- Issues encountered:
+  - generation request는 성공 version 전 retry/restart에 필요한 연락처 snapshot을 공개 Run 저장소와 분리해야 했다.
+- Validation:
+  - fresh V1→V28, populated V27→V28, SHA/checksum·two-user·invalid parity·immutability 테스트 통과.
+- Next steps:
+  - 다음 schema 변경은 착수 직전 latest를 다시 확인한다.
 
 ## [2026-08-07] Session Summary (V27 GitHub Source ingestion schema)
 

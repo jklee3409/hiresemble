@@ -67,8 +67,6 @@ import tools.jackson.databind.ObjectMapper;
 @Import(DocumentIntegrationTest.FakePorts.class)
 class DocumentIntegrationTest extends PostgresIntegrationTest {
 
-    private static final long FAKE_PRICE_VERSION = 900_000_001L;
-
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private FakeStorage storage;
@@ -89,12 +87,6 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     void resetFakes() {
         storage.reset();
         references.referenced.set(false);
-        jdbcTemplate.update("""
-                INSERT INTO ai_price_versions (
-                    id,version,catalog_key,effective_from,effective_to,created_at
-                ) VALUES (?,?,?,now(),NULL,now())
-                ON CONFLICT (version) DO NOTHING
-                """, UUID.randomUUID(), FAKE_PRICE_VERSION, "fake-document-p4");
     }
 
     @Test
@@ -658,33 +650,68 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
     @Test
     void uploadCompensatesObjectOnDatabaseFailureAndOutboxesFailedCompensation() throws Exception {
         Session owner = authenticated("compensation-owner@example.com");
-        jdbcTemplate.update("DELETE FROM user_ai_preferences WHERE user_id=?", owner.userId());
         byte[] content = longText("compensation@example.com").getBytes(StandardCharsets.UTF_8);
+        installDocumentInsertFailureTrigger();
+        try {
+            upload(owner, "compensation-upload-key-01", "compensate.txt", content, 500);
+            assertThat(storage.values).isEmpty();
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM documents WHERE user_id=?", Long.class, owner.userId()))
+                    .isZero();
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM object_deletion_outbox WHERE user_id=?",
+                    Long.class,
+                    owner.userId()))
+                    .isZero();
 
-        upload(owner, "compensation-upload-key-01", "compensate.txt", content, 404);
-        assertThat(storage.values).isEmpty();
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM documents WHERE user_id=?", Long.class, owner.userId())).isZero();
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM object_deletion_outbox WHERE user_id=?", Long.class, owner.userId())).isZero();
+            storage.failDeletes.set(true);
+            upload(owner, "compensation-upload-key-02", "orphan.txt", content, 500);
+            assertThat(storage.values).hasSize(1);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM documents WHERE user_id=?", Long.class, owner.userId()))
+                    .isZero();
+            assertThat(jdbcTemplate.queryForObject("""
+                    SELECT count(*) FROM object_deletion_outbox
+                    WHERE user_id=? AND document_id IS NULL
+                      AND reason='ORPHAN_UPLOAD_COMPENSATION' AND status='PENDING'
+                    """, Long.class, owner.userId())).isEqualTo(1L);
 
-        storage.failDeletes.set(true);
-        upload(owner, "compensation-upload-key-02", "orphan.txt", content, 404);
-        assertThat(storage.values).hasSize(1);
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM documents WHERE user_id=?", Long.class, owner.userId())).isZero();
-        assertThat(jdbcTemplate.queryForObject("""
-                SELECT count(*) FROM object_deletion_outbox
-                WHERE user_id=? AND document_id IS NULL
-                  AND reason='ORPHAN_UPLOAD_COMPENSATION' AND status='PENDING'
-                """, Long.class, owner.userId())).isEqualTo(1L);
+            storage.failDeletes.set(false);
+            outbox.processDue();
+            assertThat(storage.values).isEmpty();
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT status FROM object_deletion_outbox WHERE user_id=?",
+                    String.class,
+                    owner.userId()))
+                    .isEqualTo("SUCCEEDED");
+        } finally {
+            dropDocumentInsertFailureTrigger();
+        }
+    }
 
-        storage.failDeletes.set(false);
-        outbox.processDue();
-        assertThat(storage.values).isEmpty();
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT status FROM object_deletion_outbox WHERE user_id=?", String.class, owner.userId()))
-                .isEqualTo("SUCCEEDED");
+    private void installDocumentInsertFailureTrigger() {
+        jdbcTemplate.execute("""
+                CREATE OR REPLACE FUNCTION fail_document_insert_for_compensation_test()
+                RETURNS trigger
+                LANGUAGE plpgsql
+                AS $$
+                BEGIN
+                    RAISE EXCEPTION 'synthetic document insert failure';
+                END;
+                $$
+                """);
+        jdbcTemplate.execute("""
+                CREATE TRIGGER fail_document_insert_for_compensation_test_trg
+                BEFORE INSERT ON documents
+                FOR EACH ROW EXECUTE FUNCTION fail_document_insert_for_compensation_test()
+                """);
+    }
+
+    private void dropDocumentInsertFailureTrigger() {
+        jdbcTemplate.execute("""
+                DROP TRIGGER IF EXISTS fail_document_insert_for_compensation_test_trg ON documents
+                """);
+        jdbcTemplate.execute("DROP FUNCTION IF EXISTS fail_document_insert_for_compensation_test()");
     }
 
     @Test

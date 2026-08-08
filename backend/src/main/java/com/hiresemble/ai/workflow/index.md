@@ -8,7 +8,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 
 - `WorkflowRegistry`: definition/contribution 검증
 - `TerminalPartialPolicy`: 실제 failed scope가 남은 terminal 결과의 workflow별 성공·실패·safe error·retry 정책
-- `CanonicalWorkflowDefinitions`: 9개 WorkflowType canonical definition과 Document·Cover Letter의 격리된 legacy version definition
+- `CanonicalWorkflowDefinitions`: 11개 WorkflowType canonical definition과 Document·Cover Letter의 격리된 legacy version definition
 - `WorkflowStepExecutor`: prepare·gateway·validation·apply contract
 - `JobPostingExtractionWorkflow`: P5 URL fetch, DOM/image inspection·JPEG·PNG·WebP fetch, provider-visible reference binding을 거친 trusted `imageRef` text extraction, item/aggregate source compose, 사용자 override, 품질 검증과 domain apply까지의 9단계 v3 contribution
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
@@ -20,11 +20,12 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상
 - [`document/`](document/index.md): P4 active `DOCUMENT_INGESTION` 9단계·legacy 8단계 contribution과 실패 보상
 - [`github/`](github/index.md): Phase 1 `GITHUB_INGESTION` 10단계·same-run wait/resume·실패 보상
+- [`careerartifact/`](careerartifact/index.md): Gate 3 Resume·Portfolio 고정 8단계·strict fact-check·Office/Object 보상
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할
 
-step 순서, schema, bounded fan-out, tool allowlist, attempt 내부 call cap, retry class와 progress weight를 검증한다. 모든 executable contribution은 terminal partial policy를 명시하고 공용 Orchestrator는 workflow 전용 오류를 알지 않는다. Document, Job과 Cover Letter workflow는 각 application port를 통해 실제 aggregate에 연결한다.
+step 순서, schema, bounded fan-out, tool allowlist, attempt 내부 call cap, retry class와 progress weight를 검증한다. 모든 executable contribution은 terminal partial policy를 명시하고 공용 Orchestrator는 workflow 전용 오류를 알지 않는다. Document, Job, Cover Letter와 Career Artifact workflow는 각 application port를 통해 실제 aggregate에 연결한다.
 
 ## 다른 디렉터리와의 의존 관계
 

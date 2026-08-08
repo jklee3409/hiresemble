@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P8 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+P1~P8, GitHub와 Career Artifact 실제 오류 code, 비즈니스 예외와 MVC·DB 불변식 오류 변환을 관리한다.
+
+## [2026-08-08] Session Summary (Career Artifact 안전 오류)
+
+- What was done:
+  - generation in progress, archived, version not ready와 verified experience 부족 code를 추가했다.
+- Key decisions:
+  - owner가 다른 artifact/version/experience는 기존 `RESOURCE_NOT_FOUND`로 숨긴다.
+- Issues encountered:
+  - None.
+- Validation:
+  - API/OpenAPI status·code 통합 테스트 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (미지원 AI 모델 오류)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub executable contribution 분리가 구현됐다.
+11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
+
+## [2026-08-08] Session Summary (Resume·Portfolio canonical workflow)
+
+- What was done:
+  - `resume-generation-v1`, `portfolio-generation-v1`의 정확한 8단계와 terminal failure handler를 등록했다.
+- Key decisions:
+  - model tool은 비활성화하고 correction 가능한 의미 오류만 최초 포함 최대 두 attempt로 제한했다.
+- Issues encountered:
+  - restart 시 Office byte를 checkpoint에서 복구하지 않고 local step을 재실행하도록 경계를 정리했다.
+- Validation:
+  - step 순서·model·prompt/schema·privacy·retry contract가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (GitHub ingestion canonical workflow)
 

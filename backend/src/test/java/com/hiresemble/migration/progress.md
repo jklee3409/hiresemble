@@ -2,7 +2,20 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V27 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V28 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-08] Session Summary (V28 fresh·V27 upgrade 검증)
+
+- What was done:
+  - fresh V1→V28과 populated V27→V28 migration test를 추가했다.
+- Key decisions:
+  - V27 SHA-256 `5754a6410887b93b4cb50d09cdf2162ea64266a400b8211a73359725dbdee666`와 실제 Flyway checksum `1516904878`을 고정했다.
+- Issues encountered:
+  - 기존 document parity trigger 이름을 보존하면서 Career Artifact 분기를 additive하게 확장해야 했다.
+- Validation:
+  - owner/type/parity/current-version/immutable/storage-key/outbox 불변식과 기존 user·canonical·GitHub 데이터 보존이 통과했다.
+- Next steps:
+  - V1~V28은 적용 이력으로 수정하지 않는다.
 
 ## [2026-08-07] Session Summary (V27 fresh·V26 upgrade 검증)
 

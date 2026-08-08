@@ -4,6 +4,7 @@ import com.hiresemble.agentrun.application.model.AgentRunPage;
 import com.hiresemble.agentrun.application.model.AgentRunSnapshot;
 import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
 import com.hiresemble.agentrun.application.port.AgentRunHistoryDeletionPort;
+import com.hiresemble.agentrun.application.port.AgentRunHistoryDeletionContributor;
 import com.hiresemble.agentrun.application.port.AgentRunResourceOwnerResolver;
 import com.hiresemble.agentrun.application.query.AgentRunListCriteria;
 import com.hiresemble.agentrun.application.query.AgentRunSort;
@@ -17,6 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AgentRunApplicationService {
@@ -24,14 +27,25 @@ public class AgentRunApplicationService {
     private final AgentRunQueryPort queryPort;
     private final AgentRunHistoryDeletionPort historyDeletionPort;
     private final List<AgentRunResourceOwnerResolver> resourceResolvers;
+    private final List<AgentRunHistoryDeletionContributor> deletionContributors;
+
+    @Autowired
+    public AgentRunApplicationService(
+            AgentRunQueryPort queryPort,
+            AgentRunHistoryDeletionPort historyDeletionPort,
+            List<AgentRunResourceOwnerResolver> resourceResolvers,
+            List<AgentRunHistoryDeletionContributor> deletionContributors) {
+        this.queryPort = queryPort;
+        this.historyDeletionPort = historyDeletionPort;
+        this.resourceResolvers = List.copyOf(resourceResolvers);
+        this.deletionContributors = List.copyOf(deletionContributors);
+    }
 
     public AgentRunApplicationService(
             AgentRunQueryPort queryPort,
             AgentRunHistoryDeletionPort historyDeletionPort,
             List<AgentRunResourceOwnerResolver> resourceResolvers) {
-        this.queryPort = queryPort;
-        this.historyDeletionPort = historyDeletionPort;
-        this.resourceResolvers = List.copyOf(resourceResolvers);
+        this(queryPort, historyDeletionPort, resourceResolvers, List.of());
     }
 
     public AgentRunPage list(
@@ -81,13 +95,28 @@ public class AgentRunApplicationService {
         deleteAll(userId, Set.of(agentRunId), deletedAt);
     }
 
+    @Transactional
     public void deleteAll(UUID userId, Set<UUID> agentRunIds, Instant deletedAt) {
         if (userId == null || agentRunIds == null || deletedAt == null
                 || agentRunIds.isEmpty() || agentRunIds.size() > 100
                 || agentRunIds.stream().anyMatch(java.util.Objects::isNull)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
-        historyDeletionPort.softDeleteTerminalRuns(
-                userId, new LinkedHashSet<>(agentRunIds), deletedAt);
+        LinkedHashSet<UUID> orderedIds = new LinkedHashSet<>(agentRunIds);
+        List<AgentRunSnapshot> runs = orderedIds.stream()
+                .map(runId -> queryPort.findByOwner(userId, runId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)))
+                .toList();
+        if (runs.stream().anyMatch(run -> !run.status().isTerminal())) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
+        for (AgentRunSnapshot run : runs) {
+            deletionContributors.stream()
+                    .filter(contributor -> contributor.supports(run))
+                    .findFirst()
+                    .ifPresent(contributor -> contributor.beforeDelete(run, deletedAt));
+            historyDeletionPort.softDeleteTerminalRuns(
+                    userId, Set.of(run.id()), deletedAt);
+        }
     }
 }

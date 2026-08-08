@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, GitHub·Career Artifact, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
+
+## [2026-08-08] Session Summary (Career Artifact feature on/off OpenAPI)
+
+- What was done:
+  - 활성 88 paths/118 operations와 비활성 79 paths/107 operations를 별도 context에서 검증하고 GitHub mutation CSRF metadata를 고정했다.
+- Key decisions:
+  - Career Artifact controller bean 자체가 flag off context에서 없어야 한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - enabled·disabled OpenAPI contract test 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (경험 라이브러리 OpenAPI)
 

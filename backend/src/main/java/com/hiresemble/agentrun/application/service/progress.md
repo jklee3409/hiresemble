@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-08] Session Summary (Career Artifact history 삭제 보상)
+
+- What was done:
+  - Agent Run history 삭제 use case가 resource contributor를 호출해 Career Artifact shell·latest run·orphan Object를 정리하도록 확장했다.
+- Key decisions:
+  - 다른 resource의 기존 삭제 동작은 그대로 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Career Artifact와 기존 Agent Run 삭제 통합 테스트 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-31] Session Summary (P8 공통 retry·requested run 조정)
 
 - What was done:

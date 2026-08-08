@@ -86,7 +86,9 @@ abstract class AgentRunIntegrationSupport extends PostgresIntegrationTest {
         jdbcTemplate.update("""
                 INSERT INTO ai_price_versions (
                     id,version,catalog_key,effective_from,effective_to,created_at
-                ) VALUES (?,?,?,now(),NULL,now())
+                ) VALUES (?,?,?,
+                    TIMESTAMPTZ '2000-01-01 00:00:00+00',
+                    TIMESTAMPTZ '2000-01-02 00:00:00+00',now())
                 """, UUID.randomUUID(), version, "fixture-" + version);
         return version;
     }

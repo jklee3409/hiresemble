@@ -1,6 +1,6 @@
 # Hiresemble 구현 계획
 
-이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01~AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. 사용자 승인으로 Phase 1 Gate 0~1은 완료됐고 Gate 2~4는 `PLANNED`다.
+이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01–AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. Gate 0–3은 완료됐고 Gate 4–5는 `PLANNED`다.
 
 P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 strict schema·semantic 계약 보정 뒤 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 이를 가짜 failed scope로 만든 projection과 공용 자기소개서 partial error 하드코딩으로 Run terminal만 잘못 실패했다. terminal policy 보정은 offline 검증했고 이후 Provider를 재호출하지 않았으므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
@@ -36,9 +36,11 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [ ] 모의 면접과 비동기 종합 피드백을 구현해 AC-12를 고정한다.
 - [ ] P10-A 사용자 Dashboard·설정, P10-B 운영 안정성·동시성, P10-C 출시 준비로 전체 AC와 MVP 회귀를 완료한다.
 - [x] Phase 1 Gate 0 기준선 보호와 Gate 1 GitHub Backend를 V27로 완료한다.
-- [ ] Gate 2 GitHub Frontend 뒤 Gate 3~4 Career Artifact Backend·Frontend를 순서대로 완료한다.
+- [x] Gate 2 GitHub Frontend를 빌드 타임 feature flag 경계로 완료한다.
+- [x] Gate 3 Career Artifact Backend를 V28·조건부 API·두 workflow·Office renderer로 완료한다.
+- [ ] Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub를 별도 승인 뒤 순서대로 완료한다.
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0~1 `DONE`, Gate 2~4 `PLANNED`다. 현재 구현 기준선은 Flyway V27, canonical 경험 보관함과 GitHub provenance, 9개 WorkflowType과 OpenAPI 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. Embedding과 Chat strict output부터 document finalize까지 실제 run으로 검증됐고 terminal classification 보정은 offline 검증됐지만 live 재검증 전이다. Phase 1 자동 검증의 실제 GitHub·OpenAI 호출은 0회다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–3 `DONE`, Gate 4–5 `PLANNED`다. 현재 구현 기준선은 Flyway V28, feature-gated `/profile/github`, 조건부 Career Artifact Backend, 11개 WorkflowType과 feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. 실제 외부 GitHub·OpenAI 호출 없이 Fake/WireMock/Testcontainers/POI로 검증한다.
 
 ## 1. 전체 선행 관계
 
@@ -96,7 +98,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - P8.6~P8.9-A는 비용 예산과 별개인 기능 한도, 사용량·원가 집계, 실패 복구, 운영 관찰 경계를 순서대로 고정한다.
 - P9는 P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A가 모두 필요하다.
 - P8.9-B 운영 mutation은 별도 후속이며 P9의 필수 선행이 아니다.
-- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration으로 완료했다. Gate 2~4는 이 경계를 유지한 채 순서대로 착수한다.
+- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration, Gate 2는 기존 7개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 3은 V28 Career Artifact Backend로 완료했고 Gate 4–5는 이 경계를 유지한 채 별도로 착수한다.
 - Frontend는 각 phase의 OpenAPI/DTO와 상태 계약이 backend에서 먼저 고정된 뒤 같은 수직 단계로 진행한다.
 
 ## 2. 전 단계 공통 완료 조건
@@ -662,7 +664,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: 구현 착수 시 next available migration에 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`를 추가한다. 현재 latest V27 기준으로 즉시 착수하면 V28이지만 번호를 예약하지 않는다.
+- DB: 구현 착수 시 next available migration에 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`를 추가한다. 현재 latest V28 기준으로 즉시 착수하면 V29이지만 번호를 예약하지 않는다.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -675,7 +677,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - Cache/reuse는 새 사용자 의도면 비용 0이어도 1 unit, 자동 retry는 같은 unit, Provider 전 실패는 release, Provider 후 실패·취소/partial success는 commit한다.
 - Failure semantics: `429 FEATURE_USAGE_LIMIT_EXCEEDED`와 `429 RATE_OR_BUDGET_LIMIT_EXCEEDED`를 code·message·CTA로 분리한다.
 - Withdrawal purge: 개인정보 row는 purge하고 승인된 비식별 aggregate만 보존한다.
-- Migration responsibility: next available `TENTATIVE`; 구현 완료된 V1~V27 수정 금지.
+- Migration responsibility: next available `TENTATIVE`; 구현 완료된 V1~V28 수정 금지.
 
 ### 14.3 Test strategy·Actual E2E boundary·완료 조건
 
@@ -899,13 +901,13 @@ GitHub·Career Artifact Gate 0 기준선 보호
 
 ## 별도 Vertical — GitHub 경험·Career Artifact
 
-- 상태: Phase 1 Gate 0~1 `DONE`; Gate 2 GitHub Frontend와 Gate 3~4 Career Artifact는 `PLANNED`.
+- 상태: Gate 0–3 `DONE`; Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub는 `PLANNED`.
 - 목표: 공개 GitHub source에서 프로젝트 경험·강점을 추출해 V26 canonical 보관함에 중복 없이 연결하고, 사용자가 exact model을 골라 이력서 DOCX와 포트폴리오 PPTX 초안을 생성·다운로드한다.
-- Gate 0~1 결과: V26 checksum과 populated upgrade·문서 canonical characterization을 고정했고, V27 GitHub schema·public gateway·bounded snapshot·workflow·7개 API·GH-AC-01~04를 Fake/WireMock/Testcontainers로 검증했다.
-- 남은 구현 순서: GitHub UI·경험 provenance 표시 → artifact/version/provenance next-available migration·model catalog·renderer workflow → wizard·preview·download UI.
-- 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow, applied V1~V27과 향후 current artifact version을 파괴하지 않는다.
-- 전체 완료 조건: [`github-career-artifact-design.md`](github-career-artifact-design.md) Gate 2~4와 ART-AC-01~05가 Fake/WireMock·Testcontainers·POI 재개방·Frontend/E2E에서 통과한다.
-- 배치 결정: Gate 2는 구현된 79 paths/107 operations를 소비한다. Gate 3 migration 번호는 착수 직전 latest를 다시 확인한다.
+- Gate 0–3 결과: V26 checksum과 canonical 회귀, V27 GitHub schema·workflow·7개 API·Gate 2 Frontend를 완료했다. V28은 artifact/version/provenance/private request/outbox, 11개 Career Artifact operation, exact model, 두 8단계 workflow와 POI renderer를 추가했다.
+- 남은 구현 순서: Gate 4 wizard·structured preview·version/download UI와 선택적 suggestion → 별도 승인된 Gate 5 private GitHub.
+- 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow와 applied V1~V28을 파괴하지 않는다.
+- 전체 완료 조건: [`github-career-artifact-design.md`](github-career-artifact-design.md) Gate 4–5와 ART-AC-01–05의 사용자 journey가 Frontend/E2E 및 승인된 private GitHub 경계에서 통과한다.
+- 배치 결정: Career Artifact feature off는 기존 79 paths/107 operations를 유지하고 on은 88 paths/118 operations다. Gate 4는 새 Backend contract를 소비하되 새 공개 API를 임의로 늘리지 않는다.
 
 ## 23. 목표 package와 directory 생성 순서
 
@@ -926,7 +928,7 @@ com.hiresemble/
 ├─ research/                  # P8
 ├─ interview/                 # P8~P9
 ├─ githubsource/              # Gate 1 GitHub source·snapshot·provenance
-├─ careerartifact/            # phase 미배정 DOCX/PPTX artifact·version·renderer port
+├─ careerartifact/            # Gate 3 DOCX/PPTX artifact·version·renderer port
 ├─ usage/                     # P8.6 제품 기능 한도·metering
 ├─ billing/                   # P8.7 과금 가능 usage policy·집계, 결제 제외
 └─ backoffice/                # P8.9 ADMIN 운영 query/action
@@ -1060,20 +1062,20 @@ validator는 구현을 수정하지 않고 다음을 phase마다 확인한다.
 
 ## 26. 위험과 대응
 
-| 위험                            | 조기 검증                                                 |
-| ------------------------------- | --------------------------------------------------------- |
-| 계약 누락을 구현자가 추측       | P0 OpenAPI·상태 matrix·migration plan                     |
-| 사용자 데이터 교차 연결         | 두 사용자 fixture와 DB composite/owner join test          |
-| TaskExecutor 유실·중복          | DB claim/reconciliation와 idempotent apply test           |
-| 비용 동시성 초과                | reserve/settle 경쟁 test                                  |
-| 문서·웹 prompt injection        | Tool allowlist, content delimiting, structured validation |
+| 위험                              | 조기 검증                                                          |
+| --------------------------------- | ------------------------------------------------------------------ |
+| 계약 누락을 구현자가 추측         | P0 OpenAPI·상태 matrix·migration plan                              |
+| 사용자 데이터 교차 연결           | 두 사용자 fixture와 DB composite/owner join test                   |
+| TaskExecutor 유실·중복            | DB claim/reconciliation와 idempotent apply test                    |
+| 비용 동시성 초과                  | reserve/settle 경쟁 test                                           |
+| 문서·웹 prompt injection          | Tool allowlist, content delimiting, structured validation          |
 | GitHub source 범위·개인 기여 과장 | public-only bounded snapshot, source ref 검증, PENDING 사용자 승인 |
-| DOCX/PPTX 손상·layout overflow  | server template, POI 재개방, relation·overflow·visual fixture |
-| 파일 parser/URL fetch 자원 고갈 | size/time/redirect/DNS/resource limit test                |
-| 편집 version 유실               | optimistic lock, current partial unique, multi-tab test   |
-| SSE 단절로 영구 진행 표시       | snapshot-first, terminal GET, polling fallback            |
-| 과거 provenance 유실            | SOURCE_DELETED/soft delete/FK test                        |
-| 프론트 local draft 노출         | user-scoped session storage와 logout purge test           |
+| DOCX/PPTX 손상·layout overflow    | server template, POI 재개방, relation·overflow·visual fixture      |
+| 파일 parser/URL fetch 자원 고갈   | size/time/redirect/DNS/resource limit test                         |
+| 편집 version 유실                 | optimistic lock, current partial unique, multi-tab test            |
+| SSE 단절로 영구 진행 표시         | snapshot-first, terminal GET, polling fallback                     |
+| 과거 provenance 유실              | SOURCE_DELETED/soft delete/FK test                                 |
+| 프론트 local draft 노출           | user-scoped session storage와 logout purge test                    |
 
 ## P6 구현 후 남은 위험
 

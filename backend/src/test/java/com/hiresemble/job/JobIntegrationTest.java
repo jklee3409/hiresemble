@@ -54,7 +54,7 @@ import tools.jackson.databind.ObjectMapper;
 @Import(JobIntegrationTest.TestPorts.class)
 class JobIntegrationTest extends PostgresIntegrationTest {
 
-    private static final Instant NOW = Instant.parse("2026-07-27T00:00:00Z");
+    private static final Instant NOW = Instant.parse("2026-08-08T00:00:00Z");
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -675,7 +675,7 @@ class JobIntegrationTest extends PostgresIntegrationTest {
                 .queryParam("postingStartFrom", "2026-07-01"));
         assertValidationError(get("/api/v1/jobs")
                 .cookie(owner.cookie())
-                .queryParam("postingStartFrom", "2026-07-28"));
+                .queryParam("postingStartFrom", "2026-08-09"));
         assertValidationError(get("/api/v1/jobs")
                 .cookie(owner.cookie())
                 .queryParam("extractionStatus", "MANUAL_INPUT_PROVIDED"));

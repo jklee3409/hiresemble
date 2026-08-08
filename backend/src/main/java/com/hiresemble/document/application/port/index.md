@@ -12,7 +12,7 @@ com.hiresemble.document.application.port package는 application과 외부 구현
 | [DocumentWorkflowQueryPort.java](DocumentWorkflowQueryPort.java) | Port 책임 구현 |
 | [ObjectDeletionAlertPort.java](ObjectDeletionAlertPort.java) | Port 책임 구현 |
 | [ObjectStorageException.java](ObjectStorageException.java) | Port 책임 구현 |
-| [ObjectStoragePort.java](ObjectStoragePort.java) | Port 책임 구현 |
+| [ObjectStoragePort.java](ObjectStoragePort.java) | upload/head/delete와 기존·attachment filename presign 경계 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

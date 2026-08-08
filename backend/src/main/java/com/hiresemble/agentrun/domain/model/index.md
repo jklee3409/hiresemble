@@ -20,7 +20,7 @@ com.hiresemble.agentrun.domain.model package는 해당 계층에서 사용하는
 | [ResourceReference.java](ResourceReference.java) | Model 책임 구현 |
 | [SafeError.java](SafeError.java) | Model 책임 구현 |
 | [UsageType.java](UsageType.java) | Model 책임 구현 |
-| [WorkflowType.java](WorkflowType.java) | Model 책임 구현 |
+| [WorkflowType.java](WorkflowType.java) | 기존 9개와 Resume·Portfolio를 포함한 11개 workflow type |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

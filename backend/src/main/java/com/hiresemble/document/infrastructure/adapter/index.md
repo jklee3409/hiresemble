@@ -11,7 +11,7 @@ com.hiresemble.document.infrastructure.adapter package는 Object Storage·parser
 | [DocumentFileInspector.java](DocumentFileInspector.java) | Adapter 책임 구현 |
 | [DocumentParser.java](DocumentParser.java) | Adapter 책임 구현 |
 | [DocumentParsingException.java](DocumentParsingException.java) | Adapter 책임 구현 |
-| [S3ObjectStorageAdapter.java](S3ObjectStorageAdapter.java) | Adapter 책임 구현 |
+| [S3ObjectStorageAdapter.java](S3ObjectStorageAdapter.java) | S3 upload/head/delete와 RFC 5987 attachment presign 구현 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할

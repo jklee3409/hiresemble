@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter, P8 Interview와 Phase 1 GitHub ingestion workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+P3 fixed workflow runtime과 network-disabled gateway 기반에 P4 Document, P5 Job, P6 Job Analysis, P7 Cover Letter, P8 Interview, GitHub ingestion과 두 Career Artifact workflow가 연결됐다. local Chat은 중앙 검증된 strict schema만 전송하고 응답 phase별 safe reason과 bounded repair retry를 적용하며 Tavily adapter는 명시적 opt-in에서만 활성화된다.
+
+## [2026-08-08] Session Summary (Career Artifact AI runtime)
+
+- What was done:
+  - 11개 WorkflowType registry에 Resume·Portfolio definition, context, prompt, exact model route와 executable contribution을 등록했다.
+- Key decisions:
+  - 세 Chat step만 같은 exact model을 쓰고 render·validate·persist는 local deterministic step으로 유지했다.
+- Issues encountered:
+  - 기존 Cover Letter durable input hash 공식은 호환성을 위해 변경하지 않았다.
+- Validation:
+  - registry·prompt/schema·workflow·validator 집중 테스트가 통과했다.
+- Next steps:
+  - 실제 OpenAI 품질 평가는 별도 승인 전 수행하지 않는다.
 
 ## [2026-08-07] Session Summary (GitHub strict extraction runtime 연결)
 

@@ -158,7 +158,7 @@ class JobAutoAnalysisIntegrationTest extends PostgresIntegrationTest {
                 jobId)).isEqualTo(1L);
         mockMvc.perform(get("/api/v1/jobs/" + jobId).cookie(owner.cookie()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.automaticAnalysis.state").value("QUEUED"));
+                .andExpect(jsonPath("$.automaticAnalysis.state").value("LAUNCHED"));
     }
 
     private MvcResult create(Session session, String key, String body) throws Exception {

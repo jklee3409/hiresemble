@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0–P8은 완료됐고 P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했지만 실제 호출 검증 전이다. 별도 Phase 1 GitHub Backend Gate 0~1은 완료됐으며 Gate 2 Frontend와 Career Artifact는 미착수다. P8.5-V와 P8.6–P8.9-A가 P9 선행 계획이며 P9·P10은 미착수다.
+이 저장소는 Hiresemble의 프론트엔드, Spring 백엔드, 로컬 인프라, 명세와 Codex 작업 규칙을 하나의 모노레포에서 관리한다. P0–P8은 완료됐고 P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했지만 실제 호출 검증 전이다. GitHub Gate 0~2와 Career Artifact Backend Gate 3는 완료됐고 Gate 4 Frontend·Gate 5 Private GitHub는 계획 상태다. P8.5-V와 P8.6–P8.9-A가 P9 선행 계획이며 P9·P10은 미착수다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 GitHub Source 7개 operation을 포함해 총 107 operations/79 paths다. 공고 생성 응답은 호환성을 유지하고 등록 시각의 서울 기준 연도·상하반기를 저장하며 `GET /jobs`는 owner가 실제 보유한 기간 선택지를 반환한다. `GET /jobs/{id}`는 자동 `BALANCED` 분석 후속 상태를 additive projection으로 제공한다. Frontend는 anonymous `/` 공개 Landing, 상단·mobile bottom navigation, `/guide`, 공고 document view와 등록→추출→자동 분석 journey를 제공하며 `/dashboard`는 owner-scoped 정확 집계·서울 기준 월별 마감과 서버 게시 가이드를 행동 중심 화면으로 제공한다. `/profile/github` Frontend는 Gate 2 계획 상태다.
+공개 HTTP 범위는 Career Artifact feature가 꺼지면 GitHub Source를 포함한 107 operations/79 paths이고, 켜지면 Career Artifact 11개 operation이 추가된 118 operations/88 paths다. Frontend는 anonymous Landing과 P1~P8 route, feature-gated `/profile/github`를 제공한다. Gate 3에서는 새 WorkflowType을 기존 Agent Run SPA가 안전하게 표시하도록 호환성만 추가했으며 `/career-artifacts/**` route·wizard·preview는 Gate 4까지 만들지 않는다.
 
 ## 변경 시 주의사항
 

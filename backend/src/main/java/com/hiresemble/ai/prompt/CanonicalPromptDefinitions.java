@@ -23,6 +23,7 @@ public final class CanonicalPromptDefinitions {
         prompts.addAll(CoverLetterVerificationV3PromptDefinitions.all());
         prompts.addAll(InterviewPreparationPromptDefinitions.all());
         prompts.addAll(InterviewAnswerFeedbackPromptDefinitions.all());
+        prompts.addAll(CareerArtifactPromptDefinitions.all());
         return List.copyOf(prompts);
     }
 }

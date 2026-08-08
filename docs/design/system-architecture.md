@@ -1,10 +1,10 @@
 # Hiresemble 전체 시스템 설계
 
-- 문서 상태: P0–P8 구현, P8.5 live gate, Phase 1 GitHub Backend와 P8.6–P10·후속 Career Artifact 목표 구조를 연결한 설계 기준선
+- 문서 상태: P0–P8 구현, P8.5 live gate, GitHub·Career Artifact Gate 0–3과 P8.6–P10·후속 UI/Private GitHub 목표 구조를 연결한 설계 기준선
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
-- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub Gate 0~1 완료, Flyway V27, 9개 WorkflowType, OpenAPI 79 paths/107 operations
+- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub·Career Artifact Gate 0–3 완료, Flyway V28, 11개 WorkflowType, Career Artifact feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
-- 확장 설계: [GitHub 경험·Career Artifact](github-career-artifact-design.md) (Gate 0~1 `DONE`, Gate 2~4 `PLANNED`)
+- 확장 설계: [GitHub 경험·Career Artifact](github-career-artifact-design.md) (Gate 0–3 `DONE`, Gate 4–5 `PLANNED`)
 - P0 승인 결정 기록: [P0 계약 결정 기록](p0-contract-decision-proposal.md)
 
 이 문서는 다섯 기준 명세를 구현 구조로 연결한 파생 설계다. 현재 활성 제품 계약의 원천은 `docs/spec/**`이며 이 문서와 결정 기록은 이를 대체하거나 병렬 계약 원천이 되지 않는다. 실제 구현 여부는 코드와 각 `progress.md`를 기준으로 판단한다.
@@ -20,12 +20,12 @@
 
 ### 1.2 결정 상태
 
-| 구분      | 현재 상태                                         | 사용 원칙                                      |
-| --------- | ------------------------------------------------- | ---------------------------------------------- |
-| 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨  | 구현·테스트의 유일한 제품 계약으로 사용        |
-| 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨    | 역사와 선택 이유 확인에만 사용                 |
-| 구현 상태 | P0~P8 DONE, P8.5 구현·live 미검증, GitHub Gate 0~1 DONE | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
-| 목표 확장 | GitHub Frontend·Career Artifact Gate 2~4가 `PLANNED`    | 구현된 GitHub Backend와 후속 계약을 구분        |
+| 구분      | 현재 상태                                               | 사용 원칙                                      |
+| --------- | ------------------------------------------------------- | ---------------------------------------------- |
+| 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨        | 구현·테스트의 유일한 제품 계약으로 사용        |
+| 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨          | 역사와 선택 이유 확인에만 사용                 |
+| 구현 상태 | P0–P8 DONE, P8.5 구현·live 미검증, GitHub·Career Artifact Gate 0–3 DONE | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
+| 목표 확장 | Career Artifact Frontend Gate 4와 Private GitHub Gate 5가 `PLANNED`         | 구현된 Backend와 후속 UI·권한 계약을 구분      |
 
 ### 1.3 명시적 설계 가정
 
@@ -58,7 +58,7 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 
 문서 파싱 실패나 공고 URL 추출 실패는 사용자 계정 또는 공고 레코드 생성을 취소하지 않는다. 수동 입력 경로를 제공하고, AI 결과는 사용자가 명시적으로 저장·최종화하기 전 확정 제출물로 보지 않는다.
 
-Gate 1까지 구현된 흐름은 `GitHub URL→공개 repository 선택·bounded snapshot→canonical 경험 후보 검토·승인`이다. Gate 2~4 목표는 `GitHub 화면→사용자 exact model 선택→Resume DOCX 또는 Portfolio PPTX version→5분 download`다. GitHub raw evidence는 승인된 canonical 경험을 거치지 않고 기존 공고·자기소개서·면접 Context에 직접 들어가지 않으며 생성 output은 업로드 `documents` pipeline과 분리한다.
+Gate 0–3에서 `feature-gated GitHub 화면→공개 repository 선택·canonical 경험 검토→조건부 Career Artifact API→사용자 exact model→Resume DOCX 또는 Portfolio PPTX immutable version→5분 attachment download`의 Backend 경계까지 구현했다. Gate 4는 이 API를 소비하는 page·wizard·preview UI, Gate 5는 private GitHub의 별도 승인 대상이다. GitHub raw evidence는 승인된 canonical 경험을 거치지 않고 생성 Context에 직접 들어가지 않으며 생성 output은 업로드 `documents` pipeline과 분리한다.
 
 ## 3. MVP 범위와 제외 범위
 
@@ -96,9 +96,9 @@ Gate 1까지 구현된 흐름은 `GitHub URL→공개 repository 선택·bounded
 
 - 공개 GitHub 계정·repository URL과 사용자가 선택한 repository만 bounded snapshot으로 수집 (`IMPLEMENTED`, Gate 1)
 - 기존 V26 fingerprint·embedding 정책을 재사용한 프로젝트 경험·강점 dedupe와 사용자 승인 (`IMPLEMENTED`, Gate 1)
-- `/profile/github` source·repository 선택·진행·경험 provenance 화면 (`PLANNED`, Gate 2)
-- exact model을 사용자가 선택하는 이력서 DOCX·포트폴리오 PPTX structured 생성 (`PLANNED`, Gate 3)
-- server-owned Apache POI renderer, immutable artifact version, private Object Storage와 owner-scoped download (`PLANNED`, Gate 3)
+- `/profile/github` source·repository 선택·진행·경험 provenance 화면 (`IMPLEMENTED`, Gate 2, build-time feature flag)
+- exact model을 사용자가 선택하는 이력서 DOCX·포트폴리오 PPTX structured 생성 (`IMPLEMENTED_BACKEND`, Gate 3)
+- server-owned Apache POI renderer, immutable artifact version, private Object Storage와 owner-scoped download (`IMPLEMENTED_BACKEND`, Gate 3)
 - 선택적 생성 제안 (`PLANNED`, Gate 4); 자동 Run·강제 redirect·private repository/PAT·code 실행은 제외
 
 모듈·DB·API·페이지·Gate의 완전한 계약은 [`github-career-artifact-design.md`](github-career-artifact-design.md)를 따른다.
@@ -198,7 +198,7 @@ ADMIN 읽기 전용 운영 기반은 포함하지만 결제·구독은 계속 �
 | `AgentOrchestrator` | run 상태 전이, 단계 순서, 재시도·취소·복구·재사용·결과 반영 조정                    |
 | `ContextBuilder`    | 사용자별 최신 resource와 provenance를 조회·마스킹·순위화·token 절단해 snapshot 생성 |
 | `ModelRouter`       | Chat·image text task와 공개 품질 선택을 내부 model tier·product로 해석              |
-| embedding policy   | vector retrieval의 provider·product·dimension·version·generation typed route 제공   |
+| embedding policy    | vector retrieval의 provider·product·dimension·version·generation typed route 제공   |
 | `BudgetGuard`       | 실행 전·호출 전·호출 후 비용 한도 검사와 예약·정산 경계                             |
 | `PromptRegistry`    | 검토되고 version이 있는 prompt와 structured schema 제공                             |
 | `AgentExecutor`     | Chat/Embedding/허용 Tool 호출, timeout, schema 검증, 안전한 오류 변환               |
@@ -605,7 +605,7 @@ terminal 결과
 
 ### 13.7 Agent 목록과 workflow
 
-명세에 있는 추출·분석·매칭·조사·writer·fact check·question·interviewer·feedback 역할은 활성 기술 명세의 9개 `WorkflowType`과 고정 step registry에 배치한다. Java class 이름은 공개 계약이 아니며 구현 단계의 내부 책임이다.
+명세에 있는 추출·분석·매칭·조사·writer·fact check·question·interviewer·feedback 역할은 활성 기술 명세의 11개 `WorkflowType`과 고정 step registry에 배치한다. Java class 이름은 공개 계약이 아니며 구현 단계의 내부 책임이다.
 
 ## 14. 인증·인가·사용자 격리·개인정보
 

@@ -98,6 +98,18 @@ class S3ObjectStorageAdapterTest {
         assertThat(downloaded.statusCode()).isEqualTo(200);
         assertThat(downloaded.body()).isEqualTo(content);
 
+        var attachment = adapter.presignGet(
+                key, Duration.ofMinutes(5), "한글/이력서\r\n.docx");
+        HttpResponse<Void> attachmentResponse = http.send(
+                HttpRequest.newBuilder(attachment.uri()).GET().build(),
+                HttpResponse.BodyHandlers.discarding());
+        assertThat(attachmentResponse.statusCode()).isEqualTo(200);
+        assertThat(attachmentResponse.headers().firstValue("content-disposition"))
+                .hasValueSatisfying(value -> assertThat(value)
+                        .startsWith("attachment; filename=\"")
+                        .contains("filename*=UTF-8''")
+                        .doesNotContain("/", "\\", "\r", "\n"));
+
         adapter.delete(key);
         adapter.delete(key);
         assertThatThrownBy(() -> adapter.metadata(key))

@@ -1,8 +1,8 @@
-# P1~V27 Migration 테스트 안내
+# P1~V28 Migration 테스트 안내
 
 ## 디렉터리 목적
 
-Flyway 단계별 보존과 최신 V27 GitHub source·snapshot·provenance·typed Run 불변식을 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V28 Career Artifact·version·provenance·typed Run 불변식을 실제 PostgreSQL에서 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -19,6 +19,8 @@ Flyway 단계별 보존과 최신 V27 GitHub source·snapshot·provenance·typed
 - [`DashboardMigrationTest.java`](DashboardMigrationTest.java): 빈 DB와 populated V16→V17 가이드 seed·게시 제약·기존 데이터 보존
 - [`GitHubSourceMigrationTest.java`](GitHubSourceMigrationTest.java): fresh V27 owner·shape·unique·resource parity·outbox·two-user 불변식
 - [`GitHubSourceUpgradeMigrationTest.java`](GitHubSourceUpgradeMigrationTest.java): populated V26→V27 보존과 V26 SHA/checksum 고정
+- [`CareerArtifactMigrationTest.java`](CareerArtifactMigrationTest.java): fresh V1→V28 owner·type·parity·immutable 불변식
+- [`CareerArtifactUpgradeMigrationTest.java`](CareerArtifactUpgradeMigrationTest.java): populated V27→V28 보존과 V26/V27 SHA·Flyway checksum 고정
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할
@@ -32,7 +34,7 @@ Flyway 단계별 보존과 최신 V27 GitHub source·snapshot·provenance·typed
 
 ## 변경 시 주의사항
 
-- 적용 이력 V1~V27을 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
+- 적용 이력 V1~V28을 test 편의를 위해 수정하거나 H2로 대체하지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 versioned PromptRegistry에 P4 Document부터 P8 Interview까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
+P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
+
+## [2026-08-08] Session Summary (Career Artifact prompt contract)
+
+- What was done:
+  - Resume·Portfolio PLAN/DRAFT/FACT_CHECK prompt와 typed schema를 versioned definition으로 추가했다.
+- Key decisions:
+  - Portfolio prompt는 면접관 독자·첫 60초·case-study 순서·한 slide 한 message·근거 없는 수치 금지를 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - 핵심 정책·schema/version·빈 tool allowlist contract가 통과했다.
+- Next steps:
+  - 전체 문자열 snapshot은 사용하지 않는다.
 
 ## [2026-08-07] Session Summary (Document ingestion v2 prompt identity)
 

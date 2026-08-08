@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1~P8 Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 V16까지의 table cleanup을 제공한다.
+P1~P8, GitHub와 Career Artifact Spring Boot 통합 테스트가 공유하는 PostgreSQL Testcontainer와 V28 table cleanup을 제공한다.
+
+## [2026-08-08] Session Summary (V28 통합 test cleanup)
+
+- What was done:
+  - Career Artifact version/evidence/request/outbox와 aggregate를 FK 역순으로 정리하도록 공용 cleanup을 확장했다.
+- Key decisions:
+  - migration table은 건드리지 않고 application data만 격리한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Career Artifact와 전체 통합 test context에서 cleanup 통과.
+- Next steps:
+  - 새 FK table 추가 시 이 순서를 함께 갱신한다.
 
 ## [2026-08-02] Session Summary (V16 자동 분석 test 격리)
 

@@ -4,9 +4,22 @@
 
 - `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~~V17 migration이 P1~~P8, 사용자 대외활동·공고 자동 분석 intent와 Career Guide 게시 schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V28 migration이 P1~P8, GitHub와 Career Artifact schema를 관리한다.
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
+
+## [2026-08-08] Session Summary (Career Artifact 설정과 V28)
+
+- What was done:
+  - 기본 비활성 feature flag, typed renderer/outbox 한도와 local·local-offline 활성값 및 V28 migration을 추가했다.
+- Key decisions:
+  - production/default는 `CAREER_ARTIFACT_ENABLED:false`, Gradle test는 true이며 GitHub flag와 독립이다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Spring context, fresh/upgrade migration과 `docker compose config --quiet` 통과.
+- Next steps:
+  - 운영 활성화는 별도 배포 승인 범위다.
 
 ## [2026-08-02] Session Summary (V17 Career Guide 리소스 추가)
 

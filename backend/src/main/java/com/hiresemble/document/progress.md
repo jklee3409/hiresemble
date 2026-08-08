@@ -2,7 +2,20 @@
 
 ## Overview
 
-P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석과 P7 자기소개서용 active-generation 검색 adapter를 제공한다.
+P4 Document aggregate와 parsing·Object Storage·Agent Run·Fake AI evidence pipeline을 owner-scoped 수명주기로 구현했고, P6 공고 분석·P7 자기소개서 검색 adapter와 Career Artifact attachment presign 공용 경계를 제공한다.
+
+## [2026-08-08] Session Summary (Attachment download presign 확장)
+
+- What was done:
+  - 기존 `presignGet(storageKey, ttl)`을 유지하면서 안전한 attachment filename을 받는 overload와 S3 구현을 추가했다.
+- Key decisions:
+  - 한글 filename은 RFC 5987로 encode하고 CR/LF·path separator는 제거한다.
+- Issues encountered:
+  - 기존 Fake/adapter가 계속 compile되도록 default 호환 경계를 유지했다.
+- Validation:
+  - 기존 Object Storage 회귀와 S3 attachment test가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (canonical 경험 추출 pipeline v2)
 

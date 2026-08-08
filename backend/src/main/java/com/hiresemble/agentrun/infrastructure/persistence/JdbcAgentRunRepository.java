@@ -109,7 +109,8 @@ public class JdbcAgentRunRepository
                                 "COVER_LETTER",
                                 "QUESTION_SET",
                                 "INTERVIEW_ANSWER_VERSION",
-                                "GITHUB_SOURCE")
+                                "GITHUB_SOURCE",
+                                "CAREER_ARTIFACT")
                         .contains(command.resource().resourceType())) {
             insertTypedLink(
                     command.userId(),
@@ -305,6 +306,92 @@ public class JdbcAgentRunRepository
                         .update();
                 if (attached != 1) {
                     throw new IllegalStateException("GitHub retry source is not retryable");
+                }
+            } else if ("CAREER_ARTIFACT".equals(predecessor.resourceType())) {
+                if (predecessor.workflowType() != WorkflowType.RESUME_GENERATION
+                        && predecessor.workflowType() != WorkflowType.PORTFOLIO_GENERATION) {
+                    throw new IllegalStateException(
+                            "unsupported workflow owns a Career Artifact retry resource");
+                }
+                requireCareerArtifactRetryIdentity(predecessor, command);
+                int linked = jdbcClient.sql("""
+                                INSERT INTO agent_run_resource_links (
+                                    id,user_id,agent_run_id,resource_kind,career_artifact_id,
+                                    primary_resource,created_at
+                                )
+                                SELECT :id,user_id,:successorId,resource_kind,career_artifact_id,
+                                       true,:createdAt
+                                FROM agent_run_resource_links
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND resource_kind='CAREER_ARTIFACT' AND primary_resource
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (linked != 1) {
+                    throw new IllegalStateException(
+                            "Career Artifact retry is missing its typed resource link");
+                }
+                UUID targetVersionId;
+                try {
+                    targetVersionId = UUID.fromString(command.inputReferenceSnapshot()
+                            .path("targetVersionId").asText());
+                } catch (RuntimeException exception) {
+                    throw new IllegalStateException(
+                            "Career Artifact retry target version is invalid", exception);
+                }
+                int copied = jdbcClient.sql("""
+                                INSERT INTO career_artifact_generation_requests (
+                                    id,user_id,career_artifact_id,agent_run_id,target_version_id,
+                                    render_profile_snapshot,render_profile_hash,created_at,consumed_at
+                                )
+                                SELECT :id,user_id,career_artifact_id,:successorId,:targetVersionId,
+                                       render_profile_snapshot,render_profile_hash,:createdAt,NULL
+                                FROM career_artifact_generation_requests
+                                WHERE user_id=:userId AND agent_run_id=:predecessorId
+                                  AND consumed_at IS NULL
+                                """)
+                        .param("id", UUID.randomUUID())
+                        .param("successorId", successorId)
+                        .param("targetVersionId", targetVersionId)
+                        .param("createdAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (copied != 1) {
+                    throw new IllegalStateException(
+                            "Career Artifact retry generation request is missing");
+                }
+                int attached = jdbcClient.sql("""
+                                UPDATE career_artifacts artifact
+                                SET latest_agent_run_id=:successorId,version=version+1,
+                                    updated_at=:updatedAt
+                                WHERE artifact.user_id=:userId AND artifact.id=:artifactId
+                                  AND artifact.deleted_at IS NULL
+                                  AND artifact.lifecycle_status='ACTIVE'
+                                  AND artifact.latest_agent_run_id=:predecessorId
+                                  AND NOT EXISTS (
+                                    SELECT 1 FROM agent_run_resource_links link
+                                    JOIN agent_runs active
+                                      ON active.user_id=link.user_id
+                                     AND active.id=link.agent_run_id
+                                    WHERE link.user_id=artifact.user_id
+                                      AND link.career_artifact_id=artifact.id
+                                      AND active.id NOT IN (:predecessorId,:successorId)
+                                      AND active.deleted_at IS NULL
+                                      AND active.status IN ('QUEUED','RUNNING','WAITING_USER'))
+                                """)
+                        .param("successorId", successorId)
+                        .param("updatedAt", utc(queuedAt))
+                        .param("userId", predecessor.userId())
+                        .param("artifactId", predecessor.resourceId())
+                        .param("predecessorId", predecessor.id())
+                        .update();
+                if (attached != 1) {
+                    throw new IllegalStateException("Career Artifact retry is not active");
                 }
             } else if ("JOB".equals(predecessor.resourceType())) {
                 int linked = jdbcClient.sql("""
@@ -665,6 +752,7 @@ public class JdbcAgentRunRepository
             case "QUESTION_SET" -> "question_set_id";
             case "INTERVIEW_ANSWER_VERSION" -> "interview_answer_version_id";
             case "GITHUB_SOURCE" -> "github_source_id";
+            case "CAREER_ARTIFACT" -> "career_artifact_id";
             default -> throw new IllegalArgumentException("unsupported typed resource");
         };
         String insertSql = """
@@ -686,6 +774,11 @@ public class JdbcAgentRunRepository
     }
 
     private JsonNode retryInput(AgentRunSnapshot predecessor, UUID retryVerificationId) {
+        if ("CAREER_ARTIFACT".equals(predecessor.resourceType())
+                && (predecessor.workflowType() == WorkflowType.RESUME_GENERATION
+                        || predecessor.workflowType() == WorkflowType.PORTFOLIO_GENERATION)) {
+            return careerArtifactRetryInput(predecessor);
+        }
         if ("COVER_LETTER".equals(predecessor.resourceType())
                 && predecessor.workflowType() == WorkflowType.COVER_LETTER_GENERATION) {
             return generationRetryInput(predecessor);
@@ -700,6 +793,38 @@ public class JdbcAgentRunRepository
         ObjectNode copied = objectNode.deepCopy();
         copied.put("verificationId", retryVerificationId.toString());
         return copied;
+    }
+
+    private JsonNode careerArtifactRetryInput(AgentRunSnapshot predecessor) {
+        if (!(predecessor.inputReferenceSnapshot() instanceof ObjectNode objectNode)
+                || objectNode.path("model").asText().isBlank()
+                || objectNode.path("templateKey").asText().isBlank()
+                || objectNode.path("templateVersion").asText().isBlank()
+                || objectNode.path("renderProfileHash").asText().isBlank()
+                || !objectNode.path("selectedEvidence").isArray()) {
+            throw new IllegalStateException(
+                    "Career Artifact retry input identity is invalid");
+        }
+        ObjectNode copied = objectNode.deepCopy();
+        copied.put("targetVersionId", UUID.randomUUID().toString());
+        return copied;
+    }
+
+    private void requireCareerArtifactRetryIdentity(
+            AgentRunSnapshot predecessor, WorkflowLaunchCommand command) {
+        JsonNode before = predecessor.inputReferenceSnapshot();
+        JsonNode after = command.inputReferenceSnapshot();
+        for (String field : List.of(
+                "careerArtifactId", "artifactType", "artifactVersion", "model",
+                "templateKey", "templateVersion", "renderProfileHash",
+                "selectedEvidence", "profileSectionRefs", "includeProfileSections")) {
+            if (!java.util.Objects.equals(before.get(field), after.get(field))) {
+                throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+            }
+        }
+        if (java.util.Objects.equals(before.get("targetVersionId"), after.get("targetVersionId"))) {
+            throw new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
+        }
     }
 
     private JsonNode generationRetryInput(AgentRunSnapshot predecessor) {

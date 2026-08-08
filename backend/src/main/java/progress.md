@@ -2,8 +2,21 @@
 
 ## Overview
 
-- `com.hiresemble` 아래 P1 common·auth, P2 profile과 P3 agentrun·ai package가 구현되어 있다.
-- 공개 Controller는 인증 5, profile 25, Agent Run 5 operation만 제공한다.
+- `com.hiresemble` 아래 P1~P8, GitHub Gate 1과 Career Artifact Backend Gate 3 package가 구현되어 있다.
+- Career Artifact feature가 꺼지면 공개 기준선은 79 paths/107 operations이고, 켜지면 88 paths/118 operations다.
+
+## [2026-08-08] Session Summary (Career Artifact Java package 연결)
+
+- What was done:
+  - `careerartifact` 전 계층과 `ai/workflow/careerartifact`를 기존 Agent Run·AI·Document 경계에 연결했다.
+- Key decisions:
+  - Gate 4 Frontend package는 만들지 않고 Backend runtime만 추가했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - package compile과 Career Artifact 집중 테스트가 통과했다.
+- Next steps:
+  - Gate 4는 별도 승인 범위다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

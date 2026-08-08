@@ -1,12 +1,14 @@
 package com.hiresemble.ai.model;
 
 import com.hiresemble.agentrun.domain.model.ModelTier;
+import com.hiresemble.agentrun.domain.model.WorkflowType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Server-owned allowlist of exact OpenAI API model identifiers exposed for cover-letter work.
+ * Server-owned allowlist of exact OpenAI API model identifiers exposed for user-selected
+ * generation workflows.
  *
  * <p>Keep provider product IDs in this catalog instead of scattering literals across API,
  * workflow, and UI layers. Availability is based on the official OpenAI model catalog; account
@@ -53,16 +55,34 @@ public final class OpenAiChatModels {
         return COVER_LETTER_MODELS;
     }
 
+    public static List<Model> modelsFor(WorkflowType workflowType) {
+        if (workflowType == WorkflowType.COVER_LETTER_GENERATION
+                || workflowType == WorkflowType.COVER_LETTER_VERIFICATION
+                || workflowType == WorkflowType.RESUME_GENERATION
+                || workflowType == WorkflowType.PORTFOLIO_GENERATION) {
+            return COVER_LETTER_MODELS;
+        }
+        return List.of();
+    }
+
+    public static boolean supportsModel(WorkflowType workflowType, String model) {
+        return model != null && modelsFor(workflowType).stream()
+                .anyMatch(candidate -> candidate.id().equals(model));
+    }
+
+    public static Model requireModel(WorkflowType workflowType, String model) {
+        if (!supportsModel(workflowType, model)) {
+            throw new IllegalArgumentException("unsupported exact OpenAI model for workflow");
+        }
+        return BY_ID.get(model);
+    }
+
     public static boolean supportsCoverLetter(String model) {
-        return model != null && BY_ID.containsKey(model);
+        return supportsModel(WorkflowType.COVER_LETTER_GENERATION, model);
     }
 
     public static Model requireCoverLetter(String model) {
-        Model selected = model == null ? null : BY_ID.get(model);
-        if (selected == null) {
-            throw new IllegalArgumentException("unsupported OpenAI cover-letter model");
-        }
-        return selected;
+        return requireModel(WorkflowType.COVER_LETTER_GENERATION, model);
     }
 
     public record Model(

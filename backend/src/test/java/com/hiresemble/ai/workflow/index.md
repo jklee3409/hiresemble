@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-canonical registry coverage와 Document·Job·Cover Letter metadata·contribution 불변식을 검증한다.
+canonical registry coverage와 Document·Job·Cover Letter·Career Artifact metadata·contribution 불변식을 검증한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,11 +16,12 @@ canonical registry coverage와 Document·Job·Cover Letter metadata·contributio
 - `CoverLetterGenerationWorkflowTest`: P7 v1 durable 실행과 v2 typed plan·ACTIVITY allocation·current answer revision input·Provider TipTap·partial success/retry
 - `CoverLetterVerificationWorkflowTest`: P7 v1 durable 실행과 v2 job/rubric/sibling quality context·issue·compensation
 - `CoverLetterWorkflowContractTest`: v1/v2 definition·prompt identity, 공개 step·strict structured output·privacy 계약
+- [`careerartifact/`](careerartifact/index.md): Resume·Portfolio 고정 8단계·prompt/schema/model/privacy 계약
 - [`progress.md`](progress.md)
 
 ## 구성 요소 역할
 
-8개 type, duplicate key, weight와 executable sequence를 고정하고 Document active 9단계·legacy 8단계 및 P7 generation 8단계·verification 6단계 contribution을 검증한다.
+11개 type, duplicate key, weight와 executable sequence를 고정하고 Document active 9단계·legacy 8단계, P7 generation 8단계·verification 6단계와 Career Artifact 두 8단계 contribution을 검증한다.
 
 ## 다른 디렉터리와의 의존 관계
 

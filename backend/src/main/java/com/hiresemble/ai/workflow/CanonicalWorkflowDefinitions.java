@@ -46,6 +46,8 @@ public final class CanonicalWorkflowDefinitions {
     public static final String INTERVIEW_ANSWER_FEEDBACK_VERSION =
             "interview-answer-feedback-v1";
     public static final String GITHUB_INGESTION_VERSION = "github-ingestion-v1";
+    public static final String RESUME_GENERATION_VERSION = "resume-generation-v1";
+    public static final String PORTFOLIO_GENERATION_VERSION = "portfolio-generation-v1";
     private static final Set<FailureKind> RETRYABLE = EnumSet.of(
             FailureKind.RATE_LIMIT,
             FailureKind.PROVIDER_5XX,
@@ -74,6 +76,28 @@ public final class CanonicalWorkflowDefinitions {
                 interviewPreparation(),
                 interviewAnswerFeedback(),
                 githubIngestion(),
+                careerArtifactGeneration(
+                        WorkflowType.RESUME_GENERATION,
+                        RESUME_GENERATION_VERSION,
+                        "LOAD_RESUME_REQUEST",
+                        "BUILD_VERIFIED_CAREER_CONTEXT",
+                        "PLAN_RESUME",
+                        "DRAFT_RESUME_CONTENT",
+                        "FACT_CHECK_RESUME_CONTENT",
+                        "RENDER_DOCX",
+                        "VALIDATE_DOCX",
+                        "PERSIST_RESUME_VERSION"),
+                careerArtifactGeneration(
+                        WorkflowType.PORTFOLIO_GENERATION,
+                        PORTFOLIO_GENERATION_VERSION,
+                        "LOAD_PORTFOLIO_REQUEST",
+                        "BUILD_VERIFIED_CAREER_CONTEXT",
+                        "PLAN_PORTFOLIO_STORY",
+                        "DRAFT_PORTFOLIO_SLIDES",
+                        "FACT_CHECK_PORTFOLIO_CONTENT",
+                        "RENDER_PPTX",
+                        "VALIDATE_PPTX",
+                        "PERSIST_PORTFOLIO_VERSION"),
                 definition(WorkflowType.MOCK_INTERVIEW_FEEDBACK, Set.of(AiQualityMode.BALANCED),
                         "LOAD_SESSION_SNAPSHOT", "ANALYZE_TURNS", "SYNTHESIZE_SESSION_FEEDBACK",
                         "VALIDATE_FEEDBACK", "PERSIST_FEEDBACK"));
@@ -249,6 +273,30 @@ public final class CanonicalWorkflowDefinitions {
                 true,
                 economyBalanced(),
                 steps);
+    }
+
+    private static WorkflowDefinition careerArtifactGeneration(
+            WorkflowType type, String version, String... keys) {
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(keys.length);
+        List<StepDefinition> steps = new ArrayList<>(keys.length);
+        for (int index = 0; index < keys.length; index++) {
+            String key = keys[index];
+            boolean providerStep = key.startsWith("PLAN_")
+                    || key.startsWith("DRAFT_")
+                    || key.startsWith("FACT_CHECK_");
+            steps.add(new StepDefinition(
+                    key,
+                    agentName(key),
+                    "career-artifact-input-v1",
+                    key.toLowerCase(java.util.Locale.ROOT).replace('_', '-') + "-v1",
+                    Set.of(),
+                    providerStep ? 1 : 0,
+                    1,
+                    providerStep ? ModelTier.BALANCED : ModelTier.LOW_COST,
+                    providerStep ? RETRYABLE : Set.of(),
+                    weights.get(index)));
+        }
+        return new WorkflowDefinition(type, version, true, economyBalanced(), steps);
     }
 
     private static WorkflowDefinition definition(

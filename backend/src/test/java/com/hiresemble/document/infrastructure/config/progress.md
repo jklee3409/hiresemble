@@ -4,6 +4,19 @@
 
 com.hiresemble.document.infrastructure.config package의 테스트 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-08] Session Summary (S3 attachment presign 검증)
+
+- What was done:
+  - 5분 presign, attachment disposition과 ASCII fallback·RFC 5987 한글 filename을 검증했다.
+- Key decisions:
+  - CR/LF와 path separator가 response header에 들어가지 않게 고정한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - `S3ObjectStorageAdapterTest` 통과.
+- Next steps:
+  - None.
+
 ## [2026-07-23] Session Summary (책임별 config package 분리)
 
 - What was done:

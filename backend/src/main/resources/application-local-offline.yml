@@ -9,6 +9,8 @@ spring:
 hiresemble:
   github:
     enabled: true
+  career-artifact:
+    enabled: true
   ai:
     provider: none
   search:

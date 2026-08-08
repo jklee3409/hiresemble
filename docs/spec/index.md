@@ -6,14 +6,14 @@
 
 ## 주요 파일 및 하위 디렉터리
 
-| 경로                             | 역할                                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다. |
-| [`api.md`](api.md)               | `/api/v1`, 현재 79 paths/107 operations와 `PLANNED` usage·failure·Backoffice·Career Artifact 계약을 구분한다.       |
-| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V27 GitHub schema와 planned artifact version을 포함한 관계·제약·보존 정책을 정의한다.  |
-| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice/GitHub/artifact route, layout, API 연결과 E2E를 정의한다.   |
-| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.          |
-| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                              |
+| 경로                             | 역할                                                                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다.                |
+| [`api.md`](api.md)               | `/api/v1`, Career Artifact feature 활성 88 paths/118 operations·비활성 79 paths/107 operations와 planned 운영 API를 구분한다.           |
+| [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V28 Career Artifact schema를 포함한 관계·제약·보존 정책을 정의한다.                                       |
+| [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice/artifact route, feature-gated GitHub 화면, layout, API 연결과 E2E를 정의한다. |
+| [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.                           |
+| [`progress.md`](progress.md)     | 명세 영역의 현재 작성 상태, 구현과의 차이, 검증 및 후속 작업을 추적한다.                                                                |
 
 현재 관리 대상 하위 디렉터리는 없다.
 
@@ -27,43 +27,43 @@
 
 ## GitHub·Career Artifact 확장
 
-2026-08-07 승인된 목표 설계 중 GitHub Gate 0~1은 구현됐고 Gate 2 GitHub Frontend와 Gate 3~4 Career Artifact는 `PLANNED`로 분리한다.
+2026-08-08 기준 GitHub Gate 0–2와 Career Artifact Backend Gate 3는 구현됐다. Gate 4 Career Artifact Frontend와 Gate 5 Private GitHub는 `PLANNED`로 분리한다.
 
-| 관점 | 활성 목표 계약 |
-| --- | --- |
-| 비즈니스 규칙·인수 조건 | [`functional.md`](functional.md) GH-001–004, ART-001–004, GH-AC/ART-AC |
-| HTTP·DTO·오류 | [`api.md`](api.md) 13.5장 |
-| table·제약·migration | [`db.md`](db.md) 13–15장 |
-| route·화면·E2E | [`page.md`](page.md) 5.9, 6.3–6.5, 시나리오 E |
-| gateway·workflow·renderer·검증 | [`tech_stack.md`](tech_stack.md) 4.5, 6–12장 |
-| 모듈 변경 지점·도입 gate | [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md) |
+| 관점                           | 활성 목표 계약                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| 비즈니스 규칙·인수 조건        | [`functional.md`](functional.md) GH-001–004, ART-001–004, GH-AC/ART-AC                     |
+| HTTP·DTO·오류                  | [`api.md`](api.md) 13.5장                                                                  |
+| table·제약·migration           | [`db.md`](db.md) 13–15장                                                                   |
+| route·화면·E2E                 | [`page.md`](page.md) 5.9, 6.3–6.5, 시나리오 E                                              |
+| gateway·workflow·renderer·검증 | [`tech_stack.md`](tech_stack.md) 4.5, 6–12장                                               |
+| 모듈 변경 지점·도입 gate       | [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md) |
 
-현재 기준선은 Flyway V27, canonical 경험 보관함과 GitHub provenance, 9개 WorkflowType과 OpenAPI 79 paths/107 operations다. Career Artifact migration 번호는 예약하지 않았으며 착수 시 latest 상태를 다시 확인한다.
+현재 기준선은 Flyway V28, canonical 경험 보관함과 GitHub provenance, 11개 WorkflowType과 Career Artifact feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations다.
 
 ## P0 승인 기준선과 결정 추적
 
 2026-07-18 승인된 P0 제품 계약은 이 디렉터리의 다섯 기준 명세가 공동으로 정의한다. [`../design/p0-contract-decision-proposal.md`](../design/p0-contract-decision-proposal.md)는 결정 과정과 승인 근거를 보존하는 기록이며 활성 계약이 아니다. 아래 표는 결정 기록의 식별자를 중복 정책 서술 없이 활성 명세에 연결한다.
 
-| 결정 | 활성 계약 위치                                                                                                                                                |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D-01 | [`functional.md`](functional.md) JOB-001–002, [`api.md`](api.md) 2·7장, [`db.md`](db.md) 2·5장, [`page.md`](page.md) 7장                                      |
-| D-02 | [`api.md`](api.md) 1.6·2장, [`db.md`](db.md) 2·10장, [`tech_stack.md`](tech_stack.md) 8–9장                                                                   |
-| D-03 | [`api.md`](api.md) 1·3–12장, [`page.md`](page.md) 1·4–13장                                                                                                    |
-| D-04 | [`api.md`](api.md) 1.1장, [`db.md`](db.md) 1장, [`tech_stack.md`](tech_stack.md) 7장                                                                          |
-| D-05 | [`functional.md`](functional.md) AUTH-004·DOC-004·CL-004, [`api.md`](api.md) 4·6·8장, [`db.md`](db.md) 4·6·11–12장                                            |
-| D-06 | [`api.md`](api.md) Document DTO·6장, [`db.md`](db.md) 4.1장, [`tech_stack.md`](tech_stack.md) 6.3장                                                           |
-| D-07 | [`api.md`](api.md) 1.5장, [`db.md`](db.md) 9.1장, [`tech_stack.md`](tech_stack.md) 9–10장                                                                     |
-| D-08 | [`functional.md`](functional.md) SYS-001–002, [`api.md`](api.md) 11장, [`db.md`](db.md) 9.2–9.3장, [`tech_stack.md`](tech_stack.md) 10장                      |
-| D-09 | [`functional.md`](functional.md) SYS-003, [`api.md`](api.md) Agent Run DTO·12장, [`db.md`](db.md) 10장, [`tech_stack.md`](tech_stack.md) 9장                  |
-| D-10 | [`functional.md`](functional.md) CL-001–006, [`api.md`](api.md) 3·8장, [`db.md`](db.md) 6장, [`page.md`](page.md) 8·11장                                      |
-| D-11 | [`functional.md`](functional.md) INT-001–004, [`api.md`](api.md) 9장, [`db.md`](db.md) 7장, [`page.md`](page.md) 9장                                          |
-| D-12 | [`functional.md`](functional.md) INT-005–006, [`api.md`](api.md) 10장, [`db.md`](db.md) 8장, [`page.md`](page.md) 10장, [`tech_stack.md`](tech_stack.md) 10장 |
-| D-13 | [`functional.md`](functional.md) AUTH-001–004·PROF-001, [`api.md`](api.md) 1·4장, [`db.md`](db.md) 3·11장, [`page.md`](page.md) 1·3·13–14장                   |
-| D-14 | [`functional.md`](functional.md) JOB-001–005, [`api.md`](api.md) 7장, [`db.md`](db.md) 5장, [`page.md`](page.md) 7장                                          |
-| D-15 | [`functional.md`](functional.md) DOC-002–003·SYS-002, [`api.md`](api.md) 6장, [`db.md`](db.md) 4·9장, [`tech_stack.md`](tech_stack.md) 8·10장                 |
-| D-16 | [`functional.md`](functional.md) CL-003·INT-001–004, [`db.md`](db.md) 4.3·10장, [`tech_stack.md`](tech_stack.md) 4.4·6.2·8–9장                                |
-| D-17 | [`api.md`](api.md) 4–12장, [`page.md`](page.md) 1·4·7·10–11·16장                                                                                              |
-| D-18 | [`functional.md`](functional.md) CL-007, [`api.md`](api.md) 8장, [`db.md`](db.md) 6.1장, [`page.md`](page.md) 8·11장                                          |
+| 결정 | 활성 계약 위치                                                                                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D-01 | [`functional.md`](functional.md) JOB-001–002, [`api.md`](api.md) 2·7장, [`db.md`](db.md) 2·5장, [`page.md`](page.md) 7장                                               |
+| D-02 | [`api.md`](api.md) 1.6·2장, [`db.md`](db.md) 2·10장, [`tech_stack.md`](tech_stack.md) 8–9장                                                                            |
+| D-03 | [`api.md`](api.md) 1·3–12장, [`page.md`](page.md) 1·4–13장                                                                                                             |
+| D-04 | [`api.md`](api.md) 1.1장, [`db.md`](db.md) 1장, [`tech_stack.md`](tech_stack.md) 7장                                                                                   |
+| D-05 | [`functional.md`](functional.md) AUTH-004·DOC-004·CL-004, [`api.md`](api.md) 4·6·8장, [`db.md`](db.md) 4·6·11–12장                                                     |
+| D-06 | [`api.md`](api.md) Document DTO·6장, [`db.md`](db.md) 4.1장, [`tech_stack.md`](tech_stack.md) 6.3장                                                                    |
+| D-07 | [`api.md`](api.md) 1.5장, [`db.md`](db.md) 9.1장, [`tech_stack.md`](tech_stack.md) 9–10장                                                                              |
+| D-08 | [`functional.md`](functional.md) SYS-001–002, [`api.md`](api.md) 11장, [`db.md`](db.md) 9.2–9.3장, [`tech_stack.md`](tech_stack.md) 10장                               |
+| D-09 | [`functional.md`](functional.md) SYS-003, [`api.md`](api.md) Agent Run DTO·12장, [`db.md`](db.md) 10장, [`tech_stack.md`](tech_stack.md) 9장                           |
+| D-10 | [`functional.md`](functional.md) CL-001–006, [`api.md`](api.md) 3·8장, [`db.md`](db.md) 6장, [`page.md`](page.md) 8·11장                                               |
+| D-11 | [`functional.md`](functional.md) INT-001–004, [`api.md`](api.md) 9장, [`db.md`](db.md) 7장, [`page.md`](page.md) 9장                                                   |
+| D-12 | [`functional.md`](functional.md) INT-005–006, [`api.md`](api.md) 10장, [`db.md`](db.md) 8장, [`page.md`](page.md) 10장, [`tech_stack.md`](tech_stack.md) 10장          |
+| D-13 | [`functional.md`](functional.md) AUTH-001–004·PROF-001, [`api.md`](api.md) 1·4장, [`db.md`](db.md) 3·11장, [`page.md`](page.md) 1·3·13–14장                            |
+| D-14 | [`functional.md`](functional.md) JOB-001–005, [`api.md`](api.md) 7장, [`db.md`](db.md) 5장, [`page.md`](page.md) 7장                                                   |
+| D-15 | [`functional.md`](functional.md) DOC-002–003·SYS-002, [`api.md`](api.md) 6장, [`db.md`](db.md) 4·9장, [`tech_stack.md`](tech_stack.md) 8·10장                          |
+| D-16 | [`functional.md`](functional.md) CL-003·INT-001–004, [`db.md`](db.md) 4.3·10장, [`tech_stack.md`](tech_stack.md) 4.4·6.2·8–9장                                         |
+| D-17 | [`api.md`](api.md) 4–12장, [`page.md`](page.md) 1·4·7·10–11·16장                                                                                                       |
+| D-18 | [`functional.md`](functional.md) CL-007, [`api.md`](api.md) 8장, [`db.md`](db.md) 6.1장, [`page.md`](page.md) 8·11장                                                   |
 | D-19 | [`functional.md`](functional.md) DOC-003–004, [`api.md`](api.md) 6장, [`db.md`](db.md) 4.4–4.7장, [`page.md`](page.md) 5.8·6장, [`tech_stack.md`](tech_stack.md) 6.2장 |
 
 Gate 항목은 다음 활성 계약 위치에서 닫힌다. 표의 A-1–A-6, B-1–B-5, C-1–C-5는 결정 기록의 Gate A–C 행 순서를 보존한 추적 식별자다.

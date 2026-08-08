@@ -16,6 +16,11 @@ public interface ObjectStoragePort {
 
     PresignedObject presignGet(String storageKey, Duration ttl);
 
+    /** Additive attachment overload; existing adapters and fakes retain source compatibility. */
+    default PresignedObject presignGet(String storageKey, Duration ttl, String filename) {
+        return presignGet(storageKey, ttl);
+    }
+
     record ObjectMetadata(long size, String contentType, String checksumSha256) {}
 
     record PresignedObject(URI uri, Instant expiresAt) {}

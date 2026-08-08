@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview owner/version/hash snapshot이 구현됐다.
+P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview·Career Artifact owner/version/hash snapshot이 구현됐다.
+
+## [2026-08-08] Session Summary (Career Artifact bounded context)
+
+- What was done:
+  - 선택한 active VERIFIED experience/evidence version과 allowlist profile section을 시작 시 재검증해 bounded context로 구성했다.
+- Key decisions:
+  - GitHub raw source, 연락처, 이름과 credential number는 LLM context에서 제외한다.
+- Issues encountered:
+  - 빈 profile section은 hard failure가 아니라 warning으로 유지했다.
+- Validation:
+  - source type·owner/version, raw source·render profile 부재와 truncation 계약을 검증했다.
+- Next steps:
+  - None.
 
 ## [2026-08-06] Session Summary (자기소개서 memo·model snapshot)
 

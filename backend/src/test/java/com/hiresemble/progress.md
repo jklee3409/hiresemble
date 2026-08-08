@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1 인증·공통부터 P8 Interview·Dashboard, Phase 1 GitHub Backend·migration·actual E2E 테스트를 기능별로 구성한다.
+P1 인증·공통부터 P8 Interview·Dashboard, GitHub와 Career Artifact Backend·migration·actual E2E 테스트를 기능별로 구성한다.
+
+## [2026-08-08] Session Summary (Career Artifact와 전체 기준선 회귀)
+
+- What was done:
+  - Career Artifact migration·API·workflow·renderer/storage test와 OpenAPI feature-off context를 추가했다.
+- Key decisions:
+  - 실제 network/provider 대신 PostgreSQL·MinIO·Fake를 사용한다.
+- Issues encountered:
+  - 기존 가격·시각·Document 보상 fixture 13건을 현행 계약에 맞게 안정화했다.
+- Validation:
+  - 관련 focused suite를 통과했고 최종 전체 `check` 결과는 상위 Backend 진행 기록에 통합한다.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (GitHub Source test package 추가)
 

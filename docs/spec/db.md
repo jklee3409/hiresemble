@@ -1,14 +1,14 @@
 # DB 명세서
 
-- 문서 버전: 1.4 (GitHub Source·Career Artifact 목표 계약)
-- 기준일: 2026-08-07
+- 문서 버전: 1.5 (GitHub Source·Career Artifact Backend 계약)
+- 기준일: 2026-08-08
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
 - 시간: `timestamptz` UTC
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 GitHub Source ingestion을 추가한 V27이며, 미래 계약은 별도로 `PLANNED`를 표시한다. 적용된 V26은 변경하지 않았다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 Career Artifact를 추가한 V28이며, 미래 계약은 별도로 `PLANNED`를 표시한다. 적용된 V1~V27은 변경하지 않았다.
 
 ## 1. 공통 무결성·소유권
 
@@ -55,17 +55,16 @@
 | `interview_questions.question_type`                  | `COVER_LETTER`, `RESUME`, `PORTFOLIO`, `TECHNICAL`, `PROJECT_DEEP_DIVE`, `BEHAVIORAL`, `COMPANY_MOTIVATION`, `FOLLOW_UP`                                                                                |
 | 공개 품질                                            | `ECONOMY`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                   |
 | 내부 tier                                            | `LOW_COST`, `BALANCED`, `HIGH_QUALITY`                                                                                                                                                                  |
-| `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK`, `GITHUB_INGESTION` |
-| `agent_runs.workflow_type` (`PLANNED`)               | 기존 값에 `RESUME_GENERATION`, `PORTFOLIO_GENERATION` 추가                                                                                                                                            |
+| `agent_runs.workflow_type`                           | `DOCUMENT_INGESTION`, `JOB_POSTING_EXTRACTION`, `JOB_ANALYSIS`, `COVER_LETTER_GENERATION`, `COVER_LETTER_VERIFICATION`, `INTERVIEW_PREPARATION`, `INTERVIEW_ANSWER_FEEDBACK`, `MOCK_INTERVIEW_FEEDBACK`, `GITHUB_INGESTION`, `RESUME_GENERATION`, `PORTFOLIO_GENERATION` |
 | `documents.document_type`                            | `RESUME`, `PORTFOLIO`, `CAREER_DESCRIPTION`, `CERTIFICATE`, `TRANSCRIPT`, `OTHER`                                                                                                                       |
 | `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `EXPERIENCE`, `MANUAL`, `GITHUB_REPOSITORY`                                                            |
 | `github_sources.source_kind`                         | `ACCOUNT`, `REPOSITORY`                                                                                                                                                                                  |
 | `github_sources.account_type`                        | `USER`, `ORGANIZATION`; repository source에서는 `NULL`                                                                                                                                                   |
 | `github_sources.source_status`                       | `DISCOVERING`, `WAITING_USER`, `QUEUED`, `RUNNING`, `READY`, `PARTIAL`, `FAILED`                                                                                                                        |
 | `github_evidence_unit_links.relation_kind`           | `PRIMARY`, `SUPPORTING`                                                                                                                                                                                  |
-| `career_artifacts.artifact_type` (`PLANNED`)         | `RESUME`, `PORTFOLIO`                                                                                                                                                                                    |
-| `career_artifacts.lifecycle_status` (`PLANNED`)      | `ACTIVE`, `ARCHIVED`                                                                                                                                                                                     |
-| `career_artifact_evidence_links.usage_type` (`PLANNED`) | `PRIMARY_EXPERIENCE`, `STRENGTH`, `SUPPORTING_FACT`                                                                                                                                                   |
+| `career_artifacts.artifact_type`                     | `RESUME`, `PORTFOLIO`                                                                                                                                                                                    |
+| `career_artifacts.lifecycle_status`                  | `ACTIVE`, `ARCHIVED`                                                                                                                                                                                     |
+| `career_artifact_evidence_links.usage_type`          | `PRIMARY_EXPERIENCE`, `STRENGTH`, `SUPPORTING_FACT`                                                                                                                                                      |
 | `job_postings.deadline_source`                       | `USER_ENTERED`, `AUTO_EXTRACTED`, `UNKNOWN`                                                                                                                                                             |
 | `job_postings.closed_reason`                         | `DEADLINE_PASSED`, `USER_CLOSED`, `URL_INACTIVE`                                                                                                                                                        |
 | `job_postings.description_source`                    | `AUTO_EXTRACTED`, `USER_ENTERED`                                                                                                                                                                        |
@@ -109,7 +108,7 @@
 - Agent Run: `QUEUED→RUNNING|CANCELLED`, `RUNNING→WAITING_USER|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`, `WAITING_USER→QUEUED|CANCELLED`. terminal row는 다시 열지 않는다.
 - Agent Step: `PENDING→RUNNING|SKIPPED|REUSED|CANCELLED`, `RUNNING→WAITING_USER|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`, `WAITING_USER→PENDING|CANCELLED`; retry는 새 attempt다.
 - GitHub source: 생성 직후 `DISCOVERING`; repository URL은 `DISCOVERING→QUEUED→RUNNING→READY|PARTIAL|FAILED`, account URL은 `DISCOVERING→WAITING_USER→QUEUED→RUNNING→READY|PARTIAL|FAILED`다. refresh는 같은 aggregate의 `source_revision`을 올리고 `READY|PARTIAL|FAILED→QUEUED`로 시작하며 삭제 row는 전이 대상에서 제외한다.
-- Career Artifact (`PLANNED`): aggregate lifecycle은 `ACTIVE↔ARCHIVED`이고 generation 상태는 latest linked Agent Run에서 `NOT_STARTED|QUEUED|RUNNING|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`로 projection한다. 실패·취소·중단은 이미 성공한 `current_version_id`를 변경하지 않는다.
+- Career Artifact: aggregate lifecycle은 `ACTIVE↔ARCHIVED`이고 generation 상태는 latest linked Agent Run에서 `NOT_STARTED|QUEUED|RUNNING|SUCCEEDED|FAILED|CANCELLED|INTERRUPTED`로 projection한다. 실패·취소·중단은 이미 성공한 `current_version_id`를 변경하지 않는다.
 
 ## 3. 사용자·프로필
 
@@ -565,7 +564,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 - source soft delete, GitHub raw evidence tombstone/삭제, orphan canonical 정리는 한 DB transaction이고 object 삭제는 outbox worker가 수행한다.
 - 승인된 canonical item은 source 삭제 뒤에도 유지한다. 참조된 GitHub raw evidence는 `SOURCE_DELETED` 최소 tombstone, 미참조 raw evidence와 다른 active source가 없는 미승인 orphan item은 제거한다.
 
-## 14. Career Artifact (`PLANNED`, phase 미배정)
+## 14. Career Artifact (`IMPLEMENTED_BACKEND`, V28)
 
 ### 14.1 `career_artifacts`
 
@@ -580,11 +579,11 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 `id,user_id,career_artifact_id,version_no integer,content_schema_version varchar(80),content_json jsonb,template_key varchar(80),template_version varchar(40),model_id varchar(64),agent_run_id uuid,render_profile_snapshot jsonb,storage_key varchar(500) UNIQUE,mime_type varchar(100),size_bytes bigint,checksum_sha256 char(64),created_at`.
 
-- immutable row이며 `UNIQUE(user_id,career_artifact_id,version_no)`, `UNIQUE(user_id,id)`와 owner 복합 FK를 둔다. `version_no>=1`, `size_bytes>0`이다.
-- artifact type과 MIME은 RESUME/DOCX, PORTFOLIO/PPTX 조합만 허용하고 storage key extension도 같은 조합인지 application과 integration test에서 검증한다.
+- immutable row이며 `UNIQUE(user_id,career_artifact_id,version_no)`, `UNIQUE(user_id,id)`와 owner 복합 FK를 둔다. `version_no>=1`, `size_bytes>0`이다. 단, parent artifact가 soft delete된 뒤 개인정보 삭제를 위해 `render_profile_snapshot`만 `{}`로 바꾸는 단방향 privacy-erasure update를 허용하고 다른 column 변경은 같은 trigger가 계속 거부한다.
+- artifact type과 MIME은 RESUME/DOCX, PORTFOLIO/PPTX 조합만 허용한다. storage key는 extension 검사에 그치지 않고 row의 `user_id/career_artifact_id/id`로 계산한 고정 경로와 정확히 같아야 한다.
 - strict structured output, renderer 완료, OOXML 재개방·관계·overflow 검증, private object upload가 모두 성공한 뒤에만 row를 생성한다.
 - `content_json`은 안전한 HTML preview projection의 source이며 schema version으로 검증한다. prompt/provider response, OOXML byte와 raw evidence 원문은 넣지 않는다.
-- `render_profile_snapshot`은 최종 파일에 실제 삽입한 최소 display/contact/link와 포함 여부만 보존한다. LLM input, log, analytics에 복제하지 않고 artifact/account 삭제 시 함께 purge한다.
+- `render_profile_snapshot`은 최종 파일에 실제 삽입한 최소 display/contact/link와 포함 여부만 보존한다. LLM input, log, analytics에 복제하지 않고 artifact soft delete 시 즉시 `{}`로 scrub하며 account deletion terminal 정리에서 row를 purge한다.
 
 ### 14.3 version provenance
 
@@ -595,25 +594,34 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 - snapshot은 생성 당시 fact check와 재현을 위한 immutable provenance다. GitHub raw source unit이나 문서 chunk를 직접 연결하지 않는다.
 - artifact version 저장, provenance link 삽입과 `career_artifacts.current_version_id/latest_agent_run_id/version` 갱신은 한 transaction이다.
 
-### 14.4 Artifact Object 삭제
+### 14.4 private generation request
 
-`career_artifact_object_deletion_outbox`: `id,user_id,career_artifact_id uuid NULL,artifact_version_id uuid NULL,storage_key varchar(500),reason varchar(50),status,attempt_count,next_attempt_at,claim_token/lease_expires_at NULL,last_error_code varchar(100) NULL,created_at,completed_at NULL`.
+`career_artifact_generation_requests`: `id,user_id,career_artifact_id,agent_run_id,target_version_id,render_profile_snapshot jsonb,render_profile_hash char(64),created_at,consumed_at NULL`.
 
-- status·lease와 active storage key/reason unique는 13.5와 같다. DB apply 전 orphan upload에서는 artifact/version ID가 null일 수 있다.
+- `(user_id,id)`, `(user_id,agent_run_id)`, `(user_id,target_version_id)`를 각각 unique로 두고 artifact와 Agent Run에 owner composite FK를 둔다. Agent Run 하나에는 정확히 한 generation request만 존재한다.
+- `target_version_id`는 Run 접수 시 미리 할당하며 UUID 기반 storage key를 결정론적으로 계산한다. raw render profile은 이 private row와 성공 version의 `render_profile_snapshot` 외에는 복제하지 않고 Run input에는 `renderProfileHash`만 저장한다.
+- 성공 apply transaction은 version으로 snapshot을 복사하고 request를 consumed 처리한다. retry successor는 같은 model/template/evidence identity와 render profile을 transaction 안에서 복사하되 새 `target_version_id`를 할당한다.
+- public DTO, Agent Run DTO, checkpoint, log와 metric에 row나 연락처를 노출하지 않는다. artifact soft delete 또는 성공 version이 없는 Run history 삭제 시 snapshot을 즉시 `{}`로 scrub하고 account-deletion 후속 정리에서 row를 purge한다.
+
+### 14.5 Artifact Object 삭제
+
+`career_artifact_object_deletion_outbox`: `id,user_id,career_artifact_id uuid,artifact_version_id uuid NULL,storage_key varchar(500),reason varchar(50),status,attempt_count,next_attempt_at,claim_token/lease_expires_at NULL,last_error_code varchar(100) NULL,created_at,completed_at NULL`.
+
+- status·lease와 active storage key/reason unique는 13.5와 같다. `career_artifact_id`는 두 reason 모두 필수이고 `ARTIFACT_DELETE`만 version ID가 필수이며 `ORPHAN_UPLOAD_COMPENSATION`은 version ID가 null이다. key의 user/artifact prefix도 row identity와 정확히 일치해야 한다.
 - artifact delete는 즉시 owner API에서 404가 되고 모든 version object를 outbox에 넣는다. 과거 성공 version은 aggregate가 active인 동안 current가 아니어도 다운로드 가능하다.
-- account deletion task는 GitHub snapshot outbox와 artifact outbox가 terminal 성공한 뒤 owner row를 purge한다.
+- 현재 미구현인 account deletion task는 후속 의존성이다. 향후 AUTH-004 구현은 GitHub snapshot outbox와 artifact outbox가 terminal 성공한 뒤 owner row와 private generation request를 purge해야 한다.
 
-### 14.5 Agent Run·멱등성 확장
+### 14.6 Agent Run·멱등성 확장
 
-- V27은 `agent_runs.workflow_type` CHECK에 `GITHUB_INGESTION`을 additive하게 추가했다. `RESUME_GENERATION|PORTFOLIO_GENERATION`은 planned다.
-- V27은 `agent_run_resource_links`에 `github_source_id uuid NULL`, owner 복합 FK, exactly-one resource column CHECK와 `GITHUB_SOURCE` parity를 추가했다. `career_artifact_id|CAREER_ARTIFACT`는 planned다.
-- GitHub retry successor는 같은 source에 정확히 하나 연결한다. Career Artifact retry 계약은 planned다.
-- GitHub source 생성·선택·refresh와 artifact 생성·재생성은 기존 `idempotency_records`를 사용한다. request hash에는 canonical URL 또는 선택 ID/version/model/template/evidence version을 포함하고 renderer-only 연락처 원문은 넣지 않는다.
+- V27은 `agent_runs.workflow_type` CHECK에 `GITHUB_INGESTION`을 추가했고 V28은 `RESUME_GENERATION|PORTFOLIO_GENERATION`을 additive하게 추가했다.
+- V27은 `agent_run_resource_links`에 `github_source_id|GITHUB_SOURCE`를, V28은 `career_artifact_id|CAREER_ARTIFACT`와 exactly-one·owner·workflow/artifact type parity를 추가했다.
+- GitHub retry successor는 같은 source에, Career Artifact retry successor는 같은 active artifact에 정확히 하나 연결하고 새 deterministic target version ID를 사용한다.
+- GitHub source 생성·선택·refresh와 artifact 생성·재생성은 기존 `idempotency_records`를 사용한다. Career Artifact archive, unarchive, delete는 idempotency row를 만들지 않고 optimistic version만 사용한다. artifact request hash에는 type/title, 정규화한 선택 experience ID와 experience/evidence version, exact model, template key/version, profile section, artifact version과 render profile digest를 포함하고 renderer-only 연락처 원문은 넣지 않는다.
 - GitHub snapshot fetch와 artifact render/upload는 transaction 밖에서 수행한다. apply transaction은 owner, source/artifact revision, active policy/model, evidence version, input/output hash를 재검증한다.
 
 ## 15. 향후 migration 책임
 
-현재 latest implemented migration은 GitHub Source ingestion을 추가한 V27이다. 적용된 V1~V27은 수정하지 않는다. 아래 `PLANNED` 번호는 예약값이 아니며 실제 착수 직전 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 Career Artifact를 추가한 V28이다. 적용된 V1~V28은 수정하지 않는다. 아래 `PLANNED` 번호는 예약값이 아니며 실제 착수 직전 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -637,7 +645,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | additional implemented V25   | 취업 준비 가이드 본문 전면 개편                                                   |
 | additional implemented V26   | canonical 경험·근거 link·embedding·문서 candidate apply                          |
 | additional implemented V27   | GitHub source/repository/snapshot/unit/evidence/outbox와 typed Run link           |
-| Career Artifact (`PLANNED`)   | 착수 시 next available; artifact/version/provenance/outbox/run link               |
+| additional implemented V28   | Career Artifact/version/provenance/private request/outbox와 typed Run link         |
 | P8.6 (`PLANNED`)              | feature policy/assignment/override/period/reservation/event; 착수 시 next available |
 | P8.7 (`PLANNED`)              | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                          | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |

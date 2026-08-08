@@ -17,11 +17,12 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 - `CoverLetterVerificationPromptDefinitions`: durable verification v1 Run용 legacy prompt key와 record schema
 - `CoverLetterVerificationV2PromptDefinitions`: explicit verification v2의 fact·writing-quality 단계별 prompt identity와 strict record schema
 - `CoverLetterVerificationV3PromptDefinitions`: durable verification v3와 active v4의 relevance selection·bounded sibling·positive exact claim·ko-KR issue/suggestion prompt identity와 strict record schema
+- `CareerArtifactPromptDefinitions`: Resume·Portfolio PLAN/DRAFT/FACT_CHECK의 versioned system policy와 strict record schema
 - [`progress.md`](progress.md): registry 상태
 
 ## 구성 요소 역할
 
-workflow type+version+step key로 정확한 prompt contract를 찾는다. Job Analysis와 Cover Letter v2~v4는 단계별 prompt version을 사용해 관련 없는 checkpoint를 함께 무효화하지 않는다. 자기소개서 v4 memo는 사실 근거가 아닌 사용자 작성 방향으로 격리한다. Chat structured output definition은 중앙 strict schema registry가 자동 열거한다.
+workflow type+version+step key로 정확한 prompt contract를 찾는다. Job Analysis와 Cover Letter v2~v4는 단계별 prompt version을 사용해 관련 없는 checkpoint를 함께 무효화하지 않는다. 자기소개서 v4 memo는 사실 근거가 아닌 사용자 작성 방향으로 격리한다. Career Artifact는 승인 근거 밖 창작과 모델 소유 layout을 금지한다. Chat structured output definition은 중앙 strict schema registry가 자동 열거한다.
 
 ## 다른 디렉터리와의 의존 관계
 

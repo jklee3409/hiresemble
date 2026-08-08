@@ -4,6 +4,19 @@
 
 com.hiresemble.agentrun.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-08] Session Summary (Agent Run history deletion contributor)
+
+- What was done:
+  - generic history 삭제가 Career Artifact의 empty shell·latest run·orphan Object를 안전하게 보상할 수 있는 contributor 경계를 추가했다.
+- Key decisions:
+  - 기존 resource 보상은 변경하지 않고 optional contributor 목록으로 additive하게 확장했다.
+- Issues encountered:
+  - None.
+- Validation:
+  - Career Artifact history delete와 기존 Agent Run 회귀가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (workflow-specific retry command 경계)
 
 - What was done:

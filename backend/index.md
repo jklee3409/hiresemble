@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 인증부터 P8 면접 기능, P8.5 local OpenAI/Tavily Provider 연결과 Phase 1 GitHub Source Backend까지 도메인·계층·책임별 package로 구현되어 있다.
+`backend/`는 Hiresemble의 REST API, 인증·인가, 도메인 처리, AI 워크플로와 영속성 연동을 담당할 Spring Boot 애플리케이션 모듈이다. 현재 P1 인증부터 P8 면접 기능, P8.5 local OpenAI/Tavily Provider 연결, GitHub Source와 Career Artifact Gate 3 Backend까지 도메인·계층·책임별 package로 구현되어 있다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -16,8 +16,8 @@
 
 ## 구성 요소 역할
 
-- [`src/main/java/`](src/main/java/)는 실행 진입점과 `common`·`auth`·`profile`·`agentrun`·`ai`·`document`·`githubsource`·`job`·`coverletter`·`research`·`interview` 운영 코드를 소유한다.
-- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V27 Flyway migration을 소유한다. V27은 GitHub source·snapshot·provenance·outbox와 typed Run link를 추가한다.
+- [`src/main/java/`](src/main/java/)는 실행 진입점과 `common`·`auth`·`profile`·`agentrun`·`ai`·`document`·`githubsource`·`careerartifact`·`job`·`coverletter`·`research`·`interview` 운영 코드를 소유한다.
+- [`src/main/resources/`](src/main/resources/)는 Spring 설정과 V1~V28 Flyway migration을 소유한다. V28은 Career Artifact·immutable version·private request·outbox와 typed Run link를 추가한다.
 - [`src/test/`](src/test/)는 PostgreSQL·MinIO Testcontainers와 Fake/WireMock 기반 인증·프로필·Agent Run·AI runtime·Document·GitHub Source·Job·Cover Letter·Interview·migration·E2E 검증을 소유한다.
 - `build/`와 `.gradle/`은 재생성 가능한 빌드·캐시 영역이므로 소스나 추적 문서를 두지 않는다.
 
@@ -25,7 +25,7 @@
 
 - API·DB 계약은 [`../docs/spec/`](../docs/spec/)을 기준으로 한다.
 - 로컬 PostgreSQL/pgvector와 Object Storage는 루트 [`../compose.yaml`](../compose.yaml)에서 제공한다.
-- 프론트엔드는 GitHub Source를 포함한 107개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다. 현재 SPA는 GitHub 7개 operation을 아직 소비하지 않는다.
+- 프론트엔드는 feature off 107개·feature on 118개 operation의 직접 DTO 및 Session Cookie/CSRF 정책에 의존한다. SPA는 GitHub 7개 operation을 소비하고 Career Artifact는 Gate 4 전까지 Agent Run enum/label만 호환한다.
 - CI는 `.\gradlew.bat check`에 대응하는 백엔드 검증을 실행한다.
 
 ## 변경 시 주의사항

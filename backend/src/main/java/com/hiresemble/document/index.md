@@ -17,6 +17,7 @@
 - parse 상태와 evidence extraction 상태를 독립적으로 유지한다.
 - 원본 preview와 AI 전송용 masked content를 분리하고 workflow에는 port만 공개한다.
 - 삭제 transaction은 API 즉시 404와 outbox enqueue를 보장하며 Object 삭제는 worker가 수행한다.
+- 공용 Object Storage port는 기존 presign 계약과 함께 RFC 5987 attachment filename overload를 제공하며 Career Artifact가 이를 소비한다.
 - 공고 분석 검색은 active embedding generation과 사용자 범위를 적용하고, 후보 청크를 곧바로 공개 근거나 긍정 점수로 승격하지 않는다.
 - 신규 ingestion v2는 추출 후보를 별도 embedding한 뒤 Profile의 exact·semantic 경험 판정 경계에 전달하고 legacy v1 Run 재개를 보존한다.
 

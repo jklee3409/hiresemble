@@ -5,6 +5,7 @@ import com.hiresemble.document.application.port.ObjectStorageException;
 import com.hiresemble.document.application.port.ObjectStoragePort;
 import java.time.Duration;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -92,11 +93,24 @@ public final class S3ObjectStorageAdapter implements ObjectStoragePort {
 
     @Override
     public PresignedObject presignGet(String storageKey, Duration ttl) {
+        return presign(storageKey, ttl, null);
+    }
+
+    @Override
+    public PresignedObject presignGet(String storageKey, Duration ttl, String filename) {
+        return presign(storageKey, ttl, attachmentDisposition(filename));
+    }
+
+    private PresignedObject presign(
+            String storageKey, Duration ttl, String contentDisposition) {
         try {
-            GetObjectRequest request = GetObjectRequest.builder()
+            GetObjectRequest.Builder builder = GetObjectRequest.builder()
                     .bucket(properties.getBucket())
-                    .key(storageKey)
-                    .build();
+                    .key(storageKey);
+            if (contentDisposition != null) {
+                builder.responseContentDisposition(contentDisposition);
+            }
+            GetObjectRequest request = builder.build();
             PresignedGetObjectRequest presigned = presigner.presignGetObject(
                     GetObjectPresignRequest.builder()
                             .signatureDuration(ttl)
@@ -106,5 +120,31 @@ public final class S3ObjectStorageAdapter implements ObjectStoragePort {
         } catch (RuntimeException | java.net.URISyntaxException exception) {
             throw new ObjectStorageException(exception);
         }
+    }
+
+    static String attachmentDisposition(String filename) {
+        if (filename == null || filename.isBlank()) return null;
+        String safe = filename.replace('\r', ' ')
+                .replace('\n', ' ')
+                .replace('/', '-')
+                .replace('\\', '-')
+                .strip();
+        if (safe.isEmpty()) safe = "career-artifact";
+        if (safe.length() > 255) safe = safe.substring(0, 255);
+        String ascii = safe.replaceAll("[^A-Za-z0-9._ -]", "_")
+                .replace("\"", "_");
+        StringBuilder encoded = new StringBuilder();
+        for (byte value : safe.getBytes(StandardCharsets.UTF_8)) {
+            int unsigned = value & 0xff;
+            if ((unsigned >= 'A' && unsigned <= 'Z')
+                    || (unsigned >= 'a' && unsigned <= 'z')
+                    || (unsigned >= '0' && unsigned <= '9')
+                    || unsigned == '-' || unsigned == '.' || unsigned == '_') {
+                encoded.append((char) unsigned);
+            } else {
+                encoded.append('%').append(String.format("%02X", unsigned));
+            }
+        }
+        return "attachment; filename=\"" + ascii + "\"; filename*=UTF-8''" + encoded;
     }
 }

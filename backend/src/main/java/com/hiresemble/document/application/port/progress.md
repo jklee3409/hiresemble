@@ -4,6 +4,19 @@
 
 com.hiresemble.document.application.port package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-08-08] Session Summary (Attachment presign port)
+
+- What was done:
+  - 기존 presign signature를 보존하고 download filename을 받는 additive overload를 추가했다.
+- Key decisions:
+  - default 구현으로 기존 Fake와 adapter 호환성을 유지한다.
+- Issues encountered:
+  - None.
+- Validation:
+  - compile·Document·S3 adapter 회귀 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-07] Session Summary (embedding policy 전달 경계)
 
 - What was done:

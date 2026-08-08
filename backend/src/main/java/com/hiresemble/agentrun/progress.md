@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P8 typed resource 연결이 구현됐으며 deleted owner visibility와 domain 결과 보존을 유지한다.
+P3 Agent Run·Step, 비용, DB worker, retry·cancel과 SSE 기반 위에 P4~P8, GitHub와 Career Artifact typed resource 연결이 구현됐으며 deleted owner visibility와 domain 결과 보존을 유지한다.
+
+## [2026-08-08] Session Summary (CAREER_ARTIFACT Agent Run 연결)
+
+- What was done:
+  - 두 generation workflow, typed link·owner resolver, retry request 복사, latest run 재연결과 history 삭제 보상을 연결했다.
+- Key decisions:
+  - retry는 같은 model/template/evidence/profile digest를 유지하고 새 target version ID만 할당한다.
+- Issues encountered:
+  - 최초 실패 shell 삭제와 기존 current version이 있는 재생성 실패 보상을 분리해야 했다.
+- Validation:
+  - list/detail/SSE/cancel/retry·delete compensation과 기존 workflow 회귀가 통과했다.
+- Next steps:
+  - None.
 
 ## [2026-08-07] Session Summary (GITHUB_SOURCE Agent Run 연결)
 

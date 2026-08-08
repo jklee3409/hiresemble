@@ -2,7 +2,20 @@
 
 ## Overview
 
-P3 Agent Run domain·PostgreSQL·API·SSE와 P4~P7 typed resource 통합 검증이 구현됐다.
+P3 Agent Run domain·PostgreSQL·API·SSE와 P4~P8·GitHub·Career Artifact typed resource 통합 검증이 구현됐다.
+
+## [2026-08-08] Session Summary (Career Artifact Agent Run 회귀)
+
+- What was done:
+  - typed resource, retry private request 복사·새 target ID, cancel/interruption와 history delete compensation을 검증했다.
+- Key decisions:
+  - 공유 가격 fixture는 현재 catalog와 겹치지 않는 닫힌 과거 구간을 사용한다.
+- Issues encountered:
+  - open-ended fake 가격 row가 이후 통합 test context를 오염시켜 기존 provider/job 기대를 깨뜨렸다.
+- Validation:
+  - Career Artifact 집중 test와 기존 workflow 회귀 통과.
+- Next steps:
+  - None.
 
 ## [2026-08-03] Session Summary (프로필 eligibility 기반 재시도 fixture 정합성)
 

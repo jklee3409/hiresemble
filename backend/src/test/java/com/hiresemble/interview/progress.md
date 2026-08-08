@@ -4,6 +4,19 @@
 
 P8 migration·API·DB 불변식 통합 검증이 구현되어 있다.
 
+## [2026-08-08] Session Summary (Interview timestamp fixture 안정화)
+
+- What was done:
+  - research completion 시각을 DB의 started/created 시각 이상으로 갱신해 timestamp CHECK와 application clock 오차를 제거했다.
+- Key decisions:
+  - 운영 동작은 바꾸지 않고 test fixture SQL만 결정적으로 유지한다.
+- Issues encountered:
+  - 전체 회귀에서 약 40ms DB/application clock 차이로 한 건이 간헐 실패했다.
+- Validation:
+  - 해당 Interview 통합 test focused 재실행 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-01] Session Summary (terminal timestamp fixture 안정화)
 
 - What was done:

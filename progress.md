@@ -11,8 +11,47 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 GitHub Source 7개 operation을 포함해 총 107 operations·79 paths다.
-- Phase 1 Gate 0~1 GitHub Backend는 V27·`GITHUB_INGESTION`·canonical GitHub provenance까지 구현됐다. `/profile/github` Frontend와 Career Artifact는 `PLANNED`다.
+- 공개 Spring/OpenAPI는 Career Artifact feature가 꺼지면 GitHub Source를 포함해 79 paths/107 operations이고, 켜지면 88 paths/118 operations다.
+- GitHub Gate 0–2와 Career Artifact Backend Gate 3는 V28·11개 WorkflowType 기준으로 완료됐다. Career Artifact Frontend Gate 4와 Private GitHub Gate 5는 `PLANNED`다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 3 Backend)
+
+- What was done:
+  - V28에 artifact·immutable version·canonical provenance·private generation request·전용 Object 삭제 outbox와 `CAREER_ARTIFACT` Agent Run parity를 추가했다.
+  - 조건부 11-operation API, exact model catalog, Resume/Portfolio 고정 8단계 workflow, strict fact check, POI DOCX/PPTX renderer, 5분 attachment download와 retry·cancel·history compensation을 구현했다.
+  - 기존 Agent Run SPA가 두 WorkflowType과 16개 step을 파싱·표시하도록 최소 호환성만 추가하고 Gate 4 page·wizard·preview는 만들지 않았다.
+- Key decisions:
+  - renderer-only 원문은 private request와 성공 version에만 저장하고 Run input에는 digest만 둔다. soft delete 시 snapshot을 즉시 scrub하며 PERSIST upload와 DB apply는 checkpoint completion transaction 경계로 분리한다.
+  - production/default feature는 꺼 두고 local·offline·test만 켠다. 비활성 OpenAPI 79/107을 유지하고 활성일 때만 88/118로 확장한다.
+- Issues encountered:
+  - 감사 중 cancel transaction의 orphan cleanup self-deadlock, predecessor/successor 일괄 삭제 시 빈 shell 보존, apply rollback Object 잔존 가능성을 발견해 after-commit cleanup·순차 compensation·transaction synchronization으로 보정했다.
+  - Apache POI가 생성하는 표준 `/docProps/thumbnail.jpeg`는 PPTX 문서 속성으로 좁게 허용하고 슬라이드 media·임의 image·macro·external relationship 차단은 유지했다.
+  - 첫 전체 Backend 검증의 오래된 Document/price/Job fixture 12건과 Interview clock 경계 1건을 안정화했으며 production 동작 계약은 바꾸지 않았다.
+- Validation:
+  - `backend/.\gradlew.bat check` 성공. fresh V1→V28, populated V27→V28, API/workflow/renderer/storage/outbox/Agent Run 회귀가 모두 통과했다.
+  - `frontend/corepack pnpm check` 성공: ESLint, Prettier, vue-tsc, Vitest 80 files/373 tests, production build.
+  - GitHub focused Chromium 1/1 통과(8.3s), `docker compose config --quiet` 성공. 실제 OpenAI·GitHub·외부 S3 호출은 0회다.
+- Next steps:
+  - Gate 4에서 현재 API를 소비하는 Career Artifact 전용 UI를 별도 구현하고, Gate 5 Private GitHub와 미구현 account deletion terminal purge는 별도 승인 범위로 유지한다.
+
+## [2026-08-08] Session Summary (Phase 2 GitHub Source Frontend)
+
+- What was done:
+  - `VITE_GITHUB_SOURCE_ENABLED`로 격리된 `/profile/github`, typed 7-operation client, account repository 검색·pagination·1~10개 선택, source 상태·집계·refresh/delete와 focused Agent Run SSE를 구현했다.
+  - Agent Run의 `GITHUB_INGESTION`·required action·10개 step과 경험 보관함의 GitHub provenance·안전한 외부 링크·삭제 tombstone을 기존 흐름에 additive하게 연결했다.
+- Key decisions:
+  - feature가 꺼지면 route·ProfileTabs·`returnTo`·required-action 링크를 모두 노출하지 않는다. mutation은 사용자 작업별 idempotency key를 재사용하되 version conflict를 자동 재시도하지 않는다.
+  - Backend Java, API, DB, V27와 AI workflow는 변경하지 않았고 Career Artifact·private repository는 Gate 3–5 계획으로 유지했다.
+- Issues encountered:
+  - frozen install이 lockfile은 정상으로 판정했지만 로컬 `pdfjs-dist` link가 없어 baseline check가 실패했다. pnpm offline store에서 같은 잠금 버전 link를 복구했으며 package/lockfile diff는 없다.
+  - link 복구 직후 baseline은 70 files 중 69, 318 tests 중 317이 통과했고 기존 `ExperienceLibraryPage` submit test 1건만 비동기 button 탐색에서 실패했다. 관련 provenance test를 확장하면서 form submit으로 안정화했고 최종 전체 검증은 통과했다.
+  - mocked Playwright는 두 번째 실행에서 삭제 `alertdialog` 직전까지 진행했으나 테스트가 `dialog` role을 찾으며 실패했다. role을 수정했지만 재검증 상한에 따라 세 번째 자동 실행은 하지 않았다.
+- Validation:
+  - `corepack pnpm check`: lint·format·typecheck·Vitest 80 files/369 tests·production build 통과.
+  - GitHub 집중 Backend Gradle: 8 suites/32 tests, failures 0, errors 0, skipped 0. 실제 GitHub·AI 호출은 0회다.
+  - focused Playwright 1 scenario는 마지막 delete 확인 locator까지 실행됐으나 green 완료되지 않아 별도 재확인이 남았다.
+- Next steps:
+  - 다음 명시적 검증에서 수정된 `alertdialog` locator로 focused Playwright 1건을 재실행한다. Gate 3–5는 별도 승인 전 구현하지 않는다.
 
 ## [2026-08-07] Session Summary (Phase 1 GitHub Backend Gate 0~1)
 

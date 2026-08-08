@@ -4,6 +4,19 @@
 
 P5 Job API·application·Scheduler·URL 보안과 P6 자동 분석 orchestration 회귀 테스트가 구현됐다.
 
+## [2026-08-08] Session Summary (Job 고정 시각·projection fixture 정합성)
+
+- What was done:
+  - fixed clock을 현재 계약 날짜로 옮기고 future date·현재 LAUNCHED projection 기대를 맞췄다.
+- Key decisions:
+  - production 상태 전이는 변경하지 않고 stale fixture만 현행 projection에 맞춘다.
+- Issues encountered:
+  - 과거 고정 시각과 현재 가격 catalog 유효 구간이 겹치지 않아 기존 test가 실패했다.
+- Validation:
+  - Job·Job Analysis·auto-analysis focused suite 통과.
+- Next steps:
+  - None.
+
 ## [2026-08-05] Session Summary (공고 반기 생성·목록 회귀)
 
 - What was done:

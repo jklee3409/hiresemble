@@ -3,9 +3,23 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, canonical 경험 관리와 GitHub Source까지 총 107 operations/79 paths가 구현되어 있다.
-- V1~V27 migration이 적용됐고 V27은 GitHub source·snapshot·provenance·outbox와 typed Run link를 소유한다.
-- GitHub 집중 검증은 통과했다. 전체 `check`는 기존 가격 catalog·비동기 fixture·Document 보상 회귀 12건이 남아 범위별로 결과를 분리한다.
+- P1 인증부터 P8 Interview, canonical 경험·GitHub Source와 Career Artifact Gate 3 Backend까지 구현되어 있다. Career Artifact feature off는 79 paths/107 operations, on은 88 paths/118 operations다.
+- V1~V28 migration이 적용됐고 V28은 Career Artifact·immutable provenance/private request/outbox와 typed Run link를 소유한다.
+- 전체 `check`가 Career Artifact 포함 모든 Backend 회귀에서 통과했다. 실제 OpenAI·GitHub·외부 S3 호출은 수행하지 않았다.
+
+## [2026-08-08] Session Summary (Career Artifact Backend Gate 3)
+
+- What was done:
+  - V28, 조건부 REST 11개 operation, exact model, 두 고정 workflow, strict validator, POI renderer, private storage/download/outbox와 Agent Run retry·cancel·delete compensation을 구현했다.
+- Key decisions:
+  - raw render profile은 private request·성공 version에만 두고 Run에는 digest만 저장한다. 성공 version apply는 Object upload 이후 checkpoint transaction에서 원자 반영하며 rollback은 즉시 삭제/outbox로 보상한다.
+  - 기존 9개 workflow·Document/Profile/GitHub/Job/Cover Letter/Interview 계약은 additive extension으로 유지한다.
+- Issues encountered:
+  - 전체 회귀가 드러낸 오래된 fixture와 timing 경계를 현재 deterministic clock·비동기 계약에 맞춰 안정화했다. cancel/history 보상의 transaction self-deadlock과 bulk-delete 순서도 감사 중 발견해 보정했다.
+- Validation:
+  - `.\gradlew.bat check` 성공. Career Artifact focused API, migration, workflow, validator, renderer, S3/outbox test도 각각 통과했다.
+- Next steps:
+  - Gate 4 UI와 account deletion terminal purge는 별도 작업으로 남긴다.
 
 ## [2026-08-07] Session Summary (Phase 1 GitHub Backend 구현)
 

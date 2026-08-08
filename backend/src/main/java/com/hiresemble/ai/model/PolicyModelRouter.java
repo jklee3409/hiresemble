@@ -75,7 +75,9 @@ public final class PolicyModelRouter implements ModelRouter {
 
     private ModelRoute exactModelRoute(RoutingRequest request) {
         if (request.workflowType() != WorkflowType.COVER_LETTER_GENERATION
-                && request.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION) {
+                && request.workflowType() != WorkflowType.COVER_LETTER_VERIFICATION
+                && request.workflowType() != WorkflowType.RESUME_GENERATION
+                && request.workflowType() != WorkflowType.PORTFOLIO_GENERATION) {
             throw AiExecutionException.nonRetryable(
                     FailureKind.REQUEST_VALIDATION,
                     "AI_MODEL_NOT_SUPPORTED",
@@ -83,7 +85,8 @@ public final class PolicyModelRouter implements ModelRouter {
         }
         OpenAiChatModels.Model selected;
         try {
-            selected = OpenAiChatModels.requireCoverLetter(request.requestedModel());
+            selected = OpenAiChatModels.requireModel(
+                    request.workflowType(), request.requestedModel());
         } catch (IllegalArgumentException exception) {
             throw AiExecutionException.nonRetryable(
                     FailureKind.REQUEST_VALIDATION,

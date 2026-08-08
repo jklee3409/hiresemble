@@ -1,19 +1,21 @@
 # GitHub 경험 수집과 Career Artifact 생성 설계
 
-- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_1_IMPLEMENTED`
-- 기준일: 2026-08-07
-- 현재 구현 기준선: Flyway V27, canonical 경험 보관함과 GitHub provenance, 9개 WorkflowType, OpenAPI 79 paths/107 operations
+- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_3_IMPLEMENTED`
+- 기준일: 2026-08-08
+- 현재 구현 기준선: Flyway V28, canonical 경험 보관함과 GitHub provenance, GitHub Frontend, Career Artifact Backend, 11개 WorkflowType, feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
 - 활성 공개 계약: [`../spec/`](../spec/)
 
-이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 목표 구조를 현재 Hiresemble 구현 경계에 연결한다. Phase 1 Gate 0~1의 GitHub Backend는 구현됐고 Gate 2 Frontend와 Gate 3~4 Career Artifact는 계속 목표 상태다. 실제 상태는 코드와 각 `progress.md`를 따른다.
+이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–1 GitHub Backend, Gate 2 Frontend와 Gate 3 Career Artifact Backend는 구현됐고 Gate 4 Frontend와 Gate 5 Private GitHub는 목표 상태다. 실제 상태는 코드와 각 `progress.md`를 따른다.
 
-### Phase 1 실제 적용 상태
+### Phase 1~3 실제 적용 상태
 
 - Gate 0은 현재 V26 byte와 local Flyway 적용 checksum 일치, V26 SHA 고정, populated V26→V27 upgrade와 document canonical characterization으로 닫았다. V26 자체는 수정하지 않았다.
 - Gate 1은 V27, `com.hiresemble.githubsource`, `github-ingestion-v1`, GitHub 공개 API 7개 operation으로 구현했다.
 - GitHub vertical 전용 typed property는 production 기본 비활성이고 local·local-offline·test에서만 명시적으로 활성화한다.
+- Gate 2는 `VITE_GITHUB_SOURCE_ENABLED=true`일 때만 `/profile/github`, profile tab, required-action route를 노출하는 Frontend로 구현했다. 값이 없거나 다르면 기존 UI와 route를 유지한다.
+- GitHub Source 7개 operation, repository server 검색·pagination·선택, `GITHUB_INGESTION` SSE, refresh/delete와 경험 provenance 표시를 기존 API·DB·workflow 변경 없이 연결했다.
 - 자동 검증은 WireMock·Fake·Testcontainers만 사용하며 실제 GitHub와 OpenAI 호출은 0회다.
-- `/profile/github`, Career Artifact table/API/workflow와 `RESUME_GENERATION|PORTFOLIO_GENERATION`은 추가하지 않았다.
+- Gate 3는 V28, 조건부 Career Artifact 11개 operation, `RESUME_GENERATION|PORTFOLIO_GENERATION`, POI renderer, private object version·download/outbox를 구현했다. Career Artifact route·wizard·preview UI와 private GitHub 권한 연동은 추가하지 않았다.
 
 ## 1. 목표와 비목표
 
@@ -45,13 +47,13 @@
 | 현재 경계  | 확인된 구현                                                                            | 이번 목표 설계                                            |
 | ---------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | 문서 입력  | PDF/DOCX/TXT 업로드, parse·chunk·embedding·evidence 추출                               | 변경하지 않음                                             |
-| 경험       | V27에서 V26 `experience_items` 정책에 GitHub provenance를 additive하게 연결             | Career Artifact는 VERIFIED canonical 경험만 소비           |
+| 경험       | V27에서 V26 `experience_items` 정책에 GitHub provenance를 additive하게 연결            | Career Artifact는 VERIFIED canonical 경험만 소비          |
 | 중복 기준  | cosine 0.94 + 공통 anchor 2개 + 수치 충돌 없음은 SAME, 0.82 이상 또는 수치 충돌은 검토 | threshold와 자동 병합 보수성 유지                         |
-| AI runtime | 9개 고정 WorkflowType, `GITHUB_INGESTION` Agent Run·step·retry·SSE·비용 기록            | Resume/Portfolio 두 WorkflowType은 Gate 3에서 추가         |
+| AI runtime | 11개 고정 WorkflowType, GitHub·Resume·Portfolio Agent Run·step·retry·SSE·비용 기록     | Gate 4는 기존 Agent Run 계약을 소비                       |
 | 모델 선택  | 자기소개서 생성·검증만 server catalog의 exact model 선택                               | 이력서·포트폴리오 생성에도 같은 방식 확장                 |
 | 저장소     | document 전용 S3 adapter·5분 presigned URL·삭제 outbox                                 | GitHub snapshot과 career artifact는 별도 lifecycle로 추가 |
 | Office     | Apache POI 의존성 존재, DOCX 입력 parse                                                | XWPF DOCX·XSLF PPTX 출력 renderer 추가                    |
-| Frontend   | `/profile/experiences`, `/documents`, Agent Run monitor                                | `/profile/github`, `/career-artifacts/**` 추가            |
+| Frontend   | `/profile/github`, GitHub provenance, Agent Run monitor와 기존 profile/document 화면   | `/career-artifacts/**` 추가                               |
 
 기존 `DocumentEvidenceService`는 문서 provenance 검증과 canonical 적용을 함께 소유한다. 구현 전 characterization test로 현재 결과를 고정한 뒤 다음 세 책임으로만 추출한다.
 
@@ -338,7 +340,9 @@ Candidate
 - server-owned `templateKey`
 - renderer-only display name, 연락처, link와 포함 여부
 
-contact/render profile은 LLM Context에 보내지 않고 최종 renderer만 사용한다. Run input에는 선택 ID·version·model·template·비민감 option을 저장하고, 민감 display data는 artifact version의 owner-scoped render snapshot으로만 보존한다.
+contact/render profile은 LLM Context에 보내지 않고 최종 renderer만 사용한다. Run input에는 선택 ID·version·model·template·비민감 option과 `renderProfileHash`만 저장한다. 원문은 비동기 재시작 전에는 private `career_artifact_generation_requests`, 성공 뒤에는 해당 version의 owner-scoped render snapshot에만 보존한다. 승인된 경험·구조화 profile 본문에 우연히 섞인 이메일·전화번호·secret은 기존 privacy masker로 가리고 HTTPS URL은 placeholder로 치환한 뒤 bounded Context에 넣는다.
+
+`includeProfileSections`의 server allowlist는 `PROFILE|EDUCATIONS|CERTIFICATIONS|LANGUAGE_SCORES|AWARDS|CAREERS|ACTIVITIES`다. `PROFILE`은 introduction·희망 직무/산업/지역 같은 비연락 정보만 포함하고 legal/display name은 LLM에 보내지 않는다. 자격증 credential number를 제외하며 `ACTIVITIES`는 `use_as_material=true` row만 사용한다. 선택한 section row는 ID/version으로 snapshot하고 workflow 시작 시 다시 검증한다. 비어 있는 section은 warning이며 생성 차단 사유가 아니다.
 
 ## 8. Resume 생성
 
@@ -366,6 +370,7 @@ DOCX 정책:
 - source에 없는 조직, 기간, role, 수치 생성을 금지
 - 연락처는 renderer가 마지막에 삽입
 - 서버 template와 font fallback만 사용
+- A4이며 POI만으로 실제 page count를 확정했다고 주장하지 않고 1~2 page를 목표로 한다.
 
 ## 9. Portfolio 생성과 디자인 계약
 
@@ -414,7 +419,7 @@ Model이 결정하는 값:
 - 도형, connector와 overflow 처리
 - server-approved icon과 template
 
-초기 구성은 6~12 slide이고 COVER, PROFILE_SUMMARY, STRENGTH_OVERVIEW, PROJECT_CASE_STUDY, TECHNICAL_DECISION, IMPACT_AND_LEARNING, CLOSING type을 허용한다. 외부 image, README image, source screenshot, remote font와 arbitrary OOXML은 금지한다.
+초기 구성은 6~12 slide이고 COVER, PROFILE_SUMMARY, STRENGTH_OVERVIEW, PROJECT_CASE_STUDY, TECHNICAL_DECISION, IMPACT_AND_LEARNING, CLOSING type을 허용한다. title은 최소 28pt, body는 최소 18pt이고 한 slide는 한 핵심 message만 가진다. 외부 image, README image, source screenshot, remote font와 arbitrary OOXML은 금지한다.
 
 ## 10. Exact model 선택
 
@@ -431,7 +436,7 @@ Model이 결정하는 값:
 
 ## 11. 목표 DB 계약
 
-GitHub schema는 V26을 수정하지 않고 next available forward migration V27로 추가했다. Career Artifact migration 번호는 Gate 3 착수 시 latest를 다시 확인한다.
+GitHub schema는 V26을 수정하지 않고 forward migration V27로 추가했고 Career Artifact는 V1~V27을 수정하지 않은 V28로 추가했다.
 
 ### 11.1 GitHub table
 
@@ -504,9 +509,10 @@ GitHub schema는 V26을 수정하지 않고 next available forward migration V27
 
 `id,user_id,career_artifact_id,version_no,content_schema_version,content_json,template_key,template_version,model_id,agent_run_id,render_profile_snapshot,storage_key,mime_type,size_bytes,checksum_sha256,created_at`
 
-- immutable
+- immutable. 단, parent soft delete 뒤 `render_profile_snapshot`을 `{}`로 scrub하는 단방향 privacy-erasure만 허용하고 나머지 column은 계속 변경할 수 없다.
 - `(user_id,career_artifact_id,version_no)` unique
 - 성공적으로 검증·업로드된 version만 생성
+- storage key는 row의 user/artifact/version UUID와 artifact type으로 계산한 고정 경로와 정확히 일치한다.
 
 #### `career_artifact_evidence_links`
 
@@ -515,9 +521,19 @@ GitHub schema는 V26을 수정하지 않고 next available forward migration V27
 - usage `PRIMARY_EXPERIENCE|STRENGTH|SUPPORTING_FACT`
 - 생성 당시 provenance snapshot 보존
 
+#### `career_artifact_generation_requests`
+
+`id,user_id,career_artifact_id,agent_run_id,target_version_id,render_profile_snapshot,render_profile_hash,created_at,consumed_at NULL`
+
+- `(user_id,id)`, `(user_id,agent_run_id)`, `(user_id,target_version_id)` unique이며 artifact와 Agent Run에 owner composite FK를 둔다.
+- 한 Run에는 정확히 한 request가 있고 `target_version_id`가 deterministic Object Storage key를 결정한다.
+- 성공 apply transaction은 snapshot을 immutable version으로 복사하고 request를 consumed 처리한다.
+- retry successor는 model/template/evidence identity와 render profile을 transaction 안에서 복사하되 새 `target_version_id`를 할당한다.
+- 공개 DTO, Agent Run input/checkpoint/log/metric에 row 또는 연락처 원문을 노출하지 않는다. artifact soft delete와 성공 version 없는 Run history 삭제 시 snapshot을 `{}`로 즉시 scrub하고 account deletion terminal 정리에서 row를 purge한다.
+
 #### `career_artifact_object_deletion_outbox`
 
-artifact/version delete와 DB 실패 orphan upload compensation을 담당한다. 기존 document outbox를 변경하지 않는다.
+artifact/version delete와 DB 실패 orphan upload compensation을 담당한다. 두 reason 모두 artifact ID와 row identity에 맞는 storage key를 요구하고, artifact delete만 version ID를 가지며 orphan upload는 version ID가 null이다. 기존 document outbox를 변경하지 않는다.
 
 ### 11.3 Agent Run 확장
 
@@ -529,7 +545,7 @@ artifact/version delete와 DB 실패 orphan upload compensation을 담당한다.
 
 ## 12. 목표 API 계약
 
-모든 mutation은 Session, CSRF, owner 404, optimistic version과 `Idempotency-Key`를 사용한다.
+모든 mutation은 Session, CSRF와 owner 404를 사용한다. `POST /career-artifacts`, `POST /career-artifacts/{id}/generations`만 `Idempotency-Key`가 필수이고 archive, unarchive, delete는 optimistic version만 사용한다. 생성 request hash에는 type/title, 정규화한 experience/evidence ID·version, exact model, template key/version, profile section, artifact optimistic version과 정규화한 render profile digest를 포함하며 연락처 원문은 넣지 않는다.
 
 ### 12.1 GitHub source
 
@@ -565,10 +581,10 @@ artifact/version delete와 DB 실패 orphan upload compensation을 담당한다.
 
 ### 13.1 Route와 navigation
 
-- `/profile/github`
-- `/career-artifacts`
-- `/career-artifacts/new?type=RESUME|PORTFOLIO`
-- `/career-artifacts/:careerArtifactId`
+- `/profile/github` (`IMPLEMENTED`, `VITE_GITHUB_SOURCE_ENABLED`)
+- `/career-artifacts` (`PLANNED`, Gate 4)
+- `/career-artifacts/new?type=RESUME|PORTFOLIO` (`PLANNED`, Gate 4)
+- `/career-artifacts/:careerArtifactId` (`PLANNED`, Gate 4)
 
 상단 `이력서·자료` navigation은 `/documents|/career-artifacts`에서 active다. `/documents`에는 `업로드한 자료`, `/career-artifacts`에는 `AI로 만든 초안` switch를 제공한다. GitHub는 Career Profile Workspace의 별도 section이다.
 
@@ -638,9 +654,14 @@ users/{userId}/career-artifacts/{artifactId}/versions/{versionId}/content.pptx
 - MIME, size, SHA-256을 version row에 저장한다.
 - upload는 DB transaction 밖, domain apply는 별도 transaction이다.
 - upload 후 DB 실패는 즉시 삭제하고 실패하면 outbox에 넣는다.
+- PERSIST checkpoint completion transaction이 commit될 때만 immutable version/current/request consumed 변경이 확정된다. rollback, cancel, interrupt와 history compensation은 in-memory Office byte를 폐기하고 transaction commit 뒤 orphan key를 정리해 row lock self-deadlock을 피한다.
 - download URL은 owner 확인 뒤 5분 TTL과 attachment disposition으로 발급한다.
 - renderer template에 macro, remote media, 임의 external relationship을 허용하지 않는다.
 - artifact delete는 즉시 API 404, object delete는 outbox다.
+- 생성 파일 상한 기본값은 typed configuration의 10 MiB다.
+- initial catalog는 RESUME `resume-ats-v1` version `1`, PORTFOLIO `portfolio-interview-v1` version `1`이며 type과 맞지 않는 key는 요청 검증 오류다.
+- HTTPS link는 hyperlink relationship 없이 안전한 일반 텍스트로 렌더링한다.
+- 한글 font는 `Noto Sans KR`을 우선 지정하고 비한글 fallback을 함께 지정하되 원격 다운로드나 임의 embedding을 하지 않는다.
 
 ## 15. Package와 변경 소유권
 
@@ -678,7 +699,7 @@ com.hiresemble.ai.prompt.careerartifact
 - document MIME allowlist
 - document parser와 parse/evidence 상태
 - job, cover letter, interview public DTO와 workflow
-- 현재 V26 migration
+- 적용된 V1~V28 migration
 
 ## 16. 도입 순서와 Gate
 
@@ -698,25 +719,27 @@ com.hiresemble.ai.prompt.careerartifact
 - dedupe, refresh, delete
 - Fake/WireMock 검증
 
-### Gate 2 — GitHub frontend (`PLANNED`)
+### Gate 2 — GitHub frontend (`DONE`, feature flag)
 
-- route, repository selection, progress
-- experience source presentation
-- readiness input
+- typed build-time flag, route와 profile tab
+- repository 검색·pagination·1~10개 선택과 version 충돌 확인
+- focused Agent Run SSE·REST fallback, refresh/delete
+- experience source badge·provenance·삭제 tombstone
 
-### Gate 3 — Career Artifact backend (`PLANNED`)
+### Gate 3 — Career Artifact backend (`DONE`, V28)
 
-- artifact/version/provenance migration
-- model catalog extension
-- Resume/Portfolio workflow
-- POI renderer와 object lifecycle
+- artifact/version/provenance/private generation request/outbox migration
+- exact model catalog와 `CAREER_ARTIFACT` Agent Run retry·cancel·history compensation
+- Resume/Portfolio 고정 8단계 workflow와 grounded structured output 검증
+- POI DOCX/PPTX renderer, private object lifecycle와 5분 attachment download
+- feature 활성 88 paths/118 operations, 비활성 79 paths/107 operations OpenAPI 회귀
 
 ### Gate 4 — Career Artifact frontend (`PLANNED`)
 
 - readiness, wizard, preview, download, regeneration
 - 선택적 suggestion
 
-### Gate 5 — Private GitHub
+### Gate 5 — Private GitHub (`PLANNED`)
 
 - GitHub App installation과 token lifecycle
 - 최소 permission, disconnect와 deletion
@@ -800,8 +823,8 @@ com.hiresemble.ai.prompt.careerartifact
 2. 현재 `PROJECT|프로젝트` 등 category 실제 분포를 민감 content 없이 count로 확인한다.
 3. anonymous GitHub quota로 예상 traffic을 감당할 수 있는지 산정한다.
 4. GitHub App을 공개 MVP의 필수 연결로 할지 후속으로 둘지 운영 결정을 확정한다.
-5. Resume/PPTX server template와 사용 가능한 font를 배포 환경에서 확인한다.
-6. page/slide overflow의 자동 축소 하한과 generation failure 경계를 visual fixture로 확정한다.
+5. 운영 배포 환경의 Office font 가용성과 선택적 시각 fixture는 Gate 4/배포 검증에서 확인한다. renderer는 원격 font를 내려받지 않는다.
+6. Gate 4 preview는 Office byte를 browser에서 parse하지 않고 구현된 structured version projection을 사용한다.
 7. roadmap phase 번호는 기존 P8.5-V~P10 순서를 임의로 변경하지 않고 별도 승인으로 배치한다.
 
 ## 20. 관련 문서와 외부 계약

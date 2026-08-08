@@ -2,14 +2,42 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub Backend와 후속 Frontend·Career Artifact 상태를 구분한다.
-- 기능 명세는 핵심 MVP 여정과 AC-01~AC-17, 구현된 GH-AC-01~04 및 planned ART 인수 조건을 정의하고 나머지 명세는 V27·79 paths/107 operations 기준선과 미래 계약을 구분한다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub Gate 0–2, Career Artifact Backend Gate 3와 후속 Frontend·Private GitHub 상태를 구분한다.
+- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, 구현된 GH-AC-01–04 및 ART Backend 인수 조건을 정의한다. 현재 기준선은 V28·11 WorkflowType·feature 활성 88 paths/118 operations·비활성 79 paths/107 operations이며 ART 사용자 전체 journey는 Gate 4까지 계획 상태다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-08] Session Summary (Career Artifact Gate 3 계약 구현 승격)
+
+- What was done:
+  - ART-001~004 Backend, API 11개 operation, DB 14장, 두 workflow와 Office/Object 기술 계약을 `IMPLEMENTED_BACKEND`로 승격했다.
+  - feature off/on OpenAPI 기준선, exact model·idempotency·private request·privacy erasure·download attachment 계약을 실제 구현과 맞췄다.
+- Key decisions:
+  - `/career-artifacts/**` page·wizard·suggestion과 ART-AC 전체 journey는 Gate 4 전까지 `PLANNED`다.
+  - archive/unarchive/delete는 optimistic version만 사용하고 create/regenerate만 `Idempotency-Key`를 요구한다.
+- Issues encountered:
+  - outbox orphan row도 artifact identity가 필요하므로 artifact ID를 항상 요구하고 version ID만 reason에 따라 nullable하도록 명세를 바로잡았다.
+- Validation:
+  - enabled OpenAPI 88/118, disabled 79/107, fresh/upgrade V28와 전체 Backend/Frontend 회귀가 통과했다.
+- Next steps:
+  - Gate 4 구현 시 공개 DTO field set과 11-operation 계약을 그대로 소비한다.
+
+## [2026-08-08] Session Summary (GitHub Frontend Gate 2 상태 반영)
+
+- What was done:
+  - `page.md`의 `/profile/github`와 경험 provenance를 `IMPLEMENTED_FLAGGED`로 승격하고 build-time flag on/off 계약을 명시했다.
+- Key decisions:
+  - API·DB·functional·tech stack 공개 계약과 79 paths/107 operations, Flyway V27는 변경하지 않았다. Career Artifact와 Private GitHub는 계획 상태다.
+- Issues encountered:
+  - focused Playwright 마지막 locator는 수정됐으나 재실행하지 못한 검증 상태를 구현 상태와 분리했다.
+- Validation:
+  - Frontend `pnpm check` 80 files/369 tests와 Phase 1 Backend 8 suites/32 tests 통과. mocked Chromium 최종 green은 미확인이다.
+- Next steps:
+  - Gate 3 착수 전 latest migration을 다시 확인하고, 먼저 focused GitHub browser scenario를 재검증한다.
 
 ## [2026-08-07] Session Summary (GitHub Backend 계약 구현 승격)
 
 - What was done:
-  - GH-001~004, API 13.5.1~13.5.2·13.5.4, DB 13장과 기술 stack의 GitHub gateway/workflow를 implemented baseline으로 승격했다.
+  - GH-001–004, API 13.5.1–13.5.2·13.5.4, DB 13장과 기술 stack의 GitHub gateway/workflow를 implemented baseline으로 승격했다.
 - Key decisions:
   - DB latest는 V27, 현재 WorkflowType은 9개, feature-enabled OpenAPI는 79 paths/107 operations다. 페이지 5.9와 Career Artifact 계약은 planned다.
 - Issues encountered:
