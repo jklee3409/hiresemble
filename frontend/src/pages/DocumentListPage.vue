@@ -18,6 +18,9 @@ import { documentQueryKeys, useDocumentListQuery } from '@/features/documents/qu
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import { validateUpload } from '@/features/documents/validation'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import CareerArtifactAreaSwitch from '@/features/career-artifacts/CareerArtifactAreaSwitch.vue'
+import CareerArtifactSuggestion from '@/features/career-artifacts/CareerArtifactSuggestion.vue'
+import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import {
   DOCUMENT_PARSE_STATUSES,
   DOCUMENT_TYPES,
@@ -154,6 +157,7 @@ async function upload(): Promise<void> {
       idempotencyKey:
         uploadIdempotencyKey || (uploadIdempotencyKey = createDocumentIdempotencyKey('upload')),
     })
+    await cache.invalidateQueries({ queryKey: careerArtifactQueryKeys.readiness(userId.value) })
     notifications.toast('자료를 등록하고 분석을 시작했어요.', 'success')
     await router.push({
       name: 'document-detail',
@@ -252,6 +256,7 @@ async function remove(id: string, version: number, name: string): Promise<void> 
     cache.removeQueries({ queryKey: documentQueryKeys.text(userId.value, id) })
     cache.removeQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
     await cache.invalidateQueries({ queryKey: documentQueryKeys.root(userId.value) })
+    await cache.invalidateQueries({ queryKey: careerArtifactQueryKeys.readiness(userId.value) })
     message.value = '자료를 삭제했어요.'
     notifications.toast('자료를 삭제했어요.', 'success')
   } catch (error) {
@@ -290,6 +295,7 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
   <section class="documents-page app-page" aria-labelledby="documents-heading">
     <!-- 상단 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
     <h1 id="documents-heading" class="sr-only">이력서·자료</h1>
+    <CareerArtifactAreaSwitch />
 
     <form class="upload-panel section-surface" novalidate @submit.prevent="upload">
       <header class="upload-panel__heading">
@@ -413,6 +419,8 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
         </div>
       </div>
     </form>
+
+    <CareerArtifactSuggestion compact />
 
     <details class="filter-disclosure documents-page__filters" open>
       <summary>자료 검색·필터</summary>

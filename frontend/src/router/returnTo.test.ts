@@ -44,6 +44,42 @@ describe('safeReturnTo', () => {
     ).toBe('/profile/github?source=10000000-0000-4000-8000-000000000001')
   })
 
+  it('allows only canonical Career Artifact routes while the independent Gate 4 flag is enabled', () => {
+    const id = '10000000-0000-4000-8000-000000000001'
+    const enabled = { githubSourceEnabled: false, careerArtifactEnabled: true }
+    expect(safeReturnTo('/career-artifacts', 'https://hiresemble.example', enabled)).toBe(
+      '/career-artifacts',
+    )
+    expect(
+      safeReturnTo(
+        '/career-artifacts/new?type=RESUME&step=3',
+        'https://hiresemble.example',
+        enabled,
+      ),
+    ).toBe('/career-artifacts/new?type=RESUME&step=3')
+    expect(safeReturnTo(`/career-artifacts/${id}`, 'https://hiresemble.example', enabled)).toBe(
+      `/career-artifacts/${id}`,
+    )
+    expect(safeReturnTo('/career-artifacts', 'https://hiresemble.example', {})).toBeNull()
+    expect(
+      safeReturnTo(
+        '/career-artifacts/new?step=3&type=RESUME',
+        'https://hiresemble.example',
+        enabled,
+      ),
+    ).toBeNull()
+    expect(
+      safeReturnTo(
+        '/career-artifacts/new?type=RESUME&email=private',
+        'https://hiresemble.example',
+        enabled,
+      ),
+    ).toBeNull()
+    expect(
+      safeReturnTo('/career-artifacts/not-a-uuid', 'https://hiresemble.example', enabled),
+    ).toBeNull()
+  })
+
   it('accepts only UUID document detail routes', () => {
     expect(
       safeReturnTo('/documents/10000000-0000-4000-8000-000000000001', 'https://hiresemble.example'),

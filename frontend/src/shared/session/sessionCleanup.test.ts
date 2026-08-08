@@ -39,13 +39,17 @@ describe('SessionStorageDraftPurgePort', () => {
 
   it('purges only the current user draft key shape', () => {
     window.sessionStorage.setItem('1/user-1/cover/id/question/version', '{}')
+    window.sessionStorage.setItem('1/user-1/career-artifact/new/generation/0', '{}')
     window.sessionStorage.setItem('1/user-2/cover/id/question/version', '{}')
+    window.sessionStorage.setItem('1/user-2/career-artifact/new/generation/0', '{}')
     window.sessionStorage.setItem('unrelated/user-1', 'keep')
 
     new SessionStorageDraftPurgePort().purgeForUser('user-1')
 
     expect(window.sessionStorage.getItem('1/user-1/cover/id/question/version')).toBeNull()
+    expect(window.sessionStorage.getItem('1/user-1/career-artifact/new/generation/0')).toBeNull()
     expect(window.sessionStorage.getItem('1/user-2/cover/id/question/version')).toBe('{}')
+    expect(window.sessionStorage.getItem('1/user-2/career-artifact/new/generation/0')).toBe('{}')
     expect(window.sessionStorage.getItem('unrelated/user-1')).toBe('keep')
   })
 })

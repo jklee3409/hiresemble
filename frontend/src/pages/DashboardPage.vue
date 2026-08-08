@@ -9,6 +9,7 @@ import {
   EVIDENCE_EXTRACTION_STATUS_LABELS,
 } from '@/features/documents/presentation'
 import { useDocumentListQuery } from '@/features/documents/queries'
+import CareerArtifactSuggestion from '@/features/career-artifacts/CareerArtifactSuggestion.vue'
 import { jobCompanyLabel, jobDisplayTitle } from '@/features/jobs/presentation'
 import { useJobListQuery } from '@/features/jobs/queries'
 import type { DocumentSummaryDto } from '@/shared/api/documentContracts'
@@ -788,6 +789,8 @@ function buildCalendar(monthValue: string, days: DeadlineDay[]): CalendarCell[] 
               </RouterLink>
             </div>
           </section>
+
+          <CareerArtifactSuggestion compact />
 
           <section
             id="dashboard-deadlines"

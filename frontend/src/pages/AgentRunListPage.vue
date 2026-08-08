@@ -22,6 +22,7 @@ import {
   formatUsage,
   formatInstant,
   formatRunProgressLabel,
+  careerArtifactResourceRoute,
   gitHubSourceResourceRoute,
 } from '@/features/agent-runs/presentation'
 import {
@@ -361,6 +362,13 @@ async function removeSelected(): Promise<void> {
               :to="gitHubSourceResourceRoute(run.resourceType, run.resourceId) ?? '/agent-runs'"
             >
               GitHub 연결
+            </RouterLink>
+            <RouterLink
+              v-else-if="careerArtifactResourceRoute(run.resourceType, run.resourceId)"
+              class="button button--secondary button--compact"
+              :to="careerArtifactResourceRoute(run.resourceType, run.resourceId) ?? '/agent-runs'"
+            >
+              생성 자료
             </RouterLink>
             <button
               type="button"

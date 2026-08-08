@@ -18,6 +18,7 @@ import { documentQueryKeys } from '@/features/documents/queries'
 import { jobQueryKeys } from '@/features/jobs/queries'
 import { gitHubSourceQueryKeys } from '@/features/github/queryKeys'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import {
   sessionCleanup,
   type EventSourceCleanupPort,
@@ -227,7 +228,8 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
       (run.resourceType === 'DOCUMENT' ||
         run.resourceType === 'JOB' ||
         run.resourceType === 'COVER_LETTER' ||
-        run.resourceType === 'GITHUB_SOURCE') &&
+        run.resourceType === 'GITHUB_SOURCE' ||
+        run.resourceType === 'CAREER_ARTIFACT') &&
       run.resourceId !== null
     ) {
       if (run.resourceType === 'DOCUMENT') {
@@ -262,7 +264,7 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         void this.options.cache.invalidateQueries({
           queryKey: coverLetterQueryKeys.detail(this.options.userId, run.resourceId),
         })
-      } else {
+      } else if (run.resourceType === 'GITHUB_SOURCE') {
         void this.options.cache.invalidateQueries({
           queryKey: gitHubSourceQueryKeys.root(this.options.userId),
         })
@@ -274,6 +276,16 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         })
         void this.options.cache.invalidateQueries({
           queryKey: agentRunQueryKeys.root(this.options.userId),
+        })
+      } else {
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.versionRoot(this.options.userId, run.resourceId),
         })
       }
     }
@@ -313,6 +325,9 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         void this.options.cache.invalidateQueries({
           queryKey: profileQueryKeys.evidenceRoot(this.options.userId),
         })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.readiness(this.options.userId),
+        })
       } else if (run.resourceType === 'JOB') {
         void this.options.cache.invalidateQueries({
           queryKey: jobQueryKeys.root(this.options.userId),
@@ -350,6 +365,22 @@ export class AgentRunStreamController implements EventSourceCleanupPort {
         })
         void this.options.cache.invalidateQueries({
           queryKey: profileQueryKeys.evidenceRoot(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.readiness(this.options.userId),
+        })
+      } else if (run.resourceType === 'CAREER_ARTIFACT') {
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.root(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.readiness(this.options.userId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.detail(this.options.userId, run.resourceId),
+        })
+        void this.options.cache.invalidateQueries({
+          queryKey: careerArtifactQueryKeys.versionRoot(this.options.userId, run.resourceId),
         })
       }
     }

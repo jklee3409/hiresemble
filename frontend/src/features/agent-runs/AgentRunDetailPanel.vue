@@ -17,6 +17,7 @@ import {
   formatRunProgressLabel,
   formatStepName,
   formatUsage,
+  careerArtifactResourceRoute,
   gitHubSourceResourceRoute,
   safeRequiredActionRoute,
   usagePercent,
@@ -64,6 +65,9 @@ const coverLetterRoute = computed(() =>
 )
 const gitHubSourceRoute = computed(() =>
   gitHubSourceResourceRoute(props.run.resourceType, props.run.resourceId),
+)
+const careerArtifactRoute = computed(() =>
+  careerArtifactResourceRoute(props.run.resourceType, props.run.resourceId),
 )
 const connectionMessage = computed(() => {
   if (props.connectionState === 'reconnecting') {
@@ -157,6 +161,13 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
             :to="gitHubSourceRoute"
           >
             GitHub 연결 보기
+          </RouterLink>
+          <RouterLink
+            v-else-if="careerArtifactRoute"
+            class="button button--secondary"
+            :to="careerArtifactRoute"
+          >
+            생성 자료 보기
           </RouterLink>
           <button
             v-if="canRetry"

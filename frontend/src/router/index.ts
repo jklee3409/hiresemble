@@ -155,6 +155,7 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/DocumentDetailPage.vue'),
         meta: { title: '자료 확인' },
       },
+      ...careerArtifactRoutes(featureFlags.careerArtifactEnabled),
       {
         path: 'jobs',
         name: 'jobs',
@@ -256,6 +257,31 @@ export function gitHubProfileRoutes(enabled: boolean): RouteRecordRaw[] {
           name: 'profile-github',
           component: () => import('@/pages/GitHubSourcePage.vue'),
           meta: { title: 'GitHub 연결', profileRecommended: true },
+        },
+      ]
+    : []
+}
+
+export function careerArtifactRoutes(enabled: boolean): RouteRecordRaw[] {
+  return enabled
+    ? [
+        {
+          path: 'career-artifacts',
+          name: 'career-artifacts',
+          component: () => import('@/pages/CareerArtifactListPage.vue'),
+          meta: { title: 'AI로 만든 초안' },
+        },
+        {
+          path: 'career-artifacts/new',
+          name: 'career-artifact-new',
+          component: () => import('@/pages/CareerArtifactNewPage.vue'),
+          meta: { title: '새 초안 만들기' },
+        },
+        {
+          path: 'career-artifacts/:careerArtifactId',
+          name: 'career-artifact-detail',
+          component: () => import('@/pages/CareerArtifactDetailPage.vue'),
+          meta: { title: '생성 자료 확인' },
         },
       ]
     : []

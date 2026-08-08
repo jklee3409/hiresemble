@@ -17,6 +17,7 @@ import {
 } from '@/features/documents/queries'
 import { validateManualText } from '@/features/documents/validation'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import { useAgentRunDetailQuery } from '@/features/agent-runs/queries'
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import DocumentRunMonitor from '@/features/documents/DocumentRunMonitor.vue'
@@ -188,6 +189,7 @@ async function remove(): Promise<void> {
     cache.removeQueries({ queryKey: documentQueryKeys.text(userId.value, documentId.value) })
     cache.removeQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
     await cache.invalidateQueries({ queryKey: documentQueryKeys.root(userId.value) })
+    await cache.invalidateQueries({ queryKey: careerArtifactQueryKeys.readiness(userId.value) })
     notifications.toast('자료를 삭제했어요.', 'success')
     await router.replace({ name: 'documents', query: { deleted: 'true' } })
   } catch (error) {

@@ -3,6 +3,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import GitHubRunMonitor from '@/features/github/GitHubRunMonitor.vue'
+import CareerArtifactSuggestion from '@/features/career-artifacts/CareerArtifactSuggestion.vue'
 import {
   useCreateGitHubSourceMutation,
   useDeleteGitHubSourceMutation,
@@ -88,6 +89,12 @@ const createMutation = useCreateGitHubSourceMutation(userId)
 const selectionMutation = useSelectGitHubRepositoriesMutation(userId)
 const refreshMutation = useRefreshGitHubSourceMutation(userId)
 const deleteMutation = useDeleteGitHubSourceMutation(userId)
+const hasSuccessfulSource = computed(
+  () =>
+    sources.data.value?.items.some(
+      (source) => source.status === 'READY' || source.status === 'PARTIAL',
+    ) ?? false,
+)
 const selectedCount = computed(() => new Set(selectedRepositoryIds.value).size)
 const selectionValid = computed(() => selectedCount.value >= 1 && selectedCount.value <= 10)
 const focusedSummary = computed(
@@ -613,6 +620,8 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
           @change="sourcePage = $event"
         />
       </section>
+
+      <CareerArtifactSuggestion v-if="hasSuccessfulSource" compact />
 
       <section
         v-if="focusedSourceId"

@@ -220,6 +220,7 @@ describe('AgentRunStreamController', () => {
     expect(invalidations).toContainEqual(['user', 'user-1', 'document', documentId])
     expect(invalidations).toContainEqual(['user', 'user-1', 'documentText', documentId])
     expect(invalidations).toContainEqual(['user', 'user-1', 'evidence'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'careerArtifacts', 'readiness'])
     expect(sources[0]?.closed).toBe(true)
 
     const secondSources: FakeEventSource[] = []
@@ -396,7 +397,59 @@ describe('AgentRunStreamController', () => {
     })
     expect(invalidations).toContainEqual(['user', 'user-1', 'experiences'])
     expect(invalidations).toContainEqual(['user', 'user-1', 'evidence'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'careerArtifacts', 'readiness'])
     expect(sources[0]?.closed).toBe(true)
+  })
+
+  it('invalidates Career Artifact list, readiness, detail, versions, and related runs on terminal', () => {
+    const artifactId = '00000000-0000-4000-8000-000000000015'
+    const sources: FakeEventSource[] = []
+    const initial = agentRunDetail({
+      workflowType: 'RESUME_GENERATION',
+      resourceType: 'CAREER_ARTIFACT',
+      resourceId: artifactId,
+    })
+    const { cache, invalidations } = cacheFixture(initial)
+    const controller = new AgentRunStreamController({
+      userId: 'user-1',
+      agentRunId: RUN_ID,
+      initialRun: initial,
+      cache,
+      eventSourceFactory: sourceFactory(sources),
+    })
+    controller.start()
+    sources[0]?.emit('snapshot', snapshotEvent(initial))
+    sources[0]?.emit('terminal', {
+      ...terminalEvent(2, 'SUCCEEDED'),
+      resourceType: 'CAREER_ARTIFACT',
+      resourceId: artifactId,
+    })
+
+    expect(invalidations).toContainEqual(['user', 'user-1', 'agentRuns'])
+    expect(invalidations).toContainEqual([
+      'user',
+      'user-1',
+      'resource',
+      'CAREER_ARTIFACT',
+      artifactId,
+    ])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'careerArtifacts'])
+    expect(invalidations).toContainEqual(['user', 'user-1', 'careerArtifacts', 'readiness'])
+    expect(invalidations).toContainEqual([
+      'user',
+      'user-1',
+      'careerArtifacts',
+      'detail',
+      artifactId,
+    ])
+    expect(invalidations).toContainEqual([
+      'user',
+      'user-1',
+      'careerArtifacts',
+      'detail',
+      artifactId,
+      'versions',
+    ])
   })
 })
 

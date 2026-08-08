@@ -99,6 +99,16 @@ describe('AppLayout', () => {
     wrapper.unmount()
   })
 
+  it('keeps generated artifacts inside the existing documents navigation context', async () => {
+    const { wrapper } = await mountLayout('/career-artifacts')
+    expect(wrapper.get('.desktop-navigation__link[aria-current="page"]').text()).toBe('이력서·자료')
+    expect(wrapper.findAll('.desktop-navigation__link')).toHaveLength(6)
+    expect(wrapper.get('button[aria-controls="mobile-more-menu"]').classes()).toContain(
+      'mobile-bottom-navigation__item--active',
+    )
+    wrapper.unmount()
+  })
+
   it('updates the nickname from the header modal and returns focus to the trigger', async () => {
     const { wrapper, authStore } = await mountLayout('/dashboard')
     const trigger = wrapper.get<HTMLButtonElement>('.account-trigger')
@@ -173,6 +183,7 @@ async function mountLayout(path: string) {
             meta: { title: '내 지원 정보' },
           },
           { path: 'documents', component: DashboardPage },
+          { path: 'career-artifacts', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },
           { path: 'cover-letters', component: DashboardPage },
           { path: 'interviews', component: DashboardPage },

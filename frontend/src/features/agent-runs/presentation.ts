@@ -185,6 +185,16 @@ export function gitHubSourceResourceRoute(
     : null
 }
 
+export function careerArtifactResourceRoute(
+  resourceType: string | null,
+  resourceId: string | null,
+  careerArtifactEnabled = featureFlags.careerArtifactEnabled,
+): string | null {
+  return careerArtifactEnabled && resourceType === 'CAREER_ARTIFACT' && resourceId !== null
+    ? `/career-artifacts/${encodeURIComponent(resourceId)}`
+    : null
+}
+
 export function safeRequiredActionRoute(
   value: string | null,
   githubSourceEnabled = featureFlags.githubSourceEnabled,

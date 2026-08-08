@@ -21,7 +21,7 @@ import * as jobApi from '@/shared/api/jobApi'
 import { useAuthStore } from '@/stores/auth'
 import * as profileApi from '@/shared/api/profileApi'
 
-import { createAppRouter, gitHubProfileRoutes, routes } from './index'
+import { careerArtifactRoutes, createAppRouter, gitHubProfileRoutes, routes } from './index'
 
 vi.mock('@/shared/api/authApi', () => ({
   getCurrentUser: vi.fn(),
@@ -305,6 +305,22 @@ describe('authentication route policy', () => {
       meta: { title: 'GitHub 연결', profileRecommended: true },
     })
     expect(typeof enabled[0]?.component).toBe('function')
+  })
+
+  it('builds all three lazy Career Artifact routes only for an enabled Gate 4 flag', () => {
+    expect(careerArtifactRoutes(false)).toEqual([])
+    const enabled = careerArtifactRoutes(true)
+    expect(enabled.map((route) => route.name)).toEqual([
+      'career-artifacts',
+      'career-artifact-new',
+      'career-artifact-detail',
+    ])
+    expect(enabled.map((route) => route.path)).toEqual([
+      'career-artifacts',
+      'career-artifacts/new',
+      'career-artifacts/:careerArtifactId',
+    ])
+    expect(enabled.every((route) => typeof route.component === 'function')).toBe(true)
   })
 })
 

@@ -69,9 +69,11 @@ describe('AgentRunListPage URL state', () => {
     deleteRun.mockClear()
     deleteSelectedRuns.mockClear()
     featureFlags.githubSourceEnabled = true
+    featureFlags.careerArtifactEnabled = true
   })
   afterAll(() => {
     featureFlags.githubSourceEnabled = false
+    featureFlags.careerArtifactEnabled = false
   })
 
   it('canonicalizes invalid filters and drives sort and pagination through the URL', async () => {
@@ -91,6 +93,7 @@ describe('AgentRunListPage URL state', () => {
           component: { template: '<div />' },
         },
         { path: '/profile/github', component: { template: '<div />' } },
+        { path: '/career-artifacts/:careerArtifactId', component: { template: '<div />' } },
       ],
     })
     await router.push(
@@ -115,8 +118,12 @@ describe('AgentRunListPage URL state', () => {
       .findAll('.run-row')
       .find((row) => row.text().includes('AI 이력서 초안 만들기'))
     expect(careerArtifactRow).toBeDefined()
-    expect(careerArtifactRow?.findAll('a')).toHaveLength(1)
-    expect(careerArtifactRow?.find('a').text()).toBe('상세 보기')
+    expect(careerArtifactRow?.findAll('a')).toHaveLength(2)
+    expect(
+      careerArtifactRow
+        ?.get('a[href="/career-artifacts/80000000-0000-4000-8000-000000000001"]')
+        .text(),
+    ).toBe('생성 자료')
     expect(wrapper.text()).toContain('작업 한도의 33%')
     const rowCheckboxes = wrapper.findAll('.run-row__selection input')
     expect(rowCheckboxes[0]?.attributes('disabled')).toBeDefined()

@@ -5,6 +5,7 @@ import { featureFlags } from '@/app/featureFlags'
 import AgentRunDetailPanel from './AgentRunDetailPanel.vue'
 import {
   WORKFLOW_LABELS,
+  careerArtifactResourceRoute,
   formatStepName,
   gitHubSourceResourceRoute,
   safeRequiredActionRoute,
@@ -157,6 +158,11 @@ describe('AgentRunDetailPanel', () => {
       'PowerPoint 파일 안전성 확인',
       '포트폴리오 버전 저장',
     ])
+    const artifactId = '00000000-0000-4000-8000-000000000005'
+    expect(careerArtifactResourceRoute('CAREER_ARTIFACT', artifactId, true)).toBe(
+      `/career-artifacts/${artifactId}`,
+    )
+    expect(careerArtifactResourceRoute('CAREER_ARTIFACT', artifactId, false)).toBeNull()
   })
 
   it('maps the GitHub workflow, all ten steps, action route, and resource link', () => {
@@ -369,7 +375,8 @@ describe('AgentRunDetailPanel', () => {
     expect(wrapper.text()).not.toContain('검증 제안')
   })
 
-  it('renders a Career Artifact run generically until the Gate 4 route exists', () => {
+  it('links a Career Artifact run only while the Gate 4 route is enabled', () => {
+    featureFlags.careerArtifactEnabled = true
     const wrapper = mount(AgentRunDetailPanel, {
       props: {
         run: agentRunDetail({
@@ -399,8 +406,21 @@ describe('AgentRunDetailPanel', () => {
 
     expect(wrapper.text()).toContain('AI 포트폴리오 초안 만들기')
     expect(wrapper.text()).toContain('PowerPoint 파일 생성')
-    expect(wrapper.text()).not.toContain('포트폴리오 보기')
-    expect(wrapper.findAll('a')).toHaveLength(0)
+    expect(wrapper.text()).toContain('생성 자료 보기')
+    featureFlags.careerArtifactEnabled = false
+    const disabled = mount(AgentRunDetailPanel, {
+      props: {
+        run: agentRunDetail({
+          workflowType: 'PORTFOLIO_GENERATION',
+          resourceType: 'CAREER_ARTIFACT',
+          resourceId: '80000000-0000-4000-8000-000000000001',
+        }),
+        connectionState: 'connected',
+      },
+      global,
+    })
+    expect(disabled.text()).not.toContain('생성 자료 보기')
+    expect(disabled.findAll('a')).toHaveLength(0)
   })
 
   it('links a GitHub ingestion run back to its source only while Gate 2 is enabled', () => {

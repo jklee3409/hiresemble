@@ -4,6 +4,7 @@ import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { agentRunQueryKeys } from '@/features/agent-runs/queries'
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
+import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import {
   createGitHubSource,
   deleteGitHubSource,
@@ -176,6 +177,7 @@ export function useDeleteGitHubSourceMutation(userId: MaybeRefOrGetter<string>) 
         cache.invalidateQueries({ queryKey: gitHubSourceQueryKeys.root(ownerId) }),
         cache.invalidateQueries({ queryKey: profileQueryKeys.experiencesRoot(ownerId) }),
         cache.invalidateQueries({ queryKey: profileQueryKeys.evidenceRoot(ownerId) }),
+        cache.invalidateQueries({ queryKey: careerArtifactQueryKeys.readiness(ownerId) }),
       ])
     },
   })
