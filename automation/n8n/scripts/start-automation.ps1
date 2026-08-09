@@ -4,6 +4,7 @@ $ProgressPreference = "SilentlyContinue"
 [System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $n8nUrl = "http://localhost:5678"
+$n8nHealthUrl = "http://localhost:5678/healthz"
 $webhookUrl = "http://localhost:5678/webhook/hiresemble-start"
 
 
@@ -17,7 +18,7 @@ $n8nRunning = $false
 
 try {
     Invoke-WebRequest `
-        -Uri $n8nUrl `
+        -Uri $n8nHealthUrl `
         -TimeoutSec 2 `
         -UseBasicParsing `
         -ErrorAction Stop | Out-Null
@@ -40,17 +41,19 @@ if (-not $n8nRunning) {
     $n8nCommand = Get-Command "n8n.cmd" -ErrorAction SilentlyContinue
 
     if (-not $n8nCommand) {
-        Write-Error "n8n.cmd not found. npm global install & path check."
-        exit 1
+        throw "n8n.cmd not found. npm global install & PATH check."
     }
 
-    Start-Process `
-        -FilePath $n8nCommand.Source `
-        -WindowStyle Hidden
+    Write-Host "n8n command: $($n8nCommand.Source)"
 
+    $process = Start-Process `
+        -FilePath $n8nCommand.Source `
+        -PassThru
+
+    Write-Host "n8n process PID: $($process.Id)"
 }
 else {
-    Write-Host "[2/4] n8n is already start...."
+    Write-Host "[2/4] n8n is already running."
 }
 
 
@@ -62,11 +65,11 @@ Write-Host "[3/4] n8n ready & waiting..."
 
 $n8nReady = $false
 
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 120; $i++) {
 
     try {
         Invoke-WebRequest `
-            -Uri $n8nUrl `
+            -Uri $n8nHealthUrl `
             -TimeoutSec 2 `
             -UseBasicParsing `
             -ErrorAction Stop | Out-Null
