@@ -3,6 +3,7 @@ package com.hiresemble.careerartifact.domain;
 import com.hiresemble.careerartifact.domain.CareerArtifactContent.EvidenceRef;
 import com.hiresemble.careerartifact.domain.CareerArtifactContent.PortfolioContent;
 import com.hiresemble.careerartifact.domain.CareerArtifactContent.ResumeContent;
+import com.hiresemble.careerartifact.domain.CareerArtifactRecords.ProfileSectionSnapshot;
 import com.hiresemble.careerartifact.domain.CareerArtifactRecords.VerifiedEvidence;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,20 +21,29 @@ public final class CareerArtifactContentValidator {
             "(?<!\\p{N})(?:\\d{1,4}(?:[.,:/%-]\\d{1,4})*)(?!\\p{N})");
     private static final Pattern EXTERNAL_DIRECTIVE = Pattern.compile(
             "(?i)(https?://|data:|image\\s*url|font\\s*size|#[0-9a-f]{6}|x\\s*=|y\\s*=|ooxml|pptx|docx)");
+    // "role" and "역할" commonly introduce a responsibility sentence, not a canonical job title.
+    // Those sentences still pass evidence-reference, numeric/date, and final fact-check validation.
     private static final List<Pattern> NAMED_FACT_PATTERNS = List.of(
             Pattern.compile(
                     "(?iu)(?:organization|company|employer|회사|조직|소속)\\s*[:：]\\s*([^,;|\\n]{2,80})"),
             Pattern.compile(
-                    "(?iu)(?:role|position|직무|역할|직업)\\s*[:：]\\s*([^,;|\\n]{2,80})"));
+                    "(?iu)(?:position|job\\s*title|직무|직책|직업)\\s*[:：]\\s*([^,;|\\n]{2,80})"));
 
     public void validateResume(ResumeContent content, List<VerifiedEvidence> selected) {
+        validateResume(content, selected, List.of());
+    }
+
+    public void validateResume(
+            ResumeContent content,
+            List<VerifiedEvidence> selected,
+            List<ProfileSectionSnapshot> selectedProfiles) {
         if (content == null
                 || content.sections() == null
                 || content.sections().isEmpty()
                 || content.sections().size() > 12) {
             throw new IllegalArgumentException("RESUME_SECTION_COUNT_INVALID");
         }
-        EvidenceIndex index = new EvidenceIndex(selected);
+        EvidenceIndex index = new EvidenceIndex(selected, selectedProfiles);
         String allMaterial = index.allMaterial();
         requireText(content.headline(), 200, true, "RESUME_HEADLINE_INVALID");
         requireText(content.summary(), 2000, true, "RESUME_SUMMARY_INVALID");
@@ -60,8 +70,8 @@ public final class CareerArtifactContentValidator {
                     throw new IllegalArgumentException("UNGROUNDED_POSITIVE_CLAIM");
                 }
                 String source = index.material(item.evidenceRefs());
-                validateSupportedField(item.heading(), source);
-                validateSupportedField(item.subheading(), source);
+                if (item.heading() != null) validateClaim(item.heading(), source);
+                if (item.subheading() != null) validateClaim(item.subheading(), source);
                 if (item.period() != null) validateClaim(item.period(), source);
                 if (item.bullets() != null) {
                     item.bullets().forEach(bullet -> validateClaim(bullet, source));
@@ -71,13 +81,20 @@ public final class CareerArtifactContentValidator {
     }
 
     public void validatePortfolio(PortfolioContent content, List<VerifiedEvidence> selected) {
+        validatePortfolio(content, selected, List.of());
+    }
+
+    public void validatePortfolio(
+            PortfolioContent content,
+            List<VerifiedEvidence> selected,
+            List<ProfileSectionSnapshot> selectedProfiles) {
         if (content == null
                 || content.slides() == null
                 || content.slides().size() < 6
                 || content.slides().size() > 12) {
             throw new IllegalArgumentException("PORTFOLIO_SLIDE_COUNT_INVALID");
         }
-        EvidenceIndex index = new EvidenceIndex(selected);
+        EvidenceIndex index = new EvidenceIndex(selected, selectedProfiles);
         String allMaterial = index.allMaterial();
         bounded(content.warnings(), 20, 500, "PORTFOLIO_WARNINGS_INVALID");
         Set<Integer> numbers = new HashSet<>();
@@ -186,13 +203,27 @@ public final class CareerArtifactContentValidator {
 
     private static final class EvidenceIndex {
         private final Map<String, VerifiedEvidence> values = new HashMap<>();
+        private final String profileMaterial;
 
-        private EvidenceIndex(List<VerifiedEvidence> selected) {
+        private EvidenceIndex(
+                List<VerifiedEvidence> selected,
+                List<ProfileSectionSnapshot> selectedProfiles) {
             if (selected == null || selected.isEmpty() || selected.size() > 20) {
                 throw new IllegalArgumentException("INSUFFICIENT_VERIFIED_EXPERIENCE");
             }
             selected.forEach(value -> values.put(
                     key(value.experienceItemId(), value.evidenceId()), value));
+            if (selectedProfiles == null) {
+                throw new IllegalArgumentException("PROFILE_SNAPSHOT_INVALID");
+            }
+            StringBuilder profiles = new StringBuilder();
+            selectedProfiles.forEach(value -> {
+                if (value == null || value.safeContent() == null) {
+                    throw new IllegalArgumentException("PROFILE_SNAPSHOT_INVALID");
+                }
+                profiles.append(value.safeContent()).append(' ');
+            });
+            profileMaterial = profiles.toString();
         }
 
         private VerifiedEvidence get(EvidenceRef ref) {
@@ -208,6 +239,7 @@ public final class CareerArtifactContentValidator {
                     result.append(value.title()).append(' ').append(value.content()).append(' ');
                 }
             });
+            result.append(profileMaterial);
             return result.toString();
         }
 
@@ -218,6 +250,7 @@ public final class CareerArtifactContentValidator {
                     .append(' ')
                     .append(value.content())
                     .append(' '));
+            result.append(profileMaterial);
             return result.toString();
         }
 

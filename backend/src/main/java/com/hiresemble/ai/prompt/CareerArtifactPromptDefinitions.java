@@ -20,7 +20,7 @@ import tools.jackson.databind.JsonNode;
 public final class CareerArtifactPromptDefinitions {
 
     public static final String RESUME_PROMPT_VERSION = "resume-generation-prompt-v1";
-    public static final String PORTFOLIO_PROMPT_VERSION = "portfolio-generation-prompt-v1";
+    public static final String PORTFOLIO_PROMPT_VERSION = "portfolio-generation-prompt-v2";
 
     private static final String PORTFOLIO_SYSTEM_CONTRACT = """
             독자는 채용 담당자와 면접관이다. 첫 60초 안에 지원자의 역할, 주요 강점,
@@ -32,6 +32,8 @@ public final class CareerArtifactPromptDefinitions {
             않는다. 고유명사와 기술 용어를 보존하고 자연스러운 한국어를 사용한다.
             source가 부족하면 해당 내용을 생략하거나 warning을 반환하고 창작하지 않는다.
             좌표, font, 색상, OOXML, image URL, 외부 asset 지시는 절대 출력하지 않는다.
+            첫 60초는 내부 편집 목표일 뿐이다. 60초, 열람 시간, slide 수 같은 presentation
+            제약을 title, subtitle, item 또는 warning 문구로 출력하지 않는다.
             """;
 
     private CareerArtifactPromptDefinitions() {}

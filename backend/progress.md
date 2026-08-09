@@ -7,6 +7,22 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 102 suites/680 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-08-09] Session Summary (Career Artifact 실제 provider grounding hardening)
+
+- What was done:
+  - 실제 사용자 실패 Run을 `gpt-5.6-luna`로 재현하고 profile snapshot grounding, server-owned evidence metadata canonicalization, nullable blank canonical absence와 Resume editorial heading 검증을 구현했다.
+  - Portfolio·Resume 실제 OpenAI workflow가 각각 8단계와 Office render/reopen validation, MinIO upload, current version apply를 완료했다.
+- Key decisions:
+  - 승인 evidence의 UUID pair만 provider 선택으로 인정하고 title·usage type은 canonical snapshot으로 덮어쓴다. unknown UUID는 correction-once 뒤에도 계속 실패한다.
+  - private GitHub가 꺼진 실제 `.env`의 빈 App ID는 nullable binding으로 수용하되 private 기능이 켜지면 기존 fail-closed 검증을 유지한다.
+- Issues encountered:
+  - 작은 모델의 정상적인 편집 문구와 nullable `""`가 strict exact-match 검증에 걸렸고, fact-check가 evidence metadata를 재작성해 성공 초안을 실패시켰다.
+- Validation:
+  - 실제 성공 Run `a37e28c7-fea9-4999-bf36-1157d5664ad8`, `0c746634-9efe-4ba3-9add-5ec7b62e7612`; 총 21/50 provider calls, USD 0.057013.
+  - focused validator/workflow/GitHub property test와 `./gradlew.bat check --no-daemon --console=plain`이 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-09] Session Summary (Phase 5 Backend private GitHub와 account purge)
 
 - What was done:

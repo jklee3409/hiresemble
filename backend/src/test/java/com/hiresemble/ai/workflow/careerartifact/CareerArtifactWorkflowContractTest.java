@@ -84,6 +84,13 @@ class CareerArtifactWorkflowContractTest {
                         == WorkflowType.PORTFOLIO_GENERATION)
                 .map(PromptDefinition::instructions)
                 .reduce("", (left, right) -> left + "\n" + right);
+        assertThat(prompts)
+                .filteredOn(prompt -> prompt.key().workflowType()
+                        == WorkflowType.PORTFOLIO_GENERATION)
+                .extracting(PromptDefinition::promptVersion)
+                .containsOnly(CareerArtifactPromptDefinitions.PORTFOLIO_PROMPT_VERSION);
+        assertThat(CareerArtifactPromptDefinitions.PORTFOLIO_PROMPT_VERSION)
+                .isEqualTo("portfolio-generation-prompt-v2");
         assertThat(portfolio)
                 .contains("채용 담당자와 면접관", "첫 60초")
                 .contains("문제 → 내 역할 → 행동 → 기술적 판단 → 결과 → 드러난 강점")
@@ -96,6 +103,7 @@ class CareerArtifactWorkflowContractTest {
                 .contains("고유명사와 기술 용어", "자연스러운 한국어")
                 .contains("생략하거나 warning", "창작하지 않는다")
                 .contains("좌표, font, 색상, OOXML, image URL")
+                .contains("60초는 내부 편집 목표", "presentation")
                 .contains("evidence reference의 ID와 title은 제공된 값을 그대로 복사");
     }
 

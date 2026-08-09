@@ -14,6 +14,24 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/109 operations, on·private GitHub off 90 paths/120 operations, 둘 다 on 97 paths/127 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-08-09] Session Summary (Career Artifact 실제 AI 생성 실패 재현과 grounding 보정)
+
+- What was done:
+  - 실패한 사용자 Portfolio Run을 특정하고 활성 가격표의 최저가 `gpt-5.6-luna`로 실제 OpenAI·로컬 PostgreSQL·MinIO·Spring workflow에서 재현했다.
+  - 선택 profile grounding 누락, 책임 설명을 직무명으로 오판한 정규식, provider가 재작성한 evidence metadata, nullable 빈 문자열과 편집용 Resume heading의 과잉 검증을 각각 서버 소유 canonicalization과 의미에 맞는 claim 검증으로 보정했다.
+  - Portfolio `a37e28c7-fea9-4999-bf36-1157d5664ad8`와 Resume `0c746634-9efe-4ba3-9add-5ec7b62e7612`가 실제 외부 AI로 8단계 전체를 완료하고 현재 PPTX/DOCX version으로 연결됐다.
+- Key decisions:
+  - provider가 승인된 evidence ID를 선택할 수는 있지만 title·usage type은 서버 snapshot으로 복원하며 미승인 ID는 계속 거부한다. 빈 nullable 값은 `null`로만 정규화하고 사용자 claim은 생성·수리하지 않는다.
+  - 작업 호출은 사용자 승인에 따라 최대 50회로 제한했고 실제 사용은 21회, 총 비용은 USD 0.057013이었다. 프롬프트·응답 원문과 사용자 경력 내용은 출력하거나 checkpoint에 저장하지 않았다.
+- Issues encountered:
+  - in-app Browser와 IntelliJ 실행 구성이 없어 로그인 UI 자동화 대신 실제 `.env`, 사용자 DB, MinIO와 동일 Spring application service·비동기 workflow를 임시 bounded runner로 실행했다. runner와 Gradle task는 검증 후 제거했다.
+  - strict validator가 실제 작성 필드와 서버 소유 식별 metadata의 경계를 혼동해 단계별로 metric/date, role, evidence reference, nullable/item 오류가 드러났다.
+- Validation:
+  - 실제 성공 산출물은 PPTX 37,548 bytes와 DOCX 3,170 bytes이며 둘 다 `gpt-5.6-luna`, current version 연결과 8개 성공 step을 DB에서 확인했다.
+  - `backend/gradlew.bat check --no-daemon --console=plain`과 `docker compose --env-file .env.example config --quiet`가 통과했고 `.env`의 Git ignore도 확인했다.
+- Next steps:
+  - 실제 로그인 브라우저에서 목록·다운로드 UX를 확인하는 수동 UAT는 선택적으로 수행할 수 있다.
+
 ## [2026-08-09] Session Summary (Phase 5 private GitHub와 terminal account purge 구현)
 
 - What was done:

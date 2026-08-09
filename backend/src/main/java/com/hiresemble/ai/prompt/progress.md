@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-09] Session Summary (Portfolio 실제 provider prompt v2)
+
+- What was done:
+  - 첫 60초는 내부 편집 목표일 뿐 생성 content의 수치·read-time·slide 제약 문구가 아님을 명시하고 Portfolio prompt identity를 v2로 올렸다.
+- Key decisions:
+  - 면접관 중심 story 정책은 유지하면서 presentation constraint가 deterministic metric validator와 충돌하지 않게 했다.
+- Issues encountered:
+  - v1의 60초 지시가 실제 content에 출력되면 승인 근거에 없는 숫자로 판정될 수 있었다.
+- Validation:
+  - prompt version·핵심 문구 contract와 실제 Portfolio 생성 성공을 확인했다.
+- Next steps:
+  - None.
+
 ## [2026-08-08] Session Summary (Career Artifact prompt contract)
 
 - What was done:

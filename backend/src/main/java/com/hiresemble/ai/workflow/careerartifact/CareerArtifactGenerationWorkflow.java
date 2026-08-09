@@ -29,6 +29,7 @@ import com.hiresemble.careerartifact.domain.CareerArtifactContent.ResumeFactChec
 import com.hiresemble.careerartifact.domain.CareerArtifactContent.ResumePlan;
 import com.hiresemble.careerartifact.domain.CareerArtifactContent.ValidationIssue;
 import com.hiresemble.careerartifact.domain.CareerArtifactContentValidator;
+import com.hiresemble.careerartifact.domain.CareerArtifactContentCanonicalizer;
 import com.hiresemble.careerartifact.domain.CareerArtifactRecords.Version;
 import com.hiresemble.careerartifact.domain.CareerArtifactTypes.ArtifactType;
 import java.nio.charset.StandardCharsets;
@@ -331,12 +332,18 @@ public final class CareerArtifactGenerationWorkflow {
             requireText(output.headlineDirection(), 500, false, "RESUME_PLAN_INVALID");
             bounded(output.sectionOrder(), 12, 100, "RESUME_PLAN_INVALID");
             bounded(output.warnings(), 20, 500, "RESUME_PLAN_INVALID");
-            validateRefs(output.evidenceRefs(), state(context), false);
+            ResumePlan canonical = canonicalizer(state(context)).canonicalize(output);
+            validateRefs(canonical.evidenceRefs(), state(context), false);
         }
 
         @Override
         public JsonNode minimalOutput(ResumePlan output, ObjectMapper ignored) {
             return hashOutput(output, "warningCount", output.warnings().size());
+        }
+
+        @Override
+        public Object ephemeralOutput(ResumePlan output, StepExecutionContext context) {
+            return canonicalizer(state(context)).canonicalize(output);
         }
     }
 
@@ -364,12 +371,25 @@ public final class CareerArtifactGenerationWorkflow {
 
         @Override
         protected void validateWorkflow(ResumeContent output, StepExecutionContext context) {
-            validateResumeContent(output, state(context));
+            GenerationState state = state(context);
+            validateResumeContent(canonicalizer(state).canonicalize(output), state);
         }
 
         @Override
         public JsonNode minimalOutput(ResumeContent output, ObjectMapper ignored) {
             return hashOutput(output, "sectionCount", output.sections().size());
+        }
+
+        @Override
+        public JsonNode minimalOutput(
+                ResumeContent output, ObjectMapper ignored, StepExecutionContext context) {
+            ResumeContent canonical = canonicalizer(state(context)).canonicalize(output);
+            return hashOutput(canonical, "sectionCount", canonical.sections().size());
+        }
+
+        @Override
+        public Object ephemeralOutput(ResumeContent output, StepExecutionContext context) {
+            return canonicalizer(state(context)).canonicalize(output);
         }
     }
 
@@ -407,7 +427,9 @@ public final class CareerArtifactGenerationWorkflow {
         @Override
         protected void validateWorkflow(
                 ResumeFactCheckResult output, StepExecutionContext context) {
-            validateResumeContent(output.groundedDraft(), state(context));
+            GenerationState state = state(context);
+            validateResumeContent(
+                    canonicalizer(state).canonicalize(output.groundedDraft()), state);
         }
 
         @Override
@@ -419,9 +441,23 @@ public final class CareerArtifactGenerationWorkflow {
         }
 
         @Override
+        public JsonNode minimalOutput(
+                ResumeFactCheckResult output,
+                ObjectMapper ignored,
+                StepExecutionContext context) {
+            ResumeContent canonical = canonicalizer(state(context))
+                    .canonicalize(output.groundedDraft());
+            return objectMapper.createObjectNode()
+                    .put("contentHash", hash(objectMapper.valueToTree(canonical)))
+                    .put("issueCount", output.issues().size())
+                    .put("warningCount", output.warnings().size());
+        }
+
+        @Override
         public Object ephemeralOutput(
                 ResumeFactCheckResult output, StepExecutionContext context) {
-            ResumeContent draft = output.groundedDraft();
+            ResumeContent draft = canonicalizer(state(context))
+                    .canonicalize(output.groundedDraft());
             List<String> warnings = mergeWarnings(
                     mergeWarnings(draft.warnings(), output.warnings()),
                     contextWarnings(context));
@@ -454,12 +490,18 @@ public final class CareerArtifactGenerationWorkflow {
             requireText(output.audience(), 200, false, "PORTFOLIO_PLAN_INVALID");
             bounded(output.coreMessages(), 12, 500, "PORTFOLIO_PLAN_INVALID");
             bounded(output.warnings(), 20, 500, "PORTFOLIO_PLAN_INVALID");
-            validateRefs(output.evidenceRefs(), state(context), false);
+            PortfolioPlan canonical = canonicalizer(state(context)).canonicalize(output);
+            validateRefs(canonical.evidenceRefs(), state(context), false);
         }
 
         @Override
         public JsonNode minimalOutput(PortfolioPlan output, ObjectMapper ignored) {
             return hashOutput(output, "messageCount", output.coreMessages().size());
+        }
+
+        @Override
+        public Object ephemeralOutput(PortfolioPlan output, StepExecutionContext context) {
+            return canonicalizer(state(context)).canonicalize(output);
         }
     }
 
@@ -487,12 +529,25 @@ public final class CareerArtifactGenerationWorkflow {
 
         @Override
         protected void validateWorkflow(PortfolioContent output, StepExecutionContext context) {
-            validatePortfolioContent(output, state(context));
+            GenerationState state = state(context);
+            validatePortfolioContent(canonicalizer(state).canonicalize(output), state);
         }
 
         @Override
         public JsonNode minimalOutput(PortfolioContent output, ObjectMapper ignored) {
             return hashOutput(output, "slideCount", output.slides().size());
+        }
+
+        @Override
+        public JsonNode minimalOutput(
+                PortfolioContent output, ObjectMapper ignored, StepExecutionContext context) {
+            PortfolioContent canonical = canonicalizer(state(context)).canonicalize(output);
+            return hashOutput(canonical, "slideCount", canonical.slides().size());
+        }
+
+        @Override
+        public Object ephemeralOutput(PortfolioContent output, StepExecutionContext context) {
+            return canonicalizer(state(context)).canonicalize(output);
         }
     }
 
@@ -530,7 +585,9 @@ public final class CareerArtifactGenerationWorkflow {
         @Override
         protected void validateWorkflow(
                 PortfolioFactCheckResult output, StepExecutionContext context) {
-            validatePortfolioContent(output.groundedDraft(), state(context));
+            GenerationState state = state(context);
+            validatePortfolioContent(
+                    canonicalizer(state).canonicalize(output.groundedDraft()), state);
         }
 
         @Override
@@ -542,9 +599,23 @@ public final class CareerArtifactGenerationWorkflow {
         }
 
         @Override
+        public JsonNode minimalOutput(
+                PortfolioFactCheckResult output,
+                ObjectMapper ignored,
+                StepExecutionContext context) {
+            PortfolioContent canonical = canonicalizer(state(context))
+                    .canonicalize(output.groundedDraft());
+            return objectMapper.createObjectNode()
+                    .put("contentHash", hash(objectMapper.valueToTree(canonical)))
+                    .put("issueCount", output.issues().size())
+                    .put("warningCount", output.warnings().size());
+        }
+
+        @Override
         public Object ephemeralOutput(
                 PortfolioFactCheckResult output, StepExecutionContext context) {
-            PortfolioContent draft = output.groundedDraft();
+            PortfolioContent draft = canonicalizer(state(context))
+                    .canonicalize(output.groundedDraft());
             return new PortfolioContent(
                     draft.slides(),
                     mergeWarnings(
@@ -694,7 +765,8 @@ public final class CareerArtifactGenerationWorkflow {
 
     private void validateResumeContent(ResumeContent output, GenerationState state) {
         try {
-            contentValidator.validateResume(output, state.evidence());
+            contentValidator.validateResume(
+                    output, state.evidence(), state.profileSnapshots());
         } catch (IllegalArgumentException exception) {
             throw validationFailure(exception);
         }
@@ -702,7 +774,8 @@ public final class CareerArtifactGenerationWorkflow {
 
     private void validatePortfolioContent(PortfolioContent output, GenerationState state) {
         try {
-            contentValidator.validatePortfolio(output, state.evidence());
+            contentValidator.validatePortfolio(
+                    output, state.evidence(), state.profileSnapshots());
         } catch (IllegalArgumentException exception) {
             throw validationFailure(exception);
         }
@@ -711,13 +784,10 @@ public final class CareerArtifactGenerationWorkflow {
     private RuntimeException validationFailure(IllegalArgumentException failure) {
         String code = failure.getMessage() == null
                 ? "CAREER_ARTIFACT_CONTENT_INVALID" : failure.getMessage();
-        if ("UNKNOWN_EVIDENCE_REFERENCE".equals(code)) {
-            return deterministic(code);
-        }
         return StructuredOutputValidationException.repairable(
                 ValidationPhase.WORKFLOW_CONTEXT,
                 safeCode(code),
-                "Return a fully grounded draft within every count and length limit. Use only supplied evidence references and copy every number or date exactly from its cited evidence.");
+                "Return a fully grounded draft within every count and length limit. Use only supplied evidence references and selected structured profile values. Copy every evidence reference ID exactly and never create or modify an ID. Copy every number, date, organization, and canonical job title from those trusted sources. Presentation constraints such as scan time must not appear in the content.");
     }
 
     private void validateRefs(
@@ -730,9 +800,13 @@ public final class CareerArtifactGenerationWorkflow {
                     value.experienceItemId().equals(ref.experienceItemId())
                             && value.evidenceId().equals(ref.evidenceId())
                             && value.title().equals(ref.title()));
-            if (!allowed) throw deterministic("UNKNOWN_EVIDENCE_REFERENCE");
+            if (!allowed) throw repairable("UNKNOWN_EVIDENCE_REFERENCE");
             requireText(ref.title(), 250, false, "CAREER_ARTIFACT_EVIDENCE_REFS_INVALID");
         }
+    }
+
+    private CareerArtifactContentCanonicalizer canonicalizer(GenerationState state) {
+        return new CareerArtifactContentCanonicalizer(state.evidence());
     }
 
     private void validateIssues(List<ValidationIssue> issues) {
