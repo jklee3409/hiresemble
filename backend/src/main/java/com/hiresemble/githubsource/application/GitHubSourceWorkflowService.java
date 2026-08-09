@@ -22,6 +22,7 @@ import com.hiresemble.githubsource.application.GitHubWorkflowModels.RawCapture;
 import com.hiresemble.githubsource.application.GitHubWorkflowModels.SnapshotBundle;
 import com.hiresemble.githubsource.application.GitHubWorkflowModels.SourceUnitContent;
 import com.hiresemble.githubsource.domain.GitHubSourceKind;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Repository;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Snapshot;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Source;
@@ -133,7 +134,7 @@ public class GitHubSourceWorkflowService
     public Discovery discover(UUID userId, UUID sourceId, UUID runId, Instant now) {
         Source source = source(userId, sourceId);
         if (source.sourceKind() == GitHubSourceKind.ACCOUNT) {
-            var discovery = gateway.discoverAccount(source.ownerLogin());
+            var discovery = gateway.discoverAccount(discoveryAccess(source), source.ownerLogin());
             Source updated = store.applyAccountDiscovery(
                     userId,
                     sourceId,
@@ -144,8 +145,9 @@ public class GitHubSourceWorkflowService
                     now);
             return new Discovery(updated, store.selectedRepositories(userId, sourceId));
         }
+        GitHubAccessContext access = repositorySourceAccess(userId, source);
         ConditionalRepository response = gateway.repository(
-                source.ownerLogin(), source.repositoryName(), null);
+                access, source.ownerLogin(), source.repositoryName(), null);
         if (response.notModified() || response.repository() == null) {
             throw new GitHubGatewayException(GitHubGatewayException.Kind.INVALID_RESPONSE);
         }
@@ -157,8 +159,13 @@ public class GitHubSourceWorkflowService
     @Override
     public RawCapture capture(UUID userId, UUID sourceId, Repository repository) {
         requireSelected(userId, sourceId, repository.id());
+        Source source = source(userId, sourceId);
+        GitHubAccessContext access = repositoryAccess(source, repository);
         var commit = gateway.defaultBranchCommit(
-                repository.ownerLogin(), repository.repositoryName(), repository.defaultBranch());
+                access,
+                repository.ownerLogin(),
+                repository.repositoryName(),
+                repository.defaultBranch());
         Snapshot reusable = store.findSnapshot(
                         userId,
                         repository.id(),
@@ -169,16 +176,19 @@ public class GitHubSourceWorkflowService
             return new RawCapture(repository, reusable, null);
         }
         TreeSnapshot tree = gateway.tree(
-                repository.ownerLogin(), repository.repositoryName(), commit.treeSha());
+                access, repository.ownerLogin(), repository.repositoryName(), commit.treeSha());
         Map<String, Long> languages = gateway.languages(
-                repository.ownerLogin(), repository.repositoryName());
+                access, repository.ownerLogin(), repository.repositoryName());
         List<TreeEntry> selected = sanitizer.selectCandidateFiles(tree.entries());
         List<RawFile> files = new ArrayList<>();
         boolean complete = !tree.truncated();
         for (TreeEntry entry : selected) {
             try {
                 Blob blob = gateway.blob(
-                        repository.ownerLogin(), repository.repositoryName(), entry.sha());
+                        access,
+                        repository.ownerLogin(),
+                        repository.repositoryName(),
+                        entry.sha());
                 if (!entry.sha().equals(blob.sha())) {
                     throw new GitHubGatewayException(GitHubGatewayException.Kind.INVALID_RESPONSE);
                 }
@@ -213,6 +223,7 @@ public class GitHubSourceWorkflowService
     @Override
     public SnapshotBundle sanitizeAndStore(
             UUID userId, UUID sourceId, RawCapture capture, Instant now) {
+        Source source = source(userId, sourceId);
         if (capture.reused()) {
             return loadBundle(userId, capture.repository(), capture.reusableSnapshot(), true);
         }
@@ -248,6 +259,8 @@ public class GitHubSourceWorkflowService
                     storageKey,
                     encoded.checksumSha256(),
                     encoded.uncompressedBytes(),
+                    source.accessMode(),
+                    source.githubAppConnectionId(),
                     units,
                     now);
             if (!inserted.created()) {
@@ -426,7 +439,8 @@ public class GitHubSourceWorkflowService
                 repository.repositoryName(),
                 repository.canonicalUrl(),
                 repository.defaultBranch(),
-                false,
+                repository.visibility()
+                        == com.hiresemble.githubsource.domain.GitHubRepositoryVisibility.PRIVATE,
                 repository.fork(),
                 repository.archived(),
                 repository.description(),
@@ -439,6 +453,32 @@ public class GitHubSourceWorkflowService
         boolean selected = store.selectedRepositories(userId, sourceId).stream()
                 .anyMatch(repository -> repository.id().equals(repositoryId));
         if (!selected) throw notFound();
+    }
+
+    private GitHubAccessContext discoveryAccess(Source source) {
+        return source.accessMode() == GitHubAccessMode.PUBLIC
+                ? GitHubAccessContext.publicAccess()
+                : GitHubAccessContext.appDiscovery(source.githubAppConnectionId());
+    }
+
+    private GitHubAccessContext repositorySourceAccess(UUID userId, Source source) {
+        if (source.accessMode() == GitHubAccessMode.PUBLIC) {
+            return GitHubAccessContext.publicAccess();
+        }
+        long externalRepositoryId = store.externalRepositoryIdForConnection(
+                userId,
+                source.githubAppConnectionId(),
+                source.ownerLogin(),
+                source.repositoryName());
+        return GitHubAccessContext.appRepository(
+                source.githubAppConnectionId(), externalRepositoryId);
+    }
+
+    private GitHubAccessContext repositoryAccess(Source source, Repository repository) {
+        return source.accessMode() == GitHubAccessMode.PUBLIC
+                ? GitHubAccessContext.publicAccess()
+                : GitHubAccessContext.appRepository(
+                        source.githubAppConnectionId(), repository.externalRepositoryId());
     }
 
     private void compensateObject(UUID userId, String storageKey, Instant now) {

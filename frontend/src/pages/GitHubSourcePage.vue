@@ -2,6 +2,8 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { featureFlags } from '@/app/featureFlags'
+import GitHubAppConnectionsCard from '@/features/github/GitHubAppConnectionsCard.vue'
 import GitHubRunMonitor from '@/features/github/GitHubRunMonitor.vue'
 import CareerArtifactSuggestion from '@/features/career-artifacts/CareerArtifactSuggestion.vue'
 import {
@@ -28,7 +30,6 @@ import type {
 } from '@/shared/api/githubSourceContracts'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -111,7 +112,7 @@ const focusedSummary = computed(
 const actionErrorTitle = computed(() => {
   if (actionErrorCode.value === 'GITHUB_RATE_LIMITED') return 'GitHub 요청 한도에 도달했어요.'
   if (actionErrorCode.value === 'GITHUB_SOURCE_NOT_ACCESSIBLE')
-    return '공개 source를 찾지 못했어요.'
+    return '공개된 GitHub 주소를 찾지 못했어요.'
   if (actionErrorCode.value === 'EXTERNAL_SERVICE_UNAVAILABLE') return 'GitHub 연결이 불안정해요.'
   return '요청을 처리하지 못했어요.'
 })
@@ -189,7 +190,7 @@ async function registerSource(): Promise<void> {
       'https://github.com/계정 또는 https://github.com/계정/저장소 형식으로 입력해 주세요.'
   }
   if (!registerForm.participationConfirmed) {
-    registerErrors.value.participationConfirmed = '직접 참여한 공개 source인지 확인해 주세요.'
+    registerErrors.value.participationConfirmed = '직접 참여한 공개 저장소인지 확인해 주세요.'
   }
   if (Object.keys(registerErrors.value).length > 0) {
     await nextTick()
@@ -360,25 +361,13 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
     <h1 id="github-heading" class="sr-only">외부 연동</h1>
     <CareerArtifactAreaSwitch />
     <div class="github-page__content">
-      <PageHeader
-        title="GitHub 연결"
-        description="직접 참여한 공개 GitHub 계정이나 저장소에서 검토할 경험 근거를 찾아요."
-        variant="compact"
-        :level="2"
-      />
+      <h2 class="sr-only">GitHub 연결</h2>
 
-      <aside class="github-policy" aria-label="GitHub 분석 범위 안내">
-        <strong>공개 source만 안전하게 확인해요.</strong>
-        <ul>
-          <li>
-            계정 URL을 등록해도 모든 저장소를 자동 분석하지 않고, 직접 고른 저장소만 확인합니다.
-          </li>
-          <li>
-            저장소 코드를 실행하지 않으며, 추출 결과는 검토·승인 전까지 확정 경험으로 쓰지 않습니다.
-          </li>
-          <li>비공개 저장소, PAT, GitHub App 또는 OAuth 권한 연결은 지원하지 않습니다.</li>
-        </ul>
-      </aside>
+      <GitHubAppConnectionsCard
+        v-if="featureFlags.githubPrivateEnabled"
+        :user-id="userId"
+        @source-created="focusSource"
+      />
 
       <form class="github-register section-surface" novalidate @submit.prevent="registerSource">
         <div class="section-header">
@@ -475,7 +464,7 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
         class="github-state"
         kind="empty"
         title="아직 등록한 GitHub 연결이 없어요."
-        description="위에 직접 참여한 공개 GitHub 주소를 입력해 첫 경험 근거를 찾아보세요."
+        description="위에 직접 참여한 공개 GitHub 주소를 입력하면 이력서에 쓸 경험을 찾아 드려요."
       />
 
       <section
@@ -503,6 +492,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
               <div>
                 <div class="github-source-card__badges">
                   <StatusBadge :label="sourceKindLabel(source)" tone="neutral" />
+                  <StatusBadge
+                    :label="source.accessMode === 'GITHUB_APP' ? 'GitHub App' : 'Public'"
+                    :tone="source.accessMode === 'GITHUB_APP' ? 'success' : 'neutral'"
+                  />
                   <StatusBadge
                     :label="GITHUB_STATUS_LABELS[source.status]"
                     :tone="gitHubStatusTone(source.status)"
@@ -581,7 +574,7 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
             <div
               v-if="source.status === 'READY' || source.status === 'PARTIAL'"
               class="github-result-grid"
-              aria-label="GitHub 경험 추출 결과"
+              aria-label="GitHub에서 찾은 경험"
             >
               <div>
                 <span>새 경험</span><strong>{{ source.newExperienceCount }}</strong>
@@ -656,10 +649,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
               :label="GITHUB_STATUS_LABELS[focusedSummary.status]"
               :tone="gitHubStatusTone(focusedSummary.status)"
             />
-            <span v-if="focusedSummary.status === 'DISCOVERING'">공개 저장소를 찾고 있어요.</span>
+            <span v-if="focusedSummary.status === 'DISCOVERING'">허용된 저장소를 찾고 있어요.</span>
             <span v-else-if="focusedSummary.status === 'QUEUED'">분석 순서를 기다리고 있어요.</span>
             <span v-else-if="focusedSummary.status === 'RUNNING'"
-              >선택한 공개 저장소를 분석하고 있어요.</span
+              >선택한 저장소를 분석하고 있어요.</span
             >
             <span v-else-if="focusedSummary.status === 'WAITING_USER'"
               >분석할 저장소를 직접 골라 주세요.</span
@@ -692,7 +685,7 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
               class="alert alert--warning"
               role="status"
             >
-              저장소가 많아 일부만 발견했습니다. 이름 검색으로 확인할 수 있는 공개 저장소 안에서
+              저장소가 많아 일부만 발견했습니다. 이름 검색으로 확인할 수 있는 허용 저장소 안에서
               선택해 주세요.
             </p>
             <form class="repository-toolbar" role="search" @submit.prevent="submitRepositorySearch">
@@ -720,7 +713,7 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
             <StatePanel
               v-if="repositories.isPending.value"
               kind="loading"
-              title="공개 저장소를 불러오는 중…"
+              title="저장소를 불러오는 중…"
             />
             <StatePanel
               v-else-if="repositories.isError.value"
@@ -731,10 +724,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
             <StatePanel
               v-else-if="repositories.data.value?.items.length === 0"
               kind="empty"
-              title="조건에 맞는 공개 저장소가 없어요."
-              description="검색어를 바꾸거나 GitHub 공개 상태를 확인해 주세요."
+              title="조건에 맞는 저장소가 없어요."
+              description="검색어 또는 GitHub App repository 선택 범위를 확인해 주세요."
             />
-            <ul v-else class="repository-list" aria-label="발견한 공개 저장소">
+            <ul v-else class="repository-list" aria-label="발견한 저장소">
               <li v-for="repository in repositories.data.value?.items" :key="repository.id">
                 <label class="repository-choice">
                   <input
@@ -750,6 +743,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
                   <span class="repository-choice__body">
                     <span class="repository-choice__title">
                       <strong>{{ repository.ownerLogin }}/{{ repository.repositoryName }}</strong>
+                      <StatusBadge
+                        :label="repository.visibility === 'PRIVATE' ? 'Private' : 'Public'"
+                        :tone="repository.visibility === 'PRIVATE' ? 'warning' : 'neutral'"
+                      />
                       <StatusBadge v-if="repository.fork" label="Fork" tone="neutral" />
                       <StatusBadge v-if="repository.archived" label="보관됨" tone="warning" />
                     </span>
@@ -788,37 +785,11 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
 </template>
 
 <style scoped>
+/* 자료 종류 전환 바로 아래에서 등록 form이 시작하도록 같은 간격만 둔다. */
 .github-page__content {
-  margin-top: var(--layout-tabs-body-gap);
-}
-
-.github-policy,
-.github-register,
-.github-feedback,
-.github-state,
-.github-sources,
-.github-focused {
-  margin-top: var(--space-5);
-}
-
-.github-policy {
-  border-radius: var(--radius-lg);
-  background: var(--color-brand-soft);
-  padding: var(--space-4) var(--space-5);
-}
-
-.github-policy strong {
-  color: var(--color-brand-strong);
-}
-
-.github-policy ul {
   display: grid;
-  gap: var(--space-1);
-  margin-top: var(--space-2);
-  padding-left: var(--space-5);
-  color: var(--color-muted-strong);
-  font-size: var(--font-size-sm);
-  list-style: disc;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 .github-register,

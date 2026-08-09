@@ -34,6 +34,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private static final String ME_PATH = "/paths/~1api~1v1~1auth~1me/get";
     private static final String DISPLAY_NAME_PATH =
             "/paths/~1api~1v1~1account~1display-name/patch";
+    private static final String PASSWORD_PATH = "/paths/~1api~1v1~1account~1password/patch";
+    private static final String ACCOUNT_DELETE_PATH = "/paths/~1api~1v1~1account/delete";
     private static final String DASHBOARD_PATH = "/paths/~1api~1v1~1dashboard/get";
     private static final String CAREER_GUIDES_PATH = "/paths/~1api~1v1~1career-guides/get";
     private static final String PROFILE_ELIGIBILITY_GET_PATH =
@@ -48,7 +50,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyOneHundredEighteenOperationsAndEightyEightPaths() {
+    void liveSpringMappingsHaveExactlyOneHundredTwentyOperationsAndNinetyPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -64,12 +66,12 @@ class OpenApiContractTest extends PostgresIntegrationTest {
             operations[0] += apiPaths.size() * methodCount;
         });
 
-        assertThat(paths).hasSize(88);
-        assertThat(operations[0]).isEqualTo(118);
+        assertThat(paths).hasSize(90);
+        assertThat(operations[0]).isEqualTo(120);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyOneHundredEighteenOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyOneHundredTwentyOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -103,6 +105,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/auth/logout",
                         "/api/v1/auth/me",
                         "/api/v1/account/display-name",
+                        "/api/v1/account/password",
+                        "/api/v1/account",
                         "/api/v1/dashboard",
                         "/api/v1/career-guides",
                         "/api/v1/profile",
@@ -185,13 +189,15 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(118);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(120);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
         assertOperation(document.at(LOGOUT_PATH), "logout");
         assertOperation(document.at(ME_PATH), "getCurrentUser");
         assertOperation(document.at(DISPLAY_NAME_PATH), "updateDisplayName");
+        assertOperation(document.at(PASSWORD_PATH), "changePassword");
+        assertOperation(document.at(ACCOUNT_DELETE_PATH), "deleteAccount");
         assertOperation(document.at(DASHBOARD_PATH), "getDashboard", "Dashboard");
         assertOperation(document.at(CAREER_GUIDES_PATH), "listCareerGuides", "Dashboard");
 
@@ -201,6 +207,8 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertResponseCodes(document.at(LOGOUT_PATH), "204", "401", "403");
         assertResponseCodes(document.at(ME_PATH), "200", "401");
         assertResponseCodes(document.at(DISPLAY_NAME_PATH), "200", "400", "401", "403");
+        assertResponseCodes(document.at(PASSWORD_PATH), "204", "400", "401", "403", "409");
+        assertResponseCodes(document.at(ACCOUNT_DELETE_PATH), "202", "400", "401", "403");
         assertResponseCodes(document.at(DASHBOARD_PATH), "200", "400", "401");
         assertResponseCodes(document.at(CAREER_GUIDES_PATH), "200", "401");
         assertResponseCodes(

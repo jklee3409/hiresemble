@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod'
 
 import {
+  createGitHubSourceRequestSchema,
   gitHubRefreshResultSchema,
   gitHubRepositoryPageSchema,
   gitHubRunAcceptedSchema,
@@ -42,8 +43,9 @@ export function createGitHubSource(
   request: CreateGitHubSourceRequest,
   idempotencyKey: string,
 ): Promise<RunAcceptedDto> {
+  const validated = createGitHubSourceRequestSchema.parse(request)
   return apiClient
-    .post<unknown>('/github-sources', request, idempotencyHeader(idempotencyKey))
+    .post<unknown>('/github-sources', validated, idempotencyHeader(idempotencyKey))
     .then((value) => parseGitHubResponse(gitHubRunAcceptedSchema, value))
 }
 

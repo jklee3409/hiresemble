@@ -1,9 +1,13 @@
 package com.hiresemble.common.security;
 
 import com.hiresemble.common.exception.ErrorCode;
+import com.hiresemble.auth.security.WithdrawnUserFilter;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
@@ -31,7 +36,8 @@ public class SecurityConfiguration {
             HttpSecurity http,
             SecurityErrorResponseWriter errorWriter,
             CsrfTokenRepository csrfTokenRepository,
-            SecurityContextRepository securityContextRepository)
+            SecurityContextRepository securityContextRepository,
+            WithdrawnUserFilter withdrawnUserFilter)
             throws Exception {
         AccessDeniedHandler accessDeniedHandler = (request, response, exception) ->
                 errorWriter.write(
@@ -45,6 +51,11 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/github-app-connections/setup/callback",
+                                "/api/v1/github-app-connections/oauth/callback")
+                        .permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/csrf",
                                 "/api/v1/auth/signup",
@@ -65,7 +76,23 @@ public class SecurityConfiguration {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout.disable());
+        http.addFilterAfter(withdrawnUserFilter, SecurityContextHolderFilter.class);
         return http.build();
+    }
+
+    @Bean
+    WithdrawnUserFilter withdrawnUserFilter(
+            JdbcClient jdbc, SecurityErrorResponseWriter errorWriter) {
+        return new WithdrawnUserFilter(jdbc, errorWriter);
+    }
+
+    @Bean
+    FilterRegistrationBean<WithdrawnUserFilter> withdrawnUserFilterRegistration(
+            WithdrawnUserFilter filter) {
+        FilterRegistrationBean<WithdrawnUserFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

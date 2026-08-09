@@ -27,6 +27,17 @@ public class GitHubSnapshotDeletionOutboxStore {
         return enqueue(userId, sourceId, snapshotId, storageKey, "SOURCE_DELETE", now);
     }
 
+    public UUID enqueuePrivateConnection(
+            UUID userId, UUID snapshotId, String storageKey, Instant now) {
+        return enqueue(
+                userId, null, snapshotId, storageKey, "PRIVATE_CONNECTION_DISCONNECT", now);
+    }
+
+    public UUID enqueueAccountDeletion(
+            UUID userId, UUID snapshotId, String storageKey, Instant now) {
+        return enqueue(userId, null, snapshotId, storageKey, "ACCOUNT_DELETION", now);
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID enqueueOrphan(UUID userId, String storageKey, Instant now) {
         return enqueue(userId, null, null, storageKey, "ORPHAN_SNAPSHOT_COMPENSATION", now);

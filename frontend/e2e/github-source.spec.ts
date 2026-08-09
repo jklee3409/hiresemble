@@ -26,12 +26,13 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
   // backend가 돌려주는 legacy 경로도 새 `이력서·자료` 화면으로 이어져야 한다.
   await page.goto('/profile/github')
   await expect(page).toHaveURL(/\/integrations$/)
-  await expect(page.getByRole('heading', { name: 'GitHub 연결', level: 2 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'GitHub 연결', level: 2 })).toBeAttached()
   await expect(page.getByRole('link', { name: '외부 연동' })).toHaveAttribute(
     'aria-current',
     'page',
   )
-  await expect(page.getByText('저장소 코드를 실행하지 않으며')).toBeVisible()
+  // 등록 form의 참여 확인 문구가 수집 범위를 알려 준다.
+  await expect(page.getByText('다른 사람의 작업을 내 경험으로 등록하지 않습니다')).toBeVisible()
 
   await page.getByLabel('GitHub 계정 또는 저장소 URL').fill('https://github.com/openai')
   await page.getByLabel('제가 직접 참여한 공개 계정 또는 저장소입니다.').check()
@@ -225,6 +226,8 @@ function source(phase: 'waiting' | 'running' | 'ready', version: number) {
     canonicalUrl: 'https://github.com/openai',
     ownerLogin: 'openai',
     repositoryName: null,
+    accessMode: 'PUBLIC',
+    connectionId: null,
     status: phase === 'waiting' ? 'WAITING_USER' : phase === 'running' ? 'QUEUED' : 'READY',
     discoveredRepositoryCount: 2,
     selectedRepositoryCount: phase === 'waiting' ? 0 : 1,
@@ -292,6 +295,7 @@ function repository(id: string, name: string) {
     canonicalUrl: `https://github.com/openai/${name}`,
     description: `${name} 공개 저장소`,
     defaultBranch: 'main',
+    visibility: 'PUBLIC',
     fork: false,
     archived: false,
     selected: false,

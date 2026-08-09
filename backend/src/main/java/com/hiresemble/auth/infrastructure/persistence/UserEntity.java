@@ -88,6 +88,17 @@ public class UserEntity {
         this.updatedAt = now;
     }
 
+    public void changePassword(String passwordHash, Instant now) {
+        this.passwordHash = passwordHash;
+        this.updatedAt = now;
+    }
+
+    public void withdraw(Instant now) {
+        this.status = UserStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+        this.updatedAt = now;
+    }
+
     public UUID id() {
         return id;
     }

@@ -27,6 +27,8 @@ public final class GitHubSourceApiMapper {
                 source.canonicalUrl(),
                 source.ownerLogin(),
                 source.repositoryName(),
+                source.accessMode(),
+                source.githubAppConnectionId(),
                 source.status(),
                 source.discoveredRepositoryCount(),
                 source.selectedRepositoryCount(),
@@ -50,9 +52,11 @@ public final class GitHubSourceApiMapper {
                         new ResourceRefDto(
                                 GitHubSourceMutationService.RESOURCE_TYPE,
                                 source.id(),
-                                source.canonicalUrl()),
+                                source.accessMode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC
+                                        ? source.canonicalUrl()
+                                        : "Private GitHub source"),
                         "/profile/github",
-                        "분석할 공개 저장소를 1개 이상 선택해 주세요.")
+                        "분석할 저장소를 1개 이상 선택해 주세요.")
                 : null;
         return new GitHubSourceDetailDto(summary(source), action);
     }
@@ -65,6 +69,7 @@ public final class GitHubSourceApiMapper {
                 repository.canonicalUrl(),
                 repository.description(),
                 repository.defaultBranch(),
+                repository.visibility(),
                 repository.fork(),
                 repository.archived(),
                 repository.selected(),

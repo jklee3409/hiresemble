@@ -107,6 +107,8 @@ public class OpenApiConfiguration {
                                     && method != HttpMethod.GET)
                             || (path.startsWith("/api/v1/github-sources")
                                     && method != HttpMethod.GET)
+                            || (path.startsWith("/api/v1/github-app-connections")
+                                    && method != HttpMethod.GET)
                             || (path.startsWith("/api/v1/career-artifacts")
                                     && method != HttpMethod.GET);
                     if (protectedMutation) {

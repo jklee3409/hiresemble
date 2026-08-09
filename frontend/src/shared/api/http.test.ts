@@ -109,6 +109,21 @@ describe('HttpApiClient', () => {
     expect(unauthorized).toHaveBeenCalledTimes(1)
   })
 
+  it('does not clear an authenticated session for a current-password credential error', async () => {
+    const unauthorized = vi.fn()
+    const adapter: AxiosAdapter = async (config) => {
+      throw responseError(config, errorResponse({ status: 401, code: 'INVALID_CREDENTIALS' }))
+    }
+    const client = new HttpApiClient({ adapter })
+    client.setUnauthorizedHandler(unauthorized)
+
+    await expect(client.delete('/account')).rejects.toMatchObject({
+      status: 401,
+      code: 'INVALID_CREDENTIALS',
+    })
+    expect(unauthorized).not.toHaveBeenCalled()
+  })
+
   it('does not retry a 409 mutation', async () => {
     let mutationRequests = 0
     const adapter: AxiosAdapter = async (config) => {

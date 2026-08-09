@@ -10,6 +10,8 @@ import com.hiresemble.githubsource.application.GitHubGatewayModels.RepositoryMet
 import com.hiresemble.githubsource.application.GitHubGatewayModels.TreeEntry;
 import com.hiresemble.githubsource.application.GitHubGatewayModels.TreeSnapshot;
 import com.hiresemble.githubsource.application.GitHubRestGateway;
+import com.hiresemble.githubsource.application.GitHubAccessContext;
+import com.hiresemble.githubsource.application.GitHubInstallationTokenProvider;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -48,9 +51,13 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
     private final HttpClient client;
     private final ObjectMapper objectMapper;
     private final Semaphore concurrency;
+    private final GitHubInstallationTokenProvider tokenProvider;
 
     @Autowired
-    public HttpGitHubRestGateway(GitHubProperties properties, ObjectMapper objectMapper) {
+    public HttpGitHubRestGateway(
+            GitHubProperties properties,
+            ObjectMapper objectMapper,
+            ObjectProvider<GitHubInstallationTokenProvider> tokenProvider) {
         this(
                 properties.getApiBaseUrl(),
                 properties.getApiVersion(),
@@ -60,7 +67,8 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
                 properties.getMaxTextFileBytes(),
                 properties.getMaxConcurrentRequests(),
                 objectMapper,
-                false);
+                false,
+                tokenProvider.getIfAvailable());
     }
 
     HttpGitHubRestGateway(
@@ -73,6 +81,30 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
             int maxConcurrentRequests,
             ObjectMapper objectMapper,
             boolean allowLoopbackTestBaseUrl) {
+        this(
+                baseUrl,
+                apiVersion,
+                connectTimeout,
+                responseTimeout,
+                maxResponseBytes,
+                maxTextFileBytes,
+                maxConcurrentRequests,
+                objectMapper,
+                allowLoopbackTestBaseUrl,
+                null);
+    }
+
+    HttpGitHubRestGateway(
+            URI baseUrl,
+            String apiVersion,
+            Duration connectTimeout,
+            Duration responseTimeout,
+            int maxResponseBytes,
+            int maxTextFileBytes,
+            int maxConcurrentRequests,
+            ObjectMapper objectMapper,
+            boolean allowLoopbackTestBaseUrl,
+            GitHubInstallationTokenProvider tokenProvider) {
         requireAllowedBaseUrl(baseUrl, allowLoopbackTestBaseUrl);
         this.baseUrl = baseUrl;
         this.apiVersion = apiVersion;
@@ -81,6 +113,7 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
         this.maxTextFileBytes = maxTextFileBytes;
         this.objectMapper = objectMapper;
         this.concurrency = new Semaphore(maxConcurrentRequests, true);
+        this.tokenProvider = tokenProvider;
         this.client = HttpClient.newBuilder()
                 .connectTimeout(connectTimeout)
                 .followRedirects(HttpClient.Redirect.NEVER)
@@ -214,6 +247,119 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
         return new Blob(sha(value.path("sha").asText()), content);
     }
 
+    @Override
+    public AccountDiscovery discoverAccount(GitHubAccessContext access, String ownerLogin) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return discoverAccount(ownerLogin);
+        }
+        requirePrivateDiscovery(access);
+        var authorized = token(false, access);
+        List<RepositoryMetadata> repositories = new ArrayList<>();
+        Response first = authorizedGet(
+                access, "/installation/repositories?per_page=100&page=1", null, false);
+        repositories.addAll(installationRepositoryPage(first));
+        if (repositories.size() == 100) {
+            Response second = authorizedGet(
+                    access, "/installation/repositories?per_page=100&page=2", null, false);
+            repositories.addAll(installationRepositoryPage(second));
+        }
+        boolean truncated = repositories.size() > 200;
+        if (repositories.size() > 200) {
+            repositories = new ArrayList<>(repositories.subList(0, 200));
+        }
+        return new AccountDiscovery(authorized.targetAccountType(), repositories, truncated);
+    }
+
+    @Override
+    public ConditionalRepository repository(
+            GitHubAccessContext access,
+            String ownerLogin,
+            String repositoryName,
+            String etag) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return repository(ownerLogin, repositoryName, etag);
+        }
+        Response response = authorizedGet(
+                access,
+                "/repos/" + segment(ownerLogin) + "/" + segment(repositoryName),
+                etag,
+                true);
+        if (response.status() == 304) return new ConditionalRepository(null, true);
+        return new ConditionalRepository(repository(json(response.body()), response.etag()), false);
+    }
+
+    @Override
+    public CommitMetadata defaultBranchCommit(
+            GitHubAccessContext access,
+            String ownerLogin,
+            String repositoryName,
+            String defaultBranch) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return defaultBranchCommit(ownerLogin, repositoryName, defaultBranch);
+        }
+        Response response = authorizedGet(
+                access,
+                "/repos/" + segment(ownerLogin) + "/" + segment(repositoryName)
+                        + "/commits/" + encodedPathValue(defaultBranch),
+                null,
+                true);
+        JsonNode value = json(response.body());
+        return new CommitMetadata(
+                sha(value.path("sha").asText()),
+                sha(value.path("commit").path("tree").path("sha").asText()),
+                response.etag());
+    }
+
+    @Override
+    public TreeSnapshot tree(
+            GitHubAccessContext access,
+            String ownerLogin,
+            String repositoryName,
+            String treeSha) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return tree(ownerLogin, repositoryName, treeSha);
+        }
+        Response response = authorizedGet(
+                access,
+                "/repos/" + segment(ownerLogin) + "/" + segment(repositoryName)
+                        + "/git/trees/" + sha(treeSha) + "?recursive=1",
+                null,
+                true);
+        return treeSnapshot(response);
+    }
+
+    @Override
+    public Map<String, Long> languages(
+            GitHubAccessContext access, String ownerLogin, String repositoryName) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return languages(ownerLogin, repositoryName);
+        }
+        Response response = authorizedGet(
+                access,
+                "/repos/" + segment(ownerLogin) + "/" + segment(repositoryName) + "/languages",
+                null,
+                true);
+        return languageMap(response);
+    }
+
+    @Override
+    public Blob blob(
+            GitHubAccessContext access,
+            String ownerLogin,
+            String repositoryName,
+            String blobSha) {
+        if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {
+            return blob(ownerLogin, repositoryName, blobSha);
+        }
+        Response response = authorizedGet(
+                access,
+                "/repos/" + segment(ownerLogin) + "/" + segment(repositoryName)
+                        + "/git/blobs/" + sha(blobSha),
+                null,
+                true);
+        return blob(response);
+    }
+
     private List<RepositoryMetadata> repositoryPage(Response response) {
         JsonNode values = json(response.body());
         if (!values.isArray()) {
@@ -227,6 +373,67 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
             }
         }
         return repositories;
+    }
+
+    private List<RepositoryMetadata> installationRepositoryPage(Response response) {
+        JsonNode values = json(response.body()).path("repositories");
+        if (!values.isArray()) {
+            throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
+        }
+        List<RepositoryMetadata> repositories = new ArrayList<>();
+        values.forEach(value -> repositories.add(repository(value, null)));
+        return repositories;
+    }
+
+    private TreeSnapshot treeSnapshot(Response response) {
+        JsonNode value = json(response.body());
+        List<TreeEntry> entries = new ArrayList<>();
+        JsonNode tree = value.path("tree");
+        if (!tree.isArray()) throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
+        for (JsonNode item : tree) {
+            String path = item.path("path").asText();
+            String type = item.path("type").asText();
+            String mode = item.path("mode").asText();
+            long size = item.path("size").canConvertToLong() ? item.path("size").asLong() : -1L;
+            String itemSha = item.path("sha").asText();
+            if (path.isBlank() || path.length() > 1000 || type.isBlank() || mode.isBlank()
+                    || !itemSha.matches("[0-9a-f]{40}")) {
+                throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
+            }
+            entries.add(new TreeEntry(path, mode, type, size, itemSha));
+        }
+        return new TreeSnapshot(
+                sha(value.path("sha").asText()),
+                entries,
+                value.path("truncated").asBoolean(false),
+                response.etag());
+    }
+
+    private Map<String, Long> languageMap(Response response) {
+        JsonNode value = json(response.body());
+        if (!value.isObject()) throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
+        Map<String, Long> result = new LinkedHashMap<>();
+        value.properties().forEach(entry -> {
+            long bytes = entry.getValue().asLong(-1);
+            if (entry.getKey().length() <= 80 && bytes >= 0) result.put(entry.getKey(), bytes);
+        });
+        return Map.copyOf(result);
+    }
+
+    private Blob blob(Response response) {
+        JsonNode value = json(response.body());
+        if (!"base64".equalsIgnoreCase(value.path("encoding").asText())) {
+            throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
+        }
+        try {
+            byte[] content = Base64.getMimeDecoder().decode(value.path("content").asText());
+            if (content.length > maxTextFileBytes) {
+                throw new GitHubGatewayException(Kind.RESPONSE_LIMIT);
+            }
+            return new Blob(sha(value.path("sha").asText()), content);
+        } catch (IllegalArgumentException exception) {
+            throw new GitHubGatewayException(Kind.INVALID_RESPONSE, exception);
+        }
     }
 
     private RepositoryMetadata repository(JsonNode value, String etag) {
@@ -272,6 +479,10 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
     }
 
     private Response get(String relativePath, String etag) {
+        return get(relativePath, etag, null);
+    }
+
+    private Response get(String relativePath, String etag, String authorizationToken) {
         boolean acquired = false;
         try {
             acquired = concurrency.tryAcquire(responseTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -288,6 +499,9 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
                     .GET();
             if (etag != null && !etag.isBlank()) {
                 request.header("If-None-Match", etag);
+            }
+            if (authorizationToken != null && !authorizationToken.isBlank()) {
+                request.header("Authorization", "Bearer " + authorizationToken);
             }
             HttpResponse<InputStream> response = client.send(
                     request.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -310,6 +524,9 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
             if (status == 404) {
                 throw new GitHubGatewayException(Kind.NOT_FOUND);
             }
+            if (status == 401 || (status == 403 && authorizationToken != null)) {
+                throw new GitHubGatewayException(Kind.AUTHENTICATION);
+            }
             if (status == 403 || status == 429) {
                 throw new GitHubGatewayException(
                         Kind.RATE_LIMITED, retryAfter(response.headers().firstValue("retry-after").orElse(null)));
@@ -329,6 +546,39 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
             if (acquired) {
                 concurrency.release();
             }
+        }
+    }
+
+    private Response authorizedGet(
+            GitHubAccessContext access, String relativePath, String etag, boolean contentsRead) {
+        requireTokenProvider();
+        try {
+            var token = token(contentsRead, access);
+            return get(relativePath, etag, token.value());
+        } catch (GitHubGatewayException exception) {
+            if (exception.kind() != Kind.AUTHENTICATION && exception.kind() != Kind.PERMISSION) {
+                throw exception;
+            }
+            tokenProvider.invalidate(access.connectionId(), access.externalRepositoryId());
+            var token = token(contentsRead, access);
+            return get(relativePath, etag, token.value());
+        }
+    }
+
+    private GitHubInstallationTokenProvider.AuthorizedToken token(
+            boolean contentsRead, GitHubAccessContext access) {
+        requireTokenProvider();
+        return tokenProvider.authorize(
+                access.connectionId(), access.externalRepositoryId(), contentsRead);
+    }
+
+    private void requireTokenProvider() {
+        if (tokenProvider == null) throw new GitHubGatewayException(Kind.AUTHENTICATION);
+    }
+
+    private void requirePrivateDiscovery(GitHubAccessContext access) {
+        if (access.connectionId() == null || access.externalRepositoryId() != null) {
+            throw new GitHubGatewayException(Kind.INVALID_RESPONSE);
         }
     }
 

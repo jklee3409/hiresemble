@@ -11,11 +11,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hiresemble.githubsource.application.GitHubGatewayException;
 import com.hiresemble.githubsource.application.GitHubGatewayException.Kind;
+import com.hiresemble.githubsource.application.GitHubAccessContext;
+import com.hiresemble.githubsource.application.GitHubInstallationTokenProvider;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -178,6 +183,97 @@ class HttpGitHubRestGatewayTest {
         server.verify(0, getRequestedFor(com.github.tomakehurst.wiremock.client.WireMock.urlMatching("/steal.*")));
     }
 
+    @Test
+    void privateAccessUsesRepositoryScopedBearerForMetadataTreeLanguageAndBlobReads() {
+        UUID connectionId = UUID.randomUUID();
+        long repositoryId = 8123L;
+        RecordingTokenProvider provider = new RecordingTokenProvider();
+        HttpGitHubRestGateway gateway = privateGateway(provider);
+        GitHubAccessContext discovery = GitHubAccessContext.appDiscovery(connectionId);
+        GitHubAccessContext repositoryAccess =
+                GitHubAccessContext.appRepository(connectionId, repositoryId);
+
+        server.stubFor(get(urlEqualTo("/installation/repositories?per_page=100&page=1"))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer discovery-memory-fixture"))
+                .willReturn(json("{\"repositories\":["
+                        + repositoryJson(repositoryId, "acme", "private-repo", true) + "]}")));
+        server.stubFor(get(urlEqualTo("/repos/acme/private-repo"))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer contents-memory-fixture"))
+                .willReturn(json(repositoryJson(repositoryId, "acme", "private-repo", true))));
+        server.stubFor(get(urlEqualTo("/repos/acme/private-repo/commits/main"))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer contents-memory-fixture"))
+                .willReturn(json("{\"sha\":\"" + COMMIT_SHA
+                        + "\",\"commit\":{\"tree\":{\"sha\":\"" + TREE_SHA + "\"}}}")));
+        server.stubFor(get(urlEqualTo(
+                        "/repos/acme/private-repo/git/trees/" + TREE_SHA + "?recursive=1"))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer contents-memory-fixture"))
+                .willReturn(json("{\"sha\":\"" + TREE_SHA
+                        + "\",\"truncated\":false,\"tree\":[{\"path\":\"README.md\","
+                        + "\"mode\":\"100644\",\"type\":\"blob\",\"size\":4,\"sha\":\""
+                        + BLOB_SHA + "\"}]}")));
+        server.stubFor(get(urlEqualTo("/repos/acme/private-repo/languages"))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer contents-memory-fixture"))
+                .willReturn(json("{\"Java\":42}")));
+        String content = Base64.getEncoder().encodeToString(
+                "safe".getBytes(StandardCharsets.UTF_8));
+        server.stubFor(get(urlEqualTo("/repos/acme/private-repo/git/blobs/" + BLOB_SHA))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer contents-memory-fixture"))
+                .willReturn(json("{\"sha\":\"" + BLOB_SHA
+                        + "\",\"encoding\":\"base64\",\"content\":\"" + content + "\"}")));
+
+        assertThat(gateway.discoverAccount(discovery, "acme").repositories())
+                .singleElement()
+                .satisfies(repository -> assertThat(repository.privateRepository()).isTrue());
+        assertThat(gateway.repository(repositoryAccess, "acme", "private-repo", null)
+                        .repository().externalId())
+                .isEqualTo(repositoryId);
+        assertThat(gateway.defaultBranchCommit(repositoryAccess, "acme", "private-repo", "main")
+                        .treeSha())
+                .isEqualTo(TREE_SHA);
+        assertThat(gateway.tree(repositoryAccess, "acme", "private-repo", TREE_SHA).entries())
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.path()).isEqualTo("README.md"));
+        assertThat(gateway.languages(repositoryAccess, "acme", "private-repo"))
+                .containsEntry("Java", 42L);
+        assertThat(gateway.blob(repositoryAccess, "acme", "private-repo", BLOB_SHA).content())
+                .isEqualTo("safe".getBytes(StandardCharsets.UTF_8));
+        assertThat(provider.discoveryRequests.get()).isEqualTo(2);
+        assertThat(provider.contentsRequests.get()).isEqualTo(5);
+    }
+
+    @Test
+    void privateReadInvalidatesAndReissuesOnceAfterAuthenticationFailure() {
+        UUID connectionId = UUID.randomUUID();
+        long repositoryId = 9123L;
+        RotatingTokenProvider provider = new RotatingTokenProvider();
+        HttpGitHubRestGateway gateway = privateGateway(provider);
+        String path = "/repos/acme/private-repo";
+        server.stubFor(get(urlEqualTo(path))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer expired-memory-fixture"))
+                .willReturn(aResponse().withStatus(401)));
+        server.stubFor(get(urlEqualTo(path))
+                .withHeader("Authorization", com.github.tomakehurst.wiremock.client.WireMock.equalTo(
+                        "Bearer renewed-memory-fixture"))
+                .willReturn(json(repositoryJson(repositoryId, "acme", "private-repo", true))));
+
+        assertThat(gateway.repository(
+                                GitHubAccessContext.appRepository(connectionId, repositoryId),
+                                "acme",
+                                "private-repo",
+                                null)
+                        .repository().externalId())
+                .isEqualTo(repositoryId);
+        assertThat(provider.authorizationRequests.get()).isEqualTo(2);
+        assertThat(provider.invalidations.get()).isEqualTo(1);
+    }
+
     private void assertFailure(ThrowingCall call, Kind expected) {
         assertThatThrownBy(call::run)
                 .isInstanceOf(GitHubGatewayException.class)
@@ -196,6 +292,20 @@ class HttpGitHubRestGatewayTest {
                 2,
                 new ObjectMapper(),
                 true);
+    }
+
+    private HttpGitHubRestGateway privateGateway(GitHubInstallationTokenProvider provider) {
+        return new HttpGitHubRestGateway(
+                URI.create(server.baseUrl()),
+                "2026-03-10",
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2),
+                2_000_000,
+                64 * 1024,
+                2,
+                new ObjectMapper(),
+                true,
+                provider);
     }
 
     private com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder json(String body) {
@@ -234,6 +344,53 @@ class HttpGitHubRestGatewayTest {
                   "pushed_at":"2026-08-01T00:00:00Z"
                 }
                 """.formatted(id, id, owner, name, privateRepository);
+    }
+
+    private static final class RecordingTokenProvider implements GitHubInstallationTokenProvider {
+        private final AtomicInteger discoveryRequests = new AtomicInteger();
+        private final AtomicInteger contentsRequests = new AtomicInteger();
+
+        @Override
+        public AuthorizedToken authorize(
+                UUID connectionId, Long externalRepositoryId, boolean contentsRead) {
+            if (contentsRead) {
+                contentsRequests.incrementAndGet();
+                assertThat(externalRepositoryId).isEqualTo(8123L);
+                return new AuthorizedToken(
+                        "contents-memory-fixture",
+                        Instant.parse("2026-08-09T01:00:00Z"),
+                        GitHubAccountType.ORGANIZATION);
+            }
+            discoveryRequests.incrementAndGet();
+            assertThat(externalRepositoryId).isNull();
+            return new AuthorizedToken(
+                    "discovery-memory-fixture",
+                    Instant.parse("2026-08-09T01:00:00Z"),
+                    GitHubAccountType.ORGANIZATION);
+        }
+
+        @Override
+        public void invalidate(UUID connectionId, Long externalRepositoryId) {}
+    }
+
+    private static final class RotatingTokenProvider implements GitHubInstallationTokenProvider {
+        private final AtomicInteger authorizationRequests = new AtomicInteger();
+        private final AtomicInteger invalidations = new AtomicInteger();
+
+        @Override
+        public AuthorizedToken authorize(
+                UUID connectionId, Long externalRepositoryId, boolean contentsRead) {
+            int attempt = authorizationRequests.incrementAndGet();
+            return new AuthorizedToken(
+                    attempt == 1 ? "expired-memory-fixture" : "renewed-memory-fixture",
+                    Instant.parse("2026-08-09T01:00:00Z"),
+                    GitHubAccountType.ORGANIZATION);
+        }
+
+        @Override
+        public void invalidate(UUID connectionId, Long externalRepositoryId) {
+            invalidations.incrementAndGet();
+        }
     }
 
     @FunctionalInterface

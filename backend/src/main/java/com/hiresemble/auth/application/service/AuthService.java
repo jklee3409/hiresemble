@@ -1,12 +1,15 @@
 package com.hiresemble.auth.application.service;
 
 import com.hiresemble.auth.api.dto.AuthSessionDto;
+import com.hiresemble.auth.api.dto.AccountDeletionAcceptedDto;
 import com.hiresemble.auth.api.dto.CurrentUserDto;
 import com.hiresemble.auth.api.dto.LoginRequest;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import com.hiresemble.auth.domain.model.UserStatus;
 import com.hiresemble.auth.infrastructure.persistence.UserEntity;
 import com.hiresemble.auth.infrastructure.persistence.UserRepository;
+import com.hiresemble.auth.infrastructure.persistence.AccountDeletionTaskStore;
+import com.hiresemble.auth.infrastructure.persistence.AccountSessionStore;
 import com.hiresemble.auth.security.AuthenticatedUser;
 import com.hiresemble.agentrun.application.service.AiPreferenceRegistrationService;
 import com.hiresemble.common.exception.BusinessException;
@@ -39,6 +42,8 @@ public class AuthService {
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenService csrfTokenService;
     private final String dummyPasswordHash;
+    private final AccountSessionStore accountSessionStore;
+    private final AccountDeletionTaskStore accountDeletionTaskStore;
 
     public AuthService(
             UserRepository userRepository,
@@ -46,13 +51,17 @@ public class AuthService {
             AiPreferenceRegistrationService aiPreferenceRegistrationService,
             PasswordEncoder passwordEncoder,
             SecurityContextRepository securityContextRepository,
-            CsrfTokenService csrfTokenService) {
+            CsrfTokenService csrfTokenService,
+            AccountSessionStore accountSessionStore,
+            AccountDeletionTaskStore accountDeletionTaskStore) {
         this.userRepository = userRepository;
         this.profileRegistrationService = profileRegistrationService;
         this.aiPreferenceRegistrationService = aiPreferenceRegistrationService;
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenService = csrfTokenService;
+        this.accountSessionStore = accountSessionStore;
+        this.accountDeletionTaskStore = accountDeletionTaskStore;
         this.dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -120,6 +129,47 @@ public class AuthService {
         user.changeDisplayName(displayName.trim(), Instant.now());
         userRepository.flush();
         return principal(user).toDto();
+    }
+
+    @Transactional
+    public void changePassword(
+            UUID userId,
+            String currentPassword,
+            String newPassword,
+            HttpServletRequest request) {
+        UserEntity user = activeUser(userId);
+        if (!passwordEncoder.matches(currentPassword, user.passwordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        if (passwordEncoder.matches(newPassword, user.passwordHash())) {
+            throw new BusinessException(ErrorCode.PASSWORD_REUSE_NOT_ALLOWED);
+        }
+        HttpSession session = request.getSession(false);
+        if (session == null) throw new BusinessException(ErrorCode.AUTHENTICATION_REQUIRED);
+        Instant now = Instant.now();
+        user.changePassword(passwordEncoder.encode(newPassword), now);
+        userRepository.flush();
+        accountSessionStore.deleteOtherSessions(userId, session.getId());
+        request.changeSessionId();
+    }
+
+    @Transactional
+    public AccountDeletionAcceptedDto deleteAccount(
+            UUID userId, String currentPassword, HttpServletRequest request) {
+        UserEntity user = activeUser(userId);
+        if (!passwordEncoder.matches(currentPassword, user.passwordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        Instant now = Instant.now();
+        UUID deletionRequestId = UUID.randomUUID();
+        user.withdraw(now);
+        userRepository.flush();
+        UUID acceptedId = accountDeletionTaskStore.enqueue(deletionRequestId, userId, now);
+        accountSessionStore.deleteAllSessions(userId);
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
+        SecurityContextHolder.clearContext();
+        return new AccountDeletionAcceptedDto(acceptedId, now.plus(java.time.Duration.ofHours(24)));
     }
 
     private void authenticate(

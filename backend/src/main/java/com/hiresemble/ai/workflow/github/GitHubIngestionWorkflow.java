@@ -944,7 +944,15 @@ public final class GitHubIngestionWorkflow {
             case NOT_FOUND -> AiExecutionException.nonRetryable(
                     FailureKind.DOMAIN_VALIDATION,
                     "GITHUB_SOURCE_NOT_ACCESSIBLE",
-                    "The public GitHub source is not accessible.");
+                    "The GitHub source is not accessible.");
+            case AUTHENTICATION -> AiExecutionException.nonRetryable(
+                    FailureKind.CONFIGURATION,
+                    "GITHUB_UPSTREAM_AUTHENTICATION_FAILED",
+                    "The GitHub connection must be checked again.");
+            case PERMISSION -> AiExecutionException.nonRetryable(
+                    FailureKind.CONFIGURATION,
+                    "GITHUB_APP_PERMISSION_MISMATCH",
+                    "The GitHub App read permissions must be checked again.");
             case RESPONSE_LIMIT -> AiExecutionException.nonRetryable(
                     FailureKind.DOMAIN_VALIDATION,
                     "GITHUB_SOURCE_LIMIT_EXCEEDED",

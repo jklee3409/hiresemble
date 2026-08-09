@@ -85,6 +85,7 @@ hiresemble:
   frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
   github:
     enabled: ${GITHUB_INGESTION_ENABLED:false}
+    private-enabled: ${GITHUB_PRIVATE_ENABLED:false}
     api-base-url: https://api.github.com
     api-version: ${GITHUB_API_VERSION:2026-03-10}
     retrieval-policy-version: github-snapshot-v1
@@ -100,6 +101,24 @@ hiresemble:
     max-candidates-per-repository: 12
     max-candidates-per-run: 40
     deletion-scan-interval: 30s
+    app:
+      app-id: ${GITHUB_APP_ID:0}
+      slug: ${GITHUB_APP_SLUG:}
+      client-id: ${GITHUB_APP_CLIENT_ID:}
+      client-secret: ${GITHUB_APP_CLIENT_SECRET:}
+      private-key: ${GITHUB_APP_PRIVATE_KEY:}
+      state-secret: ${GITHUB_APP_STATE_SECRET:}
+      backend-base-url: ${GITHUB_APP_BACKEND_BASE_URL:http://localhost:8080}
+      frontend-base-url: ${GITHUB_APP_FRONTEND_BASE_URL:http://localhost:5173}
+      attempt-ttl: ${GITHUB_APP_ATTEMPT_TTL:10m}
+      token-expiry-skew: ${GITHUB_APP_TOKEN_EXPIRY_SKEW:2m}
+      revocation-scan-interval: ${GITHUB_APP_REVOCATION_SCAN_INTERVAL:30s}
+      cleanup-scan-interval: ${GITHUB_APP_CLEANUP_SCAN_INTERVAL:30s}
+  scheduling:
+    enabled: ${SCHEDULING_ENABLED:true}
+  account-deletion:
+    scan-interval: ${ACCOUNT_DELETION_SCAN_INTERVAL:30s}
+    cleanup-cron: ${ACCOUNT_DELETION_CLEANUP_CRON:0 20 4 * * *}
   career-artifact:
     enabled: ${CAREER_ARTIFACT_ENABLED:false}
     max-generated-file-bytes: ${CAREER_ARTIFACT_MAX_FILE_BYTES:10485760}

@@ -362,6 +362,10 @@ async function logout(): Promise<void> {
                 <AppIcon name="runs" />
                 AI 작업
               </RouterLink>
+              <RouterLink role="menuitem" class="menu-panel__item" to="/settings/account">
+                <AppIcon name="profile" />
+                계정 관리
+              </RouterLink>
               <button
                 type="button"
                 role="menuitem"

@@ -60,7 +60,11 @@ export class HttpApiClient {
           return this.client.request(requestConfig)
         }
 
-        if (apiError.status === 401 && this.unauthorizedHandler !== null) {
+        if (
+          apiError.status === 401 &&
+          apiError.code === 'AUTHENTICATION_REQUIRED' &&
+          this.unauthorizedHandler !== null
+        ) {
           await this.unauthorizedHandler()
         }
 

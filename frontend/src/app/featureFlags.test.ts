@@ -14,16 +14,37 @@ describe('feature flags', () => {
   it('defaults optional frontend gates to disabled when build variables are absent', () => {
     expect(resolveFeatureFlags({})).toEqual({
       githubSourceEnabled: false,
+      githubPrivateEnabled: false,
       careerArtifactEnabled: false,
     })
     expect(resolveFeatureFlags({ VITE_GITHUB_SOURCE_ENABLED: 'true' })).toEqual({
       githubSourceEnabled: true,
+      githubPrivateEnabled: false,
       careerArtifactEnabled: false,
     })
     expect(resolveFeatureFlags({ VITE_CAREER_ARTIFACT_ENABLED: 'true' })).toEqual({
       githubSourceEnabled: false,
+      githubPrivateEnabled: false,
       careerArtifactEnabled: true,
     })
+  })
+
+  it('enables private GitHub only when both GitHub flags are exactly true', () => {
+    expect(
+      resolveFeatureFlags({
+        VITE_GITHUB_SOURCE_ENABLED: 'true',
+        VITE_GITHUB_PRIVATE_ENABLED: 'true',
+      }).githubPrivateEnabled,
+    ).toBe(true)
+    expect(resolveFeatureFlags({ VITE_GITHUB_PRIVATE_ENABLED: 'true' }).githubPrivateEnabled).toBe(
+      false,
+    )
+    expect(
+      resolveFeatureFlags({
+        VITE_GITHUB_SOURCE_ENABLED: 'true',
+        VITE_GITHUB_PRIVATE_ENABLED: 'TRUE',
+      }).githubPrivateEnabled,
+    ).toBe(false)
   })
 
   it('enables Career Artifact only for the exact lowercase true value', () => {

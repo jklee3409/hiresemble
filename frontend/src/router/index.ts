@@ -157,6 +157,16 @@ export const routes: RouteRecordRaw[] = [
       ...gitHubIntegrationRoutes(featureFlags.githubSourceEnabled),
       ...careerArtifactRoutes(featureFlags.careerArtifactEnabled),
       {
+        path: 'settings',
+        redirect: { name: 'settings-account' },
+      },
+      {
+        path: 'settings/account',
+        name: 'settings-account',
+        component: () => import('@/pages/AccountSettingsPage.vue'),
+        meta: { title: '계정 관리' },
+      },
+      {
         path: 'jobs',
         name: 'jobs',
         component: () => import('@/pages/JobListPage.vue'),

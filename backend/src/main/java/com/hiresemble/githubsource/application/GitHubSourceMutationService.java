@@ -14,6 +14,7 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Repository;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Source;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
 import com.hiresemble.githubsource.domain.GitHubUrl;
 import com.hiresemble.githubsource.infrastructure.GitHubProperties;
 import com.hiresemble.githubsource.infrastructure.GitHubSnapshotDeletionOutboxStore;
@@ -69,10 +70,16 @@ public class GitHubSourceMutationService {
 
     @Transactional
     public WorkflowLaunchResult register(UUID userId, GitHubUrl url) {
+        return register(userId, url, GitHubAccessMode.PUBLIC, null);
+    }
+
+    @Transactional
+    public WorkflowLaunchResult register(
+            UUID userId, GitHubUrl url, GitHubAccessMode accessMode, UUID connectionId) {
         Instant now = clock.instant();
         UUID sourceId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
-        Source source = store.create(sourceId, userId, url, now);
+        Source source = store.create(sourceId, userId, url, accessMode, connectionId, now);
         WorkflowLaunchResult launched = launcher.launch(command(runId, source, List.of()));
         store.attachLatestRun(userId, sourceId, launched.agentRunId(), now);
         return launched;
@@ -136,13 +143,16 @@ public class GitHubSourceMutationService {
                 .put("githubSourceId", source.id().toString())
                 .put("sourceRevision", source.sourceRevision())
                 .put("sourceKind", source.sourceKind().name())
-                .put("canonicalUrl", source.canonicalUrl())
+                .put("accessMode", source.accessMode().name())
                 .put("retrievalPolicyVersion", properties.getRetrievalPolicyVersion())
                 .put("githubApiVersion", properties.getApiVersion());
+        if (source.accessMode() == GitHubAccessMode.PUBLIC) {
+            input.put("canonicalUrl", source.canonicalUrl());
+        }
         var selected = input.putArray("selectedRepositoryIds");
         repositories.forEach(repository -> selected.add(repository.id().toString()));
         String hash = sha256(source.userId() + "|" + source.id() + "|"
-                + source.sourceRevision() + "|" + source.canonicalUrl() + "|"
+                + source.sourceRevision() + "|" + source.accessMode() + "|"
                 + properties.getRetrievalPolicyVersion() + "|"
                 + repositories.stream().map(value -> value.id().toString()).sorted().toList());
         return new WorkflowLaunchCommand(
@@ -153,7 +163,11 @@ public class GitHubSourceMutationService {
                 hash,
                 input,
                 AiQualityMode.BALANCED,
-                new ResourceReference(RESOURCE_TYPE, source.id(), source.canonicalUrl()));
+                new ResourceReference(
+                        RESOURCE_TYPE,
+                        source.id(),
+                        source.accessMode() == GitHubAccessMode.PUBLIC
+                                ? source.canonicalUrl() : "Private GitHub source"));
     }
 
     private String sha256(String value) {

@@ -3,7 +3,9 @@ package com.hiresemble.githubsource.infrastructure;
 import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.githubsource.application.GitHubGatewayModels.RepositoryMetadata;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
+import com.hiresemble.githubsource.domain.GitHubRepositoryVisibility;
 import com.hiresemble.githubsource.domain.GitHubSourceKind;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Page;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Repository;
@@ -36,7 +38,7 @@ public class GitHubSourceStore {
     private static final String SOURCE_COLUMNS = """
             source.id,source.user_id,source.source_kind,source.account_type,
             source.original_url,source.canonical_url,source.owner_login,source.repository_name,
-            source.source_status,
+            source.access_mode,source.github_app_connection_id,source.source_status,
             (SELECT count(*) FROM github_source_repository_links link
              WHERE link.user_id=source.user_id AND link.github_source_id=source.id
                AND link.available) AS discovered_repository_count,
@@ -60,16 +62,27 @@ public class GitHubSourceStore {
 
     @Transactional
     public Source create(UUID sourceId, UUID userId, GitHubUrl url, Instant now) {
+        return create(sourceId, userId, url, GitHubAccessMode.PUBLIC, null, now);
+    }
+
+    @Transactional
+    public Source create(
+            UUID sourceId,
+            UUID userId,
+            GitHubUrl url,
+            GitHubAccessMode accessMode,
+            UUID connectionId,
+            Instant now) {
         try {
             jdbc.sql("""
                             INSERT INTO github_sources (
                                 id,user_id,source_kind,account_type,original_url,canonical_url,
-                                owner_login,repository_name,source_status,
+                                owner_login,repository_name,access_mode,github_app_connection_id,source_status,
                                 repository_discovery_truncated,latest_agent_run_id,source_revision,
                                 last_successful_sync_at,version,created_at,updated_at,deleted_at
                             ) VALUES (
                                 :id,:userId,:sourceKind,NULL,:originalUrl,:canonicalUrl,
-                                :ownerLogin,:repositoryName,'DISCOVERING',false,NULL,0,
+                                :ownerLogin,:repositoryName,:accessMode,:connectionId,'DISCOVERING',false,NULL,0,
                                 NULL,0,:now,:now,NULL
                             )
                             """)
@@ -80,6 +93,8 @@ public class GitHubSourceStore {
                     .param("canonicalUrl", url.canonicalUrl())
                     .param("ownerLogin", url.ownerLogin())
                     .param("repositoryName", url.repositoryName())
+                    .param("accessMode", accessMode.name())
+                    .param("connectionId", connectionId)
                     .param("now", utc(now))
                     .update();
         } catch (DataIntegrityViolationException exception) {
@@ -224,6 +239,34 @@ public class GitHubSourceStore {
                 .list();
     }
 
+    @Transactional(readOnly = true)
+    public long externalRepositoryIdForConnection(
+            UUID userId,
+            UUID connectionId,
+            String ownerLogin,
+            String repositoryName) {
+        return jdbc.sql("""
+                        SELECT repository.external_repository_id
+                        FROM github_app_connection_repository_access access
+                        JOIN github_repositories repository
+                          ON repository.user_id=access.user_id
+                         AND repository.id=access.github_repository_id
+                        WHERE access.user_id=:userId
+                          AND access.github_app_connection_id=:connectionId
+                          AND lower(repository.owner_login)=lower(:ownerLogin)
+                          AND lower(repository.repository_name)=lower(:repositoryName)
+                          AND access.available
+                        """)
+                .param("userId", userId)
+                .param("connectionId", connectionId)
+                .param("ownerLogin", ownerLogin)
+                .param("repositoryName", repositoryName)
+                .query(Long.class)
+                .optional()
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.GITHUB_INSTALLATION_NOT_ACCESSIBLE));
+    }
+
     @Transactional
     public Source applyAccountDiscovery(
             UUID userId,
@@ -251,7 +294,7 @@ public class GitHubSourceStore {
                 .param("sourceId", sourceId)
                 .update();
         for (RepositoryMetadata metadata : repositories) {
-            UUID repositoryId = upsertRepository(userId, metadata, now);
+            UUID repositoryId = upsertRepository(userId, source, metadata, now);
             upsertLink(userId, sourceId, repositoryId, false, null, true, now);
         }
         jdbc.sql("""
@@ -296,12 +339,12 @@ public class GitHubSourceStore {
         Source source = lockActive(userId, sourceId);
         requireLatestRun(source, runId);
         if (source.sourceKind() != GitHubSourceKind.REPOSITORY
-                || metadata.privateRepository()
+                || (source.accessMode() == GitHubAccessMode.PUBLIC && metadata.privateRepository())
                 || !source.ownerLogin().equalsIgnoreCase(metadata.ownerLogin())
                 || !source.repositoryName().equalsIgnoreCase(metadata.repositoryName())) {
             throw new BusinessException(ErrorCode.GITHUB_SOURCE_NOT_ACCESSIBLE);
         }
-        UUID repositoryId = upsertRepository(userId, metadata, now);
+        UUID repositoryId = upsertRepository(userId, source, metadata, now);
         jdbc.sql("""
                         UPDATE github_source_repository_links
                         SET available=false,selected=false,selection_order=NULL,updated_at=:now
@@ -561,6 +604,8 @@ public class GitHubSourceStore {
             String storageKey,
             String checksum,
             long sanitizedBytes,
+            GitHubAccessMode accessMode,
+            UUID connectionId,
             List<SourceUnitDraft> units,
             Instant capturedAt) {
         int inserted = jdbc.sql("""
@@ -568,11 +613,12 @@ public class GitHubSourceStore {
                             id,user_id,github_repository_id,commit_sha,tree_sha,
                             github_api_version,retrieval_policy_version,selection_complete,
                             upstream_truncated,snapshot_storage_key,checksum_sha256,
-                            sanitized_bytes,captured_at
+                            sanitized_bytes,access_mode,github_app_connection_id,captured_at
                         ) VALUES (
                             :id,:userId,:repositoryId,:commitSha,:treeSha,
                             :apiVersion,:policyVersion,:selectionComplete,
-                            :upstreamTruncated,:storageKey,:checksum,:sanitizedBytes,:capturedAt
+                            :upstreamTruncated,:storageKey,:checksum,:sanitizedBytes,
+                            :accessMode,:connectionId,:capturedAt
                         )
                         ON CONFLICT (user_id,github_repository_id,commit_sha,retrieval_policy_version)
                         DO NOTHING
@@ -589,6 +635,8 @@ public class GitHubSourceStore {
                 .param("storageKey", storageKey)
                 .param("checksum", checksum)
                 .param("sanitizedBytes", sanitizedBytes)
+                .param("accessMode", accessMode.name())
+                .param("connectionId", connectionId)
                 .param("capturedAt", utc(capturedAt))
                 .update();
         if (inserted == 1) {
@@ -702,6 +750,23 @@ public class GitHubSourceStore {
                 .list();
     }
 
+    @Transactional(readOnly = true)
+    public List<SnapshotObject> snapshotObjectsForConnection(UUID userId, UUID connectionId) {
+        return jdbc.sql("""
+                        SELECT id,snapshot_storage_key
+                        FROM github_repository_snapshots
+                        WHERE user_id=:userId
+                          AND github_app_connection_id=:connectionId
+                          AND access_mode='GITHUB_APP'
+                        ORDER BY captured_at,id
+                        """)
+                .param("userId", userId)
+                .param("connectionId", connectionId)
+                .query((rs, row) -> new SnapshotObject(
+                        rs.getObject("id", UUID.class), rs.getString("snapshot_storage_key")))
+                .list();
+    }
+
     private Source lockActive(UUID userId, UUID sourceId) {
         jdbc.sql("""
                         SELECT id FROM github_sources
@@ -716,8 +781,9 @@ public class GitHubSourceStore {
         return findActive(userId, sourceId).orElseThrow();
     }
 
-    private UUID upsertRepository(UUID userId, RepositoryMetadata value, Instant now) {
-        if (value.privateRepository()) {
+    private UUID upsertRepository(
+            UUID userId, Source source, RepositoryMetadata value, Instant now) {
+        if (value.privateRepository() && source.accessMode() != GitHubAccessMode.GITHUB_APP) {
             throw new BusinessException(ErrorCode.GITHUB_SOURCE_NOT_ACCESSIBLE);
         }
         String topicsJson;
@@ -726,21 +792,22 @@ public class GitHubSourceStore {
         } catch (Exception exception) {
             throw new IllegalStateException("repository topics cannot be serialized", exception);
         }
-        return jdbc.sql("""
+        UUID repositoryId = jdbc.sql("""
                         INSERT INTO github_repositories (
                             id,user_id,external_repository_id,node_id,owner_login,repository_name,
-                            canonical_url,default_branch,is_private,is_fork,is_archived,description,
+                            canonical_url,default_branch,is_private,visibility,is_fork,is_archived,description,
                             topics,metadata_etag,pushed_at,created_at,updated_at
                         ) VALUES (
                             :id,:userId,:externalId,:nodeId,:ownerLogin,:repositoryName,
-                            :canonicalUrl,:defaultBranch,false,:fork,:archived,:description,
+                            :canonicalUrl,:defaultBranch,:privateRepository,:visibility,:fork,:archived,:description,
                             CAST(:topics AS jsonb),:etag,:pushedAt,:now,:now
                         )
                         ON CONFLICT (user_id,external_repository_id) DO UPDATE SET
                             node_id=EXCLUDED.node_id,owner_login=EXCLUDED.owner_login,
                             repository_name=EXCLUDED.repository_name,
                             canonical_url=EXCLUDED.canonical_url,
-                            default_branch=EXCLUDED.default_branch,is_private=false,
+                            default_branch=EXCLUDED.default_branch,is_private=EXCLUDED.is_private,
+                            visibility=EXCLUDED.visibility,
                             is_fork=EXCLUDED.is_fork,is_archived=EXCLUDED.is_archived,
                             description=EXCLUDED.description,topics=EXCLUDED.topics,
                             metadata_etag=EXCLUDED.metadata_etag,pushed_at=EXCLUDED.pushed_at,
@@ -755,6 +822,8 @@ public class GitHubSourceStore {
                 .param("repositoryName", value.repositoryName())
                 .param("canonicalUrl", value.canonicalUrl())
                 .param("defaultBranch", value.defaultBranch())
+                .param("privateRepository", value.privateRepository())
+                .param("visibility", value.privateRepository() ? "PRIVATE" : "PUBLIC")
                 .param("fork", value.fork())
                 .param("archived", value.archived())
                 .param("description", value.description())
@@ -764,6 +833,42 @@ public class GitHubSourceStore {
                 .param("now", utc(now))
                 .query(UUID.class)
                 .single();
+        if (source.accessMode() == GitHubAccessMode.GITHUB_APP) {
+            upsertConnectionRepositoryAccess(
+                    userId,
+                    source.githubAppConnectionId(),
+                    repositoryId,
+                    value.externalId(),
+                    now);
+        }
+        return repositoryId;
+    }
+
+    private void upsertConnectionRepositoryAccess(
+            UUID userId,
+            UUID connectionId,
+            UUID repositoryId,
+            long externalRepositoryId,
+            Instant now) {
+        jdbc.sql("""
+                        INSERT INTO github_app_connection_repository_access (
+                            id,user_id,github_app_connection_id,github_repository_id,
+                            external_repository_id,available,checked_at,created_at,updated_at
+                        ) VALUES (
+                            :id,:userId,:connectionId,:repositoryId,
+                            :externalRepositoryId,true,:now,:now,:now
+                        )
+                        ON CONFLICT (user_id,github_app_connection_id,github_repository_id)
+                        DO UPDATE SET external_repository_id=EXCLUDED.external_repository_id,
+                            available=true,checked_at=EXCLUDED.checked_at,updated_at=EXCLUDED.updated_at
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("userId", userId)
+                .param("connectionId", connectionId)
+                .param("repositoryId", repositoryId)
+                .param("externalRepositoryId", externalRepositoryId)
+                .param("now", utc(now))
+                .update();
     }
 
     private void upsertLink(
@@ -868,6 +973,8 @@ public class GitHubSourceStore {
                 rs.getString("canonical_url"),
                 rs.getString("owner_login"),
                 rs.getString("repository_name"),
+                GitHubAccessMode.valueOf(rs.getString("access_mode")),
+                rs.getObject("github_app_connection_id", UUID.class),
                 GitHubSourceStatus.valueOf(rs.getString("source_status")),
                 rs.getInt("discovered_repository_count"),
                 rs.getInt("selected_repository_count"),
@@ -903,6 +1010,7 @@ public class GitHubSourceStore {
                 rs.getString("repository_name"),
                 rs.getString("canonical_url"),
                 rs.getString("default_branch"),
+                GitHubRepositoryVisibility.valueOf(rs.getString("visibility")),
                 rs.getBoolean("is_fork"),
                 rs.getBoolean("is_archived"),
                 rs.getString("description"),
@@ -929,6 +1037,8 @@ public class GitHubSourceStore {
                 rs.getString("snapshot_storage_key"),
                 rs.getString("checksum_sha256"),
                 rs.getLong("sanitized_bytes"),
+                GitHubAccessMode.valueOf(rs.getString("access_mode")),
+                rs.getObject("github_app_connection_id", UUID.class),
                 instant(rs, "captured_at"));
     }
 

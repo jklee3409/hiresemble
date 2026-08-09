@@ -3,6 +3,8 @@ package com.hiresemble.githubsource.api;
 import com.hiresemble.agentrun.api.dto.RequiredUserActionDto;
 import com.hiresemble.agentrun.api.dto.RunAcceptedDto;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
+import com.hiresemble.githubsource.domain.GitHubRepositoryVisibility;
 import com.hiresemble.githubsource.domain.GitHubSourceKind;
 import com.hiresemble.githubsource.domain.GitHubSourceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,6 +23,7 @@ public final class GitHubSourceDtos {
             String canonicalUrl,
             String description,
             String defaultBranch,
+            GitHubRepositoryVisibility visibility,
             boolean fork,
             boolean archived,
             boolean selected,
@@ -34,6 +37,8 @@ public final class GitHubSourceDtos {
             String canonicalUrl,
             String ownerLogin,
             String repositoryName,
+            GitHubAccessMode accessMode,
+            UUID connectionId,
             GitHubSourceStatus status,
             int discoveredRepositoryCount,
             int selectedRepositoryCount,

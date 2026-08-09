@@ -16,6 +16,17 @@ const fieldErrors = ref<Record<string, string>>({})
 const generalError = ref('')
 const isSubmitting = ref(false)
 const passwordVisible = ref(false)
+const accountDeletionAccepted = window.history.state?.accountDeletionAccepted === true
+const accountDeletionPurgeBy = accountDeletionAccepted
+  ? safeDeletionPurgeLabel(window.history.state?.purgeBy)
+  : null
+
+function safeDeletionPurgeLabel(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return null
+  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+}
 
 async function submit(): Promise<void> {
   generalError.value = ''
@@ -58,6 +69,11 @@ async function focusFirstError(): Promise<void> {
     <p class="page-eyebrow">다시 만나서 반가워요</p>
     <h1 class="page-title">로그인</h1>
     <p class="page-description">로그인하고 준비하던 경험 정보와 관심 공고를 이어서 확인하세요.</p>
+
+    <p v-if="accountDeletionAccepted" class="alert alert--success" role="status">
+      회원 탈퇴가 접수됐어요. 모든 세션은 종료됐으며 파일과 GitHub App 권한을 정리합니다.
+      <span v-if="accountDeletionPurgeBy">완료 목표: {{ accountDeletionPurgeBy }}</span>
+    </p>
 
     <form class="auth-page__form" novalidate :aria-busy="isSubmitting" @submit.prevent="submit">
       <div class="field">

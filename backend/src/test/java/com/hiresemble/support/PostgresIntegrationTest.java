@@ -13,7 +13,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest
-@TestPropertySource(properties = "hiresemble.ai.runtime.enabled=false")
+@TestPropertySource(properties = {
+    "hiresemble.ai.runtime.enabled=false",
+    "hiresemble.scheduling.enabled=false"
+})
 public abstract class PostgresIntegrationTest {
 
     protected static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -45,6 +48,11 @@ public abstract class PostgresIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             jdbcTemplate.execute("""
                     TRUNCATE TABLE
+                        account_deletion_tasks,
+                        github_installation_revocation_outbox,
+                        github_app_connection_repository_access,
+                        github_connection_attempts,
+                        github_app_connections,
                         career_artifact_object_deletion_outbox,
                         career_artifact_evidence_links,
                         career_artifact_generation_requests,

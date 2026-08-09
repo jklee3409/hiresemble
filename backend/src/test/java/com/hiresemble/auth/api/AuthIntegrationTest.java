@@ -2,9 +2,12 @@ package com.hiresemble.auth.api;
 
 import com.hiresemble.auth.api.dto.LoginRequest;
 import com.hiresemble.auth.api.dto.DisplayNameUpdateRequest;
+import com.hiresemble.auth.api.dto.AccountDeletionRequest;
+import com.hiresemble.auth.api.dto.PasswordChangeRequest;
 import com.hiresemble.auth.api.dto.SignupRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -598,6 +601,160 @@ class AuthIntegrationTest extends PostgresIntegrationTest {
             logger.detachAppender(appender);
             appender.stop();
         }
+    }
+
+    @Test
+    void passwordChangeVerifiesCurrentPasswordRotatesCurrentSessionAndRevokesOthers()
+            throws Exception {
+        String email = "password-change@example.com";
+        AuthenticatedSession current = authenticated(email, "Password Change");
+        Cookie otherCookie = requiredSessionCookie(
+                login(csrfSession(), email, "password-123", 200));
+
+        MvcResult changed = mockMvc.perform(patch("/api/v1/account/password")
+                        .cookie(current.cookie())
+                        .header("X-CSRF-TOKEN", current.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordChangeRequest("password-123", "new-password-456"))))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""))
+                .andReturn();
+
+        Cookie rotated = requiredSessionCookie(changed);
+        assertThat(rotated.getValue()).isNotEqualTo(current.cookie().getValue());
+        mockMvc.perform(get("/api/v1/auth/me").cookie(rotated))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email));
+        mockMvc.perform(get("/api/v1/auth/me").cookie(otherCookie))
+                .andExpect(status().isUnauthorized());
+        login(csrfSession(), email, "password-123", 401);
+        login(csrfSession(), email, "new-password-456", 200);
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM spring_session WHERE principal_name=?",
+                        Long.class,
+                        current.userId().toString()))
+                .isEqualTo(2L);
+    }
+
+    @Test
+    void passwordChangeRejectsWrongCurrentPasswordReuseMissingCsrfAndAnonymousRequests()
+            throws Exception {
+        AuthenticatedSession authenticated =
+                authenticated("password-errors@example.com", "Password Errors");
+        PasswordChangeRequest wrong =
+                new PasswordChangeRequest("wrong-password", "new-password-456");
+        PasswordChangeRequest reuse =
+                new PasswordChangeRequest("password-123", "password-123");
+
+        mockMvc.perform(patch("/api/v1/account/password")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(wrong)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        mockMvc.perform(patch("/api/v1/account/password")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reuse)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PASSWORD_REUSE_NOT_ALLOWED"));
+        mockMvc.perform(patch("/api/v1/account/password")
+                        .cookie(authenticated.cookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reuse)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+        mockMvc.perform(patch("/api/v1/account/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reuse)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void accountDeletionWithdrawsImmediatelyRevokesSessionsAndQueuesOpaqueTerminalTask()
+            throws Exception {
+        String email = "account-delete@example.com";
+        AuthenticatedSession current = authenticated(email, "Account Delete");
+        Cookie otherCookie = requiredSessionCookie(
+                login(csrfSession(), email, "password-123", 200));
+
+        MvcResult accepted = mockMvc.perform(delete("/api/v1/account")
+                        .cookie(current.cookie())
+                        .header("X-CSRF-TOKEN", current.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AccountDeletionRequest("password-123", true))))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.deletionRequestId").isNotEmpty())
+                .andExpect(jsonPath("$.purgeBy").isNotEmpty())
+                .andReturn();
+
+        UUID requestId = UUID.fromString(json(accepted).get("deletionRequestId").asText());
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT status FROM users WHERE id=?", String.class, current.userId()))
+                .isEqualTo("WITHDRAWN");
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT status FROM account_deletion_tasks WHERE id=?",
+                        String.class,
+                        requestId))
+                .isEqualTo("QUEUED");
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT policy_version FROM account_deletion_tasks WHERE id=?",
+                        String.class,
+                        requestId))
+                .isEqualTo("terminal-purge-v1");
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM spring_session", Long.class))
+                .isZero();
+        mockMvc.perform(get("/api/v1/auth/me").cookie(current.cookie()))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/auth/me").cookie(otherCookie))
+                .andExpect(status().isUnauthorized());
+        login(csrfSession(), email, "password-123", 401);
+    }
+
+    @Test
+    void accountDeletionRejectsForbiddenIdempotencyKeyWrongPasswordAndMissingConfirmation()
+            throws Exception {
+        AuthenticatedSession authenticated =
+                authenticated("account-delete-errors@example.com", "Account Delete Errors");
+        String validBody = objectMapper.writeValueAsString(
+                new AccountDeletionRequest("password-123", true));
+
+        mockMvc.perform(delete("/api/v1/account")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .header("Idempotency-Key", "must-not-be-used")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mockMvc.perform(delete("/api/v1/account")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AccountDeletionRequest("wrong-password", true))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        mockMvc.perform(delete("/api/v1/account")
+                        .cookie(authenticated.cookie())
+                        .header("X-CSRF-TOKEN", authenticated.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AccountDeletionRequest("password-123", false))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT status FROM users WHERE id=?",
+                        String.class,
+                        authenticated.userId()))
+                .isEqualTo("ACTIVE");
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM account_deletion_tasks", Long.class))
+                .isZero();
     }
 
     private AuthenticatedSession authenticated(String email, String displayName) throws Exception {

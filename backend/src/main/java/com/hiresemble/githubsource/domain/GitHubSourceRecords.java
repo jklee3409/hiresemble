@@ -17,6 +17,8 @@ public final class GitHubSourceRecords {
             String canonicalUrl,
             String ownerLogin,
             String repositoryName,
+            GitHubAccessMode accessMode,
+            UUID githubAppConnectionId,
             GitHubSourceStatus status,
             int discoveredRepositoryCount,
             int selectedRepositoryCount,
@@ -43,6 +45,7 @@ public final class GitHubSourceRecords {
             String repositoryName,
             String canonicalUrl,
             String defaultBranch,
+            GitHubRepositoryVisibility visibility,
             boolean fork,
             boolean archived,
             String description,
@@ -71,6 +74,8 @@ public final class GitHubSourceRecords {
             String storageKey,
             String checksumSha256,
             long sanitizedBytes,
+            GitHubAccessMode accessMode,
+            UUID githubAppConnectionId,
             Instant capturedAt) {}
 
     public record SourceUnit(

@@ -25,11 +25,11 @@ class CareerArtifactMigrationTest extends PostgresIntegrationTest {
     @Autowired private DataSource dataSource;
 
     @Test
-    void freshSchemaContainsV28CareerArtifactTablesAndWorkflowTypes() {
+    void freshSchemaContainsLatestCareerArtifactTablesAndWorkflowTypes() {
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT max(version::int) FROM flyway_schema_history WHERE success",
                         Integer.class))
-                .isEqualTo(28);
+                .isEqualTo(30);
         assertThat(jdbcTemplate.queryForList("""
                         SELECT table_name FROM information_schema.tables
                         WHERE table_schema='public' AND table_name LIKE 'career_artifact%'

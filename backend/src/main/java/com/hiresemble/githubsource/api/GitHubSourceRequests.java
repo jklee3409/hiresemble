@@ -10,6 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
 
 public final class GitHubSourceRequests {
 
@@ -18,7 +19,9 @@ public final class GitHubSourceRequests {
     @Schema(name = "CreateGitHubSourceRequest")
     public record CreateGitHubSourceRequest(
             @NotBlank @Size(max = 500) String url,
-            @AssertTrue boolean participationConfirmed) {}
+            @AssertTrue boolean participationConfirmed,
+            GitHubAccessMode accessMode,
+            UUID connectionId) {}
 
     @Schema(name = "GitHubRepositorySelectionRequest")
     public record RepositorySelectionRequest(

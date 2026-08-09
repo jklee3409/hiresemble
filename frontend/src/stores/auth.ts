@@ -127,6 +127,10 @@ export const useAuthStore = defineStore('auth', () => {
     await clearUserBoundary()
   }
 
+  async function completeAccountDeletion(): Promise<void> {
+    await clearUserBoundary()
+  }
+
   return {
     status,
     currentUser,
@@ -137,6 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     updateDisplayName,
     handleUnauthorized,
+    completeAccountDeletion,
   }
 })
 

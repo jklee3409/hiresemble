@@ -13,12 +13,16 @@ export const GITHUB_SOURCE_STATUSES = [
 ] as const
 export const GITHUB_SOURCE_KINDS = ['ACCOUNT', 'REPOSITORY'] as const
 export const GITHUB_ACCOUNT_TYPES = ['USER', 'ORGANIZATION'] as const
+export const GITHUB_ACCESS_MODES = ['PUBLIC', 'GITHUB_APP'] as const
+export const GITHUB_REPOSITORY_VISIBILITIES = ['PUBLIC', 'PRIVATE'] as const
 export const GITHUB_SOURCE_SORTS = ['updatedAt,desc', 'createdAt,desc'] as const
 export const GITHUB_REPOSITORY_SORTS = ['pushedAt,desc', 'repositoryName,asc'] as const
 
 export type GitHubSourceStatus = (typeof GITHUB_SOURCE_STATUSES)[number]
 export type GitHubSourceKind = (typeof GITHUB_SOURCE_KINDS)[number]
 export type GitHubAccountType = (typeof GITHUB_ACCOUNT_TYPES)[number]
+export type GitHubAccessMode = (typeof GITHUB_ACCESS_MODES)[number]
+export type GitHubRepositoryVisibility = (typeof GITHUB_REPOSITORY_VISIBILITIES)[number]
 export type GitHubSourceSort = (typeof GITHUB_SOURCE_SORTS)[number]
 export type GitHubRepositorySort = (typeof GITHUB_REPOSITORY_SORTS)[number]
 
@@ -34,6 +38,7 @@ export const gitHubRepositorySchema = z.object({
   canonicalUrl: z.url().max(500),
   description: z.string().max(500).nullable(),
   defaultBranch: z.string().min(1).max(255),
+  visibility: z.enum(GITHUB_REPOSITORY_VISIBILITIES),
   fork: z.boolean(),
   archived: z.boolean(),
   selected: z.boolean(),
@@ -48,6 +53,8 @@ export const gitHubSourceSummarySchema = z
     canonicalUrl: z.url().max(500),
     ownerLogin: z.string().min(1).max(39),
     repositoryName: z.string().min(1).max(100).nullable(),
+    accessMode: z.enum(GITHUB_ACCESS_MODES),
+    connectionId: uuidSchema.nullable(),
     status: z.enum(GITHUB_SOURCE_STATUSES),
     discoveredRepositoryCount: nonNegativeIntegerSchema,
     selectedRepositoryCount: nonNegativeIntegerSchema.max(10),
@@ -74,6 +81,16 @@ export const gitHubSourceSummarySchema = z
         code: 'custom',
         path: ['sourceKind'],
         message: 'GitHub source kind와 account/repository 필드가 일치하지 않습니다.',
+      })
+    }
+    if (
+      (value.accessMode === 'PUBLIC' && value.connectionId !== null) ||
+      (value.accessMode === 'GITHUB_APP' && value.connectionId === null)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['connectionId'],
+        message: 'GitHub access mode와 connection ID가 일치하지 않습니다.',
       })
     }
   })
@@ -158,10 +175,26 @@ export const gitHubRepositoryPageSchema = z.object({
   totalPages: nonNegativeIntegerSchema,
 })
 
-export const createGitHubSourceRequestSchema = z.object({
-  url: z.string().min(1).max(500),
-  participationConfirmed: z.literal(true),
-})
+export const createGitHubSourceRequestSchema = z
+  .object({
+    url: z.string().min(1).max(500),
+    participationConfirmed: z.literal(true),
+    accessMode: z.enum(GITHUB_ACCESS_MODES).optional(),
+    connectionId: uuidSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    const mode = value.accessMode ?? 'PUBLIC'
+    if (
+      (mode === 'PUBLIC' && value.connectionId !== undefined) ||
+      (mode === 'GITHUB_APP' && value.connectionId === undefined)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['connectionId'],
+        message: 'GitHub App 연결을 올바르게 선택해 주세요.',
+      })
+    }
+  })
 
 export const gitHubRepositorySelectionRequestSchema = z.object({
   repositoryIds: z

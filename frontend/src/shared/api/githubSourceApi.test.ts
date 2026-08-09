@@ -119,6 +119,36 @@ describe('GitHub Source API', () => {
     expect(get).toHaveBeenCalledTimes(1)
   })
 
+  it('validates the additive private connection request before sending it', async () => {
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue(accepted())
+    await gitHubApi.createGitHubSource(
+      {
+        url: 'https://github.com/openai/private-repository',
+        participationConfirmed: true,
+        accessMode: 'GITHUB_APP',
+        connectionId: uuid(8),
+      },
+      'private-key',
+    )
+    expect(post).toHaveBeenCalledWith(
+      '/github-sources',
+      expect.objectContaining({ accessMode: 'GITHUB_APP', connectionId: uuid(8) }),
+      { headers: { 'Idempotency-Key': 'private-key' } },
+    )
+
+    expect(() =>
+      gitHubApi.createGitHubSource(
+        {
+          url: 'https://github.com/openai/private-repository',
+          participationConfirmed: true,
+          accessMode: 'GITHUB_APP',
+        },
+        'invalid-private-key',
+      ),
+    ).toThrow()
+    expect(post).toHaveBeenCalledTimes(1)
+  })
+
   it('encodes source IDs before placing them in a URL', async () => {
     const get = vi.spyOn(apiClient, 'get').mockResolvedValue(detail())
     await gitHubApi.getGitHubSource('source/../other')
@@ -136,6 +166,8 @@ function source(status = 'WAITING_USER') {
     canonicalUrl: 'https://github.com/openai',
     ownerLogin: 'openai',
     repositoryName: null,
+    accessMode: 'PUBLIC',
+    connectionId: null,
     status,
     discoveredRepositoryCount: 2,
     selectedRepositoryCount: 0,
@@ -190,6 +222,7 @@ function repositoryPage() {
       canonicalUrl: 'https://github.com/openai/sdk',
       description: null,
       defaultBranch: 'main',
+      visibility: 'PUBLIC',
       fork: false,
       archived: false,
       selected: false,

@@ -29,7 +29,7 @@ class CareerArtifactDisabledOpenApiTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void disabledFeaturePreservesTheSeventyNinePathOneHundredSevenOperationBaseline()
+    void disabledFeatureHasEightyOnePathsAndOneHundredNineOperations()
             throws Exception {
         Set<String> livePaths = new LinkedHashSet<>();
         int[] liveOperations = {0};
@@ -43,8 +43,8 @@ class CareerArtifactDisabledOpenApiTest extends PostgresIntegrationTest {
                     * mapping.getMethodsCondition().getMethods().size();
         });
 
-        assertThat(livePaths).hasSize(79);
-        assertThat(liveOperations[0]).isEqualTo(107);
+        assertThat(livePaths).hasSize(81);
+        assertThat(liveOperations[0]).isEqualTo(109);
         assertThat(livePaths).noneMatch(path -> path.startsWith("/api/v1/career-artifacts"));
 
         JsonNode openApi = objectMapper.readTree(mockMvc.perform(get("/v3/api-docs"))
@@ -54,8 +54,8 @@ class CareerArtifactDisabledOpenApiTest extends PostgresIntegrationTest {
                 .getContentAsByteArray());
         Set<String> documentedPaths = new LinkedHashSet<>();
         documentedPaths.addAll(openApi.get("paths").propertyNames());
-        assertThat(openApi.get("paths").size()).isEqualTo(79);
-        assertThat(operationCount(openApi.get("paths"))).isEqualTo(107);
+        assertThat(openApi.get("paths").size()).isEqualTo(81);
+        assertThat(operationCount(openApi.get("paths"))).isEqualTo(109);
         assertThat(documentedPaths)
                 .noneMatch(path -> path.startsWith("/api/v1/career-artifacts"));
         assertThat(openApi.get("paths").has("/api/v1/github-sources")).isTrue();

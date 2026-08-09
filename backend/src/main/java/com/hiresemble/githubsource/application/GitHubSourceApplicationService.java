@@ -10,6 +10,7 @@ import com.hiresemble.common.idempotency.OriginalResponse;
 import com.hiresemble.githubsource.application.GitHubGatewayException.Kind;
 import com.hiresemble.githubsource.application.GitHubGatewayModels.ConditionalRepository;
 import com.hiresemble.githubsource.domain.GitHubSourceKind;
+import com.hiresemble.githubsource.domain.GitHubAccessMode;
 import com.hiresemble.githubsource.domain.GitHubRepositorySelection;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Page;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Repository;
@@ -18,6 +19,7 @@ import com.hiresemble.githubsource.domain.GitHubSourceRecords.Source;
 import com.hiresemble.githubsource.domain.GitHubSourceStatus;
 import com.hiresemble.githubsource.domain.GitHubUrl;
 import com.hiresemble.githubsource.infrastructure.GitHubProperties;
+import com.hiresemble.githubsource.infrastructure.GitHubAppConnectionStore;
 import com.hiresemble.githubsource.infrastructure.GitHubSourceStore;
 import java.time.Duration;
 import java.util.List;
@@ -38,33 +40,65 @@ public class GitHubSourceApplicationService {
     private final GitHubRestGateway gateway;
     private final GitHubProperties properties;
     private final IdempotencyService idempotency;
+    private final GitHubAppConnectionStore connectionStore;
 
     public GitHubSourceApplicationService(
             GitHubSourceStore store,
             GitHubSourceMutationService mutation,
             GitHubRestGateway gateway,
             GitHubProperties properties,
-            IdempotencyService idempotency) {
+            IdempotencyService idempotency,
+            GitHubAppConnectionStore connectionStore) {
         this.store = store;
         this.mutation = mutation;
         this.gateway = gateway;
         this.properties = properties;
         this.idempotency = idempotency;
+        this.connectionStore = connectionStore;
     }
 
     public IdempotentResponse<WorkflowLaunchResult> register(
             UUID userId, String url, boolean participationConfirmed, String idempotencyKey) {
+        return register(
+                userId,
+                url,
+                participationConfirmed,
+                GitHubAccessMode.PUBLIC,
+                null,
+                idempotencyKey);
+    }
+
+    public IdempotentResponse<WorkflowLaunchResult> register(
+            UUID userId,
+            String url,
+            boolean participationConfirmed,
+            GitHubAccessMode requestedAccessMode,
+            UUID connectionId,
+            String idempotencyKey) {
         if (!participationConfirmed) throw invalid();
         GitHubUrl parsed = GitHubUrl.parse(url);
+        GitHubAccessMode accessMode = requestedAccessMode == null
+                ? GitHubAccessMode.PUBLIC : requestedAccessMode;
+        if ((accessMode == GitHubAccessMode.PUBLIC && connectionId != null)
+                || (accessMode == GitHubAccessMode.GITHUB_APP && connectionId == null)) {
+            throw invalid();
+        }
+        if (accessMode == GitHubAccessMode.GITHUB_APP) {
+            if (!properties.isPrivateEnabled()) {
+                throw new BusinessException(ErrorCode.GITHUB_APP_NOT_CONFIGURED);
+            }
+            connectionStore.requireActiveForSource(userId, connectionId, parsed);
+        }
         IdempotencyScope scope = new IdempotencyScope(
                 userId, "POST", CREATE_SCOPE, IdempotencyScope.ROOT_SCOPE_ID, idempotencyKey);
         return idempotency.executePrepared(
                 scope,
-                parsed.canonicalUrl() + "|true",
+                parsed.canonicalUrl() + "|true|" + accessMode + "|" + connectionId,
                 WorkflowLaunchResult.class,
-                () -> parsed,
+                () -> new Registration(parsed, accessMode, connectionId),
                 prepared -> {
-                    WorkflowLaunchResult run = mutation.register(userId, prepared);
+                    WorkflowLaunchResult run = mutation.register(
+                            userId, prepared.url(), prepared.accessMode(), prepared.connectionId());
                     return new OriginalResponse<>(
                             202,
                             run,
@@ -180,13 +214,19 @@ public class GitHubSourceApplicationService {
         boolean changed = false;
         for (Repository repository : repositories) {
             try {
+                GitHubAccessContext access = access(source, repository);
                 ConditionalRepository current = gateway.repository(
-                        repository.ownerLogin(), repository.repositoryName(), repository.metadataEtag());
+                        access,
+                        repository.ownerLogin(),
+                        repository.repositoryName(),
+                        repository.metadataEtag());
                 if (current.notModified()) continue;
-                if (current.repository().privateRepository()) {
+                if (source.accessMode() == GitHubAccessMode.PUBLIC
+                        && current.repository().privateRepository()) {
                     throw new BusinessException(ErrorCode.GITHUB_SOURCE_NOT_ACCESSIBLE);
                 }
                 var commit = gateway.defaultBranchCommit(
+                        access,
                         current.repository().ownerLogin(),
                         current.repository().repositoryName(),
                         current.repository().defaultBranch());
@@ -228,6 +268,12 @@ public class GitHubSourceApplicationService {
         if (exception.kind() == Kind.NOT_FOUND) {
             return new BusinessException(ErrorCode.GITHUB_SOURCE_NOT_ACCESSIBLE, exception);
         }
+        if (exception.kind() == Kind.AUTHENTICATION) {
+            return new BusinessException(ErrorCode.GITHUB_UPSTREAM_AUTHENTICATION_FAILED, exception);
+        }
+        if (exception.kind() == Kind.PERMISSION) {
+            return new BusinessException(ErrorCode.GITHUB_APP_PERMISSION_MISMATCH, exception);
+        }
         if (exception.kind() == Kind.RESPONSE_LIMIT) {
             return new BusinessException(ErrorCode.GITHUB_SOURCE_LIMIT_EXCEEDED, exception);
         }
@@ -246,7 +292,17 @@ public class GitHubSourceApplicationService {
         return new BusinessException(ErrorCode.RESOURCE_STATE_CONFLICT);
     }
 
+    private GitHubAccessContext access(Source source, Repository repository) {
+        return source.accessMode() == GitHubAccessMode.PUBLIC
+                ? GitHubAccessContext.publicAccess()
+                : GitHubAccessContext.appRepository(
+                        source.githubAppConnectionId(), repository.externalRepositoryId());
+    }
+
     private record RefreshInspection(boolean changed) {}
+
+    private record Registration(
+            GitHubUrl url, GitHubAccessMode accessMode, UUID connectionId) {}
 
     public record RefreshResult(boolean changed, Source source, WorkflowLaunchResult run) {}
 }

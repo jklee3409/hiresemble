@@ -19,6 +19,14 @@ const mocks = vi.hoisted(() => ({
   remove: vi.fn(),
   confirm: vi.fn(),
   toast: vi.fn(),
+  appCapability: vi.fn(),
+  appConnections: vi.fn(),
+}))
+
+vi.mock('@/shared/api/githubAppConnectionApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/api/githubAppConnectionApi')>()),
+  getGitHubAppCapability: mocks.appCapability,
+  listGitHubAppConnections: mocks.appConnections,
 }))
 
 vi.mock('@/shared/api/githubSourceApi', async (importOriginal) => ({
@@ -51,8 +59,11 @@ describe('GitHubSourcePage', () => {
 
   it('requires a backend-compatible URL and participation confirmation before registration', async () => {
     const wrapper = await mountPage()
+    expect(mocks.appCapability).not.toHaveBeenCalled()
+    expect(mocks.appConnections).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('GitHub App 연결')
     await wrapper.get('form.github-register').trigger('submit')
-    expect(wrapper.text()).toContain('직접 참여한 공개 source인지 확인해 주세요.')
+    expect(wrapper.text()).toContain('직접 참여한 공개 저장소인지 확인해 주세요.')
     expect(mocks.create).not.toHaveBeenCalled()
 
     await wrapper.get('input[type="url"]').setValue('https://github.com/openai/repo/issues')
@@ -278,6 +289,8 @@ function source(overrides: Record<string, unknown> = {}) {
     canonicalUrl: 'https://github.com/openai',
     ownerLogin: 'openai',
     repositoryName: null,
+    accessMode: 'PUBLIC',
+    connectionId: null,
     status: 'DISCOVERING',
     discoveredRepositoryCount: 30,
     selectedRepositoryCount: 0,
@@ -322,6 +335,7 @@ function repository(value: number) {
     canonicalUrl: `https://github.com/owner/repository-${value}`,
     description: `저장소 ${value}`,
     defaultBranch: 'main',
+    visibility: 'PUBLIC',
     fork: value % 2 === 0,
     archived: value % 3 === 0,
     selected: false,

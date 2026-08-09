@@ -50,6 +50,7 @@ describe('GitHub Source contracts', () => {
             canonicalUrl: 'https://github.com/openai/hiresemble',
             description: null,
             defaultBranch: 'main',
+            visibility: 'PRIVATE',
             fork: false,
             archived: false,
             selected: true,
@@ -127,11 +128,21 @@ describe('GitHub Source contracts', () => {
     ).toBe(false)
   })
 
-  it('rejects malformed pages without requiring private provider fields', () => {
+  it('rejects malformed pages and enforces access mode connection parity', () => {
     expect(gitHubSourcePageSchema.safeParse({ items: [] }).success).toBe(false)
     expect(
       gitHubSourcePageSchema.parse(page([{ ...source(), providerPayload: 'ignored' }])).items,
     ).toHaveLength(1)
+    expect(
+      gitHubSourcePageSchema.safeParse(
+        page([source({ accessMode: 'GITHUB_APP', connectionId: null })]),
+      ).success,
+    ).toBe(false)
+    expect(
+      gitHubSourcePageSchema.safeParse(
+        page([source({ accessMode: 'GITHUB_APP', connectionId: uuid(9) })]),
+      ).success,
+    ).toBe(true)
   })
 })
 
@@ -145,6 +156,8 @@ function source(overrides: Record<string, unknown> = {}) {
     canonicalUrl: 'https://github.com/openai',
     ownerLogin: 'openai',
     repositoryName: null,
+    accessMode: 'PUBLIC',
+    connectionId: null,
     status: 'DISCOVERING',
     discoveredRepositoryCount: 2,
     selectedRepositoryCount: 0,

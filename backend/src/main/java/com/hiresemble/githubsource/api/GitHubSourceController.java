@@ -70,7 +70,12 @@ public class GitHubSourceController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
         var response = service.register(
-                user.id(), request.url(), request.participationConfirmed(), idempotencyKey);
+                user.id(),
+                request.url(),
+                request.participationConfirmed(),
+                request.accessMode(),
+                request.connectionId(),
+                idempotencyKey);
         return ResponseEntity.status(response.status())
                 .body(mapper.run(response.body(), response.replayed()));
     }

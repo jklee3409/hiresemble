@@ -38,6 +38,8 @@ public final class GitHubGatewayException extends RuntimeException {
         RATE_LIMITED,
         UPSTREAM_5XX,
         TIMEOUT,
+        AUTHENTICATION,
+        PERMISSION,
         INVALID_RESPONSE,
         RESPONSE_LIMIT
     }

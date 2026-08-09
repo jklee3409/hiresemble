@@ -250,6 +250,8 @@ describe('authentication route policy', () => {
     const interviewsRoute = children.find((route) => route.name === 'interviews')
     const questionSetRoute = children.find((route) => route.name === 'interview-question-set')
     const homeRoute = routes.find((route) => route.name === 'home')
+    const settingsRedirect = children.find((route) => route.path === 'settings')
+    const settingsAccount = children.find((route) => route.name === 'settings-account')
 
     expect(typeof documentsRoute?.component).toBe('function')
     expect(profileActivitiesRoute?.meta?.title).toBe('대외활동')
@@ -266,6 +268,8 @@ describe('authentication route policy', () => {
     expect(typeof interviewsRoute?.component).toBe('function')
     expect(typeof questionSetRoute?.component).toBe('function')
     expect(homeRoute?.meta?.title).toBe('내 경험을, 다음 기회로')
+    expect(settingsRedirect?.redirect).toEqual({ name: 'settings-account' })
+    expect(typeof settingsAccount?.component).toBe('function')
     expect(jobDetailLayout?.children?.map((route) => route.name)).toEqual([
       'job-detail',
       'job-overview',
