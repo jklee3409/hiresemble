@@ -191,11 +191,13 @@ describe('AgentRunDetailPanel', () => {
       '경험 보관함에 반영',
       'GitHub 분석 결과 저장',
     ])
+    // backend는 `/profile/github`를 그대로 돌려주고 router가 `/integrations`로 보낸다.
     expect(safeRequiredActionRoute('/profile/github', false)).toBeNull()
     expect(safeRequiredActionRoute('/profile/github', true)).toBe('/profile/github')
+    expect(safeRequiredActionRoute('/integrations', true)).toBe('/integrations')
     expect(
       gitHubSourceResourceRoute('GITHUB_SOURCE', '00000000-0000-4000-8000-000000000001', true),
-    ).toBe('/profile/github?source=00000000-0000-4000-8000-000000000001')
+    ).toBe('/integrations?source=00000000-0000-4000-8000-000000000001')
     expect(
       gitHubSourceResourceRoute('GITHUB_SOURCE', '00000000-0000-4000-8000-000000000001', false),
     ).toBeNull()

@@ -23,9 +23,14 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
   test.setTimeout(40_000)
   const fixture = await installGitHubRoutes(page)
 
+  // backend가 돌려주는 legacy 경로도 새 `이력서·자료` 화면으로 이어져야 한다.
   await page.goto('/profile/github')
-  await expect(page.getByRole('heading', { name: 'GitHub 연결', level: 1 })).toBeVisible()
-  await expect(page.locator('option[value="/profile/github"]')).toHaveText('GitHub')
+  await expect(page).toHaveURL(/\/integrations$/)
+  await expect(page.getByRole('heading', { name: 'GitHub 연결', level: 2 })).toBeVisible()
+  await expect(page.getByRole('link', { name: '외부 연동' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
   await expect(page.getByText('저장소 코드를 실행하지 않으며')).toBeVisible()
 
   await page.getByLabel('GitHub 계정 또는 저장소 URL').fill('https://github.com/openai')
@@ -63,10 +68,10 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
   await expect(repositoryLink).toHaveAttribute('rel', 'noopener noreferrer')
   await expect(page.getByRole('link', { name: 'GitHub 연결 보기' })).toHaveAttribute(
     'href',
-    `/profile/github?source=${ids.source}`,
+    `/integrations?source=${ids.source}`,
   )
 
-  await page.goto(`/profile/github?source=${ids.source}`)
+  await page.goto(`/integrations?source=${ids.source}`)
   await page.getByRole('button', { name: '새로고침' }).click()
   await expect(
     page.getByText('GitHub에 새로운 변경이 없어 기존 분석 결과를 유지합니다.'),

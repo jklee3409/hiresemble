@@ -5,6 +5,7 @@ import type {
   CoverLetterAiModelDto,
   CoverLetterQuestionDto,
 } from '@/shared/api/coverLetterContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 
 /*
  * AI 초안 설정. 기본 화면에 늘 펼쳐 두지 않고 초안 만들기·다시 쓰기를 누를 때만 연다.
@@ -32,6 +33,20 @@ const emit = defineEmits<{
   'update:selectedModel': [value: string]
   'update:avoidExperienceDuplication': [value: boolean]
 }>()
+
+const modelOptions = computed<AppSelectOption[]>(() =>
+  props.models.map((model) => ({
+    value: model.id,
+    label: `${model.displayName}${model.recommended ? ' · 추천' : ''}`,
+    description: model.id,
+  })),
+)
+// catalog 조회에 실패하면 임의 기본값으로 실행하지 않고 선택 자체를 막는다.
+const modelPlaceholder = computed(() => {
+  if (props.modelsLoading) return '모델 목록을 불러오는 중...'
+  if (props.modelsError) return '모델 목록을 불러오지 못했습니다'
+  return '모델을 선택하세요'
+})
 
 const rewriteTargets = computed(() =>
   props.questions.filter(
@@ -81,24 +96,21 @@ const evidenceSummary = computed(() => {
 
     <section class="generation-panel__block">
       <h3>어떻게 써 드릴까요</h3>
-      <label class="generation-panel__field">
-        <span>AI 모델</span>
-        <select
-          :value="selectedModel"
+      <div class="generation-panel__field">
+        <span id="cover-letter-model-label">AI 모델</span>
+        <AppSelect
+          :model-value="selectedModel"
+          :options="modelOptions"
+          :placeholder="modelPlaceholder"
           :disabled="modelsLoading || modelsError || models.length === 0"
           data-testid="cover-letter-model-select"
-          @change="emit('update:selectedModel', ($event.target as HTMLSelectElement).value)"
-        >
-          <option v-if="modelsLoading" value="">모델 목록을 불러오는 중...</option>
-          <option v-else-if="modelsError" value="">모델 목록을 불러오지 못했습니다</option>
-          <option v-for="model in models" :key="model.id" :value="model.id">
-            {{ model.displayName }} ({{ model.id }}){{ model.recommended ? ' · 추천' : '' }}
-          </option>
-        </select>
+          aria-labelledby="cover-letter-model-label"
+          @update:model-value="emit('update:selectedModel', $event)"
+        />
         <small v-if="models.find((model) => model.id === selectedModel)">
           {{ models.find((model) => model.id === selectedModel)?.description }}
         </small>
-      </label>
+      </div>
       <label class="generation-panel__option">
         <input
           type="checkbox"

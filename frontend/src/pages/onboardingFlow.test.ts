@@ -7,6 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import OnboardingPage from './OnboardingPage.vue'
 import type { ProfileDto, ProfileEligibilityDto } from '@/shared/api/contracts'
 import * as profileApi from '@/shared/api/profileApi'
+import { selectAppOption } from '@/shared/ui/appSelectTesting'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/shared/api/profileApi', () => ({
@@ -96,9 +97,9 @@ describe('P2 onboarding', () => {
 
     await wrapper.get('#onboarding-legalName').setValue('Onboarding User')
     await wrapper.get('#onboarding-workAvailableDate').setValue('2026-09-01')
-    await wrapper.get('#onboarding-militaryStatus').setValue('COMPLETED')
-    await wrapper.get('#onboarding-overseasTravelEligibility').setValue('ELIGIBLE')
-    await wrapper.get('#onboarding-employmentDisqualificationStatus').setValue('NONE_DECLARED')
+    await selectAppOption(wrapper, '병역 상태', '이행')
+    await selectAppOption(wrapper, '해외여행 가능 여부', '가능')
+    await selectAppOption(wrapper, '채용 결격 사유 여부', '없음')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.updateProfile).toHaveBeenNthCalledWith(

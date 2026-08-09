@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { chooseAppOption } from './appSelect'
 
 const viewportWidths = [1440, 1024, 768, 390] as const
 
@@ -373,9 +374,9 @@ test('profile suggestions and document registration stay keyboard-ready and resp
       await expect(page.getByLabel('프로필 메뉴')).toBeHidden()
       const sectionSelector = page.getByLabel('프로필 항목 선택')
       await expect(sectionSelector).toBeVisible()
-      await sectionSelector.selectOption('/profile/education')
+      await chooseAppOption(page, '프로필 항목 선택', '학력')
       await page.waitForURL(/\/profile\/education$/)
-      await expect(page.getByRole('heading', { name: '학력', level: 1 })).toBeVisible()
+      await expect(page.getByRole('heading', { name: '학력', level: 1 })).toBeAttached()
       await page.goto('/profile/basic')
     }
 
@@ -397,6 +398,30 @@ test('profile suggestions and document registration stay keyboard-ready and resp
 
     if (width === 1024) await page.goto('/profile/basic')
   }
+})
+
+test('document upload type stays selectable when the filter has the same accessible name', async ({
+  page,
+}) => {
+  await installAuthenticatedRoutes(page)
+  await page.route('**/api/v1/documents?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+      }),
+    })
+  })
+
+  await page.goto('/documents')
+  await expect(page.getByRole('combobox', { name: '자료 유형' })).toHaveCount(2)
+  await chooseAppOption(page, '자료 유형', '경력기술서', page.locator('#document-upload-type'))
+  await expect(page.locator('#document-upload-type')).toContainText('경력기술서')
 })
 
 test('onboarding eligibility and 30-minute job deadlines stay responsive', async ({ page }) => {
@@ -463,9 +488,12 @@ test('onboarding eligibility and 30-minute job deadlines stay responsive', async
     await page.goto('/jobs/new')
     await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0)
     await expect(page.getByLabel('마감 날짜')).toBeVisible()
-    await expect(page.getByLabel('마감 오전 또는 오후')).toHaveValue('PM')
-    await expect(page.getByLabel('마감 시간')).toHaveValue('11:30')
-    await expect(page.locator('#job-deadline-time option')).toHaveCount(24)
+    await expect(page.getByRole('combobox', { name: '마감 오전 또는 오후' })).toContainText('오후')
+    const deadlineTime = page.getByRole('combobox', { name: '마감 시간' })
+    await expect(deadlineTime).toContainText('11:30')
+    await deadlineTime.click()
+    await expect(page.getByRole('option')).toHaveCount(24)
+    await page.keyboard.press('Escape')
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   }
 })

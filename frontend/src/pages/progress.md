@@ -4,6 +4,26 @@
 
 공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, Gate 2 GitHub Source, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-08] Session Summary (자료 영역 IA 개편과 지원 정보 화면 여백 정리)
+
+- What was done:
+  - GitHub 화면을 `내 지원 정보`에서 `이력서·자료` 영역으로 옮겨 `/integrations`로 제공하고, 상단 전환을 `자료 업로드 | 외부 연동 | AI로 만든 초안` 세 갈래로 넓혔다.
+  - `AI로 만든 초안` 목록의 여백·표면·색을 다시 잡았다. 소개 blockquote 카드를 걷어내고 canvas 위 흰 카드 하나만 쓰며, 카드 안 사실 목록을 구분선 아래로 내렸다.
+  - `StructuredProfilePage`·`ProfileActivitiesPage`·`ExperienceLibraryPage`의 제목·부제 줄을 화면에서 걷어내고 sr-only `h1`만 남겼다. 추가 버튼과 정렬은 목록 위 도구 막대로 모아 상단 여백을 없앴다.
+  - 대외활동 화면의 `문서 분석 결과와 별도로 관리해요.` 안내 aside를 제거했다.
+  - 화면 안 모든 native `<select>`를 공용 `AppSelect`로 교체했다.
+- Key decisions:
+  - 두 번째 tab 이름을 `GitHub`가 아니라 `외부 연동`으로 뒀다. provider 이름을 IA에 박으면 비개발 직군에게 이 영역 전체가 무관해 보이고, 출처가 늘 때 tab 구조를 다시 바꿔야 한다. GitHub는 화면 안 provider로 표시한다.
+  - backend가 required user action route로 돌려주는 `/profile/github` 문자열은 계약이므로 바꾸지 않고 `/integrations`로 보내는 redirect만 추가했다.
+  - 제목을 지운 화면도 landmark와 낭독기 순서를 위해 sr-only `h1`을 유지한다.
+- Issues encountered:
+  - `ui-shell.spec.ts`의 dashboard heading·희망 직무 제안 2건은 이 작업 전 HEAD에서도 실패하는 기존 문제다(stash 후 baseline 확인). 이번 범위에서 고치지 않았다.
+- Validation:
+  - `node node_modules/vitest/vitest.mjs run`: 95 files / 435 tests 통과.
+  - `playwright test e2e/github-source.spec.ts e2e/career-artifacts.spec.ts e2e/ui-shell.spec.ts --project=chromium`: 6 passed, 2 failed(위 기존 실패).
+- Next steps:
+  - `ui-shell.spec.ts`의 기존 실패 2건 원인 조사.
+
 ## [2026-08-08] Session Summary (Career Artifact 목록·wizard·상세 페이지)
 
 - What was done:

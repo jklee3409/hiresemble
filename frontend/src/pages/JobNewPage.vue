@@ -7,6 +7,7 @@ import { type JobCreateForm, validateJobCreateForm } from '@/features/jobs/valid
 import { createJobIdempotencyKey } from '@/shared/api/jobApi'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
@@ -25,6 +26,14 @@ const deadlineTimes = [
     return [`${hour}:00`, `${hour}:30`]
   }).flat(),
 ] as const
+const deadlinePeriodOptions: AppSelectOption<'AM' | 'PM'>[] = [
+  { value: 'AM', label: '오전' },
+  { value: 'PM', label: '오후' },
+]
+const deadlineTimeOptions: AppSelectOption[] = deadlineTimes.map((time) => ({
+  value: time,
+  label: time,
+}))
 const fieldErrors = ref<Record<string, string>>({})
 const actionError = ref('')
 let idempotencyKey = ''
@@ -205,37 +214,30 @@ function emptyForm(): JobCreateForm {
                     : 'job-deadline-help'
                 "
               />
-              <select
+              <AppSelect
                 id="job-deadline-period"
                 v-model="deadline.period"
-                class="control"
+                :options="deadlinePeriodOptions"
                 aria-label="마감 오전 또는 오후"
-                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+                :invalid="Boolean(fieldErrors.deadlineAt)"
                 :aria-describedby="
                   fieldErrors.deadlineAt
                     ? 'job-deadline-help job-deadline-error'
                     : 'job-deadline-help'
                 "
-              >
-                <option value="AM">오전</option>
-                <option value="PM">오후</option>
-              </select>
-              <select
+              />
+              <AppSelect
                 id="job-deadline-time"
                 v-model="deadline.time"
-                class="control"
+                :options="deadlineTimeOptions"
                 aria-label="마감 시간"
-                :aria-invalid="Boolean(fieldErrors.deadlineAt)"
+                :invalid="Boolean(fieldErrors.deadlineAt)"
                 :aria-describedby="
                   fieldErrors.deadlineAt
                     ? 'job-deadline-help job-deadline-error'
                     : 'job-deadline-help'
                 "
-              >
-                <option v-for="time in deadlineTimes" :key="time" :value="time">
-                  {{ time }}
-                </option>
-              </select>
+              />
             </div>
             <span id="job-deadline-help" class="field__help">
               시간은 30분 단위로 선택할 수 있어요.

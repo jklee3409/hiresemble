@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { featureFlags } from '@/app/featureFlags'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,20 +51,20 @@ const baseSections = [
   },
 ] as const
 
-const sections = computed(() => [
-  ...baseSections,
-  ...(featureFlags.githubSourceEnabled
-    ? ([{ to: '/profile/github', label: 'GitHub', icon: 'evidence' }] as const)
-    : []),
-])
+// GitHub 연동은 `이력서·자료` 영역으로 옮겼으므로 이 목록에는 두지 않는다.
+const sections = baseSections
+
+const sectionOptions: AppSelectOption[] = sections.map((section) => ({
+  value: section.to,
+  label: section.label,
+}))
 
 const currentSection = computed(
-  () => sections.value.find((section) => route.path === section.to) ?? sections.value[0],
+  () => sections.find((section) => route.path === section.to) ?? sections[0],
 )
 
-function changeSection(event: Event): void {
-  const target = event.target as HTMLSelectElement
-  if (target.value !== route.path) void router.push(target.value)
+function changeSection(path: string): void {
+  if (path !== route.path) void router.push(path)
 }
 </script>
 
@@ -90,19 +90,15 @@ function changeSection(event: Event): void {
       </RouterLink>
     </nav>
 
-    <label class="profile-outline__mobile">
+    <div class="profile-outline__mobile">
       <span>작성할 항목</span>
-      <select
-        class="control"
-        :value="currentSection.to"
+      <AppSelect
+        :model-value="currentSection.to"
+        :options="sectionOptions"
         aria-label="프로필 항목 선택"
-        @change="changeSection"
-      >
-        <option v-for="section in sections" :key="section.to" :value="section.to">
-          {{ section.label }}
-        </option>
-      </select>
-    </label>
+        @update:model-value="changeSection"
+      />
+    </div>
   </aside>
 </template>
 

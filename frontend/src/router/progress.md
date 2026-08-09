@@ -7,6 +7,20 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child를 허용하고 GitHub path는 flag 활성 시만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-08] Session Summary (GitHub 화면을 `/integrations`로 이동)
+
+- What was done:
+  - `gitHubProfileRoutes`를 `gitHubIntegrationRoutes`로 바꾸고 canonical path를 `profile/github`에서 `integrations`로 옮겼다. 같은 flag 아래에 `profile/github` → `integrations` redirect를 함께 등록한다.
+  - `returnTo.ts`의 보호 path 판정에 `/integrations`를 추가하고 `/profile/github`도 계속 허용한다.
+- Key decisions:
+  - `/profile/github`는 backend가 `SELECT_GITHUB_REPOSITORIES` required action route로 돌려주는 값이라 공개 계약이다. 문자열을 바꾸지 않고 redirect로 흡수해 backend·DTO·workflow를 건드리지 않았다.
+  - redirect는 `to.query`를 그대로 넘겨 `?source=` deep link를 잃지 않는다.
+- Issues encountered: 없음.
+- Validation:
+  - `node node_modules/vitest/vitest.mjs run src/router`: 통과.
+- Next steps:
+  - Gate 5 이후 backend가 action route를 바꾸기로 하면 이 redirect를 정리한다.
+
 ## [2026-08-08] Session Summary (Career Artifact route gate)
 
 - What was done:

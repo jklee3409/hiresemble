@@ -14,9 +14,17 @@ import {
 } from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
+import {
+  EDUCATION_LEVEL_OPTIONS,
+  EDUCATION_STATUS_OPTIONS,
+  EMPLOYMENT_DISQUALIFICATION_OPTIONS,
+  MILITARY_STATUS_OPTIONS,
+  OVERSEAS_TRAVEL_OPTIONS,
+} from '@/features/profile/selectOptions'
 import {
   type EducationFormValues,
   type ProfileFormValues,
@@ -412,46 +420,35 @@ async function retryLoad(): Promise<void> {
             />
           </div>
           <div class="field">
-            <label class="field-label" for="onboarding-militaryStatus">병역 상태</label>
-            <select
+            <span id="onboarding-militaryStatus-label" class="field-label">병역 상태</span>
+            <AppSelect
               id="onboarding-militaryStatus"
               v-model="eligibilityForm.militaryStatus"
-              class="control"
-            >
-              <option value="UNSPECIFIED">선택하지 않음</option>
-              <option value="COMPLETED">이행</option>
-              <option value="EXEMPT">면제</option>
-              <option value="NOT_APPLICABLE">해당 없음</option>
-              <option value="NOT_COMPLETED">미이행</option>
-            </select>
+              :options="MILITARY_STATUS_OPTIONS"
+              aria-labelledby="onboarding-militaryStatus-label"
+            />
           </div>
           <div class="field">
-            <label class="field-label" for="onboarding-overseasTravelEligibility">
+            <span id="onboarding-overseasTravelEligibility-label" class="field-label">
               해외여행 가능 여부
-            </label>
-            <select
+            </span>
+            <AppSelect
               id="onboarding-overseasTravelEligibility"
               v-model="eligibilityForm.overseasTravelEligibility"
-              class="control"
-            >
-              <option value="UNSPECIFIED">선택하지 않음</option>
-              <option value="ELIGIBLE">가능</option>
-              <option value="RESTRICTED">제한 있음</option>
-            </select>
+              :options="OVERSEAS_TRAVEL_OPTIONS"
+              aria-labelledby="onboarding-overseasTravelEligibility-label"
+            />
           </div>
           <div class="field">
-            <label class="field-label" for="onboarding-employmentDisqualificationStatus">
+            <span id="onboarding-employmentDisqualificationStatus-label" class="field-label">
               채용 결격 사유 여부
-            </label>
-            <select
+            </span>
+            <AppSelect
               id="onboarding-employmentDisqualificationStatus"
               v-model="eligibilityForm.employmentDisqualificationStatus"
-              class="control"
-            >
-              <option value="UNSPECIFIED">선택하지 않음</option>
-              <option value="NONE_DECLARED">없음</option>
-              <option value="HAS_RESTRICTION">제한 있음</option>
-            </select>
+              :options="EMPLOYMENT_DISQUALIFICATION_OPTIONS"
+              aria-labelledby="onboarding-employmentDisqualificationStatus-label"
+            />
           </div>
         </div>
         <p class="field-help">선택하지 않은 항목은 공고 분석에서 ‘알 수 없음’으로 처리해요.</p>
@@ -506,19 +503,13 @@ async function retryLoad(): Promise<void> {
       </div>
       <div class="onboarding-form-grid">
         <div class="field">
-          <label class="field-label" for="onboarding-educationLevel">학력 단계</label>
-          <select
+          <span id="onboarding-educationLevel-label" class="field-label">학력 단계</span>
+          <AppSelect
             id="onboarding-educationLevel"
             v-model="educationForm.educationLevel"
-            class="control"
-          >
-            <option value="HIGH_SCHOOL">고등학교</option>
-            <option value="ASSOCIATE">대학교(전문학사)</option>
-            <option value="BACHELOR">대학교(학사)</option>
-            <option value="MASTER">대학원(석사)</option>
-            <option value="DOCTORATE">대학원(박사)</option>
-            <option value="OTHER">기타 교육</option>
-          </select>
+            :options="EDUCATION_LEVEL_OPTIONS"
+            aria-labelledby="onboarding-educationLevel-label"
+          />
         </div>
         <div class="field">
           <label class="field-label" for="onboarding-major">전공</label>
@@ -530,18 +521,13 @@ async function retryLoad(): Promise<void> {
           />
         </div>
         <div class="field">
-          <label class="field-label" for="onboarding-educationStatus">재학 상태</label>
-          <select
+          <span id="onboarding-educationStatus-label" class="field-label">재학 상태</span>
+          <AppSelect
             id="onboarding-educationStatus"
             v-model="educationForm.educationStatus"
-            class="control"
-          >
-            <option value="ENROLLED">재학</option>
-            <option value="LEAVE_OF_ABSENCE">휴학</option>
-            <option value="EXPECTED_GRADUATION">졸업 예정</option>
-            <option value="GRADUATED">졸업</option>
-            <option value="WITHDRAWN">중퇴</option>
-          </select>
+            :options="EDUCATION_STATUS_OPTIONS"
+            aria-labelledby="onboarding-educationStatus-label"
+          />
         </div>
       </div>
       <div class="onboarding-actions">

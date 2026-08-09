@@ -1,4 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
+import { chooseAppOption } from './appSelect'
 
 test.describe('P7 actual Backend cover-letter lifecycle', () => {
   test.skip(
@@ -516,7 +517,7 @@ async function uploadAndApproveEvidence(page: Page): Promise<DocumentDetail> {
     mimeType: 'text/plain',
     buffer: Buffer.from(approvedDocumentText(), 'utf8'),
   })
-  await page.locator('#document-upload-type').selectOption('RESUME')
+  await chooseAppOption(page, '자료 유형', '이력서', page.locator('#document-upload-type'))
   await page.locator('#document-displayName').fill('P7 검증 이력서')
   await page.locator('#document-upload-submit').click()
   await page.waitForURL(/\/documents\/[0-9a-f-]+\?run=[0-9a-f-]+$/)

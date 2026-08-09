@@ -13,7 +13,7 @@ import {
 } from '@/shared/api/contracts'
 import { normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
-import PageHeader from '@/shared/ui/PageHeader.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -31,6 +31,11 @@ const TYPE_LABELS: Record<ActivityType, string> = {
   INTERNATIONAL: '해외 경험',
   OTHER: '기타',
 }
+
+const activityTypeOptions: AppSelectOption<ActivityType>[] = ACTIVITY_TYPES.map((type) => ({
+  value: type,
+  label: TYPE_LABELS[type],
+}))
 
 const activitySchema = z
   .object({
@@ -224,31 +229,23 @@ function period(item: ActivityDto): string {
   >
     <ProfileTabs />
     <div class="profile-workspace-shell__content">
-      <PageHeader
-        heading-id="activities-heading"
-        title="대외활동"
-        description="동아리, 봉사, 공모전처럼 직접 참여한 경험을 기록하고 필요한 활동만 자소서·면접 소재 후보로 선택하세요."
-        variant="compact"
-      >
-        <template #actions>
-          <button
-            v-if="!editorOpen"
-            type="button"
-            class="button button--primary"
-            @click="openCreate"
-          >
-            대외활동 등록
-          </button>
-        </template>
-      </PageHeader>
+      <!-- 좌측 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+      <h1 id="activities-heading" class="sr-only">대외활동</h1>
 
-      <aside class="activity-policy" aria-label="대외활동 소재 활용 안내">
-        <strong>문서 분석 결과와 별도로 관리해요.</strong>
-        <p>
-          여기는 직접 입력한 활동만 표시됩니다. ‘소재 후보로 사용’을 켠 활동만 관련 자소서나 면접
-          준비에서 AI가 제안할 수 있어요.
+      <div class="filter-toolbar activities-page__toolbar">
+        <p class="activities-page__count">
+          등록 <strong>{{ activities.data.value?.totalElements ?? 0 }}</strong
+          >건
         </p>
-      </aside>
+        <button
+          v-if="!editorOpen"
+          type="button"
+          class="button button--primary button--compact"
+          @click="openCreate"
+        >
+          대외활동 등록
+        </button>
+      </div>
 
       <form
         v-if="editorOpen"
@@ -285,14 +282,14 @@ function period(item: ActivityDto): string {
             />
             <span v-if="fieldErrors.title" class="inline-error">{{ fieldErrors.title }}</span>
           </label>
-          <label class="field">
+          <div class="field">
             <span class="field__label">활동 종류</span>
-            <select v-model="form.activityType" class="control">
-              <option v-for="type in ACTIVITY_TYPES" :key="type" :value="type">
-                {{ TYPE_LABELS[type] }}
-              </option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="form.activityType"
+              :options="activityTypeOptions"
+              aria-label="활동 종류"
+            />
+          </div>
           <label class="field">
             <span class="field__label">진행 주체·주관 기관</span>
             <input
@@ -502,26 +499,27 @@ function period(item: ActivityDto): string {
 </template>
 
 <style scoped>
-.activity-policy,
 .activity-editor,
 .activities-page__state,
 .activity-list {
   margin-top: var(--space-5);
 }
 
-.activity-policy {
-  border-left: 3px solid var(--color-brand);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  background: var(--color-brand-soft);
-  padding: 0.875rem 1rem;
+/* 좌측 탐색이 화면 이름을 알려 주므로 본문은 등록 버튼이 있는 도구 막대에서 시작한다. */
+.activities-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
 }
-.activity-policy strong {
-  color: var(--color-brand-strong);
+.activities-page__count {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
 }
-.activity-policy p {
-  margin: 0.25rem 0 0;
-  color: var(--color-ink-soft);
-  font-size: 0.875rem;
+.activities-page__count strong {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
 }
 .activity-editor {
   padding: clamp(1rem, 3vw, 1.5rem);

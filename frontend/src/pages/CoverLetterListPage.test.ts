@@ -8,6 +8,7 @@ import {
   coverLetterSummaryFixture,
   uuid,
 } from '@/features/cover-letters/testFixtures'
+import { selectAppOption } from '@/shared/ui/appSelectTesting'
 
 import CoverLetterListPage from './CoverLetterListPage.vue'
 
@@ -82,8 +83,7 @@ describe('CoverLetterListPage', () => {
 
     const search = wrapper.get<HTMLInputElement>('input[type="search"]')
     await search.setValue('새 검색')
-    const status = wrapper.findAll('select')[0]
-    await status?.setValue('ARCHIVED')
+    await selectAppOption(wrapper, '작성 상태', '보관')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({

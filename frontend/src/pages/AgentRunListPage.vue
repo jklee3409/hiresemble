@@ -30,11 +30,22 @@ import {
   useDeleteAgentRunMutation,
   useDeleteSelectedAgentRunsMutation,
 } from '@/features/agent-runs/queries'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useNotifications } from '@/shared/ui/notifications'
+
+const retryableOptions: AppSelectOption[] = [
+  { value: '', label: '전체' },
+  { value: 'true', label: '가능' },
+  { value: 'false', label: '불가능' },
+]
+const runSortOptions: AppSelectOption[] = [
+  { value: 'queuedAt,desc', label: '최근 접수순' },
+  { value: 'updatedAt,desc', label: '최근 갱신순' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -106,18 +117,17 @@ function toggleStatus(status: AgentRunStatus, event: Event): void {
   })
 }
 
-function changeRetryable(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value
+function changeRetryable(value: string): void {
   const next = { ...filters.value, page: 0 }
   if (value === '') delete next.retryable
   else next.retryable = value === 'true'
   replaceFilters(next)
 }
 
-function changeSort(event: Event): void {
+function changeSort(value: string): void {
   replaceFilters({
     ...filters.value,
-    sort: (event.target as HTMLSelectElement).value as AgentRunListFilters['sort'],
+    sort: value as AgentRunListFilters['sort'],
     page: 0,
   })
 }
@@ -242,25 +252,26 @@ async function removeSelected(): Promise<void> {
           </div>
         </fieldset>
         <div class="run-filter-selects">
-          <label class="field">
+          <div class="field">
             <span class="field__label">재시도 가능</span>
-            <select
-              class="control control--compact"
-              :value="filters.retryable === undefined ? '' : String(filters.retryable)"
-              @change="changeRetryable"
-            >
-              <option value="">전체</option>
-              <option value="true">가능</option>
-              <option value="false">불가능</option>
-            </select>
-          </label>
-          <label class="field">
+            <AppSelect
+              :model-value="filters.retryable === undefined ? '' : String(filters.retryable)"
+              :options="retryableOptions"
+              compact
+              aria-label="재시도 가능"
+              @update:model-value="changeRetryable"
+            />
+          </div>
+          <div class="field">
             <span class="field__label">정렬</span>
-            <select class="control control--compact" :value="filters.sort" @change="changeSort">
-              <option value="queuedAt,desc">최근 접수순</option>
-              <option value="updatedAt,desc">최근 갱신순</option>
-            </select>
-          </label>
+            <AppSelect
+              :model-value="filters.sort"
+              :options="runSortOptions"
+              compact
+              aria-label="정렬"
+              @update:model-value="changeSort"
+            />
+          </div>
         </div>
       </form>
     </details>

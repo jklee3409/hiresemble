@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { chooseAppOption } from './appSelect'
 
 test.describe('P4 actual Backend document pipeline', () => {
   test.skip(
@@ -147,7 +148,7 @@ async function uploadText(
   await page
     .locator('#document-file')
     .setInputFiles({ name: filename, mimeType: 'text/plain', buffer: Buffer.from(text, 'utf8') })
-  await page.locator('#document-upload-type').selectOption('RESUME')
+  await chooseAppOption(page, '자료 유형', '이력서', page.locator('#document-upload-type'))
   await page.locator('#document-displayName').fill(displayName)
   await page.locator('#document-upload-submit').click()
   await page.waitForURL(/\/documents\/[0-9a-f-]+\?run=[0-9a-f-]+$/)

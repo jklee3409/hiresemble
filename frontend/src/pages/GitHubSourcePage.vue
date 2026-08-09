@@ -27,12 +27,13 @@ import type {
   GitHubSourceSummaryDto,
 } from '@/shared/api/githubSourceContracts'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useNotifications } from '@/shared/ui/notifications'
-import ProfileTabs from '@/features/profile/ProfileTabs.vue'
+import CareerArtifactAreaSwitch from '@/features/career-artifacts/CareerArtifactAreaSwitch.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -55,6 +56,10 @@ const repositorySearchInput = ref('')
 const repositoryQuery = ref('')
 const repositoryPage = ref(0)
 const repositorySort = ref<GitHubRepositorySort>('pushedAt,desc')
+const repositorySortOptions: AppSelectOption<GitHubRepositorySort>[] = [
+  { value: 'pushedAt,desc', label: '최근 push 순' },
+  { value: 'repositoryName,asc', label: '저장소 이름 순' },
+]
 const selectedRepositoryIds = ref<string[]>([])
 const knownRepositories = new Map<string, GitHubRepositoryDto>()
 const selectionOverrides = new Map<string, boolean>()
@@ -213,8 +218,8 @@ function submitRepositorySearch(): void {
   repositoryPage.value = 0
 }
 
-function changeRepositorySort(event: Event): void {
-  repositorySort.value = (event.target as HTMLSelectElement).value as GitHubRepositorySort
+function changeRepositorySort(value: GitHubRepositorySort): void {
+  repositorySort.value = value
   repositoryPage.value = 0
 }
 
@@ -351,14 +356,15 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
 </script>
 
 <template>
-  <section class="github-page app-page profile-workspace-shell" aria-labelledby="github-heading">
-    <ProfileTabs />
-    <div class="profile-workspace-shell__content">
+  <section class="github-page app-page" aria-labelledby="github-heading">
+    <h1 id="github-heading" class="sr-only">외부 연동</h1>
+    <CareerArtifactAreaSwitch />
+    <div class="github-page__content">
       <PageHeader
-        heading-id="github-heading"
         title="GitHub 연결"
         description="직접 참여한 공개 GitHub 계정이나 저장소에서 검토할 경험 근거를 찾아요."
         variant="compact"
+        :level="2"
       />
 
       <aside class="github-policy" aria-label="GitHub 분석 범위 안내">
@@ -700,13 +706,15 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
                 />
               </label>
               <button type="submit" class="button button--secondary">검색</button>
-              <label class="field">
+              <div class="field">
                 <span class="field__label">정렬</span>
-                <select class="control" :value="repositorySort" @change="changeRepositorySort">
-                  <option value="pushedAt,desc">최근 push 순</option>
-                  <option value="repositoryName,asc">저장소 이름 순</option>
-                </select>
-              </label>
+                <AppSelect
+                  :model-value="repositorySort"
+                  :options="repositorySortOptions"
+                  aria-label="정렬"
+                  @update:model-value="changeRepositorySort"
+                />
+              </div>
             </form>
 
             <StatePanel
@@ -780,6 +788,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
 </template>
 
 <style scoped>
+.github-page__content {
+  margin-top: var(--layout-tabs-body-gap);
+}
+
 .github-policy,
 .github-register,
 .github-feedback,

@@ -99,14 +99,18 @@ describe('AppLayout', () => {
     wrapper.unmount()
   })
 
-  it('keeps generated artifacts inside the existing documents navigation context', async () => {
-    const { wrapper } = await mountLayout('/career-artifacts')
-    expect(wrapper.get('.desktop-navigation__link[aria-current="page"]').text()).toBe('이력서·자료')
-    expect(wrapper.findAll('.desktop-navigation__link')).toHaveLength(6)
-    expect(wrapper.get('button[aria-controls="mobile-more-menu"]').classes()).toContain(
-      'mobile-bottom-navigation__item--active',
-    )
-    wrapper.unmount()
+  it('keeps integrations and generated artifacts inside the documents navigation context', async () => {
+    for (const path of ['/integrations', '/career-artifacts']) {
+      const { wrapper } = await mountLayout(path)
+      expect(wrapper.get('.desktop-navigation__link[aria-current="page"]').text()).toBe(
+        '이력서·자료',
+      )
+      expect(wrapper.findAll('.desktop-navigation__link')).toHaveLength(6)
+      expect(wrapper.get('button[aria-controls="mobile-more-menu"]').classes()).toContain(
+        'mobile-bottom-navigation__item--active',
+      )
+      wrapper.unmount()
+    }
   })
 
   it('updates the nickname from the header modal and returns focus to the trigger', async () => {
@@ -183,6 +187,7 @@ async function mountLayout(path: string) {
             meta: { title: '내 지원 정보' },
           },
           { path: 'documents', component: DashboardPage },
+          { path: 'integrations', component: DashboardPage },
           { path: 'career-artifacts', component: DashboardPage },
           { path: 'jobs', component: DashboardPage },
           { path: 'cover-letters', component: DashboardPage },

@@ -18,6 +18,7 @@ import type {
 import { ApiClientError } from '@/shared/api/errors'
 import * as documentApi from '@/shared/api/documentApi'
 import * as profileApi from '@/shared/api/profileApi'
+import { selectAppOption } from '@/shared/ui/appSelectTesting'
 import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
@@ -127,9 +128,9 @@ describe('P2 profile pages', () => {
     expect(wrapper.text()).toContain('지원 자격 확인 정보')
     expect(wrapper.text()).toContain('사용자 입력 기준')
     await wrapper.get('#profile-workAvailableDate').setValue('2026-08-01')
-    await wrapper.get('#profile-militaryStatus').setValue('COMPLETED')
-    await wrapper.get('#profile-overseasTravelEligibility').setValue('ELIGIBLE')
-    await wrapper.get('#profile-employmentDisqualificationStatus').setValue('NONE_DECLARED')
+    await selectAppOption(wrapper, '병역 상태', '이행')
+    await selectAppOption(wrapper, '해외여행 가능 여부', '가능')
+    await selectAppOption(wrapper, '채용 결격 사유 여부', '없음')
     await wrapper.get('form.profile-eligibility').trigger('submit')
     await flushPromises()
 
@@ -172,14 +173,13 @@ describe('P2 profile pages', () => {
     })
     const wrapper = await mountPage(ProfileActivitiesPage)
 
-    expect(wrapper.text()).toContain('문서 분석 결과와 별도로 관리해요.')
     expect(wrapper.text()).toContain('아직 등록한 대외활동이 없어요.')
-    await wrapper.get('button').trigger('click')
+    await clickButton(wrapper, '대외활동 등록')
     const controls = wrapper.findAll('input, textarea')
     await controls
       .find((control) => control.attributes('placeholder')?.includes('IT 동아리'))
       ?.setValue('교내 IT 동아리 운영진')
-    await wrapper.get('form select').setValue('CLUB')
+    await selectAppOption(wrapper, '활동 종류', '동아리')
     await controls
       .find((control) => control.attributes('placeholder')?.includes('총학생회'))
       ?.setValue('OO대학교')
@@ -282,7 +282,7 @@ describe('P2 profile pages', () => {
     expect(wrapper.text()).toContain('졸업 예정')
     expect(wrapper.text()).not.toContain('EXPECTED_GRADUATION')
     expect(wrapper.text()).not.toContain('대표로 설정')
-    await wrapper.get('button').trigger('click')
+    await clickButton(wrapper, '학력 추가')
     await wrapper.get('#education-schoolName').setValue('New School')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -345,9 +345,9 @@ describe('P2 profile pages', () => {
       updatedAt: '2026-07-19T00:00:00Z',
     })
     const wrapper = await mountPage(StructuredProfilePage, { kind: 'certification' })
-    await wrapper.get('button').trigger('click')
+    await clickButton(wrapper, '자격증 추가')
     await wrapper.get('#certification-name').setValue('정보처리기사')
-    await wrapper.get('#certification-evidenceDocumentId').setValue(documentId)
+    await selectAppOption(wrapper, '증빙 문서', '자격 증빙.pdf')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.createCertification).toHaveBeenCalledWith(
@@ -429,7 +429,7 @@ describe('P2 profile pages', () => {
     )
     expect(wrapper.get('.evidence-page__guidance').text()).not.toContain('신뢰도')
     expect(wrapper.find('[data-testid="evidence-card-evidence-education"]').exists()).toBe(false)
-    await wrapper.get('#evidence-document-filter').setValue('00000000-0000-4000-8000-000000000101')
+    await selectAppOption(wrapper, '출처 문서', '이력서.txt')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(profileApi.listEvidence).toHaveBeenLastCalledWith(
@@ -450,7 +450,7 @@ describe('P2 profile pages', () => {
       directCard.findAll('button').filter((button) => ['승인', '거절'].includes(button.text())),
     ).toHaveLength(0)
 
-    await wrapper.get('.evidence-filters select').setValue('REJECTED')
+    await selectAppOption(wrapper, '상태', '거절됨')
     await flushPromises()
     expect(profileApi.listEvidence).toHaveBeenLastCalledWith(
       expect.objectContaining({ verificationStatus: 'REJECTED' }),
@@ -596,4 +596,10 @@ function evidence(): EvidenceDto {
 
 function pageOf<T>(items: T[]): PageResponse<T> {
   return { items, page: 0, size: 20, totalElements: items.length, totalPages: 1 }
+}
+
+async function clickButton(wrapper: ReturnType<typeof mount>, label: string): Promise<void> {
+  const button = wrapper.findAll('button').find((candidate) => candidate.text() === label)
+  if (button === undefined) throw new Error(`"${label}" 버튼이 없습니다.`)
+  await button.trigger('click')
 }

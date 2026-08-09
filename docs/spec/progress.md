@@ -6,6 +6,22 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, 구현된 GH-AC-01–04 및 ART-AC-01–05를 정의한다. 현재 기준선은 V28·11 WorkflowType·feature 활성 88 paths/118 operations·비활성 79 paths/107 operations이며 ART 사용자 journey는 독립 frontend flag 아래 구현됐다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-08] Session Summary (자료 영역 IA와 공용 선택 control 계약 반영)
+
+- What was done:
+  - `page.md`의 GitHub 화면을 `5.9 /integrations`로 옮기고 route tree·route 상태표·AppLayout navigation 설명을 `자료 업로드 | 외부 연동 | AI로 만든 초안` 3-way switch로 갱신했다.
+  - Backend가 반환하는 `/profile/github` required action route는 공개 계약이므로 유지하고 Frontend redirect로 흡수한다는 조건을 명시했다.
+  - 공통 Layout 절에 단일 선택 입력은 native `<select>` 대신 공용 combobox/listbox control 하나만 쓴다는 규칙과 필요한 키보드·이름 계약을 추가했다.
+  - 프로필 하위 화면은 제목·설명 줄 없이 도구 영역에서 시작하고 추가 action을 그 줄에 둔다는 규칙, 대외활동 화면에 별도 안내 blockquote를 두지 않는다는 규칙을 추가했다.
+- Key decisions:
+  - tab 이름을 provider(`GitHub`)가 아니라 역할(`외부 연동`)로 정의해 비개발 직군 사용자와 향후 출처 확장을 함께 수용한다.
+  - API·DB·workflow 계약은 바꾸지 않았다. 화면 계약만 갱신했다.
+- Issues encountered: 없음.
+- Validation:
+  - 문서 변경으로 별도 명령을 실행하지 않았다. 구현 검증은 `frontend/progress.md`에 있다.
+- Next steps:
+  - Gate 5에서 backend가 action route를 바꾸기로 하면 redirect 조항을 정리한다.
+
 ## [2026-08-08] Session Summary (Career Artifact Gate 4 화면 계약 구현 승격)
 
 - What was done:

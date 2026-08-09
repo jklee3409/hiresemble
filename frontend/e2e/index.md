@@ -9,6 +9,7 @@
 | 경로                                                                           | 역할                                                                                                                         |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | [`.gitkeep`](.gitkeep)                                                         | 초기 디렉터리 추적용 placeholder로 보존                                                                                      |
+| [`appSelect.ts`](appSelect.ts)                                                 | 공용 `AppSelect`를 열기 → 고르기 순서로 조작하는 helper. 같은 이름이 반복되면 고유 trigger Locator로 범위를 좁힌다           |
 | [`profile.spec.ts`](profile.spec.ts)                                           | 가입·온보딩·프로필 지속성·두 사용자 404·cache cleanup                                                                        |
 | [`agent-runs.spec.ts`](agent-runs.spec.ts)                                     | snapshot·disconnect·reconnect·polling·retry·cancel·logout fixture                                                            |
 | [`github-source.spec.ts`](github-source.spec.ts)                               | feature-gated GitHub account 등록·검색·pagination·선택·SSE·provenance·refresh·delete fixture                                 |

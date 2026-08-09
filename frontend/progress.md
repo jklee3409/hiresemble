@@ -4,8 +4,42 @@
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview, Gate 2 GitHub Source와 Gate 4 Career Artifact typed client·Vue Query·SSE invalidation까지 구현되어 있다.
-- `/guide`, `/profile/experiences`, feature-gated `/profile/github`·`/career-artifacts/**`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 94 files/422 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·Career Artifact·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- `/guide`, `/profile/experiences`, feature-gated `/integrations`(구 `/profile/github` redirect)·`/career-artifacts/**`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Vitest 95 files/435 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·Career Artifact·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+
+## [2026-08-09] Session Summary (AppSelect 커밋 전 검증 보완)
+
+- What was done:
+  - 같은 `자료 유형` 이름을 가진 업로드·필터 combobox가 함께 있을 때 E2E strict locator가 충돌하지 않도록 공용 helper에 고유 trigger 범위를 추가했다.
+  - `/integrations`의 AppLayout active navigation 회귀와 누락된 Layout·Agent Run·Cover Letter·Interview 추적 문서를 보완하고 신규 progress 기록의 표준 필드명을 복원했다.
+- Key decisions:
+  - 중복 접근성 이름은 화면 의미상 유지하고 실제 업로드 control을 조작하는 P4·P7 호출부만 `#document-upload-type`으로 범위를 좁힌다.
+  - API·DB·Workflow와 Backend required-action `/profile/github` 계약은 변경하지 않는다.
+- Issues encountered:
+  - 첫 전체 check는 새 E2E 파일 2개의 Prettier 형식에서 중단됐고 formatter 적용 후 재검증이 통과했다.
+  - 격리 Backend가 필요한 P4·P7 actual 전체 흐름은 실행하지 않았다.
+- Validation:
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+  - AppSelect·AppLayout 집중 Vitest 2 files/16 tests, 중복 이름 focused Chromium 1/1 통과.
+- Next steps:
+  - 다음 P4·P7 actual 환경에서 업로드 이후 pipeline 전체를 재확인한다.
+
+## [2026-08-08] Session Summary (공용 선택 control과 자료 영역 IA 개편)
+
+- What was done:
+  - 공용 `AppSelect`를 만들어 20개 파일의 native `<select>` 약 50곳을 교체했다. OS가 그리던 option 목록이 제품 design token을 따르는 listbox로 바뀌었다.
+  - GitHub 화면을 `내 지원 정보`에서 `이력서·자료`의 `/integrations`로 옮기고 상단 전환을 `자료 업로드 | 외부 연동 | AI로 만든 초안` 세 갈래로 넓혔다.
+  - `AI로 만든 초안` 목록과 `내 지원 정보` 하위 화면의 여백·표면·색을 정리하고 제목 줄은 sr-only로 남겼다.
+- Key decisions:
+  - 두 번째 tab을 provider 이름(`GitHub`) 대신 `외부 연동`으로 뒀다. 비개발 직군에게도 자기 영역으로 읽히고 출처가 늘어도 IA를 다시 바꾸지 않는다.
+  - backend가 돌려주는 `/profile/github` action route는 계약이라 바꾸지 않고 redirect로 흡수했다. Backend API·DB·workflow 변경은 없다.
+- Issues encountered:
+  - `ui-shell.spec.ts` 2건은 이 작업 전 HEAD에서도 실패하는 기존 문제다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(95 files/435 tests), `vite build`: 모두 통과.
+  - `playwright test e2e/github-source.spec.ts e2e/career-artifacts.spec.ts e2e/ui-shell.spec.ts --project=chromium`: 6 passed, 2 failed(기존 실패).
+- Next steps:
+  - `ui-shell.spec.ts`의 기존 실패 2건 원인 조사.
 
 ## [2026-08-08] Session Summary (Career Artifact Gate 4 Frontend)
 

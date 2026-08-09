@@ -26,10 +26,21 @@ import {
 import { JOB_SORTS } from '@/shared/api/jobApi'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
+
+const jobSortOptions: AppSelectOption[] = [
+  { value: 'createdAt,desc', label: '최근 등록순' },
+  { value: 'deadlineAt,asc', label: '마감 임박순' },
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+]
+const jobStatusOptions: AppSelectOption<JobStatus>[] = JOB_STATUSES.map((status) => ({
+  value: status,
+  label: JOB_STATUS_LABELS[status],
+}))
 
 const route = useRoute()
 const router = useRouter()
@@ -122,8 +133,7 @@ function clearPeriod(): void {
   if (periodDetails.value) periodDetails.value.open = false
 }
 
-function updateSort(event: Event): void {
-  const requested = (event.target as HTMLSelectElement).value
+function updateSort(requested: string): void {
   const sort = JOB_SORTS.find((value) => value === requested) ?? 'createdAt,desc'
   void router.push({ query: canonicalJobQuery({ ...filters.value, sort, page: 0 }) })
 }
@@ -136,10 +146,9 @@ async function changeStatus(
   jobId: string,
   version: number,
   currentStatus: JobStatus,
-  event: Event,
+  requested: string,
 ): Promise<void> {
-  const select = event.target as HTMLSelectElement
-  const status = JOB_STATUSES.find((value) => value === select.value)
+  const status = JOB_STATUSES.find((value) => value === requested)
   if (status === undefined || status === currentStatus) return
   actionError.value = ''
   message.value = ''
@@ -152,7 +161,7 @@ async function changeStatus(
       apiError.code === 'RESOURCE_VERSION_CONFLICT'
         ? '공고가 다른 곳에서 변경됐어요. 상세 화면에서 최신 내용과 비교해 다시 적용해 주세요.'
         : apiError.message
-    select.value = currentStatus
+    // 표시 값은 서버 상태(`job.status`)에만 묶여 있으므로 실패하면 저절로 이전 값으로 돌아온다.
   }
 }
 
@@ -298,14 +307,16 @@ function currentSeoulDate(): string {
             </div>
           </details>
         </div>
-        <label class="field">
+        <div class="field">
           <span class="field__label">정렬</span>
-          <select :value="filters.sort" class="control control--compact" @change="updateSort">
-            <option value="createdAt,desc">최근 등록순</option>
-            <option value="deadlineAt,asc">마감 임박순</option>
-            <option value="updatedAt,desc">최근 수정순</option>
-          </select>
-        </label>
+          <AppSelect
+            :model-value="filters.sort"
+            :options="jobSortOptions"
+            compact
+            aria-label="정렬"
+            @update:model-value="updateSort"
+          />
+        </div>
         <div class="job-filters__actions">
           <button type="submit" class="button button--primary button--compact">필터 적용</button>
           <button type="button" class="button button--ghost button--compact" @click="clearPeriod">
@@ -388,20 +399,17 @@ function currentSeoulDate(): string {
               />
             </div>
           </div>
-          <label class="field job-row__status-control">
+          <div class="field job-row__status-control">
             <span class="field__label">상태 변경</span>
-            <select
-              :value="job.status"
-              class="control control--compact"
+            <AppSelect
+              :model-value="job.status"
+              :options="jobStatusOptions"
+              compact
               :disabled="statusMutation.isPending.value"
               :aria-label="`${jobDisplayTitle(job)} 지원 상태 변경`"
-              @change="changeStatus(job.id, job.version, job.status, $event)"
-            >
-              <option v-for="status in JOB_STATUSES" :key="status" :value="status">
-                {{ JOB_STATUS_LABELS[status] }}
-              </option>
-            </select>
-          </label>
+              @update:model-value="changeStatus(job.id, job.version, job.status, $event)"
+            />
+          </div>
         </div>
       </li>
     </ul>

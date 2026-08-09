@@ -19,7 +19,7 @@ import type {
 import { normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -29,6 +29,19 @@ import { useAuthStore } from '@/stores/auth'
 type ReviewableMatchKind = Exclude<ExperienceMatchKind, 'SAME_EXPERIENCE'>
 type VerificationFilter = '' | EvidenceVerificationStatus
 type MatchFilter = '' | ReviewableMatchKind
+
+const verificationFilterOptions: AppSelectOption<VerificationFilter>[] = [
+  { value: '', label: '전체' },
+  { value: 'PENDING', label: '확인 필요' },
+  { value: 'VERIFIED', label: '활용 승인' },
+  { value: 'REJECTED', label: '활용 제외' },
+]
+const matchFilterOptions: AppSelectOption<MatchFilter>[] = [
+  { value: '', label: '전체' },
+  { value: 'RELATED_DIFFERENT', label: '비슷한 경험 확인' },
+  { value: 'CONFLICT', label: '내용 차이 확인' },
+  { value: 'NEW', label: '검토 완료된 별도 경험' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -339,35 +352,28 @@ function similarityLabel(value: number | null): string {
     <ProfileTabs />
 
     <div class="profile-workspace-shell__content">
-      <PageHeader
-        heading-id="experience-heading"
-        eyebrow="내 지원 정보"
-        title="경험 보관함"
-        description="이력서와 포트폴리오에서 찾은 강점과 경험을 한곳에서 관리해요. 같은 경험은 카드 하나로 모으고, 상세에서 보강된 출처를 확인할 수 있어요."
-        variant="list"
-      />
+      <!-- 좌측 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+      <h1 id="experience-heading" class="sr-only">경험 보관함</h1>
 
       <details class="filter-disclosure experience-filters" open>
         <summary>경험 필터</summary>
         <form class="filter-toolbar experience-filters__form" @submit.prevent>
-          <label class="field">
+          <div class="field">
             <span class="field__label">활용 상태</span>
-            <select v-model="verificationFilter" class="control">
-              <option value="">전체</option>
-              <option value="PENDING">확인 필요</option>
-              <option value="VERIFIED">활용 승인</option>
-              <option value="REJECTED">활용 제외</option>
-            </select>
-          </label>
-          <label class="field">
+            <AppSelect
+              v-model="verificationFilter"
+              :options="verificationFilterOptions"
+              aria-label="활용 상태"
+            />
+          </div>
+          <div class="field">
             <span class="field__label">유사 경험 검토</span>
-            <select v-model="matchFilter" class="control">
-              <option value="">전체</option>
-              <option value="RELATED_DIFFERENT">비슷한 경험 확인</option>
-              <option value="CONFLICT">내용 차이 확인</option>
-              <option value="NEW">검토 완료된 별도 경험</option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="matchFilter"
+              :options="matchFilterOptions"
+              aria-label="유사 경험 검토"
+            />
+          </div>
         </form>
       </details>
 
@@ -713,7 +719,7 @@ function similarityLabel(value: number | null): string {
                   <RouterLink
                     v-if="featureFlags.githubSourceEnabled && source.githubSourceId"
                     class="button button--ghost button--compact"
-                    :to="`/profile/github?source=${encodeURIComponent(source.githubSourceId)}`"
+                    :to="`/integrations?source=${encodeURIComponent(source.githubSourceId)}`"
                   >
                     GitHub 연결 보기
                   </RouterLink>
@@ -738,13 +744,17 @@ function similarityLabel(value: number | null): string {
 
 <style scoped>
 /* 안내 문구는 페이지 설명 한 줄로 충분하다. 필터가 곧바로 이어지도록 위 여백만 남긴다. */
-.experience-filters,
 .experience-message,
 .experience-state,
 .experience-list-heading,
 .experience-list,
 .experience-detail {
   margin-top: var(--space-5);
+}
+
+/* 제목 줄이 없으므로 필터가 본문 첫 요소이며 자체 상단 여백을 갖지 않는다. */
+.experience-filters {
+  margin-top: 0;
 }
 
 /* 설명 줄이 아래 섹션과 같은 폭까지 늘어나 좁은 단으로 접히지 않게 한다. */

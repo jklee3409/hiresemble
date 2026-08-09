@@ -181,7 +181,7 @@ export function gitHubSourceResourceRoute(
   githubSourceEnabled = featureFlags.githubSourceEnabled,
 ): string | null {
   return githubSourceEnabled && resourceType === 'GITHUB_SOURCE' && resourceId !== null
-    ? `/profile/github?source=${encodeURIComponent(resourceId)}`
+    ? `/integrations?source=${encodeURIComponent(resourceId)}`
     : null
 }
 
@@ -223,7 +223,8 @@ export function safeRequiredActionRoute(
         '/profile/activities',
         '/profile/evidence',
         '/agent-runs',
-        ...(githubSourceEnabled ? ['/profile/github'] : []),
+        // backend는 `/profile/github`를 그대로 돌려주고 router가 `/integrations`로 보낸다.
+        ...(githubSourceEnabled ? ['/profile/github', '/integrations'] : []),
       ].includes(target.pathname) ||
       AGENT_RUN_DETAIL_PATH.test(target.pathname) ||
       DOCUMENT_DETAIL_PATH.test(target.pathname) ||

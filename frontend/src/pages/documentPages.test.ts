@@ -158,7 +158,8 @@ describe('P4 document pages', () => {
     const { wrapper } = await mountList('/documents?documentType=RESUME&sort=updatedAt,desc')
     expect(wrapper.text()).toContain('읽는 중')
     expect(wrapper.text()).toContain('기다리는 중')
-    expect(wrapper.findAll('select')).toHaveLength(5)
+    // 업로드 유형 1개 + 목록 필터 4개
+    expect(wrapper.findAll('[role="combobox"]')).toHaveLength(5)
   })
 
   it('shows review status and batch-approves selected document materials', async () => {

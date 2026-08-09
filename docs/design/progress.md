@@ -4,6 +4,18 @@
 
 다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 별도 GitHub·Career Artifact 설계는 Gate 0–4 구현과 Gate 5 계획을 구분한다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
 
+## [2026-08-08] Session Summary (GitHub 화면 위치와 자료 영역 switch 갱신)
+
+- What was done:
+  - `github-career-artifact-design.md`의 13장 Frontend 정보 구조에서 GitHub 화면을 `/integrations`로 옮기고 자료 영역 switch를 세 갈래로 갱신했다.
+  - Gate 2 적용 상태 문단과 변경 경계 표의 Frontend 행을 새 경로로 맞췄다.
+- Key decisions:
+  - tab 이름을 provider가 아니라 역할(`외부 연동`)로 두는 근거를 설계 문서에 남겼다.
+  - backend가 반환하는 `/profile/github` action route는 계약이므로 redirect로 흡수한다고 명시했다.
+- Issues encountered: 없음.
+- Validation: 문서 변경으로 별도 명령을 실행하지 않았다.
+- Next steps: 없음.
+
 ## [2026-08-08] Session Summary (Career Artifact 설계 Gate 4 완료 반영)
 
 - What was done:

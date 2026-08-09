@@ -17,6 +17,11 @@ import {
 } from '@/features/profile/preferenceOptions'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import { type ProfileFormValues, validateProfileForm } from '@/features/profile/schemas'
+import {
+  EMPLOYMENT_DISQUALIFICATION_OPTIONS,
+  MILITARY_STATUS_OPTIONS,
+  OVERSEAS_TRAVEL_OPTIONS,
+} from '@/features/profile/selectOptions'
 import type {
   ProfileCompletionItem,
   ProfileDto,
@@ -27,6 +32,7 @@ import type {
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
 import * as profileApi from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect from '@/shared/ui/AppSelect.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
 import { useAuthStore } from '@/stores/auth'
@@ -528,46 +534,35 @@ function emptyForm(): ProfileFormValues {
                 />
               </div>
               <div class="field">
-                <label class="field-label" for="profile-militaryStatus">병역 상태</label>
-                <select
+                <span id="profile-militaryStatus-label" class="field-label">병역 상태</span>
+                <AppSelect
                   id="profile-militaryStatus"
                   v-model="eligibilityForm.militaryStatus"
-                  class="control"
-                >
-                  <option value="UNSPECIFIED">선택하지 않음</option>
-                  <option value="COMPLETED">이행</option>
-                  <option value="EXEMPT">면제</option>
-                  <option value="NOT_APPLICABLE">해당 없음</option>
-                  <option value="NOT_COMPLETED">미이행</option>
-                </select>
+                  :options="MILITARY_STATUS_OPTIONS"
+                  aria-labelledby="profile-militaryStatus-label"
+                />
               </div>
               <div class="field">
-                <label class="field-label" for="profile-overseasTravelEligibility"
-                  >해외여행 가능 여부</label
+                <span id="profile-overseasTravelEligibility-label" class="field-label"
+                  >해외여행 가능 여부</span
                 >
-                <select
+                <AppSelect
                   id="profile-overseasTravelEligibility"
                   v-model="eligibilityForm.overseasTravelEligibility"
-                  class="control"
-                >
-                  <option value="UNSPECIFIED">선택하지 않음</option>
-                  <option value="ELIGIBLE">가능</option>
-                  <option value="RESTRICTED">제한 있음</option>
-                </select>
+                  :options="OVERSEAS_TRAVEL_OPTIONS"
+                  aria-labelledby="profile-overseasTravelEligibility-label"
+                />
               </div>
               <div class="field">
-                <label class="field-label" for="profile-employmentDisqualificationStatus"
-                  >채용 결격 사유 여부</label
+                <span id="profile-employmentDisqualificationStatus-label" class="field-label"
+                  >채용 결격 사유 여부</span
                 >
-                <select
+                <AppSelect
                   id="profile-employmentDisqualificationStatus"
                   v-model="eligibilityForm.employmentDisqualificationStatus"
-                  class="control"
-                >
-                  <option value="UNSPECIFIED">선택하지 않음</option>
-                  <option value="NONE_DECLARED">없음으로 입력</option>
-                  <option value="HAS_RESTRICTION">제한 있음</option>
-                </select>
+                  :options="EMPLOYMENT_DISQUALIFICATION_OPTIONS"
+                  aria-labelledby="profile-employmentDisqualificationStatus-label"
+                />
               </div>
             </div>
           </section>

@@ -21,6 +21,7 @@ import type {
   InterviewAnswerVersionDto,
   InterviewQuestionDto,
 } from '@/shared/api/interviewContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 const props = defineProps<{
@@ -44,6 +45,11 @@ const actionError = ref('')
 const statusMessage = ref('')
 const selectedFeedbackVersionId = ref('')
 const feedbackQuality = ref<'ECONOMY' | 'BALANCED' | 'HIGH_QUALITY'>('BALANCED')
+const feedbackQualityOptions: AppSelectOption<'ECONOMY' | 'BALANCED' | 'HIGH_QUALITY'>[] = [
+  { value: 'ECONOMY', label: '경제적' },
+  { value: 'BALANCED', label: '균형' },
+  { value: 'HIGH_QUALITY', label: '고품질', description: '설정과 예산 허용 시' },
+]
 const feedbackRunId = ref('')
 const feedbackRunVersionId = ref('')
 const feedbackRunActive = ref(false)
@@ -432,14 +438,15 @@ async function refreshFeedbackAfterRun(): Promise<void> {
           </p>
           <small>새 답변을 저장해도 이 버전의 피드백은 이곳에 그대로 남아요.</small>
         </div>
-        <label class="field">
+        <div class="field">
           <span class="field__label">피드백 품질</span>
-          <select v-model="feedbackQuality" class="control control--compact">
-            <option value="ECONOMY">경제적</option>
-            <option value="BALANCED">균형</option>
-            <option value="HIGH_QUALITY">고품질 · 설정과 예산 허용 시</option>
-          </select>
-        </label>
+          <AppSelect
+            v-model="feedbackQuality"
+            :options="feedbackQualityOptions"
+            compact
+            aria-label="피드백 품질"
+          />
+        </div>
         <button
           type="button"
           class="button button--secondary"

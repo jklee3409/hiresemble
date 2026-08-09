@@ -12,7 +12,7 @@
 - Gate 0은 현재 V26 byte와 local Flyway 적용 checksum 일치, V26 SHA 고정, populated V26→V27 upgrade와 document canonical characterization으로 닫았다. V26 자체는 수정하지 않았다.
 - Gate 1은 V27, `com.hiresemble.githubsource`, `github-ingestion-v1`, GitHub 공개 API 7개 operation으로 구현했다.
 - GitHub vertical 전용 typed property는 production 기본 비활성이고 local·local-offline·test에서만 명시적으로 활성화한다.
-- Gate 2는 `VITE_GITHUB_SOURCE_ENABLED=true`일 때만 `/profile/github`, profile tab, required-action route를 노출하는 Frontend로 구현했다. 값이 없거나 다르면 기존 UI와 route를 유지한다.
+- Gate 2는 `VITE_GITHUB_SOURCE_ENABLED=true`일 때만 GitHub 화면, 자료 영역 switch 항목과 required-action route를 노출하는 Frontend로 구현했다. 값이 없거나 다르면 기존 UI와 route를 유지한다. 화면 위치는 이후 `내 지원 정보`에서 `이력서·자료`의 `/integrations`로 옮겼다.
 - GitHub Source 7개 operation, repository server 검색·pagination·선택, `GITHUB_INGESTION` SSE, refresh/delete와 경험 provenance 표시를 기존 API·DB·workflow 변경 없이 연결했다.
 - 자동 검증은 WireMock·Fake·Testcontainers만 사용하며 실제 GitHub와 OpenAI 호출은 0회다.
 - Gate 3는 V28, 조건부 Career Artifact 11개 operation, `RESUME_GENERATION|PORTFOLIO_GENERATION`, POI renderer, private object version·download/outbox를 구현했다.
@@ -54,7 +54,7 @@
 | 모델 선택  | 자기소개서 생성·검증만 server catalog의 exact model 선택                               | 이력서·포트폴리오 생성에도 같은 방식 확장                 |
 | 저장소     | document 전용 S3 adapter·5분 presigned URL·삭제 outbox                                 | GitHub snapshot과 career artifact는 별도 lifecycle로 추가 |
 | Office     | Apache POI 의존성 존재, DOCX 입력 parse                                                | XWPF DOCX·XSLF PPTX 출력 renderer 추가                    |
-| Frontend   | `/profile/github`, `/career-artifacts/**`, provenance, Agent Run monitor와 선택적 제안 | Gate 5 private GitHub 권한 UI만 후속                      |
+| Frontend   | `/integrations`, `/career-artifacts/**`, provenance, Agent Run monitor와 선택적 제안 | Gate 5 private GitHub 권한 UI만 후속                      |
 
 기존 `DocumentEvidenceService`는 문서 provenance 검증과 canonical 적용을 함께 소유한다. 구현 전 characterization test로 현재 결과를 고정한 뒤 다음 세 책임으로만 추출한다.
 
@@ -582,14 +582,14 @@ artifact/version delete와 DB 실패 orphan upload compensation을 담당한다.
 
 ### 13.1 Route와 navigation
 
-- `/profile/github` (`IMPLEMENTED`, `VITE_GITHUB_SOURCE_ENABLED`)
+- `/integrations` (`IMPLEMENTED`, `VITE_GITHUB_SOURCE_ENABLED`, 구 `/profile/github`는 redirect)
 - `/career-artifacts` (`IMPLEMENTED_FLAGGED`, Gate 4)
 - `/career-artifacts/new?type=RESUME|PORTFOLIO` (`IMPLEMENTED_FLAGGED`, Gate 4)
 - `/career-artifacts/:careerArtifactId` (`IMPLEMENTED_FLAGGED`, Gate 4)
 
-상단 `이력서·자료` navigation은 `/documents|/career-artifacts`에서 active다. `/documents`에는 `업로드한 자료`, `/career-artifacts`에는 `AI로 만든 초안` switch를 제공한다. GitHub는 Career Profile Workspace의 별도 section이다.
+상단 `이력서·자료` navigation은 `/documents|/integrations|/career-artifacts`에서 active다. 세 화면은 `자료 업로드 | 외부 연동 | AI로 만든 초안` switch를 공유하고 각 항목은 자기 flag가 켜졌을 때만 나타난다. GitHub는 `내 지원 정보`가 아니라 `외부 연동` 화면 안의 provider다. Backend가 반환하는 `/profile/github` required action route는 계약 그대로 두고 Frontend redirect로 흡수한다.
 
-### 13.2 `/profile/github`
+### 13.2 `/integrations`
 
 - public-only·review policy 설명
 - URL form과 participation 확인

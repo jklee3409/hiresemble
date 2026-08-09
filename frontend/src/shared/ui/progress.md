@@ -5,6 +5,24 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-08] Session Summary (공용 AppSelect 선택 control 도입)
+
+- What was done:
+  - `AppSelect.vue`를 추가하고 서비스 전체 20개 파일의 native `<select>` 약 50곳을 이 component로 교체했다. trigger + listbox를 직접 그려 제품 token(radius, shadow, brand 채움, check mark)을 적용한다.
+  - WAI-ARIA combobox 패턴을 따라 DOM focus는 trigger에 두고 `aria-activedescendant`로 활성 항목을 알린다. ArrowUp/Down·Home·End·Enter·Space·Escape·Tab과 type-ahead, 바깥 클릭 닫기, 아래 공간이 좁을 때 위로 펴기를 지원한다.
+  - `appSelectTesting.ts` helper를 추가해 unit test가 `setValue` 대신 사용자와 같은 순서로 조작하게 했다. e2e는 `e2e/appSelect.ts`의 `chooseAppOption`을 쓴다.
+- Key decisions:
+  - `<script setup generic="T extends string">`으로 값 type을 보존해 호출부에서 서버 enum union을 그대로 v-model할 수 있게 했다. 이 때문에 각 화면이 option 배열을 `AppSelectOption<T>[]`로 선언한다.
+  - 목록 panel은 teleport 대신 `position: absolute`로 그린다. test와 scroll 동기화가 단순하고 현재 화면에 잘리는 overflow container가 없다.
+  - `<label>`로 감싸던 곳은 `<div class="field">` + `aria-label`/`aria-labelledby`로 바꿨다. label이 button을 가리키면 접근 가능한 이름이 붙지 않는다.
+- Issues encountered:
+  - `wrapper.get('button')`으로 첫 버튼을 집던 test들이 새 trigger를 먼저 잡았다. 해당 test는 버튼 문구로 찾도록 고쳤다.
+- Validation:
+  - `node node_modules/vitest/vitest.mjs run`: 95 files / 435 tests 통과.
+  - `node node_modules/eslint/bin/eslint.js .`, `prettier --check .`, `vue-tsc -b --force`, `vite build`: 모두 통과.
+- Next steps:
+  - 없음.
+
 ## [2026-08-07] Session Summary (StatusBadge notice tone 추가)
 
 - What was done:

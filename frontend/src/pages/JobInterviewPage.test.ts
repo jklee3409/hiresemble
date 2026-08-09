@@ -13,6 +13,7 @@ import {
   questionSetSummaryFixture,
 } from '@/features/interviews/testFixtures'
 import { ApiClientError } from '@/shared/api/errors'
+import { appSelectLabel, selectAppOption } from '@/shared/ui/appSelectTesting'
 
 import JobInterviewPage from './JobInterviewPage.vue'
 
@@ -117,12 +118,11 @@ describe('P8 Job interview preparation page', () => {
 
   it('submits only the canonical preparation fields and connects the accepted run', async () => {
     const { wrapper } = await mountPage()
-    const selects = wrapper.findAll<HTMLSelectElement>('.job-interview__form select')
-    await selects[0]!.setValue(INTERVIEW_COVER_LETTER_ID)
-    await selects[1]!.setValue('ADVANCED')
-    await selects[2]!.setValue('ECONOMY')
+    await selectAppOption(wrapper, '사용할 자기소개서', '답변 1개')
+    await selectAppOption(wrapper, '조사 범위', '검색 최대 4개')
+    await selectAppOption(wrapper, '답변 생성 품질', '경제적')
     await wrapper.get<HTMLInputElement>('input[type="number"]').setValue('12')
-    expect(selects[0]!.element.value).toBe(INTERVIEW_COVER_LETTER_ID)
+    expect(appSelectLabel(wrapper, '사용할 자기소개서')).toContain('답변 1개')
     const submit = wrapper.get<HTMLButtonElement>('[data-testid="submit-interview-preparation"]')
     expect(submit.attributes('disabled')).toBeUndefined()
     await wrapper.get('form.job-interview__form-grid').trigger('submit')
@@ -168,8 +168,7 @@ describe('P8 Job interview preparation page', () => {
       }),
     )
     const { wrapper } = await mountPage()
-    const coverSelect = wrapper.findAll<HTMLSelectElement>('.job-interview__form select')[0]!
-    await coverSelect.setValue(INTERVIEW_COVER_LETTER_ID)
+    await selectAppOption(wrapper, '사용할 자기소개서', '답변 1개')
     const submit = wrapper.get<HTMLButtonElement>('[data-testid="submit-interview-preparation"]')
     expect(submit.attributes('disabled')).toBeUndefined()
     await wrapper.get('form.job-interview__form-grid').trigger('submit')

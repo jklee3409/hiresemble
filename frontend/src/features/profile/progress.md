@@ -2,7 +2,21 @@
 
 ## Overview
 
-P2 프로필 Zod·query key·version conflict, 공용 입력 component와 feature-gated GitHub tab이 구현되어 있다.
+P2 프로필 Zod·query key·version conflict와 공용 입력 component가 구현되어 있다. GitHub 연동은 `이력서·자료` 영역이 소유한다.
+
+## [2026-08-08] Session Summary (프로필 navigation에서 GitHub 항목 제거)
+
+- What was done:
+  - `ProfileTabs`에서 feature-gated GitHub 항목을 걷어내고 desktop·mobile 모두 기존 8개 section만 제공한다.
+  - mobile selector를 공용 `AppSelect`로 바꾸고 route 이동은 값이 실제로 달라질 때만 수행한다.
+  - 온보딩과 기본 정보가 공유하는 병역·해외여행·결격·학력 단계·재학 상태 선택지를 `selectOptions.ts`로 모았다.
+- Key decisions:
+  - GitHub는 자료 출처이므로 `내 지원 정보`가 아니라 `이력서·자료`의 `외부 연동`이 소유한다. 이 navigation은 flag와 무관하게 고정 8개다.
+  - 두 화면에서 문구가 갈리던 `NONE_DECLARED`는 `없음`으로 통일했다.
+- Issues encountered: 없음.
+- Validation:
+  - `node node_modules/vitest/vitest.mjs run src/features/profile src/pages/profilePages.test.ts`: 통과.
+- Next steps: 없음.
 
 ## [2026-08-08] Session Summary (GitHub profile tab)
 

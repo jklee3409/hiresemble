@@ -34,7 +34,7 @@ const primaryNavigation: readonly NavigationItem[] = [
     to: '/documents',
     label: '이력서·자료',
     icon: 'documents',
-    matches: ['/documents', '/career-artifacts'],
+    matches: ['/documents', '/integrations', '/career-artifacts'],
   },
   { to: '/jobs', label: '관심 공고', icon: 'jobs', matches: ['/jobs'] },
   {
@@ -78,9 +78,15 @@ const logoutError = ref('')
 let bodyOverflowBeforeOverlay = ''
 
 const mobileMoreActive = computed(() =>
-  ['/profile', '/documents', '/career-artifacts', '/agent-runs', '/guide', '/onboarding'].some(
-    (prefix) => route.path.startsWith(prefix),
-  ),
+  [
+    '/profile',
+    '/documents',
+    '/integrations',
+    '/career-artifacts',
+    '/agent-runs',
+    '/guide',
+    '/onboarding',
+  ].some((prefix) => route.path.startsWith(prefix)),
 )
 const blockingOverlayOpen = computed(() => mobileMoreOpen.value || nicknameModalOpen.value)
 const AgentRunProgressDrawer = defineAsyncComponent(

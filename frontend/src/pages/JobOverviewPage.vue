@@ -48,6 +48,7 @@ import {
   type JobStatus,
   type UpdateJobRequest,
 } from '@/shared/api/jobContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -73,6 +74,10 @@ const deleteMutation = useDeleteJobMutation(userId)
 const form = reactive<JobUpdateForm>(emptyUpdateForm())
 const editing = ref(false)
 const selectedStatus = ref<JobStatus>('IN_PROGRESS')
+const jobStatusOptions: AppSelectOption<JobStatus>[] = JOB_STATUSES.map((status) => ({
+  value: status,
+  label: JOB_STATUS_LABELS[status],
+}))
 const fieldErrors = ref<Record<string, string>>({})
 const actionError = ref('')
 const message = ref('')
@@ -398,20 +403,17 @@ function extractionTone(
       <Teleport to="#job-detail-actions">
         <div class="job-overview__actions">
           <!-- 지원 상태는 별도 form 없이 고르는 즉시 저장한다. -->
-          <label class="job-status-picker">
-            <span class="sr-only">지원 상태</span>
-            <select
+          <div class="job-status-picker">
+            <AppSelect
               id="job-status-select"
               v-model="selectedStatus"
-              class="control control--compact"
+              :options="jobStatusOptions"
+              compact
+              aria-label="지원 상태"
               :disabled="statusMutation.isPending.value"
               @change="changeStatus"
-            >
-              <option v-for="status in JOB_STATUSES" :key="status" :value="status">
-                {{ JOB_STATUS_LABELS[status] }}
-              </option>
-            </select>
-          </label>
+            />
+          </div>
           <button
             type="button"
             class="button button--secondary button--compact"

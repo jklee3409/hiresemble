@@ -28,20 +28,24 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo('/agent-runs/not-a-uuid', 'https://hiresemble.example')).toBeNull()
   })
 
-  it('allows the GitHub route only while the Gate 2 build flag is enabled', () => {
-    expect(
-      safeReturnTo(
-        '/profile/github?source=10000000-0000-4000-8000-000000000001',
-        'https://hiresemble.example',
-      ),
-    ).toBeNull()
-    expect(
-      safeReturnTo(
-        '/profile/github?source=10000000-0000-4000-8000-000000000001',
-        'https://hiresemble.example',
-        { githubSourceEnabled: true },
-      ),
-    ).toBe('/profile/github?source=10000000-0000-4000-8000-000000000001')
+  /*
+   * 이 화면은 build flag에 따라 열리므로 test가 주변 `.env` 값에 흔들리지 않도록
+   * 두 갈래 모두 flag를 명시해서 확인한다.
+   */
+  it('allows the GitHub integration route only while the Gate 2 build flag is enabled', () => {
+    const source = '?source=10000000-0000-4000-8000-000000000001'
+    for (const path of ['/integrations', '/profile/github']) {
+      expect(
+        safeReturnTo(`${path}${source}`, 'https://hiresemble.example', {
+          githubSourceEnabled: false,
+        }),
+      ).toBeNull()
+      expect(
+        safeReturnTo(`${path}${source}`, 'https://hiresemble.example', {
+          githubSourceEnabled: true,
+        }),
+      ).toBe(`${path}${source}`)
+    }
   })
 
   it('allows only canonical Career Artifact routes while the independent Gate 4 flag is enabled', () => {

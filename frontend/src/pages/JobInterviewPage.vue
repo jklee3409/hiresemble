@@ -26,6 +26,7 @@ import {
   type PreparationQuestionType,
   type ResearchQuality,
 } from '@/shared/api/interviewContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -78,6 +79,20 @@ const usableCoverLetters = computed(
       (item) => item.status !== 'ARCHIVED' && item.answeredQuestionCount > 0,
     ) ?? [],
 )
+const coverLetterOptions = computed<AppSelectOption[]>(() =>
+  usableCoverLetters.value.map((coverLetter) => ({
+    value: coverLetter.id,
+    label: `${coverLetter.title} · 답변 ${coverLetter.answeredQuestionCount}개`,
+  })),
+)
+const researchQualityOptions: AppSelectOption<ResearchQuality>[] = [
+  { value: 'BASIC', label: RESEARCH_QUALITY_LABELS.BASIC, description: '검색 최대 2개' },
+  { value: 'ADVANCED', label: RESEARCH_QUALITY_LABELS.ADVANCED, description: '검색 최대 4개' },
+]
+const answerQualityOptions: AppSelectOption<Extract<AiQualityMode, 'ECONOMY' | 'BALANCED'>>[] = [
+  { value: 'ECONOMY', label: '경제적' },
+  { value: 'BALANCED', label: '균형' },
+]
 const latestQuestionSet = computed(() => questionSets.data.value?.items[0] ?? null)
 const activePreparationRun = computed(() => {
   const questionSetIds = new Set(questionSets.data.value?.items.map((item) => item.id) ?? [])
@@ -280,37 +295,33 @@ async function refreshPage(): Promise<void> {
         </p>
 
         <form class="job-interview__form-grid" @submit.prevent="submitPreparation">
-          <label class="field job-interview__wide">
+          <div class="field job-interview__wide">
             <span class="field__label">사용할 자기소개서</span>
-            <select v-model="selectedCoverLetterId" class="control" required>
-              <option value="" disabled>답변이 저장된 자기소개서를 선택하세요</option>
-              <option
-                v-for="coverLetter in usableCoverLetters"
-                :key="coverLetter.id"
-                :value="coverLetter.id"
-              >
-                {{ coverLetter.title }} · 답변 {{ coverLetter.answeredQuestionCount }}개
-              </option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="selectedCoverLetterId"
+              :options="coverLetterOptions"
+              placeholder="답변이 저장된 자기소개서를 선택하세요"
+              aria-label="사용할 자기소개서"
+            />
+          </div>
 
-          <label class="field">
+          <div class="field">
             <span class="field__label">조사 범위</span>
-            <select v-model="researchQuality" class="control">
-              <option value="BASIC">{{ RESEARCH_QUALITY_LABELS.BASIC }} · 검색 최대 2개</option>
-              <option value="ADVANCED">
-                {{ RESEARCH_QUALITY_LABELS.ADVANCED }} · 검색 최대 4개
-              </option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="researchQuality"
+              :options="researchQualityOptions"
+              aria-label="조사 범위"
+            />
+          </div>
 
-          <label class="field">
+          <div class="field">
             <span class="field__label">답변 생성 품질</span>
-            <select v-model="qualityMode" class="control">
-              <option value="ECONOMY">경제적</option>
-              <option value="BALANCED">균형</option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="qualityMode"
+              :options="answerQualityOptions"
+              aria-label="답변 생성 품질"
+            />
+          </div>
 
           <fieldset class="job-interview__types job-interview__wide">
             <legend class="field__label">질문 유형</legend>

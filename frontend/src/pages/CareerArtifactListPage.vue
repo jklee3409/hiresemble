@@ -24,8 +24,23 @@ import {
 import { archiveCareerArtifact, unarchiveCareerArtifact } from '@/shared/api/careerArtifactApi'
 import type { CareerArtifactSummaryDto } from '@/shared/api/careerArtifactContracts'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
+
+const artifactTypeFilterOptions: AppSelectOption[] = [
+  { value: '', label: '전체' },
+  { value: 'RESUME', label: '이력서' },
+  { value: 'PORTFOLIO', label: '포트폴리오' },
+]
+const lifecycleFilterOptions: AppSelectOption[] = [
+  { value: 'ACTIVE', label: '사용 중' },
+  { value: 'ARCHIVED', label: '보관' },
+]
+const artifactSortOptions: AppSelectOption[] = [
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+  { value: 'createdAt,desc', label: '최근 생성순' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -114,10 +129,9 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
     <h1 class="sr-only">AI로 만든 이력서·포트폴리오 초안</h1>
     <CareerArtifactAreaSwitch />
 
-    <section class="career-artifact-list__intro section-surface">
-      <div>
-        <p class="section-kicker">AI로 만든 초안</p>
-        <h2>검증된 경험으로 만든 파일을 확인하세요</h2>
+    <section class="career-artifact-list__intro">
+      <div class="career-artifact-list__intro-body">
+        <h2>검증된 경험으로 만든 파일</h2>
         <p>
           초안의 구조화 내용을 먼저 검토하고, 성공한 버전의 Word 또는 PowerPoint 파일을 받을 수
           있어요.
@@ -151,41 +165,37 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
       </RouterLink>
     </section>
 
-    <section class="career-artifact-list__filters" aria-label="생성 자료 필터">
-      <label>
-        종류
-        <select
-          class="control"
-          :value="filters.artifactType ?? ''"
-          @change="updateFilter('artifactType', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">전체</option>
-          <option value="RESUME">이력서</option>
-          <option value="PORTFOLIO">포트폴리오</option>
-        </select>
-      </label>
-      <label>
-        상태
-        <select
-          class="control"
-          :value="filters.lifecycleStatus"
-          @change="updateFilter('lifecycleStatus', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="ACTIVE">사용 중</option>
-          <option value="ARCHIVED">보관</option>
-        </select>
-      </label>
-      <label>
-        정렬
-        <select
-          class="control"
-          :value="filters.sort"
-          @change="updateFilter('sort', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="updatedAt,desc">최근 수정순</option>
-          <option value="createdAt,desc">최근 생성순</option>
-        </select>
-      </label>
+    <section class="career-artifact-list__filters filter-toolbar" aria-label="생성 자료 필터">
+      <div class="field">
+        <span class="field__label">종류</span>
+        <AppSelect
+          :model-value="filters.artifactType ?? ''"
+          :options="artifactTypeFilterOptions"
+          compact
+          aria-label="종류"
+          @update:model-value="updateFilter('artifactType', $event)"
+        />
+      </div>
+      <div class="field">
+        <span class="field__label">상태</span>
+        <AppSelect
+          :model-value="filters.lifecycleStatus"
+          :options="lifecycleFilterOptions"
+          compact
+          aria-label="상태"
+          @update:model-value="updateFilter('lifecycleStatus', $event)"
+        />
+      </div>
+      <div class="field">
+        <span class="field__label">정렬</span>
+        <AppSelect
+          :model-value="filters.sort"
+          :options="artifactSortOptions"
+          compact
+          aria-label="정렬"
+          @update:model-value="updateFilter('sort', $event)"
+        />
+      </div>
     </section>
 
     <p v-if="mutationError" class="alert alert--warning" role="alert">{{ mutationError }}</p>
@@ -294,56 +304,73 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
 </template>
 
 <style scoped>
+/*
+ * 자료 종류 전환 → 소개·실행 → 필터 → 목록 순으로 한 방향으로 읽히게 한다.
+ * 표면은 canvas 위 흰 카드 하나만 쓰고, 강조는 채움면이 아니라 여백과 굵기로 만든다.
+ */
 .career-artifact-list {
+  display: grid;
   min-width: 0;
+  gap: var(--space-6);
 }
 
 .career-artifact-list__intro {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-6);
-  padding: clamp(1.25rem, 4vw, 2rem);
 }
 
-.career-artifact-list__intro h2,
-.career-artifact-list__intro p {
+.career-artifact-list__intro-body {
+  min-width: 0;
+  max-width: 40rem;
+}
+
+.career-artifact-list__intro h2 {
   margin: 0;
+  color: var(--color-ink-title);
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.2rem + 0.4vw, 1.625rem);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
 }
 
-.career-artifact-list__intro p:last-child {
-  margin-top: var(--space-2);
+.career-artifact-list__intro p {
+  margin: var(--space-2) 0 0;
   color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
 }
 
 .career-artifact-list__create,
-.career-artifact-list__filters,
 .career-artifact-list__items article > footer,
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+.career-artifact-list__create {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .career-artifact-list__filters {
+  display: flex;
   flex-wrap: wrap;
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-fill);
+  align-items: flex-end;
+  gap: var(--space-3);
 }
 
-.career-artifact-list__filters label {
-  display: grid;
+.career-artifact-list__filters .field {
   min-width: min(100%, 11rem);
-  gap: var(--space-1);
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 750;
 }
 
 .career-artifact-list__items {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: 0;
@@ -353,29 +380,47 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
 .career-artifact-list__items article {
   display: grid;
   height: 100%;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  gap: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-surface);
   background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5) var(--space-6);
+  transition:
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.career-artifact-list__items article:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
 }
 
 .career-artifact-list__items header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
 }
 
 .career-artifact-list__items h2 {
   margin: var(--space-1) 0 0;
+  color: var(--color-ink-title);
   overflow-wrap: anywhere;
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
 }
 
+/* 카드 안 사실 목록은 구분선 위에서 label/값 쌍으로만 읽히게 한다. */
 .career-artifact-list__items dl {
   display: grid;
   gap: var(--space-2);
   margin: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  font-size: var(--font-size-sm);
 }
 
 .career-artifact-list__items dl div {
@@ -390,6 +435,8 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
 
 .career-artifact-list__items dd {
   margin: 0;
+  color: var(--color-ink-soft);
+  font-weight: 650;
   text-align: right;
 }
 
@@ -409,7 +456,7 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
     flex-direction: column;
   }
 
-  .career-artifact-list__filters label {
+  .career-artifact-list__filters .field {
     width: 100%;
   }
 

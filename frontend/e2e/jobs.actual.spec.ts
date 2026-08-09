@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { chooseAppOption } from './appSelect'
 
 test.describe('P5 actual Backend Job lifecycle', () => {
   test.skip(
@@ -252,8 +253,8 @@ async function createJob(page: Page, input: CreateInput): Promise<CreatedJob> {
     const hour24 = Number(hourText)
     const hour12 = String(hour24 % 12 || 12).padStart(2, '0')
     await page.locator('#job-deadline-date').fill(date)
-    await page.locator('#job-deadline-period').selectOption(hour24 >= 12 ? 'PM' : 'AM')
-    await page.locator('#job-deadline-time').selectOption(`${hour12}:${minute}`)
+    await chooseAppOption(page, '마감 오전 또는 오후', hour24 >= 12 ? '오후' : '오전')
+    await chooseAppOption(page, '마감 시간', `${hour12}:${minute}`)
   }
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -276,7 +277,7 @@ async function createJob(page: Page, input: CreateInput): Promise<CreatedJob> {
 }
 
 async function changeStatus(page: Page, status: JobDetail['status'], label: string): Promise<void> {
-  const select = page.locator('#job-status-select')
+  const select = page.getByRole('combobox', { name: '지원 상태' })
   await expect(select).toBeEnabled()
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -284,9 +285,9 @@ async function changeStatus(page: Page, status: JobDetail['status'], label: stri
       response.request().method() === 'PATCH' &&
       response.status() === 200,
   )
-  await select.selectOption(status)
+  await chooseAppOption(page, '지원 상태', label)
   expect((await responsePromise).status()).toBe(200)
-  await expect(select).toHaveValue(status)
+  await expect(select).toContainText(label)
   await expect(select).toBeEnabled()
   await expect(page.getByTestId('job-business-status')).toContainText(label)
 }

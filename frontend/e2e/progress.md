@@ -16,6 +16,34 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-09] Session Summary (중복 이름 AppSelect E2E 범위 보정)
+
+- What was done:
+  - `chooseAppOption`이 선택적으로 고유 trigger `Locator`를 받도록 확장하고, 업로드·필터에 `자료 유형` 이름이 함께 존재하는 P4·P7 actual spec은 `#document-upload-type`으로 범위를 좁혔다.
+  - `ui-shell.spec.ts`에 같은 이름의 combobox 두 개가 있는 실제 자료 목록 화면에서 업로드 control만 고르는 focused 회귀를 추가했다.
+- Key decisions:
+  - 접근성 이름은 화면 계약대로 유지하고, 중복 이름이 정상인 화면에서는 호출부가 고유 DOM 식별자로 범위를 명시한다.
+- Issues encountered:
+  - 격리 Backend가 필요한 P4·P7 actual 전체 흐름은 이번 보완에서 실행하지 않았다.
+- Validation:
+  - `P4_FRONTEND_PORT=5195 ... playwright test e2e/ui-shell.spec.ts --project=chromium --grep 'document upload type'`: 1 passed.
+- Next steps:
+  - 다음 P4·P7 actual 환경 검증에서 업로드 이후 pipeline 전체를 다시 확인한다.
+
+## [2026-08-08] Session Summary (AppSelect 도입에 따른 E2E 조작 방식 변경)
+
+- What was done:
+  - `appSelect.ts`의 `chooseAppOption` helper를 추가하고 `selectOption`을 쓰던 documents·cover-letter·interview·jobs·ui-shell spec을 사용자와 같은 순서(열기 → 고르기)로 바꿨다.
+  - `github-source.spec.ts`가 legacy `/profile/github` 진입이 `/integrations`로 redirect되는지, `외부 연동` tab이 active인지 확인하도록 갱신했다.
+- Key decisions:
+  - backend가 돌려주는 action route 문자열을 그대로 두는 대신 redirect를 검증해 계약 변경 없이 화면 이동만 확인한다.
+- Issues encountered:
+  - `ui-shell.spec.ts`의 dashboard heading·희망 직무 제안 2건은 이 작업 전 HEAD에서도 실패한다(stash 후 baseline 확인). 이번 범위에서 다루지 않았다.
+- Validation:
+  - `playwright test e2e/github-source.spec.ts e2e/career-artifacts.spec.ts e2e/ui-shell.spec.ts --project=chromium`: 6 passed, 2 failed(위 기존 실패).
+- Next steps:
+  - `ui-shell.spec.ts` 기존 실패 2건 원인 조사.
+
 ## [2026-08-08] Session Summary (Career Artifact Gate 4 Chromium)
 
 - What was done:

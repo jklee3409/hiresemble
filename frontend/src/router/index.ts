@@ -138,7 +138,6 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/ExperienceLibraryPage.vue'),
         meta: { title: '경험 보관함', profileRecommended: true },
       },
-      ...gitHubProfileRoutes(featureFlags.githubSourceEnabled),
       {
         path: 'profile/evidence',
         redirect: { name: 'profile-activities' },
@@ -155,6 +154,7 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/DocumentDetailPage.vue'),
         meta: { title: '자료 확인' },
       },
+      ...gitHubIntegrationRoutes(featureFlags.githubSourceEnabled),
       ...careerArtifactRoutes(featureFlags.careerArtifactEnabled),
       {
         path: 'jobs',
@@ -249,14 +249,23 @@ export const routes: RouteRecordRaw[] = [
   },
 ]
 
-export function gitHubProfileRoutes(enabled: boolean): RouteRecordRaw[] {
+/*
+ * GitHub 연동 화면은 `이력서·자료` 영역으로 옮겼다.
+ * 다만 `/profile/github`는 backend가 required user action route로 그대로 돌려주는 값이므로
+ * 계약을 바꾸지 않고 새 경로로 보내는 redirect만 남긴다.
+ */
+export function gitHubIntegrationRoutes(enabled: boolean): RouteRecordRaw[] {
   return enabled
     ? [
         {
-          path: 'profile/github',
-          name: 'profile-github',
+          path: 'integrations',
+          name: 'integrations',
           component: () => import('@/pages/GitHubSourcePage.vue'),
-          meta: { title: 'GitHub 연결', profileRecommended: true },
+          meta: { title: '외부 연동', profileRecommended: true },
+        },
+        {
+          path: 'profile/github',
+          redirect: (to) => ({ name: 'integrations', query: to.query }),
         },
       ]
     : []

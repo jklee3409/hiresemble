@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-09] Session Summary (GitHub Run 외부 연동 route 정렬)
+
+- What was done:
+  - GitHub Source resource link가 새 canonical `/integrations?source=...`로 이동하도록 presentation을 갱신했다.
+  - Backend 소유 required-action `/profile/github`와 새 `/integrations`를 feature flag 안에서 모두 안전한 경로로 허용하는 회귀를 보강했다.
+- Key decisions:
+  - Backend action 문자열은 바꾸지 않고 Router redirect로 호환하며, Frontend가 새로 만드는 link만 canonical route를 사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+- Next steps:
+  - Backend가 required-action 계약을 바꾸기 전까지 legacy 경로 허용을 유지한다.
+
 ## [2026-08-08] Session Summary (Career Artifact Run cache·resource 연결)
 
 - What was done:

@@ -4,6 +4,19 @@
 
 P8 조사 출처·예상 질문·답변 version·feedback Frontend 상호작용이 구현되어 있다.
 
+## [2026-08-09] Session Summary (피드백 품질 AppSelect 전환)
+
+- What was done:
+  - 예상 질문 카드의 피드백 품질 선택을 typed `AppSelect`로 바꾸고 경제적·균형·고품질 option 계약을 한 배열로 모았다.
+- Key decisions:
+  - 기존 `ECONOMY | BALANCED | HIGH_QUALITY` payload와 기본값 `BALANCED`는 유지한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+- Next steps:
+  - 없음.
+
 ## [2026-08-02] Session Summary (답변 피드백 Run 복구)
 
 - What was done:

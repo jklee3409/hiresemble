@@ -38,6 +38,7 @@ import {
 } from '@/shared/api/documentApi'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -75,6 +76,31 @@ const DOCUMENT_TYPE_HINTS: Record<DocumentType, string> = {
   TRANSCRIPT: '학업 이력과 성적 정보를 확인할 때 활용해요.',
   OTHER: '지원 준비에 참고할 수 있는 기타 자료로 등록해요.',
 }
+
+const ALL_OPTION: AppSelectOption = { value: '', label: '전체' }
+const documentTypeOptions: AppSelectOption<DocumentType>[] = DOCUMENT_TYPES.map((type) => ({
+  value: type,
+  label: DOCUMENT_TYPE_LABELS[type],
+}))
+const documentTypeFilterOptions: AppSelectOption[] = [ALL_OPTION, ...documentTypeOptions]
+const parseStatusFilterOptions: AppSelectOption[] = [
+  ALL_OPTION,
+  ...DOCUMENT_PARSE_STATUSES.map((value) => ({
+    value,
+    label: DOCUMENT_PARSE_STATUS_LABELS[value],
+  })),
+]
+const evidenceStatusFilterOptions: AppSelectOption[] = [
+  ALL_OPTION,
+  ...EVIDENCE_EXTRACTION_STATUSES.map((value) => ({
+    value,
+    label: EVIDENCE_EXTRACTION_STATUS_LABELS[value],
+  })),
+]
+const documentSortOptions: AppSelectOption[] = [
+  { value: 'uploadedAt,desc', label: '최근 업로드순' },
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+]
 
 const uploadMutation = useMutation({
   mutationFn: (input: {
@@ -189,8 +215,8 @@ function updatePage(page: number): void {
   void router.push({ query: canonicalDocumentQuery({ ...filters.value, page }) })
 }
 
-function updateSort(event: Event): void {
-  const sort = (event.target as HTMLSelectElement).value as 'uploadedAt,desc' | 'updatedAt,desc'
+function updateSort(value: string): void {
+  const sort = value as 'uploadedAt,desc' | 'updatedAt,desc'
   void router.push({ query: canonicalDocumentQuery({ ...filters.value, page: 0, sort }) })
 }
 
@@ -375,15 +401,16 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
       </div>
       <div class="upload-panel__details">
         <p class="upload-panel__label"><span>02</span> 자료 분류</p>
-        <label class="field">
-          <span class="field__label">자료 유형</span>
-          <select id="document-upload-type" v-model="documentType" class="control">
-            <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
-              {{ DOCUMENT_TYPE_LABELS[type] }}
-            </option>
-          </select>
+        <div class="field">
+          <span id="document-upload-type-label" class="field__label">자료 유형</span>
+          <AppSelect
+            id="document-upload-type"
+            v-model="documentType"
+            :options="documentTypeOptions"
+            aria-labelledby="document-upload-type-label"
+          />
           <span class="field-help">{{ DOCUMENT_TYPE_HINTS[documentType] }}</span>
-        </label>
+        </div>
         <label class="field">
           <span class="field__label">자료 이름 <span class="field__optional">(선택)</span></span>
           <input
@@ -425,40 +452,43 @@ function evidenceTone(value: EvidenceExtractionStatus): 'neutral' | 'info' | 'su
     <details class="filter-disclosure documents-page__filters" open>
       <summary>자료 검색·필터</summary>
       <form class="filter-toolbar document-filters" @submit.prevent="applyFilters">
-        <label class="field">
+        <div class="field">
           <span class="field__label">자료 유형</span>
-          <select v-model="filterDocumentType" class="control control--compact">
-            <option value="">전체</option>
-            <option v-for="type in DOCUMENT_TYPES" :key="type" :value="type">
-              {{ DOCUMENT_TYPE_LABELS[type] }}
-            </option>
-          </select>
-        </label>
-        <label class="field">
+          <AppSelect
+            v-model="filterDocumentType"
+            :options="documentTypeFilterOptions"
+            compact
+            aria-label="자료 유형"
+          />
+        </div>
+        <div class="field">
           <span class="field__label">자료 확인</span>
-          <select v-model="filterParseStatus" class="control control--compact">
-            <option value="">전체</option>
-            <option v-for="value in DOCUMENT_PARSE_STATUSES" :key="value" :value="value">
-              {{ DOCUMENT_PARSE_STATUS_LABELS[value] }}
-            </option>
-          </select>
-        </label>
-        <label class="field">
+          <AppSelect
+            v-model="filterParseStatus"
+            :options="parseStatusFilterOptions"
+            compact
+            aria-label="자료 확인"
+          />
+        </div>
+        <div class="field">
           <span class="field__label">경험·소재 정리</span>
-          <select v-model="filterEvidenceStatus" class="control control--compact">
-            <option value="">전체</option>
-            <option v-for="value in EVIDENCE_EXTRACTION_STATUSES" :key="value" :value="value">
-              {{ EVIDENCE_EXTRACTION_STATUS_LABELS[value] }}
-            </option>
-          </select>
-        </label>
-        <label class="field">
+          <AppSelect
+            v-model="filterEvidenceStatus"
+            :options="evidenceStatusFilterOptions"
+            compact
+            aria-label="경험·소재 정리"
+          />
+        </div>
+        <div class="field">
           <span class="field__label">정렬</span>
-          <select :value="filters.sort" class="control control--compact" @change="updateSort">
-            <option value="uploadedAt,desc">최근 업로드순</option>
-            <option value="updatedAt,desc">최근 수정순</option>
-          </select>
-        </label>
+          <AppSelect
+            :model-value="filters.sort"
+            :options="documentSortOptions"
+            compact
+            aria-label="정렬"
+            @update:model-value="updateSort"
+          />
+        </div>
         <button class="button button--primary button--compact" type="submit">필터 적용</button>
       </form>
     </details>

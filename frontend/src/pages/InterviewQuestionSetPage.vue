@@ -31,11 +31,31 @@ import {
   type ResearchSourceType,
   type ResearchTopic,
 } from '@/shared/api/interviewContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
+
+const researchTopicOptions: AppSelectOption<ResearchTopic | ''>[] = [
+  { value: '', label: '전체' },
+  ...RESEARCH_TOPICS.map((topic) => ({ value: topic, label: RESEARCH_TOPIC_LABELS[topic] })),
+]
+const researchSourceTypeOptions: AppSelectOption<ResearchSourceType | ''>[] = [
+  { value: '', label: '전체' },
+  ...RESEARCH_SOURCE_TYPES.map((type) => ({
+    value: type,
+    label: RESEARCH_SOURCE_TYPE_LABELS[type],
+  })),
+]
+const questionTypeOptions: AppSelectOption<InterviewQuestionType | ''>[] = [
+  { value: '', label: '전체' },
+  ...INTERVIEW_QUESTION_TYPES.map((type) => ({
+    value: type,
+    label: INTERVIEW_QUESTION_TYPE_LABELS[type],
+  })),
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -236,32 +256,26 @@ async function refreshDetail(): Promise<void> {
           </div>
         </header>
         <div class="research-sources__filters filter-toolbar">
-          <label class="field">
+          <div class="field">
             <span class="field__label">조사 주제</span>
-            <select
+            <AppSelect
               v-model="sourceTopic"
-              class="control control--compact"
+              :options="researchTopicOptions"
+              compact
+              aria-label="조사 주제"
               @change="changeSourceFilter"
-            >
-              <option value="">전체</option>
-              <option v-for="topic in RESEARCH_TOPICS" :key="topic" :value="topic">
-                {{ RESEARCH_TOPIC_LABELS[topic] }}
-              </option>
-            </select>
-          </label>
-          <label class="field">
+            />
+          </div>
+          <div class="field">
             <span class="field__label">출처 유형</span>
-            <select
+            <AppSelect
               v-model="sourceType"
-              class="control control--compact"
+              :options="researchSourceTypeOptions"
+              compact
+              aria-label="출처 유형"
               @change="changeSourceFilter"
-            >
-              <option value="">전체</option>
-              <option v-for="type in RESEARCH_SOURCE_TYPES" :key="type" :value="type">
-                {{ RESEARCH_SOURCE_TYPE_LABELS[type] }}
-              </option>
-            </select>
-          </label>
+            />
+          </div>
         </div>
 
         <p v-if="sources.isLoading.value">출처를 불러오는 중…</p>
@@ -325,15 +339,15 @@ async function refreshDetail(): Promise<void> {
             <p class="page-eyebrow">예상 질문과 답변</p>
             <h2 id="questions-heading">질문 {{ detail.data.value.questionCount }}개</h2>
           </div>
-          <label class="field">
+          <div class="field">
             <span class="field__label">질문 유형</span>
-            <select v-model="questionType" class="control control--compact">
-              <option value="">전체</option>
-              <option v-for="type in INTERVIEW_QUESTION_TYPES" :key="type" :value="type">
-                {{ INTERVIEW_QUESTION_TYPE_LABELS[type] }}
-              </option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="questionType"
+              :options="questionTypeOptions"
+              compact
+              aria-label="질문 유형"
+            />
+          </div>
         </header>
 
         <StatePanel

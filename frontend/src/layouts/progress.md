@@ -4,6 +4,21 @@
 
 form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
 
+## [2026-08-09] Session Summary (외부 연동 자료 navigation 연결)
+
+- What was done:
+  - `/integrations`에서 desktop `이력서·자료`와 mobile 더보기가 active 상태를 유지하도록 `AppLayout`의 route prefix를 확장했다.
+  - `/integrations`와 `/career-artifacts`를 같은 자료 navigation 맥락으로 고정하는 component 회귀를 추가했다.
+- Key decisions:
+  - navigation 항목 수와 canonical 진입점 `/documents`는 유지하고 active 판정만 새 외부 연동 경로까지 넓혔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `vitest run src/shared/ui/AppSelect.test.ts src/layouts/AppLayout.test.ts`: 2 files, 16 tests passed.
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+- Next steps:
+  - 없음.
+
 ## [2026-08-08] Session Summary (Career Artifact 자료 navigation)
 
 - What was done:

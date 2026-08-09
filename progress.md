@@ -14,6 +14,43 @@
 - 공개 Spring/OpenAPI는 Career Artifact feature가 꺼지면 GitHub Source를 포함해 79 paths/107 operations이고, 켜지면 88 paths/118 operations다.
 - GitHub·Career Artifact Gate 0–4는 V28·11개 WorkflowType과 독립 frontend flag 기준으로 완료됐다. Private GitHub Gate 5는 `PLANNED`다.
 
+## [2026-08-09] Session Summary (자료 IA·AppSelect 커밋 전 보완)
+
+- What was done:
+  - 커밋 전 독립 검토에서 확인한 AppSelect E2E 중복 이름 문제를 고유 trigger 범위와 focused 회귀로 보완했다.
+  - 신규 진행 기록의 표준 필드와 직접 영향 디렉터리 추적 누락을 정리하고 `/integrations`의 AppLayout navigation 회귀를 추가했다.
+- Key decisions:
+  - 서로 같은 파일과 문서 hunk에 결합된 AppSelect rollout·자료 IA·화면 밀도 변경은 중간 불일치가 없는 단일 Frontend commit으로 유지한다.
+  - 공개 API·DB·Workflow 계약과 Flyway에는 변경이 없다.
+- Issues encountered:
+  - 전체 Frontend check는 Prettier 경고 2건을 formatter로 보정한 뒤 허용된 재검증에서 통과했다.
+  - 격리 Backend 기반 P4·P7 actual은 이번 커밋 전 보완에서 실행하지 않았다.
+- Validation:
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+  - AppSelect·AppLayout 집중 Vitest 16건, 중복 이름 focused Chromium 1건 통과.
+- Next steps:
+  - 기존 `ui-shell.spec.ts` baseline 실패 2건과 P4·P7 actual 전체 재검증은 후속으로 유지한다.
+
+## [2026-08-08] Session Summary (자료 영역 IA 개편과 공용 선택 control)
+
+- What was done:
+  - GitHub 화면을 `내 지원 정보`에서 `이력서·자료` 영역의 `/integrations`로 옮기고, 자료 종류 전환을 `자료 업로드 | 외부 연동 | AI로 만든 초안` 세 갈래로 넓혔다. 각 항목은 자기 feature flag로 개별 gate한다.
+  - 공용 `AppSelect`를 만들어 Frontend 20개 파일의 native `<select>` 약 50곳을 교체했다. OS가 그리던 option 목록이 제품 design token을 따르는 listbox로 바뀌었다.
+  - `AI로 만든 초안` 목록과 `내 지원 정보` 하위 화면의 여백·표면·색을 정리하고, 제목·설명 줄은 낭독기용 `h1`만 남긴 뒤 추가·정렬 action을 목록 위 도구 막대로 모았다. 대외활동 화면의 안내 blockquote는 제거했다.
+  - `docs/spec/page.md`, `docs/design/github-career-artifact-design.md`와 영향받은 각 `index.md`·`progress.md`를 새 화면 계약에 맞춰 갱신했다.
+- Key decisions:
+  - 두 번째 tab을 provider 이름(`GitHub`)이 아니라 역할(`외부 연동`)로 뒀다. 사용자 요청대로 GitHub를 IA 최상위에 노출하면 개발 직군이 아닌 사용자에게 이 영역 전체가 무관해 보이고, 다른 출처가 늘 때 구조를 다시 바꿔야 한다.
+  - backend가 `SELECT_GITHUB_REPOSITORIES` required action route로 반환하는 `/profile/github` 문자열은 공개 계약이므로 바꾸지 않고 Frontend redirect로 흡수했다. Backend API·DB·workflow와 OpenAPI 범위 변경은 없다.
+  - `AppSelect`는 teleport 대신 화면 안 absolute panel로 그린다. test와 scroll 동기화가 단순하고 현재 화면에 잘리는 overflow container가 없다.
+- Issues encountered:
+  - `frontend/e2e/ui-shell.spec.ts`의 dashboard heading·희망 직무 제안 2건은 이 작업 전 HEAD에서도 실패하는 기존 문제다(작업 stash 후 baseline 확인). 이번 범위에서 고치지 않았다.
+- Validation:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(95 files/435 tests), `vite build`: 모두 통과.
+  - `playwright test e2e/github-source.spec.ts e2e/career-artifacts.spec.ts e2e/ui-shell.spec.ts --project=chromium`: 6 passed, 2 failed(위 기존 실패).
+- Next steps:
+  - `ui-shell.spec.ts`의 기존 실패 2건 원인 조사.
+  - Backend가 Gate 5에서 action route를 바꾸기로 하면 `/profile/github` redirect를 정리한다.
+
 ## [2026-08-08] Session Summary (Career Artifact Gate 4 Frontend)
 
 - What was done:

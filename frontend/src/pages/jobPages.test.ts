@@ -10,6 +10,7 @@ import JobOverviewPage from '@/pages/JobOverviewPage.vue'
 import * as agentRunApi from '@/shared/api/agentRunApi'
 import { ApiClientError } from '@/shared/api/errors'
 import * as jobApi from '@/shared/api/jobApi'
+import { openAppSelectOptions, selectAppOption } from '@/shared/ui/appSelectTesting'
 import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 import { agentRunSummary } from '@/features/agent-runs/testFixtures'
@@ -86,11 +87,11 @@ describe('P5 Job pages', () => {
     const { wrapper } = await mountNew()
 
     expect(wrapper.find('#job-deadline').exists()).toBe(false)
-    expect(wrapper.get('#job-deadline-time').findAll('option')).toHaveLength(24)
     await wrapper.get('#job-source-url').setValue('https://jobs.example.com/openings/deadline')
     await wrapper.get('#job-deadline-date').setValue('2026-08-31')
-    await wrapper.get('#job-deadline-period').setValue('PM')
-    await wrapper.get('#job-deadline-time').setValue('11:30')
+    await selectAppOption(wrapper, '마감 오전 또는 오후', '오후')
+    expect(await openAppSelectOptions(wrapper, '마감 시간')).toHaveLength(24)
+    await selectAppOption(wrapper, '마감 시간', '11:30')
     await wrapper.get('#job-create-form').trigger('submit')
     await flushPromises()
 
@@ -183,9 +184,7 @@ describe('P5 Job pages', () => {
     })
     expect(router.currentRoute.value.query).not.toHaveProperty('postingYear')
 
-    await wrapper
-      .get(`select[aria-label="${jobSummaryFixture().title} 지원 상태 변경"]`)
-      .setValue('IN_PROGRESS')
+    await selectAppOption(wrapper, `${jobSummaryFixture().title} 지원 상태 변경`, '지원 중')
     await flushPromises()
     expect(jobApi.updateJobStatus).toHaveBeenCalledWith(JOB_ID, {
       status: 'IN_PROGRESS',
@@ -225,7 +224,7 @@ describe('P5 Job pages', () => {
     expect(wrapper.text()).not.toContain('공고 다시 불러오기')
     expect(jobApi.retryJobExtraction).not.toHaveBeenCalled()
 
-    await wrapper.get('#job-status-select').setValue('IN_PROGRESS')
+    await selectAppOption(wrapper, '지원 상태', '지원 중')
     await flushPromises()
     expect(jobApi.updateJobStatus).toHaveBeenCalledWith(JOB_ID, {
       status: 'IN_PROGRESS',

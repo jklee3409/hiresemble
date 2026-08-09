@@ -24,10 +24,24 @@ import {
   type ResearchRunStatus,
   type SourceCoverage,
 } from '@/shared/api/interviewContracts'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
+
+const sourceCoverageOptions: AppSelectOption<SourceCoverage | ''>[] = [
+  { value: '', label: '전체' },
+  ...SOURCE_COVERAGES.map((value) => ({ value, label: SOURCE_COVERAGE_LABELS[value] })),
+]
+const researchStatusOptions: AppSelectOption<ResearchRunStatus | ''>[] = [
+  { value: '', label: '전체' },
+  ...RESEARCH_RUN_STATUSES.map((value) => ({ value, label: RESEARCH_STATUS_LABELS[value] })),
+]
+const questionSetSortOptions: AppSelectOption[] = [
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+  { value: 'createdAt,desc', label: '최근 생성순' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -82,8 +96,7 @@ async function updatePage(page: number): Promise<void> {
   })
 }
 
-async function updateSort(event: Event): Promise<void> {
-  const value = event.target instanceof HTMLSelectElement ? event.target.value : ''
+async function updateSort(value: string): Promise<void> {
   if (value !== 'updatedAt,desc' && value !== 'createdAt,desc') return
   await router.replace({
     name: 'interviews',
@@ -113,31 +126,34 @@ function normalizedSearch(): string | undefined {
           placeholder="회사, 직무, 질문 세트"
         />
       </label>
-      <label class="field">
+      <div class="field">
         <span class="field__label">출처 범위</span>
-        <select v-model="sourceCoverage" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="value in SOURCE_COVERAGES" :key="value" :value="value">
-            {{ SOURCE_COVERAGE_LABELS[value] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
+        <AppSelect
+          v-model="sourceCoverage"
+          :options="sourceCoverageOptions"
+          compact
+          aria-label="출처 범위"
+        />
+      </div>
+      <div class="field">
         <span class="field__label">조사 상태</span>
-        <select v-model="researchStatus" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="value in RESEARCH_RUN_STATUSES" :key="value" :value="value">
-            {{ RESEARCH_STATUS_LABELS[value] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
+        <AppSelect
+          v-model="researchStatus"
+          :options="researchStatusOptions"
+          compact
+          aria-label="조사 상태"
+        />
+      </div>
+      <div class="field">
         <span class="field__label">정렬</span>
-        <select :value="filters.sort" class="control control--compact" @change="updateSort">
-          <option value="updatedAt,desc">최근 수정순</option>
-          <option value="createdAt,desc">최근 생성순</option>
-        </select>
-      </label>
+        <AppSelect
+          :model-value="filters.sort"
+          :options="questionSetSortOptions"
+          compact
+          aria-label="정렬"
+          @update:model-value="updateSort"
+        />
+      </div>
       <button type="submit" class="button button--secondary">필터 적용</button>
     </form>
 

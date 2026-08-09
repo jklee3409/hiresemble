@@ -21,7 +21,8 @@ import {
   validateLanguageScoreForm,
 } from '@/features/profile/schemas'
 import AppIcon from '@/shared/ui/AppIcon.vue'
-import PageHeader from '@/shared/ui/PageHeader.vue'
+import { EDUCATION_LEVEL_OPTIONS, EDUCATION_STATUS_OPTIONS } from '@/features/profile/selectOptions'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -130,9 +131,17 @@ const deleteMutation = useMutation({
 })
 
 const title = computed(() => resourceLabels[props.kind].title)
-const description = computed(() => resourceLabels[props.kind].description)
 const addLabel = computed(() => resourceLabels[props.kind].add)
-const sortOptions = computed(() => resourceLabels[props.kind].sorts)
+const sortSelectOptions = computed<AppSelectOption[]>(() =>
+  resourceLabels[props.kind].sorts.map((option) => ({ value: option.value, label: option.label })),
+)
+const evidenceDocumentOptions = computed<AppSelectOption[]>(() => [
+  { value: '', label: '연결하지 않음' },
+  ...(selectableDocuments.data.value?.items ?? []).map((candidate) => ({
+    value: candidate.id,
+    label: candidate.displayName,
+  })),
+])
 const conflictFields = computed(() => fieldsForKind(props.kind))
 
 function openCreate(): void {
@@ -753,14 +762,12 @@ const resourceLabels: Record<
   ResourceKind,
   {
     title: string
-    description: string
     add: string
     sorts: Array<{ value: string; label: string }>
   }
 > = {
   education: {
     title: '학력',
-    description: '학력 단계를 기준으로 서버가 최종 학력을 자동으로 표시해요.',
     add: '학력 추가',
     sorts: [
       { value: 'createdAt,desc', label: '최근 등록순' },
@@ -769,7 +776,6 @@ const resourceLabels: Record<
   },
   certification: {
     title: '자격증',
-    description: '직무와 연결되는 자격증을 모아 두세요.',
     add: '자격증 추가',
     sorts: [
       { value: 'acquiredDate,desc', label: '취득일순' },
@@ -778,7 +784,6 @@ const resourceLabels: Record<
   },
   language: {
     title: '어학 성적',
-    description: '어학 성적과 유효기간을 한눈에 확인하세요.',
     add: '어학 성적 추가',
     sorts: [
       { value: 'testedAt,desc', label: '응시일순' },
@@ -787,7 +792,6 @@ const resourceLabels: Record<
   },
   award: {
     title: '수상',
-    description: '나의 성과를 보여 주는 수상 경험을 정리하세요.',
     add: '수상 추가',
     sorts: [
       { value: 'awardedAt,desc', label: '수상일순' },
@@ -796,7 +800,6 @@ const resourceLabels: Record<
   },
   career: {
     title: '경력',
-    description: '해 온 일과 만든 변화를 시간의 흐름대로 남겨 보세요.',
     add: '경력 추가',
     sorts: [
       { value: 'startedAt,desc', label: '시작일순' },
@@ -813,42 +816,37 @@ const resourceLabels: Record<
   >
     <ProfileTabs />
     <div class="profile-workspace-shell__content">
-      <PageHeader
-        :heading-id="`${kind}-heading`"
-        :title="title"
-        :description="description"
-        variant="compact"
-      >
-        <template #actions>
-          <button type="button" class="button button--primary" @click="openCreate">
-            {{ addLabel }}
-          </button>
-        </template>
-      </PageHeader>
-
-      <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
-        지금 이용 중인 계정에 남아 있는 자료만 연결할 수 있어요.
-      </p>
+      <!-- 좌측 탐색이 이미 화면 이름을 보여 주므로 제목 줄은 화면에 그리지 않는다. -->
+      <h1 :id="`${kind}-heading`" class="sr-only">{{ title }}</h1>
 
       <div class="filter-toolbar structured-profile__toolbar">
         <p class="structured-profile__count">
           등록 <strong>{{ resourceQuery.data.value?.totalElements ?? 0 }}</strong
           >건
         </p>
-        <label class="field field--inline" :for="`${kind}-sort`">
+        <div class="field field--inline structured-profile__sort">
           <span class="field__label">정렬</span>
-          <select
+          <AppSelect
             :id="`${kind}-sort`"
             v-model="sort"
-            class="control control--compact"
+            :options="sortSelectOptions"
+            compact
+            aria-label="정렬"
             @change="onSortChange"
-          >
-            <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+          />
+        </div>
+        <button
+          type="button"
+          class="button button--primary button--compact structured-profile__add"
+          @click="openCreate"
+        >
+          {{ addLabel }}
+        </button>
       </div>
+
+      <p v-if="documentLinkable" class="alert alert--info structured-profile__guidance">
+        지금 이용 중인 계정에 남아 있는 자료만 연결할 수 있어요.
+      </p>
 
       <p v-if="message" class="alert alert--success structured-profile__message" role="status">
         {{ message }}
@@ -902,16 +900,14 @@ const resourceLabels: Record<
             <label class="field"
               >전공<input v-model="form.major" class="control" maxlength="200"
             /></label>
-            <label class="field"
-              >학력 단계<select v-model="form.educationLevel" class="control">
-                <option value="HIGH_SCHOOL">고등학교</option>
-                <option value="ASSOCIATE">대학교(전문학사)</option>
-                <option value="BACHELOR">대학교(학사)</option>
-                <option value="MASTER">대학원(석사)</option>
-                <option value="DOCTORATE">대학원(박사)</option>
-                <option value="OTHER">기타 교육</option>
-              </select></label
-            >
+            <div class="field">
+              <span class="field__label">학력 단계</span>
+              <AppSelect
+                v-model="form.educationLevel"
+                :options="EDUCATION_LEVEL_OPTIONS"
+                aria-label="학력 단계"
+              />
+            </div>
             <label class="field"
               >학위·과정명<input
                 v-model="form.degree"
@@ -919,15 +915,14 @@ const resourceLabels: Record<
                 maxlength="100"
                 placeholder="예: 컴퓨터공학 학사"
             /></label>
-            <label class="field"
-              >재학 상태<select v-model="form.educationStatus" class="control">
-                <option value="ENROLLED">재학</option>
-                <option value="LEAVE_OF_ABSENCE">휴학</option>
-                <option value="EXPECTED_GRADUATION">졸업 예정</option>
-                <option value="GRADUATED">졸업</option>
-                <option value="WITHDRAWN">중퇴</option>
-              </select></label
-            >
+            <div class="field">
+              <span class="field__label">재학 상태</span>
+              <AppSelect
+                v-model="form.educationStatus"
+                :options="EDUCATION_STATUS_OPTIONS"
+                aria-label="재학 상태"
+              />
+            </div>
             <label class="field"
               >입학일<input v-model="form.admissionDate" class="control" type="date"
             /></label>
@@ -1098,27 +1093,19 @@ const resourceLabels: Record<
             </label>
           </template>
 
-          <label v-if="documentLinkable" class="field form-span">
-            증빙 문서
-            <select
+          <div v-if="documentLinkable" class="field form-span">
+            <span :id="`${kind}-evidenceDocumentId-label`" class="field__label">증빙 문서</span>
+            <AppSelect
               :id="`${kind}-evidenceDocumentId`"
               v-model="form.evidenceDocumentId"
-              class="control"
+              :options="evidenceDocumentOptions"
+              :aria-labelledby="`${kind}-evidenceDocumentId-label`"
               :disabled="selectableDocuments.isPending.value || selectableDocuments.isError.value"
-            >
-              <option value="">연결하지 않음</option>
-              <option
-                v-for="candidate in selectableDocuments.data.value?.items"
-                :key="candidate.id"
-                :value="candidate.id"
-              >
-                {{ candidate.displayName }}
-              </option>
-            </select>
+            />
             <span v-if="selectableDocuments.isError.value" class="field-error">
               자료 목록을 불러오지 못했어요.
             </span>
-          </label>
+          </div>
 
           <p v-if="generalError" class="alert alert--danger form-span" role="alert">
             {{ generalError }}
@@ -1247,7 +1234,6 @@ const resourceLabels: Record<
 
 <style scoped>
 .structured-profile__guidance,
-.structured-profile__toolbar,
 .structured-profile__message,
 .structured-profile__state,
 .structured-editor,
@@ -1255,11 +1241,23 @@ const resourceLabels: Record<
   margin-top: var(--space-5);
 }
 
+/*
+ * 좌측 탐색이 이미 화면 이름을 알려 주므로 본문은 제목 줄 없이 도구 막대에서 시작한다.
+ * 등록 버튼도 이 막대에 두어 화면 상단의 빈 공간을 없앤다.
+ */
 .structured-profile__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
+  margin-top: 0;
+}
+
+.structured-profile__sort {
+  margin-left: auto;
+}
+
+.structured-profile__add {
+  flex: 0 0 auto;
 }
 
 .structured-profile__count {
@@ -1283,7 +1281,7 @@ const resourceLabels: Record<
   white-space: nowrap;
 }
 
-.structured-profile__toolbar .control {
+.structured-profile__toolbar .app-select {
   width: auto;
   min-width: 10.5rem;
 }
@@ -1489,7 +1487,11 @@ const resourceLabels: Record<
     width: 100%;
   }
 
-  .structured-profile__toolbar .control {
+  .structured-profile__sort {
+    margin-left: 0;
+  }
+
+  .structured-profile__toolbar .app-select {
     width: 100%;
   }
 

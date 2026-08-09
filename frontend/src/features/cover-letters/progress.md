@@ -4,6 +4,20 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-09] Session Summary (AI 모델 AppSelect 전환)
+
+- What was done:
+  - 자기소개서 생성 panel의 서버 catalog 기반 AI 모델 선택을 typed `AppSelect`로 바꾸고 추천·model ID를 label과 description으로 분리했다.
+  - loading·catalog 오류·빈 목록에서는 기존처럼 선택과 유료 작업 접수를 막는다.
+- Key decisions:
+  - model ID와 추천 여부의 원천은 계속 서버 catalog이며 화면에 별도 모델 목록을 만들지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check`: 95 files, 435 tests와 lint·format·typecheck·production build 통과.
+- Next steps:
+  - 없음.
+
 ## [2026-08-07] Session Summary (공고 요구사항 카드화와 notice 색 테마 정렬)
 
 - What was done:

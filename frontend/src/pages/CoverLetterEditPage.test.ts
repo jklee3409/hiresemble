@@ -20,6 +20,7 @@ import {
   verificationFixture,
 } from '@/features/cover-letters/testFixtures'
 import { ApiClientError } from '@/shared/api/errors'
+import { appSelectLabel, openAppSelectOptions, selectAppOption } from '@/shared/ui/appSelectTesting'
 import { useNotifications } from '@/shared/ui/notifications'
 
 import CoverLetterEditPage from './CoverLetterEditPage.vue'
@@ -404,12 +405,16 @@ describe('CoverLetterEditPage', () => {
     expect(mocks.generate.mutateAsync).not.toHaveBeenCalled()
 
     // 서버가 허용한 모델 목록에서 고르고, 기본값은 추천 모델이다.
-    const modelSelect = () =>
-      wrapper.get<HTMLSelectElement>('[data-testid="cover-letter-model-select"]')
-    expect(modelSelect().element.value).toBe(RECOMMENDED_MODEL)
-    await modelSelect().setValue(HIGH_CAPABILITY_MODEL)
+    const modelLabel = () => appSelectLabel(wrapper, 'AI 모델')
+    expect(modelLabel()).toBe('GPT-5.6 Terra · 추천')
+    // 목록에는 서버가 준 정확한 model id가 함께 보인다.
+    expect(await openAppSelectOptions(wrapper, 'AI 모델')).toEqual([
+      `GPT-5.6 Sol${HIGH_CAPABILITY_MODEL}`,
+      `GPT-5.6 Terra · 추천${RECOMMENDED_MODEL}`,
+    ])
+    await selectAppOption(wrapper, 'AI 모델', 'GPT-5.6 Sol')
     await flushPromises()
-    expect(modelSelect().element.value).toBe(HIGH_CAPABILITY_MODEL)
+    expect(modelLabel()).toBe('GPT-5.6 Sol')
     await wrapper.get('[data-testid="generate-cover-letter"]').trigger('click')
     await flushPromises()
 

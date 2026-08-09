@@ -9,6 +9,8 @@
 - [`BrandMark.vue`](BrandMark.vue), [`hiresemble-logo.png`](hiresemble-logo.png): 승인된 두 번째 로고 자산과 full·compact·inverse lockup
 - [`AppIcon.vue`](AppIcon.vue): Dashboard calendar·guide·sparkle·career person과 rocket·flag·trend-up·bolt·pen·bookmark·trophy·compass를 포함한 currentColor 기반 자체 제작 SVG icon
 - [`PageHeader.vue`](PageHeader.vue): list·detail·editor·compact variant, 선택적 heading level과 부분 강조용 title slot을 지원하는 route page 제목·설명·action 영역
+- [`AppSelect.vue`](AppSelect.vue): 서비스 전체가 쓰는 단일 선택 control. OS가 그리는 native `<select>` option 목록 대신 제품 token을 적용한 listbox를 직접 그린다
+- [`appSelectTesting.ts`](appSelectTesting.ts): `AppSelect`를 사용자와 같은 순서(열기 → 고르기)로 조작하는 test helper
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status. tone은 neutral·brand·info·success·notice·warning·danger이며 notice는 오류가 아닌 "확인 권장" 상태에 쓴다
 - [`productJourney.ts`](productJourney.ts): Landing과 보호 `/guide`가 공유하는 5단계 번호·아이콘·canonical 제목·핵심 설명
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
@@ -25,7 +27,8 @@
 - 상태는 색상에만 의존하지 않고 visible text와 적절한 `role`, `aria-live`, navigation label을 제공한다.
 - `AppIcon`은 emoji나 외부 icon dependency 없이 현재 제품에서 실제 사용하는 최소 SVG path만 제공한다.
 - `BrandMark`는 full·compact·inverse variant를 제공하고 실제 link의 accessible name은 사용하는 layout이 소유한다.
-- button·input·select·checkbox·radio·switch·date·file의 시각 상태는 공용 style token을 사용하고 native semantics와 label 연결은 각 component·page가 유지한다.
+- button·input·checkbox·radio·switch·date·file의 시각 상태는 공용 style token을 사용하고 native semantics와 label 연결은 각 component·page가 유지한다.
+- 단일 선택은 `AppSelect`만 사용한다. trigger가 `<button role="combobox">`라 `<label for>`로 이름을 붙일 수 없으므로 호출부는 `aria-label` 또는 `aria-labelledby`로 접근 가능한 이름을 반드시 준다.
 - 성공은 Toast, 중요 mutation은 Confirm Dialog, 입력 오류는 Inline Validation으로 역할을 분리하고 브라우저 기본 alert·confirm·prompt를 사용하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

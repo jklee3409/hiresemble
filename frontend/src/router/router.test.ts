@@ -21,7 +21,7 @@ import * as jobApi from '@/shared/api/jobApi'
 import { useAuthStore } from '@/stores/auth'
 import * as profileApi from '@/shared/api/profileApi'
 
-import { careerArtifactRoutes, createAppRouter, gitHubProfileRoutes, routes } from './index'
+import { careerArtifactRoutes, createAppRouter, gitHubIntegrationRoutes, routes } from './index'
 
 vi.mock('@/shared/api/authApi', () => ({
   getCurrentUser: vi.fn(),
@@ -295,16 +295,28 @@ describe('authentication route policy', () => {
     )
   })
 
-  it('builds the lazy GitHub profile route only for an enabled Gate 2 flag', () => {
-    expect(gitHubProfileRoutes(false)).toEqual([])
-    const enabled = gitHubProfileRoutes(true)
-    expect(enabled).toHaveLength(1)
+  it('builds the lazy GitHub integration route only for an enabled Gate 2 flag', () => {
+    expect(gitHubIntegrationRoutes(false)).toEqual([])
+    const enabled = gitHubIntegrationRoutes(true)
+    expect(enabled).toHaveLength(2)
     expect(enabled[0]).toMatchObject({
-      path: 'profile/github',
-      name: 'profile-github',
-      meta: { title: 'GitHub 연결', profileRecommended: true },
+      path: 'integrations',
+      name: 'integrations',
+      meta: { title: '외부 연동', profileRecommended: true },
     })
     expect(typeof enabled[0]?.component).toBe('function')
+  })
+
+  it('keeps the backend-owned /profile/github action route working as a redirect', () => {
+    const enabled = gitHubIntegrationRoutes(true)
+    const legacy = enabled[1]
+    expect(legacy?.path).toBe('profile/github')
+    expect(legacy?.name).toBeUndefined()
+    const redirect = legacy?.redirect as (to: { query: Record<string, string> }) => unknown
+    expect(redirect({ query: { source: 'abc' } })).toEqual({
+      name: 'integrations',
+      query: { source: 'abc' },
+    })
   })
 
   it('builds all three lazy Career Artifact routes only for an enabled Gate 4 flag', () => {

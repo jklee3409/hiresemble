@@ -1,4 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
+import { chooseAppOption } from './appSelect'
 
 test.describe('P8 actual interview research, questions, answer versions and feedback', () => {
   test.skip(
@@ -21,8 +22,9 @@ test.describe('P8 actual interview research, questions, answer versions and feed
     await login(page, fixture.ownerEmail, fixture.password)
     await page.goto(`/jobs/${fixture.mainJobId}/interview`)
     await expect(page.getByTestId('submit-interview-preparation')).toBeVisible()
-    await page.locator('form select').first().selectOption(fixture.mainCoverId)
-    await page.locator('form select').nth(1).selectOption('ADVANCED')
+    await page.getByRole('combobox', { name: '사용할 자기소개서' }).click()
+    await page.getByRole('option').first().click()
+    await chooseAppOption(page, '조사 범위', '심화 조사')
     await page.locator('form input[type="number"]').fill('1')
 
     const preparationResponse = page.waitForResponse(

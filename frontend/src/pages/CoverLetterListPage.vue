@@ -29,6 +29,7 @@ import {
 } from '@/shared/api/coverLetterContracts'
 import { COVER_LETTER_SORTS } from '@/shared/api/coverLetterApi'
 import { normalizeApiError } from '@/shared/api/errors'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -45,6 +46,19 @@ const list = useCoverLetterListQuery(
 )
 const archiveMutation = useArchiveCoverLetterMutation(userId)
 const unarchiveMutation = useUnarchiveCoverLetterMutation(userId)
+
+const statusFilterOptions: AppSelectOption[] = [
+  { value: '', label: '전체' },
+  ...COVER_LETTER_STATUSES.map((value) => ({
+    value,
+    label: COVER_LETTER_STATUS_LABELS[value],
+  })),
+]
+const coverLetterSortOptions: AppSelectOption[] = [
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+  { value: 'createdAt,desc', label: '최근 생성순' },
+  { value: 'title,asc', label: '제목순' },
+]
 
 const search = ref('')
 const status = ref('')
@@ -86,8 +100,7 @@ function applyFilters(): void {
   })
 }
 
-function updateSort(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value
+function updateSort(value: string): void {
   const sort = COVER_LETTER_SORTS.find((candidate) => candidate === value) ?? 'updatedAt,desc'
   void router.push({
     query: canonicalCoverLetterQuery({ ...filters.value, sort, page: 0 }),
@@ -182,23 +195,20 @@ function verificationTone(value: VerificationStatus) {
           placeholder="회사, 직무, 자기소개서 제목"
         />
       </label>
-      <label class="field">
+      <div class="field">
         <span class="field__label">상태</span>
-        <select v-model="status" class="control control--compact">
-          <option value="">전체</option>
-          <option v-for="value in COVER_LETTER_STATUSES" :key="value" :value="value">
-            {{ COVER_LETTER_STATUS_LABELS[value] }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
+        <AppSelect v-model="status" :options="statusFilterOptions" compact aria-label="작성 상태" />
+      </div>
+      <div class="field">
         <span class="field__label">정렬</span>
-        <select :value="filters.sort" class="control control--compact" @change="updateSort">
-          <option value="updatedAt,desc">최근 수정순</option>
-          <option value="createdAt,desc">최근 생성순</option>
-          <option value="title,asc">제목순</option>
-        </select>
-      </label>
+        <AppSelect
+          :model-value="filters.sort"
+          :options="coverLetterSortOptions"
+          compact
+          aria-label="정렬"
+          @update:model-value="updateSort"
+        />
+      </div>
       <button type="submit" class="button button--secondary">필터 적용</button>
     </form>
 

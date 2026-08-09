@@ -65,7 +65,6 @@ describe('ExperienceLibraryPage', () => {
     const wrapper = await mountWithApp(ExperienceLibraryPage, '/profile/experiences')
 
     expect(wrapper.get('h1').text()).toBe('경험 보관함')
-    expect(wrapper.text()).toContain('같은 경험은 카드 하나로 모으고')
     expect(wrapper.findAll('[data-testid^="experience-card-"]')).toHaveLength(1)
     expect(wrapper.text()).toContain('비슷한 경험 확인')
     // 안내 aside는 제거했고 문서 출처는 개수 대신 실제 문서 이름을 보여 준다.
@@ -197,7 +196,7 @@ describe('ExperienceLibraryPage', () => {
     expect(wrapper.get('a[href="https://github.com/openai/hiresemble"]').attributes('rel')).toBe(
       'noopener noreferrer',
     )
-    expect(wrapper.get('a[href^="/profile/github?source="]').attributes('href')).toContain(
+    expect(wrapper.get('a[href^="/integrations?source="]').attributes('href')).toContain(
       '00000000-0000-4000-8000-000000000001',
     )
   })

@@ -3,22 +3,28 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { describe, expect, it } from 'vitest'
 
 import { featureFlags } from '@/app/featureFlags'
+import { appSelectLabel, selectAppOption } from '@/shared/ui/appSelectTesting'
 import ProfileTabs from './ProfileTabs.vue'
+
+const PROFILE_PATHS = [
+  '/profile/basic',
+  '/profile/education',
+  '/profile/careers',
+  '/profile/certifications',
+  '/profile/languages',
+  '/profile/awards',
+  '/profile/activities',
+  '/profile/experiences',
+]
 
 describe('Career Profile Workspace navigation', () => {
   it('keeps every deep link in a vertical outline and exposes one mobile selector', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [
-        '/profile/basic',
-        '/profile/education',
-        '/profile/careers',
-        '/profile/certifications',
-        '/profile/languages',
-        '/profile/awards',
-        '/profile/activities',
-        '/profile/experiences',
-      ].map((path) => ({ path, component: { template: '<div />' } })),
+      routes: PROFILE_PATHS.map((path) => ({ path, component: { template: '<div />' } })).concat({
+        path: '/integrations',
+        component: { template: '<div />' },
+      }),
     })
     await router.push('/profile/careers')
     await router.isReady()
@@ -40,30 +46,30 @@ describe('Career Profile Workspace navigation', () => {
     ])
     expect(wrapper.find('small').exists()).toBe(false)
     expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('경력')
-    expect(
-      (wrapper.get('select[aria-label="프로필 항목 선택"]').element as HTMLSelectElement).value,
-    ).toBe('/profile/careers')
+    expect(appSelectLabel(wrapper, '프로필 항목 선택')).toContain('경력')
 
-    await wrapper.get('select[aria-label="프로필 항목 선택"]').setValue('/profile/languages')
+    await selectAppOption(wrapper, '프로필 항목 선택', '어학')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/profile/languages')
   })
 
-  it('adds the GitHub desktop and mobile item only when Gate 2 is enabled', async () => {
+  it('never offers the GitHub integration here even when Gate 2 is enabled', async () => {
     featureFlags.githubSourceEnabled = true
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [
-        { path: '/profile/basic', component: { template: '<div />' } },
-        { path: '/profile/github', component: { template: '<div />' } },
-      ],
+      routes: PROFILE_PATHS.map((path) => ({ path, component: { template: '<div />' } })).concat({
+        path: '/integrations',
+        component: { template: '<div />' },
+      }),
     })
-    await router.push('/profile/github')
+    await router.push('/profile/basic')
     await router.isReady()
     const wrapper = mount(ProfileTabs, { global: { plugins: [router] } })
 
-    expect(wrapper.get('.profile-outline__link[aria-current="page"]').text()).toContain('GitHub')
-    expect(wrapper.get('option[value="/profile/github"]').text()).toBe('GitHub')
+    expect(wrapper.findAll('.profile-outline__link').map((link) => link.text())).not.toContain(
+      'GitHub',
+    )
+    expect(wrapper.html()).not.toContain('/integrations')
     featureFlags.githubSourceEnabled = false
   })
 })

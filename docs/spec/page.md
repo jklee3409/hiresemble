@@ -27,10 +27,10 @@
 │  ├─ /profile/awards
 │  ├─ /profile/careers
 │  ├─ /profile/activities
-│  ├─ /profile/experiences
-│  └─ /profile/github
+│  └─ /profile/experiences
 ├─ /documents
 │  └─ /documents/:documentId
+├─ /integrations
 ├─ /career-artifacts
 │  ├─ /career-artifacts/new?type=RESUME|PORTFOLIO
 │  └─ /career-artifacts/:careerArtifactId
@@ -93,7 +93,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9           | mock session create                                                   |
 | `/mock-interviews/:sessionId`                      | `PLANNED`             | P9           | mock session/start/message/complete/feedback                          |
 | `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A       | `/api/v1/backoffice/**` ADMIN GET                                     |
-| `/profile/github`                                  | `IMPLEMENTED_FLAGGED` | Gate 2       | `VITE_GITHUB_SOURCE_ENABLED=true`, 구현된 GitHub source·Agent Run API |
+| `/integrations`                                    | `IMPLEMENTED_FLAGGED` | Gate 2       | `VITE_GITHUB_SOURCE_ENABLED=true`, 구현된 GitHub source·Agent Run API |
 | `/career-artifacts`와 모든 child                   | `IMPLEMENTED_FLAGGED` | Gate 4       | `VITE_CAREER_ARTIFACT_ENABLED=true`, Gate 3의 11개 공개 operation     |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
@@ -135,7 +135,7 @@ PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아�
 ### Navigation과 상단 Header
 
 - Desktop은 상단에 `홈`, `내 정보`, `이력서·자료`, `관심 공고`, `자기소개서`, `면접 준비`의 사용자 여정 중심 navigation을 둔다.
-- `이력서·자료`는 `/documents`와 `/career-artifacts`에서 함께 active다. 두 root 화면은 각각 `업로드한 자료`, `AI로 만든 초안` switch를 제공하며 상대 화면으로 이동해도 navigation 맥락을 유지한다.
+- `이력서·자료`는 `/documents`, `/integrations`, `/career-artifacts`에서 함께 active다. 세 root 화면은 같은 `자료 업로드 | 외부 연동 | AI로 만든 초안` switch를 공유하며 서로 이동해도 navigation 맥락을 유지한다. 각 항목은 자기 feature flag가 켜졌을 때만 표시하고, 남는 항목이 하나면 switch를 그리지 않는다.
 - 모바일은 `홈`, `공고`, `자기소개서`, `면접 준비`, `더보기` bottom navigation을 사용한다. 더보기 dialog에서 내 정보, 자료, AI 작업과 가이드에 접근한다.
 - 상단 우측에는 진행 중 Agent Run 알림과 사람 아이콘+닉네임 account menu를 둔다. 사진 기능이 없으므로 이름 첫 글자 avatar와 별도 sidebar profile card를 사용하지 않는다.
 - account menu는 이용 가이드, AI 작업, 닉네임 변경, 로그아웃을 제공하고 header와 navigation에 사용자 정보를 중복 표시하지 않는다.
@@ -151,6 +151,8 @@ PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아�
 - Agent Progress Drawer
 - Version Conflict 비교·재적용 Dialog
 - 인증 shell별 전용 404
+
+단일 선택 입력은 화면마다 다르게 만들지 않고 공용 선택 control 하나만 사용한다. 브라우저 기본 `<select>`의 option 목록은 OS가 그려 제품 색·모서리·간격을 적용할 수 없으므로, trigger와 목록을 직접 그리고 WAI-ARIA combobox 패턴(`role="combobox"` + `role="listbox"` + `aria-activedescendant`)으로 키보드·낭독기 동작을 유지한다. 방향키·Home·End·Enter·Space·Escape·문자 입력 탐색·바깥 클릭 닫기를 지원하고, trigger가 button이므로 호출 화면은 `aria-label` 또는 `aria-labelledby`로 접근 가능한 이름을 반드시 제공한다.
 
 브라우저 기본 `alert`, `confirm`, `prompt`는 사용하지 않는다. 저장·승인·요청 성공은 Toast, 조회·네트워크 오류는 Toast 또는 해당 영역 메시지, 입력 오류는 field 인접 Inline Validation으로 구분한다. 자료·대외활동·AI 작업 삭제, 다시 분석, 승인 취소처럼 되돌리기 어렵거나 새 사용량이 생길 수 있는 동작은 Confirm Dialog를 사용한다. Dialog는 cancel에 초기 focus를 두고 Tab focus trap, ESC 닫기, 배경 클릭 취소와 trigger focus 복귀를 지원한다.
 
@@ -306,7 +308,8 @@ Desktop 프로필 하위 내비게이션은 부가 설명 없이 항목명만 �
 - 배지는 학력 `최종 학력`·재학 상태, 경력 `재직 중`, 자격증·어학 `유효기간 지남`처럼 이미 저장된 값에서만 만들고 새 상태를 추정하지 않는다.
 - 날짜는 `YYYY.MM.DD`로 표시하고 기간은 `시작 ~ 종료`로 묶으며, 진행 중인 경력은 종료 자리에 `현재`를 사용한다. 값이 없으면 해당 사실을 표시하지 않는다.
 - 경력은 timeline으로 표현하되 rail과 marker를 카드 안쪽 icon 열에 두어 목록 경계 밖으로 잘려 보이지 않게 한다.
-- 목록 상단 도구 영역은 왼쪽에 서버 `totalElements` 기준 등록 건수, 오른쪽에 정렬을 두고 정렬 label은 줄바꿈하지 않는다.
+- 목록 상단 도구 영역은 왼쪽에 서버 `totalElements` 기준 등록 건수, 오른쪽에 정렬과 추가 action을 두고 정렬 label은 줄바꿈하지 않는다.
+- 좌측 outline이 이미 현재 화면 이름을 보여 주므로 본문에는 제목·설명 줄을 그리지 않고 낭독기용 `h1`만 남긴다. 본문은 이 도구 영역에서 시작한다. 같은 규칙을 `/profile/activities`와 `/profile/experiences`에도 적용한다.
 
 ## 5.1 `/profile/basic`
 
@@ -376,6 +379,7 @@ API:
 - 제목·종류·진행 주체·활동 내용만 필수이며 오류는 각 입력 옆에 표시한다.
 - `자소서·면접 소재 후보로 사용`을 명시적으로 켠 활동만 후속 AI의 승인 소재 snapshot에 포함한다. 직접 등록했다는 이유만으로 자동 사용하지 않는다.
 - 빈 화면은 AI 추출 결과를 대신 표시하지 않고 첫 활동 등록 action과 향후 활용 의미를 안내한다.
+- 화면 상단에 문서 분석과의 관계를 설명하는 별도 안내 blockquote는 두지 않는다. 소재 사용 여부는 각 활동 카드의 상태 badge와 편집 form의 `자소서·면접 소재 후보로 사용` 설명이 이미 알려 준다.
 - 삭제 전 확인 Modal은 연결된 소재 후보도 함께 제거되지만 업로드 자료에는 영향이 없음을 설명한다.
 
 API: `GET|POST /profile/activities`, `GET|PUT|DELETE /profile/activities/:id`.
@@ -393,14 +397,15 @@ AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 
 
 API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
 
-## 5.9 `/profile/github` (`IMPLEMENTED_FLAGGED`, Gate 2 Frontend)
+## 5.9 `/integrations` (`IMPLEMENTED_FLAGGED`, Gate 2 Frontend)
 
-공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약을 typed API client, repository selector, focused Run monitor와 경험 provenance 화면으로 연결했다. Career Profile Workspace의 기존 세로 outline/mobile selector에 `GitHub` 항목을 추가하되 다른 프로필 route의 이동·저장 동작은 바꾸지 않는다.
+공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약을 typed API client, repository selector, focused Run monitor와 경험 provenance 화면으로 연결했다. 이 화면은 `내 지원 정보`가 아니라 `이력서·자료` 영역의 `외부 연동` 항목이 소유한다. tab 이름에 provider를 넣지 않아 개발 직군이 아닌 사용자에게도 이 영역이 자기 것으로 읽히게 하고, 나중에 다른 출처가 늘어도 IA를 다시 바꾸지 않는다. GitHub는 화면 안에서 현재 지원하는 provider로 표시한다.
 
 ### Feature flag
 
-- `VITE_GITHUB_SOURCE_ENABLED`가 정확히 `true`일 때만 route, ProfileTabs, `returnTo`와 Agent Run required-action/resource link를 허용한다.
-- 값이 없거나 다르면 `/profile/github`를 등록하지 않고 기존 UI와 allowlist를 유지한다.
+- `VITE_GITHUB_SOURCE_ENABLED`가 정확히 `true`일 때만 route, 자료 영역 switch의 `외부 연동` 항목, `returnTo`와 Agent Run required-action/resource link를 허용한다.
+- 값이 없거나 다르면 `/integrations`를 등록하지 않고 기존 UI와 allowlist를 유지한다.
+- Backend는 `SELECT_GITHUB_REPOSITORIES` required action route로 `/profile/github`를 반환한다. 이 문자열은 공개 계약이므로 바꾸지 않고, Frontend가 같은 flag 아래에서 `/integrations`로 보내는 redirect를 등록해 흡수한다.
 - 이 build-time flag는 Backend capability endpoint를 대체하지 않으며 local 예시는 `.env.example`에서 명시적으로 활성화한다.
 
 ### URL 등록
@@ -487,7 +492,7 @@ API:
 
 사용자가 AI로 생성한 이력서 DOCX와 포트폴리오 PPTX 초안을 관리한다. 업로드 원천인 `documents`와 생성 출력인 Career Artifact를 같은 row나 상태 체계로 합치지 않는다.
 
-- 상단 switch는 `업로드한 자료`(`/documents`)와 `AI로 만든 초안`(`/career-artifacts`)을 제공한다.
+- 상단 switch는 `자료 업로드`(`/documents`), `외부 연동`(`/integrations`), `AI로 만든 초안`(`/career-artifacts`)을 제공한다.
 - 목록은 artifact type, 제목, 생성 상태, current version, 최근 수정 시각과 latest Agent Run을 표시한다.
 - filter는 `전체|이력서|포트폴리오`, lifecycle은 `사용 중|보관`으로 제공하고 URL query와 server pagination을 사용한다.
 - active card는 `보관`, archived card는 `다시 사용`을 제공한다. 보관본은 preview·version·download만 가능하고 새 생성 action은 unarchive 뒤에 제공한다.

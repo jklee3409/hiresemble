@@ -79,7 +79,7 @@ function isAuthRequiredPath(
   const path = target.pathname
   return (
     AUTH_REQUIRED_PATHS.has(path) ||
-    (githubSourceEnabled && path === '/profile/github') ||
+    (githubSourceEnabled && (path === '/integrations' || path === '/profile/github')) ||
     AGENT_RUN_DETAIL_PATH.test(path) ||
     DOCUMENT_DETAIL_PATH.test(path) ||
     JOB_DETAIL_PATH.test(path) ||

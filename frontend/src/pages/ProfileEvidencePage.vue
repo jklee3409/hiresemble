@@ -12,11 +12,13 @@ import {
   metadataFieldsToRecord,
   metadataToFields,
   type EvidenceMetadataField,
+  type EvidenceMetadataFieldType,
 } from '@/features/profile/evidenceMetadata'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -40,7 +42,36 @@ const page = ref(0)
 const size = ref(20)
 const sort = ref('updatedAt,desc')
 const documentId = ref(typeof route.query.documentId === 'string' ? route.query.documentId : '')
+
+const evidenceStatusOptions: AppSelectOption<'' | EvidenceVerificationStatus>[] = [
+  { value: '', label: '전체' },
+  { value: 'PENDING', label: '검토 대기' },
+  { value: 'VERIFIED', label: '승인됨' },
+  { value: 'REJECTED', label: '거절됨' },
+  { value: 'SOURCE_DELETED', label: '원본 삭제됨' },
+]
+const evidenceSortOptions: AppSelectOption[] = [
+  { value: 'updatedAt,desc', label: '최근 수정순' },
+  { value: 'confidence,desc', label: '신뢰도순' },
+]
+const metadataTypeOptions: AppSelectOption<EvidenceMetadataFieldType>[] = [
+  { value: 'text', label: '글자' },
+  { value: 'number', label: '숫자' },
+  { value: 'boolean', label: '예·아니요' },
+  { value: 'empty', label: '내용 없음' },
+]
+const metadataBooleanOptions: AppSelectOption[] = [
+  { value: 'true', label: '예' },
+  { value: 'false', label: '아니요' },
+]
 const documents = useDocumentListQuery(userId, { page: 0, size: 100, sort: 'updatedAt,desc' })
+const documentFilterOptions = computed<AppSelectOption[]>(() => [
+  { value: '', label: '전체' },
+  ...(documents.data.value?.items ?? []).map((candidate) => ({
+    value: candidate.id,
+    label: candidate.displayName,
+  })),
+])
 const filters = computed<profileApi.EvidenceListParams>(() => ({
   verificationStatus: status.value || undefined,
   evidenceCategory: category.value.trim() || undefined,
@@ -318,45 +349,40 @@ function confidenceLabel(evidence: EvidenceDto): string {
       <details class="filter-disclosure evidence-page__filters" open>
         <summary>대외활동 필터</summary>
         <form class="filter-toolbar evidence-filters" @submit.prevent="applyFilters">
-          <label class="field">
+          <div class="field">
             <span class="field__label">상태</span>
-            <select v-model="status" class="control control--compact">
-              <option value="">전체</option>
-              <option value="PENDING">검토 대기</option>
-              <option value="VERIFIED">승인됨</option>
-              <option value="REJECTED">거절됨</option>
-              <option value="SOURCE_DELETED">원본 삭제됨</option>
-            </select>
-          </label>
+            <AppSelect
+              v-model="status"
+              :options="evidenceStatusOptions"
+              compact
+              aria-label="상태"
+            />
+          </div>
           <label class="field">
             <span class="field__label">카테고리</span>
             <input v-model="category" class="control control--compact" maxlength="80" />
           </label>
-          <label class="field">
+          <div class="field">
             <span class="field__label">정렬</span>
-            <select v-model="sort" class="control control--compact" @change="applyFilters">
-              <option value="updatedAt,desc">최근 수정순</option>
-              <option value="confidence,desc">신뢰도순</option>
-            </select>
-          </label>
-          <label class="field evidence-filters__document">
-            <span class="field__label">출처 문서</span>
-            <select
+            <AppSelect
+              v-model="sort"
+              :options="evidenceSortOptions"
+              compact
+              aria-label="정렬"
+              @change="applyFilters"
+            />
+          </div>
+          <div class="field evidence-filters__document">
+            <span id="evidence-document-filter-label" class="field__label">출처 문서</span>
+            <AppSelect
               id="evidence-document-filter"
               v-model="documentId"
-              class="control control--compact"
+              :options="documentFilterOptions"
+              compact
+              aria-labelledby="evidence-document-filter-label"
               :disabled="documents.isPending.value || documents.isError.value"
-            >
-              <option value="">전체</option>
-              <option
-                v-for="candidate in documents.data.value?.items"
-                :key="candidate.id"
-                :value="candidate.id"
-              >
-                {{ candidate.displayName }}
-              </option>
-            </select>
-          </label>
+            />
+          </div>
           <button type="submit" class="button button--primary button--compact">필터 적용</button>
         </form>
       </details>
@@ -442,29 +468,29 @@ function confidenceLabel(evidence: EvidenceDto): string {
                 <span class="sr-only">추가 정보 {{ index + 1 }} 이름</span>
                 <input v-model="entry.key" class="control" placeholder="예: 담당 역할" />
               </label>
-              <label class="field">
-                <span class="sr-only">추가 정보 {{ index + 1 }} 형식</span>
-                <select v-model="entry.type" class="control">
-                  <option value="text">글자</option>
-                  <option value="number">숫자</option>
-                  <option value="boolean">예·아니요</option>
-                  <option value="empty">내용 없음</option>
-                </select>
-              </label>
-              <label v-if="entry.type !== 'empty'" class="field">
-                <span class="sr-only">추가 정보 {{ index + 1 }} 내용</span>
-                <select v-if="entry.type === 'boolean'" v-model="entry.value" class="control">
-                  <option value="true">예</option>
-                  <option value="false">아니요</option>
-                </select>
+              <div class="field">
+                <AppSelect
+                  v-model="entry.type"
+                  :options="metadataTypeOptions"
+                  :aria-label="`추가 정보 ${index + 1} 형식`"
+                />
+              </div>
+              <div v-if="entry.type !== 'empty'" class="field">
+                <AppSelect
+                  v-if="entry.type === 'boolean'"
+                  v-model="entry.value"
+                  :options="metadataBooleanOptions"
+                  :aria-label="`추가 정보 ${index + 1} 내용`"
+                />
                 <input
                   v-else
                   v-model="entry.value"
                   class="control"
                   :inputmode="entry.type === 'number' ? 'decimal' : 'text'"
                   placeholder="내용 입력"
+                  :aria-label="`추가 정보 ${index + 1} 내용`"
                 />
-              </label>
+              </div>
               <span v-else class="metadata-entry__empty">내용 없음</span>
               <button
                 type="button"

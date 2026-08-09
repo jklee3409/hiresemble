@@ -5,6 +5,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { featureFlags } from '@/app/featureFlags'
 import { agentRunSummary } from '@/features/agent-runs/testFixtures'
+import { selectAppOption } from '@/shared/ui/appSelectTesting'
 import { useNotifications } from '@/shared/ui/notifications'
 
 import AgentRunListPage from './AgentRunListPage.vue'
@@ -92,7 +93,7 @@ describe('AgentRunListPage URL state', () => {
           name: 'cover-letter-edit',
           component: { template: '<div />' },
         },
-        { path: '/profile/github', component: { template: '<div />' } },
+        { path: '/integrations', component: { template: '<div />' } },
         { path: '/career-artifacts/:careerArtifactId', component: { template: '<div />' } },
       ],
     })
@@ -112,7 +113,7 @@ describe('AgentRunListPage URL state', () => {
       wrapper.get('a[href="/cover-letters/60000000-0000-4000-8000-000000000001/edit"]').text(),
     ).toBe('자기소개서')
     expect(
-      wrapper.get('a[href="/profile/github?source=70000000-0000-4000-8000-000000000001"]').text(),
+      wrapper.get('a[href="/integrations?source=70000000-0000-4000-8000-000000000001"]').text(),
     ).toBe('GitHub 연결')
     const careerArtifactRow = wrapper
       .findAll('.run-row')
@@ -148,9 +149,7 @@ describe('AgentRunListPage URL state', () => {
     await flushPromises()
     expect(deleteRun).toHaveBeenCalledWith('10000000-0000-4000-8000-000000000002')
 
-    const sort = wrapper.findAll('select')[1]
-    expect(sort).toBeDefined()
-    await sort?.setValue('updatedAt,desc')
+    await selectAppOption(wrapper, '정렬', '최근 갱신순')
     await flushPromises()
     expect(router.currentRoute.value.query).toMatchObject({
       status: ['FAILED'],

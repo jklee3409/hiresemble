@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 Career Artifact feature가 꺼지면 GitHub Source를 포함한 107 operations/79 paths이고, 켜지면 Career Artifact 11개 operation이 추가된 118 operations/88 paths다. Frontend는 anonymous Landing과 P1~P8 route, 서로 독립적으로 feature-gated `/profile/github`와 `/career-artifacts/**`를 제공한다. Gate 4는 Gate 3 API·DB·workflow를 변경하지 않고 wizard·structured preview·version download·lifecycle·Agent Run 연동과 선택적 제안을 추가했다.
+공개 HTTP 범위는 Career Artifact feature가 꺼지면 GitHub Source를 포함한 107 operations/79 paths이고, 켜지면 Career Artifact 11개 operation이 추가된 118 operations/88 paths다. Frontend는 anonymous Landing과 P1~P8 route, 서로 독립적으로 feature-gated `/integrations`(구 `/profile/github`는 redirect)와 `/career-artifacts/**`를 제공한다. Gate 4는 Gate 3 API·DB·workflow를 변경하지 않고 wizard·structured preview·version download·lifecycle·Agent Run 연동과 선택적 제안을 추가했다.
 
 ## 변경 시 주의사항
 
