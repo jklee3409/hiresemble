@@ -52,7 +52,9 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
   await expect(page.getByText('1개 선택', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '선택 저장하고 분석 시작' }).click()
 
-  await expect(page.getByText('경험 후보 찾기')).toBeVisible()
+  // 단계 이름은 진행 중에만 남기므로, terminal SSE가 바로 도착하는 fixture에서는
+  // monitor가 붙었는지와 아래 완료 상태로 확인한다. SSE 사용 여부는 sseRequests가 검증한다.
+  await expect(page.locator('.github-run-monitor')).toBeVisible()
   await expect(page.getByText('완료').first()).toBeVisible({ timeout: 10_000 })
   await expect(page.getByText('새 경험').locator('..')).toContainText('2')
   await expect(page.getByText('기존 경험 보강').locator('..')).toContainText('1')
@@ -75,7 +77,7 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
   await page.goto(`/integrations?source=${ids.source}`)
   await page.getByRole('button', { name: '새로고침' }).click()
   await expect(
-    page.getByText('GitHub에 새로운 변경이 없어 기존 분석 결과를 유지합니다.'),
+    page.getByText('GitHub에 새로운 변경이 없어서 지금 결과를 그대로 두었어요.'),
   ).toBeVisible()
   expect(fixture.refreshRequests).toBe(1)
 

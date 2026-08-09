@@ -13,10 +13,14 @@ import {
   safeGitHubInstallationUrl,
 } from '@/features/github/appNavigation'
 import { useCreateGitHubSourceMutation } from '@/features/github/queries'
-import { parsePublicGitHubUrl } from '@/features/github/presentation'
+import {
+  GITHUB_CONNECTION_STATUS_LABELS,
+  parsePublicGitHubUrl,
+} from '@/features/github/presentation'
 import { startGitHubAppConnection } from '@/shared/api/githubAppConnectionApi'
 import type { GitHubAppConnectionDto } from '@/shared/api/githubAppConnectionContracts'
 import { normalizeApiError } from '@/shared/api/errors'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useNotifications } from '@/shared/ui/notifications'
@@ -94,8 +98,8 @@ async function connect(): Promise<void> {
     const normalized = normalizeApiError(error)
     errorMessage.value =
       normalized.code === 'GITHUB_APP_NOT_CONFIGURED'
-        ? 'GitHub App 설정이 아직 완료되지 않았어요.'
-        : 'GitHub App 연결을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.'
+        ? '아직 private 저장소 연결을 준비하는 중이에요. 조금 뒤에 다시 시도해 주세요.'
+        : 'GitHub 연결을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.'
   } finally {
     connecting.value = false
   }
@@ -109,7 +113,7 @@ async function refresh(connection: GitHubAppConnectionDto): Promise<void> {
       connectionId: connection.id,
       version: connection.version,
     })
-    feedback.value = 'GitHub App 권한과 저장소 범위를 다시 확인했어요.'
+    feedback.value = '권한과 저장소 범위를 다시 확인했어요.'
   } catch (error) {
     const normalized = normalizeApiError(error)
     errorMessage.value = connectionError(normalized.code)
@@ -118,10 +122,10 @@ async function refresh(connection: GitHubAppConnectionDto): Promise<void> {
 
 async function disconnect(connection: GitHubAppConnectionDto): Promise<void> {
   const confirmed = await notifications.confirm({
-    title: `${connection.targetAccountLogin} GitHub App 연결을 해제할까요?`,
+    title: `${connection.targetAccountLogin} 연결을 해제할까요?`,
     message:
-      'GitHub App을 uninstall하고 새 private 저장소 refresh를 즉시 중단합니다. private snapshot과 raw evidence는 삭제하지만, 이미 승인한 경험과 생성된 Resume·Portfolio version은 유지합니다.',
-    confirmLabel: '연결 해제 및 uninstall',
+      'GitHub에서 이 앱을 지우고 private 저장소를 더 이상 읽지 않아요. 저장해 둔 private 원본 기록도 함께 지워져요. 이미 승인한 경험과 만들어 둔 이력서·포트폴리오는 그대로 남아요.',
+    confirmLabel: '연결 해제하기',
     tone: 'danger',
   })
   if (!confirmed) return
@@ -132,7 +136,7 @@ async function disconnect(connection: GitHubAppConnectionDto): Promise<void> {
       connectionId: connection.id,
       version: connection.version,
     })
-    feedback.value = '권한 해제와 private snapshot 정리를 접수했어요.'
+    feedback.value = '연결을 해제하고 저장해 둔 private 기록을 지우고 있어요.'
   } catch (error) {
     errorMessage.value = connectionError(normalizeApiError(error).code)
   }
@@ -146,7 +150,7 @@ async function registerPrivateSource(): Promise<void> {
     return
   }
   if (connectionId.value === '' || !participationConfirmed.value) {
-    privateFormError.value = 'ACTIVE 연결을 고르고 직접 참여한 저장소임을 확인해 주세요.'
+    privateFormError.value = '연결된 GitHub 계정을 고르고, 직접 참여한 저장소인지 확인해 주세요.'
     return
   }
   try {
@@ -158,7 +162,7 @@ async function registerPrivateSource(): Promise<void> {
     })
     privateUrl.value = ''
     participationConfirmed.value = false
-    feedback.value = 'private 저장소 목록을 확인하고 있어요.'
+    feedback.value = 'private 저장소 목록을 불러오고 있어요.'
     emit('sourceCreated', accepted.resourceId!)
   } catch (error) {
     errorMessage.value = connectionError(normalizeApiError(error).code)
@@ -175,18 +179,20 @@ function callbackMessage(value: CallbackResult): string {
   return {
     connected: 'GitHub App 연결을 확인했어요.',
     cancelled: 'GitHub App 연결이 취소됐어요.',
-    expired: '연결 요청이 만료됐어요. 다시 시작해 주세요.',
-    permission: 'Metadata read와 Contents read 권한을 확인해 주세요.',
+    expired: '연결 요청 시간이 지났어요. 다시 시작해 주세요.',
+    permission: 'GitHub에서 저장소 정보와 파일 읽기 권한을 모두 허용해 주세요.',
     unavailable: 'GitHub App 연결을 확인하지 못했어요.',
   }[value]
 }
 
 function connectionError(code: string): string {
   if (code === 'GITHUB_APP_PERMISSION_MISMATCH')
-    return 'Metadata read와 Contents read 권한이 필요해요.'
-  if (code === 'GITHUB_INSTALLATION_SUSPENDED') return 'GitHub installation이 일시 중지됐어요.'
-  if (code === 'GITHUB_INSTALLATION_REVOKED') return 'GitHub installation 권한이 해제됐어요.'
-  return 'GitHub App 연결 상태를 확인하지 못했어요.'
+    return '저장소 정보와 파일 읽기 권한이 모두 필요해요. GitHub에서 권한을 다시 확인해 주세요.'
+  if (code === 'GITHUB_INSTALLATION_SUSPENDED')
+    return 'GitHub에서 이 앱이 일시 중지됐어요. GitHub 설정에서 다시 켜 주세요.'
+  if (code === 'GITHUB_INSTALLATION_REVOKED')
+    return 'GitHub에서 이 앱의 권한이 해제됐어요. 다시 연결해 주세요.'
+  return 'GitHub 연결 상태를 확인하지 못했어요.'
 }
 
 function statusTone(status: GitHubAppConnectionDto['status']) {
@@ -223,12 +229,12 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
     </div>
 
     <p>
-      GitHub로 이동해 <strong>Metadata read</strong>와 <strong>Contents read</strong>만 허용합니다.
-      GitHub에서 고른 저장소 중 Hiresemble에서 다시 선택한 1~10개만 읽습니다.
+      GitHub로 이동해 저장소 정보 읽기(<strong>Metadata read</strong>)와 파일 읽기(<strong
+        >Contents read</strong
+      >)만 허용해 주세요. 그중에서도 Hiresemble에서 다시 고른 1~10개 저장소만 읽어요.
     </p>
     <p class="github-app-card__notice">
-      PAT나 token을 붙여 넣지 마세요. 연결 과정의 code와 state는 브라우저 저장소에 보관하지
-      않습니다.
+      개인 access token은 붙여 넣지 마세요. 연결에 쓰는 값은 브라우저에 저장하지 않아요.
     </p>
 
     <a
@@ -240,39 +246,36 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
       >GitHub 설치 화면으로 이동</a
     >
 
-    <p
+    <InlineNotice
       v-if="callbackResult"
-      class="alert"
-      :class="callbackResult === 'connected' ? 'alert--success' : 'alert--warning'"
-      role="status"
-    >
-      {{ callbackMessage(callbackResult) }}
-    </p>
-    <p v-if="feedback" class="alert alert--success" role="status">{{ feedback }}</p>
-    <p v-if="errorMessage" class="alert alert--danger" role="alert">{{ errorMessage }}</p>
+      :tone="callbackResult === 'connected' ? 'info' : 'warning'"
+      :title="callbackMessage(callbackResult)"
+    />
+    <InlineNotice v-if="feedback" tone="info" :title="feedback" />
+    <InlineNotice v-if="errorMessage" tone="danger" role="alert" :title="errorMessage" />
 
     <StatePanel
       v-if="capability.isPending.value"
       kind="loading"
-      title="GitHub App 제공 상태를 확인하는 중…"
+      title="private 저장소 연결을 쓸 수 있는지 확인하는 중…"
     />
     <StatePanel
       v-else-if="capability.isError.value || !available"
       kind="error"
-      title="Private GitHub 연결을 지금 사용할 수 없어요."
-      description="Backend capability와 GitHub App 환경 변수 설정을 확인해 주세요. 공개 GitHub 흐름은 계속 사용할 수 있습니다."
+      title="private 저장소 연결은 아직 쓸 수 없어요."
+      description="공개 저장소 연결은 아래에서 그대로 사용할 수 있어요."
     />
 
     <template v-else>
       <StatePanel
         v-if="connections.isPending.value"
         kind="loading"
-        title="연결된 installation을 불러오는 중…"
+        title="연결한 GitHub 계정을 불러오는 중…"
       />
       <StatePanel
         v-else-if="connections.isError.value"
         kind="error"
-        title="GitHub App 연결 목록을 불러오지 못했어요."
+        title="연결한 GitHub 계정을 불러오지 못했어요."
       />
       <ul v-else-if="connections.data.value?.items.length" class="github-app-list">
         <li v-for="connection in connections.data.value.items" :key="connection.id">
@@ -283,21 +286,24 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
                 connection.targetAccountType === 'ORGANIZATION' ? 'Organization' : 'Personal'
               }}</span>
             </div>
-            <StatusBadge :label="connection.status" :tone="statusTone(connection.status)" />
+            <StatusBadge
+              :label="GITHUB_CONNECTION_STATUS_LABELS[connection.status]"
+              :tone="statusTone(connection.status)"
+            />
           </div>
           <dl>
             <div>
-              <dt>GitHub repository 설정</dt>
+              <dt>GitHub에서 허용한 범위</dt>
               <dd>
                 {{
                   connection.repositorySelection === 'ALL'
-                    ? 'All repositories'
-                    : 'Selected repositories'
+                    ? '모든 저장소'
+                    : 'GitHub에서 고른 저장소만'
                 }}
               </dd>
             </div>
             <div>
-              <dt>마지막 확인</dt>
+              <dt>마지막으로 확인한 때</dt>
               <dd>{{ formatInstant(connection.lastCheckedAt) }}</dd>
             </div>
           </dl>
@@ -308,7 +314,7 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
               :href="safeGitHubInstallationManageUrl(connection.manageUrl)!"
               target="_blank"
               rel="noopener noreferrer"
-              >GitHub 저장소 설정 관리</a
+              >GitHub에서 범위 바꾸기</a
             >
             <button
               type="button"
@@ -329,7 +335,7 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
           </div>
         </li>
       </ul>
-      <p v-else class="github-app-card__empty">아직 연결된 GitHub App installation이 없어요.</p>
+      <p v-else class="github-app-card__empty">아직 연결한 GitHub 계정이 없어요.</p>
 
       <form
         v-if="activeConnections.length"
@@ -338,11 +344,11 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
         @submit.prevent="registerPrivateSource"
       >
         <div>
-          <p class="section-kicker">Private source 등록</p>
-          <h3>연결한 계정의 저장소 선택 시작</h3>
+          <p class="section-kicker">Private 저장소 등록</p>
+          <h3>연결한 계정에서 저장소 고르기</h3>
         </div>
         <label class="field">
-          <span class="field__label">ACTIVE GitHub App 연결</span>
+          <span class="field__label">연결한 GitHub 계정</span>
           <select v-model="connectionId" class="control">
             <option
               v-for="connection in activeConnections"
@@ -365,7 +371,7 @@ type CallbackResult = 'connected' | 'cancelled' | 'expired' | 'permission' | 'un
         </label>
         <label class="github-app-card__confirmation">
           <input v-model="participationConfirmed" class="checkbox-control" type="checkbox" />
-          <span>제가 직접 참여했고, 연결된 installation에서 허용한 저장소입니다.</span>
+          <span>제가 직접 참여했고, GitHub에서 이 앱에 허용한 저장소입니다.</span>
         </label>
         <p v-if="privateFormError" class="inline-error" role="alert">{{ privateFormError }}</p>
         <button

@@ -47,7 +47,7 @@ test('GitHub App private source to artifacts, disconnect, and terminal account d
   await expect(page).toHaveURL(/\/integrations$/)
   await expect(page.getByText('GitHub App 연결을 확인했어요.')).toBeVisible()
   await expect(page.getByText('phase5-org', { exact: true })).toBeVisible()
-  await expect(page.getByText('ACTIVE')).toBeVisible()
+  await expect(page.getByText('연결됨', { exact: true })).toBeVisible()
 
   const privateForm = page.locator('form.private-source-form')
   await privateForm
@@ -59,7 +59,9 @@ test('GitHub App private source to artifacts, disconnect, and terminal account d
   await expect(page.getByText('Private').first()).toBeVisible()
   await page.getByLabel('phase5-org/private-platform 선택').check()
   await page.getByRole('button', { name: '선택 저장하고 분석 시작' }).click()
-  await expect(page.getByText('경험 후보 찾기')).toBeVisible()
+  // 이 fixture는 terminal SSE가 곧바로 도착하므로 진행 중에만 보이는 단계 이름 대신
+  // GitHub run monitor가 붙었는지로 확인한다.
+  await expect(page.locator('.github-run-monitor')).toBeVisible()
   await expect(page.getByText('완료').first()).toBeVisible({ timeout: 10_000 })
   expect(fixture.privateSourceBody).toMatchObject({
     accessMode: 'GITHUB_APP',
@@ -68,7 +70,8 @@ test('GitHub App private source to artifacts, disconnect, and terminal account d
   expect(fixture.selectedRepositoryIds).toEqual([ids.repository])
 
   await page.goto(`/profile/experiences?selected=${ids.experience}`)
-  await expect(page.getByText('Private GitHub 성능 개선')).toBeVisible()
+  // 목록 카드와 상세 panel이 같은 제목을 함께 보여 주므로 첫 번째만 확인한다.
+  await expect(page.getByText('Private GitHub 성능 개선').first()).toBeVisible()
   await page.getByRole('button', { name: '활용 승인' }).first().click()
   await expect(page.getByText('활용 승인').first()).toBeVisible()
   expect(fixture.verificationRequests).toBe(1)
@@ -94,16 +97,17 @@ test('GitHub App private source to artifacts, disconnect, and terminal account d
   await page.goto('/integrations')
   await page.getByRole('button', { name: '권한 다시 확인' }).click()
   await expect(page.getByText('권한과 저장소 범위를 다시 확인했어요.')).toBeVisible()
-  await page.getByRole('button', { name: '연결 해제' }).click()
+  await page.getByRole('button', { name: '연결 해제', exact: true }).click()
   const disconnectDialog = page.getByRole('alertdialog')
   await expect(disconnectDialog).toContainText('이미 승인한 경험')
-  await disconnectDialog.getByRole('button', { name: '연결 해제 및 uninstall' }).click()
-  await expect(page.getByText('private snapshot 정리를 접수했어요.')).toBeVisible()
+  await disconnectDialog.getByRole('button', { name: '연결 해제하기' }).click()
+  await expect(page.getByText('저장해 둔 private 기록을 지우고 있어요.')).toBeVisible()
   expect(fixture.uninstallConfirmed).toBe(true)
   expect(fixture.privateSnapshotRemoved).toBe(true)
 
   await page.goto(`/profile/experiences?selected=${ids.experience}`)
-  await expect(page.getByText('Private GitHub 성능 개선')).toBeVisible()
+  // 목록 카드와 상세 panel이 같은 제목을 함께 보여 주므로 첫 번째만 확인한다.
+  await expect(page.getByText('Private GitHub 성능 개선').first()).toBeVisible()
   await expect(page.getByText('활용 승인').first()).toBeVisible()
 
   await page.goto('/settings/account')

@@ -1,14 +1,37 @@
 import type { ApiClientError } from '@/shared/api/errors'
+import type { GitHubAppConnectionStatus } from '@/shared/api/githubAppConnectionContracts'
 import type { GitHubSourceStatus } from '@/shared/api/githubSourceContracts'
+
+export const GITHUB_CONNECTION_STATUS_LABELS: Record<GitHubAppConnectionStatus, string> = {
+  ACTIVE: '연결됨',
+  SUSPENDED: '일시 중지됨',
+  DISCONNECTING: '해제하는 중',
+  DISCONNECTED: '해제됨',
+  REVOKED: '권한이 해제됨',
+}
 
 export const GITHUB_STATUS_LABELS: Record<GitHubSourceStatus, string> = {
   DISCOVERING: '저장소 확인 중',
   WAITING_USER: '저장소 선택 필요',
-  QUEUED: '작업 대기',
+  QUEUED: '차례 기다리는 중',
   RUNNING: '분석 중',
   READY: '완료',
   PARTIAL: '일부만 확인',
-  FAILED: '확인 실패',
+  FAILED: '확인하지 못함',
+}
+
+/*
+ * 상태 badge 옆에 한 문장으로 지금 무슨 일이 일어나고 있는지 알린다.
+ * 화면마다 문구를 따로 쓰면 같은 상태가 다르게 설명되므로 여기 한곳에서만 정의한다.
+ */
+export const GITHUB_STATUS_DESCRIPTIONS: Record<GitHubSourceStatus, string> = {
+  DISCOVERING: '연결한 곳에서 읽을 수 있는 저장소를 찾고 있어요.',
+  WAITING_USER: '분석할 저장소를 직접 골라 주세요.',
+  QUEUED: '분석을 시작할 차례를 기다리고 있어요.',
+  RUNNING: '고른 저장소에서 경험이 될 만한 내용을 찾고 있어요.',
+  READY: '경험 확인을 마쳤어요. 아래에서 결과를 볼 수 있어요.',
+  PARTIAL: '일부 저장소만 확인했어요. 찾은 내용은 그대로 쓸 수 있어요.',
+  FAILED: '확인을 끝내지 못했어요. 지금까지 찾은 내용은 그대로 남아 있어요.',
 }
 
 export function gitHubStatusTone(
@@ -122,7 +145,17 @@ export function gitHubErrorMessage(error: ApiClientError, now = new Date()): str
 }
 
 export function formatGitHubInstant(value: string | null): string {
-  if (value === null) return '아직 없음'
+  if (value === null) return '아직 없어요'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '확인할 수 없음' : date.toLocaleString('ko-KR')
+  if (Number.isNaN(date.getTime())) return '확인할 수 없어요'
+  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+}
+
+/* 목록 칸에서는 시각까지 보여 줄 이유가 없어 날짜만 쓴다. */
+export function formatGitHubDate(value: string | null): string {
+  if (value === null) return '아직 없어요'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? '확인할 수 없어요'
+    : date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
 }

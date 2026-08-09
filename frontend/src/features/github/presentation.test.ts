@@ -14,11 +14,11 @@ describe('GitHub presentation boundaries', () => {
     expect(GITHUB_STATUS_LABELS).toEqual({
       DISCOVERING: '저장소 확인 중',
       WAITING_USER: '저장소 선택 필요',
-      QUEUED: '작업 대기',
+      QUEUED: '차례 기다리는 중',
       RUNNING: '분석 중',
       READY: '완료',
       PARTIAL: '일부만 확인',
-      FAILED: '확인 실패',
+      FAILED: '확인하지 못함',
     })
   })
 

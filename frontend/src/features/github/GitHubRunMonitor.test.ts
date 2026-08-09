@@ -57,7 +57,7 @@ describe('GitHubRunMonitor', () => {
     const wrapper = mountMonitor()
     expect(wrapper.text()).toContain('경험 후보 찾기')
     expect(wrapper.text()).toContain('65%')
-    expect(wrapper.text()).toContain('진행 상태 연결 복구 중')
+    expect(wrapper.text()).toContain('진행 상태를 다시 연결하고 있어요')
     expect(wrapper.text()).not.toContain('EXTRACT_GITHUB_CANDIDATES')
     expect(mocks.streamOptions).toMatchObject({
       userId: 'user-1',
@@ -72,7 +72,7 @@ describe('GitHubRunMonitor', () => {
       resourceId: '00000000-0000-4000-8000-000000000099',
     })
     const wrapper = mountMonitor()
-    expect(wrapper.text()).toContain('일치하지 않는 작업 정보')
+    expect(wrapper.text()).toContain('작업 정보를 확인하지 못했어요')
     expect(mocks.streamOptions).toBeNull()
   })
 })

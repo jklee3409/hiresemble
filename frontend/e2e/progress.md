@@ -16,6 +16,21 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-09] Session Summary (GitHub spec의 전이 문구 의존 제거)
+
+- What was done:
+  - `github-source.spec.ts`와 `phase5-private-github.spec.ts`가 진행 중에만 보이는 단계 이름을 기다리던 부분을 `.github-run-monitor` 존재와 완료 상태 확인으로 바꿨다. fixture가 terminal SSE를 즉시 보내 단계 이름이 한 프레임만 남기 때문이다.
+  - 문구 변경에 맞춰 `연결됨`, `연결 해제하기`, `저장해 둔 private 기록을 지우고 있어요.`, 새로고침 결과 문구 기대를 갱신했다.
+  - `phase5-private-github.spec.ts`의 strict locator 중복 2건(`ACTIVE` 배지와 경험 제목)을 exact/first로 고쳤다.
+- Key decisions:
+  - SSE 사용 여부는 계속 `fixture.sseRequests`로 확인하므로 단계 이름 기대를 없애도 검증 의도는 유지된다.
+- Issues encountered:
+  - `phase5-private-github.spec.ts`는 마지막 줄에서 실패한다. 탈퇴 후 `/login?returnTo=%2Fsettings%2Faccount`를 기대하지만 앱은 `/login`으로만 이동한다. 이번 변경과 무관한 Gate 5 동작 차이다.
+- Validation:
+  - `github-source.spec.ts` 1건 통과. `phase5-private-github.spec.ts`는 위 마지막 assertion 하나로 `NOT_VERIFIED`다. 외부 network 호출 없이 route fixture만 사용했다.
+- Next steps:
+  - 탈퇴 후 login redirect의 `returnTo` 계약을 확정한 뒤 phase5 spec을 다시 실행한다.
+
 ## [2026-08-09] Session Summary (AI 검토 tab 열 확장 기대 교체)
 
 - What was done:

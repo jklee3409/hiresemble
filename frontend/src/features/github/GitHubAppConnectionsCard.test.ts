@@ -69,7 +69,7 @@ describe('GitHubAppConnectionsCard', () => {
 
     expect(wrapper.text()).toContain('GitHub App 연결을 확인했어요.')
     expect(wrapper.text()).toContain('acme')
-    expect(wrapper.text()).toContain('ACTIVE')
+    expect(wrapper.text()).toContain('연결됨')
     expect(router.currentRoute.value.query).toEqual({})
     expect(wrapper.html()).not.toContain('oauth-code')
 
@@ -80,7 +80,7 @@ describe('GitHubAppConnectionsCard', () => {
     await button(wrapper, '연결 해제').trigger('click')
     await flushPromises()
     expect(mocks.confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('GitHub App을 uninstall') }),
+      expect.objectContaining({ message: expect.stringContaining('GitHub에서 이 앱을 지우고') }),
     )
     expect(mocks.disconnect).toHaveBeenCalledWith(uuid(1), 1)
   })
@@ -121,7 +121,7 @@ describe('GitHubAppConnectionsCard', () => {
       requiredPermissions: ['metadata:read', 'contents:read'],
     })
     const { wrapper } = await mountCard('/integrations')
-    expect(wrapper.text()).toContain('Private GitHub 연결을 지금 사용할 수 없어요.')
+    expect(wrapper.text()).toContain('private 저장소 연결은 아직 쓸 수 없어요.')
     expect(wrapper.text()).not.toContain('연결 준비 중')
   })
 })

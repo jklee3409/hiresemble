@@ -100,7 +100,7 @@ describe('GitHubSourcePage', () => {
     mocks.select.mockResolvedValue(accepted())
     const wrapper = await mountPage(`/profile/github?source=${uuid(1)}`)
 
-    expect(wrapper.text()).toContain('분석할 저장소 1~10개')
+    expect(wrapper.text()).toContain('경험을 찾을 저장소 고르기')
     expect(wrapper.get('.repository-selector__actions button').attributes('disabled')).toBeDefined()
     await wrapper.get('input[placeholder="저장소 이름 또는 설명"]').setValue('sdk')
     await wrapper.get('form[role="search"]').trigger('submit')
@@ -158,9 +158,9 @@ describe('GitHubSourcePage', () => {
     await flushPromises()
 
     expect(mocks.select).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('시도한 선택 2개를 보존했습니다')
+    expect(wrapper.text()).toContain('고른 저장소 2개는 그대로 두었어요')
     expect(wrapper.text()).toContain(`owner/repository-11`)
-    expect(wrapper.text()).toContain('남아 있는 선택을 검토한 뒤')
+    expect(wrapper.text()).toContain('남아 있는 선택을 확인한 뒤')
   })
 
   it('shows lifecycle states, result counts, truncated/incomplete warnings, and refresh outcomes', async () => {
@@ -193,15 +193,15 @@ describe('GitHubSourcePage', () => {
     expect(wrapper.text()).toContain('기존 경험 보강3')
     expect(wrapper.text()).toContain('검토 필요1')
     expect(wrapper.text()).toContain('제외된 후보4')
-    expect(wrapper.text()).toContain('일부 목록만 표시')
-    expect(wrapper.text()).toContain('결과가 부분적일 수 있어요')
+    expect(wrapper.text()).toContain('저장소가 많아 일부만 보여 드리고 있어요')
+    expect(wrapper.text()).toContain('일부 파일은 확인하지 못했어요')
 
     await buttonByText(wrapper, '새로고침').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('새로운 변경이 없어 기존 분석 결과를 유지합니다')
+    expect(wrapper.text()).toContain('새로운 변경이 없어서 지금 결과를 그대로 두었어요')
     await buttonByText(wrapper, '새로고침').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('GitHub 분석을 다시 시작했어요')
+    expect(wrapper.text()).toContain('새로운 변경을 찾아 다시 확인하고 있어요')
   })
 
   it('explains rate limiting, failed retry guidance, and delete confirmation/cancel/success', async () => {
@@ -222,7 +222,7 @@ describe('GitHubSourcePage', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('GitHub 요청 한도에 도달했어요')
     expect(wrapper.text()).toContain('이후 다시 시도해 주세요')
-    expect(wrapper.text()).toContain('AI 작업 상세에서 재시도 가능 여부 확인')
+    expect(wrapper.text()).toContain('GitHub 경험 확인을 끝내지 못했어요')
 
     mocks.confirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
     await buttonByText(wrapper, '삭제').trigger('click')

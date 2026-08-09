@@ -16,7 +16,9 @@ import {
   useSelectGitHubRepositoriesMutation,
 } from '@/features/github/queries'
 import {
+  GITHUB_STATUS_DESCRIPTIONS,
   GITHUB_STATUS_LABELS,
+  formatGitHubDate,
   formatGitHubInstant,
   gitHubErrorMessage,
   gitHubStatusTone,
@@ -30,6 +32,7 @@ import type {
 } from '@/shared/api/githubSourceContracts'
 import { normalizeApiError } from '@/shared/api/errors'
 import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -58,8 +61,8 @@ const repositoryQuery = ref('')
 const repositoryPage = ref(0)
 const repositorySort = ref<GitHubRepositorySort>('pushedAt,desc')
 const repositorySortOptions: AppSelectOption<GitHubRepositorySort>[] = [
-  { value: 'pushedAt,desc', label: '최근 push 순' },
-  { value: 'repositoryName,asc', label: '저장소 이름 순' },
+  { value: 'pushedAt,desc', label: '최근 작업 순' },
+  { value: 'repositoryName,asc', label: '이름 순' },
 ]
 const selectedRepositoryIds = ref<string[]>([])
 const knownRepositories = new Map<string, GitHubRepositoryDto>()
@@ -110,11 +113,11 @@ const focusedSummary = computed(
     null,
 )
 const actionErrorTitle = computed(() => {
-  if (actionErrorCode.value === 'GITHUB_RATE_LIMITED') return 'GitHub 요청 한도에 도달했어요.'
+  if (actionErrorCode.value === 'GITHUB_RATE_LIMITED') return 'GitHub 요청 한도에 도달했어요'
   if (actionErrorCode.value === 'GITHUB_SOURCE_NOT_ACCESSIBLE')
-    return '공개된 GitHub 주소를 찾지 못했어요.'
-  if (actionErrorCode.value === 'EXTERNAL_SERVICE_UNAVAILABLE') return 'GitHub 연결이 불안정해요.'
-  return '요청을 처리하지 못했어요.'
+    return '공개된 GitHub 주소를 찾지 못했어요'
+  if (actionErrorCode.value === 'EXTERNAL_SERVICE_UNAVAILABLE') return 'GitHub 연결이 불안정해요'
+  return '요청을 처리하지 못했어요'
 })
 
 watch(
@@ -206,7 +209,7 @@ async function registerSource(): Promise<void> {
     })
     registerForm.url = ''
     registerForm.participationConfirmed = false
-    actionMessage.value = 'GitHub 연결을 등록했어요. 공개 정보를 확인하고 있습니다.'
+    actionMessage.value = 'GitHub 연결을 등록했어요. 공개 정보를 확인하고 있어요.'
     notifications.toast('GitHub 연결을 등록했어요.', 'success')
     await focusSource(accepted.resourceId!)
   } catch (error) {
@@ -289,7 +292,7 @@ async function reconcileVersionConflict(sourceId: string, attempted: string[]): 
   missingRepositoryNames.value = checks.filter((check) => !check.exists).map((check) => check.name)
   actionErrorCode.value = 'RESOURCE_VERSION_CONFLICT'
   actionError.value =
-    '최신 저장소 목록을 다시 확인했어요. 남아 있는 선택을 검토한 뒤 저장 버튼을 다시 눌러 주세요.'
+    '저장소 목록을 다시 불러왔어요. 남아 있는 선택을 확인한 뒤 다시 저장해 주세요.'
   await nextTick()
   actionPanel.value?.focus()
 }
@@ -303,10 +306,10 @@ async function refreshSource(source: GitHubSourceSummaryDto): Promise<void> {
     })
     await focusSource(source.id)
     if (result.changed && result.run !== null) {
-      actionMessage.value = '새 변경을 확인해 GitHub 분석을 다시 시작했어요.'
-      notifications.toast('GitHub 분석을 다시 시작했어요.', 'success')
+      actionMessage.value = '새로운 변경을 찾아 다시 확인하고 있어요.'
+      notifications.toast('GitHub를 다시 확인하고 있어요.', 'success')
     } else {
-      actionMessage.value = 'GitHub에 새로운 변경이 없어 기존 분석 결과를 유지합니다.'
+      actionMessage.value = 'GitHub에 새로운 변경이 없어서 지금 결과를 그대로 두었어요.'
       notifications.toast('새로운 GitHub 변경이 없어요.', 'info')
     }
   } catch (error) {
@@ -322,7 +325,7 @@ async function removeSource(source: GitHubSourceSummaryDto): Promise<void> {
   const confirmed = await notifications.confirm({
     title: '이 GitHub 연결을 삭제할까요?',
     message:
-      'GitHub 연결과 provenance 원본은 삭제되지만, 이미 검토하고 승인한 경험은 경험 보관함에 유지될 수 있어요.',
+      '연결과 GitHub에서 가져온 원본 기록은 지워져요. 다만 이미 검토하고 승인한 경험은 경험 보관함에 유지될 수 있어요.',
     confirmLabel: 'GitHub 연결 삭제',
     tone: 'danger',
   })
@@ -420,25 +423,22 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
         </div>
       </form>
 
-      <section
-        v-if="actionError"
-        ref="actionPanel"
-        class="alert alert--danger github-feedback"
-        role="alert"
-        tabindex="-1"
-      >
-        <strong>{{ actionErrorTitle }}</strong>
-        <p>{{ actionError }}</p>
-        <p v-if="preservedConflictSelection.length">
-          시도한 선택 {{ preservedConflictSelection.length }}개를 보존했습니다.
-          <span v-if="missingRepositoryNames.length">
-            최신 목록에서 사라진 저장소: {{ missingRepositoryNames.join(', ') }}
-          </span>
-        </p>
-      </section>
-      <p v-if="actionMessage" class="alert alert--success github-feedback" role="status">
-        {{ actionMessage }}
-      </p>
+      <div v-if="actionError" ref="actionPanel" class="github-feedback" tabindex="-1">
+        <InlineNotice
+          tone="danger"
+          role="alert"
+          :title="actionErrorTitle"
+          :description="actionError"
+        >
+          <p v-if="preservedConflictSelection.length" class="github-feedback__detail">
+            고른 저장소 {{ preservedConflictSelection.length }}개는 그대로 두었어요.
+            <span v-if="missingRepositoryNames.length">
+              지금 목록에서 사라진 저장소는 {{ missingRepositoryNames.join(', ') }}예요.
+            </span>
+          </p>
+        </InlineNotice>
+      </div>
+      <InlineNotice v-if="actionMessage" tone="info" :title="actionMessage" />
 
       <StatePanel
         v-if="sources.isPending.value"
@@ -472,14 +472,13 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
         class="github-sources"
         aria-labelledby="source-list-heading"
       >
-        <div class="github-sources__heading">
-          <div>
-            <p class="section-kicker">등록된 연결</p>
-            <h2 id="source-list-heading" class="section-title">
-              GitHub source {{ sources.data.value.totalElements }}개
-            </h2>
-          </div>
-        </div>
+        <!--
+          다른 목록 화면과 같이 제목 줄은 그리지 않는다. 상단 자료 종류 전환이 이미 화면 이름을
+          알리고 연결 개수는 카드 목록 자체로 보인다.
+        -->
+        <h2 id="source-list-heading" class="sr-only">
+          등록한 GitHub 연결 {{ sources.data.value.totalElements }}개
+        </h2>
         <ul class="github-source-list data-list">
           <li
             v-for="source in sources.data.value.items"
@@ -543,30 +542,31 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
 
             <dl class="github-source-card__meta">
               <div>
-                <dt>저장소</dt>
+                <dt>고른 저장소</dt>
                 <dd>
-                  선택 {{ source.selectedRepositoryCount }} / 발견
-                  {{ source.discoveredRepositoryCount }}
+                  {{ source.selectedRepositoryCount }}개 / 찾은
+                  {{ source.discoveredRepositoryCount }}개
                 </dd>
               </div>
               <div>
-                <dt>마지막 성공 동기화</dt>
+                <dt>마지막으로 확인한 때</dt>
                 <dd>{{ formatGitHubInstant(source.lastSuccessfulSyncAt) }}</dd>
               </div>
               <div>
-                <dt>버전</dt>
-                <dd>{{ source.version }}</dd>
+                <dt>등록한 날</dt>
+                <dd>{{ formatGitHubDate(source.createdAt) }}</dd>
               </div>
               <div>
-                <dt>최근 AI 작업</dt>
+                <dt>AI 작업 기록</dt>
                 <dd>
                   <RouterLink
                     v-if="source.latestAgentRunId"
+                    class="text-link"
                     :to="`/agent-runs/${source.latestAgentRunId}`"
                   >
-                    상세 보기
+                    자세히 보기
                   </RouterLink>
-                  <span v-else>아직 없음</span>
+                  <span v-else>아직 없어요</span>
                 </dd>
               </div>
             </dl>
@@ -589,26 +589,33 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
                 <span>제외된 후보</span><strong>{{ source.rejectedCandidateCount }}</strong>
               </div>
             </div>
-            <p
+            <InlineNotice
               v-if="source.repositoryDiscoveryTruncated"
-              class="alert alert--warning"
-              role="status"
+              tone="notice"
+              title="저장소가 많아 일부만 보여 드리고 있어요"
+              description="찾는 저장소가 목록에 없으면 아래 검색으로 이름을 입력해 주세요."
+            />
+            <InlineNotice
+              v-if="source.snapshotIncomplete"
+              tone="notice"
+              title="일부 파일은 확인하지 못했어요"
+              description="한 번에 읽을 수 있는 양을 넘어서 결과가 일부만 반영됐을 수 있어요."
+            />
+            <InlineNotice
+              v-if="source.status === 'FAILED'"
+              tone="danger"
+              title="GitHub 경험 확인을 끝내지 못했어요"
+              description="지금까지 찾은 내용은 그대로 남아 있어요. 다시 시도할 수 있는지는 AI 작업 기록에서 확인할 수 있어요."
             >
-              GitHub에서 발견한 저장소가 많아 일부 목록만 표시합니다. 검색으로 원하는 저장소를
-              찾아보세요.
-            </p>
-            <p v-if="source.snapshotIncomplete" class="alert alert--warning" role="status">
-              일부 파일은 안전 한도 안에서 확인하지 못해 결과가 부분적일 수 있어요.
-            </p>
-            <p v-if="source.status === 'FAILED'" class="alert alert--danger" role="status">
-              이 연결의 분석을 마치지 못했어요.
-              <RouterLink
-                v-if="source.latestAgentRunId"
-                :to="`/agent-runs/${source.latestAgentRunId}`"
-              >
-                AI 작업 상세에서 재시도 가능 여부 확인
-              </RouterLink>
-            </p>
+              <template v-if="source.latestAgentRunId" #actions>
+                <RouterLink
+                  class="button button--secondary button--compact"
+                  :to="`/agent-runs/${source.latestAgentRunId}`"
+                >
+                  원인 보기
+                </RouterLink>
+              </template>
+            </InlineNotice>
           </li>
         </ul>
         <PaginationNav
@@ -630,7 +637,9 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
         <div class="github-focused__header">
           <div>
             <p class="section-kicker">선택한 연결</p>
-            <h2 id="github-focused-heading" class="section-title">상태와 저장소 확인</h2>
+            <h2 id="github-focused-heading" class="section-title">
+              {{ focusedSummary ? sourceDisplayName(focusedSummary) : '진행 상황' }}
+            </h2>
           </div>
           <button type="button" class="button button--ghost button--compact" @click="clearFocus">
             닫기
@@ -644,20 +653,13 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
           :description="gitHubErrorMessage(normalizeApiError(detail.error.value))"
         />
         <template v-else-if="focusedSummary">
-          <p class="github-focused__status">
+          <div class="github-focused__status">
             <StatusBadge
               :label="GITHUB_STATUS_LABELS[focusedSummary.status]"
               :tone="gitHubStatusTone(focusedSummary.status)"
             />
-            <span v-if="focusedSummary.status === 'DISCOVERING'">허용된 저장소를 찾고 있어요.</span>
-            <span v-else-if="focusedSummary.status === 'QUEUED'">분석 순서를 기다리고 있어요.</span>
-            <span v-else-if="focusedSummary.status === 'RUNNING'"
-              >선택한 저장소를 분석하고 있어요.</span
-            >
-            <span v-else-if="focusedSummary.status === 'WAITING_USER'"
-              >분석할 저장소를 직접 골라 주세요.</span
-            >
-          </p>
+            <p>{{ GITHUB_STATUS_DESCRIPTIONS[focusedSummary.status] }}</p>
+          </div>
 
           <GitHubRunMonitor
             v-if="focusedSummary.latestAgentRunId"
@@ -676,18 +678,21 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
             <div class="repository-selector__heading">
               <div>
                 <p class="section-kicker">저장소 선택</p>
-                <h3 id="repository-selector-heading" class="section-title">분석할 저장소 1~10개</h3>
+                <h3 id="repository-selector-heading" class="section-title">
+                  경험을 찾을 저장소 고르기
+                </h3>
+                <p class="repository-selector__hint">
+                  직접 참여한 저장소를 1~10개까지 고를 수 있어요.
+                </p>
               </div>
-              <strong>{{ selectedCount }}개 선택</strong>
+              <strong class="repository-selector__count">{{ selectedCount }}개 선택</strong>
             </div>
-            <p
+            <InlineNotice
               v-if="focusedSummary.repositoryDiscoveryTruncated"
-              class="alert alert--warning"
-              role="status"
-            >
-              저장소가 많아 일부만 발견했습니다. 이름 검색으로 확인할 수 있는 허용 저장소 안에서
-              선택해 주세요.
-            </p>
+              tone="notice"
+              title="저장소가 많아 일부만 불러왔어요"
+              description="찾는 저장소가 아래 목록에 없으면 이름으로 검색해 주세요."
+            />
             <form class="repository-toolbar" role="search" @submit.prevent="submitRepositorySearch">
               <label class="field">
                 <span class="field__label">저장소 검색</span>
@@ -725,7 +730,7 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
               v-else-if="repositories.data.value?.items.length === 0"
               kind="empty"
               title="조건에 맞는 저장소가 없어요."
-              description="검색어 또는 GitHub App repository 선택 범위를 확인해 주세요."
+              description="검색어를 바꾸거나, GitHub에서 이 앱에 허용한 저장소 범위를 확인해 주세요."
             />
             <ul v-else class="repository-list" aria-label="발견한 저장소">
               <li v-for="repository in repositories.data.value?.items" :key="repository.id">
@@ -750,8 +755,8 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
                       <StatusBadge v-if="repository.fork" label="Fork" tone="neutral" />
                       <StatusBadge v-if="repository.archived" label="보관됨" tone="warning" />
                     </span>
-                    <span>{{ repository.description || '설명이 없는 저장소' }}</span>
-                    <small>마지막 push {{ formatGitHubInstant(repository.pushedAt) }}</small>
+                    <span>{{ repository.description || '설명이 없는 저장소예요.' }}</span>
+                    <small>마지막 작업 {{ formatGitHubInstant(repository.pushedAt) }}</small>
                   </span>
                 </label>
               </li>
@@ -763,11 +768,15 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
               label="GitHub 저장소 페이지"
               @change="repositoryPage = $event"
             />
-            <p v-if="selectedCount === 0" class="inline-error" role="status">
-              분석할 저장소를 1개 이상 선택해 주세요.
-            </p>
             <div class="repository-selector__actions">
-              <span>최대 10개까지 선택할 수 있어요.</span>
+              <!-- 아직 아무것도 고르지 않은 상태는 오류가 아니므로 붉은 문구 대신 안내로 알린다. -->
+              <span role="status">
+                {{
+                  selectedCount === 0
+                    ? '저장소를 1개 이상 골라야 분석을 시작할 수 있어요.'
+                    : '고른 저장소만 읽어요. 나중에 다시 바꿀 수 있어요.'
+                }}
+              </span>
               <button
                 type="button"
                 class="button button--primary"
@@ -824,7 +833,6 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   font-size: var(--font-size-sm);
 }
 
-.github-sources__heading,
 .github-source-card__header,
 .github-source-card__badges,
 .github-source-card__actions,
@@ -837,7 +845,10 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   align-items: center;
 }
 
-.github-sources__heading,
+.repository-selector__heading {
+  align-items: flex-start;
+}
+
 .github-source-card__header,
 .github-focused__header,
 .repository-selector__heading,
@@ -884,6 +895,12 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   gap: var(--space-3);
 }
 
+/* 연결 정보 네 칸은 카드 안에서 옅은 구분선으로만 나눈다. 칸마다 면을 깔면 결과 숫자와 경쟁한다. */
+.github-source-card__meta {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
 .github-source-card__meta dt,
 .github-result-grid span {
   color: var(--color-muted);
@@ -896,6 +913,11 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   margin-top: var(--space-1);
   overflow-wrap: anywhere;
   font-size: var(--font-size-sm);
+}
+
+.github-source-card__meta dd {
+  color: var(--color-text-secondary);
+  font-weight: 650;
 }
 
 .github-result-grid > div {
@@ -947,14 +969,53 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   overflow-wrap: anywhere;
 }
 
-.repository-selector__actions > span {
+.repository-selector__actions > span,
+.repository-selector__hint {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
 }
 
-.github-feedback:focus {
+.repository-selector__hint {
+  margin-top: var(--space-1);
+}
+
+.repository-selector__count {
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-strong);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+/*
+ * 선택한 연결의 지금 상태. badge와 설명 한 줄을 한 덩어리로 묶어
+ * 문장이 카드 안에 떠 있는 것처럼 보이지 않게 한다.
+ */
+.github-focused__status {
+  align-items: baseline;
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
+  padding: var(--space-3) var(--space-4);
+}
+
+.github-focused__status p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.github-feedback:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+.github-feedback__detail {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
 }
 
 @media (max-width: 64rem) {

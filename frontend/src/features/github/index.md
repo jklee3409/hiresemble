@@ -9,8 +9,8 @@ source 완료·삭제는 Career Artifact readiness도 invalidate해 같은 화�
 - [`queryKeys.ts`](queryKeys.ts): source 목록·상세·repository cache 경계
 - [`queries.ts`](queries.ts): Vue Query read/mutation과 관련 cache 갱신
 - [`idempotency.ts`](idempotency.ts): pending 사용자 작업별 `Idempotency-Key` 수명주기
-- [`presentation.ts`](presentation.ts): URL·외부 링크 검증, 상태·rate limit 사용자 표현
-- [`GitHubRunMonitor.vue`](GitHubRunMonitor.vue): focused source 한 건의 Run 진행 표시
+- [`presentation.ts`](presentation.ts): URL·외부 링크 검증, source·connection 상태 라벨과 설명, 시각 표기, rate limit 사용자 표현
+- [`GitHubRunMonitor.vue`](GitHubRunMonitor.vue): focused source 한 건의 Run 진행 표시. 공용 `progress-track` 막대를 쓰고 끝난 작업에는 막대를 남기지 않는다
 - [`GitHubAppConnectionsCard.vue`](GitHubAppConnectionsCard.vue): capability, setup/OAuth 결과, connection refresh/disconnect와 private source 입력
 - [`appNavigation.ts`](appNavigation.ts): GitHub install/manage URL의 scheme·host·path·query allowlist
 - [`progress.md`](progress.md): 구현·검증 기록
