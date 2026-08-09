@@ -2,7 +2,20 @@
 
 ## Overview
 
-외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차와, P8.6–P8.9의 기능 한도·usage accounting·실패 복구·Backoffice 운영 계획이 문서화되어 있다.
+외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차, GitHub App private repository local UI UAT와 P8.6–P8.9 운영 계획이 문서화되어 있다.
+
+## [2026-08-09] Session Summary (GitHub App local UI UAT runbook)
+
+- What was done:
+  - App 생성·URL·read permission·webhook off·환경 변수·서비스 기동부터 private ingestion, 경험 승인, DOCX/PPTX, refresh/disconnect/uninstall, 회원 탈퇴와 credential 정리까지 24단계 runbook을 작성했다.
+- Key decisions:
+  - 실제 secret 값은 문서에 넣지 않고 각 단계에서 진입 URL, UI label, 기대 상태와 safe 장애 확인만 제공한다.
+- Issues encountered:
+  - 자동화 credential 환경에서는 실제 external UAT를 수행할 수 없어 상태를 `USER_MANUAL_UI_VALIDATION_PENDING`으로 분리했다.
+- Validation:
+  - `.env.example`, application typed properties, Backend/Frontend route·label과 runbook을 대조했다.
+- Next steps:
+  - 사용자가 local credential로 UAT를 수행한 뒤 결과와 안전한 request ID만 기록한다.
 
 ## [2026-08-06] Session Summary (선택 가능 OpenAI 모델 운영 기준)
 

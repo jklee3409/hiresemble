@@ -8,7 +8,7 @@ com.hiresemble.auth.api.controller package는 인증 context와 HTTP 입력·출
 
 | 파일                                             | 역할                              |
 | ------------------------------------------------ | --------------------------------- |
-| [AccountController.java](AccountController.java) | 현재 사용자 닉네임 변경 HTTP 계약 |
+| [AccountController.java](AccountController.java) | 표시 이름·비밀번호 변경과 terminal 탈퇴 HTTP 계약 |
 | [AuthController.java](AuthController.java)       | Controller 책임 구현              |
 | [progress.md](progress.md)                       | 이 package의 이동·검증 이력       |
 

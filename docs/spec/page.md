@@ -1,7 +1,7 @@
 # 페이지 구조 명세서
 
-- 문서 버전: 1.5 (GitHub Source Frontend 구현 상태 반영)
-- 기준일: 2026-08-08
+- 문서 버전: 1.6 (GitHub App private repository·account settings 구현 상태)
+- 기준일: 2026-08-09
 - Frontend: Vue 3 SPA
 - 기본 화면: Desktop First, 모바일 반응형
 - API Prefix: `/api/v1`
@@ -82,18 +82,19 @@ Canonical redirect:
 
 job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생성 child는 `interview/mock/new`만 허용한다. 타 사용자 UUID도 같은 404 화면을 사용한다.
 
-현재 실제 router는 `/settings/*`, `/backoffice/*`, `/mock-interviews/*`, `/jobs/:jobId/interview/mock/new`를 구현하지 않았다. 다음 표의 미래 route는 구현 전까지 목표 계약이며 현재 route처럼 취급하지 않는다.
+현재 실제 router는 `/settings/account`와 `/settings` redirect를 구현했다. `/settings/ai|usage|privacy`, `/backoffice/*`, `/mock-interviews/*`, `/jobs/:jobId/interview/mock/new`는 구현하지 않았다. 다음 표의 미래 route는 구현 전까지 목표 계약이며 현재 route처럼 취급하지 않는다.
 
 | Route group                                        | Implementation status | Phase        | prerequisite API                                                      |
 | -------------------------------------------------- | --------------------- | ------------ | --------------------------------------------------------------------- |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입    | 인증 API bootstrap                                                    |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 2 | Career Artifact flag off OpenAPI 79 paths/107 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 2 | Career Artifact flag off OpenAPI 81 paths/109 operations              |
+| `/settings`, `/settings/account`                  | `IMPLEMENTED`         | Gate 5       | account display-name/password/logout/delete API                       |
 | `/settings/usage`                                  | `PLANNED`             | P8.7         | `GET /settings/usage`, `/settings/usage/history`                      |
-| account, AI, privacy 설정 세 route                 | `PLANNED`             | P10-A        | account, settings AI/privacy API                                      |
+| AI, privacy 설정 두 route                          | `PLANNED`             | P10-A        | settings AI/privacy API                                               |
 | `/jobs/:jobId/interview/mock/new`                  | `PLANNED`             | P9           | mock session create                                                   |
 | `/mock-interviews/:sessionId`                      | `PLANNED`             | P9           | mock session/start/message/complete/feedback                          |
 | `/backoffice`와 모든 child                         | `PLANNED`             | P8.9-A       | `/api/v1/backoffice/**` ADMIN GET                                     |
-| `/integrations`                                    | `IMPLEMENTED_FLAGGED` | Gate 2       | `VITE_GITHUB_SOURCE_ENABLED=true`, 구현된 GitHub source·Agent Run API |
+| `/integrations`                                    | `IMPLEMENTED_FLAGGED` | Gate 2·5     | public flag, private flag/capability에 따른 GitHub source·App API     |
 | `/career-artifacts`와 모든 child                   | `IMPLEMENTED_FLAGGED` | Gate 4       | `VITE_CAREER_ARTIFACT_ENABLED=true`, Gate 3의 11개 공개 operation     |
 
 `/backoffice`는 `/backoffice/overview`로 redirect한다. 일반 사용자 navigation에는 Backoffice를 표시하지 않는다.
@@ -153,6 +154,10 @@ PublicLayout의 desktop·mobile 브랜드는 `/`의 공개 Landing으로 돌아�
 - 인증 shell별 전용 404
 
 단일 선택 입력은 화면마다 다르게 만들지 않고 공용 선택 control 하나만 사용한다. 브라우저 기본 `<select>`의 option 목록은 OS가 그려 제품 색·모서리·간격을 적용할 수 없으므로, trigger와 목록을 직접 그리고 WAI-ARIA combobox 패턴(`role="combobox"` + `role="listbox"` + `aria-activedescendant`)으로 키보드·낭독기 동작을 유지한다. 방향키·Home·End·Enter·Space·Escape·문자 입력 탐색·바깥 클릭 닫기를 지원하고, trigger가 button이므로 호출 화면은 `aria-label` 또는 `aria-labelledby`로 접근 가능한 이름을 반드시 제공한다.
+
+AI 작업 실패는 Backend가 저장한 safe error 문장을 그대로 그리지 않는다. 이 문장은 내부 검증 단계를 옮긴 것이라 사용자가 다음에 무엇을 할지 알 수 없다. Frontend가 error code(없으면 문장 패턴)로 분류해 무엇이 일어났고 저장한 내용은 어떻게 되는지 알려 주는 제목과 설명으로 바꿔 보여 주며, 알 수 없는 code도 원문으로 되돌리지 않고 안전한 기본 문구를 쓴다.
+
+문장 하나로 상황을 알릴 때는 면 전체를 상태색으로 채우지 않는다. 표면은 본문과 같은 흰 카드로 두고 심각도는 아이콘 색으로만 구분해, 화면 전체가 그 상태인 경우와 본문 안 한 줄 알림을 시각적으로 분리한다.
 
 브라우저 기본 `alert`, `confirm`, `prompt`는 사용하지 않는다. 저장·승인·요청 성공은 Toast, 조회·네트워크 오류는 Toast 또는 해당 영역 메시지, 입력 오류는 field 인접 Inline Validation으로 구분한다. 자료·대외활동·AI 작업 삭제, 다시 분석, 승인 취소처럼 되돌리기 어렵거나 새 사용량이 생길 수 있는 동작은 Confirm Dialog를 사용한다. Dialog는 cancel에 초기 focus를 두고 Tab focus trap, ESC 닫기, 배경 클릭 취소와 trigger focus 복귀를 지원한다.
 
@@ -397,13 +402,15 @@ AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 
 
 API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
 
-## 5.9 `/integrations` (`IMPLEMENTED_FLAGGED`, Gate 2 Frontend)
+## 5.9 `/integrations` (`IMPLEMENTED_FLAGGED` public, Gate 5 private `IMPLEMENTED_NOT_VERIFIED`)
 
 공개 GitHub 계정 또는 저장소를 경험 후보 원천으로 등록하고 수집 범위와 결과를 사용자가 통제하는 화면이다. Gate 1 Backend의 7개 GitHub operation과 Agent Run/SSE 계약을 typed API client, repository selector, focused Run monitor와 경험 provenance 화면으로 연결했다. 이 화면은 `내 지원 정보`가 아니라 `이력서·자료` 영역의 `외부 연동` 항목이 소유한다. tab 이름에 provider를 넣지 않아 개발 직군이 아닌 사용자에게도 이 영역이 자기 것으로 읽히게 하고, 나중에 다른 출처가 늘어도 IA를 다시 바꾸지 않는다. GitHub는 화면 안에서 현재 지원하는 provider로 표시한다.
 
 ### Feature flag
 
 - `VITE_GITHUB_SOURCE_ENABLED`가 정확히 `true`일 때만 route, 자료 영역 switch의 `외부 연동` 항목, `returnTo`와 Agent Run required-action/resource link를 허용한다.
+- `VITE_GITHUB_PRIVATE_ENABLED`는 private connection card/callback/private request만 별도로 gate한다. public flag가 false면 private flag 값과 무관하게 `/integrations`, `/profile/github` redirect와 모든 GitHub request가 0건이다.
+- public=true/private=false는 현재 공개 문구·URL 등록·repository 선택 flow를 그대로 유지하고 private API request가 0건이다. private=true인데 Backend capability가 없으면 secret detail 없이 `현재 비공개 저장소 연결을 사용할 수 없어요` 상태와 재시도만 제공한다.
 - 값이 없거나 다르면 `/integrations`를 등록하지 않고 기존 UI와 allowlist를 유지한다.
 - Backend는 `SELECT_GITHUB_REPOSITORIES` required action route로 `/profile/github`를 반환한다. 이 문자열은 공개 계약이므로 바꾸지 않고, Frontend가 같은 flag 아래에서 `/integrations`로 보내는 redirect를 등록해 흡수한다.
 - 이 build-time flag는 Backend capability endpoint를 대체하지 않으며 local 예시는 `.env.example`에서 명시적으로 활성화한다.
@@ -412,8 +419,8 @@ API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /pro
 
 - 입력은 `https://github.com/{owner}` 또는 `https://github.com/{owner}/{repository}`만 받는다. 화면 예시는 URL만 보여 주고 username만 입력하는 별도 mode는 만들지 않는다.
 - `본인 또는 실제 참여 프로젝트이며 AI 결과를 직접 검토합니다` 확인을 필수로 받는다.
-- 첫 구현은 공개 repository만 지원하며 private repository, Personal Access Token 입력과 GitHub 로그인 연결을 제안하지 않는다.
-- 제출 전에는 `모든 저장소를 자동 분석하지 않음`, `code를 실행하지 않음`, `추출 결과는 승인 전까지 사용되지 않음`을 간결하게 안내한다.
+- 공개 source는 기존 동작을 유지한다. private flag가 켜지면 GitHub App만 추가하며 Personal Access Token 입력/paste field는 어떤 상태에도 만들지 않는다.
+- 수집 범위 설명을 화면 상단에 별도 안내 blockquote로 쌓지 않는다. 사용자가 실제로 동의하는 참여 확인 문구 옆에서 `공개 정보만 확인하며 다른 사람의 작업을 내 경험으로 등록하지 않는다`를 알리고, 자동 분석·code 미실행·승인 전 미사용 정책은 저장소 선택과 경험 승인 단계에서 각각 그 맥락에 맞게 안내한다.
 - validation error는 field 옆에 표시하고 raw GitHub 응답이나 접근 제한 detail은 노출하지 않는다.
 
 ### Source 목록과 상태
@@ -431,11 +438,20 @@ API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /pro
 - 1~10개를 선택하며 전체 목록을 무조건 선택하는 action과 선택 전 AI 호출은 금지한다.
 - 선택 제출은 source version과 전체 repository ID 집합을 보내고 성공 뒤 같은 Run monitor로 돌아간다. version 충돌은 최신 repository 목록과 사용자 선택을 비교한다.
 
+### GitHub App 연결·private repository
+
+- 연결 card는 필요한 권한 `Metadata 읽기`, `Contents 읽기`, `선택한 저장소만 사용`을 먼저 설명하고 `GitHub App 연결` action 전 외부 GitHub로 이동함을 알린다.
+- callback query가 있으면 `연결 확인 중`을 표시하고 결과를 해석한 즉시 `router.replace`로 canonical `/integrations` URL을 복원한다. state, code, installation ID는 Pinia/localStorage/sessionStorage에 저장하지 않는다.
+- 연결 목록은 personal/organization 대상, repository selection, 마지막 확인 시각과 `연결됨|일시 중지|권한 해제됨|연결 해제 중` 상태를 표시한다. `권한 다시 확인`, `GitHub 저장소 설정 관리`, `연결 해제` action을 제공한다.
+- repository는 `공개|비공개` badge를 표시하고 server pagination/search와 기존 1~10개 keyboard 선택 계약을 재사용한다. private source의 refresh/delete/Agent Run도 공개 source와 같은 monitor를 사용한다.
+- 연결 해제 dialog는 private refresh 중단, private snapshot/raw evidence 삭제, 승인 canonical 경험 보존, 기존 Resume/Portfolio version 보존과 GitHub App remote uninstall을 각각 설명한다. 명시적인 확인 뒤에만 202 disconnect를 보낸다.
+- dialog는 열기 trigger로 focus를 복원하고 Escape/Tab trap, 1440px·390px overflow 없는 layout을 제공한다.
+
 ### 필수 화면 상태
 
 `empty`, `URL validation`, `discovering`, `waiting repository selection`, `queued/running`, `ready`, `partial`, `rate limited`, `not accessible`, `failed`, `delete confirmation`을 각각 독립 상태로 설계한다. `PARTIAL`은 실패처럼 숨기지 않고 분석하지 못한 범위와 승인 전 검토 필요성을 표시한다. SSE 단절은 source 실패가 아니라 공통 연결 복구 상태를 사용한다.
 
-API: `POST|GET /github-sources`, `GET|DELETE /github-sources/:id`, `GET /github-sources/:id/repositories`, `PUT /github-sources/:id/repository-selection`, `POST /github-sources/:id/refresh`, Agent Run detail/SSE.
+API: `POST|GET /github-sources`, `GET|DELETE /github-sources/:id`, `GET /github-sources/:id/repositories`, `PUT /github-sources/:id/repository-selection`, `POST /github-sources/:id/refresh`, `GET|POST|DELETE /github-app-connections/**`, Agent Run detail/SSE.
 
 ---
 
@@ -492,7 +508,9 @@ API:
 
 사용자가 AI로 생성한 이력서 DOCX와 포트폴리오 PPTX 초안을 관리한다. 업로드 원천인 `documents`와 생성 출력인 Career Artifact를 같은 row나 상태 체계로 합치지 않는다.
 
-- 상단 switch는 `자료 업로드`(`/documents`), `외부 연동`(`/integrations`), `AI로 만든 초안`(`/career-artifacts`)을 제공한다.
+- 상단 switch는 `자료 업로드`(`/documents`), `외부 연동`(`/integrations`), `AI로 만든 초안`(`/career-artifacts`)을 제공하고, 세 화면에서 같은 폭과 위치를 유지한다.
+- 화면 문구는 `구조화`, `원본 경험`, `성공한 버전`, `생성 자료` 같은 내부 용어 대신 사용자가 쓰는 말을 사용한다. 상태 label도 `만드는 중`, `완료`처럼 지금 상태를 그대로 말한다.
+- 생성이 진행 중일 때는 진행 상태만 표시하고 실패 안내를 겹쳐 보여 주지 않는다.
 - 목록은 artifact type, 제목, 생성 상태, current version, 최근 수정 시각과 latest Agent Run을 표시한다.
 - filter는 `전체|이력서|포트폴리오`, lifecycle은 `사용 중|보관`으로 제공하고 URL query와 server pagination을 사용한다.
 - active card는 `보관`, archived card는 `다시 사용`을 제공한다. 보관본은 preview·version·download만 가능하고 새 생성 action은 unarchive 뒤에 제공한다.
@@ -1019,10 +1037,13 @@ API:
 
 ## 13.1 `/settings/account`
 
-- 닉네임
-- 비밀번호 변경
-- 로그아웃
-- 회원 탈퇴
+- `/settings`는 `/settings/account`로 replace redirect한다. 이 Phase에서는 `/settings/ai|usage|privacy` route를 새로 구현하지 않는다.
+- 표시 이름은 기존 `PATCH /account/display-name`을 사용한다.
+- 비밀번호 변경 form은 현재 비밀번호와 정책을 충족하는 새 비밀번호를 받고, 성공 시 다른 기기 Session 종료와 현재 Session 보안 갱신을 알린다. password 원문을 draft/storage에 저장하지 않는다.
+- 로그아웃은 기존 Session/client cleanup을 재사용한다.
+- 회원 탈퇴 dialog는 현재 비밀번호, `되돌릴 수 없음`, 모든 Session 종료, GitHub App uninstall, private snapshot·Career Artifact file 삭제와 24시간 purge 목표를 설명하고 별도의 두 번째 확인을 요구한다. `Idempotency-Key`를 보내지 않는다.
+- 202 뒤 모든 SSE를 닫고 진행 query를 cancel한 다음 QueryClient clear, Pinia auth/user reset, user-scoped sessionStorage draft와 raw download ticket를 제거한다. `deletionRequestId`는 localStorage/sessionStorage에 저장하지 않고 navigation state의 일회성 접수 안내만 로그인 또는 landing에 표시한다.
+- keyboard dialog focus/복원과 1440px·390px layout을 검증한다.
 
 API:
 
@@ -1291,3 +1312,19 @@ GitHub 계정 URL과 참여 확인 등록
 계정 URL이 아닌 repository URL은 선택 단계를 건너뛰고, 동일 commit refresh는 새 AI Run 없이 기존 결과를 유지한다. 제안은 dismiss 가능하며 사용자를 생성 route로 강제 이동시키지 않는다.
 
 Gate 4는 위 흐름의 선택 제안·wizard·Agent Run monitor·현재 structured preview·version download·lifecycle을 `VITE_CAREER_ARTIFACT_ENABLED=true`에서 연결했다. 과거 version API는 summary와 download만 제공하므로 current preview를 과거 version처럼 표시하지 않는다. Backend API·DB·workflow는 Gate 3 계약 그대로다.
+
+## 시나리오 F (Private GitHub·account purge Gate 5 `IMPLEMENTED_NOT_VERIFIED`)
+
+```text
+/integrations에서 GitHub App 연결
+→ setup callback과 OAuth 검증
+→ personal/organization installation 및 private repository 선택
+→ 기존 GitHub ingestion Run·canonical 경험 검토/승인
+→ 승인 경험으로 Resume DOCX와 Portfolio PPTX 생성·preview·download
+→ 권한 refresh와 remote uninstall을 포함한 연결 해제
+→ 승인 경험·기존 immutable artifact version 보존 확인
+→ /settings/account에서 현재 비밀번호와 두 번째 확인으로 회원 탈퇴
+→ 즉시 Session/client state 차단과 terminal purge 접수 확인
+```
+
+Backend·Frontend·Compose 검증과 기존 Chromium 4개 journey는 통과했다. 신규 Phase 5 journey는 외부 HTTPS catch-all mock을 통과한 뒤 connection label selector에서 멈췄고 selector 보정 뒤 재실행하지 않아 `IMPLEMENTED_NOT_VERIFIED`다. 실제 GitHub App credential을 사용하는 검증은 [local UAT runbook](../operations/github-app-local-uat.md)의 `USER_MANUAL_UI_VALIDATION_PENDING`으로 분리한다.

@@ -5,6 +5,19 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-09] Session Summary (InlineNotice 도입)
+
+- What was done:
+  - `InlineNotice.vue`를 추가했다. 표면은 흰 카드와 1px 경계로 두고 심각도는 왼쪽 아이콘 tile에만 남긴다.
+  - AI 작업 실패·연결 문제처럼 문장 하나를 알리던 자리에서 `.alert`를 걷어내고 이 component로 바꿨다.
+- Key decisions:
+  - `.alert`는 면 전체를 상태색으로 채운다. 화면 전체가 그 상태일 때는 맞지만 본문 안 한 줄 알림에 쓰면 시선을 과하게 뺏는다. 두 쓰임을 분리했다.
+  - tone은 아이콘 색만 바꾸고 본문 대비는 그대로 둔다. 색만으로 심각도를 전달하지 않도록 제목 문구가 항상 상황을 말한다.
+- Issues encountered: 없음.
+- Commands run:
+  - `vitest run src/shared/ui/InlineNotice.test.ts`: 6 tests 통과.
+- Follow-ups: 없음.
+
 ## [2026-08-08] Session Summary (공용 AppSelect 선택 control 도입)
 
 - What was done:

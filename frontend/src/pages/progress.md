@@ -2,7 +2,40 @@
 
 ## Overview
 
-공개 Landing과 P1 인증부터 P8 Interview preparation·question set·answer feedback, Gate 2 GitHub Source, `/guide`, 현재 route 기반 dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
+
+## [2026-08-09] Session Summary (Private GitHub와 account settings page)
+
+- What was done:
+  - `GitHubSourcePage`에 flag-gated App card·public/private badge/source flow를 연결하고 `AccountSettingsPage`에 표시 이름·password·logout·두 단계 account deletion dialog를 추가했다.
+- Key decisions:
+  - 탈퇴 202 뒤 deletion ID는 저장하지 않고 navigation state의 안전한 안내만 남기며 shared cleanup을 재사용한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - page component test, keyboard/focus 계약과 Frontend 전체 check가 통과했다. Phase 5 통합 Chromium은 재검증 대기다.
+- Next steps:
+  - 390px/1440px 포함 Phase 5 종단 browser journey를 다음 검증에서 완료한다.
+
+## [2026-08-09] Session Summary (생성 자료 화면 여백·진행 표시·문구 정리)
+
+- What was done:
+  - `CareerArtifactDetailPage`를 grid stack으로 바꿔 섹션 간격을 하나로 통일하고, 카드 padding·제목 크기를 다른 화면과 맞췄다.
+  - 진행 중일 때 `아직 받을 수 있는 파일이 없어요`와 실패 안내를 함께 보여 주던 문제를 고쳤다. 만드는 중에는 진행 안내만 표시한다.
+  - `구조화`, `원본 경험`, `성공한 버전`, `생성 자료`처럼 내부 용어를 쓰던 문구를 사용자 말로 바꿨다. 상태 label도 `생성 중 → 만드는 중`, `생성 완료 → 완료`처럼 정리했다.
+  - `AI로 만든 초안` 목록 소개 문구를 `내 경험을 바탕으로 만든 경쟁력`으로 바꾸고, 카드 footer에서 `최근 AI 작업` 링크를 빼고 `보관`을 오른쪽 끝으로 옮겼다.
+  - GitHub 화면에서 제목·설명 줄과 수집 범위 안내 blockquote를 제거하고 등록 form이 자료 종류 전환 바로 아래에서 시작하게 했다.
+  - 버전 목록 선택 강조가 정의되지 않은 `--color-primary`를 쓰던 것을 `--color-brand`로 고쳤다.
+- Key decisions:
+  - 상태 label에서 `생성`을 빼고 동사형으로 바꿨다. 사용자에게는 `무엇을 만드는가`보다 `지금 어떤 상태인가`가 중요하다.
+  - GitHub 수집 범위 안내는 지웠지만 등록 form의 참여 확인 문구는 남겼다. 사용자가 무엇에 동의하는지는 계속 보여야 한다.
+- Issues encountered:
+  - 문구를 바꾸면서 unit·E2E의 문자열 assertion 여러 건이 깨져 새 문구로 갱신했다.
+- Commands run:
+  - `vitest run`: 95 files / 435 tests 통과.
+  - `playwright test e2e/career-artifacts.spec.ts e2e/github-source.spec.ts e2e/ui-shell.spec.ts --project=chromium`: 9 passed.
+- Follow-ups:
+  - 없음.
 
 ## [2026-08-08] Session Summary (자료 영역 IA 개편과 지원 정보 화면 여백 정리)
 

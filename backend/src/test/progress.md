@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1~P8과 Phase 1 GitHub Backend 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
+P1~P8, public/private GitHub, Career Artifact와 terminal account purge 운영 코드와 분리된 JUnit·MockMvc·Testcontainers·WireMock·actual E2E 검증 source set을 관리한다.
+
+## [2026-08-09] Session Summary (Phase 5 Backend 전체 회귀)
+
+- What was done: GitHub App security/gateway/private pipeline, account worker, V29/V30 migration과 scheduler 격리 테스트를 추가했다.
+- Key decisions: 실제 GitHub/OpenAI/S3 대신 WireMock/Fake/Testcontainers만 사용한다.
+- Issues encountered: 최초 full check의 OpenAPI description·migration latest fixture를 보정했다.
+- Validation: 102 suites/680 tests, 실패 0.
+- Next steps: 실제 App UAT는 테스트 source set 밖의 사용자 runbook으로 수행한다.
 
 ## [2026-08-07] Session Summary (GitHub Backend Gate 0~1 회귀)
 

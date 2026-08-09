@@ -2,7 +2,20 @@
 
 ## Overview
 
-Gate 2 공개 GitHub source의 owner-scoped query, mutation, focused Run 표시 기반을 관리한다.
+Gate 2 공개 GitHub와 Gate 5 GitHub App private source의 owner-scoped query, connection mutation, callback cleanup과 focused Run 표시 기반을 관리한다.
+
+## [2026-08-09] Session Summary (GitHub App connection과 private source card)
+
+- What was done:
+  - capability/unavailable, 연결 시작·결과, personal/organization 목록·상태·refresh·manage link·disconnect dialog와 private source 입력을 구현했다.
+- Key decisions:
+  - install/manage URL은 HTTPS github.com의 고정 path/query shape만 허용하고 callback 민감 query는 즉시 제거한다. PAT 입력 UI는 없다.
+- Issues encountered:
+  - setup mock 302의 route interception 우회가 있어 E2E fixture를 명시적 OAuth link와 catch-all HTTPS 차단으로 보정했다.
+- Validation:
+  - component/navigation/query test와 Frontend 전체 check가 통과했다. 통합 Chromium은 strict locator 보정 뒤 재검증 대기다.
+- Next steps:
+  - 같은 5개 Chromium journey 재검증 후 실제 App UAT를 사용자에게 인계한다.
 
 ## [2026-08-08] Session Summary (Career Artifact suggestion readiness 연동)
 

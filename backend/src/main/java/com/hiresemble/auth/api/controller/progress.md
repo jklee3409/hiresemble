@@ -2,7 +2,15 @@
 
 ## Overview
 
-com.hiresemble.auth.api.controller package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+com.hiresemble.auth.api.controller package의 인증·계정 HTTP 책임과 검증 상태를 추적한다.
+
+## [2026-08-09] Session Summary (Account password·delete endpoints)
+
+- What was done: Session+CSRF password 204와 Idempotency-Key 금지 delete 202를 연결했다.
+- Key decisions: 실패를 HTTP 200으로 감싸지 않는다.
+- Issues encountered: 없음.
+- Validation: MockMvc/OpenAPI와 전체 check가 통과했다.
+- Next steps: 없음.
 
 ## [2026-07-31] Session Summary (AccountController 닉네임 변경)
 

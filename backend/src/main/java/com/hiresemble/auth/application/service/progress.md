@@ -2,7 +2,15 @@
 
 ## Overview
 
-com.hiresemble.auth.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+com.hiresemble.auth.application.service package의 인증·terminal deletion 실행 책임과 검증 상태를 추적한다.
+
+## [2026-08-09] Session Summary (AccountDeletionWorker)
+
+- What was done: WITHDRAWN enqueue와 claim/cancel/cleanup/final purge worker를 구현했다.
+- Key decisions: terminal cleanup 전 user를 삭제하지 않는다.
+- Issues encountered: lease recovery와 중복 worker 멱등성을 보정했다.
+- Validation: worker integration과 전체 check가 통과했다.
+- Next steps: DEAD 운영 경보 연결은 배포 운영 범위에서 확인한다.
 
 ## [2026-07-31] Session Summary (AuthService 닉네임 use case)
 

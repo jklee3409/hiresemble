@@ -2,7 +2,15 @@
 
 ## Overview
 
-현재 인증 사용자와 unknown·authenticated·anonymous 상태, 닉네임 변경 뒤 사용자 projection을 Pinia로 관리한다.
+현재 인증 사용자와 unknown·authenticated·anonymous 상태, 표시 이름 갱신과 account deletion 완료 cleanup을 Pinia로 관리한다.
+
+## [2026-08-09] Session Summary (Account deletion auth cleanup)
+
+- What was done: 202 account deletion 뒤 공통 session cleanup을 거쳐 auth/user state를 anonymous로 reset하는 action을 추가했다.
+- Key decisions: deletionRequestId와 password를 store에 보관하지 않는다.
+- Issues encountered: 없음.
+- Validation: auth/account page test와 Frontend 전체 check가 통과했다.
+- Next steps: logout·401·deletion cleanup 순서를 분기별로 중복 구현하지 않는다.
 
 ## [2026-07-31] Session Summary (현재 사용자 닉네임 projection 갱신)
 

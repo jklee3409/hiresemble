@@ -11,8 +11,59 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 Career Artifact feature가 꺼지면 GitHub Source를 포함해 79 paths/107 operations이고, 켜지면 88 paths/118 operations다.
-- GitHub·Career Artifact Gate 0–4는 V28·11개 WorkflowType과 독립 frontend flag 기준으로 완료됐다. Private GitHub Gate 5는 `PLANNED`다.
+- 공개 Spring/OpenAPI는 Career Artifact off 81 paths/109 operations, on·private GitHub off 90 paths/120 operations, 둘 다 on 97 paths/127 operations다.
+- GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
+
+## [2026-08-09] Session Summary (Phase 5 private GitHub와 terminal account purge 구현)
+
+- What was done:
+  - V29 GitHub App connection/private repository/revocation과 V30 account deletion task, OAuth+PKCE·repository-scoped token gateway, 기존 GitHub ingestion 연동, `/integrations` private UI, `/settings/account`, disconnect/uninstall·terminal purge와 local UAT runbook을 구현했다.
+  - 기존 Object deletion outbox 통합 테스트의 scheduler/manual claim 경쟁을 production cadence 변경 없이 test scheduler flag로 격리했다.
+- Key decisions:
+  - PAT·token 영속화·webhook을 추가하지 않고 Metadata/Contents read와 선택 repository ID downscope만 허용했다. cleanup external/object task가 terminal success일 때만 connection/user physical purge를 완료한다.
+  - Gate 0–4와 public request는 additive하게 보존하고 Gate 5는 전체 mocked Chromium green 전까지 `DONE`으로 올리지 않는다.
+- Issues encountered:
+  - Phase 5 Playwright의 mock 302가 route interception을 우회해 검증 과정에서 GitHub OAuth/login page로 실제 GET navigation 두 번이 발생했다. GitHub API·OpenAI·외부 S3 호출은 없었고 이후 모든 알 수 없는 HTTPS를 catch-all 차단하도록 fixture를 보정했다.
+  - 최종 재검증은 connection label의 strict locator 중복에서 1건 실패했다. locator를 exact로 고쳤지만 저장소의 재검증 한도에 따라 다시 실행하지 않았다.
+- Validation:
+  - Backend `check`: 102 suites/680 tests, 실패 0. Frontend `check`: 102 files/465 tests, lint·format·typecheck·build 통과. `docker compose config --quiet` 통과, V1–V28 checksum 재확인, latest V30.
+  - 동일 Chromium run은 기존 GitHub 1개+Career Artifact 3개 4/4 통과, Phase 5 1개는 위 locator로 미통과해 전체 판정은 `NOT_VERIFIED`다.
+- Next steps:
+  - 다음 승인된 검증 turn에서 selector 보정 상태로 같은 5개 Chromium journey를 한 번 실행한다. 이후 사용자가 runbook으로 실제 GitHub App UAT를 수행한다.
+
+## [2026-08-09] Session Summary (AI 실패 문구 사용자화와 알림 표면 정리)
+
+- What was done:
+  - backend safe error(`AI 결과의 의미 제약을 확인하지 못했습니다.` 등)를 화면에 그대로 그리던 4곳을 `agentRunFailureCopy` 매핑으로 바꿨다. 원문은 이제 어느 화면에도 노출되지 않는다.
+  - 문장 하나를 알리려고 면 전체를 노란색으로 채우던 `.alert` 사용을 공용 `InlineNotice`로 교체했다. 흰 카드 위에 아이콘만 상태색을 갖는다.
+- Key decisions:
+  - 매핑은 code 우선, 없으면 message 패턴으로 분류한다. 알 수 없는 code는 원문으로 되돌리지 않고 안전한 기본 문구를 쓴다.
+  - `.alert`는 화면 전체가 그 상태일 때만 남기고, 본문 안 알림은 `InlineNotice`로 분리했다.
+- Issues encountered:
+  - `job-auto-analysis.spec.ts` 1건은 이 작업 전 HEAD에서도 실패한다(stash 후 baseline 확인). 이번 범위 밖이다.
+- Commands run:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(97 files/450 tests), `vite build`: 모두 통과.
+  - `playwright test` fixture 7개 spec: 15 passed.
+- Follow-ups:
+  - `job-auto-analysis.spec.ts` 기존 실패 원인 조사.
+
+## [2026-08-09] Session Summary (생성 자료 화면 정리와 진행 표시 수정)
+
+- What was done:
+  - `AI로 만든 초안` 목록·상세의 여백과 표면을 정리하고, 진행 막대를 OS 기본 모양에서 제품 brand 막대로 바꿨다.
+  - 화면 문구에서 `구조화`, `원본 경험`, `성공한 버전`, `생성 자료` 같은 내부 용어를 걷어내고 사용자 말로 바꿨다.
+  - GitHub 화면의 제목·수집 범위 안내를 제거해 자료 종류 전환 바로 아래에서 등록 form이 시작하게 했다.
+  - 자료 종류 전환의 회색 배경이 `외부 연동`에서만 짧아지던 문제를 고쳤다.
+  - `ui-shell` E2E 인증 fixture에 Gate 4·Gate 2 endpoint를 추가해 이전부터 실패하던 2건까지 함께 해결했다.
+- Key decisions:
+  - 상태 label은 `생성 중`이 아니라 `만드는 중`처럼 지금 상태를 그대로 말한다.
+  - 만드는 중에는 실패 안내를 겹쳐 보여 주지 않는다.
+- Issues encountered:
+  - 문구 변경으로 unit·E2E 문자열 assertion 다수가 깨져 함께 갱신했다.
+- Commands run:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(95 files/435 tests), `vite build`: 모두 통과.
+  - `playwright test e2e/ui-shell.spec.ts e2e/career-artifacts.spec.ts e2e/github-source.spec.ts --project=chromium`: 9 passed, 0 failed.
+- Follow-ups: 없음.
 
 ## [2026-08-09] Session Summary (자료 IA·AppSelect 커밋 전 보완)
 

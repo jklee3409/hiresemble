@@ -10,11 +10,12 @@ com.hiresemble.agentrun.infrastructure.config package는 해당 계층의 Spring
 | ---- | ---- |
 | [AgentRuntimeConfiguration.java](AgentRuntimeConfiguration.java) | Configuration 책임 구현 |
 | [AgentRuntimeProperties.java](AgentRuntimeProperties.java) | Configuration 책임 구현 |
+| [SchedulingConfiguration.java](SchedulingConfiguration.java) | production scheduler 활성화와 test profile 격리 |
 | [progress.md](progress.md) | 이 package의 이동·검증 이력 |
 
 ## 구성 요소 역할
 
-- 해당 계층의 Spring 실행 설정과 typed configuration을 소유한다.
+- 해당 계층의 Spring 실행 설정과 typed configuration을 소유한다. `hiresemble.scheduling.enabled`는 production 기본 true이며 통합 테스트의 수동 outbox claim과 `@Scheduled` 경쟁만 격리한다.
 - 상위 계층의 책임을 더 구체적인 탐색 단위로 드러내며 새 동작이나 계약을 정의하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계

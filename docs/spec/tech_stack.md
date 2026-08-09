@@ -1,7 +1,7 @@
 # 기술 스택 명세서
 
-- 문서 버전: 1.5 (GitHub Source·Career Artifact Frontend 기술 계약)
-- 기준일: 2026-08-08
+- 문서 버전: 1.6 (GitHub App private repository·terminal purge 기술 계약)
+- 기준일: 2026-08-09
 - 대상 범위: 핵심 MVP
 - 아키텍처 원칙: Spring Boot 모듈러 모놀리스 + Spring AI 기반 통제형 멀티 에이전트 워크플로
 - 공통 API Prefix: `/api/v1`
@@ -601,7 +601,11 @@ FRONTEND_ORIGIN
 
 환경 변수는 versioned DB policy를 선택·override하는 운영 입력이며 모델·비용 한도 자체를 business code에 하드코딩하지 않는다. active embedding policy는 provider/model/dimension/generation이 함께 검증돼야 boot가 성공한다.
 
-GitHub vertical의 production base host는 `api.github.com` allowlist로 고정하고 test profile에서만 Fake base URL을 주입한다. API version, connect/read timeout, global concurrency, repository/file/byte 상한, snapshot retention과 renderer template/version/file-size limit은 typed `@ConfigurationProperties`로 관리한다. 초기 template catalog는 RESUME `resume-ats-v1` version `1`, PORTFOLIO `portfolio-interview-v1` version `1`로 고정한다. 첫 public-only 구현에는 GitHub token 환경 변수를 추가하지 않는다. 향후 GitHub App을 승인하면 App ID·private key·webhook secret은 secret manager에서 주입하고 source/Run/DB에 복사하지 않는다.
+GitHub vertical의 production API host는 `api.github.com`, 설치·OAuth host는 `github.com`과 `github.com/login/oauth` allowlist로 고정하고 test profile에서만 loopback WireMock base URL을 주입한다. API version, connect/read timeout, global concurrency, repository/file/byte 상한, snapshot retention과 renderer template/version/file-size limit은 typed `@ConfigurationProperties`로 관리한다. 초기 template catalog는 RESUME `resume-ats-v1` version `1`, PORTFOLIO `portfolio-interview-v1` version `1`로 고정한다.
+
+Gate 5 GitHub App 설정은 public flag와 독립된 `hiresemble.github.private-enabled`, `hiresemble.github.app.*` typed properties다. private feature가 켜졌는데 App ID, client ID/secret, slug, RSA private key, state/PKCE HMAC secret 또는 고정 Backend/Frontend base URL이 빠졌거나 URL/permission 계약이 잘못되면 startup에서 fail fast한다. setup/OAuth callback URI는 사용자 입력을 받지 않고 Backend base URL의 고정 `/api/v1/github-app-connections/setup/callback`과 `/oauth/callback`에서 파생한다. secret은 환경/secret manager에서만 주입하고 source·Run·checkpoint·DB·log에 복사하지 않는다. App JWT는 JDK `Signature(SHA256withRSA)`로 생성하고 PKCS#8과 GitHub가 발급하는 PKCS#1 PEM을 dependency 추가 없이 parsing한다. installation token은 repository ID와 read permission으로 downscope한 뒤 `expires_at-safety skew`까지만 memory cache하고 401/403 read는 cache 폐기 후 한 번만 재발급한다.
+
+필요한 환경 변수 이름은 `GITHUB_INGESTION_ENABLED`, `GITHUB_PRIVATE_ENABLED`, `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_STATE_SECRET`, `GITHUB_APP_BACKEND_BASE_URL`, `GITHUB_APP_FRONTEND_BASE_URL`, `GITHUB_APP_ATTEMPT_TTL`, `GITHUB_APP_TOKEN_EXPIRY_SKEW`, `GITHUB_APP_REVOCATION_SCAN_INTERVAL`, `GITHUB_APP_CLEANUP_SCAN_INTERVAL`, `SCHEDULING_ENABLED`, `ACCOUNT_DELETION_SCAN_INTERVAL`, `ACCOUNT_DELETION_CLEANUP_CRON`이다. `.env.example`에는 빈 값/안전한 placeholder와 변수명만 두며 실제 credential을 넣지 않는다. `SCHEDULING_ENABLED`는 normal runtime 기본 true이고 deterministic integration test만 false로 override한다. Frontend는 public `VITE_GITHUB_SOURCE_ENABLED`와 독립된 `VITE_GITHUB_PRIVATE_ENABLED`를 사용하고 public flag가 false면 private flag도 효과가 없다. webhook endpoint·webhook secret은 Gate 5에서 추가하지 않는다.
 
 ---
 
@@ -618,7 +622,7 @@ GitHub vertical의 production base host는 `api.github.com` allowlist로 고정�
 - Python/LangGraph 서버
 - Kafka·Redis 기반 분산 처리
 - OCR과 HWP 직접 파싱
-- private GitHub repository와 사용자 PAT 저장; GitHub App 연결은 별도 보안 승인 뒤 확장
+- 사용자 PAT 저장과 GitHub webhook 처리. private repository는 Gate 5 GitHub App read-only connection으로만 지원한다.
 - Git clone, repository build/test 실행과 commit/star 수 기반 역량 평가
 - browser 내 DOCX/PPTX 편집, 임의 template/remote asset 업로드와 생성 파일 자동 제출
 - 생성 Career Artifact를 `documents` 입력 pipeline에 자동 재등록

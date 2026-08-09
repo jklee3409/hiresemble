@@ -2,7 +2,20 @@
 
 ## Overview
 
-다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 별도 GitHub·Career Artifact 설계는 Gate 0–4 구현과 Gate 5 계획을 구분한다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+다섯 P0 승인 명세를 연결한 전체 시스템 설계와 단계별 구현 계획, 승인 결정 기록이 작성되어 있다. P0–P8은 완료됐고 P8.5의 Chat strict output부터 문서 finalize까지 live 증거가 있으나 terminal 보정은 live 재검증 전이다. P8.5-V–P8.9-A가 P9의 선행이며 P10은 사용자 설정, 운영 안정성, 출시 준비로 분리돼 있다. 별도 GitHub·Career Artifact 설계는 Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`, 실제 UAT `USER_MANUAL_UI_VALIDATION_PENDING`을 구분한다. 이 디렉터리는 코드 진행 문서를 대신하지 않는다.
+
+## [2026-08-09] Session Summary (Gate 5 구현 상태와 수명주기 설계 동기화)
+
+- What was done:
+  - GitHub App sequence/state/token lifecycle, disconnect/revocation, terminal account purge, feature matrix와 원래 시나리오 1–5의 UI/API/DB/test 추적성을 V29·V30 실제 구현에 맞췄다.
+- Key decisions:
+  - Backend/Frontend/DB 구현과 실제 외부 UAT를 분리하고, 최종 mocked Chromium 미통과 때문에 Gate 5를 `DONE` 대신 `IMPLEMENTED_NOT_VERIFIED`로 기록했다.
+- Issues encountered:
+  - 설계의 기존 V28·88/118·79/107 기준선과 planned 상태가 실제 V30·97/127·90/120·81/109와 달라 모두 갱신했다.
+- Validation:
+  - 코드의 OpenAPI test 상수, migration 파일과 전체 check 결과를 대조했다.
+- Next steps:
+  - Phase 5 Chromium 재검증 성공 뒤 Gate 5만 `DONE`으로 올리고 외부 UAT는 사용자 결과가 있을 때 별도로 갱신한다.
 
 ## [2026-08-08] Session Summary (GitHub 화면 위치와 자료 영역 switch 갱신)
 

@@ -2,7 +2,20 @@
 
 ## Overview
 
-P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과 닉네임 변경을 구성하며 가입 기본 프로필과 P3 AI preference 생성을 각 application 경계에 위임한다.
+P1의 사용자 가입·Session 인증·DB projection과 Gate 5의 비밀번호 변경, WITHDRAWN 전환, durable terminal account purge를 구성하며 profile/AI/GitHub/Object cleanup 경계를 조정한다.
+
+## [2026-08-09] Session Summary (AUTH-004 terminal account purge)
+
+- What was done:
+  - current password 기반 204 password change/session rotation, 202 account deletion, WITHDRAWN filter, FK 없는 deletion task worker와 owner purge store를 구현했다.
+- Key decisions:
+  - 접수 즉시 전 Session·보호 API를 차단하고 active Run 안정화, GitHub uninstall과 Document/GitHub/Career Artifact outbox terminal success 전에는 user를 삭제하지 않는다.
+- Issues encountered:
+  - purge 순서와 outbox DEAD gate, 성공 task subject scrub을 재시작·lease recovery에서도 멱등하게 유지했다.
+- Validation:
+  - Auth integration, account worker crash/retry/terminal gate/final purge와 Backend 전체 102 suites/680 tests가 통과했다.
+- Next steps:
+  - `/settings/account`의 최종 Phase 5 browser journey는 selector 보정 뒤 재검증 대기다.
 
 ## [2026-07-31] Session Summary (현재 사용자 닉네임 변경)
 

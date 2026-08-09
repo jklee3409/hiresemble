@@ -2,9 +2,49 @@
 
 ## Overview
 
-- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub·Career Artifact Gate 0–4와 후속 Private GitHub 상태를 구분한다.
-- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, 구현된 GH-AC-01–04 및 ART-AC-01–05를 정의한다. 현재 기준선은 V28·11 WorkflowType·feature 활성 88 paths/118 operations·비활성 79 paths/107 operations이며 ART 사용자 journey는 독립 frontend flag 아래 구현됐다.
+- `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub·Career Artifact Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`와 실제 UAT 대기를 구분한다.
+- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/127·private 비활성 90/120·Career Artifact 비활성 81/109다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-09] Session Summary (Phase 5 API·DB·페이지·기술 명세 구현 동기화)
+
+- What was done:
+  - GitHub App 7 operation의 실제 DTO/status/callback code, public-compatible source access mode, V29 repository access schema, V30 account task, `/settings/account`, 환경 변수와 UAT 상태를 동기화했다.
+- Key decisions:
+  - 계획 예시가 아니라 코드의 `requiredPermissions`, list wrapper, `manageUrl`, query disconnect와 202 connection DTO를 canonical 계약으로 삼았다.
+- Issues encountered:
+  - 명세의 callback URI 환경 변수와 repository connection column이 실제 구현과 달라, 고정 base URL 파생 callback과 access link table로 바로잡았다.
+- Validation:
+  - OpenAPI 97/127·90/120·81/109 test, migration V29/V30, Frontend Zod 계약과 대조했다.
+- Next steps:
+  - Phase 5 Chromium 재검증 전에는 Gate 5 완료 상태를 `DONE`으로 변경하지 않는다.
+
+## [2026-08-09] Session Summary (AI 실패 문구와 알림 표면 계약 추가)
+
+- What was done:
+  - `page.md` 공통 Layout 절에 Backend safe error 원문을 화면에 그리지 않고 code(없으면 문장 패턴)로 분류해 사용자 문구로 바꾼다는 규칙을 추가했다.
+  - 문장 하나를 알릴 때 면 전체를 상태색으로 채우지 않고 아이콘 색으로만 심각도를 구분한다는 표면 규칙을 함께 명시했다.
+- Key decisions:
+  - 알 수 없는 error code에서도 원문으로 되돌리지 않는다. 새 code가 추가돼도 내부 검증 문장이 새지 않아야 한다.
+  - API·DB·workflow 계약은 바꾸지 않았다. safe error 자체는 Backend가 계속 소유하고 화면 표현만 계약으로 고정했다.
+- Issues encountered: 없음.
+- Commands run:
+  - 문서 변경으로 별도 명령을 실행하지 않았다. 구현 검증은 `frontend/progress.md`에 있다.
+- Follow-ups: 없음.
+
+## [2026-08-09] Session Summary (생성 자료 화면 표현 규칙 반영)
+
+- What was done:
+  - `page.md`의 `/career-artifacts` 절에 자료 종류 전환이 세 화면에서 같은 폭·위치를 유지한다는 조건과, 화면 문구가 내부 용어 대신 사용자 말을 쓴다는 규칙을 추가했다.
+  - 생성이 진행 중일 때 실패 안내를 겹쳐 보여 주지 않는다는 조건을 명시했다.
+  - `/integrations`의 수집 범위 안내를 화면 상단 blockquote가 아니라 참여 확인 문구와 각 단계 맥락에서 제공하도록 바꿨다.
+- Key decisions:
+  - 정책 문구는 사용자가 실제로 그 선택을 하는 지점에서 보여 준다. 화면 상단에 모아 두면 읽지 않고 지나간다.
+  - API·DB·workflow 계약은 바꾸지 않았다. 화면 표현 계약만 갱신했다.
+- Issues encountered: 없음.
+- Commands run:
+  - 문서 변경으로 별도 명령을 실행하지 않았다. 구현 검증은 `frontend/progress.md`에 있다.
+- Follow-ups: 없음.
 
 ## [2026-08-08] Session Summary (자료 영역 IA와 공용 선택 control 계약 반영)
 

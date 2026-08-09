@@ -3,9 +3,56 @@
 ## Overview
 
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
-- P1 auth부터 P8 Interview, Gate 2 GitHub Source와 Gate 4 Career Artifact typed client·Vue Query·SSE invalidation까지 구현되어 있다.
-- `/guide`, `/profile/experiences`, feature-gated `/integrations`(구 `/profile/github` redirect)·`/career-artifacts/**`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Vitest 95 files/435 tests와 공개 Landing·UI shell, P2~P8 actual E2E, GitHub·Career Artifact·자동 분석·전반 화면 fixture Browser 회귀가 있다.
+- P1 auth부터 P8 Interview, Gate 2/5 public·private GitHub, Gate 4 Career Artifact typed client·Vue Query·SSE invalidation과 Gate 5 account settings/client cleanup까지 구현되어 있다.
+- `/guide`, `/profile/experiences`, feature-gated `/integrations`(구 `/profile/github` redirect)·`/career-artifacts/**`, `/settings/account`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
+- Frontend `check`는 102 files/465 tests로 통과했다. 기존 GitHub·Career Artifact Chromium 4개는 통과했고 신규 Phase 5 journey는 selector 보정 뒤 재검증 대기다.
+
+## [2026-08-09] Session Summary (Phase 5 GitHub App와 account settings UI)
+
+- What was done:
+  - private build flag, strict GitHub App/account clients, connection card·private source, callback query cleanup, `/settings/account` password/logout/deletion과 shared session cleanup을 구현했다.
+- Key decisions:
+  - state/code/token은 client storage/store에 넣지 않고 callback query를 즉시 replace한다. account delete는 Idempotency-Key 없이 202 뒤 SSE/query/Pinia/user draft/download ticket을 정리한다.
+- Issues encountered:
+  - 통합 Playwright에서 mock redirect interception과 중복 text locator를 발견해 catch-all HTTPS 차단과 exact locator로 보정했다. 재검증 한도 때문에 최종 locator 보정 상태는 실행하지 않았다.
+- Validation:
+  - `corepack pnpm check`: ESLint·Prettier·TypeScript·102 files/465 tests·Vite build 통과. Chromium 기존 4/4 통과, 신규 1건은 재검증 대기.
+- Next steps:
+  - 다음 검증 turn에서 격리 port로 기존 4개+Phase 5 journey를 한 run에 실행하고, 이후 local GitHub App 수동 UAT를 수행한다.
+
+## [2026-08-09] Session Summary (AI 실패 문구 사용자화와 알림 표면 정리)
+
+- What was done:
+  - backend safe error(`AI 결과의 의미 제약을 확인하지 못했습니다.` 등)를 화면에 그대로 그리던 4곳을 `agentRunFailureCopy` 매핑으로 바꿨다. 원문은 이제 어느 화면에도 노출되지 않는다.
+  - 문장 하나를 알리려고 면 전체를 노란색으로 채우던 `.alert` 사용을 공용 `InlineNotice`로 교체했다. 흰 카드 위에 아이콘만 상태색을 갖는다.
+- Key decisions:
+  - 매핑은 code 우선, 없으면 message 패턴으로 분류한다. 알 수 없는 code는 원문으로 되돌리지 않고 안전한 기본 문구를 쓴다.
+  - `.alert`는 화면 전체가 그 상태일 때만 남기고, 본문 안 알림은 `InlineNotice`로 분리했다.
+- Issues encountered:
+  - `job-auto-analysis.spec.ts` 1건은 이 작업 전 HEAD에서도 실패한다(stash 후 baseline 확인). 이번 범위 밖이다.
+- Commands run:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(97 files/450 tests), `vite build`: 모두 통과.
+  - `playwright test` fixture 7개 spec: 15 passed.
+- Follow-ups:
+  - `job-auto-analysis.spec.ts` 기존 실패 원인 조사.
+
+## [2026-08-09] Session Summary (생성 자료 화면 정리와 진행 표시 수정)
+
+- What was done:
+  - `AI로 만든 초안` 목록·상세의 여백과 표면을 정리하고, 진행 막대를 OS 기본 모양에서 제품 brand 막대로 바꿨다.
+  - 화면 문구에서 `구조화`, `원본 경험`, `성공한 버전`, `생성 자료` 같은 내부 용어를 걷어내고 사용자 말로 바꿨다.
+  - GitHub 화면의 제목·수집 범위 안내를 제거해 자료 종류 전환 바로 아래에서 등록 form이 시작하게 했다.
+  - 자료 종류 전환의 회색 배경이 `외부 연동`에서만 짧아지던 문제를 고쳤다.
+  - `ui-shell` E2E 인증 fixture에 Gate 4·Gate 2 endpoint를 추가해 이전부터 실패하던 2건까지 함께 해결했다.
+- Key decisions:
+  - 상태 label은 `생성 중`이 아니라 `만드는 중`처럼 지금 상태를 그대로 말한다.
+  - 만드는 중에는 실패 안내를 겹쳐 보여 주지 않는다.
+- Issues encountered:
+  - 문구 변경으로 unit·E2E 문자열 assertion 다수가 깨져 함께 갱신했다.
+- Commands run:
+  - `eslint .`, `prettier --check .`, `vue-tsc -b --force`, `vitest run`(95 files/435 tests), `vite build`: 모두 통과.
+  - `playwright test e2e/ui-shell.spec.ts e2e/career-artifacts.spec.ts e2e/github-source.spec.ts --project=chromium`: 9 passed, 0 failed.
+- Follow-ups: 없음.
 
 ## [2026-08-09] Session Summary (AppSelect 커밋 전 검증 보완)
 

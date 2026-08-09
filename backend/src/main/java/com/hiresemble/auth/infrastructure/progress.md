@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1 users credential·상태·표시 이름의 JPA mapping과 repository만 소유한다. `user_profiles` 영속성은 P2 profile 영역으로 이동했다.
+users credential·상태, Spring Session, account deletion task와 terminal owner purge 저장소를 소유한다. `user_profiles` 일반 영속성은 P2 profile 영역에 있다.
+
+## [2026-08-09] Session Summary (Account deletion persistence)
+
+- What was done: session revoke, task claim/lease/retry/cleanup과 exhaustive owner purge/gate query를 구현했다.
+- Key decisions: task에는 user FK와 개인정보/object key를 복사하지 않는다.
+- Issues encountered: dependency delete 순서를 실제 FK와 terminal outbox 상태에 맞췄다.
+- Validation: Testcontainers worker/final purge/two-user 회귀와 전체 check가 통과했다.
+- Next steps: 새로운 user-owned table은 purge inventory에도 함께 추가한다.
 
 ## [2026-07-31] Session Summary (사용자 표시 이름 상태 전이)
 

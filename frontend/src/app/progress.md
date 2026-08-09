@@ -2,7 +2,20 @@
 
 ## Overview
 
-Vue 애플리케이션이 공유하는 Pinia, TanStack Query 인스턴스와 build-time feature flag 구성을 관리한다.
+Vue 애플리케이션이 공유하는 Pinia, TanStack Query 인스턴스와 public GitHub·private GitHub App·Career Artifact build-time feature flag 구성을 관리한다.
+
+## [2026-08-09] Session Summary (Private GitHub build-time flag)
+
+- What was done:
+  - `VITE_GITHUB_PRIVATE_ENABLED`를 추가하고 public GitHub flag가 false면 private가 항상 비활성인 exact-true 파생 규칙과 env typing/test를 구현했다.
+- Key decisions:
+  - private flag는 Backend capability를 대체하지 않고 연결 UI/request만 gate한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - feature flag unit test와 Frontend 전체 102 files/465 tests가 통과했다.
+- Next steps:
+  - 실제 App 설정이 없는 환경은 private flag를 false로 유지한다.
 
 ## [2026-08-08] Session Summary (Career Artifact build-time flag)
 

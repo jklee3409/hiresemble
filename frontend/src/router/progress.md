@@ -7,6 +7,19 @@
 - `returnTo.ts`가 same-origin 등록 보호 path와 UUID Agent Run·Document·Job·Cover Letter·Interview detail child를 허용하고 GitHub path는 flag 활성 시만 허용한다.
 - 새 route 진입은 상단으로 이동하고 browser history의 저장 위치는 복원한다.
 
+## [2026-08-09] Session Summary (Account settings route와 callback canonicalization)
+
+- What was done:
+  - `/settings`→`/settings/account` redirect와 보호 account page를 추가하고 GitHub callback의 `/profile/github` query를 `/integrations`로 전달한 뒤 component가 즉시 제거하도록 연결했다.
+- Key decisions:
+  - settings/AI·usage·privacy는 등록하지 않고 account만 최소 구현한다. state/code/installation query는 returnTo나 storage에 남기지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - Router/returnTo focused test와 Frontend 전체 check가 통과했다.
+- Next steps:
+  - Phase 5 통합 Chromium journey는 selector 보정 뒤 재검증 대기다.
+
 ## [2026-08-08] Session Summary (GitHub 화면을 `/integrations`로 이동)
 
 - What was done:

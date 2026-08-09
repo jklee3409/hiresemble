@@ -2,11 +2,12 @@
 
 ## 디렉터리 목적
 
-Spring Session SecurityContext에 저장할 최소 현재 사용자 principal을 정의한다.
+Spring Session SecurityContext에 저장할 최소 현재 사용자 principal과 DB에서 확인한 `WITHDRAWN` 사용자의 보호 요청을 즉시 차단하는 경계를 정의한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`AuthenticatedUser.java`](AuthenticatedUser.java): UUID name과 공개 사용자 projection을 제공하는 직렬화 principal
+- [`WithdrawnUserFilter.java`](WithdrawnUserFilter.java): DB 상태가 WITHDRAWN인 principal의 보호 요청 즉시 차단
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 
 ## 구성 요소 역할

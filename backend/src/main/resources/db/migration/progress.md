@@ -30,7 +30,22 @@
 - `V26__create_canonical_experience_library.sql`은 canonical 경험·다중 문서 출처 link·`vector(1536)` embedding과 `EXPERIENCE` evidence source를 추가한다.
 - `V27__create_github_source_ingestion.sql`은 GitHub source·repository·snapshot·provenance·전용 Object outbox와 typed Run link를 추가한다.
 - `V28__create_career_artifacts.sql`은 Career Artifact·immutable version·private generation request·evidence provenance·전용 Object outbox와 두 typed Run workflow를 추가한다.
+- `V29__add_private_github_app_connections.sql`은 GitHub App attempt/connection/repository access/revocation과 private source/snapshot 삭제 경계를 추가한다.
+- `V30__add_account_deletion_tasks.sql`은 FK 없는 terminal account deletion claim/lease task를 추가한다.
 - P9 모의 면접 table은 구현하지 않았다.
+
+## [2026-08-09] Session Summary (V29 private GitHub와 V30 account deletion)
+
+- What was done:
+  - 기존 V1–V28을 수정하지 않고 V29 connection/private repository/revocation, V30 account deletion task·index·terminal 제약을 additive하게 추가했다.
+- Key decisions:
+  - external installation은 global unique, repository access는 owner composite link로 표현하고 task subject에는 user FK·email·원문을 두지 않는다.
+- Issues encountered:
+  - V27의 public-only CHECK와 immutable snapshot delete guard를 forward migration에서 terminal object deletion 성공 조건으로 안전하게 교체했다.
+- Validation:
+  - fresh V1→V30, populated V28→V30, public/canonical/artifact/session 보존, 음수 constraint와 V1–V28 SHA-256 고정을 포함한 Backend 전체 check가 통과했다.
+- Next steps:
+  - 다음 schema 변경은 V30 다음 available version을 착수 시 재확인한다.
 
 ## [2026-08-08] Session Summary (V28 Career Artifact schema)
 

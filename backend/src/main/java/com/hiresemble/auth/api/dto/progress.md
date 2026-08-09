@@ -2,7 +2,15 @@
 
 ## Overview
 
-com.hiresemble.auth.api.dto package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+com.hiresemble.auth.api.dto package의 인증·계정 request/response 계약과 검증 상태를 추적한다.
+
+## [2026-08-09] Session Summary (Password·deletion DTO)
+
+- What was done: password change, account deletion request와 minimal accepted DTO를 추가했다.
+- Key decisions: password/task 내부 상태를 응답에 노출하지 않는다.
+- Issues encountered: 없음.
+- Validation: Auth/OpenAPI test와 전체 check가 통과했다.
+- Next steps: 없음.
 
 ## [2026-08-04] Session Summary (Signup 비밀번호 정책 연결)
 

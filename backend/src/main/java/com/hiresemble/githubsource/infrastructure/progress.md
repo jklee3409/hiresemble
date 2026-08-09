@@ -2,7 +2,15 @@
 
 ## Overview
 
-GitHub Source infrastructure 구현 상태를 추적한다.
+public/private GitHub Source REST·storage·connection/outbox infrastructure 구현 상태를 추적한다.
+
+## [2026-08-09] Session Summary (GitHub App credential·revocation infrastructure)
+
+- What was done: typed properties, RS256 JWT, OAuth/user/install/token/uninstall gateway, cache, stores와 cleanup workers를 구현했다.
+- Key decisions: production host를 고정하고 loopback은 test constructor만 허용하며 token cache는 upstream expiry-skew까지만 유지한다.
+- Issues encountered: 401/403 단일 재발급, uninstall 404 성공과 bounded retry/dead를 안전한 code로 통일했다.
+- Validation: WireMock security/gateway, worker와 전체 check가 통과했다.
+- Next steps: 운영 credential은 runbook의 외부 주입만 사용한다.
 
 ## [2026-08-07] Session Summary (GitHub REST·snapshot·outbox infrastructure)
 

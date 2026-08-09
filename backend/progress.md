@@ -3,9 +3,24 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, canonical 경험·GitHub Source와 Career Artifact Gate 3 Backend까지 구현되어 있다. Career Artifact feature off는 79 paths/107 operations, on은 88 paths/118 operations다.
-- V1~V28 migration이 적용됐고 V28은 Career Artifact·immutable provenance/private request/outbox와 typed Run link를 소유한다.
-- 전체 `check`가 Career Artifact 포함 모든 Backend 회귀에서 통과했다. 실제 OpenAI·GitHub·외부 S3 호출은 수행하지 않았다.
+- P1 인증부터 P8 Interview, canonical 경험·public/private GitHub Source와 Career Artifact Backend, terminal account purge까지 구현되어 있다. OpenAPI는 Career Artifact off 81/109, on·private off 90/120, 둘 다 on 97/127이다.
+- V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
+- 전체 `check`가 102 suites/680 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
+
+## [2026-08-09] Session Summary (Phase 5 Backend private GitHub와 account purge)
+
+- What was done:
+  - typed GitHub App 설정, RS256 JWT, one-time setup/OAuth state+PKCE, user installation 검증, repository-scoped installation token과 private ingestion을 기존 GitHub workflow에 연결했다.
+  - revocation/private snapshot worker와 AUTH-004 password/delete, WITHDRAWN filter, account deletion task worker·terminal outbox gate를 구현했다.
+- Key decisions:
+  - credential은 memory에서만 사용하고 source/Run/checkpoint/DB/DTO/log에 저장하지 않는다. public gateway는 Authorization header가 없고 private token은 ACTIVE owner connection에서 매번 해결한다.
+  - scheduler 설정을 별도 conditional configuration으로 옮겨 test profile만 비활성화하고 production outbox cadence·retry 상태는 유지했다.
+- Issues encountered:
+  - 첫 전체 check에서 account OpenAPI description 누락과 migration expected version 28 fixture가 실패해 실제 계약 30으로 보정했다. focused 재검증과 최종 전체 check가 통과했다.
+- Validation:
+  - `.\gradlew.bat check` BUILD SUCCESSFUL, 102 suites/680 tests/실패 0. V1→V30과 populated V28→V30, V1–V28 checksum, WireMock/Fake/Testcontainers 경계를 포함한다.
+- Next steps:
+  - 실제 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`; credential 없이 자동화와 private flag off boot는 계속 동작한다.
 
 ## [2026-08-08] Session Summary (Career Artifact Backend Gate 3)
 

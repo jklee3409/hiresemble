@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1~P3 HTTP 기능이 공유하는 오류, OpenAPI, 보안, validation과 idempotency 기반을 관리한다.
+HTTP 기능이 공유하는 오류, OpenAPI, Security/Session, validation과 idempotency 기반을 관리한다.
+
+## [2026-08-09] Session Summary (GitHub App·WITHDRAWN 공통 경계)
+
+- What was done: GitHub App safe error code, conditional OpenAPI security metadata와 WITHDRAWN filter chain 연결을 추가했다.
+- Key decisions: callback/upstream secret은 중앙 오류 응답에 넣지 않고 account/OpenAPI mutation은 실제 HTTP status를 유지한다.
+- Issues encountered: account operation description 누락이 OpenAPI full test에서 발견돼 보정했다.
+- Validation: OpenAPI/Security focused test와 전체 check가 통과했다.
+- Next steps: 새로운 safe error는 공개 명세와 Frontend mapping을 함께 갱신한다.
 
 ## [2026-07-23] Session Summary (책임별 backend package 세분화)
 

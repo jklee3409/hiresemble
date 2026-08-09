@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1 인증 HTTP 회귀와 P1·P2 생성 OpenAPI 계약 테스트의 상위 경계를 관리한다.
+인증 HTTP·OpenAPI와 Gate 5 password/account deletion worker 회귀의 상위 경계를 관리한다.
+
+## [2026-08-09] Session Summary (AUTH-004 회귀)
+
+- What was done: password/session rotation, delete 202/WITHDRAWN, crash·lease·outbox terminal gate·final purge 테스트를 추가했다.
+- Key decisions: 다른 사용자 격리와 같은 이메일 재가입 경계를 포함한다.
+- Issues encountered: 없음.
+- Validation: Auth/account focused test와 전체 check가 통과했다.
+- Next steps: 새로운 owner table은 purge fixture에 추가한다.
 
 ## [2026-07-19] Session Summary (P2 포함 OpenAPI 테스트 경계 확장)
 

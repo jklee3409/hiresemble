@@ -1,7 +1,7 @@
 # 기능 명세서
 
-- 문서 버전: 1.4 (GitHub 경험 수집·Career Artifact Backend 계약)
-- 기준일: 2026-08-08
+- 문서 버전: 1.5 (GitHub App private repository·terminal account purge 구현 계약)
+- 기준일: 2026-08-09
 - 대상: 핵심 MVP
 - 사용자 역할: 현재 `USER`; P8.9-A 목표 `USER`, `ADMIN` (`PLANNED`, 공개 ADMIN 가입 없음)
 - 공고 상태: `IN_PROGRESS`, `SUBMITTED`, `CLOSED`
@@ -95,9 +95,13 @@
 ## AUTH-004 회원 탈퇴
 
 - 현재 비밀번호를 다시 확인한다.
+- 비밀번호 변경은 현재 비밀번호 확인, 기존 값과 다른 새 비밀번호 정책 검증 뒤 다른 모든 Session을 폐기하고 현재 Session ID와 CSRF를 회전한다.
 - 접수 transaction에서 사용자를 즉시 비가역 `WITHDRAWN`으로 바꾸고 모든 Session을 폐기한다.
 - 탈퇴는 Agent Run과 분리된 durable deletion task로 처리하며 `Idempotency-Key`를 지원하지 않는다.
 - 모든 사용자 API와 Object download는 접수 즉시 차단한다.
+- worker는 active Agent Run을 cancel·안정화하고 GitHub App installation remote uninstall, Document/GitHub snapshot/Career Artifact Object outbox가 모두 `SUCCEEDED`인지 확인한 뒤에만 owner data와 user를 물리 삭제한다.
+- remote GitHub 404와 Object missing은 성공이고 transient upstream 오류는 lease 기반 bounded retry다. outbox/task `DEAD`에서는 user row를 삭제하지 않는다.
+- final transaction은 `account_deletion_tasks.subject_user_id`를 null로 scrub하고 task를 `SUCCEEDED`로 바꾼다. task에는 email, display name, password hash와 사용자 원문을 복사하지 않는다.
 - Object와 사용자 콘텐츠의 물리 삭제 목표는 요청 후 24시간 이내다.
 - 개인정보가 없는 성공 deletion task metadata만 30일 보존한 뒤 삭제한다.
 - purge 완료 후 같은 이메일의 새 계정 가입을 허용하며 탈퇴 계정 복구는 제공하지 않는다.
@@ -307,6 +311,19 @@
 - source 삭제는 API에서 즉시 숨기고 snapshot Object는 outbox로 삭제한다.
 - 과거 산출물이 참조하는 raw evidence는 `SOURCE_DELETED` tombstone, 미참조 raw evidence는 삭제한다.
 - 승인된 canonical 경험은 유지하고 승인되지 않았으며 다른 활성 출처가 없는 orphan만 제거한다.
+
+## GH-005 GitHub App private repository (`IMPLEMENTED_NOT_VERIFIED`, Gate 5)
+
+- Personal Access Token 입력·저장·paste UI를 제공하지 않는다. GitHub App은 repository `Metadata: read`, `Contents: read`만 사용하고 webhook은 별도 승인까지 비활성이다.
+- 연결 시작은 로그인 Session+CSRF가 필요하며 256-bit one-time install state를 현재 user와 Session에 결속한다. setup callback의 `installation_id`는 검증 전 pending 값일 뿐 신뢰하지 않는다.
+- setup callback 뒤 두 번째 one-time OAuth state와 PKCE S256으로 user access token을 발급받아 그 사용자가 pending installation과 repository에 실제 접근 가능한지 확인한다. 검증이 끝나면 user/refresh token을 즉시 폐기하고 어떤 영속 저장소·Run·DTO에도 복사하지 않는다.
+- permission, target account ID/type, repository selection, suspension과 installation ownership을 확인한 뒤에만 connection을 `ACTIVE`로 저장한다. 외부 installation 하나는 Hiresemble user 한 명만 연결할 수 있다.
+- installation이 all repositories여도 content ingestion token은 사용자가 Hiresemble에서 선택한 repository external ID 하나와 read-only permission으로 축소한다. token은 on demand 생성하고 DB에 저장하지 않는다.
+- source `accessMode`는 `PUBLIC|GITHUB_APP`, repository `visibility`는 `PUBLIC|PRIVATE`다. 값이 없는 기존 create request는 정확히 `PUBLIC`이며 private repository는 owner의 `ACTIVE` connection을 가진 `GITHUB_APP` source에만 연결할 수 있다.
+- public gateway에는 Authorization header가 없다. private 401/403은 cached token 폐기 후 read 요청 한 번만 재발급하며 disconnected/suspended/revoked connection은 token 발급 전에 실패한다.
+- private repository도 기존 bounded snapshot·sanitizer·prompt injection 방어와 canonical dedupe/승인 pipeline을 그대로 거쳐 Resume/Portfolio가 승인 경험만 소비한다.
+- 연결 해제는 사용자 확인 후 즉시 `DISCONNECTING`으로 전환하고 remote uninstall과 private snapshot/raw evidence 삭제를 durable outbox로 끝낸다. 404는 이미 제거된 성공으로 처리하며 승인 canonical 경험과 기존 immutable Career Artifact version은 보존한다.
+- installation 상태 변화는 연결 refresh와 다음 token 발급 실패로 감지한다. webhook endpoint·secret은 Gate 5 범위 밖이다.
 
 ## ART-001 Career Artifact 생성 요청 (`IMPLEMENTED`, Backend Gate 3·Frontend Gate 4)
 
@@ -871,7 +888,7 @@ PORTFOLIO_GENERATION
 | AC-16 | AI 기능 실패가 공통 사용자 category·복구 CTA·데이터 보존 안내로 표시된다.                        |
 | AC-17 | ADMIN만 Backoffice에서 사용자·사용량·AI 원가·실패·Agent Run을 안전하게 조회한다.                 |
 
-GitHub·Career Artifact vertical은 기존 AC-01~~17 구현 완료 판정과 별도로 추적한다. Gate 0~~2가 GH-AC-01~~04의 Backend·Frontend 흐름을 구현했고 Gate 3가 ART-AC-01~~04의 Backend 생성·검증·파일 수명주기를 구현했다. Gate 4는 독립 build flag 아래 `/career-artifacts/**` 사용자 journey와 선택적 제안을 기존 공개 계약에 연결해 ART-AC-01~05를 완료했다. Gate 5 Private GitHub는 이 판정과 분리된 `PLANNED` 범위다.
+GitHub·Career Artifact vertical은 기존 AC-01~~17 구현 완료 판정과 별도로 추적한다. Gate 0~~2가 GH-AC-01~~04의 Backend·Frontend 흐름을 구현했고 Gate 3가 ART-AC-01~~04의 Backend 생성·검증·파일 수명주기를 구현했다. Gate 4는 독립 build flag 아래 `/career-artifacts/**` 사용자 journey와 선택적 제안을 기존 공개 계약에 연결해 ART-AC-01~05를 완료했다. Gate 5는 GH-AC-05~~07과 AUTH-AC-04를 구현했지만 최종 mocked Chromium journey가 selector 보정 뒤 재검증되지 않아 `IMPLEMENTED_NOT_VERIFIED`다. 실제 외부 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
 | ID        | 인수 조건                                                                                                            |
 | --------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -879,6 +896,10 @@ GitHub·Career Artifact vertical은 기존 AC-01~~17 구현 완료 판정과 별
 | GH-AC-02  | public repository를 실행하지 않고 bounded snapshot으로 수집하며 prompt injection·secret·SSRF 입력을 차단한다.        |
 | GH-AC-03  | 기존과 같은 경험은 새 카드를 만들지 않고 출처를 보강하며 유사·수치 충돌은 사용자 검토로 보낸다.                      |
 | GH-AC-04  | GitHub 신규 경험·강점은 승인 전 후속 산출물에 사용되지 않고 source 삭제 뒤 승인 canonical 경험은 유지된다.           |
+| GH-AC-05  | Session-bound one-time setup/OAuth state와 PKCE로 installation 접근·permission을 검증한 뒤에만 ACTIVE 연결을 만든다. |
+| GH-AC-06  | private repository는 ACTIVE owner connection과 선택 repository ID로 downscope한 read-only token만 사용한다.          |
+| GH-AC-07  | disconnect는 token mint를 즉시 막고 remote uninstall·private snapshot 정리가 terminal 성공한 뒤 완료된다.            |
+| AUTH-AC-04 | 탈퇴 접수 즉시 WITHDRAWN·전 Session 차단 후 모든 object/GitHub cleanup 성공 때만 user를 물리 삭제한다.                |
 | ART-AC-01 | 사용자가 VERIFIED 경험과 exact model을 선택해 이력서 DOCX 초안을 생성하고 version별로 다운로드한다.                  |
 | ART-AC-02 | 사용자가 VERIFIED 경험과 exact model을 선택해 면접관 중심 포트폴리오 PPTX 초안을 생성하고 version별로 다운로드한다.  |
 | ART-AC-03 | AI 출력의 모든 claim이 생성 당시 evidence snapshot에 연결되고 source에 없는 역할·수치·성과가 file에 포함되지 않는다. |

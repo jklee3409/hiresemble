@@ -2,7 +2,20 @@
 
 ## Overview
 
-Backend P1~P8와 Gate 2 GitHub Source OpenAPI, 11개 Agent Run WorkflowType, Dashboard·Career Guide와 자동 분석 projection에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8, Gate 2/5 public·private GitHub, Gate 3 Career Artifact와 account OpenAPI, 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+
+## [2026-08-09] Session Summary (GitHub App·account strict API client)
+
+- What was done:
+  - GitHub App capability/connection 7 operation, password/delete account 계약과 additive source access mode/visibility를 strict Zod와 AbortSignal/CSRF 패턴으로 추가했다.
+- Key decisions:
+  - account deletion에는 Idempotency-Key를 보내지 않고, HTTP 401은 code가 `AUTHENTICATION_REQUIRED`일 때만 auth cleanup한다.
+- Issues encountered:
+  - invalid private source 요청은 API 호출 전에 동기 Zod 오류로 거부되므로 테스트 assertion을 동기 throw 계약에 맞췄다.
+- Validation:
+  - Frontend 전체 102 files/465 tests와 typecheck/build가 통과했다.
+- Next steps:
+  - Backend DTO field 변경은 OpenAPI와 Zod를 같은 작업에서 갱신한다.
 
 ## [2026-08-08] Session Summary (Career Artifact 11-operation strict client)
 

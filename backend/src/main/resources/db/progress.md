@@ -3,7 +3,15 @@
 ## Overview
 
 - Flyway 기본 경로인 `migration` 하위 디렉터리만 존재한다.
-- V1 extension부터 Career Guide 게시 V17까지 있으며 최초 공개 가이드 5개 외 별도 운영 seed·fixture 리소스는 없다.
+- V1 extension부터 V30 GitHub App/account deletion까지 있으며 최초 공개 가이드 5개 외 별도 운영 seed·fixture 리소스는 없다.
+
+## [2026-08-09] Session Summary (Flyway V29·V30 추가)
+
+- What was done: migration 하위에 V29 private GitHub와 V30 account deletion 책임을 추가했다.
+- Key decisions: 기존 V1–V28은 byte 단위로 보존한다.
+- Issues encountered: 없음.
+- Validation: fresh/upgrade/checksum test와 전체 check가 통과했다.
+- Next steps: 없음.
 
 ## [2026-08-02] Session Summary (V17 Career Guide DB 리소스 연결)
 

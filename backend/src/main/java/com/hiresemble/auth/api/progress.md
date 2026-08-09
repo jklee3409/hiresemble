@@ -2,7 +2,15 @@
 
 ## Overview
 
-P1 인증과 계정 닉네임 변경 Controller·request·response DTO의 공개 HTTP·Swagger 계약을 소유한다.
+인증과 계정 표시 이름·비밀번호·terminal deletion Controller·DTO의 공개 HTTP·Swagger 계약을 소유한다.
+
+## [2026-08-09] Session Summary (Password·account deletion HTTP 계약)
+
+- What was done: `PATCH /account/password` 204와 `DELETE /account` 202 DTO를 구현했다.
+- Key decisions: delete의 Idempotency-Key를 금지하고 receipt는 deletionRequestId/purgeBy만 노출한다.
+- Issues encountered: 없음.
+- Validation: Auth/OpenAPI integration과 전체 check가 통과했다.
+- Next steps: 공개 DTO에 task status·email·Run ID를 추가하지 않는다.
 
 ## [2026-07-31] Session Summary (Account display-name HTTP 계약)
 

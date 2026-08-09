@@ -2,7 +2,15 @@
 
 ## Overview
 
-Spring Session SecurityContext에 저장할 최소 현재 사용자 principal을 정의한다. 현재 P1 구현과 검증 상태만 기록한다.
+Spring Session SecurityContext 최소 principal과 WITHDRAWN 사용자의 즉시 접근 차단을 정의한다.
+
+## [2026-08-09] Session Summary (WITHDRAWN request 차단)
+
+- What was done: DB user 상태를 확인해 WITHDRAWN principal의 보호 요청을 인증 실패로 전환하는 filter를 추가했다.
+- Key decisions: 탈퇴 직후 같은 Session·다른 Session·download ticket 발급을 모두 차단한다.
+- Issues encountered: 없음.
+- Validation: Auth integration과 전체 check가 통과했다.
+- Next steps: WITHDRAWN을 로그인 가능한 상태로 되돌리지 않는다.
 
 ## [2026-07-19] Session Summary (Session 인증 principal 구현)
 

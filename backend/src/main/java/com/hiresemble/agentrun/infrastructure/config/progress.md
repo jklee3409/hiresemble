@@ -2,7 +2,15 @@
 
 ## Overview
 
-com.hiresemble.agentrun.infrastructure.config package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+com.hiresemble.agentrun.infrastructure.config package의 runtime·scheduler 설정 책임과 검증 상태를 추적한다.
+
+## [2026-08-09] Session Summary (통합 테스트 scheduler 격리)
+
+- What was done: `@EnableScheduling`을 별도 conditional `SchedulingConfiguration`으로 옮겼다.
+- Key decisions: production 기본 true와 outbox cadence/retry는 유지하고 PostgreSQL 통합 테스트만 scheduler를 끈다.
+- Issues encountered: scheduled scan과 테스트의 수동 `processDue`가 같은 PENDING row를 경쟁했다.
+- Validation: focused scheduler/outbox test와 Backend 전체 680 tests가 통과했다.
+- Next steps: scheduler를 끄는 다른 profile은 명시적 사유가 있을 때만 추가한다.
 
 ## [2026-07-23] Session Summary (책임별 config package 분리)
 

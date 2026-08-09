@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1 users credential·상태·표시 이름의 JPA mapping 및 repository를 소유한다.
+users credential·상태·표시 이름의 JPA mapping, Spring Session 정리, FK 없는 account deletion task claim/lease와 owner data terminal purge 저장소를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -11,7 +11,7 @@ P1 users credential·상태·표시 이름의 JPA mapping 및 repository를 소�
 
 ## 구성 요소 역할
 
-- Flyway V2 users schema와 일치하는 mapping만 제공하고 API projection은 auth API 계층에서 만든다.
+- Flyway V2 users와 V30 account deletion task schema에 일치하는 mapping/query만 제공하고 API projection은 auth API 계층에서 만든다.
 - `user_profiles`의 소유권과 등록은 [`../../profile/infrastructure/persistence/ProfileStore.java`](../../profile/infrastructure/persistence/ProfileStore.java)와 profile application 경계에 있다.
 
 ## 다른 디렉터리와의 의존 관계

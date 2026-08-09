@@ -1,10 +1,10 @@
 # Hiresemble 전체 시스템 설계
 
-- 문서 상태: P0–P8 구현, P8.5 live gate, GitHub·Career Artifact Gate 0–4와 P8.6–P10·Private GitHub 목표 구조를 연결한 설계 기준선
+- 문서 상태: P0–P8 구현, P8.5 live gate, GitHub·Career Artifact Gate 0–4와 Gate 5 구현, P8.6–P10 목표 구조를 연결한 설계 기준선
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
-- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub·Career Artifact Gate 0–4 완료, Flyway V28, 11개 WorkflowType, Career Artifact feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
+- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub·Career Artifact Gate 0–4 완료·Gate 5 `IMPLEMENTED_NOT_VERIFIED`, Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations·private 비활성/Career Artifact 활성 90 paths/120 operations·Career Artifact 비활성 81 paths/109 operations
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
-- 확장 설계: [GitHub 경험·Career Artifact](github-career-artifact-design.md) (Gate 0–4 `DONE`, Gate 5 `PLANNED`)
+- 확장 설계: [GitHub 경험·Career Artifact](github-career-artifact-design.md) (Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT `USER_MANUAL_UI_VALIDATION_PENDING`)
 - P0 승인 결정 기록: [P0 계약 결정 기록](p0-contract-decision-proposal.md)
 
 이 문서는 다섯 기준 명세를 구현 구조로 연결한 파생 설계다. 현재 활성 제품 계약의 원천은 `docs/spec/**`이며 이 문서와 결정 기록은 이를 대체하거나 병렬 계약 원천이 되지 않는다. 실제 구현 여부는 코드와 각 `progress.md`를 기준으로 판단한다.
@@ -24,8 +24,8 @@
 | --------- | ----------------------------------------------------------------------- | ---------------------------------------------- |
 | 활성 계약 | P0 승인 결과가 다섯 `docs/spec/**` 명세에 반영됨                        | 구현·테스트의 유일한 제품 계약으로 사용        |
 | 결정 기록 | D-01–D-18과 8개 제품 결정의 과정·근거가 보존됨                          | 역사와 선택 이유 확인에만 사용                 |
-| 구현 상태 | P0–P8 DONE, P8.5 구현·live 미검증, GitHub·Career Artifact Gate 0–4 DONE | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
-| 목표 확장 | Private GitHub Gate 5가 `PLANNED`                                       | 구현된 공개 source·artifact와 권한 확장을 구분 |
+| 구현 상태 | P0–P8 DONE, P8.5 구현·live 미검증, GitHub·Career Artifact Gate 0–4 DONE, Gate 5 구현·최종 E2E 미검증 | 실제 구현 여부는 코드와 `progress.md`에서 추적 |
+| 목표 확장 | 실제 GitHub App UAT가 `USER_MANUAL_UI_VALIDATION_PENDING`                | 자동화 완료와 외부 installation 검증을 구분 |
 
 ### 1.3 명시적 설계 가정
 
@@ -58,7 +58,7 @@ Hiresemble은 사용자가 직접 입력하거나 문서에서 추출한 뒤 승
 
 문서 파싱 실패나 공고 URL 추출 실패는 사용자 계정 또는 공고 레코드 생성을 취소하지 않는다. 수동 입력 경로를 제공하고, AI 결과는 사용자가 명시적으로 저장·최종화하기 전 확정 제출물로 보지 않는다.
 
-Gate 0–4에서 `feature-gated GitHub 화면→공개 repository 선택·canonical 경험 검토→조건부 Career Artifact API→사용자 exact model→Resume DOCX 또는 Portfolio PPTX immutable version→현재 structured preview·version download` 사용자 경계를 구현했다. Gate 5는 private GitHub의 별도 승인 대상이다. GitHub raw evidence는 승인된 canonical 경험을 거치지 않고 생성 Context에 직접 들어가지 않으며 생성 output은 업로드 `documents` pipeline과 분리한다.
+Gate 0–4에서 `feature-gated GitHub 화면→공개 repository 선택·canonical 경험 검토→조건부 Career Artifact API→사용자 exact model→Resume DOCX 또는 Portfolio PPTX immutable version→현재 structured preview·version download` 사용자 경계를 구현했다. Gate 5는 GitHub App의 최소 read permission과 선택 repository downscope를 같은 pipeline 앞에 추가했고, disconnect와 account deletion의 terminal cleanup을 durable task/outbox로 연결했다. GitHub raw evidence는 승인된 canonical 경험을 거치지 않고 생성 Context에 직접 들어가지 않으며 생성 output은 업로드 `documents` pipeline과 분리한다.
 
 ## 3. MVP 범위와 제외 범위
 
@@ -102,6 +102,43 @@ Gate 0–4에서 `feature-gated GitHub 화면→공개 repository 선택·canoni
 - `/career-artifacts/**` wizard·preview·download·lifecycle와 선택적 생성 제안 (`IMPLEMENTED_FLAGGED`, Gate 4); 자동 Run·강제 redirect·private repository/PAT·code 실행은 제외
 
 모듈·DB·API·페이지·Gate의 완전한 계약은 [`github-career-artifact-design.md`](github-career-artifact-design.md)를 따른다.
+
+### 3.4 Gate 5 GitHub App 권한·연결 구조
+
+GitHub App surface는 공개 GitHub surface와 독립된 backend/frontend flag로 격리한다. Backend는 `Metadata: read`, `Contents: read`만 허용하고 외부 installation이 모든 repository에 설치됐더라도 ingestion 직전 token을 사용자가 Hiresemble에서 선택한 단일 repository ID로 다시 downscope한다. PAT 입력·저장, git clone/archive/submodule/symlink 실행, webhook endpoint·secret은 포함하지 않는다.
+
+```text
+로그인 session + CSRF
+  -> installation request(state digest + session binding, short TTL)
+  -> github.com App setup
+  -> setup callback(state 검증, installation_id는 pending only)
+  -> OAuth redirect(두 번째 state + PKCE S256)
+  -> OAuth callback(code one-time exchange)
+  -> memory-only user token으로 installation 접근성 검증
+  -> App JWT로 target/selection/permission snapshot 검증
+  -> ACTIVE connection 저장
+  -> 선택 repository ID로 제한한 memory-only installation token
+  -> 기존 GitHub snapshot/candidate/canonical review pipeline
+```
+
+- 두 callback state는 원문을 저장하지 않고 digest만 저장하며 user와 현재 Spring Session에 결속한다. setup state는 OAuth state로 원자 교체되고 각 state는 한 번만 소비된다.
+- PKCE verifier는 서버 state secret과 attempt ID를 HMAC-SHA-256해 결정론적으로 파생한다. 평문 verifier, OAuth code, user/installation token, App JWT는 DB·Session·Run·checkpoint·DTO·로그에 저장하지 않는다.
+- 하나의 외부 installation ID는 한 Hiresemble 사용자에게만 연결된다. 한 사용자는 personal/organization 설치를 여러 개 가질 수 있다.
+- connection은 `ACTIVE -> SUSPENDED|REVOKED|DISCONNECTING -> DISCONNECTED`로 전이한다. `ACTIVE` 외 상태에서는 token mint와 새 private refresh/run을 거부하지만 성공 snapshot에서 승인된 canonical 경험과 기존 artifact version은 보존한다.
+- 허용 outbound host는 `github.com`, `api.github.com`, `github.com/login/oauth` 계열의 서버 소유 고정 URL뿐이다. callback 결과도 등록된 frontend base URL의 고정 `/profile/github` 경로로만 redirect한다.
+
+```text
+사용자 disconnect 확인
+  -> connection DISCONNECTING (token mint 즉시 금지)
+  -> GitHub installation revocation outbox
+  -> private snapshot object deletion outbox
+  -> remote uninstall + 모든 snapshot terminal success
+  -> raw evidence/link scrub + connection DISCONNECTED
+
+404/missing object = success
+timeout/429/5xx = bounded retry
+DEAD = 운영 추적, cleanup 미완료
+```
 
 ADMIN 읽기 전용 운영 기반은 포함하지만 결제·구독은 계속 제외한다. 제외 항목을 위한 빈 package, UI, 확장 API를 선행 생성하지 않는다.
 
@@ -637,6 +674,26 @@ terminal 결과
 - 외부 검색 query에 개인 내용을 넣지 않는다.
 - `agent_steps.output_json`은 최소 구조화 산출물과 ID 참조만 저장한다.
 - presigned download URL은 owner 확인 뒤 5분 TTL로 발급하고 Object key나 원본 filename을 공개 DTO에 노출하지 않는다.
+
+### 14.4 비밀번호 변경과 회원 탈퇴 terminal purge
+
+`PATCH /account/password`는 현재 비밀번호와 새 정책을 검증하고 같은 비밀번호를 거부한다. 성공 transaction 뒤 현재 Session만 rotate하고 같은 principal의 나머지 Spring Session을 폐기한다.
+
+`DELETE /account`는 current password를 검증해 사용자 상태를 `WITHDRAWN`으로 바꾸고 모든 Session을 폐기하며 FK 없는 `account_deletion_tasks`를 같은 transaction에서 enqueue한다. `WITHDRAWN`은 로그인, 보호 API, object download ticket 발급을 즉시 차단한다.
+
+```text
+account deletion task claim + lease
+  -> active Agent Run cancel/stabilize
+  -> GitHub connections DISCONNECTING + revocation outbox
+  -> document/GitHub snapshot/Career Artifact object deletion enqueue
+  -> 모든 remote/object outbox SUCCEEDED 확인
+     PENDING/RUNNING/RETRY_WAIT/DEAD가 하나라도 있으면 physical purge 금지
+  -> owner data와 users row를 final transaction에서 삭제
+  -> task SUCCEEDED + subject_user_id NULL scrub
+  -> 성공 metadata 30일 뒤 cleanup
+```
+
+task 재시작, lease 만료, 중복 worker는 같은 deletion request를 재사용해 idempotent하게 처리한다. purge 목표는 접수 후 24시간이며 user row가 남아 있는 동안 같은 email 재가입은 막히고 final purge 뒤에는 허용된다.
 
 ## 15. 비동기 작업·실패 복구·재시도·SSE
 

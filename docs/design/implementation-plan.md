@@ -1,6 +1,6 @@
 # Hiresemble 구현 계획
 
-이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01–AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. Gate 0–4는 완료됐고 Gate 5 Private GitHub는 `PLANNED`다.
+이 계획은 [전체 시스템 설계](system-architecture.md)를 AC-01–AC-17의 검증 가능한 수직 단계로 구현하기 위한 순서와 완료 조건을 정의한다. 공개 계약과 데이터 수명주기를 먼저 확정하고, 승인 근거→공고→자기소개서→면접의 도메인 선행 관계와 P9 전 운영 기반을 유지한다. GitHub 경험·Career Artifact는 [별도 목표 설계](github-career-artifact-design.md)의 GH/ART 인수 조건과 Gate를 따른다. Gate 0–4는 완료됐고 Gate 5 Private GitHub는 코드·migration·UI·runbook 구현 뒤 최종 browser 재검증만 남은 `IMPLEMENTED_NOT_VERIFIED`다.
 
 P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-decision-proposal.md)에 보존한다. 현재 활성 계약은 `docs/spec/**`이며 P0 계약 기준선은 2026-07-18 완료됐다. P1 공통 HTTP·인증부터 P7 자기소개서 생성·검증·버전 관리까지 2026-07-30 final-source actual 검증과 독립 validator `PASS`로 완료됐다. P8은 2026-07-31 구현과 final-source 검증, 한 번의 제한 보정 뒤 두 번째 single-agent read-only self-audit `PASS`로 완료됐다. P8.5는 일반 local의 OpenAI Chat·Embedding/Tavily 연결과 offline/test 격리를 구현했다. 2026-08-01 strict schema·semantic 계약 보정 뒤 실제 문서 run `bf26f44e-4512-414d-af1e-863076941535`는 Chat strict output, Java/workflow validation, trusted ref mapping, evidence persistence와 finalize까지 성공했다. candidate 6건 중 4건 적용·2건 정상 filtering이었지만 이를 가짜 failed scope로 만든 projection과 공용 자기소개서 partial error 하드코딩으로 Run terminal만 잘못 실패했다. terminal policy 보정은 offline 검증했고 이후 Provider를 재호출하지 않았으므로 전체 상태는 `IMPLEMENTED_NOT_LIVE_VERIFIED`다. P8.5 이후 결정 근거는 [운영 기반 계약 결정](post-p8-5-operations-contract-decision.md)에 보존한다.
 
@@ -39,9 +39,9 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] Gate 2 GitHub Frontend를 빌드 타임 feature flag 경계로 완료한다.
 - [x] Gate 3 Career Artifact Backend를 V28·조건부 API·두 workflow·Office renderer로 완료한다.
 - [x] Gate 4 Career Artifact Frontend를 독립 build flag와 기존 Gate 3 공개 계약 소비로 완료한다.
-- [ ] Gate 5 Private GitHub를 별도 승인 뒤 완료한다.
+- [ ] Gate 5 Private GitHub·AUTH-004 terminal purge 전체 Chromium 재검증을 완료한다. (구현 `IMPLEMENTED_NOT_VERIFIED`)
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–4 `DONE`, Gate 5 `PLANNED`다. 현재 구현 기준선은 Flyway V28, feature-gated `/profile/github`와 `/career-artifacts/**`, 조건부 Career Artifact Backend, 11개 WorkflowType과 feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations이며 변동 가능한 test count는 코드 영역의 최신 `progress.md`를 따른다. 실제 외부 GitHub·OpenAI 호출 없이 Fake/WireMock/Testcontainers/POI·browser fixture로 검증한다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`다. 현재 기준선은 Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations, private 비활성/Career Artifact 활성 90 paths/120 operations, Career Artifact 비활성 81 paths/109 operations다. Backend 102 suites/680 tests와 Frontend 102 files/465 tests는 통과했고 최종 Phase 5 Chromium journey는 selector 보정 뒤 재검증 대기다. 실제 외부 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
 ## 1. 전체 선행 관계
 
@@ -100,7 +100,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - P8.6~P8.9-A는 비용 예산과 별개인 기능 한도, 사용량·원가 집계, 실패 복구, 운영 관찰 경계를 순서대로 고정한다.
 - P9는 P3, P8.5-V, P8.6, P8.7, P8.8, P8.9-A가 모두 필요하다.
 - P8.9-B 운영 mutation은 별도 후속이며 P9의 필수 선행이 아니다.
-- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration, Gate 2는 기존 7개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 3은 V28 Career Artifact Backend, Gate 4는 기존 11개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 5만 이 경계를 유지한 별도 승인 대상이다.
+- GitHub Gate 0은 V26 checksum·populated upgrade와 문서 canonical 회귀를 보호했고 Gate 1은 V27 forward migration, Gate 2는 기존 7개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 3은 V28 Career Artifact Backend, Gate 4는 기존 11개 operation을 소비하는 feature-gated Frontend로 완료했다. Gate 5는 이 경계를 유지한 additive GitHub App·account purge 확장이다.
 - Frontend는 각 phase의 OpenAPI/DTO와 상태 계약이 backend에서 먼저 고정된 뒤 같은 수직 단계로 진행한다.
 
 ## 2. 전 단계 공통 완료 조건
@@ -666,7 +666,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 ### 14.1 Backend·DB·API·Frontend responsibility
 
 - Backend: `usage` module이 immutable policy, assignment/override, period, reserve/commit/release, reconciliation port를 소유한다.
-- DB: 구현 착수 시 next available migration에 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`를 추가한다. 현재 latest V28 기준으로 즉시 착수하면 V29이지만 번호를 예약하지 않는다.
+- DB: 구현 착수 시 next available migration에 `feature_usage_policy_versions/items`, `user_feature_usage_assignments/overrides`, `feature_usage_periods/reservations/events`를 추가한다. 현재 latest V30 다음 번호를 착수 시 다시 확인하며 번호를 예약하지 않는다.
 - API: `GET /settings/usage`, `GET /settings/usage/history`를 `PLANNED`로 구현하고 `/usage/summary` 중복 경계를 만들지 않는다.
 - Frontend/Page: API consumer와 enforcement 오류를 연결하며 전체 `/settings/usage` 화면은 P8.7에서 제공한다.
 - Canonical key: document/job/cover letter/interview 7개와 P9 mock 3개를 고정한다.
@@ -903,13 +903,23 @@ GitHub·Career Artifact Gate 0 기준선 보호
 
 ## 별도 Vertical — GitHub 경험·Career Artifact
 
-- 상태: Gate 0–4 `DONE`; Gate 5 Private GitHub는 `PLANNED`.
+- 상태: Gate 0–4 `DONE`; Gate 5 Private GitHub·AUTH-004는 `IMPLEMENTED_NOT_VERIFIED`.
 - 목표: 공개 GitHub source에서 프로젝트 경험·강점을 추출해 V26 canonical 보관함에 중복 없이 연결하고, 사용자가 exact model을 골라 이력서 DOCX와 포트폴리오 PPTX 초안을 생성·다운로드한다.
 - Gate 0–4 결과: V26 checksum과 canonical 회귀, V27 GitHub schema·workflow·7개 API·Gate 2 Frontend를 완료했다. V28은 artifact/version/provenance/private request/outbox, 11개 Career Artifact operation, exact model, 두 8단계 workflow와 POI renderer를 추가했다. Gate 4는 별도 flag 아래 wizard·structured preview·version/download·lifecycle·suggestion과 Agent Run 연동을 추가했다.
-- 남은 구현 순서: 별도 승인된 Gate 5 private GitHub.
+- Gate 5 구현 순서:
+  1. 기존 Object deletion outbox 통합 테스트의 scheduler/manual claim 경쟁을 test profile에서 격리한다.
+  2. V1–V28 checksum을 보존하고 V29 이후 additive migration으로 connection attempt, connection, revocation outbox, private source/repository, account deletion task를 추가한다.
+  3. typed configuration, App JWT/OAuth+PKCE/installation gateway, 연결 API와 public-compatible source 확장을 Fake/WireMock으로 고정한다.
+  4. selected repository downscope를 기존 bounded snapshot→candidate→canonical approval workflow에 연결하고 disconnect cleanup을 구현한다.
+  5. 비밀번호 변경과 회원 탈퇴 202, `WITHDRAWN` 즉시 차단, lease/retry 기반 terminal purge를 구현한다.
+  6. `/profile/github`, `/settings/account`, 기존 Career Artifact UI를 strict contract와 user-scoped cleanup으로 연결한다.
+  7. unit/integration/OpenAPI/migration/Playwright/Compose 전체 회귀와 로컬 GitHub App 수동 runbook을 완료한다.
+- Gate 5 구현 결과: 1~6과 runbook, Backend/Frontend/Compose/migration 검증은 완료됐다. 동일 Chromium run의 기존 4개 journey는 통과했지만 신규 journey는 selector 보정 후 재실행하지 않아 7번과 Gate 5 `DONE` 판정만 미완료다.
+- Gate 5 권한 경계: PAT 없음, `Metadata: read`+`Contents: read`만 허용, 각 installation token은 UI에서 선택한 repository ID로 제한, callback state/session/TTL/one-time+OAuth PKCE 검증, webhook deferred.
+- Gate 5 수명주기: disconnect와 account deletion은 먼저 token mint를 차단하고 remote uninstall·private snapshot·document/artifact object deletion이 terminal success인 경우에만 local cleanup/user physical purge를 완료한다.
 - 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow와 applied V1~V28을 파괴하지 않는다.
-- 전체 완료 조건: ART-AC-01–05 사용자 journey는 Gate 4 Frontend/E2E에서 통과했다. 전체 vertical 종료는 [`github-career-artifact-design.md`](github-career-artifact-design.md)의 승인된 Gate 5 private GitHub 경계를 별도로 통과해야 한다.
-- 배치 결정: Career Artifact feature off는 기존 79 paths/107 operations를 유지하고 on은 88 paths/118 operations다. Gate 4는 새 Backend contract를 소비하되 새 공개 API를 임의로 늘리지 않는다.
+- 전체 완료 조건: ART-AC-01–05 사용자 journey는 Gate 4 Frontend/E2E에서 통과했다. 전체 vertical 종료는 [`github-career-artifact-design.md`](github-career-artifact-design.md)의 승인된 Gate 5 private GitHub·terminal purge 경계를 코드·migration·UI·자동화·runbook으로 통과해야 한다. 실제 외부 GitHub App UAT는 구현 완료와 분리해 `USER_MANUAL_UI_VALIDATION_PENDING`으로 기록한다.
+- 배치 결정: AUTH-004 account endpoint가 항상 2 paths/2 operations를 추가해 Career Artifact off는 81 paths/109 operations, on·private GitHub off는 90 paths/120 operations다. private GitHub on은 GitHub App 7 paths/7 operations가 추가되어 97 paths/127 operations다.
 
 ## 23. 목표 package와 directory 생성 순서
 

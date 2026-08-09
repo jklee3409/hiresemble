@@ -2,7 +2,15 @@
 
 ## Overview
 
-Flyway 단계별 보존과 최신 V28 schema의 빈 DB·upgrade 경로를 실제 PostgreSQL에서 검증한다.
+Flyway 단계별 보존과 최신 V30 schema의 빈 DB·V28 upgrade 경로를 실제 PostgreSQL에서 검증한다.
+
+## [2026-08-09] Session Summary (V29·V30 migration 회귀)
+
+- What was done: fresh V1→V30, populated V28→V30, constraint·보존·FK 부재·checksum 테스트를 추가했다.
+- Key decisions: V1–V28 전체 SHA-256을 고정한다.
+- Issues encountered: 기존 latest 28 assertion을 실제 30으로 갱신했다.
+- Validation: focused migration과 전체 check가 통과했다.
+- Next steps: applied V1–V30은 수정하지 않는다.
 
 ## [2026-08-08] Session Summary (V28 fresh·V27 upgrade 검증)
 

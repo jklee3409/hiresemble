@@ -2,7 +2,15 @@
 
 ## Overview
 
-P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub Gate 0–2와 Career Artifact Backend Gate 3는 구현됐고 Gate 4 Frontend·Gate 5 Private GitHub는 `PLANNED`다.
+P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub·Career Artifact Gate 0–4는 `DONE`, Gate 5는 `IMPLEMENTED_NOT_VERIFIED`, 실제 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
+
+## [2026-08-09] Session Summary (Phase 5 설계·명세·UAT 동기화)
+
+- What was done: 설계 3종, 활성 명세 5종, 관련 index/progress와 24단계 GitHub App local UAT runbook을 V29·V30 구현에 맞췄다.
+- Key decisions: 자동화 미통과와 실제 외부 UAT 대기를 분리해 Gate 5를 `DONE`으로 과장하지 않는다.
+- Issues encountered: planned DTO·환경 변수·OpenAPI count가 실제 코드와 달라 구현 계약으로 보정했다.
+- Validation: Backend/Frontend 전체 check, migration/OpenAPI 상수와 문서 교차 대조를 수행했다.
+- Next steps: Phase 5 Chromium 재검증 성공 후 완료 상태만 갱신한다.
 
 ## [2026-08-08] Session Summary (Career Artifact Gate 3 문서 동기화)
 

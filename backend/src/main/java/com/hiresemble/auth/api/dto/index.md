@@ -12,6 +12,9 @@ com.hiresemble.auth.api.dto package는 외부 request·response와 event의 타�
 | [CsrfDto.java](CsrfDto.java)                                   | DTO 책임 구현               |
 | [CurrentUserDto.java](CurrentUserDto.java)                     | DTO 책임 구현               |
 | [DisplayNameUpdateRequest.java](DisplayNameUpdateRequest.java) | 닉네임 변경 요청 계약       |
+| [PasswordChangeRequest.java](PasswordChangeRequest.java)       | 현재/새 비밀번호 검증 요청  |
+| [AccountDeletionRequest.java](AccountDeletionRequest.java)     | 현재 비밀번호 탈퇴 요청     |
+| [AccountDeletionAcceptedDto.java](AccountDeletionAcceptedDto.java) | deletionRequestId·purgeBy 응답 |
 | [LoginRequest.java](LoginRequest.java)                         | DTO 책임 구현               |
 | [SignupRequest.java](SignupRequest.java)                       | DTO 책임 구현               |
 | [progress.md](progress.md)                                     | 이 package의 이동·검증 이력 |

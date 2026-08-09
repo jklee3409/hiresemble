@@ -1,14 +1,14 @@
 # DB 명세서
 
-- 문서 버전: 1.5 (GitHub Source·Career Artifact Backend 계약)
-- 기준일: 2026-08-08
+- 문서 버전: 1.6 (GitHub App private repository·account terminal purge schema)
+- 기준일: 2026-08-09
 - DBMS: PostgreSQL 18 + pgvector
 - 식별자: UUID
 - 시간: `timestamptz` UTC
 - 상태: `varchar` + 명시적 `CHECK`
 - JSON 산출물: `jsonb`
 
-이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 Career Artifact를 추가한 V28이며, 미래 계약은 별도로 `PLANNED`를 표시한다. 적용된 V1~V27은 변경하지 않았다.
+이 문서는 목표 데이터 계약과 현재 구현된 Flyway 경계를 함께 기록한다. 현재 최신 migration은 account terminal purge task를 추가한 V30이며, 미래 계약은 별도로 `PLANNED`를 표시한다. 적용된 V1~V28은 변경하지 않았고 V29·V30은 forward-only additive migration이다.
 
 ## 1. 공통 무결성·소유권
 
@@ -60,7 +60,12 @@
 | `profile_evidence.source_type`                       | `EDUCATION`, `CERTIFICATION`, `LANGUAGE_SCORE`, `AWARD`, `CAREER`, `ACTIVITY`, `DOCUMENT_CHUNK`, `EXPERIENCE`, `MANUAL`, `GITHUB_REPOSITORY`                                                            |
 | `github_sources.source_kind`                         | `ACCOUNT`, `REPOSITORY`                                                                                                                                                                                  |
 | `github_sources.account_type`                        | `USER`, `ORGANIZATION`; repository source에서는 `NULL`                                                                                                                                                   |
+| `github_sources.access_mode`                         | `PUBLIC`, `GITHUB_APP`                                                                                                                                                                                    |
 | `github_sources.source_status`                       | `DISCOVERING`, `WAITING_USER`, `QUEUED`, `RUNNING`, `READY`, `PARTIAL`, `FAILED`                                                                                                                        |
+| `github_repositories.visibility`                     | `PUBLIC`, `PRIVATE` (`is_private`와 parity)                                                                                                                                                               |
+| `github_app_connection_attempts.phase`               | `INSTALL_PENDING`, `OAUTH_PENDING`                                                                                                                                                                        |
+| `github_app_connections.status`                      | `ACTIVE`, `SUSPENDED`, `DISCONNECTING`, `DISCONNECTED`, `REVOKED`                                                                                                                                         |
+| `github_installation_revocation_outbox.status`       | `PENDING`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `DEAD`                                                                                                                                                  |
 | `github_evidence_unit_links.relation_kind`           | `PRIMARY`, `SUPPORTING`                                                                                                                                                                                  |
 | `career_artifacts.artifact_type`                     | `RESUME`, `PORTFOLIO`                                                                                                                                                                                    |
 | `career_artifacts.lifecycle_status`                  | `ACTIVE`, `ARCHIVED`                                                                                                                                                                                     |
@@ -465,7 +470,7 @@ charge_mode(METERED_ZERO_RATE|NO_CHARGE)
 - Backoffice read model은 기존 domain query port와 SQL projection을 사용하고 사용자 원문·prompt/response·key를 복제하지 않는다.
 - P8.9-B mutation audit schema는 별도 승인 전 만들지 않는다.
 
-## 11. 회원 탈퇴 task와 보존
+## 11. 회원 탈퇴 task와 보존 (`IMPLEMENTED`, V30)
 
 `account_deletion_tasks`는 user FK가 없는 독립 table이다.
 
@@ -482,6 +487,14 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 - final transaction은 task를 SUCCEEDED·`subject_user_id=null`로 바꾸고 user를 purge한다.
 - 물리 삭제 목표는 접수 후 24시간 이내다.
 - 개인정보 없는 성공 task metadata는 30일 보존한다. `DEAD`는 운영 경보·수동 복구 대상이다.
+
+### 11.1 Gate 5 deletion task 불변식
+
+- `account_deletion_tasks.subject_user_id`에는 FK를 두지 않는다. nonterminal task 한 건만 같은 subject를 소유하도록 partial unique를 두고 성공 transaction에서 null로 scrub한다.
+- claim은 `FOR UPDATE SKIP LOCKED`, random `claim_token`, lease expiry recovery를 사용한다. `RUNNING` lease가 만료되면 attempt를 증가시켜 `RETRY_WAIT`으로 회수하며 최대 attempt 뒤 `DEAD`다.
+- task는 user의 email/displayName/password hash, document·GitHub·artifact 원문 또는 object key를 복사하지 않는다. object identity는 기존 owner outbox에만 둔다.
+- `purge_by=requested_at+24h`, `next_attempt_at`, bounded `last_error_code`를 저장한다. 성공 row는 `completed_at+30d` 이후 정리한다.
+- final purge 전에 user의 Document, GitHub snapshot, Career Artifact outbox와 GitHub installation revocation outbox에 `PENDING|PROCESSING|RUNNING|RETRY_WAIT|DEAD`가 없어야 한다. `DEAD`는 purge 금지 조건이다.
 
 ## 12. Transaction·삭제·embedding 운영 규칙
 
@@ -501,9 +514,59 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 이 절은 [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md)의 목표 schema이며 [`V27__create_github_source_ingestion.sql`](../../backend/src/main/resources/db/migration/V27__create_github_source_ingestion.sql)에서 구현됐다. V26과 이전 migration은 수정하지 않았다.
 
+Gate 5는 V1~V28을 변경하지 않고 [`V29__add_private_github_app_connections.sql`](../../backend/src/main/resources/db/migration/V29__add_private_github_app_connections.sql)에서 아래 표·column·constraint를 additive하게 적용했다.
+
+### 13.0 GitHub App connection schema (`IMPLEMENTED`, V29)
+
+`github_app_connection_attempts`:
+
+```text
+id uuid PK, user_id uuid, session_binding_digest char(64), state_digest char(64) UNIQUE
+phase(INSTALL_PENDING|OAUTH_PENDING), pending_installation_id bigint NULL
+expires_at, consumed_at NULL, created_at, updated_at
+```
+
+- raw install/OAuth state, code, PKCE verifier와 token column은 금지한다. user owner composite key를 두고 `expires_at>created_at`, pending installation ID 양수, phase/shape와 one-time consumed time을 CHECK한다.
+- setup 성공 transaction은 같은 row의 state digest를 second OAuth state digest로 교체하고 phase를 `OAUTH_PENDING`으로 바꾼다. OAuth callback은 외부 교환 전에 `consumed_at`을 CAS로 기록한다.
+- PKCE verifier는 server state secret과 attempt identity에서 HMAC으로 파생하므로 DB와 Spring Session에 평문을 저장하지 않는다. expired/consumed attempt는 주기 정리 대상이다.
+
+`github_app_connections`:
+
+```text
+id uuid PK, user_id uuid, github_installation_id bigint UNIQUE
+target_account_id bigint, target_account_login varchar(100), target_account_type(USER|ORGANIZATION)
+repository_selection(ALL|SELECTED), status, permission_snapshot jsonb, version bigint
+connected_at, verified_at, last_checked_at, disconnected_at NULL
+```
+
+- `(user_id,id)` unique와 user owner FK를 둔다. installation ID·target ID는 양수이고 external installation ID의 global unique가 한 Hiresemble user ownership을 강제한다.
+- `permission_snapshot`은 정확히 `{"metadata":"read","contents":"read"}`인 bounded object만 허용하며 token, URL, upstream body는 저장하지 않는다.
+- `ACTIVE`만 token mint 가능하다는 상태 전이는 application transaction과 repository query 조건으로 함께 보호한다.
+
+`github_installation_revocation_outbox`:
+
+```text
+id uuid PK, user_id uuid, github_app_connection_id uuid, github_installation_id bigint
+status(PENDING|RUNNING|RETRY_WAIT|SUCCEEDED|DEAD), attempt_count, next_attempt_at
+claim_token NULL, lease_expires_at NULL, last_error_code NULL, created_at, completed_at NULL
+```
+
+- connection owner composite FK와 active `(github_installation_id)` partial unique를 둔다. remote uninstall에 필요한 installation ID 외 credential/upstream body를 저장하지 않는다.
+- 404는 `SUCCEEDED`, timeout/429/5xx는 bounded retry, `DEAD`는 terminal 운영 추적이다. disconnect와 account purge는 이 row가 `SUCCEEDED`이기 전 완료되지 않는다.
+
+기존 GitHub table 확장:
+
+- `github_sources.access_mode`는 기존 row를 `PUBLIC`로 backfill하고 NOT NULL로 고정한다. `github_app_connection_id` nullable owner composite FK를 추가하며 `PUBLIC↔NULL`, `GITHUB_APP↔NOT NULL` shape를 강제한다.
+- `github_repositories.visibility`는 기존 row를 `PUBLIC`로 backfill하고 `is_private=false↔PUBLIC`, `is_private=true↔PRIVATE` parity를 강제한다. connection별 접근 범위는 repository row에 중복 column을 두지 않고 `github_app_connection_repository_access`의 owner composite FK와 external repository ID parity로 표현한다.
+- V27의 `github_repositories_public_ck`는 새 migration에서 명시적으로 drop하고 visibility/connection CHECK로 교체한다.
+- `github_app_connection_repository_access`는 `id,user_id,github_app_connection_id,github_repository_id,external_repository_id,available,checked_at,timestamps`를 가지며 connection/repository owner composite FK, connection별 repository·external ID unique와 조회 index를 둔다.
+- deferred constraint trigger는 private repository link의 source가 같은 user·connection의 `GITHUB_APP`이고 active access row의 repository/external ID가 일치하는지 검증한다. PUBLIC source→private repository, connection owner mismatch와 external repository parity 위반은 DB에서 거부한다.
+- `github_repository_snapshots`에도 `access_mode`와 owner-matched `github_app_connection_id`를 추가해 private snapshot의 삭제 범위를 connection 단위로 찾는다.
+- private source/snapshot을 disconnect purge할 때 referenced evidence는 `SOURCE_DELETED` 최소 tombstone으로 scrub하고 GitHub unit link를 제거한다. controlled purge transaction만 immutable snapshot/unit DELETE guard를 통과하며 일반 UPDATE/DELETE는 계속 거부한다.
+
 ### 13.1 `github_sources`
 
-`id,user_id`, `source_kind varchar(20)`, `account_type varchar(20) NULL`, `original_url varchar(500)`, `canonical_url varchar(500)`, `owner_login varchar(100)`, `repository_name varchar(100) NULL`, `source_status varchar(30)`, `repository_discovery_truncated boolean DEFAULT false`, `latest_agent_run_id uuid NULL`, `source_revision bigint DEFAULT 0`, `last_successful_sync_at NULL`, `version`, timestamps, `deleted_at NULL`.
+`id,user_id`, `source_kind varchar(20)`, `account_type varchar(20) NULL`, `original_url varchar(500)`, `canonical_url varchar(500)`, `owner_login varchar(100)`, `repository_name varchar(100) NULL`, `access_mode(PUBLIC|GITHUB_APP)`, `github_app_connection_id uuid NULL`, `source_status varchar(30)`, `repository_discovery_truncated boolean DEFAULT false`, `latest_agent_run_id uuid NULL`, `source_revision bigint DEFAULT 0`, `last_successful_sync_at NULL`, `version`, timestamps, `deleted_at NULL`.
 
 - active `UNIQUE(user_id,canonical_url) WHERE deleted_at IS NULL`이며 canonical URL은 application에서 `https://github.com/{owner}[/{repository}]` 형태로만 만든다.
 - `ACCOUNT`는 `account_type IS NOT NULL AND repository_name IS NULL`, `REPOSITORY`는 `account_type IS NULL AND repository_name IS NOT NULL`이다.
@@ -514,9 +577,9 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ### 13.2 repository·선택
 
-`github_repositories`: `id,user_id,external_repository_id bigint,node_id varchar(100),owner_login varchar(100),repository_name varchar(100),canonical_url varchar(500),default_branch varchar(255),is_private boolean,is_fork boolean,is_archived boolean,description varchar(500) NULL,pushed_at NULL`, timestamps.
+`github_repositories`: `id,user_id,external_repository_id bigint,node_id varchar(100),owner_login varchar(100),repository_name varchar(100),canonical_url varchar(500),default_branch varchar(255),is_private boolean,visibility(PUBLIC|PRIVATE),is_fork boolean,is_archived boolean,description varchar(500) NULL,pushed_at NULL`, timestamps.
 
-- `UNIQUE(user_id,external_repository_id)`와 `UNIQUE(user_id,id)`를 두며 최초 vertical은 `is_private=false`만 source selection에 허용한다.
+- `UNIQUE(user_id,external_repository_id)`와 `UNIQUE(user_id,id)`를 둔다. PUBLIC source는 PUBLIC만, GITHUB_APP source는 같은 connection access row로 확인된 PUBLIC 또는 PRIVATE repository만 선택한다.
 - rename은 external ID 기준으로 metadata와 canonical URL을 갱신하되 이전 immutable snapshot identity는 유지한다.
 
 `github_source_repository_links`: `id,user_id,github_source_id,github_repository_id,selected boolean,selection_order integer NULL,discovered_at,updated_at`.
@@ -621,7 +684,7 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 
 ## 15. 향후 migration 책임
 
-현재 latest implemented migration은 Career Artifact를 추가한 V28이다. 적용된 V1~V28은 수정하지 않는다. 아래 `PLANNED` 번호는 예약값이 아니며 실제 착수 직전 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
+현재 latest implemented migration은 account terminal purge task를 추가한 V30이다. 적용된 V1~V28은 수정하지 않았고 V29·V30은 additive migration이다. 아래 `PLANNED` 번호는 예약값이 아니며 실제 착수 직전 latest migration을 다시 확인한다. schema 변경이 없는 phase는 번호를 소비하지 않는다.
 
 | 순서 책임                    | 목표 영역                                                                        |
 | ---------------------------- | -------------------------------------------------------------------------------- |
@@ -646,6 +709,8 @@ purge_by, last_error_code varchar(100) NULL, requested_at, completed_at NULL
 | additional implemented V26   | canonical 경험·근거 link·embedding·문서 candidate apply                          |
 | additional implemented V27   | GitHub source/repository/snapshot/unit/evidence/outbox와 typed Run link           |
 | additional implemented V28   | Career Artifact/version/provenance/private request/outbox와 typed Run link         |
+| additional implemented V29   | GitHub App attempt/connection/revocation, private source/repository/snapshot 삭제 경계 |
+| additional implemented V30   | FK 없는 account deletion task, claim/lease/retry·24시간 purge·30일 cleanup index  |
 | P8.6 (`PLANNED`)              | feature policy/assignment/override/period/reservation/event; 착수 시 next available |
 | P8.7 (`PLANNED`)              | immutable billing policy, feature billing snapshot 제약, 집계 index              |
 | P8.8                          | DB 변경 없음; safe code→failure presentation mapping은 code 계약                 |

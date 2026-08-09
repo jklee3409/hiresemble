@@ -6,7 +6,7 @@ logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 
 
 ## 주요 파일 및 하위 디렉터리
 
-- [`sessionCleanup.ts`](sessionCleanup.ts): EventSource·query·store·draft cleanup coordinator
+- [`sessionCleanup.ts`](sessionCleanup.ts): logout·401·account deletion의 EventSource·query·store·user draft/download ticket cleanup coordinator
 - [`sessionCleanup.test.ts`](sessionCleanup.test.ts): 정확한 순서와 사용자별 draft purge test
 - [`progress.md`](progress.md): 이 영역의 구현·검증 이력
 

@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과 계정 닉네임 변경을 도메인 경계별로 구성한다.
+P1의 사용자 가입·Session 인증·현재 사용자 projection과 Gate 5의 표시 이름/비밀번호 변경·WITHDRAWN 전환·durable terminal account purge를 도메인 경계별로 구성한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -17,6 +17,7 @@ P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과
 
 - HTTP 입력은 application use case로 전달하고 사용자 entity는 공개 응답에 직접 노출하지 않는다.
 - 닉네임 변경 뒤 `GET /auth/me`는 Session principal의 과거 값이 아니라 현재 DB projection을 반환한다.
+- 탈퇴 접수는 모든 Session과 보호 API를 즉시 차단하고, cleanup outbox가 terminal success인 경우에만 사용자 row를 물리 삭제한다.
 
 ## 다른 디렉터리와의 의존 관계
 
@@ -26,7 +27,7 @@ P1의 사용자 가입, Session 인증, DB 기반 현재 사용자 projection과
 ## 변경 시 주의사항
 
 - 가입 시 기본 프로필 생성은 [`../profile/`](../profile/index.md)의 등록 경계를 호출하고, 프로필 CRUD를 인증 영역에 중복 구현하지 않는다.
-- 승인된 닉네임 변경 외 비밀번호 변경·탈퇴와 Dashboard API를 선행 추가하지 않는다.
+- 비밀번호 원문·deletion task의 사용자 원문을 로그나 공개 DTO에 넣지 않고 `WITHDRAWN`을 복구 가능한 상태로 되돌리지 않는다.
 
 ## 관련 규칙 및 문서
 

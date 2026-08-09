@@ -2,7 +2,15 @@
 
 ## Overview
 
-가입·로그인·로그아웃·현재 사용자 조회·닉네임 변경 transaction과 SecurityContext·CSRF Session 전이를 조정하고 기본 profile·AI preference 등록을 각 service에 위임한다.
+가입·로그인·로그아웃·현재 사용자 조회·계정 변경 transaction, terminal deletion worker와 SecurityContext·CSRF Session 전이를 조정한다.
+
+## [2026-08-09] Session Summary (WITHDRAWN 전환과 purge worker)
+
+- What was done: password rotation, delete enqueue, Run cancel·external/object terminal gate·final purge worker를 구현했다.
+- Key decisions: user physical delete와 task SUCCEEDED/subject scrub을 같은 최종 transaction에서 수행한다.
+- Issues encountered: retry/lease 회복과 중복 실행에서 purge 순서를 멱등하게 유지했다.
+- Validation: account worker integration과 전체 check가 통과했다.
+- Next steps: DEAD task는 운영 개입 전 user를 보존한다.
 
 ## [2026-07-31] Session Summary (DB 기반 사용자 projection·닉네임 transaction)
 

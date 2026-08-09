@@ -8,7 +8,8 @@ com.hiresemble.auth.application.service package는 use case, transaction 또는 
 
 | 파일                                           | 역할                                                 |
 | ---------------------------------------------- | ---------------------------------------------------- |
-| [AuthService.java](AuthService.java)           | 가입·로그인·현재 사용자 조회·닉네임 변경 transaction |
+| [AuthService.java](AuthService.java)           | 가입·로그인·계정 변경·WITHDRAWN enqueue transaction  |
+| [AccountDeletionWorker.java](AccountDeletionWorker.java) | terminal cleanup claim·retry·final purge worker       |
 | [CsrfTokenService.java](CsrfTokenService.java) | Service 책임 구현                                    |
 | [progress.md](progress.md)                     | 이 package의 이동·검증 이력                          |
 

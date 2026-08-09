@@ -2,7 +2,15 @@
 
 ## Overview
 
-com.hiresemble.auth.infrastructure.persistence package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
+com.hiresemble.auth.infrastructure.persistence package의 user/session/deletion task·purge 책임과 검증 상태를 추적한다.
+
+## [2026-08-09] Session Summary (Terminal purge stores)
+
+- What was done: Spring Session, deletion task claim/lease와 owner cleanup store를 추가했다.
+- Key decisions: task table에는 user FK와 개인정보를 두지 않는다.
+- Issues encountered: FK 의존 순서와 outbox terminal gate를 실제 schema에서 확인했다.
+- Validation: Testcontainers migration/worker와 전체 check가 통과했다.
+- Next steps: 새로운 owner table 추가 시 purge inventory를 갱신한다.
 
 ## [2026-07-31] Session Summary (UserEntity 닉네임 변경)
 

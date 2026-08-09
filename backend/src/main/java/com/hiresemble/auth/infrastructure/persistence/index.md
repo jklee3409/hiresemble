@@ -10,6 +10,9 @@ com.hiresemble.auth.infrastructure.persistence package는 JDBC/JPA 기반 저장
 | ------------------------------------------ | ------------------------------------------------- |
 | [UserEntity.java](UserEntity.java)         | 사용자 persistence와 로그인·닉네임 변경 상태 전이 |
 | [UserRepository.java](UserRepository.java) | Persistence 책임 구현                             |
+| [AccountSessionStore.java](AccountSessionStore.java) | 현재/전체 Spring Session 정리                    |
+| [AccountDeletionTaskStore.java](AccountDeletionTaskStore.java) | deletion task claim·lease·retry·scrub            |
+| [AccountPurgeStore.java](AccountPurgeStore.java) | external/object terminal gate와 owner final purge |
 | [progress.md](progress.md)                 | 이 package의 이동·검증 이력                       |
 
 ## 구성 요소 역할

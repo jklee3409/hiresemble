@@ -2,7 +2,15 @@
 
 ## Overview
 
-logout·401·사용자 ID 변경 시 사용자 경계를 폐기하는 순서와 P3 Agent Run EventSource 등록을 관리한다.
+logout·401·사용자 ID 변경·account deletion 시 사용자 경계를 폐기하는 순서와 P3 Agent Run EventSource 등록을 관리한다.
+
+## [2026-08-09] Session Summary (Terminal deletion client cleanup 재사용)
+
+- What was done: account deletion에서 EventSource 종료, query cancel/clear, Pinia reset, user-scoped draft와 download ticket cleanup을 같은 coordinator로 사용했다.
+- Key decisions: deletion receipt는 storage에 남기지 않는다.
+- Issues encountered: 없음.
+- Validation: account page/session cleanup test와 전체 check가 통과했다.
+- Next steps: 새 user-scoped storage key는 cleanup registry에도 추가한다.
 
 ## [2026-08-08] Session Summary (Career Artifact draft 사용자 경계)
 

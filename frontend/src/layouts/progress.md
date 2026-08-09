@@ -2,7 +2,15 @@
 
 ## Overview
 
-form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 계정 메뉴, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
+form 우선 익명 인증 shell과 desktop 상단 navigation·mobile bottom navigation 보호 shell을 분리하고 account settings link, Job child tab과 lazy Agent Run Progress Drawer를 제공한다.
+
+## [2026-08-09] Session Summary (Account settings navigation)
+
+- What was done: account menu에서 `/settings/account`로 이동하는 계정 관리 action을 연결했다.
+- Key decisions: 미구현 AI/usage/privacy 설정 navigation은 추가하지 않는다.
+- Issues encountered: 없음.
+- Validation: layout/router component test와 Frontend 전체 check가 통과했다.
+- Next steps: 없음.
 
 ## [2026-08-09] Session Summary (외부 연동 자료 navigation 연결)
 

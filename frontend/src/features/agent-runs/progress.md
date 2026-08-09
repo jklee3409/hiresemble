@@ -4,6 +4,20 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-08-09] Session Summary (safe error 문구 매핑 도입)
+
+- What was done:
+  - `agentRunFailureCopy`를 추가해 backend safe error를 사용자 문구(title·description)로 바꾼다. `AI 결과의 의미 제약을 확인하지 못했습니다.` 같은 내부 검증 문장이 화면에 그대로 나오던 문제를 없앴다.
+  - 원문을 그대로 그리던 Career Artifact·면접·문서·질문 세트 화면을 이 매핑과 `InlineNotice`로 바꿨다.
+  - `AgentRunDetailPanel`도 retryable만 보던 두 갈래 문구 대신 같은 매핑을 쓰도록 통일했다.
+- Key decisions:
+  - code를 먼저 보고 없으면 message 패턴으로 분류한다. backend가 code 없이 문장만 주는 경로가 있어서 둘 다 필요하다.
+  - 알 수 없는 code는 원문으로 되돌리지 않고 안전한 기본 문구를 쓴다. 새 code가 생겨도 내부 문장이 새지 않는다.
+- Issues encountered: 없음.
+- Commands run:
+  - `vitest run src/features/agent-runs/failureCopy.test.ts`: 9 tests 통과.
+- Follow-ups: 없음.
+
 ## [2026-08-09] Session Summary (GitHub Run 외부 연동 route 정렬)
 
 - What was done:

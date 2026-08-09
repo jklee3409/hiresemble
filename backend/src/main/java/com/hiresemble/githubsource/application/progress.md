@@ -2,7 +2,15 @@
 
 ## Overview
 
-GitHub Source application 구현 상태를 추적한다.
+GitHub Source와 App connection application 구현 상태를 추적한다.
+
+## [2026-08-09] Session Summary (Connection·private source application)
+
+- What was done: state/PKCE lifecycle, owner installation 검증, private source parity, refresh/disconnect orchestration을 구현했다.
+- Key decisions: 검증 성공 뒤에만 ACTIVE를 저장하고 disconnect 접수 즉시 token mint를 막는다.
+- Issues encountered: setup installation ID spoof와 callback replay/session mismatch를 transaction CAS로 차단했다.
+- Validation: connection/pipeline integration과 Backend 전체 check가 통과했다.
+- Next steps: manual external installation 검증 대기다.
 
 ## [2026-08-07] Session Summary (GitHub source use case와 workflow port)
 

@@ -16,6 +16,34 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-09] Session Summary (Phase 5 private GitHub 종단 journey)
+
+- What was done:
+  - setup/OAuth mock, private repository→Run→승인 경험→Resume/Portfolio→disconnect→account deletion을 한 journey로 추가하고 GitHub mock 외 모든 HTTPS를 catch-all 차단했다.
+- Key decisions:
+  - 기존 GitHub 1개와 Career Artifact 3개를 신규 journey와 동일 Chromium run에서 실행한다. 실제 GitHub API/OpenAI/S3는 route fixture 밖으로 나가면 실패시킨다.
+- Issues encountered:
+  - mock callback 302가 interception을 우회해 검증 중 GitHub OAuth/login page 실제 GET navigation 두 번이 발생했다. 이후 explicit OAuth link와 catch-all 차단으로 보정했다.
+  - 재검증에서는 기존 4/4가 통과하고 신규 journey가 `phase5-org` 중복 locator에서 실패했다. exact locator로 보정했지만 재검증 한도 때문에 다시 실행하지 않았다.
+- Validation:
+  - 마지막 run: 4 passed, 1 failed. 신규 spec Prettier check는 통과했으나 최종 종단 상태는 `NOT_VERIFIED`다.
+- Next steps:
+  - 다음 승인된 검증 turn에서 격리 port로 동일 5개 journey를 한 번 실행한다.
+
+## [2026-08-09] Session Summary (Gate 4 활성 build의 인증 fixture 보강)
+
+- What was done:
+  - `ui-shell.spec.ts`의 공용 인증 fixture에 Career Artifact readiness·목록, GitHub source 목록과 프로필 자격 정보 응답을 추가했다.
+  - GitHub 화면에서 제거한 수집 범위 안내 대신 등록 form의 참여 확인 문구를 확인하도록 바꿨다.
+  - 바뀐 삭제 Dialog 제목·본문과 409 안내 문구에 맞춰 `career-artifacts.spec.ts` assertion을 갱신했다.
+- Key decisions:
+  - fixture는 화면이 실제로 부르는 endpoint를 모두 덮는다. 하나라도 빠지면 요청이 실제 backend로 새 나가 화면이 로그인으로 되돌아가고, 실패 원인이 화면 문제처럼 보인다.
+- Issues encountered:
+  - Gate 4 flag가 켜진 뒤 `/dashboard`와 `/profile/basic`이 Career Artifact readiness를 부르면서 이전부터 실패하던 2건의 원인이 이 fixture 누락이었음을 확인했다. 이번에 함께 해결했다.
+- Commands run:
+  - `playwright test e2e/ui-shell.spec.ts e2e/career-artifacts.spec.ts e2e/github-source.spec.ts --project=chromium`: 9 passed.
+- Follow-ups: 없음.
+
 ## [2026-08-09] Session Summary (중복 이름 AppSelect E2E 범위 보정)
 
 - What was done:

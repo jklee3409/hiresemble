@@ -2,9 +2,17 @@
 
 ## Overview
 
-- `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage와 검색 설정이 있다.
+- `application.yml`에 PostgreSQL, Flyway, JPA validate, JDBC Session, multipart, AI, Actuator, OpenAPI, Object Storage, GitHub App와 account deletion 설정이 있다.
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
-- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V28 migration이 P1~P8, GitHub와 Career Artifact schema를 관리한다.
+- JDBC Session runtime schema 초기화는 꺼져 있고 V1~V30 migration이 P1~P8, public/private GitHub, Career Artifact와 terminal account deletion schema를 관리한다.
+
+## [2026-08-09] Session Summary (GitHub App·scheduler·account deletion properties)
+
+- What was done: independent private flag, App credential/base URL/TTL/skew/scan, scheduler와 account deletion scan/cleanup typed 설정을 추가했다.
+- Key decisions: private off는 credential 없이 부팅하고 private on의 필수 credential 누락은 fail fast한다.
+- Issues encountered: 없음.
+- Validation: configuration test와 Backend 전체 check가 통과했다.
+- Next steps: 실제 secret은 environment/secret manager로만 주입한다.
 - Agent runtime 기본값은 heartbeat 15초, lease 60초, reconciliation 30초, worker 2개와 queue 32이며 provider는 `none`이다.
 - Swagger UI는 `/swagger-ui.html`에서 Try It Out을 제공하며 JSON CSRF 계약과 맞지 않는 내장 CSRF 자동화는 사용하지 않는다.
 

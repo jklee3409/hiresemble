@@ -1,7 +1,7 @@
 # API 명세서
 
-- 문서 버전: 1.4 (GitHub Source·Career Artifact Backend 계약)
-- 기준일: 2026-08-08
+- 문서 버전: 1.5 (GitHub App private repository·account terminal purge 계약)
+- 기준일: 2026-08-09
 - Base URL: `/api/v1`
 - 인증: Spring Session Cookie + CSRF
 - 시간: ISO-8601 UTC
@@ -10,7 +10,7 @@
 
 이 문서는 Backend와 Frontend 사이의 공개 HTTP 계약이다. 단일 성공 DTO는 공통 envelope 없이 직접 반환하고 실제 HTTP status를 사용한다. DB 내부 hash, checksum, storage key, parser·prompt·schema version, provider/model ID, claim·lease, price item, step reuse 원본과 provider rank는 공개 DTO에 노출하지 않는다. 사용자가 직접 선택하는 자기소개서와 Career Artifact의 server allowlist exact model ID만 명시적 예외다.
 
-Career Artifact feature가 비활성인 공개 기준선은 79 paths/107 operations다. feature가 활성인 OpenAPI는 9 paths/11 operations를 additive하게 제공해 88 paths/118 operations다. 13장의 사용자 사용량·공통 AI 실패·Backoffice는 계속 `PLANNED`이고 Career Artifact 페이지·wizard는 Gate 4 범위다.
+AUTH-004 account endpoint를 포함한 현재 OpenAPI는 Career Artifact 비활성 81 paths/109 operations, Career Artifact 활성·private GitHub 비활성 90 paths/120 operations다. private GitHub를 함께 활성화하면 GitHub App connection 7 paths/7 operations가 additive하게 등록되어 97 paths/127 operations다. 13장의 사용자 사용량·공통 AI 실패·Backoffice는 계속 `PLANNED`다.
 
 ## 1. 공통 HTTP 계약
 
@@ -217,7 +217,7 @@ TipTap 공개 schema:
 | `CsrfDto`                         | `headerName:string 1..100`, `parameterName:string 1..100`, `token:string nonblank`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CurrentUserDto`                  | `id:UUID`, `email:string 3..320`, `displayName:string 1..100`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `AuthSessionDto`                  | `user:CurrentUserDto`, `csrf:CsrfDto`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `AccountDeletionAcceptedDto`      | `deletionRequestId:UUID`, `status=QUEUED`, `requestedAt:Instant`, `purgeBy:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `AccountDeletionAcceptedDto`      | `deletionRequestId:UUID`, `purgeBy:Instant`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `RunAcceptedDto`                  | `agentRunId:UUID`, `status`는 `QUEUED` 또는 `WAITING_USER`, `resourceType:string 1..50`, `resourceId:UUID`, `replayed:boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `DocumentUploadAcceptedDto`       | `documentId:UUID`, `parseStatus=UPLOADED`, `evidenceExtractionStatus=NOT_STARTED`, `agentRunId:UUID`, `status=QUEUED`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `JobCreationAcceptedDto`          | `jobId:UUID`, `status=IN_PROGRESS`, `extractionStatus`는 `QUEUED` 또는 `MANUAL_INPUT_PROVIDED`, `agentRunId:UUID?`; `QUEUED`일 때만 agentRunId가 non-null                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -281,6 +281,8 @@ TipTap 공개 schema:
 | `PATCH /account/display-name` | `displayName 1..100`                                                                                      | 없음      | 200 `CurrentUserDto`                                             | 400/401/403     |
 | `PATCH /account/password`     | `currentPassword 1..72 bytes`, `newPassword` 전체 10자 이상·문자/숫자/특수문자 각 1개 이상·UTF-8 72 bytes 이하, 서로 다름 | 없음      | 204                                                              | 400/401/403/409 |
 | `DELETE /account`             | JSON `currentPassword 1..72 bytes`; Idempotency-Key 금지                                                  | 없음      | 202 `AccountDeletionAcceptedDto`, 즉시 WITHDRAWN·전 Session 폐기 | 400/401/403/409 |
+
+`PATCH /account/password`는 성공 transaction에서 다른 모든 Spring Session을 삭제하고 현재 Session ID와 CSRF token을 회전한다. `AccountDeletionAcceptedDto`의 완전한 field set은 `deletionRequestId:UUID`, `purgeBy:Instant`이며 Agent Run ID, email과 task 내부 상태를 노출하지 않는다. `DELETE /account`에 `Idempotency-Key`가 있으면 400이고, 202 직후 같은 Session과 모든 보호 API·download ticket 발급은 401이다.
 | `GET /dashboard`              | query `month:YYYY-MM` 필수; `Asia/Seoul` 월 경계                                                         | 없음      | 200 `DashboardDto`; owner-scoped 정확 집계·활성 마감 일정        | 400/401         |
 | `GET /career-guides`          | 없음                                                                                                      | 없음      | 200 `CareerGuidePostDto[]`; 게시 시각 도달, 노출 순서 오름차순    | 401             |
 
@@ -489,7 +491,7 @@ commit마다 stateVersion을 증가시키고 event ID로 사용한다. heartbeat
 
 ## 13. Planned future contracts
 
-다음 API 중 GitHub Source는 Gate 1에서 구현되어 feature 비활성 기준선 79 paths/107 operations에 포함된다. Career Artifact는 Gate 3에서 feature 조건부로 구현되어 활성 시 88 paths/118 operations가 된다. 나머지 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
+다음 API 중 GitHub Source는 Gate 1에서 구현됐다. Career Artifact와 private GitHub App은 각각 독립 feature 조건부로 등록되고 account endpoint는 항상 등록된다. 현재 실제 개수는 Career Artifact off 81 paths/109 operations, Career Artifact on·private off 90 paths/120 operations, 둘 다 on 97 paths/127 operations다. 나머지 row는 명시된 phase가 구현·OpenAPI 검증을 완료하기 전까지 `PLANNED`다.
 
 ### 13.1 사용자 사용량 (`PLANNED` P8.6~P8.7)
 
@@ -570,7 +572,7 @@ Career Artifact DTO (`IMPLEMENTED_BACKEND`):
 
 | Method·path | request·filter | version/I | 성공 | 주요 오류 |
 | --- | --- | --- | --- | --- |
-| `POST /github-sources` | `url:string 1..500`, `participationConfirmed:true` | I | 202 `RunAcceptedDto`; `resourceType=GITHUB_SOURCE`, `resourceId=sourceId`, account는 discovery 후 같은 Run이 `WAITING_USER` 가능 | 400/409/422/429/503 |
+| `POST /github-sources` | `url:string 1..500`, `participationConfirmed:true`, optional `accessMode:PUBLIC\|GITHUB_APP`, `connectionId:UUID?`; 두 optional field가 없으면 PUBLIC | I | 202 `RunAcceptedDto`; `resourceType=GITHUB_SOURCE`, `resourceId=sourceId`, account는 discovery 후 같은 Run이 `WAITING_USER` 가능 | 400/409/422/429/503 |
 | `GET /github-sources` | `status?:GitHubSourceStatus`, `sourceKind?:GitHubSourceKind`, page,size; sort `updatedAt,desc` 또는 `createdAt,desc` | 없음 | 200 `PageResponse<GitHubSourceSummaryDto>` | 400/401 |
 | `GET /github-sources/{id}` | 없음 | 없음 | 200 `GitHubSourceDetailDto` | 404 |
 | `GET /github-sources/{id}/repositories` | `query?:string <=200`, `selected?:boolean`, page,size; sort `pushedAt,desc` 또는 `repositoryName,asc` | 없음 | 200 `PageResponse<GitHubRepositoryDto>` | 400/404 |
@@ -578,9 +580,43 @@ Career Artifact DTO (`IMPLEMENTED_BACKEND`):
 | `POST /github-sources/{id}/refresh` | `version:long` | body version+I | 변경 시 202 `GitHubRefreshResultDto{changed=true,run!=null}`, 동일 snapshot이면 200 `{changed=false,run=null}` | 404/409/422/429/503 |
 | `DELETE /github-sources/{id}` | query `version:long` | query version | 204, 즉시 owner API에서 404 | 404/409 |
 
-URL은 `https://github.com/{owner}` 또는 `https://github.com/{owner}/{repository}`만 허용한다. `www.github.com`은 canonical host로 정규화하고 user-info, port, query, fragment, percent-encoded slash, 제어문자, `.git` 외 추가 path segment를 거부한다. 입력 URL을 직접 fetch하지 않고 server가 GitHub API route를 구성한다. 첫 구현은 공개 repository만 지원하며 PAT를 request로 받지 않는다.
+URL은 `https://github.com/{owner}` 또는 `https://github.com/{owner}/{repository}`만 허용한다. `www.github.com`은 canonical host로 정규화하고 user-info, port, query, fragment, percent-encoded slash, 제어문자, `.git` 외 추가 path segment를 거부한다. 입력 URL을 직접 fetch하지 않고 server가 GitHub API route를 구성한다. PAT는 어떤 request에서도 받지 않는다. Gate 5의 additive create field가 없으면 기존 public 동작이다.
 
 account source는 repository discovery 뒤 AI 호출 전에 `WAITING_USER`와 `SELECT_GITHUB_REPOSITORIES`가 된다. discovery는 최근 push 기준 최대 200개 public repository metadata만 저장하고 더 많으면 `repositoryDiscoveryTruncated=true`로 알린다. selection command는 source에 연결되어 발견된 public repository만 허용하며 전체 선택 집합을 교체한다. repository source는 한 repository를 자동 선택한다. refresh의 commit SHA와 retrieval policy가 모두 동일하면 새 Agent Run과 AI 비용을 만들지 않는다.
+
+#### 13.5.2-A GitHub App connection endpoint (`IMPLEMENTED_NOT_VERIFIED`, Gate 5)
+
+이 endpoint family는 `hiresemble.github.enabled=true`와 `hiresemble.github.private-enabled=true`일 때만 등록된다. callback GET 두 개는 CSRF 대신 Session-bound one-time state를 검증하며, 그 외 mutation은 Session+CSRF를 함께 요구한다.
+
+| Method·path | request·filter | 성공 | 주요 오류 |
+| --- | --- | --- | --- |
+| `GET /github-app-connections/capability` | 없음 | 200 `GitHubAppCapabilityDto` | 401 |
+| `POST /github-app-connections/installation-requests` | body 없음 | 200 `GitHubInstallationRequestDto` | 401/403/409/503 |
+| `GET /github-app-connections/setup/callback` | `state:string` exact base64url 43자, `installation_id:long>0`, `setup_action?:install\|update` | 302 고정 GitHub OAuth authorize URL | 302 고정 `/profile/github?githubAppResult=expired\|unavailable` |
+| `GET /github-app-connections/oauth/callback` | `state:string` exact base64url 43자, `code:string 1..512` 또는 OAuth `error` | 302 고정 `/profile/github?githubAppResult=connected` | 302 고정 `cancelled\|expired\|permission\|unavailable` |
+| `GET /github-app-connections` | 없음 | 200 `GitHubAppConnectionListDto{items:[...]}` | 401 |
+| `POST /github-app-connections/{id}/refresh` | `version:long>=0` | 200 refreshed `GitHubAppConnectionDto` | 404/409/422/503 |
+| `DELETE /github-app-connections/{id}` | query `version:long>=0`, `uninstallConfirmed:true`; body와 Idempotency-Key 없음 | 202 `GitHubAppConnectionDto` with `DISCONNECTING` | 400/404/409/503 |
+
+완전한 공개 field set:
+
+- `GitHubAppCapabilityDto`: `enabled:boolean`, `configured:boolean`, `requiredPermissions:["metadata:read","contents:read"]`. App ID/client ID/slug/private key/client secret/state secret은 없다.
+- `GitHubInstallationRequestDto`: `installationUrl:https://github.com/...`, `expiresAt:Instant`. state는 URL 내부에만 있고 별도 field로 반환하지 않는다.
+- `GitHubAppConnectionDto`: `id:UUID`, `targetAccountLogin:string`, `targetAccountType:USER|ORGANIZATION`, `repositorySelection:ALL|SELECTED`, `status:ACTIVE|SUSPENDED|DISCONNECTING|DISCONNECTED|REVOKED`, `manageUrl:https://github.com/...`, `version:long`, `connectedAt:Instant`, `verifiedAt:Instant`, `lastCheckedAt:Instant`, `disconnectedAt:Instant?`. token과 별도 external installation ID field는 없다.
+- `GitHubAppConnectionListDto`: `items:GitHubAppConnectionDto[]`.
+
+`POST /github-sources`는 optional `accessMode:PUBLIC|GITHUB_APP`, `connectionId:UUID?`를 additive하게 받는다. 두 field가 모두 없으면 PUBLIC이다. `GITHUB_APP`이면 private feature enabled, owner의 `ACTIVE` connection, URL owner와 installation target 일치가 필요하다. `GitHubSourceSummaryDto`에 `accessMode`, `connectionId?`를, `GitHubRepositoryDto`에 `visibility:PUBLIC|PRIVATE`를 추가한다. connection DTO의 internal/external installation identity는 source Run input·checkpoint와 공개 DTO에 복사하지 않는다.
+
+callback은 원문 state/code/upstream body를 오류 응답이나 redirect에 넣지 않는다. owner mismatch는 404이고 다음 안전한 오류 code를 중앙 `ErrorResponseDto`로 사용한다.
+
+- `GITHUB_APP_NOT_CONFIGURED` 503
+- `GITHUB_CONNECTION_REQUIRED` 409
+- `GITHUB_CONNECTION_STATE_INVALID_OR_EXPIRED` 409
+- `GITHUB_INSTALLATION_NOT_ACCESSIBLE` 422
+- `GITHUB_APP_PERMISSION_MISMATCH` 422
+- `GITHUB_INSTALLATION_SUSPENDED` 409
+- `GITHUB_INSTALLATION_REVOKED` 409
+- `GITHUB_UPSTREAM_AUTHENTICATION_FAILED` 503
 
 #### 13.5.3 Career Artifact endpoint (`IMPLEMENTED_BACKEND`, Gate 3)
 

@@ -36,6 +36,8 @@
 | [`V26__create_canonical_experience_library.sql`](V26__create_canonical_experience_library.sql)                                 | canonical 경험·출처 link·semantic embedding 저장소         |
 | [`V27__create_github_source_ingestion.sql`](V27__create_github_source_ingestion.sql)                                           | GitHub source·snapshot·provenance·outbox·typed Run 확장     |
 | [`V28__create_career_artifacts.sql`](V28__create_career_artifacts.sql)                                                         | Career Artifact·version·generation request·outbox·typed Run 확장 |
+| [`V29__add_private_github_app_connections.sql`](V29__add_private_github_app_connections.sql)                                 | GitHub App connection·private repository access·revocation 확장 |
+| [`V30__add_account_deletion_tasks.sql`](V30__add_account_deletion_tasks.sql)                                                 | FK 없는 terminal account deletion claim·lease task             |
 
 현재 하위 디렉터리는 없다. 향후 migration도 특별한 분리 요구가 없으면 이 위치에 순차적으로 둔다.
 
@@ -67,6 +69,8 @@
 - V26은 `EXPERIENCE` evidence source와 canonical 경험, 다중 문서 출처 link, `vector(1536)` candidate embedding을 추가하고 기존 문서 근거를 보존하며 backfill한다.
 - V27은 public GitHub source·repository selection·immutable snapshot·sanitized unit·evidence provenance·전용 Object deletion outbox와 `GITHUB_INGESTION` typed Run link를 additive하게 추가한다.
 - V28은 immutable Resume·Portfolio version·canonical evidence provenance·private generation request·전용 Object deletion outbox와 두 `CAREER_ARTIFACT` typed Run workflow를 additive하게 추가한다.
+- V29는 one-time connection attempt, globally unique installation connection, repository access link, source/snapshot access mode, private repository visibility와 revocation/snapshot terminal cleanup을 additive하게 추가한다.
+- V30은 user FK가 없는 account deletion task와 active subject unique, due/cleanup index, claim/lease·24시간 purge·terminal subject scrub 제약을 추가한다.
 - P9 mock interview schema는 다음 forward migration으로 남긴다.
 
 ## 다른 디렉터리와의 의존 관계

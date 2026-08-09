@@ -2,7 +2,7 @@
 
 ## 디렉터리 목적
 
-이 디렉터리는 공개 Landing부터 P1 인증·P8 면접 준비와 feature-gated GitHub Source·Career Artifact까지 route table, browser history, 공통 문서 제목, guard와 안전한 `returnTo` 검증을 관리한다.
+이 디렉터리는 공개 Landing부터 P1 인증·P8 면접 준비, feature-gated GitHub Source·Career Artifact와 Gate 5 account settings까지 route table, browser history, 공통 문서 제목, guard와 안전한 `returnTo` 검증을 관리한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -19,12 +19,12 @@
 
 ## 구성 요소 역할
 
-- `index.ts`는 anonymous `/` 공개 Landing, 인증, onboarding, 재방문 가능한 `/guide`, dashboard, 기존 8개 profile section과 feature 활성 시 lazy `/integrations`(구 `/profile/github`는 redirect), `/career-artifacts` 목록·생성·상세, 업무 route와 Job analysis/cover-letter/interview child, 질문 set 목록·상세 route를 등록한다.
+- `index.ts`는 anonymous `/` 공개 Landing, 인증, onboarding, 재방문 가능한 `/guide`, dashboard, 기존 8개 profile section과 feature 활성 시 lazy `/integrations`(구 `/profile/github`는 redirect), `/career-artifacts` 목록·생성·상세, `/settings`→`/settings/account`, 업무 route와 Job analysis/cover-letter/interview child, 질문 set 목록·상세 route를 등록한다.
 - public-only와 auth-required 정책을 metadata와 auth store bootstrap으로 구분한다.
 - `/`는 bootstrap 완료 뒤 anonymous navigation만 허용하고 authenticated session은 Landing을 mount하기 전에 `/dashboard`로 replace한다.
 - 공통 `afterEach`가 Landing·인증·보호·404 route의 meta title을 동일한 형식으로 문서 제목에 반영한다.
 - 새 route 진입은 문서 상단으로 이동하고 browser history의 저장 위치는 복원한다.
-- `returnTo`는 dashboard·onboarding·등록된 profile·canonical experience·Agent Run·Document·Job·Cover Letter의 same-origin path만 허용한다. 외부 연동(`/integrations`와 backend가 돌려주는 `/profile/github`)과 Career Artifact route는 각각의 feature flag가 활성일 때만 허용하고 Career Artifact new query와 UUID 상세를 canonical 형식으로 제한한다.
+- `returnTo`는 dashboard·onboarding·등록된 profile·canonical experience·Agent Run·Document·Job·Cover Letter·account settings의 same-origin path만 허용한다. 외부 연동(`/integrations`와 backend가 돌려주는 `/profile/github`)과 Career Artifact route는 각각의 feature flag가 활성일 때만 허용하고 Career Artifact new query와 UUID 상세를 canonical 형식으로 제한한다.
 - route name, path, page import와 layout 경계를 한눈에 추적할 수 있는 진입점 역할을 한다.
 
 ## 다른 디렉터리와의 의존 관계

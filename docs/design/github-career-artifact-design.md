@@ -1,13 +1,13 @@
 # GitHub 경험 수집과 Career Artifact 생성 설계
 
-- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_4_IMPLEMENTED`
-- 기준일: 2026-08-08
-- 현재 구현 기준선: Flyway V28, canonical 경험 보관함과 GitHub provenance, GitHub Frontend, Career Artifact Backend·Frontend, 11개 WorkflowType, feature 활성 OpenAPI 88 paths/118 operations·비활성 79 paths/107 operations
+- 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_4_DONE_GATE_5_IMPLEMENTED_NOT_VERIFIED`
+- 기준일: 2026-08-09
+- 현재 구현 기준선: Flyway V30, canonical 경험 보관함과 GitHub provenance, GitHub App private connection·terminal purge, Career Artifact Backend·Frontend, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations·private 비활성/Career Artifact 활성 90 paths/120 operations·Career Artifact 비활성 81 paths/109 operations
 - 활성 공개 계약: [`../spec/`](../spec/)
 
-이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–1 GitHub Backend, Gate 2 GitHub Frontend, Gate 3 Career Artifact Backend와 Gate 4 Career Artifact Frontend는 구현됐고 Gate 5 Private GitHub는 목표 상태다. 실제 상태는 코드와 각 `progress.md`를 따른다.
+이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–4는 `DONE`이고 Gate 5 Private GitHub와 account terminal purge 코드는 구현됐다. Backend 전체 check, Frontend 전체 check, migration과 Compose 검증은 통과했지만 최종 mocked Chromium journey가 selector 보정 뒤 재실행되지 않아 Gate 5는 `IMPLEMENTED_NOT_VERIFIED`다. 실제 GitHub App UAT는 별도 `USER_MANUAL_UI_VALIDATION_PENDING`이며 상세 상태는 코드와 각 `progress.md`를 따른다.
 
-### Phase 1~4 실제 적용 상태
+### Phase 1~5 실제 적용 상태
 
 - Gate 0은 현재 V26 byte와 local Flyway 적용 checksum 일치, V26 SHA 고정, populated V26→V27 upgrade와 document canonical characterization으로 닫았다. V26 자체는 수정하지 않았다.
 - Gate 1은 V27, `com.hiresemble.githubsource`, `github-ingestion-v1`, GitHub 공개 API 7개 operation으로 구현했다.
@@ -17,6 +17,7 @@
 - 자동 검증은 WireMock·Fake·Testcontainers만 사용하며 실제 GitHub와 OpenAI 호출은 0회다.
 - Gate 3는 V28, 조건부 Career Artifact 11개 operation, `RESUME_GENERATION|PORTFOLIO_GENERATION`, POI renderer, private object version·download/outbox를 구현했다.
 - Gate 4는 독립 `VITE_CAREER_ARTIFACT_ENABLED` flag 아래 목록·4단계 wizard·현재 structured preview·과거 version 다운로드·lifecycle·SSE/REST monitor와 선택적 제안을 구현했다. Backend API·DB·workflow와 private GitHub 권한은 변경하지 않았다.
+- Gate 5는 V29 GitHub App connection/private source/revocation schema, V30 account deletion task, read-only repository-scoped token gateway, `/integrations` private UI와 `/settings/account` terminal purge UI를 additive하게 구현했다. 자동 검증의 외부 HTTPS 요청은 mock route에서 차단한다.
 
 ## 1. 목표와 비목표
 
@@ -54,7 +55,7 @@
 | 모델 선택  | 자기소개서 생성·검증만 server catalog의 exact model 선택                               | 이력서·포트폴리오 생성에도 같은 방식 확장                 |
 | 저장소     | document 전용 S3 adapter·5분 presigned URL·삭제 outbox                                 | GitHub snapshot과 career artifact는 별도 lifecycle로 추가 |
 | Office     | Apache POI 의존성 존재, DOCX 입력 parse                                                | XWPF DOCX·XSLF PPTX 출력 renderer 추가                    |
-| Frontend   | `/integrations`, `/career-artifacts/**`, provenance, Agent Run monitor와 선택적 제안 | Gate 5 private GitHub 권한 UI만 후속                      |
+| Frontend   | `/integrations`, `/career-artifacts/**`, provenance, Agent Run monitor와 선택적 제안 | GitHub App 연결·private source와 `/settings/account` 구현 |
 
 기존 `DocumentEvidenceService`는 문서 provenance 검증과 canonical 적용을 함께 소유한다. 구현 전 characterization test로 현재 결과를 고정한 뒤 다음 세 책임으로만 추출한다.
 
@@ -742,11 +743,72 @@ com.hiresemble.ai.prompt.careerartifact
 - SSE snapshot-first·reconnect·REST fallback, archive·unarchive·delete와 선택적 suggestion
 - Vitest 94 files/422 tests 전체 check와 Career Artifact·GitHub Chromium 4/4 회귀
 
-### Gate 5 — Private GitHub (`PLANNED`)
+### Gate 5 — Private GitHub·terminal purge (`IMPLEMENTED_NOT_VERIFIED`)
 
-- GitHub App installation과 token lifecycle
-- 최소 permission, disconnect와 deletion
-- webhook는 polling 비용·staleness 측정 뒤 별도 승인
+Gate 5는 기존 public URL 계약을 바꾸지 않는 additive extension이다. Personal Access Token은 어떤 UI·API·DB에도 추가하지 않는다.
+
+#### Feature·permission 경계
+
+- Backend는 `hiresemble.github.enabled`와 독립된 `hiresemble.github.private-enabled`, `hiresemble.github.app.*` typed 설정을 사용한다. Frontend는 `VITE_GITHUB_PRIVATE_ENABLED`를 별도 해석한다.
+- public flag가 꺼지면 `/integrations`와 `/profile/github` redirect 및 모든 GitHub 요청이 사라진다. public=true/private=false는 Gate 2 동작과 정확히 같다. private=true라도 Backend capability가 없거나 configured=false면 연결 control은 안전한 unavailable 상태다.
+- App repository permission은 `Metadata: read`, `Contents: read`만 허용한다. write/admin/organization/account permission과 webhook은 요청하지 않는다.
+- GitHub 설치 화면에서 허용한 repository 중 Hiresemble에서 다시 선택한 1~10개만 수집한다. content ingestion용 installation token은 `repository_ids=[선택한 external repository ID]`와 `permissions={metadata:read,contents:read}`로 매번 축소한다.
+- 하나의 GitHub installation ID는 DB unique로 한 Hiresemble user만 소유한다. 한 사용자는 personal/organization installation 여러 개를 연결할 수 있다.
+
+#### Installation→setup→OAuth sequence
+
+```text
+Browser ─POST+Session+CSRF─> installation-requests
+Backend ─one-time install state digest/session binding/TTL 저장─> DB
+Backend ─302 대상 URL 반환─> https://github.com/apps/{slug}/installations/new
+GitHub ─setup callback(state, installation_id)─> Backend
+Backend ─state/session/user/TTL/phase 검증, installation_id는 pending만 저장─> DB
+Backend ─second state + PKCE S256─> https://github.com/login/oauth/authorize
+GitHub ─OAuth callback(code,state)─> Backend
+Backend ─state를 먼저 one-time consume, code+verifier 교환─> github.com/login/oauth/access_token
+Backend ─user token으로 /user/installations 및 /user/installations/{id}/repositories 검증─> api.github.com
+Backend ─App JWT로 target/selection/suspension/permission 재검증─> api.github.com
+Backend ─검증 성공 뒤에만 ACTIVE connection 저장; user token/refresh token 폐기─> DB
+Backend ─고정 결과 code만 포함한 /integrations redirect─> Browser
+Browser ─router.replace로 callback query 제거─> /integrations
+```
+
+- setup callback의 `installation_id`는 신뢰하지 않고 pending 값으로만 둔다. expired/replayed/다른 Session·user/조작된 installation은 연결을 만들지 않는다.
+- install state와 OAuth state는 각각 256-bit CSPRNG 값이며 DB에는 SHA-256 digest만 저장한다. `session_binding_digest`는 server HMAC으로 현재 Spring Session ID에 결속한다.
+- PKCE verifier는 평문 DB/Session에 저장하지 않는다. `HMAC-SHA-256(app.state-secret, attemptId|userId|createdAt|"pkce-v1")`의 base64url 값으로 결정론적으로 파생하고 challenge는 S256이다. state secret rotation은 진행 중 attempt TTL보다 길게 이전 key를 보존한 뒤 수행한다.
+- OAuth code, user access/refresh token, installation token, App JWT, state 원문과 verifier는 DB·Session·Run·checkpoint·DTO·log에 저장하지 않는다. callback 오류는 allowlist된 고정 결과 code로만 redirect한다.
+- 외부 URL은 server-owned 설정과 고정 host로만 만든다. GitHub 호출·이동 host는 `github.com`, `api.github.com`, `github.com/login/oauth`이고 성공/실패 복귀는 등록된 Frontend origin의 `/integrations`만 사용한다.
+
+#### Connection·token lifecycle
+
+```text
+ACTIVE ─refresh suspended_at─> SUSPENDED
+ACTIVE|SUSPENDED ─404/revoked credential─> REVOKED
+ACTIVE|SUSPENDED ─user-confirmed DELETE─> DISCONNECTING
+DISCONNECTING ─remote uninstall + private snapshot object/row purge 성공─> DISCONNECTED
+DISCONNECTING ─bounded retry 소진─> DISCONNECTING + DEAD outbox(운영 추적)
+```
+
+- `ACTIVE`만 private discovery·refresh·Run token을 발급한다. `SUSPENDED|DISCONNECTING|DISCONNECTED|REVOKED`는 발급 전에 실패한다.
+- App JWT는 RS256, `iat=now-60s`, `exp<=now+9m`로 생성한다. installation token은 DB에 저장하지 않고 memory cache의 만료를 upstream `expires_at - safety skew`로 제한한다.
+- public gateway는 Authorization header를 만들지 않는다. private read의 401/403은 cache를 폐기하고 같은 read를 새 token으로 한 번만 재시도한다. 404/429/5xx/timeout은 안전한 typed 오류로 변환한다.
+- retry와 refresh는 Run 생성 당시 credential을 복사하지 않고 현재 `ACTIVE` connection에서 새 token을 해결한다. 연결이 끊겨도 기존 성공 snapshot과 승인 canonical 경험, immutable Career Artifact version은 훼손하지 않는다.
+
+#### Disconnect·account deletion
+
+- 연결 해제 확인 뒤 즉시 `DISCONNECTING`으로 바꿔 token mint를 막고 GitHub installation revocation outbox와 해당 connection의 private snapshot deletion을 enqueue한다. remote uninstall 404와 object missing은 성공이다.
+- timeout/429/5xx는 bounded retry와 lease recovery를 사용하고 `DEAD`는 운영 추적 대상이다. remote uninstall과 모든 private snapshot object·DB raw evidence purge가 성공해야 `DISCONNECTED`가 된다.
+- referenced GitHub evidence는 raw source link/excerpt를 scrub한 `SOURCE_DELETED` tombstone으로 바꾸고 승인 canonical 경험은 보존한다. 새 private refresh/Run만 차단한다.
+- `DELETE /account`는 같은 transaction에서 user를 `WITHDRAWN`, 모든 Spring Session을 폐기하고 FK 없는 `account_deletion_tasks`를 enqueue한다. worker는 Run cancel 안정화→GitHub uninstall→Document/GitHub/Career Artifact object terminal success→owner data·user final purge 순서를 지킨다.
+- `PENDING|RUNNING|RETRY_WAIT|DEAD` external/object task가 하나라도 있으면 user row를 삭제하지 않는다. 성공 transaction은 task를 `SUCCEEDED`, `subject_user_id=NULL`로 scrub하며 성공 metadata는 30일 뒤 정리한다. 목표 `purgeBy`는 접수 후 24시간이다.
+- webhook endpoint와 webhook secret은 Gate 5에 추가하지 않는다. installation 상태는 명시 refresh와 token 발급 실패에서 감지한다.
+
+#### 자동화 판정
+
+- Backend `check`: 102 suites/680 tests, 실패 0. WireMock·Fake·Testcontainers로 App JWT, PKCE/state, permission/repository downscope, private ingestion, revocation/account purge와 V1→V30·populated V28→V30을 검증했다.
+- Frontend `check`: 102 test files/465 tests, lint·format·typecheck·build 포함 통과했다.
+- 동일 Chromium run의 기존 GitHub 1개와 Career Artifact 3개 시나리오는 통과했다. 신규 Phase 5 journey는 OAuth 외부 차단 보정 뒤 connection 목록의 중복 text selector에서 실패했고 selector는 정확 일치로 보정했으나 재검증 한도 때문에 다시 실행하지 않았다.
+- 따라서 Gate 5를 `DONE`으로 올리지 않는다. 실제 GitHub App 연결 성공도 자동화 결과로 대체하지 않으며 `USER_MANUAL_UI_VALIDATION_PENDING`으로 유지한다.
 
 각 Gate는 독립 feature flag로 비활성화할 수 있어야 하며 이전 Gate의 기존 기능을 변경하지 않는다.
 
@@ -797,7 +859,17 @@ com.hiresemble.ai.prompt.careerartifact
 - feature flag off route·switch·returnTo·resource link·readiness 요청 부재
 - 1440px·390px overflow와 keyboard/focus
 
-실제 GitHub와 유료 AI Provider는 자동 test에서 호출하지 않는다. GitHub는 WireMock, AI는 Fake gateway, object storage는 local adapter/Testcontainers 경계로 검증한다.
+### 17.4 원래 시나리오 1–5 추적성
+
+| 시나리오 | UI route | API·workflow | DB·수명주기 | 자동화 근거 |
+| --- | --- | --- | --- | --- |
+| 1. 공개 GitHub URL 등록·선택·추출 | `/integrations` | `/github-sources/**`, `GITHUB_INGESTION` | V27 source/repository/snapshot/unit | `GitHubSource*`, `github-source.spec.ts` |
+| 2. GitHub App private 연결·선택 repository 추출 | `/integrations` GitHub App card | `/github-app-connections/**`, additive `GITHUB_APP` source | V29 attempt/connection/access/revocation | `GitHubAppConnectionIntegrationTest`, `HttpGitHubAppRemoteGatewayTest`, Phase 5 Chromium journey(재검증 대기) |
+| 3. canonical 경험 중복 방지·검토·승인 | `/profile/experiences` | 기존 canonical candidate apply·verification | V26 canonical item/evidence와 V27/V29 provenance tombstone | 기존 GitHub/canonical 회귀, Phase 5 Backend private pipeline |
+| 4. Resume exact model·DOCX version/download | `/career-artifacts/new`, `/career-artifacts/:id` | `RESUME_GENERATION`, Career Artifact API | V28 artifact/version/object outbox | Career Artifact Backend·Vitest·기존 Chromium Resume journey |
+| 5. Portfolio design·PPTX preview/download와 terminal cleanup | `/career-artifacts/**`, `/settings/account` | `PORTFOLIO_GENERATION`, disconnect, `DELETE /account` worker | V28 immutable version/object outbox, V29 revocation, V30 deletion task | Portfolio Chromium 회귀, account worker 통합 테스트, Phase 5 Chromium journey(재검증 대기) |
+
+자동 test는 실제 GitHub와 유료 AI Provider를 호출하지 않도록 설계한다. GitHub는 WireMock/browser fixture, AI는 Fake gateway, object storage는 local adapter/Testcontainers 경계로 검증하고 알 수 없는 외부 HTTPS 요청은 Phase 5 browser fixture에서 차단한다.
 
 ## 18. 관찰성과 개인정보
 
@@ -822,12 +894,12 @@ com.hiresemble.ai.prompt.careerartifact
 
 로그에는 내부 correlation ID와 source/artifact/run ID만 사용한다. 개인정보 삭제는 account deletion task가 GitHub snapshot과 career artifact object outbox 완료를 포함해야 한다.
 
-## 19. 후속 Gate 전 확인 사항
+## 19. 후속 확인 사항
 
 1. Gate 0에서 available local Flyway history와 현재 V26 checksum 일치, V26 SHA와 populated V26→V27 upgrade를 확인했다. 새로운 영구 환경에는 배포 전 동일 checksum 확인을 반복한다.
 2. 현재 `PROJECT|프로젝트` 등 category 실제 분포를 민감 content 없이 count로 확인한다.
 3. anonymous GitHub quota로 예상 traffic을 감당할 수 있는지 산정한다.
-4. GitHub App을 공개 MVP의 필수 연결로 할지 후속으로 둘지 운영 결정을 확정한다.
+4. [로컬 GitHub App UAT runbook](../operations/github-app-local-uat.md)으로 실제 installation·private repository·uninstall을 검증하고 결과를 `USER_MANUAL_UI_VALIDATION_PENDING`에서 갱신한다.
 5. 운영 배포 환경의 Office font 가용성과 선택적 시각 fixture는 배포 검증에서 확인한다. renderer는 원격 font를 내려받지 않는다.
 6. Gate 4 preview는 Office byte를 browser에서 parse하지 않고 구현된 structured version projection을 사용한다.
 7. roadmap phase 번호는 기존 P8.5-V~P10 순서를 임의로 변경하지 않고 별도 승인으로 배치한다.
@@ -846,3 +918,7 @@ com.hiresemble.ai.prompt.careerartifact
 - [GitHub REST Git trees](https://docs.github.com/en/rest/git/trees)
 - [GitHub REST rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)
 - [GitHub App 개요](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps)
+- [GitHub App 인증 방식](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app)
+- [GitHub App setup URL](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/about-the-setup-url)
+- [Installation access token](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)
+- [GitHub App installation REST](https://docs.github.com/en/rest/apps/installations)

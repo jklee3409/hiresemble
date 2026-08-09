@@ -2,17 +2,19 @@
 
 ## 디렉터리 목적
 
-Backend P1~P8, Gate 2 GitHub Source와 Gate 3 Career Artifact OpenAPI 및 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
+Backend P1~P8, Gate 2 public GitHub, Gate 3 Career Artifact와 Gate 5 GitHub App/account OpenAPI 및 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
 ## 주요 파일 및 하위 디렉터리
 
 - [`contracts.ts`](contracts.ts): 인증·프로필·canonical 경험 request·response, 문서·GitHub evidence source와 error type
 - [`http.ts`](http.ts): baseURL·cookie·CSRF interceptor
-- [`authApi.ts`](authApi.ts): 다섯 인증 endpoint와 계정 닉네임 변경 consumer
+- [`authApi.ts`](authApi.ts): 다섯 인증 endpoint와 계정 표시 이름 변경 consumer
+- [`accountContracts.ts`](accountContracts.ts), [`accountApi.ts`](accountApi.ts): 비밀번호 변경·terminal account deletion strict request/response와 Idempotency-Key 없는 consumer
 - [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD, direct/document evidence batch 검토와 canonical 경험 목록·상세·수정·검증·병합/분리 consumer
 - [`experienceContracts.ts`](experienceContracts.ts): canonical 경험·GitHub provenance 응답의 strict Zod 계약
 - [`githubSourceContracts.ts`](githubSourceContracts.ts): GitHub Source·repository page·refresh와 Run parity strict Zod 계약
 - [`githubSourceApi.ts`](githubSourceApi.ts): GitHub Source 7개 operation, typed sort·version·Idempotency-Key consumer
+- [`githubAppConnectionContracts.ts`](githubAppConnectionContracts.ts), [`githubAppConnectionApi.ts`](githubAppConnectionApi.ts): capability·connection lifecycle 7개 operation의 strict Zod/AbortSignal consumer
 - [`careerArtifactContracts.ts`](careerArtifactContracts.ts): Career Artifact enum·projection·MIME·resource parity와 request strict Zod 계약
 - [`careerArtifactApi.ts`](careerArtifactApi.ts): Career Artifact 11개 operation, CSRF·query·version과 create/regenerate 전용 Idempotency-Key consumer
 - [`agentRunContracts.ts`](agentRunContracts.ts): 11개 workflow enum·DTO·SSE event Zod 계약
@@ -33,7 +35,7 @@ Backend P1~P8, Gate 2 GitHub Source와 Gate 3 Career Artifact OpenAPI 및 11개 
 
 ## 구성 요소 역할
 
-- HTTP transport를 화면에서 분리하고 Backend 오류 code를 parsing 없이 사용자 동작으로 변환한다.
+- HTTP transport를 화면에서 분리하고 Backend 오류 code를 parsing 없이 사용자 동작으로 변환한다. 401은 `AUTHENTICATION_REQUIRED`만 session cleanup하고 current password의 `INVALID_CREDENTIALS`는 form 오류로 유지한다.
 
 ## 다른 디렉터리와의 의존 관계
 
