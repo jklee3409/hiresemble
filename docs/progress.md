@@ -4,6 +4,14 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub·Career Artifact Gate 0–4는 `DONE`, Gate 5는 `IMPLEMENTED_NOT_VERIFIED`, 실제 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-08-09] Session Summary (공개 GitHub snapshot quota 경계 동기화)
+
+- What was done: GitHub 설계의 공개 content snapshot을 REST blob fan-out에서 bounded commit archive로 동기화했다.
+- Key decisions: metadata discovery quota와 content snapshot 요청 수를 분리해 기록하고 private GitHub 계약은 유지한다.
+- Issues encountered: 기존 설계의 anonymous quota 후속 항목이 content와 metadata를 구분하지 않았다.
+- Validation: 구현 gateway 제한과 설계 문구를 대조했다.
+- Next steps: metadata discovery traffic 산정과 private App UAT는 유지한다.
+
 ## [2026-08-09] Session Summary (Phase 5 설계·명세·UAT 동기화)
 
 - What was done: 설계 3종, 활성 명세 5종, 관련 index/progress와 24단계 GitHub App local UAT runbook을 V29·V30 구현에 맞췄다.

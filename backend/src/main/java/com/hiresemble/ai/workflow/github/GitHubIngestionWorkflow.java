@@ -232,6 +232,11 @@ public final class GitHubIngestionWorkflow {
         public JsonNode minimalOutput(SourceValidationOutput output, ObjectMapper ignored) {
             return tree(output);
         }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
     }
 
     private final class DiscoverExecutor extends GitHubExecutor<DiscoveryOutput> {

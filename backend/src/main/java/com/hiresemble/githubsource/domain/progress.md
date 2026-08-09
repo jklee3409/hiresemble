@@ -4,6 +4,14 @@
 
 public/private GitHub Source와 App connection domain 구현 상태를 추적한다.
 
+## [2026-08-09] Session Summary (FAILED source refresh 상태 계약)
+
+- What was done: `FAILED`를 snapshot terminal state로 인정해 기존 허용 전이 `FAILED -> QUEUED`를 application refresh에서 사용할 수 있게 했다.
+- Key decisions: domain transition 표는 바꾸지 않고 refresh 가능 상태 판정만 일치시켰다.
+- Issues encountered: 없음.
+- Validation: boundary와 API integration test가 통과했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (Private access domain enum·record)
 
 - What was done: access mode, repository visibility, connection status/selection과 안전한 record를 추가했다.

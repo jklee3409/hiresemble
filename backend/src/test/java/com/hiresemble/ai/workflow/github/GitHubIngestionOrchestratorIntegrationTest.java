@@ -72,6 +72,7 @@ class GitHubIngestionOrchestratorIntegrationTest extends PostgresIntegrationTest
     @Autowired private FakeGitHubStorage storage;
     @Autowired private FakeGitHubChatGateway chatGateway;
     @Autowired private FakeGitHubEmbeddingGateway embeddingGateway;
+    @Autowired private GitHubIngestionWorkflow githubIngestionWorkflow;
 
     private UUID userId;
 
@@ -97,6 +98,15 @@ class GitHubIngestionOrchestratorIntegrationTest extends PostgresIntegrationTest
         storage.values.clear();
         chatGateway.reset();
         embeddingGateway.reset();
+    }
+
+    @Test
+    void sourceValidationIsNeverReusedBecauseItAppliesTheRunStateTransition() {
+        assertThat(githubIngestionWorkflow.contribution().steps())
+                .filteredOn(step -> step.stepKey().equals(
+                        GitHubIngestionWorkflow.VALIDATE_GITHUB_SOURCE))
+                .singleElement()
+                .satisfies(step -> assertThat(step.executor().reusable()).isFalse());
     }
 
     @Test

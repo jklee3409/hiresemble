@@ -15,6 +15,7 @@ import com.hiresemble.githubsource.application.GitHubGatewayModels.TreeSnapshot;
 import com.hiresemble.githubsource.application.GitHubSanitizerModels.RawFile;
 import com.hiresemble.githubsource.application.GitHubSanitizerModels.RawRepository;
 import com.hiresemble.githubsource.application.GitHubSanitizerModels.SanitizedRepository;
+import com.hiresemble.githubsource.application.GitHubPublicArchiveGateway.ArchiveFile;
 import com.hiresemble.githubsource.application.GitHubWorkflowModels.ApplySummary;
 import com.hiresemble.githubsource.application.GitHubWorkflowModels.Discovery;
 import com.hiresemble.githubsource.application.GitHubWorkflowModels.FinalSummary;
@@ -133,6 +134,12 @@ public class GitHubSourceWorkflowService
     @Override
     public Discovery discover(UUID userId, UUID sourceId, UUID runId, Instant now) {
         Source source = source(userId, sourceId);
+        List<Repository> selected = store.selectedRepositories(userId, sourceId);
+        if (source.sourceKind() == GitHubSourceKind.REPOSITORY
+                && source.accessMode() == GitHubAccessMode.PUBLIC
+                && !selected.isEmpty()) {
+            return new Discovery(source, selected);
+        }
         if (source.sourceKind() == GitHubSourceKind.ACCOUNT) {
             var discovery = gateway.discoverAccount(discoveryAccess(source), source.ownerLogin());
             Source updated = store.applyAccountDiscovery(
@@ -161,6 +168,38 @@ public class GitHubSourceWorkflowService
         requireSelected(userId, sourceId, repository.id());
         Source source = source(userId, sourceId);
         GitHubAccessContext access = repositoryAccess(source, repository);
+        if (access.mode() == GitHubAccessMode.PUBLIC) {
+            var archive = gateway.publicArchive(
+                    repository.ownerLogin(), repository.repositoryName());
+            if (archive.isPresent()) {
+                var downloaded = archive.orElseThrow();
+                Snapshot reusable = store.findSnapshot(
+                                userId,
+                                repository.id(),
+                                downloaded.commitSha(),
+                                properties.getRetrievalPolicyVersion())
+                        .orElse(null);
+                if (reusable != null) return new RawCapture(repository, reusable, null);
+                List<TreeEntry> selected = sanitizer.selectCandidateFiles(
+                        downloaded.files().stream().map(ArchiveFile::entry).toList());
+                Map<String, ArchiveFile> byPath = downloaded.files().stream().collect(
+                        java.util.stream.Collectors.toMap(
+                                value -> value.entry().path(), value -> value, (left, right) -> left));
+                List<RawFile> files = selected.stream()
+                        .map(entry -> new RawFile(entry, byPath.get(entry.path()).content()))
+                        .toList();
+                RawRepository raw = new RawRepository(
+                        metadata(repository),
+                        downloaded.commitSha(),
+                        downloaded.commitSha(),
+                        downloaded.truncated(),
+                        Map.of(),
+                        files,
+                        files.size() == selected.size(),
+                        selected.size());
+                return new RawCapture(repository, null, raw);
+            }
+        }
         var commit = gateway.defaultBranchCommit(
                 access,
                 repository.ownerLogin(),

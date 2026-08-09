@@ -87,6 +87,7 @@ class GitHubSourceBoundaryTest {
         GitHubSourceStatus.RUNNING.requireTransitionTo(GitHubSourceStatus.PARTIAL);
         GitHubSourceStatus.READY.requireTransitionTo(GitHubSourceStatus.QUEUED);
         GitHubSourceStatus.FAILED.requireTransitionTo(GitHubSourceStatus.QUEUED);
+        assertThat(GitHubSourceStatus.FAILED.terminalSnapshotState()).isTrue();
         assertThatThrownBy(() ->
                         GitHubSourceStatus.WAITING_USER.requireTransitionTo(GitHubSourceStatus.READY))
                 .isInstanceOf(BusinessException.class)

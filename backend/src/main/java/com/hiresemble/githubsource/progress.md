@@ -4,6 +4,14 @@
 
 Gate 1 public GitHub Source와 Gate 5 GitHub App private repository Backend가 같은 bounded ingestion·canonical pipeline에 구현됐다. Gate 5는 최종 browser 재검증 전 `IMPLEMENTED_NOT_VERIFIED`다.
 
+## [2026-08-09] Session Summary (공개 source quota-safe refresh 복구)
+
+- What was done: 실패 source 재실행과 공개 repository archive snapshot 경로를 연결해 실제 실패 요청을 복구했다.
+- Key decisions: 공개 content만 archive를 우선하고 private token REST, API·DB 계약과 10단계 workflow 순서는 유지한다.
+- Issues encountered: 익명 REST quota와 stateful validation checkpoint 재사용이 연속으로 드러났다.
+- Validation: 실제 Run 성공, focused GitHub integration 통과, 전체 suite의 비관련 timing test는 격리 재실행 통과다.
+- Next steps: metadata discovery quota 용량 계획은 남아 있다.
+
 ## [2026-08-09] Session Summary (GitHub App private repository lifecycle)
 
 - What was done:

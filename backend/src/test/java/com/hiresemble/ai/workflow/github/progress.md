@@ -4,6 +4,14 @@
 
 Phase 1 Gate 1 GitHub ingestion workflow 통합 테스트가 구현됐다.
 
+## [2026-08-09] Session Summary (validation step reuse 회귀)
+
+- What was done: source validation executor가 재사용 불가임을 workflow contribution 경계에서 고정했다.
+- Key decisions: 상태 전이 step만 직접 계약 검증하고 나머지 checkpoint 재사용은 유지한다.
+- Issues encountered: 없음.
+- Validation: `GitHubIngestionOrchestratorIntegrationTest`가 통과했다.
+- Next steps: None.
+
 ## [2026-08-07] Session Summary (GitHub workflow orchestration 검증)
 
 - What was done: account wait/resume, direct repository skip, partial, invalid ref, usage, retry·cancel·SSE fixture를 추가했다.

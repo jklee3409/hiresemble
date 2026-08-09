@@ -12,6 +12,7 @@ import com.hiresemble.githubsource.application.GitHubGatewayModels.TreeSnapshot;
 import com.hiresemble.githubsource.application.GitHubRestGateway;
 import com.hiresemble.githubsource.application.GitHubAccessContext;
 import com.hiresemble.githubsource.application.GitHubInstallationTokenProvider;
+import com.hiresemble.githubsource.application.GitHubPublicArchiveGateway;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,12 +54,14 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
     private final ObjectMapper objectMapper;
     private final Semaphore concurrency;
     private final GitHubInstallationTokenProvider tokenProvider;
+    private final GitHubPublicArchiveGateway publicArchiveGateway;
 
     @Autowired
     public HttpGitHubRestGateway(
             GitHubProperties properties,
             ObjectMapper objectMapper,
-            ObjectProvider<GitHubInstallationTokenProvider> tokenProvider) {
+            ObjectProvider<GitHubInstallationTokenProvider> tokenProvider,
+            GitHubPublicArchiveGateway publicArchiveGateway) {
         this(
                 properties.getApiBaseUrl(),
                 properties.getApiVersion(),
@@ -68,7 +72,8 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
                 properties.getMaxConcurrentRequests(),
                 objectMapper,
                 false,
-                tokenProvider.getIfAvailable());
+                tokenProvider.getIfAvailable(),
+                publicArchiveGateway);
     }
 
     HttpGitHubRestGateway(
@@ -91,6 +96,7 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
                 maxConcurrentRequests,
                 objectMapper,
                 allowLoopbackTestBaseUrl,
+                null,
                 null);
     }
 
@@ -105,6 +111,32 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
             ObjectMapper objectMapper,
             boolean allowLoopbackTestBaseUrl,
             GitHubInstallationTokenProvider tokenProvider) {
+        this(
+                baseUrl,
+                apiVersion,
+                connectTimeout,
+                responseTimeout,
+                maxResponseBytes,
+                maxTextFileBytes,
+                maxConcurrentRequests,
+                objectMapper,
+                allowLoopbackTestBaseUrl,
+                tokenProvider,
+                null);
+    }
+
+    private HttpGitHubRestGateway(
+            URI baseUrl,
+            String apiVersion,
+            Duration connectTimeout,
+            Duration responseTimeout,
+            int maxResponseBytes,
+            int maxTextFileBytes,
+            int maxConcurrentRequests,
+            ObjectMapper objectMapper,
+            boolean allowLoopbackTestBaseUrl,
+            GitHubInstallationTokenProvider tokenProvider,
+            GitHubPublicArchiveGateway publicArchiveGateway) {
         requireAllowedBaseUrl(baseUrl, allowLoopbackTestBaseUrl);
         this.baseUrl = baseUrl;
         this.apiVersion = apiVersion;
@@ -114,10 +146,19 @@ public final class HttpGitHubRestGateway implements GitHubRestGateway {
         this.objectMapper = objectMapper;
         this.concurrency = new Semaphore(maxConcurrentRequests, true);
         this.tokenProvider = tokenProvider;
+        this.publicArchiveGateway = publicArchiveGateway;
         this.client = HttpClient.newBuilder()
                 .connectTimeout(connectTimeout)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
+    }
+
+    @Override
+    public Optional<GitHubPublicArchiveGateway.PublicArchive> publicArchive(
+            String ownerLogin, String repositoryName) {
+        return publicArchiveGateway == null
+                ? Optional.empty()
+                : Optional.of(publicArchiveGateway.download(ownerLogin, repositoryName));
     }
 
     @Override

@@ -35,6 +35,7 @@ import com.hiresemble.githubsource.application.GitHubSnapshotStoragePort;
 import com.hiresemble.githubsource.application.GitHubSourceWorkflowService;
 import com.hiresemble.githubsource.domain.GitHubAccountType;
 import com.hiresemble.githubsource.domain.GitHubSourceRecords.Source;
+import com.hiresemble.githubsource.domain.GitHubSourceStatus;
 import com.hiresemble.githubsource.infrastructure.GitHubSnapshotDeletionOutboxWorker;
 import com.hiresemble.support.PostgresIntegrationTest;
 import jakarta.servlet.http.Cookie;
@@ -356,6 +357,37 @@ class GitHubSourceApiIntegrationTest extends PostgresIntegrationTest {
                 String.class,
                 owner.userId(),
                 sourceId)).isEqualTo("SUCCEEDED");
+    }
+
+    @Test
+    void failedSourceCanRefreshEvenWhenTheCapturedCommitDidNotChange() throws Exception {
+        Session owner = authenticated("github-failed-refresh-owner@example.com");
+        JsonNode accepted = create(
+                owner,
+                "https://github.com/octo/failed-refresh",
+                "github-failed-refresh-create-0001",
+                202);
+        UUID sourceId = UUID.fromString(accepted.get("resourceId").asText());
+        UUID runId = UUID.fromString(accepted.get("agentRunId").asText());
+        Source ready = moveRepositoryToReady(owner.userId(), sourceId, runId);
+        jdbcTemplate.update(
+                "UPDATE github_sources SET source_status='FAILED',version=version+1 WHERE user_id=? AND id=?",
+                owner.userId(),
+                sourceId);
+        Source failed = source(owner.userId(), sourceId);
+        assertThat(failed.status()).isEqualTo(GitHubSourceStatus.FAILED);
+
+        JsonNode refreshed = refresh(
+                owner,
+                sourceId,
+                failed.version(),
+                "github-failed-refresh-recovery-0001",
+                202);
+
+        assertThat(refreshed.get("changed").asBoolean()).isTrue();
+        assertThat(refreshed.at("/run/status").asText()).isEqualTo("QUEUED");
+        assertThat(source(owner.userId(), sourceId).status()).isEqualTo(GitHubSourceStatus.QUEUED);
+        assertThat(ready.lastSuccessfulSyncAt()).isNotNull();
     }
 
     @Test

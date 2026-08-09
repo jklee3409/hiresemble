@@ -4,6 +4,14 @@
 
 Gate 1 public과 Gate 5 private access context를 함께 사용하는 `github-ingestion-v1` 10단계 workflow가 구현됐다.
 
+## [2026-08-09] Session Summary (stateful validation 재사용 차단)
+
+- What was done: refresh Run에서 `VALIDATE_GITHUB_SOURCE`가 checkpoint로 재사용되지 않고 `QUEUED -> RUNNING` 전이를 매번 수행하도록 했다.
+- Key decisions: 순수 산출물 step의 재사용은 유지하고 상태 전이를 소유한 validation만 non-reusable로 고정했다.
+- Issues encountered: 실제 첫 archive Run은 validation 재사용으로 finalize CAS가 실패했다.
+- Validation: executor 계약 regression과 실제 후속 Run 10단계 성공을 확인했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (Private access context workflow 연결)
 
 - What was done: source access mode/connection을 workflow에서 해석해 기존 discovery·snapshot·canonical 단계에 전달했다.

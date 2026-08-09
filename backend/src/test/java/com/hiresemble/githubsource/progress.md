@@ -4,6 +4,14 @@
 
 public/private GitHub Backend를 deterministic PostgreSQL, Fake와 WireMock으로 검증한다. 실제 GitHub와 paid AI 호출은 금지한다.
 
+## [2026-08-09] Session Summary (FAILED source refresh 회귀)
+
+- What was done: 실패 source가 동일 captured commit에서도 새 Run으로 `QUEUED`되는 API 통합 회귀를 추가했다.
+- Key decisions: 자동 테스트는 Fake만 사용하고 실제 provider 검증 결과는 root/backend 기록에만 남긴다.
+- Issues encountered: 새 테스트의 enum import 누락을 compile 단계에서 발견해 보정했다.
+- Validation: `GitHubSourceApiIntegrationTest` 포함 focused suite가 통과했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (GitHub App private security 회귀)
 
 - What was done: connection state/PKCE/owner permission, token downscope/cache, private ingestion와 revocation cleanup 테스트를 추가했다.

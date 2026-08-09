@@ -13,7 +13,7 @@ public enum GitHubSourceStatus {
     FAILED;
 
     public boolean terminalSnapshotState() {
-        return this == READY || this == PARTIAL;
+        return this == READY || this == PARTIAL || this == FAILED;
     }
 
     public void requireTransitionTo(GitHubSourceStatus next) {

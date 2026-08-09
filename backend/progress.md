@@ -7,6 +7,19 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 102 suites/680 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-08-09] Session Summary (공개 GitHub archive 수집과 실패 source 복구)
+
+- What was done:
+  - 공개 repository snapshot을 commit-addressed codeload archive로 수집하고 실패 source refresh, workflow validation 상태 전이를 보정했다.
+- Key decisions:
+  - 공개 archive는 16 MiB compressed, 64 MiB expanded, 10,000 entries와 retained file 64 KiB 한도로 검증하며 private repository는 기존 authenticated REST를 유지한다.
+- Issues encountered:
+  - 실제 장애는 익명 REST quota 소진과 validation step checkpoint 재사용의 두 단계 문제였다.
+- Validation:
+  - 실제 OpenAI 4회 호출로 대상 Run이 성공했고 focused archive/API/orchestrator integration은 통과했다. 전체 692 tests 중 비관련 worker timing test 1개만 실패했고 동일 테스트 격리 실행은 통과했다. `docker compose config --quiet`도 통과했다.
+- Next steps:
+  - 전체 suite의 account deletion scheduler timing flake는 별도 안정화 대상이다.
+
 ## [2026-08-09] Session Summary (Career Artifact 실제 provider grounding hardening)
 
 - What was done:

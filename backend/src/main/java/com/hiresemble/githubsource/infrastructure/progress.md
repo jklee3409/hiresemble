@@ -4,6 +4,14 @@
 
 public/private GitHub Source REST·storage·connection/outbox infrastructure 구현 상태를 추적한다.
 
+## [2026-08-09] Session Summary (bounded public codeload archive gateway)
+
+- What was done: 공개 HEAD archive redirect를 검증하고 ZIP entry를 기존 tree/blob 모델로 변환하는 gateway를 추가했다.
+- Key decisions: 고정 GitHub/codeload origin, 40자리 commit SHA, path traversal·크기·entry 수 제한과 실제 Git blob SHA-1을 적용했다. retrieval policy는 `github-snapshot-v2`로 올렸다.
+- Issues encountered: 대상 archive가 기존 8 MiB REST response 한도를 소폭 초과해 archive 전용 16 MiB compressed 한도를 분리했다.
+- Validation: 정상 archive, 외부 redirect 거부, compressed oversize 회귀 테스트와 실제 8.43 MB repository 수집이 통과했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (private off blank App ID binding)
 
 - What was done:

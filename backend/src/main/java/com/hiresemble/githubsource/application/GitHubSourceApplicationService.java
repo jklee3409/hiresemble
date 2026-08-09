@@ -211,9 +211,25 @@ public class GitHubSourceApplicationService {
         if (repositories.isEmpty()) {
             throw new BusinessException(ErrorCode.GITHUB_REPOSITORY_SELECTION_REQUIRED);
         }
-        boolean changed = false;
+        boolean changed = source.status() == GitHubSourceStatus.FAILED;
         for (Repository repository : repositories) {
             try {
+                if (source.accessMode() == GitHubAccessMode.PUBLIC) {
+                    var archive = gateway.publicArchive(
+                            repository.ownerLogin(), repository.repositoryName());
+                    if (archive.isPresent()) {
+                        Snapshot latest = store.latestSnapshot(
+                                        userId,
+                                        repository.id(),
+                                        properties.getRetrievalPolicyVersion())
+                                .orElse(null);
+                        if (latest == null
+                                || !latest.commitSha().equals(archive.orElseThrow().commitSha())) {
+                            changed = true;
+                        }
+                        continue;
+                    }
+                }
                 GitHubAccessContext access = access(source, repository);
                 ConditionalRepository current = gateway.repository(
                         access,

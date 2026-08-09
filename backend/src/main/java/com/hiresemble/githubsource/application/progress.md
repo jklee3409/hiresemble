@@ -4,6 +4,14 @@
 
 GitHub Source와 App connection application 구현 상태를 추적한다.
 
+## [2026-08-09] Session Summary (실패 source refresh와 공개 archive orchestration)
+
+- What was done: `FAILED` source를 새 Run으로 refresh하고 저장된 direct repository metadata와 archive commit을 재사용하도록 조정했다.
+- Key decisions: 실패 상태는 commit 동일 여부와 무관하게 새 Run을 만들며 initial registration과 private 접근의 기존 검증은 유지한다.
+- Issues encountered: 실패 source의 동일 commit 최적화가 복구 Run 생성을 막았다.
+- Validation: API regression과 실제 대상 source 복구가 통과했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (Connection·private source application)
 
 - What was done: state/PKCE lifecycle, owner installation 검증, private source parity, refresh/disconnect orchestration을 구현했다.

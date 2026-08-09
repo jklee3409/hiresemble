@@ -14,6 +14,19 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/109 operations, on·private GitHub off 90 paths/120 operations, 둘 다 on 97 paths/127 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-08-09] Session Summary (공개 GitHub 연동 rate limit 장애 복구와 실제 AI 검증)
+
+- What was done:
+  - `jklee3409@naver.com`의 `https://github.com/jklee3409/hiresemble` 실패 Run을 식별하고, 공개 content 수집을 bounded commit archive로 전환해 같은 source를 실제 OpenAI workflow로 복구했다.
+- Key decisions:
+  - 공개 snapshot은 REST blob fan-out 대신 검증된 codeload archive를 사용하고 private GitHub REST 경계는 유지한다. 실패 source refresh와 source 상태 전이를 수행하는 validation step은 명시적으로 재실행한다.
+- Issues encountered:
+  - 최초 Run은 익명 GitHub quota 소진으로 실패했고, 첫 보정 Run은 validation checkpoint 재사용 때문에 finalize 상태 전이가 거부됐다. 둘을 독립 원인으로 수정했다.
+- Validation:
+  - 실제 Run `fce1902d-1222-4cfc-8bde-efdd8f677d49`가 `SUCCEEDED`, source는 bounded 수집에 따른 `PARTIAL`, error는 null이었다. 실제 provider call은 4/10, 누적 비용은 USD 0.031125였다. 관련 통합 테스트와 Compose 검증은 통과했고, 전체 692개 테스트 중 비관련 account deletion timing test 1개가 실패했으나 격리 재실행은 통과했다.
+- Next steps:
+  - account/repository metadata 탐색의 anonymous quota 용량 계획과 실제 GitHub App private UAT는 별도 후속이다.
+
 ## [2026-08-09] Session Summary (Career Artifact 실제 AI 생성 실패 재현과 grounding 보정)
 
 - What was done:

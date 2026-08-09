@@ -125,7 +125,8 @@ GitHub raw evidence는 downstream 생성 Context에 직접 넣지 않는다. 항
 
 첫 구현은 URL만으로 접근 가능한 공개 repository만 지원한다.
 
-- 익명 API quota를 보호하기 위해 ETag/conditional request, queue, global concurrency와 repository snapshot cache를 사용한다.
+- 공개 repository metadata 탐색에는 ETag/conditional request, queue와 global concurrency를 사용한다. 선택된 공개 repository의 content snapshot은 REST blob fan-out 대신 commit-addressed `codeload.github.com` archive를 단일 bounded download로 수집하고 snapshot cache를 사용해 익명 API quota와 요청 수를 보호한다.
+- 공개 archive redirect는 고정 codeload origin과 40자리 commit SHA path만 허용하며 압축 크기, 전체 해제 크기, entry 수·경로와 retained text file 크기를 제한한다.
 - upstream `403|429`는 reset/Retry-After를 snapshot하고 bounded retry 뒤 `GITHUB_RATE_LIMITED`로 종료한다.
 - 사용자 PAT 입력·저장은 허용하지 않는다.
 - private repository는 후속 GitHub App 연결에서만 지원한다.
@@ -898,7 +899,7 @@ DISCONNECTING ─bounded retry 소진─> DISCONNECTING + DEAD outbox(운영 추
 
 1. Gate 0에서 available local Flyway history와 현재 V26 checksum 일치, V26 SHA와 populated V26→V27 upgrade를 확인했다. 새로운 영구 환경에는 배포 전 동일 checksum 확인을 반복한다.
 2. 현재 `PROJECT|프로젝트` 등 category 실제 분포를 민감 content 없이 count로 확인한다.
-3. anonymous GitHub quota로 예상 traffic을 감당할 수 있는지 산정한다.
+3. account/repository metadata 탐색에 남아 있는 anonymous GitHub quota의 예상 traffic을 산정한다. 공개 content snapshot은 archive 수집으로 REST blob quota와 분리했다.
 4. [로컬 GitHub App UAT runbook](../operations/github-app-local-uat.md)으로 실제 installation·private repository·uninstall을 검증하고 결과를 `USER_MANUAL_UI_VALIDATION_PENDING`에서 갱신한다.
 5. 운영 배포 환경의 Office font 가용성과 선택적 시각 fixture는 배포 검증에서 확인한다. renderer는 원격 font를 내려받지 않는다.
 6. Gate 4 preview는 Office byte를 browser에서 parse하지 않고 구현된 structured version projection을 사용한다.

@@ -12,10 +12,11 @@ public class GitHubProperties implements InitializingBean {
     private boolean privateEnabled;
     private URI apiBaseUrl = URI.create("https://api.github.com");
     private String apiVersion = "2026-03-10";
-    private String retrievalPolicyVersion = "github-snapshot-v1";
+    private String retrievalPolicyVersion = "github-snapshot-v2";
     private Duration connectTimeout = Duration.ofSeconds(3);
     private Duration responseTimeout = Duration.ofSeconds(10);
     private int maxResponseBytes = 8 * 1024 * 1024;
+    private int maxArchiveBytes = 16 * 1024 * 1024;
     private int maxConcurrentRequests = 2;
     private int maxDiscoveredRepositories = 200;
     private int maxSelectedRepositories = 10;
@@ -88,6 +89,14 @@ public class GitHubProperties implements InitializingBean {
 
     public void setMaxResponseBytes(int maxResponseBytes) {
         this.maxResponseBytes = maxResponseBytes;
+    }
+
+    public int getMaxArchiveBytes() {
+        return maxArchiveBytes;
+    }
+
+    public void setMaxArchiveBytes(int maxArchiveBytes) {
+        this.maxArchiveBytes = maxArchiveBytes;
     }
 
     public int getMaxConcurrentRequests() {
@@ -176,6 +185,8 @@ public class GitHubProperties implements InitializingBean {
                 || !positive(responseTimeout)
                 || maxResponseBytes < 1024
                 || maxResponseBytes > 10 * 1024 * 1024
+                || maxArchiveBytes < 1024
+                || maxArchiveBytes > 32 * 1024 * 1024
                 || maxConcurrentRequests < 1
                 || maxConcurrentRequests > 8
                 || maxDiscoveredRepositories != 200

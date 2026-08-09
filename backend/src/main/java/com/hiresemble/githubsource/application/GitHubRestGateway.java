@@ -6,6 +6,7 @@ import com.hiresemble.githubsource.application.GitHubGatewayModels.CommitMetadat
 import com.hiresemble.githubsource.application.GitHubGatewayModels.ConditionalRepository;
 import com.hiresemble.githubsource.application.GitHubGatewayModels.TreeSnapshot;
 import java.util.Map;
+import java.util.Optional;
 
 public interface GitHubRestGateway {
 
@@ -21,6 +22,11 @@ public interface GitHubRestGateway {
     Map<String, Long> languages(String ownerLogin, String repositoryName);
 
     Blob blob(String ownerLogin, String repositoryName, String blobSha);
+
+    default Optional<GitHubPublicArchiveGateway.PublicArchive> publicArchive(
+            String ownerLogin, String repositoryName) {
+        return Optional.empty();
+    }
 
     default AccountDiscovery discoverAccount(GitHubAccessContext access, String ownerLogin) {
         if (access.mode() == com.hiresemble.githubsource.domain.GitHubAccessMode.PUBLIC) {

@@ -5,6 +5,14 @@
 Coverage targets public-only GitHub input and deterministic local fixtures. Detailed
 session results are recorded by the root agent after integrated verification.
 
+## [2026-08-09] Session Summary (public archive security boundary)
+
+- What was done: bounded archive 정상 수집, redirect origin 거부와 compressed size 초과 거부 테스트를 추가했다.
+- Key decisions: loopback fixture는 package constructor로만 주입하고 production origin은 고정한다.
+- Issues encountered: 없음.
+- Validation: archive gateway와 기존 REST gateway focused tests가 통과했다.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (optional GitHub App ID binding regression)
 
 - What was done:
