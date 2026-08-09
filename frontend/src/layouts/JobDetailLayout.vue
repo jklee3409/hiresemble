@@ -10,6 +10,7 @@ import {
 } from '@/features/jobs/presentation'
 import { useJobDetailQuery } from '@/features/jobs/queries'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -41,10 +42,7 @@ const analysisLabel = computed(() => {
 
 <template>
   <section class="job-detail-shell">
-    <RouterLink class="job-detail-back" :to="{ name: 'jobs' }">
-      <AppIcon name="arrow-left" />
-      공고 목록
-    </RouterLink>
+    <BackLink :to="{ name: 'jobs' }">공고 목록</BackLink>
     <header v-if="job.data.value" class="job-resource-header">
       <div class="job-resource-header__main">
         <p>{{ jobCompanyLabel(job.data.value.companyName) }}</p>
@@ -126,17 +124,6 @@ const analysisLabel = computed(() => {
 <style scoped>
 .job-detail-shell {
   min-width: 0;
-}
-
-.job-detail-back {
-  display: inline-flex;
-  min-height: 2.25rem;
-  align-items: center;
-  gap: 0.375rem;
-  color: var(--color-muted-strong);
-  font-size: 0.8125rem;
-  font-weight: 680;
-  text-decoration: none;
 }
 
 .job-resource-header {
@@ -224,10 +211,6 @@ const analysisLabel = computed(() => {
 
 .job-resource-header__actions:empty {
   display: none;
-}
-
-.job-detail-back:hover {
-  color: var(--color-brand);
 }
 
 .job-detail-tabs {

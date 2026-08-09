@@ -75,6 +75,7 @@ import type {
 import { normalizeApiError, type ApiClientError } from '@/shared/api/errors'
 import { listEvidence } from '@/shared/api/profileApi'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import { useNotifications } from '@/shared/ui/notifications'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -1644,10 +1645,7 @@ function coverLetterActionMessage(error: ApiClientError): string {
     <template v-else-if="coverLetter.data.value">
       <header class="cover-topbar">
         <div class="cover-topbar__identity">
-          <RouterLink class="cover-topbar__back" :to="{ name: 'cover-letters' }">
-            <AppIcon name="arrow-left" />
-            <span>자기소개서 목록</span>
-          </RouterLink>
+          <BackLink :to="{ name: 'cover-letters' }">자기소개서 목록</BackLink>
           <form
             v-if="renamingTitle && !readOnly"
             class="cover-topbar__rename"
@@ -2401,18 +2399,9 @@ function coverLetterActionMessage(error: ApiClientError): string {
   min-width: 0;
 }
 
-.cover-topbar__back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.cover-topbar__back:hover {
-  color: var(--color-brand-strong);
+/* 제목 줄과의 간격은 identity grid gap이 만든다. */
+.cover-topbar__identity > .back-link {
+  margin-bottom: var(--space-1);
 }
 
 .cover-topbar__title-row {

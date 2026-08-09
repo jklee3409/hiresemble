@@ -5,6 +5,22 @@
 - 현재 구현 route가 공유하는 브랜드 lockup, icon, page header, text status, loading·empty·error state와 pagination primitive가 있다.
 - 공용 component는 domain 판단이나 API 호출을 소유하지 않고 접근 가능한 표현만 제공한다.
 
+## [2026-08-09] Session Summary (돌아가기 링크 단일 표현으로 통합)
+
+- What was done:
+  - `BackLink.vue`를 추가하고 상세 화면 8곳의 서로 다른 돌아가기 링크를 이 하나로 바꿨다. 전역 `.back-link` 알약과 왼쪽 화살표를 항상 함께 쓴다.
+  - 교체 대상은 `.back-link` 3곳(AI 작업 상세·자료 상세·공고 등록)과 서로 다르던 5곳(`job-detail-back`, `cover-topbar__back`, `question-set-page__back`, Career Artifact 상세·생성의 `← ` text-link)이다.
+- Key decisions:
+  - 알약 자체 margin은 전역 class에 그대로 두고, gap을 이미 가진 grid container에서만 화면 쪽에서 0으로 낮춘다. 간격은 화면 사정이고 생김새는 공용 규칙이다.
+  - `ProfileSectionActions`의 이전·다음 button은 목록 복귀가 아니라 항목 사이 이동이라 그대로 뒀다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check`: 102 files, 465 tests와 lint·format·typecheck·build 통과.
+  - Chromium 13건(github-source·career-artifacts·job-analysis·cover-letter-review·ui-shell·agent-runs) 통과. 공고 등록·공고 상세·자기소개서 편집·Career Artifact 상세를 1440px 화면으로 직접 확인했다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (InlineNotice 도입)
 
 - What was done:

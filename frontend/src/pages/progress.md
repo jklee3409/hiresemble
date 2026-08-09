@@ -4,6 +4,35 @@
 
 공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-09] Session Summary (돌아가기 링크 통일과 GitHub 목록 제목 정리)
+
+- What was done:
+  - `AgentRunDetailPage`, `DocumentDetailPage`, `JobNewPage`, `CoverLetterEditPage`, `InterviewQuestionSetPage`, `CareerArtifactDetailPage`, `CareerArtifactNewPage`와 `layouts/JobDetailLayout`의 돌아가기 링크를 공용 `BackLink`로 바꾸고 화면별 back 전용 style을 지웠다.
+  - `GitHubSourcePage`의 `등록된 연결 / GitHub 연결 N개` 제목 줄을 없애고 `sr-only` 제목만 남겼다.
+- Key decisions:
+  - 목록 제목은 삭제를 골랐다. 다른 목록 화면이 모두 `sr-only` 제목만 두고 상단 탐색이 화면 이름을 알리므로, 이 화면만 제목 줄을 그리면 그 자체가 불일치다. 개수는 카드 목록으로 보인다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check` 통과, Chromium 13건 통과. 상세는 [`../shared/ui/progress.md`](../shared/ui/progress.md)에 있다.
+- Next steps:
+  - 없음.
+
+## [2026-08-09] Session Summary (GitHub 연결 화면 문구와 디자인 정리)
+
+- What was done:
+  - `GitHubSourcePage.vue`의 어색한 표현을 서비스 문구로 바꿨다. `상태와 저장소 확인`을 선택한 연결 이름으로, `GitHub source N개`를 `GitHub 연결 N개`로, `마지막 성공 동기화`·`버전`을 `마지막으로 확인한 때`·`등록한 날`로 바꿨다.
+  - 상태 badge 옆에 떠 있던 문장을 `GITHUB_STATUS_DESCRIPTIONS` 기반 상태 block으로 묶고, `.alert` 경고 세 곳을 `InlineNotice`로 바꿨다.
+  - 저장소 선택 영역에 선택 규칙 안내와 선택 개수 pill을 넣고, 선택 전에 뜨던 붉은 오류 문구를 안내 문구로 바꿨다. 정렬 label의 `최근 push 순`도 `최근 작업 순`으로 바꿨다.
+- Key decisions:
+  - 사용자에게 의미 없는 `version` 숫자는 화면에서 빼고 mutation 인자로만 쓴다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check` 통과. `github-source.spec.ts` Chromium 1건 통과. 1440px에서 저장소 선택·진행 중·완료 세 상태를 화면으로 확인했다. 상세는 [`../features/github/progress.md`](../features/github/progress.md)에 있다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (자기소개서 편집 작성 도움 열 폭 고정)
 
 - What was done:

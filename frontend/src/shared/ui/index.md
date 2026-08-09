@@ -13,6 +13,7 @@
 - [`appSelectTesting.ts`](appSelectTesting.ts): `AppSelect`를 사용자와 같은 순서(열기 → 고르기)로 조작하는 test helper
 - [`StatusBadge.vue`](StatusBadge.vue): text label과 선택적 prefix를 포함하는 semantic status. tone은 neutral·brand·info·success·notice·warning·danger이며 notice는 오류가 아닌 "확인 권장" 상태에 쓴다
 - [`productJourney.ts`](productJourney.ts): Landing과 보호 `/guide`가 공유하는 5단계 번호·아이콘·canonical 제목·핵심 설명
+- [`BackLink.vue`](BackLink.vue): 상세 화면에서 목록·이전 화면으로 돌아가는 유일한 표현. 전역 `.back-link` 알약과 왼쪽 화살표를 고정하고 위치·간격만 쓰는 쪽에서 정한다
 - [`InlineNotice.vue`](InlineNotice.vue): 본문 흐름 안에서 한 가지 상황을 알리는 줄. 표면은 흰 카드로 두고 심각도는 왼쪽 아이콘에만 남긴다
 - [`StatePanel.vue`](StatePanel.vue): loading·empty·error section과 action slot
 - [`PaginationNav.vue`](PaginationNav.vue): 이전·현재·다음 공용 pagination
@@ -32,6 +33,7 @@
 - 단일 선택은 `AppSelect`만 사용한다. trigger가 `<button role="combobox">`라 `<label for>`로 이름을 붙일 수 없으므로 호출부는 `aria-label` 또는 `aria-labelledby`로 접근 가능한 이름을 반드시 준다.
 - 성공은 Toast, 중요 mutation은 Confirm Dialog, 입력 오류는 Inline Validation으로 역할을 분리하고 브라우저 기본 alert·confirm·prompt를 사용하지 않는다.
 - 문장 하나로 상황을 알릴 때는 면 전체를 상태색으로 채우는 `.alert` 대신 `InlineNotice`를 쓴다. `.alert`는 화면 전체가 그 상태일 때만 남긴다.
+- 목록·이전 화면으로 돌아가는 링크는 화면마다 새로 만들지 않고 `BackLink`를 쓴다. 앞뒤 항목을 오가는 `ProfileSectionActions`의 이전·다음 button은 다른 패턴이므로 여기에 포함하지 않는다.
 
 ## 다른 디렉터리와의 의존 관계
 

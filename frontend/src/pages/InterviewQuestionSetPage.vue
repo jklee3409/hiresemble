@@ -33,6 +33,7 @@ import {
   type ResearchTopic,
 } from '@/shared/api/interviewContracts'
 import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
@@ -131,9 +132,7 @@ async function refreshDetail(): Promise<void> {
 
 <template>
   <section class="question-set-page app-page" aria-labelledby="question-set-heading">
-    <RouterLink class="question-set-page__back" :to="{ name: 'interviews' }">
-      예상 질문 세트 목록
-    </RouterLink>
+    <BackLink :to="{ name: 'interviews' }">예상 질문 세트 목록</BackLink>
 
     <StatePanel
       v-if="detail.isLoading.value"
@@ -400,11 +399,9 @@ async function refreshDetail(): Promise<void> {
   gap: var(--space-5);
 }
 
-.question-set-page__back {
-  justify-self: start;
-  color: var(--color-brand);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
+/* container gap이 이미 아래 간격을 만들므로 알약 자체 margin은 쓰지 않는다. */
+.question-set-page > .back-link {
+  margin-bottom: 0;
 }
 
 .section-surface {

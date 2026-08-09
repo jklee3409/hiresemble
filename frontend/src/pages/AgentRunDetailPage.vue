@@ -14,7 +14,7 @@ import {
   type AgentRunConnectionState,
 } from '@/features/agent-runs/stream'
 import { normalizeApiError } from '@/shared/api/errors'
-import AppIcon from '@/shared/ui/AppIcon.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -89,10 +89,7 @@ async function cancel(): Promise<void> {
 
 <template>
   <section class="agent-run-detail-page app-page">
-    <RouterLink class="back-link" to="/agent-runs">
-      <AppIcon name="arrow-left" />
-      AI 작업
-    </RouterLink>
+    <BackLink to="/agent-runs">AI 작업</BackLink>
     <StatePanel
       v-if="detail.isLoading.value"
       class="agent-run-detail-page__state"

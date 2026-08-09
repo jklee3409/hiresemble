@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import CareerArtifactGenerationForm from '@/features/career-artifacts/CareerArtifactGenerationForm.vue'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/features/career-artifacts/filters'
 import type { CareerArtifactType } from '@/shared/api/careerArtifactContracts'
 import type { RunAcceptedDto } from '@/shared/api/agentRunContracts'
+import BackLink from '@/shared/ui/BackLink.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -59,7 +60,7 @@ function cancel(): void {
 <template>
   <main class="career-artifact-new page-stack">
     <h1 class="sr-only">새 이력서·포트폴리오 초안 만들기</h1>
-    <RouterLink class="text-link" to="/career-artifacts">← AI로 만든 초안 목록</RouterLink>
+    <BackLink to="/career-artifacts">AI로 만든 초안 목록</BackLink>
     <CareerArtifactGenerationForm
       v-if="authStore.currentUser"
       :user-id="authStore.currentUser.id"

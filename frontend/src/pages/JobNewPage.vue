@@ -6,7 +6,7 @@ import { useCreateJobMutation } from '@/features/jobs/queries'
 import { type JobCreateForm, validateJobCreateForm } from '@/features/jobs/validation'
 import { createJobIdempotencyKey } from '@/shared/api/jobApi'
 import { fieldErrorsToRecord, normalizeApiError } from '@/shared/api/errors'
-import AppIcon from '@/shared/ui/AppIcon.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import { focusFirstInvalidControl } from '@/shared/ui/formFocus'
@@ -112,10 +112,7 @@ function emptyForm(): JobCreateForm {
 
 <template>
   <section class="job-new app-page app-page--narrow" aria-labelledby="job-new-heading">
-    <RouterLink class="back-link" :to="{ name: 'jobs' }">
-      <AppIcon name="arrow-left" />
-      공고 목록
-    </RouterLink>
+    <BackLink :to="{ name: 'jobs' }">공고 목록</BackLink>
     <PageHeader
       heading-id="job-new-heading"
       title="관심 공고 추가"

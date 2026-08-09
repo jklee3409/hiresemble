@@ -34,6 +34,7 @@ import {
 import { normalizeApiError } from '@/shared/api/errors'
 import type { DocumentParseStatus, EvidenceExtractionStatus } from '@/shared/api/documentContracts'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import BackLink from '@/shared/ui/BackLink.vue'
 import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
@@ -249,10 +250,7 @@ function fileTypeLabel(mimeType: string): string {
 
 <template>
   <section class="document-detail app-page" aria-labelledby="document-heading">
-    <RouterLink class="back-link" to="/documents">
-      <AppIcon name="arrow-left" />
-      이력서·자료
-    </RouterLink>
+    <BackLink to="/documents">이력서·자료</BackLink>
     <StatePanel
       v-if="document.isPending.value"
       class="document-detail__state"

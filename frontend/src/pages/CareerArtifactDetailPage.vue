@@ -30,6 +30,7 @@ import type {
 } from '@/shared/api/careerArtifactContracts'
 import type { RunAcceptedDto } from '@/shared/api/agentRunContracts'
 import { normalizeApiError } from '@/shared/api/errors'
+import BackLink from '@/shared/ui/BackLink.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
@@ -221,7 +222,7 @@ function generationTone(status: string) {
 
 <template>
   <main class="career-artifact-detail page-stack">
-    <RouterLink class="text-link" to="/career-artifacts">← 목록으로</RouterLink>
+    <BackLink to="/career-artifacts">AI로 만든 초안 목록</BackLink>
 
     <section v-if="detail.isPending.value" class="state-panel" aria-busy="true" role="status">
       자료를 불러오는 중…
@@ -512,7 +513,8 @@ function generationTone(status: string) {
   align-content: start;
 }
 
-.career-artifact-detail > .text-link {
+.career-artifact-detail > .back-link {
+  margin-bottom: 0;
   justify-self: start;
 }
 
