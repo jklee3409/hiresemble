@@ -7,7 +7,7 @@ defineProps<{ preview: ResumeArtifactPreviewDto }>()
 <template>
   <article class="resume-preview" aria-label="현재 이력서 미리보기">
     <header>
-      <p class="section-kicker">구조화 미리보기</p>
+      <p class="section-kicker">내용 미리보기</p>
       <h2 v-if="preview.headline">{{ preview.headline }}</h2>
       <p v-if="preview.summary" class="resume-preview__summary">{{ preview.summary }}</p>
     </header>
@@ -24,7 +24,7 @@ defineProps<{ preview: ResumeArtifactPreviewDto }>()
           <li v-for="bullet in item.bullets" :key="bullet">{{ bullet }}</li>
         </ul>
         <details v-if="item.evidenceRefs.length > 0">
-          <summary>근거 {{ item.evidenceRefs.length }}개</summary>
+          <summary>참고한 내 경험 {{ item.evidenceRefs.length }}개</summary>
           <ul>
             <li v-for="evidence in item.evidenceRefs" :key="evidence.evidenceId">
               {{ evidence.title }}

@@ -131,11 +131,8 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
 
     <section class="career-artifact-list__intro">
       <div class="career-artifact-list__intro-body">
-        <h2>검증된 경험으로 만든 파일</h2>
-        <p>
-          초안의 구조화 내용을 먼저 검토하고, 성공한 버전의 Word 또는 PowerPoint 파일을 받을 수
-          있어요.
-        </p>
+        <h2>내 경험을 바탕으로 만든 경쟁력</h2>
+        <p>정리된 내용을 직접 확인하고, 완성된 결과는 Word 또는 PowerPoint로 받아볼 수 있어요.</p>
       </div>
       <div
         v-if="readiness.data.value?.verifiedExperienceCount"
@@ -165,7 +162,7 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
       </RouterLink>
     </section>
 
-    <section class="career-artifact-list__filters filter-toolbar" aria-label="생성 자료 필터">
+    <section class="career-artifact-list__filters filter-toolbar" aria-label="자료 필터">
       <div class="field">
         <span class="field__label">종류</span>
         <AppSelect
@@ -200,11 +197,9 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
 
     <p v-if="mutationError" class="alert alert--warning" role="alert">{{ mutationError }}</p>
     <section :aria-busy="list.isPending.value" aria-live="polite">
-      <p v-if="list.isPending.value" class="state-panel" role="status">
-        생성 자료 목록을 불러오는 중…
-      </p>
+      <p v-if="list.isPending.value" class="state-panel" role="status">만든 자료를 불러오는 중…</p>
       <div v-else-if="list.isError.value" class="state-panel state-panel--error">
-        <p>생성 자료 목록을 불러오지 못했어요.</p>
+        <p>만든 자료를 불러오지 못했어요.</p>
         <button type="button" class="button button--secondary" @click="list.refetch()">
           다시 불러오기
         </button>
@@ -252,12 +247,6 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
               <RouterLink class="button button--primary" :to="`/career-artifacts/${artifact.id}`"
                 >상세 보기</RouterLink
               >
-              <RouterLink
-                v-if="artifact.latestAgentRunId"
-                class="text-link"
-                :to="`/agent-runs/${artifact.latestAgentRunId}`"
-                >최근 AI 작업</RouterLink
-              >
               <button
                 type="button"
                 class="button button--secondary"
@@ -280,7 +269,7 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
     <nav
       v-if="list.data.value && list.data.value.totalPages > 1"
       class="pagination-controls"
-      aria-label="생성 자료 페이지"
+      aria-label="자료 페이지"
     >
       <button
         type="button"
@@ -440,8 +429,10 @@ function generationTone(status: CareerArtifactSummaryDto['generationStatus']) {
   text-align: right;
 }
 
+/* 주 동작은 왼쪽, 보관·다시 사용은 오른쪽 끝에 둔다. */
 .career-artifact-list__items article > footer {
   flex-wrap: wrap;
+  justify-content: space-between;
   margin-top: auto;
 }
 

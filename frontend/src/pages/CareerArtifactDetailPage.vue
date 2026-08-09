@@ -72,6 +72,9 @@ const detailError = computed(() =>
 const lifecycleLabel = computed(() =>
   artifact.value ? ARTIFACT_LIFECYCLE_LABELS[artifact.value.lifecycleStatus] : '',
 )
+const generationInProgress = computed(
+  () => artifact.value !== null && ['QUEUED', 'RUNNING'].includes(artifact.value.generationStatus),
+)
 
 watch(
   () => detail.data.value?.latestRun?.id,
@@ -112,9 +115,9 @@ async function deleteArtifact(): Promise<void> {
   const confirmedArtifactId = artifact.value.id
   const confirmedVersion = artifact.value.version
   const confirmed = await notifications.confirm({
-    title: '이 생성 자료를 삭제할까요?',
+    title: '이 자료를 삭제할까요?',
     message:
-      '생성한 파일과 모든 버전은 제거됩니다. 원본으로 사용한 업로드 문서와 경험 보관함의 경험은 그대로 유지됩니다.',
+      '만들어 둔 파일과 지난 기록이 모두 사라져요. 업로드한 자료와 경험 보관함의 내용은 그대로 남아요.',
     confirmLabel: '자료 삭제',
     cancelLabel: '취소',
     tone: 'danger',
@@ -125,7 +128,7 @@ async function deleteArtifact(): Promise<void> {
     await deleteMutation.mutateAsync(confirmedVersion)
     closeAgentRunStreamsForResource(userId.value, 'CAREER_ARTIFACT', confirmedArtifactId)
     clearCareerArtifactDraftsForArtifact(userId.value, confirmedArtifactId)
-    notifications.toast('생성 자료를 삭제했어요.', 'success')
+    notifications.toast('자료를 삭제했어요.', 'success')
     await router.replace({ name: 'career-artifacts' })
   } catch (error) {
     const apiError = normalizeApiError(error)
@@ -218,17 +221,17 @@ function generationTone(status: string) {
 
 <template>
   <main class="career-artifact-detail page-stack">
-    <RouterLink class="text-link" to="/career-artifacts">← AI로 만든 초안 목록</RouterLink>
+    <RouterLink class="text-link" to="/career-artifacts">← 목록으로</RouterLink>
 
     <section v-if="detail.isPending.value" class="state-panel" aria-busy="true" role="status">
-      생성 자료를 불러오는 중…
+      자료를 불러오는 중…
     </section>
     <section v-else-if="detailError" class="state-panel state-panel--error">
       <h1 v-if="detailError.status === 404">이 자료를 찾을 수 없어요</h1>
       <h1 v-else-if="detailError.code === 'INVALID_SERVER_RESPONSE'">
-        자료 정보를 안전하게 표시하지 못했어요
+        자료 내용을 표시하지 못했어요
       </h1>
-      <h1 v-else>생성 자료를 불러오지 못했어요</h1>
+      <h1 v-else>자료를 불러오지 못했어요</h1>
       <p v-if="detailError.status === 404">삭제되었거나 이 계정에서 볼 수 없는 자료예요.</p>
       <p v-else>{{ careerArtifactErrorMessage(detailError) }}</p>
       <button type="button" class="button button--secondary" @click="detail.refetch()">
@@ -246,7 +249,9 @@ function generationTone(status: string) {
           <p>
             {{ ARTIFACT_GENERATION_LABELS[artifact.generationStatus] }} ·
             {{
-              artifact.currentVersionNo ? `현재 v${artifact.currentVersionNo}` : '성공한 버전 없음'
+              artifact.currentVersionNo
+                ? `현재 v${artifact.currentVersionNo}`
+                : '아직 받을 파일 없음'
             }}
           </p>
         </div>
@@ -273,9 +278,9 @@ function generationTone(status: string) {
       >
         <header class="career-artifact-detail__section-heading">
           <div>
-            <p class="section-kicker">현재 성공 버전</p>
-            <h2>v{{ detail.data.value.currentVersion.versionNo }} 미리보기</h2>
-            <p>새 생성이 진행되거나 실패해도 이 성공 버전은 계속 이용할 수 있어요.</p>
+            <p class="section-kicker">지금 받을 수 있는 파일</p>
+            <h2>v{{ detail.data.value.currentVersion.versionNo }} 내용 살펴보기</h2>
+            <p>새로 만드는 중이거나 실패하더라도 이 파일은 그대로 받을 수 있어요.</p>
           </div>
           <button
             type="button"
@@ -291,7 +296,7 @@ function generationTone(status: string) {
           class="career-artifact-detail__download-info"
           role="status"
         >
-          {{ downloadInfo[detail.data.value.currentVersion.id]?.filename }} · 링크 만료
+          {{ downloadInfo[detail.data.value.currentVersion.id]?.filename }} · 다운로드 링크 만료
           {{
             formatCareerArtifactInstant(
               downloadInfo[detail.data.value.currentVersion.id]!.expiresAt,
@@ -308,11 +313,17 @@ function generationTone(status: string) {
         />
       </section>
 
+      <!-- 만드는 중일 때는 위 진행 카드가 이미 상태를 알려 주므로 실패 안내를 겹쳐 보여 주지 않는다. -->
+      <section v-else-if="generationInProgress" class="state-panel">
+        <h2>파일을 만들고 있어요</h2>
+        <p>다 만들면 여기에서 내용을 살펴보고 파일로 받을 수 있어요.</p>
+      </section>
+
       <section v-else class="state-panel">
-        <h2>아직 성공한 파일이 없어요</h2>
+        <h2>아직 받을 수 있는 파일이 없어요</h2>
         <p>
-          실패·취소·중단된 작업은 원본 경험을 바꾸지 않습니다. 최근 AI 작업에서 안전한 오류를
-          확인하고 다시 시도하거나 설정을 다시 선택하세요.
+          작업이 실패하거나 중단돼도 내 경험 기록은 그대로예요. 무엇이 문제였는지 확인하고 다시
+          만들어 보세요.
         </p>
         <RouterLink
           v-if="artifact.latestAgentRunId"
@@ -325,23 +336,21 @@ function generationTone(status: string) {
       <section class="career-artifact-detail__versions section-surface">
         <header class="career-artifact-detail__section-heading">
           <div>
-            <p class="section-kicker">버전 기록</p>
-            <h2>성공한 파일 버전</h2>
-            <p>
-              과거 버전은 구조화 미리보기가 제공되지 않으며, 선택한 파일만 다운로드할 수 있어요.
-            </p>
+            <p class="section-kicker">지난 기록</p>
+            <h2>만들어 둔 파일</h2>
+            <p>예전에 만든 파일은 내용 미리보기 없이 다운로드만 할 수 있어요.</p>
           </div>
         </header>
-        <p v-if="versions.isPending.value" role="status">버전 기록을 불러오는 중…</p>
+        <p v-if="versions.isPending.value" role="status">지난 기록을 불러오는 중…</p>
         <div v-else-if="versions.isError.value" class="alert alert--warning">
-          버전 기록을 불러오지 못했어요.
+          지난 기록을 불러오지 못했어요.
           <button type="button" class="text-link" @click="versions.refetch()">다시 불러오기</button>
         </div>
-        <p v-else-if="versions.data.value?.items.length === 0">아직 성공한 파일 버전이 없어요.</p>
+        <p v-else-if="versions.data.value?.items.length === 0">아직 만들어 둔 파일이 없어요.</p>
         <div v-else class="career-artifact-detail__version-layout">
           <div
             role="listbox"
-            aria-label="다운로드할 버전"
+            aria-label="받을 파일 고르기"
             class="career-artifact-detail__version-list"
           >
             <button
@@ -361,7 +370,7 @@ function generationTone(status: string) {
             </button>
           </div>
           <article v-if="selectedVersion" class="career-artifact-detail__selected-version">
-            <h3>v{{ selectedVersion.versionNo }} 파일</h3>
+            <h3>v{{ selectedVersion.versionNo }}</h3>
             <dl>
               <div>
                 <dt>AI 모델</dt>
@@ -372,7 +381,7 @@ function generationTone(status: string) {
                 <dd>{{ Math.ceil(selectedVersion.fileSizeBytes / 1024) }} KB</dd>
               </div>
               <div>
-                <dt>생성 시각</dt>
+                <dt>만든 시각</dt>
                 <dd>{{ formatCareerArtifactInstant(selectedVersion.createdAt) }}</dd>
               </div>
             </dl>
@@ -385,7 +394,7 @@ function generationTone(status: string) {
               {{ ARTIFACT_FILE_LABELS[artifact.artifactType] }} 다운로드
             </button>
             <p v-if="downloadInfo[selectedVersion.id]" role="status">
-              {{ downloadInfo[selectedVersion.id]?.filename }} · 링크 만료
+              {{ downloadInfo[selectedVersion.id]?.filename }} · 다운로드 링크 만료
               {{ formatCareerArtifactInstant(downloadInfo[selectedVersion.id]!.expiresAt) }}
             </p>
           </article>
@@ -393,7 +402,7 @@ function generationTone(status: string) {
         <nav
           v-if="versions.data.value && versions.data.value.totalPages > 1"
           class="pagination-controls"
-          aria-label="버전 페이지"
+          aria-label="기록 페이지"
         >
           <button
             type="button"
@@ -420,8 +429,8 @@ function generationTone(status: string) {
         class="career-artifact-detail__actions section-surface"
       >
         <header>
-          <p class="section-kicker">자료 관리</p>
-          <h2>새 버전과 보관 상태</h2>
+          <p class="section-kicker">이 자료 관리</p>
+          <h2>다시 만들기와 보관</h2>
         </header>
         <div>
           <button
@@ -467,9 +476,11 @@ function generationTone(status: string) {
         class="career-artifact-detail__regenerate"
       >
         <header>
-          <p class="section-kicker">새 버전</p>
-          <h2>경험과 표시 정보를 다시 확인하세요</h2>
-          <p>과거 연락처와 전체 경험 선택은 공개 API에 포함되지 않으므로 추측해 채우지 않습니다.</p>
+          <p class="section-kicker">다시 만들기</p>
+          <h2>어떤 내용으로 만들까요</h2>
+          <p>
+            지난번에 고른 경험과 연락처는 저장해 두지 않아요. 이번에 넣을 내용을 다시 골라 주세요.
+          </p>
         </header>
         <CareerArtifactGenerationForm
           v-if="authStore.currentUser"
@@ -493,8 +504,16 @@ function generationTone(status: string) {
 </template>
 
 <style scoped>
+/* 뒤로 가기 → 자료 요약 → 진행 상태 → 결과 → 버전 → 관리 순으로 같은 간격을 두고 쌓는다. */
 .career-artifact-detail {
+  display: grid;
   min-width: 0;
+  gap: var(--space-5);
+  align-content: start;
+}
+
+.career-artifact-detail > .text-link {
+  justify-self: start;
 }
 
 .career-artifact-detail__header,
@@ -512,7 +531,25 @@ function generationTone(status: string) {
 .career-artifact-detail__versions,
 .career-artifact-detail__actions,
 .career-artifact-detail__regenerate {
-  padding: clamp(1.25rem, 4vw, 2rem);
+  padding: var(--space-5) var(--space-6);
+}
+
+.career-artifact-detail__header h1 {
+  margin: var(--space-1) 0 0;
+  color: var(--color-ink-title);
+  font-size: clamp(1.375rem, 1.2rem + 0.4vw, 1.625rem);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+
+.career-artifact-detail__section-heading h2,
+.career-artifact-detail__actions h2,
+.career-artifact-detail__regenerate h2 {
+  color: var(--color-ink-title);
+  font-size: 1.0625rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }
 
 .career-artifact-detail__header h1,
@@ -572,8 +609,9 @@ function generationTone(status: string) {
 }
 
 .career-artifact-detail__version-list button[aria-selected='true'] {
-  border-color: var(--color-primary);
-  background: var(--hs-blue-50);
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
 }
 
 .career-artifact-detail__version-list span,

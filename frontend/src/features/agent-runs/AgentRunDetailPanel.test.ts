@@ -335,8 +335,9 @@ describe('AgentRunDetailPanel', () => {
       global,
     })
 
+    expect(wrapper.text()).toContain('AI 연결이 원활하지 않아요')
+    expect(wrapper.text()).toContain('저장해 둔 내용은 그대로 있어요')
     expect(wrapper.text()).toContain('잠시 후 다시 시도해 주세요')
-    expect(wrapper.text()).toContain('등록한 원본과 기존 결과는 그대로 유지됩니다')
     expect(wrapper.text()).not.toContain('공급자')
     expect(wrapper.text()).not.toContain('AI_PROVIDER_DISABLED')
   })

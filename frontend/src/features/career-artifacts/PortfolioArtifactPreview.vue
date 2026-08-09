@@ -47,7 +47,7 @@ function setTabRef(element: Element | ComponentPublicInstance | null, index: num
 <template>
   <section class="portfolio-preview" aria-label="현재 포트폴리오 미리보기">
     <header>
-      <p class="section-kicker">구조화 미리보기</p>
+      <p class="section-kicker">내용 미리보기</p>
       <h2>포트폴리오 슬라이드 {{ preview.slides.length }}장</h2>
     </header>
 
@@ -91,7 +91,7 @@ function setTabRef(element: Element | ComponentPublicInstance | null, index: num
         <li v-for="item in selectedSlide.items" :key="item">{{ item }}</li>
       </ul>
       <details v-if="selectedSlide.evidenceRefs.length > 0">
-        <summary>근거 {{ selectedSlide.evidenceRefs.length }}개</summary>
+        <summary>참고한 내 경험 {{ selectedSlide.evidenceRefs.length }}개</summary>
         <ul>
           <li v-for="evidence in selectedSlide.evidenceRefs" :key="evidence.evidenceId">
             {{ evidence.title }}

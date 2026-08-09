@@ -9,7 +9,7 @@ describe('Career Artifact structured previews', () => {
     const wrapper = mount(ResumeArtifactPreview, { props: { preview: resumePreview() } })
     expect(wrapper.text()).toContain('백엔드 개발자')
     expect(wrapper.text()).toContain('응답 시간을 줄였습니다')
-    expect(wrapper.text()).toContain('근거 1개')
+    expect(wrapper.text()).toContain('참고한 내 경험 1개')
     expect(wrapper.text()).toContain('수치를 다시 확인하세요')
     expect(wrapper.html()).not.toContain('iframe')
   })

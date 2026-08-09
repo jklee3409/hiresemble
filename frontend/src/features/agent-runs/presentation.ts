@@ -146,6 +146,80 @@ const STEP_LABELS: Record<string, string> = {
   PERSIST_PORTFOLIO_VERSION: '포트폴리오 버전 저장',
 }
 
+export interface AgentRunFailureCopy {
+  title: string
+  description: string
+}
+
+/*
+ * Backend가 내려 주는 safe error는 `AI 결과의 의미 제약을 확인하지 못했습니다.`처럼
+ * 내부 검증 단계를 그대로 옮긴 문장이라 사용자가 무엇을 해야 할지 알 수 없다.
+ * 화면에는 원문 대신 이 표를 통과한 문구만 보여 주고, 원문은 어디에도 노출하지 않는다.
+ */
+export function agentRunFailureCopy(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+  options: { retryable?: boolean; status?: AgentRunStatus } = {},
+): AgentRunFailureCopy {
+  const code = error?.code?.toUpperCase() ?? ''
+  const message = error?.message ?? ''
+  const retryHint = options.retryable === false ? '' : ' 잠시 후 다시 시도해 주세요.'
+
+  if (options.status === 'CANCELLED') {
+    return {
+      title: '작업을 취소했어요',
+      description: '요청하신 대로 진행을 멈췄어요. 지금까지 저장한 내용은 그대로 있어요.',
+    }
+  }
+  if (code === 'INSUFFICIENT_JOB_DATA' || code.includes('INSUFFICIENT')) {
+    return {
+      title: '내용이 부족해 마무리하지 못했어요',
+      description: '참고할 내용이 충분하지 않았어요. 자료를 더 채운 뒤 다시 시도해 주세요.',
+    }
+  }
+  if (
+    code.startsWith('AI_SO_') ||
+    code.includes('STRUCTURED_OUTPUT') ||
+    code.includes('OUTPUT_INVALID') ||
+    message.includes('의미 제약') ||
+    message.includes('결과 형식')
+  ) {
+    return {
+      title: 'AI가 만든 내용을 정리하지 못했어요',
+      description: `AI 답변이 화면에 보여 줄 수 있는 형태로 정리되지 않았어요. 저장해 둔 내용은 그대로 있어요.${retryHint}`,
+    }
+  }
+  if (code.includes('TIMEOUT')) {
+    return {
+      title: 'AI 응답이 너무 오래 걸렸어요',
+      description: `작업은 안전하게 멈췄고 저장해 둔 내용은 그대로 있어요.${retryHint}`,
+    }
+  }
+  if (code.includes('RATE_LIMIT') || code.includes('QUOTA') || code.includes('BUDGET')) {
+    return {
+      title: '지금은 요청이 몰려 있어요',
+      description: `사용할 수 있는 양을 넘어서 작업을 멈췄어요. 저장해 둔 내용은 그대로 있어요.${retryHint}`,
+    }
+  }
+  if (
+    code.includes('PROVIDER') ||
+    code.includes('TEMPORARY') ||
+    code.includes('NETWORK') ||
+    code.includes('UNAVAILABLE')
+  ) {
+    return {
+      title: 'AI 연결이 원활하지 않아요',
+      description: `일시적인 연결 문제로 작업을 마치지 못했어요. 저장해 둔 내용은 그대로 있어요.${retryHint}`,
+    }
+  }
+  return {
+    title: '작업을 마치지 못했어요',
+    description:
+      options.retryable === false
+        ? '지금은 이 작업을 진행할 수 없어요. 저장해 둔 내용은 그대로 있어요.'
+        : '문제가 생겨 작업을 안전하게 멈췄어요. 저장해 둔 내용은 그대로 있어요. 잠시 후 다시 시도해 주세요.',
+  }
+}
+
 export function formatStepName(stepKey: string): string {
   return STEP_LABELS[stepKey] ?? '작업 진행 내용'
 }

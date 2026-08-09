@@ -38,13 +38,14 @@ describe('CareerArtifactListPage', () => {
     expect(wrapper.text()).toContain('이력서 DOCX 만들기')
     expect(wrapper.text()).toContain('포트폴리오 PPTX 만들기')
     expect(wrapper.text()).toContain('사용 중')
-    expect(wrapper.text()).toContain('생성 완료')
+    expect(wrapper.text()).toContain('완료')
     expect(wrapper.text()).toContain('v1')
     expect(wrapper.text()).not.toContain('ARCHIVED')
     expect(wrapper.text()).not.toContain('SUCCEEDED')
+    // 카드는 상세 보기와 보관만 제공한다. AI 작업 링크는 상세 화면이 소유한다.
     expect(
       wrapper.find('a[href="/agent-runs/00000000-0000-4000-8000-000000000003"]').exists(),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('archives explicitly and does not expose a regeneration control in the list', async () => {

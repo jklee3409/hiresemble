@@ -76,7 +76,11 @@ test('Resume wizard, idempotent create, SSE, prior preview, lifecycle, download 
   await page.getByRole('button', { name: '다음' }).click()
   await page.getByRole('button', { name: '새 버전 생성 요청' }).click()
 
-  await expect(page.getByText('재생성 작업을 마치지 못했어요.')).toBeVisible({ timeout: 10_000 })
+  // backend가 저장한 원문 대신 사용자 문구만 보여야 한다.
+  await expect(page.getByText('문제가 생겨 작업을 안전하게 멈췄어요')).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.getByText('재생성 작업을 마치지 못했어요.')).toHaveCount(0)
   await expect(page.getByText('이전 성공 이력서 내용')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Word(.docx) 다운로드' }).first()).toBeEnabled()
   expect(fixture.regenerateRequests).toBe(1)
@@ -91,10 +95,8 @@ test('Resume wizard, idempotent create, SSE, prior preview, lifecycle, download 
   expect(fixture.unarchiveVersions).toEqual([4])
 
   await page.getByRole('button', { name: '삭제', exact: true }).click()
-  const dialog = page.getByRole('alertdialog', { name: '이 생성 자료를 삭제할까요?' })
-  await expect(dialog).toContainText(
-    '원본으로 사용한 업로드 문서와 경험 보관함의 경험은 그대로 유지',
-  )
+  const dialog = page.getByRole('alertdialog', { name: '이 자료를 삭제할까요?' })
+  await expect(dialog).toContainText('업로드한 자료와 경험 보관함의 내용은 그대로 남아요')
   await dialog.getByRole('button', { name: '자료 삭제' }).click()
   await expect(page).toHaveURL('/career-artifacts')
   await expect(page.getByText('아직 만든 초안이 없어요')).toBeVisible()
@@ -148,7 +150,7 @@ test('a 409 conflict is shown once without automatic create retry and keeps vali
   await page.getByLabel('제목').fill('충돌 확인 이력서')
   await page.getByRole('button', { name: '파일 생성 요청' }).click()
 
-  await expect(page.getByText(/최신 내용을 확인한 뒤 다시 선택/)).toBeVisible()
+  await expect(page.getByText(/최신 상태를 확인한 뒤 다시 선택/)).toBeVisible()
   await page.waitForTimeout(500)
   expect(fixture.createRequests).toBe(1)
   await expect(page.getByLabel('제목')).toHaveValue('충돌 확인 이력서')

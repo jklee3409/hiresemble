@@ -41,11 +41,11 @@ describe('CareerArtifactDetailPage', () => {
   it('keeps the prior current preview and download available after a regeneration failure', async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     const { wrapper } = await mountDetail()
-    expect(wrapper.text()).toContain('현재 성공 버전')
+    expect(wrapper.text()).toContain('지금 받을 수 있는 파일')
     expect(wrapper.text()).toContain('이전 성공 내용 유지')
-    expect(wrapper.text()).toContain('새 생성이 진행되거나 실패해도')
-    expect(wrapper.text()).toContain('과거 버전은 구조화 미리보기가 제공되지 않으며')
-    expect(wrapper.text()).toContain('생성 실패')
+    expect(wrapper.text()).toContain('새로 만드는 중이거나 실패하더라도')
+    expect(wrapper.text()).toContain('예전에 만든 파일은 내용 미리보기 없이 다운로드만')
+    expect(wrapper.text()).toContain('실패')
     const download = wrapper
       .findAll('button')
       .find((button) => button.text().includes('Word(.docx) 다운로드'))
@@ -99,7 +99,7 @@ describe('CareerArtifactDetailPage', () => {
     expect(wrapper.text()).toContain('다시 사용')
     expect(wrapper.text()).not.toContain('새 버전 만들기')
     expect(wrapper.text()).not.toContain('자료 삭제')
-    expect(wrapper.text()).toContain('현재 성공 버전')
+    expect(wrapper.text()).toContain('지금 받을 수 있는 파일')
   })
 
   it('distinguishes owner-scoped 404 from malformed server data', async () => {
@@ -114,7 +114,7 @@ describe('CareerArtifactDetailPage', () => {
       new ApiClientError({ status: 0, code: 'INVALID_SERVER_RESPONSE', message: 'invalid' }),
     )
     const malformed = await mountDetail()
-    expect(malformed.wrapper.text()).toContain('안전하게 표시하지 못했어요')
+    expect(malformed.wrapper.text()).toContain('자료 내용을 표시하지 못했어요')
   })
 })
 

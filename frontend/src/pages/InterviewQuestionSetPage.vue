@@ -22,6 +22,7 @@ import {
   useResearchSourceListQuery,
   useRetryResearchMutation,
 } from '@/features/interviews/queries'
+import { agentRunFailureCopy } from '@/features/agent-runs/presentation'
 import { normalizeApiError } from '@/shared/api/errors'
 import {
   INTERVIEW_QUESTION_TYPES,
@@ -32,6 +33,7 @@ import {
   type ResearchTopic,
 } from '@/shared/api/interviewContracts'
 import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
@@ -95,6 +97,10 @@ const researchIsActive = computed(() =>
 const hasCoverageWarning = computed(() =>
   ['LIMITED', 'NONE'].includes(detail.data.value?.research.sourceCoverage ?? ''),
 )
+const researchFailureCopy = computed(() => {
+  const safeError = detail.data.value?.research.safeError
+  return safeError ? agentRunFailureCopy(safeError) : null
+})
 
 function changeSourceFilter(): void {
   sourcePage.value = 0
@@ -195,9 +201,13 @@ async function refreshDetail(): Promise<void> {
               : '공개 출처가 제한적이에요. 후기·커뮤니티 정보는 참고로만 보고 단정적인 사실로 사용하지 마세요.'
           }}
         </p>
-        <p v-if="detail.data.value.research.safeError" class="alert alert--danger" role="alert">
-          {{ detail.data.value.research.safeError.message }}
-        </p>
+        <InlineNotice
+          v-if="researchFailureCopy"
+          :title="researchFailureCopy.title"
+          :description="researchFailureCopy.description"
+          tone="danger"
+          role="alert"
+        />
         <p v-if="retryError" class="alert alert--danger" role="alert">{{ retryError }}</p>
 
         <p v-if="detail.data.value.research.summary" class="research-summary__copy">

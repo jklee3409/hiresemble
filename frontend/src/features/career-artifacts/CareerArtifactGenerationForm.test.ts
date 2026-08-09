@@ -100,7 +100,7 @@ describe('CareerArtifactGenerationForm', () => {
     await flushPromises()
 
     expect(careerArtifactApi.createCareerArtifact).toHaveBeenCalledOnce()
-    expect(wrapper.text()).toContain('최신 내용을 확인한 뒤 다시 선택')
+    expect(wrapper.text()).toContain('최신 상태를 확인한 뒤 다시 선택')
     expect(sessionStorage.getItem('1/user-1/career-artifact/new/generation/0')).not.toBeNull()
   })
 

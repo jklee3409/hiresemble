@@ -25,13 +25,13 @@ export const ARTIFACT_LIFECYCLE_LABELS: Record<CareerArtifactLifecycle, string> 
 }
 
 export const ARTIFACT_GENERATION_LABELS: Record<CareerArtifactGenerationStatus, string> = {
-  NOT_STARTED: '생성 전',
-  QUEUED: '생성 대기',
-  RUNNING: '생성 중',
-  SUCCEEDED: '생성 완료',
-  FAILED: '생성 실패',
-  CANCELLED: '생성 취소',
-  INTERRUPTED: '생성 중단',
+  NOT_STARTED: '만들기 전',
+  QUEUED: '차례 기다리는 중',
+  RUNNING: '만드는 중',
+  SUCCEEDED: '완료',
+  FAILED: '실패',
+  CANCELLED: '취소함',
+  INTERRUPTED: '중단됨',
 }
 
 export const PROFILE_SECTION_LABELS: Record<CareerArtifactProfileSection, string> = {
@@ -55,11 +55,11 @@ export const PORTFOLIO_SLIDE_LABELS: Record<PortfolioSlideType, string> = {
 }
 
 export const PORTFOLIO_VISUAL_LABELS: Record<PortfolioVisualType, string> = {
-  NONE: '시각 요소 없음',
-  PROCESS: '진행 과정 구조',
+  NONE: '그림 없음',
+  PROCESS: '진행 과정',
   ARCHITECTURE: '구조도',
   TIMELINE: '시간 흐름',
-  IMPACT_METRICS: '성과 지표',
+  IMPACT_METRICS: '성과 숫자',
 }
 
 export function formatCareerArtifactInstant(value: string): string {
@@ -70,17 +70,17 @@ export function formatCareerArtifactInstant(value: string): string {
 export function careerArtifactErrorMessage(error: ApiClientError): string {
   switch (error.code) {
     case 'RESOURCE_VERSION_CONFLICT':
-      return '다른 화면에서 상태가 바뀌었어요. 최신 내용을 확인한 뒤 다시 선택해 주세요.'
+      return '다른 화면에서 내용이 바뀌었어요. 최신 상태를 확인한 뒤 다시 선택해 주세요.'
     case 'AI_MODEL_NOT_SUPPORTED':
       return '선택한 AI 모델을 더 이상 사용할 수 없어요. 모델을 다시 선택해 주세요.'
     case 'INSUFFICIENT_VERIFIED_EXPERIENCE':
-      return '사용할 수 있는 확인된 경험이 부족해요. 경험 보관함을 확인해 주세요.'
+      return '쓸 수 있는 경험이 아직 부족해요. 경험 보관함에서 경험을 더 확인해 주세요.'
     case 'CAREER_ARTIFACT_GENERATION_IN_PROGRESS':
-      return '이미 파일 생성 작업이 진행 중이에요. 현재 작업이 끝난 뒤 다시 시도해 주세요.'
+      return '이미 파일을 만들고 있어요. 지금 작업이 끝난 뒤 다시 시도해 주세요.'
     case 'CAREER_ARTIFACT_ARCHIVED':
-      return '보관한 자료는 새로 생성할 수 없어요. 다시 사용으로 바꾼 뒤 시도해 주세요.'
+      return '보관한 자료는 새로 만들 수 없어요. `다시 사용`으로 바꾼 뒤 시도해 주세요.'
     case 'INVALID_SERVER_RESPONSE':
-      return '생성 자료 정보를 안전하게 확인하지 못했어요. 잠시 후 다시 시도해 주세요.'
+      return '자료 내용을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.'
     default:
       return error.message
   }

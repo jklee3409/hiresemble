@@ -61,7 +61,7 @@ describe('CareerArtifactRunMonitor', () => {
     const wrapper = mountMonitor()
     expect(wrapper.text()).toContain('Word 파일 생성')
     expect(wrapper.text()).toContain('70%')
-    expect(wrapper.text()).toContain('연결을 복구')
+    expect(wrapper.text()).toContain('연결이 잠시 끊겨 다시 잇고 있어요')
     expect(wrapper.text()).not.toContain('RENDER_DOCX')
     expect(mocks.streamOptions).toMatchObject({ userId: 'user-1', agentRunId: expect.any(String) })
   })
@@ -73,7 +73,7 @@ describe('CareerArtifactRunMonitor', () => {
       resourceId: artifactId,
     })
     const wrapper = mountMonitor()
-    expect(wrapper.text()).toContain('일치하지 않는 작업 정보')
+    expect(wrapper.text()).toContain('다른 자료의 작업 정보가 도착했어요')
     expect(mocks.streamOptions).toBeNull()
   })
 })

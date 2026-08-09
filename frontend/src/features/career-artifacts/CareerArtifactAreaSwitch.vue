@@ -48,9 +48,13 @@ const visibleAreas = computed(() => areas.value.filter((area) => area.enabled))
 </template>
 
 <style scoped>
+/*
+ * 세 화면이 같은 자리에 같은 크기로 놓이도록 항상 본문 폭을 채운다.
+ * `inline-flex`로 두면 부모 layout에 따라 어떤 화면에서만 배경이 짧아진다.
+ */
 .artifact-area-switch {
-  display: inline-flex;
-  max-width: 100%;
+  display: flex;
+  width: 100%;
   gap: 0.25rem;
   padding: 0.3125rem;
   overflow-x: auto;

@@ -19,6 +19,7 @@ import { validateManualText } from '@/features/documents/validation'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
 import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import { useAgentRunDetailQuery } from '@/features/agent-runs/queries'
+import { agentRunFailureCopy } from '@/features/agent-runs/presentation'
 import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
 import DocumentRunMonitor from '@/features/documents/DocumentRunMonitor.vue'
 import DocumentEvidencePanel from '@/features/documents/DocumentEvidencePanel.vue'
@@ -33,6 +34,7 @@ import {
 import { normalizeApiError } from '@/shared/api/errors'
 import type { DocumentParseStatus, EvidenceExtractionStatus } from '@/shared/api/documentContracts'
 import AppIcon from '@/shared/ui/AppIcon.vue'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import PageHeader from '@/shared/ui/PageHeader.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
@@ -47,6 +49,10 @@ const notifications = useNotifications()
 const userId = computed(() => authStore.currentUser?.id ?? '')
 const documentId = computed(() => String(route.params.documentId ?? ''))
 const document = useDocumentDetailQuery(userId, documentId)
+const documentFailureCopy = computed(() => {
+  const safeError = document.data.value?.safeError
+  return safeError ? agentRunFailureCopy(safeError) : null
+})
 const textEnabled = computed(() => document.data.value?.parseStatus === 'PARSED')
 const documentText = useDocumentTextQuery(userId, documentId, textEnabled)
 const manualText = ref('')
@@ -352,13 +358,14 @@ function fileTypeLabel(mimeType: string): string {
           )
         }}
       </p>
-      <p
-        v-if="document.data.value.safeError"
-        class="alert alert--warning document-detail__message"
+      <InlineNotice
+        v-if="documentFailureCopy"
+        class="document-detail__message"
+        :title="documentFailureCopy.title"
+        :description="documentFailureCopy.description"
+        tone="warning"
         role="alert"
-      >
-        {{ document.data.value.safeError.message }}
-      </p>
+      />
       <p v-if="message" class="alert alert--success document-detail__message" role="status">
         {{ message }}
       </p>

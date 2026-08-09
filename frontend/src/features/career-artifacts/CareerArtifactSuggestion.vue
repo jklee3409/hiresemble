@@ -27,7 +27,8 @@ const suggestions = computed(() => {
     items.push({
       type: 'RESUME',
       title: '확인한 GitHub 경험으로 이력서 초안을 만들어 보세요',
-      description: '선택한 경험과 모델을 마지막 단계에서 확인한 뒤 Word 파일 생성을 요청합니다.',
+      description:
+        '넣을 경험과 AI 모델을 고르고 마지막에 한 번 더 확인한 뒤 Word 파일로 받을 수 있어요.',
     })
   }
   if (
@@ -38,7 +39,8 @@ const suggestions = computed(() => {
     items.push({
       type: 'PORTFOLIO',
       title: '확인한 GitHub 경험으로 포트폴리오 초안을 만들어 보세요',
-      description: '검증된 근거를 구조화한 슬라이드를 미리 보고 PowerPoint 파일로 받을 수 있어요.',
+      description:
+        '확인해 둔 경험으로 만든 슬라이드를 먼저 살펴보고 PowerPoint 파일로 받을 수 있어요.',
     })
   }
   return items
@@ -54,7 +56,7 @@ function dismiss(type: 'RESUME' | 'PORTFOLIO'): void {
     v-if="featureFlags.careerArtifactEnabled && suggestions.length > 0"
     class="artifact-suggestions"
     :class="{ 'artifact-suggestions--compact': compact }"
-    aria-label="생성 자료 제안"
+    aria-label="만들어 볼 자료 제안"
   >
     <article v-for="suggestion in suggestions" :key="suggestion.type" class="artifact-suggestion">
       <div>

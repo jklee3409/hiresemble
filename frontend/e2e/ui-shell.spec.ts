@@ -499,6 +499,59 @@ test('onboarding eligibility and 30-minute job deadlines stay responsive', async
 })
 
 async function installAuthenticatedRoutes(page: Page): Promise<void> {
+  /*
+   * 자료·대시보드 화면은 Gate 4 flag가 켜지면 Career Artifact readiness와 목록을 함께 부른다.
+   * 이 fixture가 그 응답을 주지 않으면 실제 backend로 새 나가 화면이 로그인으로 되돌아간다.
+   */
+  await page.route('**/api/v1/career-artifacts/readiness', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        hasUploadedResume: true,
+        hasUploadedPortfolio: true,
+        hasGeneratedResume: true,
+        hasGeneratedPortfolio: true,
+        verifiedExperienceCount: 0,
+        verifiedGitHubExperienceCount: 0,
+        verifiedStrengthCount: 0,
+        canGenerateResume: false,
+        canGeneratePortfolio: false,
+        warnings: [],
+      }),
+    })
+  })
+  await page.route('**/api/v1/career-artifacts*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }),
+    })
+  })
+  await page.route('**/api/v1/github-sources*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }),
+    })
+  })
+  // `/profile/basic`은 기본 정보와 자격 정보를 함께 부르므로 둘 다 없으면 로그인으로 되돌아간다.
+  await page.route('**/api/v1/profile/eligibility', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: '00000000-0000-4000-8000-000000000010',
+        workAvailableDate: null,
+        militaryStatus: 'UNSPECIFIED',
+        overseasTravelEligibility: 'UNSPECIFIED',
+        employmentDisqualificationStatus: 'UNSPECIFIED',
+        version: 0,
+        createdAt: '2026-08-04T00:00:00Z',
+        updatedAt: '2026-08-04T00:00:00Z',
+      }),
+    })
+  })
   await page.route('**/api/v1/auth/me', async (route) => {
     await route.fulfill({
       status: 200,

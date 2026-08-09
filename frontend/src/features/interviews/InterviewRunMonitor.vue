@@ -7,9 +7,11 @@ import {
   AgentRunStreamController,
   type AgentRunConnectionState,
 } from '@/features/agent-runs/stream'
+import { agentRunFailureCopy } from '@/features/agent-runs/presentation'
 import { AGENT_RUN_STATUS_LABELS } from '@/features/interviews/presentation'
 import type { AgentRunDetailDto, WorkflowType } from '@/shared/api/agentRunContracts'
 import { normalizeApiError } from '@/shared/api/errors'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 
 const props = defineProps<{
   userId: string
@@ -96,6 +98,13 @@ watch(
 
 onBeforeUnmount(() => stream?.close())
 
+const failureCopy = computed(() => {
+  const run = detail.data.value
+  return run?.safeError
+    ? agentRunFailureCopy(run.safeError, { retryable: run.retryable, status: run.status })
+    : null
+})
+
 const connectionLabel = computed(
   () =>
     ({
@@ -118,9 +127,12 @@ const connectionLabel = computed(
       이 AI 작업은 목록에서 정리되었어요. 이미 만든 면접 준비 결과와 답변 피드백은 그대로
       유지됩니다.
     </p>
-    <p v-else-if="detail.isError.value" class="interview-run__warning">
-      진행 연결이 잠시 끊겼어요. AI 작업에서 다시 확인할 수 있어요.
-    </p>
+    <InlineNotice
+      v-else-if="detail.isError.value"
+      title="진행 상황을 잠시 확인하지 못했어요"
+      description="진행 연결이 잠시 끊겼어요. AI 작업에서 다시 확인할 수 있어요."
+      tone="notice"
+    />
     <template v-else-if="detail.data.value">
       <div class="interview-run__summary">
         <div>
@@ -140,9 +152,13 @@ const connectionLabel = computed(
         {{ detail.data.value.progressPercent }}%
       </progress>
       <p class="interview-run__connection">{{ connectionLabel }}</p>
-      <p v-if="detail.data.value.safeError" class="interview-run__warning" role="alert">
-        {{ detail.data.value.safeError.message }}
-      </p>
+      <InlineNotice
+        v-if="failureCopy"
+        :title="failureCopy.title"
+        :description="failureCopy.description"
+        tone="warning"
+        role="alert"
+      />
       <RouterLink
         class="button button--secondary"
         :to="{ name: 'agent-run-detail', params: { agentRunId: detail.data.value.id } }"
@@ -176,10 +192,6 @@ const connectionLabel = computed(
 .interview-run__history-note {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-}
-
-.interview-run__warning {
-  color: var(--color-danger-strong);
 }
 
 .interview-run .button {

@@ -7,11 +7,13 @@ import type {
   AgentRunStatus,
   AgentStepStatus,
 } from '@/shared/api/agentRunContracts'
+import InlineNotice from '@/shared/ui/InlineNotice.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
 
 import {
   STATUS_LABELS,
   WORKFLOW_LABELS,
+  agentRunFailureCopy,
   formatDuration,
   formatInstant,
   formatRunProgressLabel,
@@ -85,10 +87,11 @@ const taskUsagePercent = computed(() =>
 const taskRemainingPercent = computed(() =>
   taskUsagePercent.value === null ? null : Math.max(0, 100 - taskUsagePercent.value),
 )
-const safeRunErrorMessage = computed(() =>
-  props.run.retryable
-    ? '작업을 마치지 못했어요. 잠시 후 다시 시도해 주세요. 등록한 원본과 기존 결과는 그대로 유지됩니다.'
-    : '지금은 이 작업을 진행할 수 없어요. 등록한 원본과 기존 결과는 그대로 유지됩니다.',
+const failureCopy = computed(() =>
+  agentRunFailureCopy(props.run.safeError, {
+    retryable: props.run.retryable,
+    status: props.run.status,
+  }),
 )
 
 function runTone(value: AgentRunStatus): 'neutral' | 'info' | 'success' | 'warning' | 'danger' {
@@ -263,19 +266,20 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
       </div>
     </section>
 
-    <section v-if="run.safeError" class="alert alert--danger run-safe-error" role="alert">
-      <h3>문제가 생겼어요</h3>
-      <p>{{ safeRunErrorMessage }}</p>
-    </section>
+    <InlineNotice
+      v-if="run.safeError"
+      :title="failureCopy.title"
+      :description="failureCopy.description"
+      tone="danger"
+      role="alert"
+    />
 
-    <p
+    <InlineNotice
       v-if="run.partialResult?.failedScopeKeys.length"
-      class="alert alert--warning run-safe-error"
-      role="status"
-    >
-      일부 항목은 완료하지 못했어요. 완료 {{ run.partialResult.succeededScopeKeys.length }}개 · 확인
-      필요 {{ run.partialResult.failedScopeKeys.length }}개
-    </p>
+      title="일부 항목은 완료하지 못했어요"
+      :description="`완료 ${run.partialResult.succeededScopeKeys.length}개 · 확인 필요 ${run.partialResult.failedScopeKeys.length}개`"
+      tone="warning"
+    />
 
     <details class="run-timeline section-surface">
       <summary>
@@ -419,19 +423,6 @@ function stepTone(value: AgentStepStatus): 'neutral' | 'info' | 'success' | 'war
 
 .run-usage-progress {
   margin-top: var(--space-4);
-}
-
-.run-safe-error {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.run-safe-error h3 {
-  font-weight: 750;
-}
-
-.run-safe-error small {
-  font-size: var(--font-size-xs);
 }
 
 .run-partial > p {
