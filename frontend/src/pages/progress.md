@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-09] Session Summary (자기소개서 편집 작성 도움 열 폭 고정)
+
+- What was done:
+  - `CoverLetterEditPage.vue`에서 `assistLayout` computed, `data-assist-layout` 속성, `wide` grid 규칙과 `grid-template-columns` transition을 제거했다. 작성 도움 열은 tab과 관계없이 같은 폭을 쓴다.
+- Key decisions:
+  - AI 검토 tab에서만 열을 넓히던 동작을 되돌렸다. tab 전환마다 중앙 편집기 폭이 바뀌어 작성 중 답변의 줄바꿈이 함께 움직이는 비용이 더 크다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check` 통과. 검토 tab 내부 디자인 변경과 함께 `cover-letter-review.spec.ts` Chromium 1건으로 확인했다. 상세는 [`../features/cover-letters/progress.md`](../features/cover-letters/progress.md)에 있다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (Private GitHub와 account settings page)
 
 - What was done:

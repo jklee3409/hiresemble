@@ -184,56 +184,68 @@ function tone(status: VerificationDto['status']) {
             </RouterLink>
           </header>
 
-          <ul v-if="latestVerification.issues.length" class="verification-issues">
-            <li
-              v-for="(issue, index) in sortedIssues(latestVerification)"
-              :key="`${issue.code}-${index}`"
-              :data-severity="issue.severity"
-            >
-              <p class="verification-issues__head">
-                <em>{{ ISSUE_SEVERITY_LABELS[issue.severity] }}</em>
-                <strong>{{ ISSUE_CODE_LABELS[issue.code] }}</strong>
-              </p>
-              <blockquote v-if="issue.relatedText">{{ issue.relatedText }}</blockquote>
-              <p>{{ issue.message }}</p>
-              <ul v-if="issue.evidenceRefs.length" class="historical-evidence">
-                <li v-for="reference in issue.evidenceRefs" :key="reference.id">
-                  <span>{{ reference.title }}</span>
-                  <small>{{ evidenceCurrentState(reference).label }}</small>
-                  <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
-                    새 초안·검토에서는 쓰지 않아요
-                  </small>
-                </li>
-              </ul>
-            </li>
-          </ul>
-          <p v-else class="assist__note">고칠 곳을 찾지 못했어요.</p>
-
-          <div v-if="latestVerification.suggestions.length" class="verification-suggestions">
-            <h4>이렇게 고쳐 보면 어떨까요</h4>
-            <div v-for="suggestion in latestVerification.suggestions" :key="suggestion">
-              <p>{{ suggestion }}</p>
-              <button
-                v-if="canApplySuggestion"
-                type="button"
-                class="button button--secondary button--compact"
-                @click="emit('apply-suggestion', suggestion)"
+          <section class="assist__block">
+            <h3>고쳐야 할 곳</h3>
+            <ul v-if="latestVerification.issues.length" class="assist__cards verification-issues">
+              <li
+                v-for="(issue, index) in sortedIssues(latestVerification)"
+                :key="`${issue.code}-${index}`"
+                :data-severity="issue.severity"
               >
-                답변에 적용
-              </button>
-            </div>
-            <small>적용해도 바로 저장되지 않아요. 다듬은 뒤 답변 저장을 눌러 주세요.</small>
-          </div>
+                <em class="assist__card-tag verification-issues__severity">{{
+                  ISSUE_SEVERITY_LABELS[issue.severity]
+                }}</em>
+                <p>
+                  <strong>{{ ISSUE_CODE_LABELS[issue.code] }}</strong>
+                </p>
+                <blockquote v-if="issue.relatedText">{{ issue.relatedText }}</blockquote>
+                <p>{{ issue.message }}</p>
+                <ul v-if="issue.evidenceRefs.length" class="historical-evidence">
+                  <li v-for="reference in issue.evidenceRefs" :key="reference.id">
+                    <span>{{ reference.title }}</span>
+                    <small>{{ evidenceCurrentState(reference).label }}</small>
+                    <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
+                      새 초안·검토에서는 쓰지 않아요
+                    </small>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <p v-else class="assist__note">고칠 곳을 찾지 못했어요.</p>
+          </section>
 
-          <ul v-if="latestVerification.evidenceRefs.length" class="historical-evidence">
-            <li v-for="reference in latestVerification.evidenceRefs" :key="reference.id">
-              <span>{{ reference.title }}</span>
-              <small>{{ evidenceCurrentState(reference).label }}</small>
-              <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
-                새 초안·검토에서는 쓰지 않아요
-              </small>
-            </li>
-          </ul>
+          <section v-if="latestVerification.suggestions.length" class="assist__block">
+            <h3>이렇게 고쳐 보면 어떨까요</h3>
+            <ul class="assist__cards verification-suggestions">
+              <li v-for="suggestion in latestVerification.suggestions" :key="suggestion">
+                <p>{{ suggestion }}</p>
+                <button
+                  v-if="canApplySuggestion"
+                  type="button"
+                  class="button button--secondary button--compact"
+                  @click="emit('apply-suggestion', suggestion)"
+                >
+                  답변에 적용
+                </button>
+              </li>
+            </ul>
+            <p class="assist__note">
+              적용해도 바로 저장되지 않아요. 다듬은 뒤 답변 저장을 눌러 주세요.
+            </p>
+          </section>
+
+          <section v-if="latestVerification.evidenceRefs.length" class="assist__block">
+            <h3>검토에 사용한 근거</h3>
+            <ul class="assist__cards historical-evidence">
+              <li v-for="reference in latestVerification.evidenceRefs" :key="reference.id">
+                <span>{{ reference.title }}</span>
+                <small>{{ evidenceCurrentState(reference).label }}</small>
+                <small v-if="evidenceCurrentState(reference).excludedFromNewContext">
+                  새 초안·검토에서는 쓰지 않아요
+                </small>
+              </li>
+            </ul>
+          </section>
         </article>
 
         <!-- 지난 검토는 접어 둔다. 최신 결과 하나만 읽으면 되도록 화면을 비운다. -->
@@ -258,14 +270,16 @@ function tone(status: VerificationDto['status']) {
                 검토 과정 보기
               </RouterLink>
             </header>
-            <ul v-if="verification.issues.length" class="verification-issues">
+            <ul v-if="verification.issues.length" class="assist__cards verification-issues">
               <li
                 v-for="(issue, index) in sortedIssues(verification)"
                 :key="`${issue.code}-${index}`"
                 :data-severity="issue.severity"
               >
-                <p class="verification-issues__head">
-                  <em>{{ ISSUE_SEVERITY_LABELS[issue.severity] }}</em>
+                <em class="assist__card-tag verification-issues__severity">{{
+                  ISSUE_SEVERITY_LABELS[issue.severity]
+                }}</em>
+                <p>
                   <strong>{{ ISSUE_CODE_LABELS[issue.code] }}</strong>
                 </p>
                 <p>{{ issue.message }}</p>
@@ -439,16 +453,13 @@ function tone(status: VerificationDto['status']) {
 }
 
 /*
- * 검토 결과는 개수가 많아질수록 경계가 흐려진다.
- * 결과 한 건을 하나의 면으로 묶고, 지적 사항은 심각도 색 띠로 훑을 수 있게 한다.
+ * 최신 검토 결과는 공고 요구사항 tab과 같은 골격을 쓴다.
+ * 별도의 떠 있는 카드로 감싸지 않고 제목이 붙은 block을 세로로 쌓아, 두 tab이 같은 화면으로 보이게 한다.
  */
 .verification-card {
   display: grid;
-  gap: var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4);
+  gap: var(--space-4);
+  min-width: 0;
 }
 
 .verification-card header {
@@ -503,29 +514,18 @@ function tone(status: VerificationDto['status']) {
 }
 
 .verification-archive .verification-card {
+  gap: var(--space-3);
   margin-top: var(--space-2);
-}
-
-.verification-card--past {
-  box-shadow: none;
-  background: var(--color-fill);
-}
-
-.verification-issues {
-  display: grid;
-  gap: var(--space-2);
-}
-
-/*
- * 지적 사항 한 건. 왼쪽 색 띠 없이 옅은 채움면과 심각도 알약만으로 구분한다.
- * 목록이 "수정 필요"를 먼저 정렬하므로 위치도 함께 심각도를 알린다.
- */
-.verification-issues > li {
-  display: grid;
-  gap: var(--space-2);
   border-radius: var(--radius-md);
   background: var(--color-fill);
   padding: var(--space-3) var(--space-4);
+}
+
+/*
+ * 지적 사항 한 건. 요구사항 카드와 같은 채움면·모서리·여백을 쓰고
+ * 심각도만 옅은 색과 알약으로 구분한다. 목록이 "수정 필요"를 먼저 정렬하므로 위치도 함께 심각도를 알린다.
+ */
+.verification-issues > li {
   font-size: var(--font-size-sm);
   line-height: 1.65;
 }
@@ -542,28 +542,20 @@ function tone(status: VerificationDto['status']) {
   background: var(--color-notice-soft);
 }
 
-.verification-issues__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.verification-issues__head em {
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
+/*
+ * 심각도 알약은 요구사항 분류 알약과 같은 모양으로 카드 맨 위 한 줄을 혼자 쓰고 색만 심각도를 따른다.
+ * 제목을 옆에 붙이면 좁은 열에서 알약과 제목이 서로 밀려 요구사항 카드와 다른 줄바꿈이 생긴다.
+ */
+.verification-issues__severity {
   color: var(--color-text-secondary);
-  padding: 0.0625rem 0.5rem;
-  font-size: var(--font-size-xs);
   font-style: normal;
-  font-weight: 750;
 }
 
-.verification-issues > li[data-severity='ERROR'] .verification-issues__head em {
+.verification-issues > li[data-severity='ERROR'] .verification-issues__severity {
   color: var(--color-danger-strong);
 }
 
-.verification-issues > li[data-severity='WARNING'] .verification-issues__head em {
+.verification-issues > li[data-severity='WARNING'] .verification-issues__severity {
   color: var(--color-notice-strong);
 }
 
@@ -581,23 +573,6 @@ function tone(status: VerificationDto['status']) {
   line-height: 1.6;
 }
 
-.verification-suggestions {
-  display: grid;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-.verification-suggestions h4 {
-  font-weight: 750;
-}
-
-.verification-suggestions > div {
-  display: grid;
-  gap: var(--space-2);
-  justify-items: start;
-}
-
-.verification-suggestions small,
 .historical-evidence small {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
@@ -609,10 +584,15 @@ function tone(status: VerificationDto['status']) {
   font-size: var(--font-size-sm);
 }
 
+/* 근거 한 줄은 제목과 현재 상태를 같은 줄에 둔다. 카드로 쓸 때도 이 배치는 유지한다. */
 .historical-evidence li {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: baseline;
+}
+
+.assist__cards.historical-evidence {
+  gap: var(--space-2);
 }
 </style>

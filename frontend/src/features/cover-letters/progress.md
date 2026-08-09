@@ -4,6 +4,24 @@
 
 P7 자기소개서 filter·query·TipTap editor·session draft·작업별 409 비교·Agent Run UI가 actual Chromium과 최종 validator `PASS`로 완료됐다.
 
+## [2026-08-09] Session Summary (AI 검토 결과 tab을 공고 요구사항과 같은 폭·디자인으로 통일)
+
+- What was done:
+  - `CoverLetterEditPage.vue`의 `assistLayout`·`data-assist-layout`과 `wide` grid 규칙, 열 폭 transition을 제거했다. 작성 도움 열은 tab과 무관하게 `minmax(16rem, 19rem)`을 쓴다.
+  - `CoverLetterAssistPanel.vue`의 검토 결과를 요구사항 tab과 같은 골격으로 바꿨다. 떠 있는 `--color-surface` + `--shadow-sm` 카드를 없애고 `고쳐야 할 곳`·`이렇게 고쳐 보면 어떨까요`·`검토에 사용한 근거` 세 `assist__block`으로 나눴다.
+  - 지적 사항·제안·근거 목록이 요구사항 카드와 같은 `assist__cards` 채움면·모서리·여백을 공유하고, 심각도 알약이 분류 알약과 같은 `assist__card-tag` 모양을 쓰도록 했다. 지난 검토 panel은 `verification-archive` 안에서 채움면 block으로 묶었다.
+  - 사용자 확인 후 지적 사항 카드의 `verification-issues__head` flex 행을 없앴다. 심각도 알약이 요구사항 카드처럼 첫 줄을 혼자 쓰고 지적 코드 제목과 본문이 그 아래로 쌓인다. 심각도 색 선택자는 `verification-issues__severity`로 옮겼다.
+- Key decisions:
+  - 검토 tab만 열을 넓히던 동작을 되돌렸다. tab을 오갈 때마다 편집기 폭이 함께 흔들려 답변 줄바꿈 위치가 바뀌는 편이 좁은 인용문보다 방해가 크다.
+  - 심각도 색(`--color-danger-soft`/`--color-notice-soft`)과 알약 색은 유지했다. 두 tab을 같게 만드는 요구는 카드 골격에 대한 것이고, 심각도 구분은 별도의 접근성 결정이다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check`: 102 files, 465 tests와 lint·format·typecheck·production build 통과.
+  - `cover-letter-review.spec.ts`를 폭 동일성·카드 geometry 동일성·떠 있는 카드 없음 기준으로 고쳐 Chromium 1건 통과했다. 1440px에서 두 tab과 지난 검토 panel을 화면으로 확인했다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (AI 모델 AppSelect 전환)
 
 - What was done:

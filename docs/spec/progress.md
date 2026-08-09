@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/127·private 비활성 90/120·Career Artifact 비활성 81/109다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-08-09] Session Summary (자기소개서 작성 도움 두 tab 표현 규칙 명시)
+
+- What was done:
+  - `page.md`의 자기소개서 편집 화면 절에 작성 도움 두 tab이 같은 열 폭과 같은 표현(제목 block · 옅은 채움면 카드 · 분류/심각도 알약)을 쓰고 검토 결과를 떠 있는 카드나 modal로 분리하지 않는다는 규칙을 추가했다.
+- Key decisions:
+  - 기존 명세에는 열 폭·카드 표현 규칙이 없었고 검토 tab만 열을 넓히던 동작은 구현 결정이었다. 이번 사용자 요청으로 확정된 표현을 계약 쪽에 남긴다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - 구현과 대조했다. `frontend` 변경과 `cover-letter-review.spec.ts` Chromium 1건이 같은 규칙을 검증한다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (Phase 5 API·DB·페이지·기술 명세 구현 동기화)
 
 - What was done:

@@ -16,6 +16,21 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-09] Session Summary (AI 검토 tab 열 확장 기대 교체)
+
+- What was done:
+  - `cover-letter-review.spec.ts`의 `data-assist-layout` `normal`/`wide` 기대를 없애고, 요구사항 tab을 기준으로 열 폭과 카드 geometry가 같은지, 검토 결과가 떠 있는 카드로 감싸이지 않는지 확인하도록 바꿨다.
+  - 비교 기준 카드를 실제로 그리기 위해 최신 공고 분석 fixture(`/jobs/{id}/analyses/latest`)를 추가했다.
+  - 심각도 알약을 카드 첫 줄로 분리하면서 색 확인 selector를 `.verification-issues__head em`에서 `.verification-issues__severity`로 바꿨다.
+- Key decisions:
+  - 심각도 색과 좌측 border 부재 기대는 그대로 두고 알약 모양 비교만 추가했다. 심각도 구분은 이번 변경 대상이 아니다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `playwright test e2e/cover-letter-review.spec.ts` Chromium 1건 통과. 외부 network 호출 없이 `/api/v1/**` route fixture만 사용한다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (Phase 5 private GitHub 종단 journey)
 
 - What was done:

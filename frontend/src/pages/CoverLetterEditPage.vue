@@ -253,12 +253,6 @@ const materialAnchor = ref<HTMLElement | null>(null)
 /* 이 화면에서 진행을 지켜본 AI 작업인지. 지난 작업의 결과 알림을 다시 띄우지 않는다. */
 const watchedRun = ref(false)
 const activeSheet = ref<SheetKind>('')
-/*
- * 공고 요구사항은 짧은 목록이라 좁은 열로 충분하지만 AI 검토 결과는 인용문과 제안이 함께 붙어
- * 같은 폭에서는 서너 단어마다 줄이 바뀐다. 검토 tab에서만 열을 넓혀 편집기를 가리지 않으면서
- * 읽을 수 있는 폭을 확보한다.
- */
-const assistLayout = computed(() => (assistTab.value === 'REVIEW' ? 'wide' : 'normal'))
 
 const activeQuestions = computed(() =>
   [...(coverLetter.data.value?.questions ?? [])]
@@ -1796,11 +1790,7 @@ function coverLetterActionMessage(error: ApiClientError): string {
         </div>
       </section>
 
-      <div
-        class="cover-workspace"
-        data-testid="cover-letter-editor"
-        :data-assist-layout="assistLayout"
-      >
+      <div class="cover-workspace" data-testid="cover-letter-editor">
         <aside class="cover-workspace__rail">
           <CoverLetterQuestionRail
             :questions="activeQuestions"
@@ -2514,18 +2504,13 @@ function coverLetterActionMessage(error: ApiClientError): string {
 
 /* ------------------------------------------------------------------ 작업 영역 */
 
+/* 작성 도움 열은 tab과 무관하게 같은 폭을 쓴다. 열이 넓어졌다 좁아지면 편집기 폭도 함께 흔들린다. */
 .cover-workspace {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(16rem, 19rem);
   align-items: start;
   gap: clamp(var(--space-3), 1.5vw, var(--space-5));
   margin-top: var(--space-4);
-  transition: grid-template-columns var(--motion-slow) var(--ease-emphasized);
-}
-
-/* AI 검토 결과를 볼 때만 오른쪽 열을 넓힌다. 편집기는 계속 남아 바로 고칠 수 있다. */
-.cover-workspace[data-assist-layout='wide'] {
-  grid-template-columns: auto minmax(0, 1fr) minmax(22rem, 28rem);
 }
 
 .cover-workspace__rail {
