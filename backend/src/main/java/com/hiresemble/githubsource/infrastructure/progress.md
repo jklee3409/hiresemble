@@ -4,6 +4,19 @@
 
 public/private GitHub Source REST·storage·connection/outbox infrastructure 구현 상태를 추적한다.
 
+## [2026-08-09] Session Summary (private off blank App ID binding)
+
+- What was done:
+  - `GITHUB_APP_ID=`인 실제 로컬 환경에서 private repository 기능이 꺼져 있으면 nullable `Long`으로 binding되도록 보정했다.
+- Key decisions:
+  - private 기능이 켜진 경우 App ID non-null·positive 검증과 fail-closed 경계는 그대로 유지한다.
+- Issues encountered:
+  - primitive `long` binding이 비활성 기능의 빈 선택 설정까지 애플리케이션 시작 전에 실패시켰다.
+- Validation:
+  - blank binding focused test, 실제 local Spring context와 전체 Backend check가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-09] Session Summary (GitHub App credential·revocation infrastructure)
 
 - What was done: typed properties, RS256 JWT, OAuth/user/install/token/uninstall gateway, cache, stores와 cleanup workers를 구현했다.

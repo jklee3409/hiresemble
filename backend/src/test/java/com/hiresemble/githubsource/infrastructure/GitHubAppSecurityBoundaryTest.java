@@ -25,12 +25,28 @@ import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.mock.env.MockEnvironment;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 class GitHubAppSecurityBoundaryTest {
 
     private static final Instant NOW = Instant.parse("2026-08-09T00:00:00Z");
+
+    @Test
+    void blankAppIdBindsSafelyWhileThePrivateFeatureIsDisabled() {
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("hiresemble.github.private-enabled", "false")
+                .withProperty("hiresemble.github.app.app-id", "");
+        GitHubProperties properties = Binder.get(environment)
+                .bind("hiresemble.github", Bindable.of(GitHubProperties.class))
+                .orElseGet(GitHubProperties::new);
+
+        assertThat(properties.getApp().getAppId()).isNull();
+        properties.afterPropertiesSet();
+    }
 
     @Test
     void privateFeatureFailsConfigurationValidationWhenCredentialsAreMissingOrHostIsUnsafe()

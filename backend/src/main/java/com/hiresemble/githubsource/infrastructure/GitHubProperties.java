@@ -195,7 +195,7 @@ public class GitHubProperties implements InitializingBean {
     }
 
     public static final class App {
-        private long appId;
+        private Long appId;
         private String slug;
         private String clientId;
         private String clientSecret;
@@ -206,8 +206,8 @@ public class GitHubProperties implements InitializingBean {
         private Duration attemptTtl = Duration.ofMinutes(10);
         private Duration tokenExpirySkew = Duration.ofMinutes(2);
 
-        public long getAppId() { return appId; }
-        public void setAppId(long appId) { this.appId = appId; }
+        public Long getAppId() { return appId; }
+        public void setAppId(Long appId) { this.appId = appId; }
         public String getSlug() { return slug; }
         public void setSlug(String slug) { this.slug = slug; }
         public String getClientId() { return clientId; }
@@ -228,7 +228,7 @@ public class GitHubProperties implements InitializingBean {
         public void setTokenExpirySkew(Duration tokenExpirySkew) { this.tokenExpirySkew = tokenExpirySkew; }
 
         private boolean valid() {
-            return appId > 0
+            return appId != null && appId > 0
                     && slug != null && slug.matches("[A-Za-z0-9-]{1,100}")
                     && clientId != null && clientId.matches("[A-Za-z0-9_]{8,100}")
                     && clientSecret != null && clientSecret.length() >= 16
