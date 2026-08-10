@@ -60,7 +60,7 @@ function cancel(): void {
 <template>
   <main class="career-artifact-new page-stack">
     <h1 class="sr-only">새 이력서·포트폴리오 초안 만들기</h1>
-    <BackLink to="/career-artifacts">AI로 만든 초안 목록</BackLink>
+    <BackLink to="/career-artifacts">AI로 이력서·포트폴리오 만들기</BackLink>
     <CareerArtifactGenerationForm
       v-if="authStore.currentUser"
       :user-id="authStore.currentUser.id"

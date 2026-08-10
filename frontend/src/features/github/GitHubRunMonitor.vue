@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { useAgentRunDetailQuery } from '@/features/agent-runs/queries'
 import {
@@ -41,6 +40,14 @@ const parityError = computed(() => run.data.value !== undefined && validRun.valu
 /* 끝난 작업에는 진행률 막대를 남기지 않는다. 상태는 위 badge가 이미 알리고 있다. */
 const inProgress = computed(() =>
   ['QUEUED', 'RUNNING', 'WAITING_USER'].includes(validRun.value?.status ?? ''),
+)
+/* 보여 줄 것이 없으면 빈 채움면만 남으므로 section 자체를 그리지 않는다. */
+const visible = computed(
+  () =>
+    run.isPending.value ||
+    run.isError.value ||
+    parityError.value ||
+    (validRun.value !== null && inProgress.value),
 )
 const connectionMessage = computed(() => {
   if (connectionState.value === 'reconnecting' || connectionState.value === 'polling') {
@@ -87,6 +94,7 @@ function tone(status: string): 'neutral' | 'info' | 'success' | 'warning' | 'dan
 
 <template>
   <section
+    v-if="visible"
     class="github-run-monitor"
     aria-live="polite"
     :aria-busy="
@@ -109,7 +117,11 @@ function tone(status: string): 'neutral' | 'info' | 'success' | 'warning' | 'dan
       title="이 연결의 작업 정보를 확인하지 못했어요"
       description="화면을 새로고침한 뒤에도 같으면 AI 작업 목록에서 확인해 주세요."
     />
-    <template v-else-if="validRun">
+    <!--
+      끝난 작업은 화면에 남기지 않는다. 결과는 위 연결 상태와 아래 찾은 경험이 이미 알리고,
+      실행 기록이 필요하면 목록 카드의 `AI 작업 기록`으로 간다.
+    -->
+    <template v-else-if="validRun && inProgress">
       <div class="github-run-monitor__heading">
         <div class="github-run-monitor__title">
           <p class="section-kicker">AI 작업</p>
@@ -118,7 +130,7 @@ function tone(status: string): 'neutral' | 'info' | 'success' | 'warning' | 'dan
         <StatusBadge :label="STATUS_LABELS[validRun.status]" :tone="tone(validRun.status)" />
       </div>
 
-      <div v-if="inProgress" class="github-run-monitor__progress">
+      <div class="github-run-monitor__progress">
         <div class="github-run-monitor__progress-head">
           <span class="github-run-monitor__step">
             {{
@@ -137,16 +149,9 @@ function tone(status: string): 'neutral' | 'info' | 'success' | 'warning' | 'dan
         </progress>
       </div>
 
-      <p
-        v-if="inProgress && connectionMessage"
-        class="github-run-monitor__connection"
-        role="status"
-      >
+      <p v-if="connectionMessage" class="github-run-monitor__connection" role="status">
         {{ connectionMessage }}
       </p>
-      <RouterLink class="text-link" :to="`/agent-runs/${validRun.id}`">
-        AI 작업 상세 보기
-      </RouterLink>
     </template>
   </section>
 </template>

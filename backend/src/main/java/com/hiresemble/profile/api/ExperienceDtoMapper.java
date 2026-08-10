@@ -29,6 +29,7 @@ final class ExperienceDtoMapper {
                 value.documentSourceCount(),
                 value.githubRepositorySourceCount(),
                 value.primaryDocumentName(),
+                value.primaryGitHubRepositoryName(),
                 value.version(),
                 value.createdAt(),
                 value.updatedAt());

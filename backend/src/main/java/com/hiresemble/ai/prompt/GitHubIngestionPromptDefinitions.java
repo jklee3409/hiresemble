@@ -13,6 +13,7 @@ import tools.jackson.databind.JsonNode;
 public final class GitHubIngestionPromptDefinitions {
 
     public static final String PROMPT_VERSION = "github-ingestion-prompt-v1";
+    public static final String EXTRACTION_PROMPT_VERSION = "github-ingestion-prompt-v2";
 
     private GitHubIngestionPromptDefinitions() {}
 
@@ -34,7 +35,9 @@ public final class GitHubIngestionPromptDefinitions {
                         WorkflowType.GITHUB_INGESTION,
                         CanonicalWorkflowDefinitions.GITHUB_INGESTION_VERSION,
                         step.stepKey()),
-                PROMPT_VERSION,
+                GitHubIngestionWorkflow.EXTRACT_GITHUB_CANDIDATES.equals(step.stepKey())
+                        ? EXTRACTION_PROMPT_VERSION
+                        : PROMPT_VERSION,
                 JsonNode.class,
                 outputType(step.stepKey()),
                 step.outputSchemaVersion(),
@@ -83,8 +86,15 @@ public final class GitHubIngestionPromptDefinitions {
                     No tools are available. Do not infer a user's role, ownership, duration, result,
                     strength, or metric from stars, forks, commit counts, authorship, or language ratios.
                     State roles, dates, numeric outcomes, and achievements only when explicitly supported
-                    by the supplied content. Return at most twelve candidates. Categories are PROJECT or
-                    STRENGTH. Every candidate must cite one or more supplied opaque sourceUnitReferences.
+                    by the supplied content. Write every candidate title and content in natural Korean
+                    (ko-KR), translating supported English source material while preserving technical names.
+                    Extract only repository-level core experiences: the main product or project purpose,
+                    substantial architecture or implementation, a meaningful problem and solution, or a
+                    clearly supported outcome. Consolidate related evidence into one experience. Omit routine
+                    maintenance, configuration, dependency updates, file-level changes, isolated tests or
+                    documentation, minor refactoring, and mere technology mentions. Return at most three
+                    candidates, and return zero when no central experience is sufficiently supported.
+                    Categories are PROJECT or STRENGTH. Every candidate must cite one or more supplied opaque sourceUnitReferences.
                     Return only the strict structured output object and never create database identifiers,
                     user identifiers, repository identifiers, snapshot identifiers, or status values.
                     """;

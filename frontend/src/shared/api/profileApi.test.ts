@@ -199,6 +199,7 @@ describe('P2 profile API contract', () => {
       content: '처리 시간을 35% 줄였습니다.',
       version: 3,
     })
+    await profileApi.deleteExperience('experience-id', 3)
     await profileApi.verifyExperience('experience-id', { status: 'VERIFIED', version: 4 })
     await profileApi.resolveExperienceMatch('experience-id', {
       resolution: 'MERGE_WITH_TARGET',
@@ -220,6 +221,9 @@ describe('P2 profile API contract', () => {
       title: '주문 처리 개선',
       content: '처리 시간을 35% 줄였습니다.',
       version: 3,
+    })
+    expect(apiClient.delete).toHaveBeenCalledWith('/profile/experiences/experience-id', {
+      params: { version: 3 },
     })
     expect(apiClient.patch).toHaveBeenCalledWith(
       '/profile/experiences/experience-id/verification',
@@ -253,6 +257,7 @@ function experienceDetail() {
       documentSourceCount: 1,
       githubRepositorySourceCount: 0,
       primaryDocumentName: 'resume.pdf',
+      primaryGitHubRepositoryName: null,
       version: 3,
       createdAt: now,
       updatedAt: now,

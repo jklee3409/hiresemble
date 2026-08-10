@@ -2,7 +2,7 @@
 
 - 문서 상태: `APPROVED_TARGET_DESIGN`, 구현 상태 `GATE_0_4_DONE_GATE_5_IMPLEMENTED_NOT_VERIFIED`
 - 기준일: 2026-08-09
-- 현재 구현 기준선: Flyway V30, canonical 경험 보관함과 GitHub provenance, GitHub App private connection·terminal purge, Career Artifact Backend·Frontend, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations·private 비활성/Career Artifact 활성 90 paths/120 operations·Career Artifact 비활성 81 paths/109 operations
+- 현재 구현 기준선: Flyway V30, canonical 경험 보관함과 GitHub provenance, GitHub App private connection·terminal purge, Career Artifact Backend·Frontend, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/128 operations·private 비활성/Career Artifact 활성 90 paths/121 operations·Career Artifact 비활성 81 paths/110 operations
 - 활성 공개 계약: [`../spec/`](../spec/)
 
 이 문서는 GitHub URL에서 사용자의 프로젝트 경험과 강점을 추출하고, 사용자가 선택한 모델로 이력서 DOCX와 포트폴리오 PPTX 초안을 생성하는 구조를 현재 Hiresemble 구현 경계에 연결한다. Gate 0–4는 `DONE`이고 Gate 5 Private GitHub와 account terminal purge 코드는 구현됐다. Backend 전체 check, Frontend 전체 check, migration과 Compose 검증은 통과했지만 최종 mocked Chromium journey가 selector 보정 뒤 재실행되지 않아 Gate 5는 `IMPLEMENTED_NOT_VERIFIED`다. 실제 GitHub App UAT는 별도 `USER_MANUAL_UI_VALIDATION_PENDING`이며 상세 상태는 코드와 각 `progress.md`를 따른다.
@@ -176,7 +176,7 @@ repository URL은 단일 repository를 선택하고 WAIT step을 `SKIPPED`로 �
 | repository당 후보 file                |                         80 |
 | 개별 text file                        |                     64 KiB |
 | repository당 sanitized input          | 400,000 Unicode code point |
-| repository당 candidate                |                         12 |
+| repository당 중심 candidate           |                          3 |
 | 한 Run 전체 candidate                 |                         40 |
 
 Git tree가 upstream 한도로 잘리면 snapshot에 `upstream_truncated=true`, `selection_complete=false`를 저장하고 사용자 결과에 `PARTIAL`을 표시한다. 잘린 tree를 전체 repository 분석으로 표현하지 않는다.
@@ -248,23 +248,20 @@ GitHub fetch는 `WebSearchGateway`나 model tool이 아니라 `GitHubRepositoryG
 ### 5.1 Provider output
 
 ```text
-GitHubExtractionOutput
-├─ schemaVersion
-├─ projectExperiences[0..12]
-└─ strengths[0..12]
+CandidateBatch
+└─ candidates[0..3]
 
 Candidate
+├─ evidenceCategory(PROJECT|STRENGTH)
 ├─ title
 ├─ content
 ├─ confidence
-├─ sourceUnitIds[1..20]
-├─ relatedProjectCandidateIndexes[0..12]  // strength만
-└─ limitations[0..5]
+└─ sourceUnitReferences[1..20]
 ```
 
-- `projectExperiences`는 서버가 category `PROJECT`로 매핑한다.
-- `strengths`는 category `STRENGTH`로 매핑한다.
-- category, user ID, repository ID, snapshot ID와 verification status는 model이 출력하지 않는다.
+- title과 content는 기술명·고유명사를 보존하되 자연스러운 한국어로 작성하며, 둘 중 하나라도 한글이 없으면 correction 대상으로 거부한다.
+- repository의 주된 목적·핵심 설계/구현·중요 문제 해결·명시된 성과만 후보로 삼고 관련 근거는 하나로 합친다. 설정·의존성 갱신·파일 단위 변경·고립된 테스트/문서·작은 refactor·단순 기술 나열은 제외하며 충분한 중심 경험이 없으면 0개를 반환한다.
+- user ID, repository ID, snapshot ID와 verification status는 model이 출력하지 않는다.
 - source unit 참조가 하나라도 허용 목록 밖이면 candidate를 저장하지 않는다.
 - 일부 candidate 거절은 정상 filtering이며 전체 Run 실패와 구분한다.
 

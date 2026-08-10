@@ -102,6 +102,7 @@ function item() {
     documentSourceCount: 0,
     githubRepositorySourceCount: 1,
     primaryDocumentName: null,
+    primaryGitHubRepositoryName: null,
     version: 1,
     createdAt: now,
     updatedAt: now,

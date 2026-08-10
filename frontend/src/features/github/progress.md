@@ -4,6 +4,19 @@
 
 Gate 2 공개 GitHub와 Gate 5 GitHub App private source의 owner-scoped query, connection mutation, callback cleanup과 focused Run 표시 기반을 관리한다.
 
+## [2026-08-09] Session Summary (끝난 작업 monitor 숨김)
+
+- What was done:
+  - `GitHubRunMonitor`가 진행 중인 작업일 때만 화면에 나온다. 끝난 작업의 상태 block과 `AI 작업 상세 보기` link는 남기지 않고, 보여 줄 것이 없으면 채움면 section 자체를 그리지 않는다.
+- Key decisions:
+  - 끝난 결과는 위 연결 상태 문장과 아래 찾은 경험이 이미 알린다. 실행 기록이 필요하면 목록 카드의 `AI 작업 기록`으로 간다. 자기소개서 monitor와 같은 규칙이다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `corepack pnpm check` 통과. `github-source.spec.ts` Chromium 1건 통과.
+- Next steps:
+  - 없음.
+
 ## [2026-08-09] Session Summary (GitHub 화면 진행률 표시와 문구·디자인 정리)
 
 - What was done:

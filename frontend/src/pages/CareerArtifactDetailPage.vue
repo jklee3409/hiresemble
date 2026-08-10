@@ -222,7 +222,7 @@ function generationTone(status: string) {
 
 <template>
   <main class="career-artifact-detail page-stack">
-    <BackLink to="/career-artifacts">AI로 만든 초안 목록</BackLink>
+    <BackLink to="/career-artifacts">AI로 이력서·포트폴리오 만들기</BackLink>
 
     <section v-if="detail.isPending.value" class="state-panel" aria-busy="true" role="status">
       자료를 불러오는 중…

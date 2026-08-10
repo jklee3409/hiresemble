@@ -5,7 +5,21 @@
 - Vue 3, TypeScript, Vite, pnpm 기반 개발 환경과 주요 plugin이 구성되어 있다.
 - P1 auth부터 P8 Interview, Gate 2/5 public·private GitHub, Gate 4 Career Artifact typed client·Vue Query·SSE invalidation과 Gate 5 account settings/client cleanup까지 구현되어 있다.
 - `/guide`, `/profile/experiences`, feature-gated `/integrations`(구 `/profile/github` redirect)·`/career-artifacts/**`, `/settings/account`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
-- Frontend `check`는 102 files/465 tests로 통과했다. 기존 GitHub·Career Artifact Chromium 4개는 통과했고 신규 Phase 5 journey는 selector 보정 뒤 재검증 대기다.
+- Frontend `check`는 102 files/466 tests로 통과했다. 공개 GitHub·경험 삭제 Chromium journey는 통과했고 Phase 5 journey는 마지막 탈퇴 후 login redirect 계약 1건이 재검증 대기다.
+
+## [2026-08-10] Session Summary (경험 보관함 삭제 UI와 중단 작업 회수)
+
+- What was done:
+  - 경험 카드에 위험도 표시 삭제 button과 확인 dialog를 추가하고 version query 삭제 API, 경험·근거·Career Artifact readiness cache 무효화를 연결했다.
+  - 중단된 세션의 GitHub별 경험 미리보기·대표 repository 표시·자료 영역 문구 변경을 보존하고 누락된 strict DTO E2E fixture를 보정했다.
+- Key decisions:
+  - 확인 문구는 경험이 보관함과 향후 AI 활용에서 사라지지만 이미 만든 이력서·포트폴리오 파일은 바뀌지 않는다고 설명한다.
+- Issues encountered:
+  - Phase 5 E2E 첫 실행은 기존 Vite flag를 재사용했고, 격리 포트 실행에서는 누락 fixture를 보정한 뒤 마지막 `/login` 대 `returnTo` 기대 차이가 남았다.
+- Validation:
+  - `corepack pnpm check` 성공(102 files/466 tests·lint·format·typecheck·build). 공개 GitHub source/경험 삭제 Chromium 1건 통과.
+- Next steps:
+  - 탈퇴 후 보호 route의 `returnTo` 정책 확정 뒤 Phase 5 Chromium 마지막 assertion을 재검증한다.
 
 ## [2026-08-09] Session Summary (Phase 5 GitHub App와 account settings UI)
 

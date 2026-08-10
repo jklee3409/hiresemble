@@ -35,6 +35,7 @@ export const experienceItemSchema = z.object({
   documentSourceCount: z.number().int().nonnegative(),
   githubRepositorySourceCount: z.number().int().nonnegative(),
   primaryDocumentName: z.string().max(255).nullable(),
+  primaryGitHubRepositoryName: z.string().max(201).nullable(),
   version: z.number().int().nonnegative(),
   createdAt: instantSchema,
   updatedAt: instantSchema,

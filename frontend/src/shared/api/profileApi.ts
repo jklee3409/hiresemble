@@ -53,6 +53,8 @@ export interface EvidenceListParams extends PageParams {
 export interface ExperienceListParams extends PageParams {
   verificationStatus?: EvidenceVerificationStatus
   matchKind?: Exclude<ExperienceMatchKind, 'SAME_EXPERIENCE'>
+  /* 이 GitHub 연결에서 나온 근거를 가진 경험만 남긴다. */
+  githubSourceId?: string
 }
 
 function query<T extends object>(params: T): { params: T } {
@@ -236,6 +238,10 @@ export function updateExperience(
   return apiClient
     .put<unknown>(`/profile/experiences/${id}`, request)
     .then((value) => parseExperienceResponse(experienceDetailSchema, value))
+}
+
+export function deleteExperience(id: string, version: number): Promise<void> {
+  return apiClient.delete(`/profile/experiences/${id}`, query({ version }))
 }
 
 export function verifyExperience(

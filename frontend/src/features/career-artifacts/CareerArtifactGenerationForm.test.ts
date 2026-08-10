@@ -187,6 +187,7 @@ function experience(): ExperienceItemDto {
     documentSourceCount: 1,
     githubRepositorySourceCount: 1,
     primaryDocumentName: 'resume.pdf',
+    primaryGitHubRepositoryName: null,
     version: 1,
     createdAt: now,
     updatedAt: now,

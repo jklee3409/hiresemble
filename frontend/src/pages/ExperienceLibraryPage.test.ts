@@ -14,12 +14,14 @@ import type {
   PageResponse,
 } from '@/shared/api/contracts'
 import * as profileApi from '@/shared/api/profileApi'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/shared/api/profileApi', () => ({
   listExperiences: vi.fn(),
   getExperience: vi.fn(),
   updateExperience: vi.fn(),
+  deleteExperience: vi.fn(),
   verifyExperience: vi.fn(),
   resolveExperienceMatch: vi.fn(),
   listEvidence: vi.fn(),
@@ -31,6 +33,7 @@ vi.mock('@/shared/api/profileApi', () => ({
 describe('ExperienceLibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useNotifications().resolveConfirmation(false)
     featureFlags.githubSourceEnabled = false
   })
 
@@ -129,6 +132,25 @@ describe('ExperienceLibraryPage', () => {
     expect(wrapper.find('.experience-detail').exists()).toBe(false)
   })
 
+  it('deletes an experience after confirmation and removes it from the library', async () => {
+    const item = experience({ reviewRequired: false, matchKind: 'NEW' })
+    vi.mocked(profileApi.listExperiences)
+      .mockResolvedValueOnce(pageOf([item]))
+      .mockResolvedValueOnce(pageOf([]))
+    vi.mocked(profileApi.deleteExperience).mockResolvedValue()
+
+    const wrapper = await mountWithApp(ExperienceLibraryPage, '/profile/experiences')
+
+    await clickButton(wrapper, '삭제')
+    expect(useNotifications().state.confirmation?.title).toBe('이 경험을 삭제할까요?')
+    useNotifications().resolveConfirmation(true)
+    await flushPromises()
+
+    expect(profileApi.deleteExperience).toHaveBeenCalledWith(item.id, item.version)
+    expect(wrapper.findAll('[data-testid^="experience-card-"]')).toHaveLength(0)
+    expect(wrapper.text()).toContain('조건에 맞는 경험이 없어요')
+  })
+
   it('renders corroborating document evidence as an existing source without review actions', async () => {
     vi.mocked(profileApi.listEvidence).mockResolvedValue(pageOf([corroboratingEvidence()]))
     const wrapper = await mountWithApp(DocumentEvidencePanel, '/', {
@@ -155,6 +177,7 @@ describe('ExperienceLibraryPage', () => {
       documentSourceCount: 0,
       githubRepositorySourceCount: 2,
       primaryDocumentName: null,
+      primaryGitHubRepositoryName: 'openai/hiresemble',
     })
     vi.mocked(profileApi.listExperiences).mockResolvedValue(pageOf([item]))
     vi.mocked(profileApi.getExperience).mockResolvedValue({
@@ -189,6 +212,8 @@ describe('ExperienceLibraryPage', () => {
     expect(wrapper.text()).toContain('GitHub 출처')
     expect(wrapper.text()).toContain('GitHub 저장소')
     expect(wrapper.text()).toContain('2곳')
+    expect(wrapper.get('.experience-card__meta-wide').text()).toContain('openai/hiresemble 외 1곳')
+    expect(wrapper.get('.experience-card__meta-wide').text()).not.toContain('문서 출처 없음')
     expect(wrapper.text()).toContain('openai/hiresemble')
     expect(wrapper.text()).toContain('abcdef123456')
     expect(wrapper.text()).toContain('안전한 요약')
@@ -260,6 +285,7 @@ function experience(overrides: Partial<ExperienceItemDto> = {}): ExperienceItemD
     documentSourceCount: 2,
     githubRepositorySourceCount: 0,
     primaryDocumentName: '지원용 이력서.pdf',
+    primaryGitHubRepositoryName: null,
     version: 3,
     createdAt: '2026-08-01T00:00:00Z',
     updatedAt: '2026-08-07T00:00:00Z',

@@ -45,6 +45,7 @@ public class ExperienceApplicationService {
             UUID userId,
             EvidenceVerificationStatus status,
             ExperienceMatchKind matchKind,
+            UUID githubSourceId,
             int page,
             int size,
             String sort) {
@@ -55,7 +56,7 @@ public class ExperienceApplicationService {
         if (normalizedSort == null) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
-        return experienceStore.list(userId, status, matchKind, page, size, normalizedSort);
+        return experienceStore.list(userId, status, matchKind, githubSourceId, page, size, normalizedSort);
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +84,18 @@ public class ExperienceApplicationService {
         profileStore.synchronizeExperienceEvidenceContent(
                 userId, current.canonicalEvidenceId(), title, content, now);
         return get(userId, itemId);
+    }
+
+    @Transactional
+    public void delete(UUID userId, UUID itemId, long version) {
+        ExperienceItemRecord current = experienceStore.findActive(userId, itemId)
+                .orElseThrow(this::notFound);
+        Instant now = clock.instant();
+        if (!experienceStore.softDeleteItem(userId, itemId, version, now)) {
+            throw versionConflict();
+        }
+        experienceStore.clearInboundMatches(userId, itemId, now);
+        profileStore.retireExperienceEvidence(userId, current.canonicalEvidenceId(), now);
     }
 
     @Transactional

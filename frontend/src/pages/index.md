@@ -19,8 +19,8 @@
 - [`DashboardPage.test.ts`](DashboardPage.test.ts): 이름 강조·사람 icon·주말과 날짜별 건수·날짜 선택·장문 가이드 modal focus·오류·빈 상태 회귀
 - [`StructuredProfilePage.vue`](StructuredProfilePage.vue): Workspace 안의 학력 단계·서버 계산 최종 학력, 경력·자격증·어학·수상 목록·form·삭제·409 재적용과 학력 상태 한국어 표시
 - [`ProfileActivitiesPage.vue`](ProfileActivitiesPage.vue): 문서 AI 추출 경험과 분리된 사용자 직접 대외활동 CRUD·소재 후보 사용 선택
-- [`ExperienceLibraryPage.vue`](ExperienceLibraryPage.vue): canonical 경험 목록·filter·pagination, 내용 수정·활용 검증, 문서·GitHub provenance와 유사·충돌 경험 비교·병합/분리
-- [`ExperienceLibraryPage.test.ts`](ExperienceLibraryPage.test.ts): canonical 카드·유사 경험·문서 보강 출처와 GitHub badge·안전한 링크·삭제 tombstone 회귀
+- [`ExperienceLibraryPage.vue`](ExperienceLibraryPage.vue): canonical 경험 목록·filter·pagination, 내용 수정·활용 검증·확인 후 삭제, 문서·GitHub provenance와 유사·충돌 경험 비교·병합/분리
+- [`ExperienceLibraryPage.test.ts`](ExperienceLibraryPage.test.ts): canonical 카드·유사 경험·확인 후 삭제·문서 보강 출처와 GitHub badge·안전한 링크·source tombstone 회귀
 - [`GitHubSourcePage.vue`](GitHubSourcePage.vue): 공개 GitHub 등록과 flag-gated GitHub App/private source, 상태·결과, repository 검색·선택, focused Run, refresh/delete
 - [`GitHubSourcePage.test.ts`](GitHubSourcePage.test.ts): URL·참여 확인, 상태·선택 제한·version 충돌·refresh/delete·오류와 접근성 회귀
 - [`CareerArtifactListPage.vue`](CareerArtifactListPage.vue): 생성 자료의 type·lifecycle·sort·pagination 목록, readiness CTA와 archive/unarchive

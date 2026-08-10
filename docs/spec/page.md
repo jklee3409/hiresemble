@@ -87,7 +87,7 @@ job 상세 tab child는 `overview|analysis|cover-letter|interview`, 별도 생�
 | Route group                                        | Implementation status | Phase        | prerequisite API                                                      |
 | -------------------------------------------------- | --------------------- | ------------ | --------------------------------------------------------------------- |
 | `/` 공개 Landing                                   | `IMPLEMENTED`         | 공개 진입    | 인증 API bootstrap                                                    |
-| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 2 | Career Artifact flag off OpenAPI 81 paths/109 operations              |
+| 현재 `/signup`~`/agent-runs/:agentRunId`, `/guide` | `IMPLEMENTED`         | P1~P8·Gate 2 | Career Artifact flag off OpenAPI 81 paths/110 operations              |
 | `/settings`, `/settings/account`                  | `IMPLEMENTED`         | Gate 5       | account display-name/password/logout/delete API                       |
 | `/settings/usage`                                  | `PLANNED`             | P8.7         | `GET /settings/usage`, `/settings/usage/history`                      |
 | AI, privacy 설정 두 route                          | `PLANNED`             | P10-A        | settings AI/privacy API                                               |
@@ -395,12 +395,13 @@ AI가 문서에서 추출했거나 사용자가 승인한 강점·경험을 한 
 
 - 기본 목록은 제목, category, 승인 상태, 연결 출처 수와 마지막 수정 시각을 표시한다.
 - 편집·승인·제외는 정규 경험에 적용하고 원본 문서 근거는 문서 상세에서 별도로 검토한다.
+- 각 카드의 `삭제`는 확인 dialog 뒤 경험을 보관함과 향후 AI 활용에서 제거한다. dialog는 이미 만든 이력서·포트폴리오 파일이 바뀌지 않는다는 수명주기 경계를 함께 알린다.
 - 승인된 정규 경험은 원본 문서 삭제 뒤에도 유지되며 삭제된 원문의 본문·미리보기는 제공하지 않는다.
 - Backend API와 Frontend route·화면이 연결되어 있다. Frontend는 기존 Career Profile Workspace의 세로 outline/mobile selector, soft surface, 상태 badge와 pagination을 재사용한다.
 - 상세 영역에서 최초·보강 출처를 구분하고 문서 출처로 이동할 수 있다. 문서 상세의 `CORROBORATING` 항목은 승인 가능한 새 소재가 아니라 기존 경험에 추가된 출처로만 표시한다.
-- Backend 경험 DTO는 `GitHub` repository 이름·URL, 짧은 commit SHA, 수집 시각, sanitized excerpt와 distinct repository source count를 additive하게 제공한다. Gate 2 Frontend는 이를 badge·안전한 링크·삭제 tombstone으로 표시한다(`IMPLEMENTED_FLAGGED`).
+- Backend 경험 DTO는 `GitHub` repository 이름·URL, 짧은 commit SHA, 수집 시각, sanitized excerpt와 distinct repository source count를 additive하게 제공한다. Gate 2 Frontend는 이를 badge·안전한 링크·삭제 tombstone으로 표시하고, 경험 보관함 목록 카드에서 GitHub 출처가 있으면 `문서 출처 없음` 대신 대표 `owner/repository` 이름을 우선 표시한다(`IMPLEMENTED_FLAGGED`).
 
-API: `GET /profile/experiences`, `GET|PUT /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
+API: `GET /profile/experiences`, `GET|PUT|DELETE /profile/experiences/:id`, `PATCH /profile/experiences/:id/verification`, `PATCH /profile/experiences/:id/match-resolution`.
 
 ## 5.9 `/integrations` (`IMPLEMENTED_FLAGGED` public, Gate 5 private `IMPLEMENTED_NOT_VERIFIED`)
 

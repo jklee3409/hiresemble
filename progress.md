@@ -11,8 +11,26 @@
 - P6 공고 분석·owner-scoped RAG·결정론적 점수·OUTDATED·재분석 수직 기능은 두 구현 MAJOR 보정과 final-source actual Chromium 2/2·후속 DB assertion을 통과해 `DONE`이다.
 - P7 자기소개서 Backend·AI Workflow·Frontend 수직 기능은 1차 validator의 두 MAJOR 보정, final-source actual Chromium·DB assertion과 최종 read-only validator `PASS`로 `DONE`이다.
 - P8 면접 조사·예상 질문·답변 피드백은 Backend·AI Workflow·Frontend, final-source actual P8/P7/P6 회귀와 두 번째 single-agent read-only self-audit를 통과해 `DONE`이다.
-- 공개 Spring/OpenAPI는 Career Artifact off 81 paths/109 operations, on·private GitHub off 90 paths/120 operations, 둘 다 on 97 paths/127 operations다.
+- 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
+
+## [2026-08-10] Session Summary (GitHub 핵심 경험 한국어 추출과 경험 영구 비노출 삭제)
+
+- What was done:
+  - 중단된 8월 9일 작업의 diff·최신 진행 기록을 추적해 GitHub 경험의 대표 저장소 표시와 source filter를 보존하고, 빠져 있던 후보 수 제한·삭제 수명주기·E2E fixture를 완성했다.
+  - GitHub 후보 제목·본문을 한국어로 강제하고 repository별 중심 경험만 최대 3개 추출하도록 prompt·runtime validator를 맞췄다. 경험 보관함에는 optimistic version 삭제 API와 확인 UI를 추가했다.
+  - 삭제 경험은 item·canonical/raw 근거 조회와 향후 AI Context에서 제외하고 사용자 문구를 제거했다. 과거 immutable provenance는 유지하며 같은 GitHub claim 재수집은 새 카드를 만들지 않는다.
+- Key decisions:
+  - 작은 설정·의존성·파일 단위 변경·고립된 테스트/문서·경미한 refactor·기술 나열은 후보에서 제외하고 충분한 중심 경험이 없으면 0개를 허용한다.
+  - 삭제는 FK 이력을 깨는 hard delete 대신 item soft delete와 canonical evidence 퇴역을 사용하며, 이미 만든 이력서·포트폴리오 파일은 변경하지 않는다.
+- Issues encountered:
+  - 최초 삭제 통합 테스트는 `SOURCE_DELETED`가 EXPERIENCE source에 허용되지 않는 DB 제약으로 실패해 `REJECTED` 퇴역과 active item 조회 차단으로 바로잡았다.
+  - 이전 세션의 Phase 5 Chromium journey는 격리 포트에서 DTO fixture를 보정한 뒤에도 마지막 보호 경로가 `/login`이고 test는 `/login?returnTo=...`를 기대해 미통과 상태다.
+- Validation:
+  - `backend\\gradlew.bat check` 성공(104 suites/696 tests), `corepack pnpm check` 성공(102 files/466 tests·lint·format·typecheck·build), `docker compose config --quiet` 성공.
+  - GitHub 공개 source/경험 삭제 Chromium 1건과 focused Backend·Frontend 삭제 테스트가 통과했다. Phase 5 private Chromium은 마지막 login redirect assertion 1건만 실패했다.
+- Next steps:
+  - 탈퇴 계정의 보호 경로 재진입에서 `returnTo`를 보존할지 버릴지 제품 계약을 확정한 뒤 Phase 5 journey를 재검증한다. 실제 외부 GitHub App UAT는 계속 별도 대기다.
 
 ## [2026-08-09] Session Summary (공개 GitHub 연동 rate limit 장애 복구와 실제 AI 검증)
 

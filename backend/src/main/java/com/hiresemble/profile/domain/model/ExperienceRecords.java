@@ -26,6 +26,7 @@ public final class ExperienceRecords {
             int documentSourceCount,
             int githubRepositorySourceCount,
             String primaryDocumentName,
+            String primaryGitHubRepositoryName,
             long version,
             Instant createdAt,
             Instant updatedAt) {}

@@ -3,9 +3,25 @@
 ## Overview
 
 - Java 21, Spring Boot 4.1, Spring AI 2.0 기반 단일 애플리케이션의 초기 빌드 환경이 구성되어 있다.
-- P1 인증부터 P8 Interview, canonical 경험·public/private GitHub Source와 Career Artifact Backend, terminal account purge까지 구현되어 있다. OpenAPI는 Career Artifact off 81/109, on·private off 90/120, 둘 다 on 97/127이다.
+- P1 인증부터 P8 Interview, canonical 경험·public/private GitHub Source와 Career Artifact Backend, terminal account purge까지 구현되어 있다. OpenAPI는 Career Artifact off 81/110, on·private off 90/121, 둘 다 on 97/128이다.
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
-- 전체 `check`가 102 suites/680 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
+- 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
+
+## [2026-08-10] Session Summary (GitHub 핵심 경험 추출과 canonical 경험 삭제 API)
+
+- What was done:
+  - GitHub extraction을 한국어 제목·본문, repository당 최대 3개 중심 경험으로 제한하고 prompt/runtime/provenance validator 계약을 일치시켰다.
+  - `DELETE /api/v1/profile/experiences/{id}?version=`을 추가해 item soft delete, inbound match 해제, canonical evidence 퇴역, raw source 조회 차단과 동일 GitHub claim 재생성 방지를 한 transaction으로 연결했다.
+  - OpenAPI 3개 feature 조합 operation 기준을 110/121/128로 갱신하고 통합 회귀를 추가했다.
+- Key decisions:
+  - EXPERIENCE에는 `SOURCE_DELETED`를 허용하지 않는 V3 제약을 유지하고 삭제 evidence는 비식별 marker·빈 metadata·`REJECTED`로 퇴역한다.
+  - 과거 typed FK와 immutable 결과는 보존하되 active item이 없는 canonical/raw evidence는 공개 조회와 분석 snapshot에서 제외한다.
+- Issues encountered:
+  - 최초 focused test에서 DB 제약 위반을 확인해 별도 migration 없이 기존 제약과 호환되는 상태 전이로 수정했다.
+- Validation:
+  - `gradlew.bat check` 성공, 104 suites/696 tests·실패 0. 삭제 후 목록/상세/근거/AI 비노출과 동일 GitHub claim no-op을 PostgreSQL 통합 테스트로 확인했다.
+- Next steps:
+  - None.
 
 ## [2026-08-09] Session Summary (공개 GitHub archive 수집과 실패 source 복구)
 

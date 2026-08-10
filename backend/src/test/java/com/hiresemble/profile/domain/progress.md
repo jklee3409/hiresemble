@@ -4,6 +4,14 @@
 
 P2 프로필 순수 도메인 정책 테스트가 구현되어 있다.
 
+## [2026-08-10] Session Summary (GitHub 대표 저장소 DTO fixture 정렬)
+
+- What was done: canonical 경험 record에 추가된 nullable `primaryGitHubRepositoryName`을 domain fixture에 반영했다.
+- Key decisions: 문서-only fixture는 null을 사용해 기존 의미를 유지한다.
+- Issues encountered: 없음.
+- Validation: `ProfileDomainTest`와 Backend 전체 `check` 통과.
+- Next steps: None.
+
 ## [2026-08-07] Session Summary (경험 유사도 정책 회귀)
 
 - What was done:

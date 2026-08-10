@@ -202,7 +202,7 @@ class GitHubAppConnectionIntegrationTest extends PostgresIntegrationTest {
                     * mapping.getMethodsCondition().getMethods().size();
         });
         assertThat(paths).hasSize(97);
-        assertThat(operations[0]).isEqualTo(127);
+        assertThat(operations[0]).isEqualTo(128);
         assertThat(paths).contains(
                 "/api/v1/github-app-connections/capability",
                 "/api/v1/github-app-connections/installation-requests",
@@ -218,7 +218,7 @@ class GitHubAppConnectionIntegrationTest extends PostgresIntegrationTest {
                 .getResponse()
                 .getContentAsByteArray());
         assertThat(document.get("paths").size()).isEqualTo(97);
-        assertThat(operationCount(document.get("paths"))).isEqualTo(127);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(128);
         assertThat(document.at("/paths/~1api~1v1~1github-app-connections~1installation-requests/post/security/0/sessionCookie")
                         .isArray())
                 .isTrue();

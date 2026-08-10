@@ -33,7 +33,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 .github/workflows -----------------------> backend/frontend/E2E/compose 검증
 ```
 
-공개 HTTP 범위는 Career Artifact feature off 109 operations/81 paths, on·private GitHub off 120 operations/90 paths, 둘 다 on 127 operations/97 paths다. Frontend는 anonymous Landing과 P1~P8 route, feature-gated `/integrations`(구 `/profile/github`는 redirect)·`/career-artifacts/**`, 그리고 `/settings/account`를 제공한다. Gate 5는 기존 public GitHub·Career Artifact pipeline을 유지한 채 GitHub App connection/private source와 durable terminal purge를 additive하게 연결했다.
+공개 HTTP 범위는 Career Artifact feature off 110 operations/81 paths, on·private GitHub off 121 operations/90 paths, 둘 다 on 128 operations/97 paths다. Frontend는 anonymous Landing과 P1~P8 route, feature-gated `/integrations`(구 `/profile/github`는 redirect)·`/career-artifacts/**`, 그리고 `/settings/account`를 제공한다. Gate 5는 기존 public GitHub·Career Artifact pipeline을 유지한 채 GitHub App connection/private source와 durable terminal purge를 additive하게 연결했다.
 
 ## 변경 시 주의사항
 

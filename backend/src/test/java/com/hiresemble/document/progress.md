@@ -4,6 +4,14 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-08-10] Session Summary (문서 canonical 경험 삭제 API 회귀)
+
+- What was done: 두 문서가 보강한 canonical 경험을 승인한 뒤 DELETE 204, 목록/상세/근거/분석 비노출을 HTTP와 PostgreSQL로 검증했다.
+- Key decisions: 원문 document와 과거 provenance는 삭제하지 않고 canonical 사용자 경험만 퇴역한다.
+- Issues encountered: 없음.
+- Validation: `DocumentIntegrationTest`와 Backend 전체 `check` 통과.
+- Next steps: None.
+
 ## [2026-08-08] Session Summary (Upload 보상 fixture 결정성 보정)
 
 - What was done:

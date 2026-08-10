@@ -841,6 +841,22 @@ public class ProfileStore {
                         FROM profile_evidence
                         WHERE user_id=:userId
                           AND id=:id
+                          AND (source_type <> 'EXPERIENCE' OR EXISTS (
+                              SELECT 1 FROM experience_items experience
+                              WHERE experience.user_id=profile_evidence.user_id
+                                AND experience.id=profile_evidence.source_entity_id
+                                AND experience.deleted_at IS NULL
+                          ))
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM experience_evidence_links experience_link
+                              JOIN experience_items deleted_experience
+                                ON deleted_experience.user_id=experience_link.user_id
+                               AND deleted_experience.id=experience_link.experience_item_id
+                              WHERE experience_link.user_id=profile_evidence.user_id
+                                AND experience_link.profile_evidence_id=profile_evidence.id
+                                AND deleted_experience.deleted_at IS NOT NULL
+                          )
                           AND source_type <> 'EDUCATION'
                           AND NOT (
                               upper(regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g'))
@@ -872,6 +888,16 @@ public class ProfileStore {
                           )
                           AND verification_status='VERIFIED'
                           AND source_deleted_at IS NULL
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM experience_evidence_links experience_link
+                              JOIN experience_items deleted_experience
+                                ON deleted_experience.user_id=experience_link.user_id
+                               AND deleted_experience.id=experience_link.experience_item_id
+                              WHERE experience_link.user_id=profile_evidence.user_id
+                                AND experience_link.profile_evidence_id=profile_evidence.id
+                                AND deleted_experience.deleted_at IS NOT NULL
+                          )
                           AND (
                               source_type <> 'DOCUMENT_CHUNK'
                               OR NOT EXISTS (
@@ -950,6 +976,22 @@ public class ProfileStore {
         String documentValue = documentId == null ? "" : documentId.toString();
         String where = """
                 user_id=:userId
+                AND (source_type <> 'EXPERIENCE' OR EXISTS (
+                    SELECT 1 FROM experience_items experience
+                    WHERE experience.user_id=profile_evidence.user_id
+                      AND experience.id=profile_evidence.source_entity_id
+                      AND experience.deleted_at IS NULL
+                ))
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM experience_evidence_links experience_link
+                    JOIN experience_items deleted_experience
+                      ON deleted_experience.user_id=experience_link.user_id
+                     AND deleted_experience.id=experience_link.experience_item_id
+                    WHERE experience_link.user_id=profile_evidence.user_id
+                      AND experience_link.profile_evidence_id=profile_evidence.id
+                      AND deleted_experience.deleted_at IS NOT NULL
+                )
                 AND source_type <> 'EDUCATION'
                 AND NOT (
                     upper(regexp_replace(evidence_category, '[[:space:]_-]+', '', 'g'))
@@ -1230,6 +1272,23 @@ public class ProfileStore {
                 .update();
         if (deleted != 1) {
             throw new IllegalStateException("canonical experience evidence could not be deleted");
+        }
+    }
+
+    public void retireExperienceEvidence(UUID userId, UUID evidenceId, Instant now) {
+        int updated = jdbcClient.sql("""
+                        UPDATE profile_evidence
+                        SET title='[삭제된 경험]',content='[사용자가 삭제한 경험입니다.]',
+                            metadata='{}'::jsonb,confidence=NULL,verification_status='REJECTED',
+                            verified_at=NULL,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:evidenceId AND source_type='EXPERIENCE'
+                        """)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("evidenceId", evidenceId)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("canonical experience evidence could not be retired");
         }
     }
 

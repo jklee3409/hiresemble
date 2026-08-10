@@ -24,7 +24,7 @@ const areas = computed(() => [
   },
   {
     to: '/career-artifacts',
-    label: 'AI로 만든 초안',
+    label: 'AI로 이력서·포트폴리오 만들기',
     prefix: '/career-artifacts',
     enabled: featureFlags.careerArtifactEnabled,
   },

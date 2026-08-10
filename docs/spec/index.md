@@ -9,7 +9,7 @@
 | 경로                             | 역할                                                                                                                                     |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | [`functional.md`](functional.md) | 회원·프로필·문서·GitHub source·Career Artifact·공고·자기소개서·면접·Agent Run의 비즈니스 규칙과 현재/목표 AC를 정의한다.                 |
-| [`api.md`](api.md)               | `/api/v1`, private GitHub 활성 97/127·private 비활성 90/120·Career Artifact 비활성 81/109와 planned 운영 API를 구분한다.                 |
+| [`api.md`](api.md)               | `/api/v1`, private GitHub 활성 97/128·private 비활성 90/121·Career Artifact 비활성 81/110과 planned 운영 API를 구분한다.                 |
 | [`db.md`](db.md)                 | PostgreSQL 18/pgvector의 현재 V30 GitHub App·account deletion schema를 포함한 관계·제약·보존 정책을 정의한다.                           |
 | [`page.md`](page.md)             | Vue SPA의 실제 route와 `PLANNED` settings/mock/Backoffice, feature-gated GitHub·Career Artifact 화면, layout, API 연결과 E2E를 정의한다. |
 | [`tech_stack.md`](tech_stack.md) | 모듈러 모놀리스, 보안, 통제형 AI workflow, GitHub gateway, Office renderer, 비용·테스트·배포 원칙을 정의한다.                            |
@@ -38,7 +38,7 @@
 | gateway·workflow·renderer·검증 | [`tech_stack.md`](tech_stack.md) 4.5, 6–12장                                               |
 | 모듈 변경 지점·도입 gate       | [`../design/github-career-artifact-design.md`](../design/github-career-artifact-design.md) |
 
-현재 기준선은 Flyway V30, canonical 경험 보관함·GitHub App private provenance·terminal deletion task, 11개 WorkflowType과 private GitHub 활성 OpenAPI 97 paths/127 operations·private 비활성/Career Artifact 활성 90 paths/120 operations·Career Artifact 비활성 81 paths/109 operations다.
+현재 기준선은 Flyway V30, canonical 경험 보관함·GitHub App private provenance·terminal deletion task, 11개 WorkflowType과 private GitHub 활성 OpenAPI 97 paths/128 operations·private 비활성/Career Artifact 활성 90 paths/121 operations·Career Artifact 비활성 81 paths/110 operations다.
 
 ## P0 승인 기준선과 결정 추적
 

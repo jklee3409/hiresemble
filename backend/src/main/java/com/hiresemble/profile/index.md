@@ -20,6 +20,8 @@ P2 기본 프로필, 지원 자격 자기신고, 구조화 경력과 P4 Document
 - 대외활동은 문서와 독립된 `activities`가 원본이며 `useAsMaterial`이 켜진 항목만 ACTIVITY evidence를 `VERIFIED`로 제공한다.
 - 자격증·어학·수상의 증빙 문서는 같은 사용자 active Document만 허용하고 document evidence는 PENDING으로 적용한다.
 - 문서와 GitHub에서 추출된 같은 경험은 공통 semantic 정책으로 하나의 canonical `EXPERIENCE`에 출처를 연결하며 불확실한 관련·충돌 판정은 사용자 해결 대상으로 남긴다.
+- 경험 목록은 `verificationStatus`·`matchKind`와 함께 `githubSourceId`로도 좁힐 수 있고, 그 GitHub 연결에서 나온 근거를 가진 경험만 남긴다.
+- 경험 삭제는 canonical item을 soft delete하고 근거 본문을 퇴역시켜 목록·상세·일반 근거 조회·향후 AI Context에서 제외한다. 과거 provenance ID와 source link는 보존하며 같은 immutable GitHub claim은 새 카드로 복원하지 않는다.
 - 삭제 문서 evidence는 참조가 없으면 삭제하고 참조가 있으면 동일 ID의 `SOURCE_DELETED` read-only tombstone으로 전환한다.
 - 모든 단건 조회와 mutation은 Session principal의 사용자 ID를 함께 사용한다.
 - 공고 분석에는 canonical profile hash, 대표 학력·지원 자격 typed fact, `VERIFIED` evidence의 ID·version·hash·provenance를 제공하며 profile entity와 원문 전체를 노출하지 않는다.

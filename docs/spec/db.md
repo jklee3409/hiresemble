@@ -203,6 +203,8 @@ Spring Session framework table은 user principal을 조회 가능한 인덱스�
 - active `(user_id,evidence_category,canonical_fingerprint)`은 unique이며 사용자 단위 advisory transaction lock으로 동시 문서 적용을 직렬화한다.
 - `RELATED_DIFFERENT|CONFLICT`만 owner-matched `matched_experience_item_id`와 similarity를 가지며 `NEW`는 둘 다 null이다.
 - `canonical_evidence_id`는 같은 사용자의 `profile_evidence(EXPERIENCE)`를 가리키며 승인된 항목이 원문 삭제 뒤에도 유지되는 근거 원천이다.
+- 사용자 삭제는 item의 `deleted_at`을 설정하고 version을 증가시키며 inbound match 제안을 해제한다. canonical `EXPERIENCE` row는 과거 typed link의 FK를 위해 남기되 title/content를 고정 삭제 marker로, metadata를 빈 object로, confidence·verified_at을 null로 바꾸고 `REJECTED`로 퇴역시킨다. 일반 근거 조회와 AI snapshot은 active item이 연결된 `EXPERIENCE`만 허용한다.
+- 삭제한 item의 source evidence link는 보존한다. 동일한 immutable GitHub claim이 다시 적용되면 이 link를 찾아 `SAME_EXPERIENCE` no-op으로 처리하고 새 active card를 만들지 않는다.
 
 ### 4.6 `experience_evidence_links`
 

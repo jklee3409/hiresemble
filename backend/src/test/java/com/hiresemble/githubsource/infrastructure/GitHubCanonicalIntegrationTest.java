@@ -1,7 +1,10 @@
 package com.hiresemble.githubsource.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hiresemble.common.exception.BusinessException;
+import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.document.infrastructure.persistence.DocumentStore;
 import com.hiresemble.githubsource.application.GitHubCandidateProvenanceValidator;
 import com.hiresemble.githubsource.application.GitHubCandidateProvenanceValidator.AllowedSourceUnit;
@@ -14,6 +17,7 @@ import com.hiresemble.profile.domain.model.EvidenceVerificationStatus;
 import com.hiresemble.profile.domain.model.ExperienceCommands.ExperienceVerification;
 import com.hiresemble.profile.domain.model.ExperienceMatchKind;
 import com.hiresemble.profile.infrastructure.persistence.ExperienceStore;
+import com.hiresemble.profile.infrastructure.persistence.ProfileStore;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,6 +40,7 @@ class GitHubCanonicalIntegrationTest extends PostgresIntegrationTest {
     @Autowired private ExperienceStore experienceStore;
     @Autowired private ExperienceApplicationService experienceService;
     @Autowired private DocumentStore documentStore;
+    @Autowired private ProfileStore profileStore;
 
     private UUID owner;
     private Graph first;
@@ -64,6 +69,7 @@ class GitHubCanonicalIntegrationTest extends PostgresIntegrationTest {
         assertThat(pending.verificationStatus()).isEqualTo(EvidenceVerificationStatus.PENDING);
         assertThat(pending.sourceCount()).isEqualTo(1);
         assertThat(pending.githubRepositorySourceCount()).isEqualTo(1);
+        assertThat(pending.primaryGitHubRepositoryName()).isEqualTo("canonical-owner/first-repo");
 
         var refreshed = apply(first, firstValidated);
         assertThat(refreshed.experienceMatchCounts())
@@ -84,6 +90,8 @@ class GitHubCanonicalIntegrationTest extends PostgresIntegrationTest {
         var withTwoRepositories = experienceStore.findDetail(owner, itemId).orElseThrow();
         assertThat(withTwoRepositories.item().sourceCount()).isEqualTo(2);
         assertThat(withTwoRepositories.item().githubRepositorySourceCount()).isEqualTo(2);
+        assertThat(withTwoRepositories.item().primaryGitHubRepositoryName())
+                .isEqualTo("canonical-owner/first-repo");
         assertThat(withTwoRepositories.sources())
                 .hasSize(2)
                 .allSatisfy(source -> {
@@ -112,6 +120,79 @@ class GitHubCanonicalIntegrationTest extends PostgresIntegrationTest {
                           AND verification_status='VERIFIED'
                         """, Integer.class, owner))
                 .isEqualTo(1);
+    }
+
+    @Test
+    void experienceListFilteredByGitHubSourceReturnsOnlyThatConnectionsExperiences() {
+        apply(first, validate(first, PROJECT_KO, "First repository work", "First cache hit ratio 91 %.", vector(1.0)));
+        apply(second, validate(second, PROJECT_KO, "Second repository work", "Second queue lag 12 ms.", vector(0.1)));
+
+        var fromFirst = experienceService.list(
+                owner, null, null, first.sourceId(), 0, 20, "updatedAt,desc");
+        assertThat(fromFirst.items()).hasSize(1);
+        assertThat(fromFirst.items().getFirst().title()).isEqualTo("First repository work");
+        assertThat(fromFirst.totalElements()).isEqualTo(1);
+
+        var fromSecond = experienceService.list(
+                owner, null, null, second.sourceId(), 0, 20, "updatedAt,desc");
+        assertThat(fromSecond.items()).hasSize(1);
+        assertThat(fromSecond.items().getFirst().title()).isEqualTo("Second repository work");
+
+        assertThat(experienceService.list(owner, null, null, null, 0, 20, "updatedAt,desc").items())
+                .hasSize(2);
+        assertThat(experienceService
+                        .list(owner, null, null, UUID.randomUUID(), 0, 20, "updatedAt,desc")
+                        .items())
+                .isEmpty();
+    }
+
+    @Test
+    void deletedExperienceStaysHiddenAndSameGitHubClaimDoesNotRecreateIt() {
+        var validated = validate(
+                first,
+                PROJECT_KO,
+                "삭제할 결제 API 개선",
+                "Redis 캐시로 결제 API 지연을 42 ms로 줄였습니다.",
+                vector(1.0));
+        var initial = apply(first, validated);
+        UUID rawEvidenceId = initial.appliedEvidenceIds().getFirst();
+        UUID itemId = jdbcTemplate.queryForObject(
+                "SELECT id FROM experience_items WHERE user_id=? AND deleted_at IS NULL",
+                UUID.class,
+                owner);
+        var item = experienceStore.findActive(owner, itemId).orElseThrow();
+
+        experienceService.delete(owner, itemId, item.version());
+
+        assertThat(experienceStore.findActive(owner, itemId)).isEmpty();
+        assertThat(experienceService.list(owner, null, null, null, 0, 20, "updatedAt,desc").items())
+                .isEmpty();
+        assertThat(jdbcTemplate.queryForObject("""
+                        SELECT verification_status='REJECTED'
+                               AND source_deleted_at IS NULL
+                               AND title='[삭제된 경험]'
+                        FROM profile_evidence
+                        WHERE user_id=? AND id=?
+                        """, Boolean.class, owner, item.canonicalEvidenceId()))
+                .isTrue();
+        assertThatThrownBy(() -> experienceService.get(owner, itemId))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+        assertThat(profileStore.findEvidence(owner, rawEvidenceId)).isEmpty();
+
+        var reapplied = canonicalService.apply(
+                owner,
+                first.sourceId(),
+                first.repositoryId(),
+                first.snapshotId(),
+                validated.accepted(),
+                documentStore.activeEmbeddingPolicy(),
+                Instant.now());
+        assertThat(reapplied.experienceMatchCounts())
+                .containsOnly(Map.entry(ExperienceMatchKind.SAME_EXPERIENCE, 1));
+        assertThat(experienceService.list(owner, null, null, null, 0, 20, "updatedAt,desc").items())
+                .isEmpty();
+        assertThat(profileStore.findEvidence(owner, rawEvidenceId)).isEmpty();
     }
 
     @Test
@@ -187,8 +268,8 @@ class GitHubCanonicalIntegrationTest extends PostgresIntegrationTest {
                 Map.of("U1", new AllowedSourceUnit(
                         first.unitId(), "Repository evidence 42 item 0 1 2 3 4 5 6 7 8 9 10 11 12")),
                 excessive);
-        assertThat(bounded.accepted()).hasSize(12);
-        assertThat(bounded.rejectionReasonCounts()).containsEntry(RejectionReason.LIMIT_EXCEEDED, 1);
+        assertThat(bounded.accepted()).hasSize(3);
+        assertThat(bounded.rejectionReasonCounts()).containsEntry(RejectionReason.LIMIT_EXCEEDED, 10);
     }
 
     private void assertSemanticDecision(

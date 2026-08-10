@@ -41,7 +41,7 @@ P0의 결정 과정과 승인 근거는 [P0 계약 결정 기록](p0-contract-de
 - [x] Gate 4 Career Artifact Frontend를 독립 build flag와 기존 Gate 3 공개 계약 소비로 완료한다.
 - [ ] Gate 5 Private GitHub·AUTH-004 terminal purge 전체 Chromium 재검증을 완료한다. (구현 `IMPLEMENTED_NOT_VERIFIED`)
 
-현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`다. 현재 기준선은 Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations, private 비활성/Career Artifact 활성 90 paths/120 operations, Career Artifact 비활성 81 paths/109 operations다. Backend 102 suites/680 tests와 Frontend 102 files/465 tests는 통과했고 최종 Phase 5 Chromium journey는 selector 보정 뒤 재검증 대기다. 실제 외부 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
+현재 단계: P0–P8 `DONE`, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V `USER_LOCAL_VALIDATION_PENDING`, P8.6–P8.9-A `PLANNED`, P8.9-B `PLANNED_LATER`, P9 `BLOCKED_BY_P8_5V_TO_P8_9A`, P10-A–C `PLANNED`다. 별도 GitHub·Career Artifact vertical은 Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`다. 현재 기준선은 Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/128 operations, private 비활성/Career Artifact 활성 90 paths/121 operations, Career Artifact 비활성 81 paths/110 operations다. Backend 102 suites/680 tests와 Frontend 102 files/465 tests는 통과했고 최종 Phase 5 Chromium journey는 selector 보정 뒤 재검증 대기다. 실제 외부 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
 ## 1. 전체 선행 관계
 
@@ -368,7 +368,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - [x] `document-ingestion-v2` 후보 임베딩 step과 durable `p0-contract-v1` 레거시 실행기 동시 등록
 - [x] exact fingerprint, 사용자·category·policy 범위 cosine Top-K, anchor·숫자 충돌 보수적 판정
 - [x] 동일 경험은 보강 출처만 연결하고 유사·충돌은 사용자 match resolution 대상으로 보존
-- [x] `/profile/experiences` 조회·상세·편집·승인·match resolution 5 operations
+- [x] `/profile/experiences` 조회·상세·편집·삭제·승인·match resolution 6 operations
 - [x] 승인된 정규 경험의 원본 삭제·reparse 생존과 후속 AI 단일 canonical evidence 사용
 - [ ] Frontend `/profile/experiences` 경험 보관함과 문서 상세 중복 표시 연결
 
@@ -919,7 +919,7 @@ GitHub·Career Artifact Gate 0 기준선 보호
 - Gate 5 수명주기: disconnect와 account deletion은 먼저 token mint를 차단하고 remote uninstall·private snapshot·document/artifact object deletion이 terminal success인 경우에만 local cleanup/user physical purge를 완료한다.
 - 호환성: 기존 document parser/MIME·상태, job/cover/interview workflow와 applied V1~V28을 파괴하지 않는다.
 - 전체 완료 조건: ART-AC-01–05 사용자 journey는 Gate 4 Frontend/E2E에서 통과했다. 전체 vertical 종료는 [`github-career-artifact-design.md`](github-career-artifact-design.md)의 승인된 Gate 5 private GitHub·terminal purge 경계를 코드·migration·UI·자동화·runbook으로 통과해야 한다. 실제 외부 GitHub App UAT는 구현 완료와 분리해 `USER_MANUAL_UI_VALIDATION_PENDING`으로 기록한다.
-- 배치 결정: AUTH-004 account endpoint가 항상 2 paths/2 operations를 추가해 Career Artifact off는 81 paths/109 operations, on·private GitHub off는 90 paths/120 operations다. private GitHub on은 GitHub App 7 paths/7 operations가 추가되어 97 paths/127 operations다.
+- 배치 결정: AUTH-004 account endpoint가 항상 2 paths/2 operations를 추가해 Career Artifact off는 81 paths/110 operations, on·private GitHub off는 90 paths/121 operations다. private GitHub on은 GitHub App 7 paths/7 operations가 추가되어 97 paths/128 operations다.
 
 ## 23. 목표 package와 directory 생성 순서
 

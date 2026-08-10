@@ -546,8 +546,8 @@ class GitHubIngestionOrchestratorIntegrationTest extends PostgresIntegrationTest
                     : request.input().path("sourceUnits").get(0).path("sourceUnitRef").asText();
             var candidate = new GitHubIngestionWorkflow.ExtractedCandidate(
                     "PROJECT",
-                    "Resilient service",
-                    "Built a resilient service with automated tests.",
+                    "복원력 있는 서비스 구축",
+                    "자동화 테스트를 갖춘 복원력 있는 서비스를 구축했습니다.",
                     new BigDecimal("0.900"),
                     List.of(reference));
             try {

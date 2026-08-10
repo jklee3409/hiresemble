@@ -4,6 +4,35 @@
 
 P2 기본·구조화 프로필·비학력 direct evidence와 P4 Document PENDING evidence·증빙 문서 FK를 owner-scoped transaction 경계로 구현했고, P6~P7용 canonical profile·현재 `VERIFIED` 비학력 evidence snapshot query를 제공한다.
 
+## [2026-08-10] Session Summary (canonical 경험 삭제와 영구 비노출)
+
+- What was done:
+  - optimistic version을 받는 경험 삭제 service/store를 추가해 item soft delete, inbound match 해제와 canonical evidence 퇴역을 원자적으로 수행한다.
+  - 삭제 item의 canonical/raw source evidence를 단건·목록·검증된 분석 snapshot에서 숨기고, 기존 source link를 사용해 같은 GitHub claim 재수집을 `SAME_EXPERIENCE` no-op으로 처리한다.
+- Key decisions:
+  - 과거 분석·자기소개서·면접·Career Artifact의 FK와 snapshot은 보존하고 title/content/metadata/confidence만 안전하게 제거한다.
+- Issues encountered:
+  - EXPERIENCE source에는 `SOURCE_DELETED`를 허용하지 않는 DB 제약이 있어 `REJECTED` 퇴역과 active item 존재 조건으로 구현했다.
+- Validation:
+  - GitHub·두 문서 semantic 경험 삭제 통합 테스트와 Backend 전체 696 tests가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-09] Session Summary (경험 목록 GitHub 연결 filter)
+
+- What was done:
+  - `GET /profile/experiences`에 `githubSourceId` optional filter를 추가했다. Controller·ApplicationService·`ExperienceStore.list`가 함께 인자를 받는다.
+  - Store는 `experience_evidence_links`와 `profile_evidence`를 잇는 `EXISTS` 절을 붙여 그 연결에서 나온 근거를 가진 경험만 남긴다. 목록과 count 모두 같은 조건을 쓴다.
+- Key decisions:
+  - status·matchKind가 쓰는 빈 문자열 sentinel 방식을 uuid에는 쓰지 않았다. `''`를 uuid로 cast하면 조건이 먼저 평가될 때 실패하므로 절 자체를 조건부로 붙이고 param도 그때만 bind한다.
+  - 기존 filter와 응답 DTO는 그대로 두고 additive하게만 넓혔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `gradlew test --tests GitHubCanonicalIntegrationTest` 통과. 두 연결에서 각각 나온 경험 분리, filter 없는 전체 조회, 존재하지 않는 source id의 빈 결과를 확인했다.
+- Next steps:
+  - 없음.
+
 ## [2026-08-07] Session Summary (문서·GitHub 공통 canonical 경험 적용)
 
 - What was done:

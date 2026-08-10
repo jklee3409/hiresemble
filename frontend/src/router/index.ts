@@ -288,7 +288,7 @@ export function careerArtifactRoutes(enabled: boolean): RouteRecordRaw[] {
           path: 'career-artifacts',
           name: 'career-artifacts',
           component: () => import('@/pages/CareerArtifactListPage.vue'),
-          meta: { title: 'AI로 만든 초안' },
+          meta: { title: 'AI로 이력서·포트폴리오 만들기' },
         },
         {
           path: 'career-artifacts/new',

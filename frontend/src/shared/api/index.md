@@ -10,7 +10,7 @@ Backend P1~P8, Gate 2 public GitHub, Gate 3 Career Artifact와 Gate 5 GitHub App
 - [`http.ts`](http.ts): baseURL·cookie·CSRF interceptor
 - [`authApi.ts`](authApi.ts): 다섯 인증 endpoint와 계정 표시 이름 변경 consumer
 - [`accountContracts.ts`](accountContracts.ts), [`accountApi.ts`](accountApi.ts): 비밀번호 변경·terminal account deletion strict request/response와 Idempotency-Key 없는 consumer
-- [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD, direct/document evidence batch 검토와 canonical 경험 목록·상세·수정·검증·병합/분리 consumer
+- [`profileApi.ts`](profileApi.ts): 프로필·대외활동 CRUD, direct/document evidence batch 검토와 canonical 경험 목록·상세·수정·검증·삭제·병합/분리 consumer
 - [`experienceContracts.ts`](experienceContracts.ts): canonical 경험·GitHub provenance 응답의 strict Zod 계약
 - [`githubSourceContracts.ts`](githubSourceContracts.ts): GitHub Source·repository page·refresh와 Run parity strict Zod 계약
 - [`githubSourceApi.ts`](githubSourceApi.ts): GitHub Source 7개 operation, typed sort·version·Idempotency-Key consumer

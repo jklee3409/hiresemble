@@ -348,6 +348,8 @@ export interface ExperienceItemDto extends VersionedProfileResource {
   githubRepositorySourceCount: number
   /* 가장 먼저 이 경험을 추출한 문서의 이름. 문서 출처가 없거나 원본이 지워졌으면 null이다. */
   primaryDocumentName: string | null
+  /* 활성 GitHub 출처 중 가장 먼저 연결된 저장소의 owner/name. */
+  primaryGitHubRepositoryName: string | null
 }
 
 export interface ExperienceSourceDto {

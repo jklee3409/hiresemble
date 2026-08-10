@@ -16,6 +16,20 @@
 - `playwright.config.ts`는 `corepack pnpm dev`로 Vite web server를 시작하고 Chromium project를 사용한다.
 - 테스트는 외부 provider와 운영 데이터 없이 격리 DB·Object Storage 또는 Playwright route fixture를 사용한다.
 
+## [2026-08-10] Session Summary (GitHub 경험 삭제 journey와 Phase 5 재검증)
+
+- What was done:
+  - 공개 GitHub journey에 provenance 경험의 확인 후 삭제, version query와 목록 비노출 검증을 추가했다.
+  - strict 경험 DTO에 추가된 `primaryGitHubRepositoryName`을 Phase 5와 Career Artifact fixture에 보강하고 이전 세션의 Phase 5 journey를 격리 포트로 재실행했다.
+- Key decisions:
+  - feature flag가 다른 기존 Vite server를 재사용하지 않도록 Phase 5는 `P8_FRONTEND_PORT=5187`에서 검증했다.
+- Issues encountered:
+  - 공개 GitHub journey는 통과했다. Phase 5는 private source→artifact→disconnect→account deletion까지 통과했지만 탈퇴 뒤 `/settings/account` 재진입이 `/login`으로 끝나 test의 `returnTo` 기대와 달라 마지막 assertion이 실패했다.
+- Validation:
+  - `github-source.spec.ts` Chromium 1건 통과. `phase5-private-github.spec.ts`는 마지막 URL assertion 1건 실패로 `NOT_VERIFIED`다.
+- Next steps:
+  - 탈퇴 사용자에게 보호 route `returnTo`를 보존하는 것이 맞는지 계약을 확정한 뒤 test 또는 router를 한쪽으로 정렬한다.
+
 ## [2026-08-09] Session Summary (GitHub spec의 전이 문구 의존 제거)
 
 - What was done:

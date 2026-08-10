@@ -20,7 +20,7 @@ describe('CareerArtifactAreaSwitch', () => {
     expect(wrapper.findAll('a').map((link) => link.text())).toEqual([
       '자료 업로드',
       '외부 연동',
-      'AI로 만든 초안',
+      'AI로 이력서·포트폴리오 만들기',
     ])
     expect(wrapper.get('a[href="/career-artifacts"]').attributes('aria-current')).toBe('page')
     expect(wrapper.get('a[href="/documents"]').attributes('aria-current')).toBeUndefined()
@@ -41,7 +41,7 @@ describe('CareerArtifactAreaSwitch', () => {
 
     expect(wrapper.findAll('a').map((link) => link.text())).toEqual([
       '자료 업로드',
-      'AI로 만든 초안',
+      'AI로 이력서·포트폴리오 만들기',
     ])
   })
 

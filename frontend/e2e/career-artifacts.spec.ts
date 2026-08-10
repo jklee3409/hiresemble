@@ -622,6 +622,7 @@ function experiencePage() {
         documentSourceCount: 1,
         githubRepositorySourceCount: 1,
         primaryDocumentName: 'resume.pdf',
+        primaryGitHubRepositoryName: 'openai/hiresemble',
         version: 1,
         createdAt: NOW,
         updatedAt: NOW,

@@ -4,6 +4,19 @@
 
 Backend P1~P8, Gate 2/5 public·private GitHub, Gate 3 Career Artifact와 account OpenAPI, 11개 Agent Run WorkflowType에 일치하는 TypeScript DTO, Axios·CSRF와 typed 오류 처리를 소유한다.
 
+## [2026-08-10] Session Summary (canonical 경험 삭제 client)
+
+- What was done:
+  - `deleteExperience(id, version)`을 추가해 `DELETE /profile/experiences/{id}`의 optimistic version query와 void 204 계약을 연결했다.
+- Key decisions:
+  - 다른 profile delete operation과 같은 Axios query pattern을 사용하고 응답 body parser는 두지 않는다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - exact URL/query unit test와 Frontend 전체 `check`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-09] Session Summary (GitHub App·account strict API client)
 
 - What was done:

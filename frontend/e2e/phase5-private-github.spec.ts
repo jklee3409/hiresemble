@@ -458,6 +458,7 @@ async function installPhase5Routes(page: Page) {
       documentSourceCount: 0,
       githubRepositorySourceCount: 1,
       primaryDocumentName: null,
+      primaryGitHubRepositoryName: 'phase5-org/private-platform',
       version: verified ? 2 : 1,
       createdAt: NOW,
       updatedAt: NOW,

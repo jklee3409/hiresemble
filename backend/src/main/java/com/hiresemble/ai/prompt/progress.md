@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-08-10] Session Summary (GitHub 중심 경험 한국어 extraction prompt v2)
+
+- What was done:
+  - GitHub 후보 제목·본문을 자연스러운 한국어로 작성하고 repository의 주된 목적·핵심 설계/구현·중요 문제 해결·명시된 성과만 최대 3개 반환하도록 extraction prompt v2를 등록했다.
+- Key decisions:
+  - 기술명·고유명사는 보존하되 작은 설정·의존성·파일 변경·고립된 테스트/문서·경미한 refactor·기술 나열은 제외하고 관련 근거는 하나로 합친다. 중심 경험이 없으면 0개를 허용한다.
+- Issues encountered:
+  - 기존 v1은 후보를 12개까지 허용해 사용자가 원하는 굵은 경험 경계와 맞지 않았다.
+- Validation:
+  - prompt registry/contract를 포함한 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-09] Session Summary (Portfolio 실제 provider prompt v2)
 
 - What was done:

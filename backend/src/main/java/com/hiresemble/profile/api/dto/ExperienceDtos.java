@@ -29,6 +29,7 @@ public final class ExperienceDtos {
             int documentSourceCount,
             int githubRepositorySourceCount,
             @Schema(nullable = true, maxLength = 255) String primaryDocumentName,
+            @Schema(nullable = true, maxLength = 201) String primaryGitHubRepositoryName,
             long version,
             Instant createdAt,
             Instant updatedAt) {}

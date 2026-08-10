@@ -4,6 +4,14 @@
 
 P1 다섯 인증 endpoint와 계정 닉네임 변경 회귀, P1~P8, GitHub·Career Artifact, Dashboard·Career Guide, Job 자동 분석 projection 및 Agent Run history delete OpenAPI·Swagger UI의 실제 Spring 통합 계약을 검증한다.
 
+## [2026-08-10] Session Summary (경험 삭제 OpenAPI 기준)
+
+- What was done: `deleteExperienceItem` operation과 Career Artifact/private GitHub 3개 조합의 110/121/128 operation 기준을 갱신했다.
+- Key decisions: DELETE는 query version, session security, CSRF mutation과 204 응답 계약을 따른다.
+- Issues encountered: 없음.
+- Validation: OpenAPI context 회귀와 Backend 전체 `check` 통과.
+- Next steps: None.
+
 ## [2026-08-08] Session Summary (Career Artifact feature on/off OpenAPI)
 
 - What was done:

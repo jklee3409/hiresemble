@@ -4,6 +4,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { featureFlags } from '@/app/featureFlags'
+import { careerArtifactQueryKeys } from '@/features/career-artifacts/queryKeys'
 import { safeGitHubRepositoryUrl } from '@/features/github/presentation'
 import ProfileTabs from '@/features/profile/ProfileTabs.vue'
 import { profileQueryKeys } from '@/features/profile/queryKeys'
@@ -94,6 +95,10 @@ const updateMutation = useMutation({
       version: input.version,
     }),
 })
+const deleteMutation = useMutation({
+  mutationFn: (input: { item: ExperienceItemDto }) =>
+    profileApi.deleteExperience(input.item.id, input.item.version),
+})
 const verificationMutation = useMutation({
   mutationFn: (input: { item: ExperienceItemDto; status: 'PENDING' | 'VERIFIED' | 'REJECTED' }) =>
     profileApi.verifyExperience(input.item.id, {
@@ -113,6 +118,7 @@ const resolutionMutation = useMutation({
 const busy = computed(
   () =>
     updateMutation.isPending.value ||
+    deleteMutation.isPending.value ||
     verificationMutation.isPending.value ||
     resolutionMutation.isPending.value,
 )
@@ -181,6 +187,33 @@ async function save(item: ExperienceItemDto): Promise<void> {
     await refreshAfterMutation(saved)
     editingId.value = ''
     notifications.toast('경험 내용을 수정했어요.', 'success')
+  } catch (error) {
+    actionError.value = conflictMessage(error)
+    await experiences.refetch()
+  }
+}
+
+async function remove(item: ExperienceItemDto): Promise<void> {
+  const confirmed = await notifications.confirm({
+    title: '이 경험을 삭제할까요?',
+    message:
+      '삭제하면 경험 보관함과 앞으로의 AI 활용에서 사라져요. 이미 만든 이력서나 포트폴리오 파일은 바뀌지 않아요.',
+    confirmLabel: '경험 삭제',
+    tone: 'danger',
+  })
+  if (!confirmed) return
+
+  actionError.value = ''
+  try {
+    await deleteMutation.mutateAsync({ item })
+    cache.removeQueries({ queryKey: profileQueryKeys.experience(userId.value, item.id) })
+    if (selectedId.value === item.id) await closeDetail()
+    if (editingId.value === item.id) cancelEdit()
+    if ((experiences.data.value?.items.length ?? 0) === 1 && page.value > 0) page.value -= 1
+    await cache.invalidateQueries({ queryKey: profileQueryKeys.experiencesRoot(userId.value) })
+    await cache.invalidateQueries({ queryKey: profileQueryKeys.evidenceRoot(userId.value) })
+    await cache.invalidateQueries({ queryKey: careerArtifactQueryKeys.readiness(userId.value) })
+    notifications.toast('경험을 삭제했어요.', 'success')
   } catch (error) {
     actionError.value = conflictMessage(error)
     await experiences.refetch()
@@ -318,10 +351,16 @@ function sourceLabel(source: ExperienceSourceDto): string {
 }
 
 /*
- * 개수 대신 실제 문서 이름을 보여 준다. 같은 경험이 여러 문서에서 나왔다면
- * 서버가 가장 먼저 추출한 문서 이름을 주고, 나머지는 "외 N곳"으로만 센다.
+ * GitHub 출처가 있으면 저장소 이름을 우선 표시한다. 문서만 연결된 경험은
+ * 기존처럼 가장 먼저 추출한 문서 이름과 나머지 출처 수를 보여 준다.
  */
-function documentSourceLabel(item: ExperienceItemDto): string {
+function primarySourceLabel(item: ExperienceItemDto): string {
+  if (item.primaryGitHubRepositoryName) {
+    if (item.githubRepositorySourceCount > 1) {
+      return `${item.primaryGitHubRepositoryName} 외 ${item.githubRepositorySourceCount - 1}곳`
+    }
+    return item.primaryGitHubRepositoryName
+  }
   if (!item.primaryDocumentName) {
     return item.documentSourceCount > 0 ? '원본이 삭제된 문서' : '문서 출처 없음'
   }
@@ -481,6 +520,14 @@ function similarityLabel(value: number | null): string {
                 >
                   수정
                 </button>
+                <button
+                  type="button"
+                  class="button button--danger button--compact"
+                  :disabled="busy"
+                  @click="remove(item)"
+                >
+                  삭제
+                </button>
               </div>
             </div>
 
@@ -520,8 +567,8 @@ function similarityLabel(value: number | null): string {
                   <dd>{{ categoryLabel(item.evidenceCategory) }}</dd>
                 </div>
                 <div class="experience-card__meta-wide">
-                  <dt>문서 출처</dt>
-                  <dd :title="documentSourceLabel(item)">{{ documentSourceLabel(item) }}</dd>
+                  <dt>출처</dt>
+                  <dd :title="primarySourceLabel(item)">{{ primarySourceLabel(item) }}</dd>
                 </div>
                 <div>
                   <dt>출처</dt>

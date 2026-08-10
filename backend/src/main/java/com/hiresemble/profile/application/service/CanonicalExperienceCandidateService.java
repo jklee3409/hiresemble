@@ -71,7 +71,7 @@ public class CanonicalExperienceCandidateService {
                     .orElseGet(() -> semanticDecision(
                             userId, categories, candidate, embeddingPolicy));
             UUID evidenceId = sourceEvidenceWriter.create(userId, UUID.randomUUID(), candidate, now);
-            var existingEvidenceLink = experienceStore.findBySourceEvidence(userId, evidenceId);
+            var existingEvidenceLink = experienceStore.findAnyBySourceEvidence(userId, evidenceId);
             if (existingEvidenceLink.isPresent()) {
                 applied.add(evidenceId);
                 matches.merge(ExperienceMatchKind.SAME_EXPERIENCE, 1, Integer::sum);

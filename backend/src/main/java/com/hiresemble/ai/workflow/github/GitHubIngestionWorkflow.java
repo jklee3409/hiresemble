@@ -65,7 +65,7 @@ public final class GitHubIngestionWorkflow {
     public static final String APPLY_CANONICAL_EXPERIENCES = "APPLY_CANONICAL_EXPERIENCES";
     public static final String FINALIZE_GITHUB_SOURCE = "FINALIZE_GITHUB_SOURCE";
 
-    public static final int MAX_CANDIDATES_PER_REPOSITORY = 12;
+    public static final int MAX_CANDIDATES_PER_REPOSITORY = 3;
     public static final int MAX_CANDIDATES_PER_RUN = 40;
     private static final int EMBEDDING_DIMENSION = 1536;
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(60);
@@ -552,6 +552,12 @@ public final class GitHubIngestionWorkflow {
                         "GITHUB_CANDIDATE_LIMIT_INVALID",
                         "Return at most " + maximum + " candidates using only the supplied source unit references.");
             }
+            if (output.candidates().stream().anyMatch(candidate -> !isKoreanCandidate(candidate))) {
+                throw StructuredOutputValidationException.repairable(
+                        ValidationPhase.JAVA_RECORD,
+                        "GITHUB_CANDIDATE_LANGUAGE_INVALID",
+                        "Write every candidate title and content in Korean while preserving technical names.");
+            }
         }
     }
 
@@ -912,6 +918,20 @@ public final class GitHubIngestionWorkflow {
     private String outputSchemaVersion(String stepKey) {
         return "github-" + stepKey.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
                 + "-output-v1";
+    }
+
+    static boolean isKoreanCandidate(ExtractedCandidate candidate) {
+        return candidate != null
+                && containsHangul(candidate.title())
+                && containsHangul(candidate.content());
+    }
+
+    private static boolean containsHangul(String value) {
+        if (value == null || value.isBlank()) return false;
+        return value.codePoints().anyMatch(codePoint ->
+                (codePoint >= 0xAC00 && codePoint <= 0xD7A3)
+                        || (codePoint >= 0x1100 && codePoint <= 0x11FF)
+                        || (codePoint >= 0x3130 && codePoint <= 0x318F));
     }
 
     private String candidateHash(ExtractedCandidate candidate) {

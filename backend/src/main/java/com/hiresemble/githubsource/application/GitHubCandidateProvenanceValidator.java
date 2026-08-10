@@ -28,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class GitHubCandidateProvenanceValidator {
 
+    private static final int MAX_CANDIDATES_PER_REPOSITORY = 3;
     private static final Pattern NUMBER = Pattern.compile("(?<![\\p{L}\\p{N}])\\d+(?:[.,]\\d+)?%?");
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
             "PROJECT", "프로젝트", "STRENGTH", "강점", "역량");
@@ -55,9 +56,12 @@ public class GitHubCandidateProvenanceValidator {
         EnumMap<RejectionReason, Integer> rejected = new EnumMap<>(RejectionReason.class);
         Set<String> claims = new HashSet<>();
         List<GitHubEvidenceCandidate> bounded = candidates == null ? List.of() : candidates;
-        if (bounded.size() > 12) {
-            bounded = bounded.subList(0, 12);
-            rejected.merge(RejectionReason.LIMIT_EXCEEDED, candidates.size() - 12, Integer::sum);
+        if (bounded.size() > MAX_CANDIDATES_PER_REPOSITORY) {
+            bounded = bounded.subList(0, MAX_CANDIDATES_PER_REPOSITORY);
+            rejected.merge(
+                    RejectionReason.LIMIT_EXCEEDED,
+                    candidates.size() - MAX_CANDIDATES_PER_REPOSITORY,
+                    Integer::sum);
         }
         for (GitHubEvidenceCandidate candidate : bounded) {
             try {

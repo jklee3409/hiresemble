@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -24,6 +25,8 @@ import {
   gitHubStatusTone,
   parsePublicGitHubUrl,
 } from '@/features/github/presentation'
+import { profileQueryKeys } from '@/features/profile/queryKeys'
+import { listExperiences } from '@/shared/api/profileApi'
 import { listGitHubRepositories } from '@/shared/api/githubSourceApi'
 import type {
   GitHubRepositoryDto,
@@ -94,6 +97,27 @@ const repositories = useGitHubRepositoryListQuery(
       detail.data.value.source.status === 'WAITING_USER',
   ),
 )
+/*
+ * 이 연결에서 찾은 경험. 상세는 경험 보관함이 소유하므로 여기서는 맛보기 3개와 이동 경로만 둔다.
+ * 총 개수를 알아야 "더 보기"를 띄울지 정할 수 있어 page size를 미리보기 개수로 맞춘다.
+ */
+const EXPERIENCE_PREVIEW_SIZE = 3
+const experienceFilters = computed(() => ({
+  githubSourceId: focusedSourceId.value,
+  page: 0,
+  size: EXPERIENCE_PREVIEW_SIZE,
+  sort: 'updatedAt,desc' as const,
+}))
+const sourceExperiences = useQuery({
+  queryKey: computed(() => profileQueryKeys.experiences(userId.value, experienceFilters.value)),
+  queryFn: () => listExperiences(experienceFilters.value),
+  enabled: computed(() => userId.value !== '' && focusedSourceId.value !== ''),
+})
+const experienceTotal = computed(() => sourceExperiences.data.value?.totalElements ?? 0)
+const hiddenExperienceCount = computed(() =>
+  Math.max(0, experienceTotal.value - EXPERIENCE_PREVIEW_SIZE),
+)
+
 const createMutation = useCreateGitHubSourceMutation(userId)
 const selectionMutation = useSelectGitHubRepositoriesMutation(userId)
 const refreshMutation = useRefreshGitHubSourceMutation(userId)
@@ -542,10 +566,13 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
 
             <dl class="github-source-card__meta">
               <div>
-                <dt>고른 저장소</dt>
+                <dt>저장소</dt>
                 <dd>
-                  {{ source.selectedRepositoryCount }}개 / 찾은
-                  {{ source.discoveredRepositoryCount }}개
+                  {{
+                    source.sourceKind === 'REPOSITORY'
+                      ? '이 저장소 1곳'
+                      : `${source.discoveredRepositoryCount}곳 중 ${source.selectedRepositoryCount}곳을 읽어요`
+                  }}
                 </dd>
               </div>
               <div>
@@ -636,9 +663,9 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
       >
         <div class="github-focused__header">
           <div>
-            <p class="section-kicker">선택한 연결</p>
+            <p class="section-kicker">이 저장소에서 찾은 것</p>
             <h2 id="github-focused-heading" class="section-title">
-              {{ focusedSummary ? sourceDisplayName(focusedSummary) : '진행 상황' }}
+              {{ focusedSummary ? sourceDisplayName(focusedSummary) : '자세히 보기' }}
             </h2>
           </div>
           <button type="button" class="button button--ghost button--compact" @click="clearFocus">
@@ -667,6 +694,46 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
             :source-id="focusedSummary.id"
             :agent-run-id="focusedSummary.latestAgentRunId"
           />
+
+          <!-- 확인이 끝난 연결에서는 숫자 대신 실제로 찾은 경험을 보여 준다. -->
+          <section
+            v-if="focusedSummary.status === 'READY' || focusedSummary.status === 'PARTIAL'"
+            class="source-experiences"
+            aria-labelledby="source-experiences-heading"
+          >
+            <h3 id="source-experiences-heading" class="section-title">찾은 경험</h3>
+            <StatePanel
+              v-if="sourceExperiences.isPending.value"
+              kind="loading"
+              title="찾은 경험을 불러오는 중…"
+            />
+            <StatePanel
+              v-else-if="sourceExperiences.isError.value"
+              kind="error"
+              title="찾은 경험을 불러오지 못했어요."
+              description="경험 보관함에서 직접 확인할 수 있어요."
+            />
+            <p v-else-if="experienceTotal === 0" class="source-experiences__empty">
+              이 저장소에서는 아직 경험으로 정리된 내용이 없어요.
+            </p>
+            <template v-else>
+              <ul class="source-experiences__list">
+                <li v-for="item in sourceExperiences.data.value?.items ?? []" :key="item.id">
+                  <RouterLink :to="`/profile/experiences?selected=${item.id}`">
+                    <span class="source-experiences__title">{{ item.title }}</span>
+                    <span class="source-experiences__excerpt">{{ item.content }}</span>
+                  </RouterLink>
+                </li>
+              </ul>
+              <RouterLink class="text-link" to="/profile/experiences">
+                {{
+                  hiddenExperienceCount > 0
+                    ? `더 많은 내용을 확인하세요 (${hiddenExperienceCount}개 더 있어요)`
+                    : '경험 보관함에서 자세히 보기'
+                }}
+              </RouterLink>
+            </template>
+          </section>
 
           <section
             v-if="
@@ -876,9 +943,14 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   gap: var(--space-2);
 }
 
+/* 저장소 이름이 카드에서 가장 먼저 읽혀야 한다. 배지와 링크보다 확실히 굵고 크게 둔다. */
 .github-source-card h3 {
   margin-top: var(--space-2);
-  font-size: 1.125rem;
+  color: var(--color-ink-title);
+  font-size: 1.3125rem;
+  font-weight: 780;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 .github-source-card__url {
@@ -934,6 +1006,61 @@ function safeSourceUrl(source: GitHubSourceSummaryDto): string | null {
   display: grid;
   gap: var(--space-5);
   scroll-margin-top: 5rem;
+}
+
+/*
+ * 이 연결에서 찾은 경험 미리보기. 상세와 승인은 경험 보관함이 소유하므로
+ * 여기서는 제목과 앞부분만 한 줄씩 보여 주고 카드 전체를 이동 target으로 둔다.
+ */
+.source-experiences {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.source-experiences__list {
+  display: grid;
+  width: 100%;
+  gap: var(--space-2);
+}
+
+.source-experiences__list a {
+  display: grid;
+  gap: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-fill);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
+  transition: background-color var(--motion-fast);
+}
+
+.source-experiences__list a:hover {
+  background: var(--color-brand-soft);
+}
+
+.source-experiences__title {
+  color: var(--color-ink-title);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+/* 본문은 목록에서 한 줄만 보여 주고 전체는 경험 보관함에서 읽는다. */
+.source-experiences__excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.source-experiences__empty {
+  color: var(--color-muted-strong);
+  font-size: var(--font-size-sm);
 }
 
 .repository-selector {

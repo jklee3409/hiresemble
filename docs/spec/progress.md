@@ -3,8 +3,36 @@
 ## Overview
 
 - `functional.md`, `api.md`, `db.md`, `page.md`, `tech_stack.md`의 다섯 활성 명세가 유지되며 GitHub·Career Artifact Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`와 실제 UAT 대기를 구분한다.
-- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/127·private 비활성 90/120·Career Artifact 비활성 81/109다.
+- 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/128·private 비활성 90/121·Career Artifact 비활성 81/110이다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
+
+## [2026-08-10] Session Summary (GitHub 핵심 경험·한국어·삭제 수명주기 계약)
+
+- What was done:
+  - GitHub 후보가 자연스러운 한국어 제목·본문으로 repository별 중심 경험 최대 3개만 반환한다는 기능 계약을 확정했다.
+  - 경험 삭제 API, UI 확인 문구, soft delete·evidence 퇴역·향후 AI 비노출·동일 GitHub claim 재생성 방지와 과거 immutable provenance 보존을 API/DB/기능/페이지 명세에 동기화했다.
+  - 공개 OpenAPI operation 기준을 Career Artifact off 110, on·private off 121, private on 128로 갱신했다.
+- Key decisions:
+  - 사용자 삭제와 원본 source 삭제는 다른 수명주기다. 사용자 삭제는 EXPERIENCE를 `REJECTED`로 퇴역시키고 active item 존재 조건으로 숨긴다.
+- Issues encountered:
+  - 기존 DB 제약은 EXPERIENCE의 `SOURCE_DELETED`를 허용하지 않아 새 상태나 migration 없이 현재 제약에 맞는 퇴역 규칙을 문서화했다.
+- Validation:
+  - Backend 전체 OpenAPI·PostgreSQL 통합 test, Frontend 전체 check와 공개 GitHub 삭제 Chromium journey를 구현과 대조했다.
+- Next steps:
+  - Phase 5 login `returnTo` 차이는 별도 계약 결정 전까지 Gate 5 `IMPLEMENTED_NOT_VERIFIED`를 유지한다.
+
+## [2026-08-09] Session Summary (경험 목록의 GitHub 연결 filter 추가)
+
+- What was done:
+  - `api.md`의 `GET /profile/experiences`에 owner-scoped `githubSourceId?:UUID` filter를 추가하고, 그 연결에서 나온 근거를 가진 경험만 남긴다는 설명을 붙였다.
+- Key decisions:
+  - GitHub 연결 화면이 찾은 경험을 보여 주려면 source별 조회가 필요한데, 기존 계약에는 없어 filter를 additive하게 넓혔다. 응답 DTO와 다른 filter는 그대로 둔다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - backend `GitHubCanonicalIntegrationTest` 통과로 filter 동작과 owner 격리를 확인했다.
+- Next steps:
+  - 없음.
 
 ## [2026-08-09] Session Summary (자기소개서 작성 도움 두 tab 표현 규칙 명시)
 

@@ -50,7 +50,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
     private RequestMappingHandlerMapping handlerMapping;
 
     @Test
-    void liveSpringMappingsHaveExactlyOneHundredTwentyOperationsAndNinetyPaths() {
+    void liveSpringMappingsHaveExactlyOneHundredTwentyOneOperationsAndNinetyPaths() {
         Set<String> paths = new LinkedHashSet<>();
         int[] operations = {0};
 
@@ -67,11 +67,11 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         });
 
         assertThat(paths).hasSize(90);
-        assertThat(operations[0]).isEqualTo(120);
+        assertThat(operations[0]).isEqualTo(121);
     }
 
     @Test
-    void generatedOpenApiHasStableMetadataAndExactlyOneHundredTwentyOperations()
+    void generatedOpenApiHasStableMetadataAndExactlyOneHundredTwentyOneOperations()
             throws Exception {
         JsonNode document = openApi();
 
@@ -189,7 +189,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "/api/v1/interview-questions/{questionId}/answer-versions",
                         "/api/v1/interview-answer-versions/{versionId}/feedback",
                         "/api/v1/interview-answer-versions/{versionId}/feedbacks");
-        assertThat(operationCount(document.get("paths"))).isEqualTo(120);
+        assertThat(operationCount(document.get("paths"))).isEqualTo(121);
         assertOperation(document.at(CSRF_PATH), "initializeCsrf");
         assertOperation(document.at(SIGNUP_PATH), "signup");
         assertOperation(document.at(LOGIN_PATH), "login");
@@ -255,6 +255,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
         assertProfileOperation(document, "/api/v1/profile/experiences", "get", "listExperienceItems");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "get", "getExperienceItem");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "put", "updateExperienceItem");
+        assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}", "delete", "deleteExperienceItem");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/verification", "patch", "verifyExperienceItem");
         assertProfileOperation(document, "/api/v1/profile/experiences/{experienceItemId}/match-resolution", "patch", "resolveExperienceMatch");
         assertTaggedOperation(document, "/api/v1/github-sources", "post", "createGitHubSource", "GitHub Sources");
@@ -792,7 +793,7 @@ class OpenApiContractTest extends PostgresIntegrationTest {
                         "experienceLinkKind",
                         "experienceMatchKind");
         assertThat(fieldNames(schemas.at("/ExperienceItemDto/properties")))
-                .contains("githubRepositorySourceCount");
+                .contains("githubRepositorySourceCount", "primaryGitHubRepositoryName");
         assertThat(fieldNames(schemas.at("/ExperienceSourceDto/properties")))
                 .contains(
                         "githubSourceId",

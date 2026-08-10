@@ -5,6 +5,14 @@
 Coverage targets public-only GitHub input and deterministic local fixtures. Detailed
 session results are recorded by the root agent after integrated verification.
 
+## [2026-08-10] Session Summary (GitHub 후보 상한과 삭제 재수집 회귀)
+
+- What was done: provenance 후보 3개 상한과 삭제 경험의 목록·상세·raw evidence 비노출, 동일 claim 재적용 no-op을 PostgreSQL에서 검증했다.
+- Key decisions: 삭제 source link를 유지해 suppression identity로 사용한다.
+- Issues encountered: 최초 SOURCE_DELETED 전이는 DB 제약에 맞지 않아 REJECTED 퇴역으로 보정했다.
+- Validation: `GitHubCanonicalIntegrationTest`와 Backend 전체 `check` 통과.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (public archive security boundary)
 
 - What was done: bounded archive 정상 수집, redirect origin 거부와 compressed size 초과 거부 테스트를 추가했다.

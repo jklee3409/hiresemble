@@ -262,6 +262,8 @@
 
 정규 경험은 `profile_evidence`의 원문 근거와 별도 수명주기를 가진다. 사용자가 승인한 정규 경험은 원본 문서가 삭제되거나 재분석돼도 `EXPERIENCE` 근거로 유지되며 후속 공고 분석·자기소개서·면접 준비에는 정규 근거 한 건만 전달한다. 승인하지 않았고 활성 출처도 없는 정규 경험은 제거한다.
 
+사용자가 정규 경험을 직접 삭제하면 해당 item과 canonical `EXPERIENCE` 근거를 일반 조회와 향후 AI Context에서 즉시 제외한다. 근거의 사용자 문구·metadata·confidence는 제거하고 상태는 `REJECTED`로 퇴역시키되, 이미 생성된 공고 분석·자기소개서·면접·Career Artifact snapshot이 참조하는 provenance ID는 보존한다. 동일한 GitHub source claim의 재수집은 삭제한 경험을 새 카드로 복원하지 않는다.
+
 ## DOC-004 파일 삭제
 
 - 문서 metadata를 즉시 soft delete하고 API와 download URL에서는 곧바로 404로 처리한다.
@@ -294,7 +296,9 @@
 
 ## GH-003 프로젝트 경험·강점 추출과 중복 방지 (`IMPLEMENTED`, Gate 1)
 
-- AI는 strict schema의 프로젝트 경험과 강점 후보, confidence, source unit reference와 limitation만 반환한다.
+- AI는 strict schema의 프로젝트 경험과 강점 후보, confidence와 source unit reference만 반환한다.
+- 후보의 제목과 본문은 기술명·고유명사를 제외하고 자연스러운 한국어로 작성한다. 제목과 본문에 한글이 없는 결과는 적용 전에 correction 대상으로 거부한다.
+- repository별 후보는 최대 3개이며, repository의 주된 목적·핵심 설계/구현·중요 문제 해결·명시된 성과처럼 중심 경험만 남긴다. 설정, 의존성 갱신, 파일 단위 변경, 고립된 테스트·문서화, 작은 refactor와 단순 기술 나열은 제외하고 관련 근거는 하나의 경험으로 합친다. 충분한 중심 경험이 없으면 0개를 허용한다.
 - 서버는 프로젝트 경험 category를 `PROJECT`, 강점을 `STRENGTH`로 지정하고 model이 user/source/status를 정하지 못하게 한다.
 - GitHub candidate도 현재 문서 candidate와 같은 canonical fingerprint, active embedding policy, cosine Top-K, 의미 anchor와 수치 충돌 정책을 사용한다.
 - `PROJECT|프로젝트`, `STRENGTH|강점|역량`처럼 기존 category alias를 같은 비교 group으로 취급하되 기존 row를 첫 도입에서 일괄 변경하지 않는다.

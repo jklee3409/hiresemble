@@ -4,6 +4,14 @@
 
 Phase 1 Gate 1 GitHub ingestion workflow 통합 테스트가 구현됐다.
 
+## [2026-08-10] Session Summary (한국어·중심 후보 extraction 계약)
+
+- What was done: GitHub extraction prompt v2, repository당 최대 3개와 제목·본문 한글 runtime 검증 회귀를 추가했다.
+- Key decisions: prompt 문구와 Java validation을 한 contract test에서 함께 고정한다.
+- Issues encountered: 없음.
+- Validation: Backend 전체 `check` 696 tests 통과.
+- Next steps: None.
+
 ## [2026-08-09] Session Summary (validation step reuse 회귀)
 
 - What was done: source validation executor가 재사용 불가임을 workflow contribution 경계에서 고정했다.

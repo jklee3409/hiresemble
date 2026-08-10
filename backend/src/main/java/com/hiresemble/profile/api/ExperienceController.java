@@ -15,15 +15,20 @@ import com.hiresemble.profile.domain.model.ExperienceCommands.ExperienceWrite;
 import com.hiresemble.profile.domain.model.ExperienceMatchKind;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.util.UUID;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,12 +59,13 @@ public class ExperienceController {
     public PageResponse<ExperienceItemDto> list(
             @RequestParam(required = false) EvidenceVerificationStatus verificationStatus,
             @RequestParam(required = false) ExperienceMatchKind matchKind,
+            @RequestParam(required = false) UUID githubSourceId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "updatedAt,desc") String sort,
             @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
         return ExperienceDtoMapper.page(service.list(
-                user.id(), verificationStatus, matchKind, page, size, sort));
+                user.id(), verificationStatus, matchKind, githubSourceId, page, size, sort));
     }
 
     @GetMapping("/{experienceItemId}")
@@ -86,6 +92,20 @@ public class ExperienceController {
                 user.id(),
                 experienceItemId,
                 new ExperienceWrite(request.title(), request.content(), request.version())));
+    }
+
+    @DeleteMapping("/{experienceItemId}")
+    @Operation(
+            operationId = "deleteExperienceItem",
+            summary = "Delete a canonical experience",
+            description = "Soft-deletes the owner-scoped experience so it is no longer listed, selectable, or available to future AI workflows.")
+    @ApiResponse(responseCode = "204", content = @Content)
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID experienceItemId,
+            @RequestParam @PositiveOrZero long version,
+            @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser user) {
+        service.delete(user.id(), experienceItemId, version);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping(

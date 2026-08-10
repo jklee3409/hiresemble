@@ -58,9 +58,19 @@ public class ExperienceStore {
              JOIN documents document
                ON document.user_id=link.user_id AND document.id=evidence.document_id
              WHERE link.user_id=item.user_id AND link.experience_item_id=item.id
-               AND evidence.source_deleted_at IS NULL AND document.deleted_at IS NULL
+                AND evidence.source_deleted_at IS NULL AND document.deleted_at IS NULL
              ORDER BY evidence.created_at, evidence.id
-             LIMIT 1) AS primary_document_name
+             LIMIT 1) AS primary_document_name,
+            (SELECT repository.owner_login || '/' || repository.repository_name
+             FROM experience_evidence_links link
+             JOIN profile_evidence evidence
+               ON evidence.user_id=link.user_id AND evidence.id=link.profile_evidence_id
+             JOIN github_repositories repository
+               ON repository.user_id=link.user_id AND repository.id=evidence.github_repository_id
+             WHERE link.user_id=item.user_id AND link.experience_item_id=item.id
+               AND evidence.source_deleted_at IS NULL
+             ORDER BY evidence.created_at, evidence.id
+             LIMIT 1) AS primary_github_repository_name
             """;
 
     private final JdbcClient jdbc;
@@ -245,6 +255,15 @@ public class ExperienceStore {
     }
 
     public Optional<EvidenceExperienceLink> findBySourceEvidence(UUID userId, UUID evidenceId) {
+        return findBySourceEvidence(userId, evidenceId, true);
+    }
+
+    public Optional<EvidenceExperienceLink> findAnyBySourceEvidence(UUID userId, UUID evidenceId) {
+        return findBySourceEvidence(userId, evidenceId, false);
+    }
+
+    private Optional<EvidenceExperienceLink> findBySourceEvidence(
+            UUID userId, UUID evidenceId, boolean activeOnly) {
         return jdbc.sql("""
                         SELECT link.profile_evidence_id,link.experience_item_id,
                                item.canonical_evidence_id,link.relation_kind,item.match_kind
@@ -252,8 +271,7 @@ public class ExperienceStore {
                         JOIN experience_items item
                           ON item.user_id=link.user_id AND item.id=link.experience_item_id
                         WHERE link.user_id=:userId AND link.profile_evidence_id=:evidenceId
-                          AND item.deleted_at IS NULL
-                        """)
+                        """ + (activeOnly ? " AND item.deleted_at IS NULL" : ""))
                 .param("userId", userId)
                 .param("evidenceId", evidenceId)
                 .query((resultSet, rowNumber) -> new EvidenceExperienceLink(
@@ -295,10 +313,15 @@ public class ExperienceStore {
                         java.util.function.Function.identity()));
     }
 
+    /*
+     * githubSourceId가 있으면 그 GitHub 연결에서 나온 근거를 하나라도 가진 경험만 남긴다.
+     * 빈 문자열 sentinel 대신 절을 조건부로 붙인다. uuid 비교에 sentinel을 쓰면 cast가 먼저 평가될 때 실패한다.
+     */
     public PageSlice<ExperienceItemRecord> list(
             UUID userId,
             EvidenceVerificationStatus status,
             ExperienceMatchKind matchKind,
+            UUID githubSourceId,
             int page,
             int size,
             String sort) {
@@ -312,22 +335,31 @@ public class ExperienceStore {
         String where = "item.user_id=:userId AND item.deleted_at IS NULL "
                 + "AND (:status='' OR item.verification_status=:status) "
                 + "AND (:matchKind='' OR item.match_kind=:matchKind)";
-        List<ExperienceItemRecord> items = jdbc.sql(
+        if (githubSourceId != null) {
+            where += " AND EXISTS (SELECT 1 FROM experience_evidence_links link "
+                    + "JOIN profile_evidence evidence"
+                    + " ON evidence.user_id=link.user_id AND evidence.id=link.profile_evidence_id "
+                    + "WHERE link.user_id=item.user_id AND link.experience_item_id=item.id "
+                    + "AND evidence.github_source_id=:githubSourceId)";
+        }
+        var itemQuery = jdbc.sql(
                         "SELECT " + ITEM_COLUMNS + " FROM experience_items item WHERE "
                                 + where + " ORDER BY " + order + " LIMIT :size OFFSET :offset")
                 .param("userId", userId)
                 .param("status", statusValue)
                 .param("matchKind", matchValue)
                 .param("size", size)
-                .param("offset", (long) page * size)
-                .query(this::item)
-                .list();
-        long count = jdbc.sql("SELECT count(*) FROM experience_items item WHERE " + where)
+                .param("offset", (long) page * size);
+        var countQuery = jdbc.sql("SELECT count(*) FROM experience_items item WHERE " + where)
                 .param("userId", userId)
                 .param("status", statusValue)
-                .param("matchKind", matchValue)
-                .query(Long.class)
-                .single();
+                .param("matchKind", matchValue);
+        if (githubSourceId != null) {
+            itemQuery = itemQuery.param("githubSourceId", githubSourceId);
+            countQuery = countQuery.param("githubSourceId", githubSourceId);
+        }
+        List<ExperienceItemRecord> items = itemQuery.query(this::item).list();
+        long count = countQuery.query(Long.class).single();
         int totalPages = count == 0 ? 0 : (int) ((count + size - 1) / size);
         return new PageSlice<>(items, page, size, count, totalPages);
     }
@@ -500,6 +532,20 @@ public class ExperienceStore {
                 .update();
     }
 
+    public boolean softDeleteItem(UUID userId, UUID itemId, long version, Instant now) {
+        return jdbc.sql("""
+                        UPDATE experience_items
+                        SET deleted_at=:now,version=version+1,updated_at=:now
+                        WHERE user_id=:userId AND id=:itemId AND version=:version
+                          AND deleted_at IS NULL
+                        """)
+                .param("now", utc(now))
+                .param("userId", userId)
+                .param("itemId", itemId)
+                .param("version", version)
+                .update() == 1;
+    }
+
     public List<UUID> findOrphanUnverifiedItems(UUID userId) {
         return jdbc.sql("""
                         SELECT item.id
@@ -541,6 +587,7 @@ public class ExperienceStore {
                 resultSet.getInt("document_source_count"),
                 resultSet.getInt("github_repository_source_count"),
                 resultSet.getString("primary_document_name"),
+                resultSet.getString("primary_github_repository_name"),
                 resultSet.getLong("version"),
                 instant(resultSet, "created_at"),
                 instant(resultSet, "updated_at"));

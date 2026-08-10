@@ -2,7 +2,7 @@
 
 - 문서 상태: P0–P8 구현, P8.5 live gate, GitHub·Career Artifact Gate 0–4와 Gate 5 구현, P8.6–P10 목표 구조를 연결한 설계 기준선
 - 기준 명세: [기능](../spec/functional.md), [DB](../spec/db.md), [API](../spec/api.md), [페이지](../spec/page.md), [기술 스택](../spec/tech_stack.md)
-- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub·Career Artifact Gate 0–4 완료·Gate 5 `IMPLEMENTED_NOT_VERIFIED`, Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/127 operations·private 비활성/Career Artifact 활성 90 paths/120 operations·Career Artifact 비활성 81 paths/109 operations
+- 현재 구현 상태: P0–P8 완료, P8.5 `IMPLEMENTED_NOT_LIVE_VERIFIED`, GitHub·Career Artifact Gate 0–4 완료·Gate 5 `IMPLEMENTED_NOT_VERIFIED`, Flyway V30, 11개 WorkflowType, private GitHub 활성 OpenAPI 97 paths/128 operations·private 비활성/Career Artifact 활성 90 paths/121 operations·Career Artifact 비활성 81 paths/110 operations
 - 상세 실행 계획: [구현 계획](implementation-plan.md)
 - 확장 설계: [GitHub 경험·Career Artifact](github-career-artifact-design.md) (Gate 0–4 `DONE`, Gate 5 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT `USER_MANUAL_UI_VALIDATION_PENDING`)
 - P0 승인 결정 기록: [P0 계약 결정 기록](p0-contract-decision-proposal.md)

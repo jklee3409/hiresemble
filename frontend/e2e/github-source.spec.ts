@@ -73,6 +73,12 @@ test('GitHub account selection, SSE completion, provenance, unchanged refresh, a
     'href',
     `/integrations?source=${ids.source}`,
   )
+  await page.getByRole('button', { name: '삭제', exact: true }).click()
+  const experienceDialog = page.getByRole('alertdialog', { name: '이 경험을 삭제할까요?' })
+  await expect(experienceDialog).toContainText('앞으로의 AI 활용에서 사라져요')
+  await experienceDialog.getByRole('button', { name: '경험 삭제' }).click()
+  await expect(page.getByText('조건에 맞는 경험이 없어요')).toBeVisible()
+  expect(fixture.experienceDeleteVersion).toBe(1)
 
   await page.goto(`/integrations?source=${ids.source}`)
   await page.getByRole('button', { name: '새로고침' }).click()
@@ -95,6 +101,8 @@ async function installGitHubRoutes(page: Page) {
   let sseRequests = 0
   let refreshRequests = 0
   let deleteVersion: number | null = null
+  let experienceDeleted = false
+  let experienceDeleteVersion: number | null = null
   const selectedRepositoryIds: string[] = []
 
   await page.route('**/api/v1/**', async (route) => {
@@ -199,8 +207,15 @@ async function installGitHubRoutes(page: Page) {
       phase = 'deleted'
       return route.fulfill({ status: 204, body: '' })
     }
-    if (path === '/profile/experiences') return json(route, experiencePage())
-    if (path === `/profile/experiences/${ids.experience}`) {
+    if (path === `/profile/experiences/${ids.experience}` && request.method() === 'DELETE') {
+      experienceDeleteVersion = Number(url.searchParams.get('version'))
+      experienceDeleted = true
+      return route.fulfill({ status: 204, body: '' })
+    }
+    if (path === '/profile/experiences') {
+      return json(route, experienceDeleted ? pageOf([]) : experiencePage())
+    }
+    if (path === `/profile/experiences/${ids.experience}` && !experienceDeleted) {
       return json(route, experienceDetail())
     }
     return json(route, pageOf([]))
@@ -216,6 +231,9 @@ async function installGitHubRoutes(page: Page) {
     },
     get deleteVersion() {
       return deleteVersion
+    },
+    get experienceDeleteVersion() {
+      return experienceDeleteVersion
     },
   }
 }
@@ -369,6 +387,7 @@ function experienceItem() {
     documentSourceCount: 0,
     githubRepositorySourceCount: 1,
     primaryDocumentName: null,
+    primaryGitHubRepositoryName: null,
     version: 1,
     createdAt: NOW,
     updatedAt: NOW,

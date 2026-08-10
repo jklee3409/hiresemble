@@ -4,6 +4,19 @@
 
 GitHub Source와 App connection application 구현 상태를 추적한다.
 
+## [2026-08-10] Session Summary (GitHub 후보 provenance 상한 정렬)
+
+- What was done:
+  - model output 뒤 source-unit·수치 근거를 확인하는 provenance validator도 repository별 최대 3개만 수용하도록 workflow 상한과 맞췄다.
+- Key decisions:
+  - 초과 후보는 기존 `LIMIT_EXCEEDED` reason count로 집계해 부분 성공 통계를 유지한다.
+- Issues encountered:
+  - 중단된 변경에서는 prompt/workflow만 3개였고 provenance validator는 12개를 허용하는 불일치가 남아 있었다.
+- Validation:
+  - 13개 입력에서 3개 수용·10개 제한 초과를 검증했고 Backend 전체 `check`가 통과했다.
+- Next steps:
+  - None.
+
 ## [2026-08-09] Session Summary (실패 source refresh와 공개 archive orchestration)
 
 - What was done: `FAILED` source를 새 Run으로 refresh하고 저장된 direct repository metadata와 archive commit을 재사용하도록 조정했다.

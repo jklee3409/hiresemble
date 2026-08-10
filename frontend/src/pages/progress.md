@@ -4,6 +4,39 @@
 
 공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-08-10] Session Summary (경험 보관함 삭제와 GitHub 출처 표시 완료)
+
+- What was done:
+  - 경험 카드에 `삭제` button을 추가하고 전역 확인 dialog, 204 API 호출, 선택 상세 닫기, 빈 page 보정과 query cache 갱신을 연결했다.
+  - GitHub 경험은 목록에서 대표 `owner/repository`를 표시하고 연결 화면의 찾은 경험 미리보기로 이어지는 중단 작업을 유지했다.
+- Key decisions:
+  - 삭제 확인은 향후 AI 비활용과 기존 생성 파일 보존을 동시에 안내한다.
+- Issues encountered:
+  - 없음.
+- Validation:
+  - `ExperienceLibraryPage.test.ts` 삭제 회귀와 Frontend 전체 466 tests, 공개 GitHub Chromium journey가 통과했다.
+- Next steps:
+  - None.
+
+## [2026-08-09] Session Summary (GitHub 연결 상세에 찾은 경험 노출과 자료 영역 이름 변경)
+
+- What was done:
+  - `GitHubSourcePage`의 선택한 연결 panel에 이 연결에서 찾은 경험 최대 3개를 보여 주고, 더 있으면 남은 개수와 함께 경험 보관함으로 보내는 link를 붙였다. 새 `githubSourceId` filter를 쓴다.
+  - `선택한 연결` kicker를 `이 저장소에서 찾은 것`으로 바꾸고, 진행이 끝난 연결에서는 AI 작업 진행 block과 `AI 작업 상세 보기` link를 화면에 남기지 않는다. 실행 기록은 목록 카드의 `AI 작업 기록`으로 간다.
+  - `고른 저장소 N개 / 찾은 M개`를 저장소 종류에 맞춰 `이 저장소 1곳` 또는 `M곳 중 N곳을 읽어요`로 바꿨다.
+  - 저장소 이름 `owner/repository`를 `1.3125rem`·`780`으로 키워 카드에서 가장 먼저 읽히게 했다.
+  - 자료 영역 전환 tab과 route title, 상세·생성 화면의 BackLink 문구를 `AI로 만든 초안`에서 `AI로 이력서·포트폴리오 만들기`로 바꿨다.
+- Key decisions:
+  - 경험 미리보기는 3건과 총 개수만 쓰고 승인·수정은 계속 경험 보관함이 소유한다. 같은 편집 UI를 두 화면에 복제하지 않기 위해서다.
+  - 미리보기 page size를 3으로 맞춰 `totalElements`로 남은 개수를 계산한다. 별도 count 요청을 만들지 않는다.
+- Issues encountered:
+  - `github-source.spec.ts`의 경험 fixture가 다른 작업에서 추가된 필수 `primaryGitHubRepositoryName` field를 갖고 있지 않아 경험 화면이 그려지지 않았다. fixture에 `null`을 넣어 복구했다.
+- Validation:
+  - `corepack pnpm check`: 102 files, 465 tests와 lint·format·typecheck·build 통과. Chromium 7건(github-source·ui-shell·cover-letter-review) 통과.
+  - 1440px에서 완료 상태 연결의 찾은 경험 목록과 카드 제목 강조를 직접 확인했다.
+- Next steps:
+  - `career-artifacts.spec.ts`와 `phase5-private-github.spec.ts`의 경험 fixture에도 같은 field가 빠져 있다. 해당 schema를 추가한 작업에서 함께 맞춰야 한다.
+
 ## [2026-08-09] Session Summary (돌아가기 링크 통일과 GitHub 목록 제목 정리)
 
 - What was done:

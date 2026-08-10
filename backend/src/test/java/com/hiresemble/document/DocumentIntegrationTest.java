@@ -460,6 +460,42 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.items[0].experienceItemId").isNotEmpty())
                 .andExpect(jsonPath("$.items[0].experienceLinkKind").value("CORROBORATING"))
                 .andExpect(jsonPath("$.items[0].experienceMatchKind").value("NEW"));
+
+        UUID experienceId = jdbcTemplate.queryForObject(
+                "SELECT id FROM experience_items WHERE user_id=? AND deleted_at IS NULL",
+                UUID.class,
+                owner.userId());
+        UUID canonicalEvidenceId = jdbcTemplate.queryForObject(
+                "SELECT canonical_evidence_id FROM experience_items WHERE user_id=? AND id=?",
+                UUID.class,
+                owner.userId(),
+                experienceId);
+        mockMvc.perform(patch("/api/v1/profile/experiences/" + experienceId + "/verification")
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"VERIFIED\",\"version\":0}"))
+                .andExpect(status().isOk());
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .extracting(value -> value.id())
+                .contains(canonicalEvidenceId);
+
+        mockMvc.perform(delete("/api/v1/profile/experiences/" + experienceId)
+                        .cookie(owner.cookie())
+                        .header("X-CSRF-TOKEN", owner.csrfToken())
+                        .queryParam("version", "1"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/profile/experiences").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/v1/profile/experiences/" + experienceId).cookie(owner.cookie()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/profile/evidence").cookie(owner.cookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        assertThat(profileAnalysisQuery.loadAnalysisSnapshot(owner.userId()).verifiedEvidence())
+                .extracting(value -> value.id())
+                .doesNotContain(canonicalEvidenceId);
     }
 
     @Test
