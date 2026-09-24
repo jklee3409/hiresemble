@@ -50,10 +50,13 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     private static String promptVersion(String workflowVersion, String stepKey) {
         boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(workflowVersion);
         if (CoverLetterGenerationWorkflow.PLAN_QUESTIONS.equals(stepKey)) {
-            return v4 ? "cover-letter-plan-questions-prompt-v6" : "cover-letter-plan-questions-prompt-v5";
+            return v4 ? "cover-letter-plan-questions-prompt-v7" : "cover-letter-plan-questions-prompt-v5";
         }
         if (CoverLetterGenerationWorkflow.WRITE_ANSWER.equals(stepKey)) {
-            return v4 ? "cover-letter-write-answer-prompt-v6" : "cover-letter-write-answer-prompt-v5";
+            return v4 ? "cover-letter-write-answer-prompt-v7" : "cover-letter-write-answer-prompt-v5";
+        }
+        if (v4 && CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER.equals(stepKey)) {
+            return "cover-letter-fact-check-answer-prompt-v5";
         }
         return "cover-letter-" + stepKey.toLowerCase(java.util.Locale.ROOT).replace('_', '-')
                 + (v4 ? "-prompt-v4" : "-prompt-v3");
@@ -79,7 +82,9 @@ public final class CoverLetterGenerationV3PromptDefinitions {
                             ? CoverLetterGenerationWorkflow.WriteAnswerInputV4.class
                             : CoverLetterGenerationWorkflow.WriteAnswerInputV3.class;
             case CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER ->
-                    CoverLetterGenerationWorkflow.FactCheckAnswerInputV3.class;
+                    v4
+                            ? CoverLetterGenerationWorkflow.FactCheckAnswerInputV4.class
+                            : CoverLetterGenerationWorkflow.FactCheckAnswerInputV3.class;
             case CoverLetterGenerationWorkflow.APPLY_ANSWER_VERSION ->
                     CoverLetterGenerationWorkflow.ApplyAnswerRequestInput.class;
             default -> throw new IllegalArgumentException("unknown cover-letter generation step");
@@ -162,7 +167,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
                     Allocate only supplied candidate evidence by content relevance. Reuse requires a
                     necessity reason and distinct emphasis. Do not invent evidence IDs or facts.
                     """;
-            case CoverLetterGenerationWorkflow.WRITE_ANSWER -> """
+            case CoverLetterGenerationWorkflow.WRITE_ANSWER -> v4 ? WRITE_ANSWER_V4 : """
                     Set schemaVersion to exactly cover-generation-answer-output-v3 and copy the
                     supplied questionId exactly. Directly answer the question and implement the
                     planned framework. currentAnswer and sibling answers include original/provided
@@ -191,15 +196,64 @@ public final class CoverLetterGenerationV3PromptDefinitions {
         if (!v4) {
             return instructions;
         }
+        String memo = """
+                Treat questionMemo as the user's explicit writing direction. Follow it when it
+                does not conflict with the question, length, or verified evidence. A memo is
+                guidance, not factual evidence: never turn an unsupported memo statement into a
+                factual claim.
+                """;
         return instructions + switch (stepKey) {
-            case CoverLetterGenerationWorkflow.PLAN_QUESTIONS,
-                    CoverLetterGenerationWorkflow.WRITE_ANSWER -> """
-                    Treat questionMemo as the user's explicit writing direction. Follow it when it
-                    does not conflict with the question, length, or verified evidence. A memo is
-                    guidance, not factual evidence: never turn an unsupported memo statement into a
-                    factual claim.
+            case CoverLetterGenerationWorkflow.PLAN_QUESTIONS -> memo + """
+                    When maxLength is supplied, set targetCharacterCount to about 90 percent of
+                    maxLength and never above it; Korean screeners read a clearly underfilled answer
+                    as low effort. When maxLength is null, use 800 to 1,200.
+                    """;
+            case CoverLetterGenerationWorkflow.WRITE_ANSWER -> memo;
+            case CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER -> """
+                    evidenceSourceExcerpts are masked original source text that belongs to the
+                    listed VERIFIED evidenceId. Treat a qualitative detail about context, reasoning,
+                    process, or personal action that is consistent with an allowed evidence's source
+                    excerpt as supported by that evidenceId. Numbers, dates, durations, titles,
+                    rankings, and quantitative results are supported only by verifiedEvidence
+                    content, never by a source excerpt alone.
                     """;
             default -> "";
         };
     }
+
+    /** Active v4 writer: hiring-screener writing rules, fill target, and source excerpts. */
+    private static final String WRITE_ANSWER_V4 = """
+            Set schemaVersion to exactly cover-generation-answer-output-v3 and copy the
+            supplied questionId exactly. Write for a hiring manager or HR screener who reads many
+            applications quickly. Directly answer the question and use the planned framework and
+            sections as guidance for emphasis, not as a rigid template.
+            Writing rules:
+            - Open with one or two sentences that answer the question and state the core message.
+            - Build the body on one or two concrete experiences: the specific situation and problem,
+              the applicant's own judgment and actions in first person rather than team-level
+              summaries, and the verified result. Then connect them to this role's requirements.
+            - Prefer specific technologies, decisions, trade-offs, and outcomes over abstract
+              adjectives. Avoid cliches and generic company praise, such as upbringing stories,
+              wishing the company endless growth, or claims of passion and diligence without proof.
+            - Use natural professional Korean in a consistent formal declarative style, keep
+              paragraphs short, and do not repeat the question text. Follow headingPolicy; when a
+              heading is allowed, a short bracketed subheading may summarize the core message.
+            Length: targetCharacterCount is authoritative. Aim for about targetCharacterCount
+            plain-text code points. When minimumCharacterCount is supplied, never write fewer. The
+            final plain-text code-point count, excluding TipTap markup, must not exceed maxLength.
+            Reach the length by deepening the supplied evidence with concrete detail, never by
+            padding, repetition, or invented facts.
+            Evidence: verifiedEvidence is the user-approved content of each experience.
+            evidenceSourceExcerpts are masked original source text for the same evidenceId; use them
+            for concrete context, reasoning, process, and personal actions consistent with that
+            evidence. Positive support comes only from current VERIFIED evidence supplied in context.
+            Every factual evidence claim must use an allowed evidenceId and exactAnswerExcerpt that
+            appears verbatim in the answer, with its claimType. State numbers, dates, durations,
+            titles, rankings, and quantitative results only when they appear in that evidence's
+            verifiedEvidence content, never from a source excerpt alone. Never copy masked
+            placeholders into the answer.
+            currentAnswer and sibling answers include original/provided counts, truncated, full
+            hash, and bounded text. Never assume truncated text is complete; revise only the safely
+            supplied scope. Return safe TipTap JSON only.
+            """;
 }

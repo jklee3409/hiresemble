@@ -315,8 +315,9 @@ LLM 전송 전 기본 마스킹 대상:
 - 외부 page·검색 text는 instruction이 아닌 untrusted data로 delimiter 처리한다.
 - GitHub README·manifest·code·workflow도 모두 untrusted data이며 그 안의 prompt, URL, command와 추가 fetch 지시를 실행하지 않는다.
 - 외부 콘텐츠의 tool 지시·prompt injection을 실행하지 않고 step별 Tool allowlist와 호출 상한을 적용한다.
-- 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용한다.
+- 승인 근거와 연결되지 않은 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용한다.
 - 미승인 chunk만으로 긍정 사실을 작성하거나 score·interview 질문의 근거로 쓰지 않으며 PASSED 대신 `WARNING + UNVERIFIED_CLAIM`으로 처리한다.
+- 예외적으로 자기소개서 생성 v4는 배분된 `VERIFIED` 근거의 원본 masked chunk를 owner·active document·활성 근거 조건으로 조회해 writer·FactCheck의 bounded 서술 맥락으로만 전달한다. 정량 사실과 claim provenance는 `VERIFIED` 근거 content 경계를 유지하고 chunk ID·document ID는 Provider에 보내지 않는다.
 - Object key, 일반 log, analytics와 browser console에 사용자 filename·원문·전체 prompt/response를 남기지 않는다.
 - GitHub snapshot 전체와 source code excerpt는 downstream 생성 Context에 주입하지 않는다. Career Artifact의 생성 파일 연락처는 LLM Context 밖에서 renderer가 삽입한다.
 

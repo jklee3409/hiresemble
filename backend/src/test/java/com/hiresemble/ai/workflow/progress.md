@@ -4,6 +4,21 @@
 
 P3 Registry와 P4~P8, GitHub·Career Artifact workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 writer 품질 계약 테스트)
+
+- What was done:
+  - v4 writer 입력의 원문 발췌 dedupe·근거당 3개 제한·분량 목표/하한·4,000자 근거 content, 하한 미달 보정, claim 없는 사실 표현 WARNING, 단일 문항 미지원 수치 ERROR, v3 기존 거부 유지 테스트를 추가했다.
+  - v4 prompt version·핵심 지시·입력 type 계약 테스트와 policy 경계 테스트를 추가했다.
+- Key decisions:
+  - 테스트 helper가 v4 run에도 v3/v4 통합 prompt registry를 사용하도록 보정했다.
+- Issues encountered:
+  - None
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-08] Session Summary (Career Artifact workflow 회귀)
 
 - What was done:

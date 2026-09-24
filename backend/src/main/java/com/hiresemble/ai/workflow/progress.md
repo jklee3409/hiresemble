@@ -4,6 +4,24 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 writer 원문 발췌·분량 목표·사실 표현 경고 전환)
+
+- What was done:
+  - v4 `WRITE_ANSWER`에 배분된 `VERIFIED` 근거의 원본 masked chunk를 근거당 최대 3개·3,000자, 문항당 9,000자로 전달하고 근거 content 상한을 2,000자에서 4,000자로 넓혔다.
+  - `CoverLetterWorkflowV3Policy`에 제한의 90% 목표와 300자 이상 제한의 70% 하한을 추가하고, 하한 미달은 `COVER_GENERATION_ANSWER_TOO_SHORT` 보정 1회로 처리한다. 단일 문항 local plan도 v4에서 같은 목표를 쓴다.
+  - v4에서는 claim 없는 사실 표현을 작성 단계에서 거부하지 않는다. 단일 문항 local FactCheck는 근거 없는 수치를 ERROR로, APPLY는 사실 이슈 없이 claim도 없는 사실 표현을 WARNING으로 기록한다. v4 FactCheck 입력은 `FactCheckAnswerInputV4`로 원문 발췌를 함께 받는다.
+- Key decisions:
+  - v1~v3 durable 재생 경로의 입력·검증·prompt는 바꾸지 않고 v4(`isExactModel`)에만 적용했다. v4 context policy ref는 `cover-generation-context-v5`로 올렸다.
+  - 원문 발췌는 서술 맥락 전용이며 수치·날짜·직함 등 정량 사실과 claim provenance는 기존 `VERIFIED` content 경계를 유지해 `unsupportedNumbers`와 별도 검증 workflow가 그대로 일관된다.
+- Issues encountered:
+  - 답변과 입력이 길어져 기존 45초 chat timeout·8,000 output token 한도에 더 가까워진다. 이번 범위에서는 조정하지 않았다.
+  - 사용자가 나중에 실행하는 별도 `COVER_LETTER_VERIFICATION`은 원문 발췌를 받지 않아, 발췌에서 온 정성 서술을 미검증으로 표시할 수 있다.
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider로 v4 품질·timeout을 비교 검증하고, 검증 workflow에도 원문 발췌를 전달할지 결정한다.
+
 ## [2026-08-08] Session Summary (Resume·Portfolio canonical workflow)
 
 - What was done:

@@ -325,6 +325,19 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verificationStatus").value("VERIFIED"))
                 .andExpect(jsonPath("$.version").value(1));
+        assertThat(documentStore.evidenceSourceChunks(
+                        owner.userId(), List.of(result.appliedEvidenceIds().getFirst()), 10))
+                .singleElement()
+                .satisfies(source -> {
+                    assertThat(source.evidenceId()).isEqualTo(result.appliedEvidenceIds().getFirst());
+                    assertThat(source.chunkId()).isEqualTo(chunks.getFirst().id());
+                    assertThat(source.maskedContent())
+                            .isEqualTo(chunks.getFirst().maskedContent())
+                            .doesNotContain("private@example.com");
+                });
+        assertThat(documentStore.evidenceSourceChunks(
+                        other.userId(), List.of(result.appliedEvidenceIds().getFirst()), 10))
+                .isEmpty();
         mockMvc.perform(patch("/api/v1/profile/evidence/verification")
                         .cookie(owner.cookie())
                         .header("X-CSRF-TOKEN", owner.csrfToken())
@@ -335,6 +348,9 @@ class DocumentIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].verificationStatus").value("PENDING"))
                 .andExpect(jsonPath("$[0].version").value(2));
+        assertThat(documentStore.evidenceSourceChunks(
+                        owner.userId(), List.of(result.appliedEvidenceIds().getFirst()), 10))
+                .isEmpty();
         mockMvc.perform(get("/api/v1/profile/evidence").cookie(other.cookie())
                         .queryParam("documentId", documentId.toString()))
                 .andExpect(status().isNotFound());

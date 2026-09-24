@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/128·private 비활성 90/121·Career Artifact 비활성 81/110이다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 writer 원문 발췌 계약)
+
+- What was done:
+  - CL-003 생성 규칙과 기술 명세 보안 절에 v4 writer·FactCheck가 배분된 `VERIFIED` 근거의 원본 masked chunk를 bounded 서술 맥락으로 받는 예외, 90% 목표·70% 하한, claim 없는 사실 표현의 WARNING 처리를 추가했다.
+- Key decisions:
+  - 승인 근거와 연결되지 않은 미승인 chunk의 기존 금지와 정량 사실의 `VERIFIED` content 경계는 유지했다. 사용자 승인한 P0 요청이 기존 문구보다 우선하므로 계약을 좁게 갱신했다.
+- Issues encountered:
+  - None
+- Validation:
+  - Markdown 변경만 수행했고 구현 검증은 backend 진행 기록을 따른다.
+- Next steps:
+  - None
+
 ## [2026-08-10] Session Summary (GitHub 핵심 경험·한국어·삭제 수명주기 계약)
 
 - What was done:

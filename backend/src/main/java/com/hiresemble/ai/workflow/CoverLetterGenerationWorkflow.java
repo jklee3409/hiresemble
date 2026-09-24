@@ -28,6 +28,7 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAnswer;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceUse;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationQuestion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
@@ -126,6 +127,11 @@ public final class CoverLetterGenerationWorkflow {
     private static final int MAX_EVIDENCE_CONTENT = 1_000;
     private static final int MAX_CURRENT_ANSWER = 4_000;
     private static final int MAX_SIBLING_ANSWER = 1_000;
+    private static final int MAX_WRITER_EVIDENCE_CONTENT_V4 = 4_000;
+    private static final int MAX_SOURCE_CHUNK_LOOKUP = 100;
+    private static final int MAX_SOURCE_CHUNKS_PER_EVIDENCE = 3;
+    private static final int MAX_SOURCE_EXCERPT_PER_EVIDENCE = 3_000;
+    private static final int MAX_SOURCE_EXCERPT_TOTAL = 9_000;
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration EMBEDDING_TIMEOUT = Duration.ofSeconds(30);
     private static final Pattern NUMBER = Pattern.compile("(?<![\\p{L}\\p{N}])\\d[\\d,.%]*(?![\\p{L}\\p{N}])");
@@ -766,9 +772,11 @@ public final class CoverLetterGenerationWorkflow {
             PlanningInvocationInput input = planningInvocationInput(invocation);
             if (input.questions().size() == 1) {
                 QuestionPlanningInput question = input.questions().getFirst();
-                int target = Math.max(1, Math.min(
-                        800,
-                        question.maxLength() == null ? 800 : question.maxLength()));
+                int target = isExactModel(invocation.executionContext().run())
+                        ? CoverLetterWorkflowV3Policy.targetCharacterCount(question.maxLength(), 800)
+                        : Math.max(1, Math.min(
+                                800,
+                                question.maxLength() == null ? 800 : question.maxLength()));
                 List<Integer> requirementIndexes = java.util.stream.IntStream.range(
                                 0, Math.min(100, input.requirements().size()))
                         .boxed()
@@ -1747,9 +1755,13 @@ public final class CoverLetterGenerationWorkflow {
                     .filter(value -> value.questionId().equals(question.questionId()))
                     .findFirst()
                     .orElseThrow(CoverLetterGenerationWorkflow.this::configurationFailure);
+            boolean v4 = isExactModel(context.run());
             List<ApprovedEvidenceInput> evidence = allocation.evidenceIds().stream()
-                    .map(id -> approvedEvidenceV2(state, id))
+                    .map(id -> v4 ? approvedEvidenceV4Writer(state, id) : approvedEvidenceV2(state, id))
                     .toList();
+            List<EvidenceSourceExcerptInput> excerpts = v4
+                    ? sourceExcerpts(state, allocation.evidenceIds())
+                    : List.of();
             List<OtherQuestionStrategyInput> otherQuestions = plans.plans().stream()
                     .filter(value -> !value.questionId().equals(question.questionId()))
                     .map(value -> {
@@ -1773,17 +1785,23 @@ public final class CoverLetterGenerationWorkflow {
             refs.put("currentAnswerProvidedCharacterCount", current.providedCharacterCount());
             refs.put("currentAnswerTruncated", current.truncated());
             refs.put("currentAnswerFullTextHash", current.fullTextHash());
+            if (v4) {
+                refs.put("sourceExcerptCount", excerpts.size());
+                refs.put("sourceExcerptHash", stableHash(excerpts));
+            }
             return localInput(
                     state,
                     question.questionId().toString(),
                     refs,
-                    stableHash(plan) + "|" + current.fullTextHash(),
+                    stableHash(plan) + "|" + current.fullTextHash()
+                            + (v4 ? "|" + stableHash(excerpts) : ""),
                     writeAnswerInput(
                             state,
                             question,
                             plan,
                             analysis,
                             evidence,
+                            excerpts,
                             current,
                             otherQuestions));
         }
@@ -1824,7 +1842,10 @@ public final class CoverLetterGenerationWorkflow {
             validateTipTap(content);
             String text = plainText(content);
             CoverLetterWorkflowV3Policy.validateDistinctClaims(output.claims(), text);
-            if (CoverLetterWorkflowV3Policy.hasFactualPattern(text) && output.claims().isEmpty()) {
+            // v4 keeps concrete wording and leaves ungrounded facts to FACT_CHECK/APPLY warnings.
+            if (!isExactModel(context.run())
+                    && CoverLetterWorkflowV3Policy.hasFactualPattern(text)
+                    && output.claims().isEmpty()) {
                 throw new IllegalArgumentException("factual answer requires grounded claims");
             }
             int count = text.codePointCount(0, text.length());
@@ -1866,6 +1887,17 @@ public final class CoverLetterGenerationWorkflow {
                         ValidationPhase.WORKFLOW_CONTEXT,
                         "COVER_GENERATION_ANSWER_LENGTH_INVALID",
                         "Shorten the answer so its final plain-text code-point count is no greater than the supplied maxLength. Preserve only grounded claims and answer the question directly.");
+            }
+            Integer minimum = isExactModel(context.run())
+                    ? CoverLetterWorkflowV3Policy.minimumCharacterCount(question.maxLength())
+                    : null;
+            if (minimum != null && count < minimum) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_TOO_SHORT",
+                        "Expand the answer so its final plain-text code-point count is at least "
+                                + minimum
+                                + ", close to the supplied targetCharacterCount and never above maxLength. Deepen the supplied verified evidence and source excerpts with the concrete situation, the applicant's own decisions and actions, and the verified result. Do not pad, repeat, or add unsupported facts.");
             }
         }
 
@@ -2121,6 +2153,41 @@ public final class CoverLetterGenerationWorkflow {
                     .put("providedCharacterCount", value.answer().providedCharacterCount())
                     .put("truncated", value.answer().truncated())
                     .put("fullTextHash", value.answer().fullTextHash()));
+            List<ApprovedEvidenceInput> checkedEvidence = retrieval.evidenceIds().stream()
+                    .map(id -> approvedEvidenceV2(state, id))
+                    .toList();
+            if (isExactModel(context.run())) {
+                List<UUID> allocatedEvidence = allocations.allocations().stream()
+                        .filter(value -> value.questionId().equals(question.questionId()))
+                        .flatMap(value -> value.evidenceIds().stream())
+                        .toList();
+                List<EvidenceSourceExcerptInput> excerpts = sourceExcerpts(state, allocatedEvidence);
+                refs.put("sourceExcerptCount", excerpts.size());
+                refs.put("sourceExcerptHash", stableHash(excerpts));
+                return localInput(
+                        state,
+                        question.questionId().toString(),
+                        refs,
+                        sha256(answerText) + "|" + stableHash(siblings) + "|" + stableHash(excerpts),
+                        tree(new FactCheckAnswerInputV4(
+                                inputSchemaVersion(state),
+                                CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                                question.questionId(),
+                                bounded(question.questionText(), 2_000),
+                                question.maxLength(),
+                                plan,
+                                analysis,
+                                mapTipTap(answer.content()),
+                                answerText,
+                                answer.claims(),
+                                checkedEvidence,
+                                excerpts,
+                                requirementInputs(state),
+                                retrieval.candidateChunks(),
+                                siblings,
+                                state.snapshot().job().analysisOutdated(),
+                                CoverLetterWorkflowV3Policy.DUPLICATION_POLICY_VERSION)));
+            }
             return localInput(
                     state,
                     question.questionId().toString(),
@@ -2137,9 +2204,7 @@ public final class CoverLetterGenerationWorkflow {
                             mapTipTap(answer.content()),
                             answerText,
                             answer.claims(),
-                            retrieval.evidenceIds().stream()
-                                    .map(id -> approvedEvidenceV2(state, id))
-                                    .toList(),
+                            checkedEvidence,
                             requirementInputs(state),
                             retrieval.candidateChunks(),
                             siblings,
@@ -2151,9 +2216,24 @@ public final class CoverLetterGenerationWorkflow {
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             GenerationState state = state(invocation.executionContext());
             if (state.snapshot().questions().size() == 1) {
-                FactCheckAnswerInputV3 input = read(
-                        invocation.input().gatewayPayload(), FactCheckAnswerInputV3.class);
-                List<VerificationIssueDraftV2> issues = input.claims().stream()
+                boolean v4 = isExactModel(invocation.executionContext().run());
+                UUID questionId;
+                String answerText;
+                List<EvidenceClaimDraftV3> claims;
+                if (v4) {
+                    FactCheckAnswerInputV4 input = read(
+                            invocation.input().gatewayPayload(), FactCheckAnswerInputV4.class);
+                    questionId = input.questionId();
+                    answerText = input.plainText();
+                    claims = input.claims();
+                } else {
+                    FactCheckAnswerInputV3 input = read(
+                            invocation.input().gatewayPayload(), FactCheckAnswerInputV3.class);
+                    questionId = input.questionId();
+                    answerText = input.plainText();
+                    claims = input.claims();
+                }
+                List<VerificationIssueDraftV2> issues = new ArrayList<>(claims.stream()
                         .map(claim -> new VerificationIssueDraftV2(
                                 VerificationIssueKind.FACTUAL,
                                 VerificationIssueCode.UNVERIFIED_CLAIM,
@@ -2161,10 +2241,22 @@ public final class CoverLetterGenerationWorkflow {
                                 "생성된 사실 주장은 제출 전에 연결된 근거와 직접 대조해 확인해 주세요.",
                                 null,
                                 List.of(claim.evidenceId())))
-                        .toList();
+                        .toList());
+                List<String> unsupported = v4
+                        ? unsupportedNumbers(answerText, state.snapshot().verifiedEvidence())
+                        : List.of();
+                if (!unsupported.isEmpty()) {
+                    issues.add(new VerificationIssueDraftV2(
+                            VerificationIssueKind.FACTUAL,
+                            VerificationIssueCode.UNVERIFIED_CLAIM,
+                            IssueSeverity.ERROR,
+                            "승인된 경력 근거에서 확인되지 않은 수치가 있습니다. 제출 전에 근거와 대조하거나 삭제해 주세요.",
+                            bounded(String.join(", ", unsupported), 1_000),
+                            List.of()));
+                }
                 return localResponse(new FactCheckAnswerOutputV3(
                         FACT_CHECK_SCHEMA_V3,
-                        input.questionId(),
+                        questionId,
                         issues,
                         issues.isEmpty()
                                 ? List.of()
@@ -2551,7 +2643,9 @@ public final class CoverLetterGenerationWorkflow {
                                 output.snapshotHash(),
                                 mapTipTap(answer.content()),
                                 evidenceUsesV3(answer, factCheck),
-                                verificationResultV3(factCheck)));
+                                isExactModel(context.run())
+                                        ? verificationResultV4(answer, factCheck)
+                                        : verificationResultV3(factCheck)));
             } catch (BusinessException exception) {
                 throw mapBusiness(exception);
             }
@@ -3964,6 +4058,7 @@ public final class CoverLetterGenerationWorkflow {
             QuestionPlanV3 plan,
             QuestionAnalysisOutputV3 analysis,
             List<ApprovedEvidenceInput> evidence,
+            List<EvidenceSourceExcerptInput> excerpts,
             BoundedText current,
             List<OtherQuestionStrategyInput> otherQuestions) {
         if (state.snapshot().model() == null) {
@@ -3994,8 +4089,11 @@ public final class CoverLetterGenerationWorkflow {
                 question.maxLength(),
                 plan,
                 analysis,
-                plan.targetCharacterCount(),
+                CoverLetterWorkflowV3Policy.targetCharacterCount(
+                        question.maxLength(), plan.targetCharacterCount()),
+                CoverLetterWorkflowV3Policy.minimumCharacterCount(question.maxLength()),
                 evidence,
+                excerpts,
                 jobWritingContext(state),
                 question.currentAnswerVersionId(),
                 current,
@@ -4010,7 +4108,7 @@ public final class CoverLetterGenerationWorkflow {
     private String contextPolicyVersion(GenerationState state) {
         return state.snapshot().model() == null
                 ? CONTEXT_POLICY_VERSION_V3
-                : "cover-generation-context-v4";
+                : "cover-generation-context-v5";
     }
 
     private String retrievalPolicyVersion(GenerationState state) {
@@ -4116,6 +4214,57 @@ public final class CoverLetterGenerationWorkflow {
                         bounded(value.evidenceCategory(), 200),
                         bounded(value.title(), MAX_EVIDENCE_TITLE),
                         bounded(value.content(), 2_000),
+                        value.version()))
+                .orElseThrow(() -> domainFailure(
+                        "COVER_GENERATION_EVIDENCE_STALE",
+                        "자기소개서에 사용할 승인 근거가 변경되었습니다."));
+    }
+
+    /**
+     * Masked source chunks behind the allocated VERIFIED evidence, bounded per evidence and per
+     * question. Chunks shared by several evidence items are attached to the first one only.
+     */
+    private List<EvidenceSourceExcerptInput> sourceExcerpts(
+            GenerationState state, List<UUID> evidenceIds) {
+        if (evidenceIds.isEmpty()) {
+            return List.of();
+        }
+        List<EvidenceSourceExcerpt> chunks = queryPort.findEvidenceSourceExcerpts(
+                state.snapshot().userId(), List.copyOf(new LinkedHashSet<>(evidenceIds)), MAX_SOURCE_CHUNK_LOOKUP);
+        Set<UUID> usedChunks = new HashSet<>();
+        List<EvidenceSourceExcerptInput> excerpts = new ArrayList<>();
+        int remaining = MAX_SOURCE_EXCERPT_TOTAL;
+        for (UUID evidenceId : new LinkedHashSet<>(evidenceIds)) {
+            if (remaining <= 0) break;
+            List<String> texts = chunks.stream()
+                    .filter(chunk -> chunk.evidenceId().equals(evidenceId))
+                    .filter(chunk -> chunk.maskedContent() != null && !chunk.maskedContent().isBlank())
+                    .filter(chunk -> usedChunks.add(chunk.chunkId()))
+                    .limit(MAX_SOURCE_CHUNKS_PER_EVIDENCE)
+                    .map(chunk -> chunk.maskedContent().strip())
+                    .toList();
+            if (texts.isEmpty()) continue;
+            BoundedText text = CoverLetterWorkflowV3Policy.bound(
+                    String.join("\n\n", texts),
+                    Math.min(MAX_SOURCE_EXCERPT_PER_EVIDENCE, remaining));
+            remaining -= text.providedCharacterCount();
+            excerpts.add(new EvidenceSourceExcerptInput(
+                    evidenceId, text.boundedPlainText(), text.truncated()));
+        }
+        return List.copyOf(excerpts);
+    }
+
+    private ApprovedEvidenceInput approvedEvidenceV4Writer(
+            GenerationState state, UUID evidenceId) {
+        return state.snapshot().verifiedEvidence().stream()
+                .filter(value -> value.id().equals(evidenceId))
+                .findFirst()
+                .map(value -> new ApprovedEvidenceInput(
+                        value.id(),
+                        value.sourceType().name(),
+                        bounded(value.evidenceCategory(), 200),
+                        bounded(value.title(), MAX_EVIDENCE_TITLE),
+                        bounded(value.content(), MAX_WRITER_EVIDENCE_CONTENT_V4),
                         value.version()))
                 .orElseThrow(() -> domainFailure(
                         "COVER_GENERATION_EVIDENCE_STALE",
@@ -4413,6 +4562,37 @@ public final class CoverLetterGenerationWorkflow {
                         .map(value -> new VerifiedClaim(
                                 value.exactAnswerExcerpt(), true, value.evidenceIds()))
                         .toList());
+    }
+
+    /**
+     * v4 no longer rejects factual wording without grounded claims at WRITE_ANSWER, so APPLY keeps
+     * a deterministic warning when the fact check did not already report a factual issue.
+     */
+    private VerificationResult verificationResultV4(
+            WrittenAnswerOutputV3 answer, FactCheckAnswerOutputV3 factCheck) {
+        VerificationResult base = verificationResultV3(factCheck);
+        String text = plainText(mapTipTap(answer.content()));
+        boolean factualIssueReported = factCheck.issues().stream()
+                .anyMatch(issue -> issue.issueKind() == VerificationIssueKind.FACTUAL);
+        if (!answer.claims().isEmpty()
+                || factualIssueReported
+                || base.issues().size() >= 100
+                || !CoverLetterWorkflowV3Policy.hasFactualPattern(text)) {
+            return base;
+        }
+        List<VerificationIssue> issues = new ArrayList<>(base.issues());
+        issues.add(new VerificationIssue(
+                VerificationIssueCode.UNVERIFIED_CLAIM,
+                IssueSeverity.WARNING,
+                "경력 근거와 연결되지 않은 사실 표현이 있습니다. 제출 전에 근거와 대조해 주세요.",
+                null,
+                List.of()));
+        VerificationStatus status = issues.stream()
+                        .anyMatch(value -> value.severity() == IssueSeverity.ERROR)
+                ? VerificationStatus.FAILED
+                : VerificationStatus.WARNING;
+        return new VerificationResult(
+                status, issues, base.suggestions(), base.verifiedClaims());
     }
 
     private List<EvidenceUse> evidenceUsesV3(
@@ -5417,7 +5597,9 @@ public final class CoverLetterGenerationWorkflow {
             QuestionPlanV3 plan,
             QuestionAnalysisOutputV3 analysis,
             int targetCharacterCount,
+            @ProviderNullable Integer minimumCharacterCount,
             List<ApprovedEvidenceInput> verifiedEvidence,
+            List<EvidenceSourceExcerptInput> evidenceSourceExcerpts,
             JobWritingContextInput job,
             UUID currentAnswerVersionId,
             BoundedText currentAnswer,
@@ -5425,9 +5607,17 @@ public final class CoverLetterGenerationWorkflow {
             HeadingPolicy headingPolicy) {
         public WriteAnswerInputV4 {
             verifiedEvidence = copy(verifiedEvidence);
+            evidenceSourceExcerpts = copy(evidenceSourceExcerpts);
             otherQuestions = copy(otherQuestions);
         }
     }
+
+    /**
+     * Ephemeral masked original text behind one allocated VERIFIED evidence item. It adds narrative
+     * detail only; the evidence content remains the positive provenance boundary.
+     */
+    public record EvidenceSourceExcerptInput(
+            UUID evidenceId, String maskedSourceText, boolean truncated) {}
 
     public record WrittenAnswerOutputV3(
             String schemaVersion,
@@ -5470,6 +5660,34 @@ public final class CoverLetterGenerationWorkflow {
         public FactCheckAnswerInputV3 {
             claims = copy(claims);
             verifiedEvidence = copy(verifiedEvidence);
+            requirements = copy(requirements);
+            candidateChunks = copy(candidateChunks);
+            siblingAnswers = copy(siblingAnswers);
+        }
+    }
+
+    public record FactCheckAnswerInputV4(
+            String schemaVersion,
+            String outputLocale,
+            UUID questionId,
+            String questionText,
+            Integer maxLength,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            TipTapDocumentDto content,
+            String plainText,
+            List<EvidenceClaimDraftV3> claims,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            List<EvidenceSourceExcerptInput> evidenceSourceExcerpts,
+            List<RequirementInput> requirements,
+            List<ChunkCandidateRef> candidateChunks,
+            List<SiblingAnswerInputV3> siblingAnswers,
+            boolean analysisOutdated,
+            String duplicationPolicyVersion) {
+        public FactCheckAnswerInputV4 {
+            claims = copy(claims);
+            verifiedEvidence = copy(verifiedEvidence);
+            evidenceSourceExcerpts = copy(evidenceSourceExcerpts);
             requirements = copy(requirements);
             candidateChunks = copy(candidateChunks);
             siblingAnswers = copy(siblingAnswers);

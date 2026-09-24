@@ -330,6 +330,14 @@ public final class CoverLetterModels {
             String maskedContent,
             double distance) {}
 
+    /** Masked original chunk text behind a current VERIFIED evidence item. */
+    public record EvidenceSourceExcerpt(
+            UUID evidenceId,
+            UUID chunkId,
+            UUID documentId,
+            int chunkIndex,
+            String maskedContent) {}
+
     public record PersistGeneratedAnswer(
             UUID coverLetterId,
             UUID questionId,

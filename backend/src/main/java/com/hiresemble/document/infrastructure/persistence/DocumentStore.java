@@ -6,6 +6,7 @@ import com.hiresemble.document.domain.model.DocumentRecords.DocumentChunkRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.DocumentTextRecord;
 import com.hiresemble.document.domain.model.DocumentRecords.EmbeddingPolicy;
+import com.hiresemble.document.domain.model.DocumentRecords.EvidenceSourceChunk;
 import com.hiresemble.document.domain.model.DocumentRecords.PageSlice;
 import com.hiresemble.document.domain.model.DocumentRecords.SimilarChunk;
 import com.hiresemble.document.domain.model.DocumentType;
@@ -357,6 +358,69 @@ public class DocumentStore {
                 .query((rs, row) -> new SimilarChunk(
                         uuid(rs, "id"), uuid(rs, "document_id"), rs.getInt("chunk_index"),
                         rs.getString("masked_content"), rs.getDouble("distance")))
+                .list();
+    }
+
+    /**
+     * Resolves masked source chunks for current VERIFIED evidence. Direct document evidence uses
+     * its own chunk; canonical experience evidence follows its active raw document links.
+     */
+    public List<EvidenceSourceChunk> evidenceSourceChunks(
+            UUID userId, List<UUID> evidenceIds, int limit) {
+        return jdbc.sql("""
+                        WITH sources AS (
+                            SELECT evidence.id AS evidence_id,
+                                   evidence.document_id,
+                                   evidence.source_entity_id AS chunk_id
+                            FROM profile_evidence evidence
+                            WHERE evidence.user_id=:userId
+                              AND evidence.id IN (:evidenceIds)
+                              AND evidence.verification_status='VERIFIED'
+                              AND evidence.source_deleted_at IS NULL
+                              AND evidence.source_type='DOCUMENT_CHUNK'
+                              AND evidence.source_entity_id IS NOT NULL
+                            UNION
+                            SELECT evidence.id AS evidence_id,
+                                   raw.document_id,
+                                   raw.source_entity_id AS chunk_id
+                            FROM profile_evidence evidence
+                            JOIN experience_items item
+                              ON item.user_id=evidence.user_id
+                             AND item.id=evidence.source_entity_id
+                             AND item.deleted_at IS NULL
+                            JOIN experience_evidence_links link
+                              ON link.user_id=item.user_id
+                             AND link.experience_item_id=item.id
+                            JOIN profile_evidence raw
+                              ON raw.user_id=link.user_id
+                             AND raw.id=link.profile_evidence_id
+                            WHERE evidence.user_id=:userId
+                              AND evidence.id IN (:evidenceIds)
+                              AND evidence.verification_status='VERIFIED'
+                              AND evidence.source_deleted_at IS NULL
+                              AND evidence.source_type='EXPERIENCE'
+                              AND raw.source_type='DOCUMENT_CHUNK'
+                              AND raw.source_entity_id IS NOT NULL
+                              AND raw.source_deleted_at IS NULL
+                              AND raw.verification_status NOT IN ('REJECTED','SOURCE_DELETED')
+                        )
+                        SELECT sources.evidence_id,c.id,c.document_id,c.chunk_index,c.masked_content
+                        FROM sources
+                        JOIN document_chunks c
+                          ON c.user_id=:userId
+                         AND c.document_id=sources.document_id
+                         AND c.id=sources.chunk_id
+                        JOIN documents d ON d.user_id=c.user_id AND d.id=c.document_id
+                        WHERE d.deleted_at IS NULL
+                        ORDER BY sources.evidence_id,c.document_id,c.chunk_index,c.id
+                        LIMIT :limit
+                        """)
+                .param("userId", userId)
+                .param("evidenceIds", evidenceIds)
+                .param("limit", limit)
+                .query((rs, row) -> new EvidenceSourceChunk(
+                        uuid(rs, "evidence_id"), uuid(rs, "id"), uuid(rs, "document_id"),
+                        rs.getInt("chunk_index"), rs.getString("masked_content")))
                 .list();
     }
 

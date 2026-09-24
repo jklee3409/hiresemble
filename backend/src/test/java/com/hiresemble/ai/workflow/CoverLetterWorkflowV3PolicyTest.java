@@ -161,6 +161,17 @@ class CoverLetterWorkflowV3PolicyTest {
                 .isEqualTo(CoverLetterWorkflowV3Policy.DUPLICATION_POLICY_VERSION);
     }
 
+    @Test
+    void v4FillTargetAndFloorFollowMaxLength() {
+        assertThat(CoverLetterWorkflowV3Policy.targetCharacterCount(1_000, 400)).isEqualTo(900);
+        assertThat(CoverLetterWorkflowV3Policy.targetCharacterCount(1, 1)).isEqualTo(1);
+        assertThat(CoverLetterWorkflowV3Policy.targetCharacterCount(null, 850)).isEqualTo(850);
+        assertThat(CoverLetterWorkflowV3Policy.minimumCharacterCount(1_000)).isEqualTo(700);
+        assertThat(CoverLetterWorkflowV3Policy.minimumCharacterCount(300)).isEqualTo(210);
+        assertThat(CoverLetterWorkflowV3Policy.minimumCharacterCount(299)).isNull();
+        assertThat(CoverLetterWorkflowV3Policy.minimumCharacterCount(null)).isNull();
+    }
+
     private NarrativeSectionPlan section(NarrativeSectionType type, int weight) {
         return new NarrativeSectionPlan(type, "section objective", weight);
     }

@@ -26,6 +26,12 @@ public final class CoverLetterWorkflowV3Policy {
             "cover-letter-duplication-v3";
     public static final String EVIDENCE_SELECTION_POLICY_VERSION =
             "cover-letter-evidence-selection-v3";
+    /** Share of maxLength a v4 answer aims for; Korean screening expects a nearly full answer. */
+    public static final double TARGET_FILL_RATIO = 0.9d;
+    /** Share of maxLength below which a v4 answer is treated as clearly underfilled. */
+    public static final double MINIMUM_FILL_RATIO = 0.7d;
+    /** Short limits are exempt from the fill floor because a direct answer can be complete. */
+    public static final int MINIMUM_FILL_APPLIES_FROM = 300;
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
     private static final Map<CoverLetterGenerationWorkflow.NarrativeFramework, Set<NarrativeSectionType>>
@@ -297,6 +303,22 @@ public final class CoverLetterWorkflowV3Policy {
                 coreOverlap,
                 emphasisObserved,
                 DUPLICATION_POLICY_VERSION);
+    }
+
+    /** Server-owned v4 length target: about 90% of maxLength, else the planned target. */
+    public static int targetCharacterCount(Integer maxLength, int plannedTarget) {
+        if (maxLength == null) {
+            return plannedTarget;
+        }
+        return Math.max(1, Math.min(maxLength, (int) Math.floor(maxLength * TARGET_FILL_RATIO)));
+    }
+
+    /** Server-owned v4 fill floor, or null when no maxLength or a short limit is supplied. */
+    public static Integer minimumCharacterCount(Integer maxLength) {
+        if (maxLength == null || maxLength < MINIMUM_FILL_APPLIES_FROM) {
+            return null;
+        }
+        return (int) Math.floor(maxLength * MINIMUM_FILL_RATIO);
     }
 
     public static boolean hasFactualPattern(String answer) {

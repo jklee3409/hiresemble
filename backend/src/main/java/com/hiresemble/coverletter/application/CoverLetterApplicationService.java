@@ -24,6 +24,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.AnswerVers
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAnswer;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Detail;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceUse;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationQuestion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
@@ -951,6 +952,13 @@ public class CoverLetterApplicationService
     public List<CandidateChunk> searchEvidenceCandidates(
             UUID userId, List<Double> queryVector, int limit) {
         return evidenceSearch.searchMaskedCandidates(userId, queryVector, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EvidenceSourceExcerpt> findEvidenceSourceExcerpts(
+            UUID userId, List<UUID> evidenceIds, int limit) {
+        return evidenceSearch.findMaskedSourceExcerpts(userId, evidenceIds, limit);
     }
 
     @Override

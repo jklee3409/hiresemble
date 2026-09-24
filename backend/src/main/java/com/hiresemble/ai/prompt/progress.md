@@ -4,6 +4,22 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 writer 채용 담당자 관점 prompt v7)
+
+- What was done:
+  - v4 `WRITE_ANSWER` prompt를 `cover-letter-write-answer-prompt-v7`로 올리고 두괄식 첫 문장, 1~2개 구체 경험과 1인칭 개인 행동, 직무 요건 연결, 상투 표현 금지, 짧은 문단 규칙을 명시했다.
+  - "Prefer a concise direct answer" 지시를 v4에서 제거하고 서버가 준 `targetCharacterCount`·`minimumCharacterCount`를 기준 분량으로 삼게 했다. `PLAN_QUESTIONS` v7은 제한의 약 90%를 목표로 계획한다.
+  - v4 `FACT_CHECK_ANSWER` prompt v5와 입력 type `FactCheckAnswerInputV4`를 등록해 원문 발췌의 정성 서술은 해당 evidenceId 근거로, 정량 사실은 근거 content로만 판정하게 했다.
+- Key decisions:
+  - v3 prompt text와 version identity는 byte 단위로 유지했다.
+- Issues encountered:
+  - None
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider 출력으로 문체 규칙 준수율과 분량 달성률을 관측한다.
+
 ## [2026-08-10] Session Summary (GitHub 중심 경험 한국어 extraction prompt v2)
 
 - What was done:

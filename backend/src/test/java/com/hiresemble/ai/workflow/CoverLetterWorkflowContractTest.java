@@ -234,6 +234,42 @@ class CoverLetterWorkflowContractTest {
     }
 
     @Test
+    void v4PromptsPublishHiringScreenerWritingFillTargetAndSourceExcerptContract() {
+        java.util.function.Function<String, PromptRegistry.PromptDefinition> v4 = step ->
+                new PromptRegistry(CoverLetterGenerationV3PromptDefinitions.all()).require(
+                        WorkflowType.COVER_LETTER_GENERATION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        step);
+
+        var writer = v4.apply(CoverLetterGenerationWorkflow.WRITE_ANSWER);
+        assertThat(writer.promptVersion()).isEqualTo("cover-letter-write-answer-prompt-v7");
+        assertThat(writer.inputType()).isEqualTo(CoverLetterGenerationWorkflow.WriteAnswerInputV4.class);
+        assertThat(writer.instructions())
+                .contains(
+                        "hiring manager or HR screener",
+                        "Open with one or two sentences",
+                        "targetCharacterCount is authoritative",
+                        "minimumCharacterCount",
+                        "must not exceed maxLength",
+                        "evidenceSourceExcerpts",
+                        "never from a source excerpt alone",
+                        "exactAnswerExcerpt",
+                        "questionMemo")
+                .doesNotContain("Prefer a concise direct answer");
+
+        var plan = v4.apply(CoverLetterGenerationWorkflow.PLAN_QUESTIONS);
+        assertThat(plan.promptVersion()).isEqualTo("cover-letter-plan-questions-prompt-v7");
+        assertThat(plan.instructions()).contains("about 90 percent of", "questionMemo");
+
+        var factCheck = v4.apply(CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER);
+        assertThat(factCheck.promptVersion()).isEqualTo("cover-letter-fact-check-answer-prompt-v5");
+        assertThat(factCheck.inputType())
+                .isEqualTo(CoverLetterGenerationWorkflow.FactCheckAnswerInputV4.class);
+        assertThat(factCheck.instructions())
+                .contains("evidenceSourceExcerpts", "only by verifiedEvidence");
+    }
+
+    @Test
     void v3PlanningRecordsNormalizeBlankOptionalConnections() {
         var sections = List.of(new CoverLetterWorkflowV3Policy.NarrativeSectionPlan(
                 CoverLetterWorkflowV3Policy.NarrativeSectionType.DIRECT_ANSWER,

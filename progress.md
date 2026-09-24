@@ -14,6 +14,19 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 생성 품질 P0 개선)
+
+- What was done:
+  - 자기소개서 v4 writer에 승인 근거의 원본 masked 발췌·넓은 근거 content·90% 분량 목표/70% 하한·채용 담당자 관점 작성 규칙을 적용하고, claim 없는 사실 표현을 작성 단계 거부에서 FactCheck/APPLY 경고로 전환했다. 세부는 [`backend/progress.md`](backend/progress.md)에 있다.
+- Key decisions:
+  - 명세의 미승인 chunk 금지를 "승인 근거와 연결되지 않은 chunk"로 좁히고, 승인 근거의 원본 chunk는 v4 writer·FactCheck의 bounded 서술 맥락으로만 허용했다. 정량 사실과 provenance는 `VERIFIED` content 경계를 유지한다.
+- Issues encountered:
+  - 클라우드 세션에서 Maven Central 429와 Docker Hub의 MinIO 이미지 거부가 있었다. Gradle mirror는 세션 전용 init script로만 사용했다.
+- Validation:
+  - Backend 전체 check 703 tests 중 702 통과, MinIO 이미지 pull 거부로 `S3ObjectStorageAdapterTest` 1건 미검증.
+- Next steps:
+  - 실제 provider 품질·timeout 검증 후 P1 개선을 진행한다.
+
 ## [2026-08-10] Session Summary (GitHub 핵심 경험 한국어 추출과 경험 영구 비노출 삭제)
 
 - What was done:

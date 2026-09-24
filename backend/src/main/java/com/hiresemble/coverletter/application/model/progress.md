@@ -4,6 +4,20 @@
 
 P7 API·generation·verification에 필요한 최소 immutable application record가 구현됐다.
 
+## [2026-09-24] Session Summary (근거 원본 발췌 model)
+
+- What was done:
+  - `EvidenceSourceExcerpt`(evidence·chunk·document ID, chunk index, masked content) record를 추가했다.
+- Key decisions:
+  - 원문(content)이 아닌 masked content만 담는다.
+- Issues encountered:
+  - None
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-06] Session Summary (선택 모델과 memo application model)
 
 - What was done: generation question에 memo, generation·verification snapshot에 model을 추가하고 durable legacy constructor를 보존했다.

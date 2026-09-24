@@ -572,7 +572,10 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 - 과장된 직무 경험 표현 금지
 - current answer가 없을 때 생성 버전은 `AI_GENERATED`, 있을 때 새 생성 버전은 `AI_REVISED`다.
 - 문항별 결과를 atomic하게 저장하고 일부 실패 시 성공 version을 보존한다. retry는 동일 hash의 성공 문항을 재사용하고 실패 문항만 다시 실행한다.
-- 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용하고 writer·적합도 score·면접 질문의 긍정 사실 근거로 사용하지 않는다. 그 chunk만으로 검증을 통과시키지 않고 `WARNING + UNVERIFIED_CLAIM`으로 표시한다.
+- 승인 근거와 연결되지 않은 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용하고 writer·적합도 score·면접 질문의 긍정 사실 근거로 사용하지 않는다. 그 chunk만으로 검증을 통과시키지 않고 `WARNING + UNVERIFIED_CLAIM`으로 표시한다.
+- v4 writer와 FactCheck는 배분된 `VERIFIED` 근거의 원본 masked chunk(문서 근거 자신의 chunk 또는 정규 경험에 연결된 활성 문서 근거 chunk)를 근거당 최대 3개·3,000자, 문항당 9,000자까지 받는다. 이 발췌는 상황·판단·과정·개인 행동을 구체화하는 서술 맥락이며, 수치·날짜·기간·직함·순위·정량 성과는 해당 근거 content에 있을 때만 쓴다. claim evidenceId와 긍정 provenance는 계속 `VERIFIED` 근거만 사용한다.
+- v4는 글자 수 제한이 있으면 제한의 약 90%를 목표 분량으로 서버가 지정하고, 제한이 300자 이상인데 결과가 제한의 70%에 못 미치면 한 번 보정 재작성을 요청한다. 제한을 넘는 결과는 기존처럼 보정·거부한다.
+- v4는 근거 claim이 없는 사실 표현을 작성 단계에서 거부하지 않는다. FactCheck가 사실 이슈를 판정하고, 사실 이슈 없이 claim도 없는 사실 표현이면 저장 시 `WARNING + UNVERIFIED_CLAIM`을 추가한다. 단일 문항 생성의 승인 근거에 없는 수치는 `ERROR + UNVERIFIED_CLAIM`이다.
 
 ## CL-004 사용자 편집과 버전 관리
 

@@ -2,6 +2,7 @@ package com.hiresemble.coverletter.application.port;
 
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerificationSnapshot;
 import java.util.List;
@@ -67,4 +68,9 @@ public interface CoverLetterQueryPort {
 
     List<CandidateChunk> searchEvidenceCandidates(
             UUID userId, List<Double> queryVector, int limit);
+
+    default List<EvidenceSourceExcerpt> findEvidenceSourceExcerpts(
+            UUID userId, List<UUID> evidenceIds, int limit) {
+        throw new UnsupportedOperationException("evidence source excerpts are not configured");
+    }
 }

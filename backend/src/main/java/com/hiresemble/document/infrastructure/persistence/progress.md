@@ -4,6 +4,20 @@
 
 com.hiresemble.document.infrastructure.persistence package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-09-24] Session Summary (VERIFIED 근거 원본 chunk 조회 SQL)
+
+- What was done:
+  - `DocumentStore.evidenceSourceChunks`를 추가했다. 직접 `DOCUMENT_CHUNK` 근거는 자기 chunk를, 정규 `EXPERIENCE` 근거는 삭제되지 않은 experience item의 `experience_evidence_links`로 연결된 활성 문서 근거 chunk를 조회한다.
+- Key decisions:
+  - owner 조건, `VERIFIED`·`source_deleted_at IS NULL`, 삭제되지 않은 문서, `REJECTED|SOURCE_DELETED` raw 근거 제외를 모두 SQL에서 강제하고 masked content만 반환한다.
+- Issues encountered:
+  - None
+- Validation:
+  - `DocumentIntegrationTest` 파이프라인 테스트에 VERIFIED 반환·타 사용자 빈 결과·PENDING 전환 후 빈 결과 단언을 추가했다.
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-07-23] Session Summary (책임별 persistence package 분리)
 
 - What was done:

@@ -123,4 +123,11 @@ public final class DocumentRecords {
             int chunkIndex,
             String maskedContent,
             double distance) {}
+
+    public record EvidenceSourceChunk(
+            UUID evidenceId,
+            UUID chunkId,
+            UUID documentId,
+            int chunkIndex,
+            String maskedContent) {}
 }

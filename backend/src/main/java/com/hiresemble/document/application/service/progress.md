@@ -4,6 +4,20 @@
 
 com.hiresemble.document.application.service package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-09-24] Session Summary (자기소개서용 근거 원본 chunk adapter)
+
+- What was done:
+  - `DocumentCoverLetterEvidenceSearchAdapter`가 owner·ID 개수(최대 100, 중복 금지)·limit를 검증한 뒤 근거 원본 masked chunk를 요청 근거 순서로 반환한다.
+- Key decisions:
+  - 잘못된 입력은 기존 검색 adapter와 같은 `VALIDATION_ERROR`로 거부한다.
+- Issues encountered:
+  - None
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-07] Session Summary (Document ingestion v2 접수)
 
 - What was done:

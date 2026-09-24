@@ -460,6 +460,7 @@ selected questions
 
 - 공동 planning은 경험 배분만 담당하며 실제 writer와 fact check는 문항별 step이다.
 - 미승인 chunk는 후보 탐색·semantic 탐색·FactCheck의 모순 확인에만 사용하고 긍정 사실의 근거나 `PASSED` 근거로 쓰지 않는다.
+- v4 writer·FactCheck는 배분된 `VERIFIED` 근거의 원본 masked chunk를 서술 맥락으로 함께 받지만, 정량 사실과 claim provenance는 `VERIFIED` 근거 content로만 판단한다.
 - 생성 중 FactCheck와 별도 verify는 모두 현재 answer version에 연결된 immutable 검증을 만들며, 최종화는 최신 검증을 사용한다.
 - 일부 문항 성공은 문항별 immutable version으로 원자 반영하고 실패 문항만 새 run에서 재시도할 수 있다.
 

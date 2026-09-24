@@ -50,6 +50,9 @@ import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInput
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.VerifiedClaimDraft;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInput;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutput;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.EvidenceClaimDraftV3;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.FactCheckAnswerOutputV3;
+import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WriteAnswerInputV4;
 import com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.WrittenAnswerOutputV3;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowStep;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
@@ -60,6 +63,7 @@ import com.hiresemble.ai.workflow.WorkflowStepExecutor.StepInput;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AnswerVersion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAnswer;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationQuestion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.JobContext;
@@ -71,6 +75,8 @@ import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
 import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.coverletter.domain.AnswerCreatedBy;
 import com.hiresemble.coverletter.domain.CoverLetterVersionSource;
+import com.hiresemble.coverletter.domain.IssueSeverity;
+import com.hiresemble.coverletter.domain.VerificationIssueCode;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapDocumentDto;
 import com.hiresemble.coverletter.domain.TipTapContent.TipTapNodeDto;
 import com.hiresemble.coverletter.domain.VerificationStatus;
@@ -195,6 +201,229 @@ class CoverLetterGenerationWorkflowTest {
             executeWholeStepWithRun(fixture, run, executable, upstream, ephemeral);
         }
         throw new AssertionError("WRITE_ANSWER step was not found");
+    }
+
+    @Test
+    void v4WriterReceivesSourceExcerptsServerFillTargetAndWiderEvidence() {
+        Fixture fixture = v4SingleQuestionFixture(1_000, "승인된 경험 ".repeat(500));
+        UUID evidenceId = fixture.snapshot().verifiedEvidence().getFirst().id();
+        UUID sharedChunk = UUID.randomUUID();
+        fixture.query().sourceExcerpts.addAll(List.of(
+                new EvidenceSourceExcerpt(evidenceId, sharedChunk, UUID.randomUUID(), 0, "원문 첫 문단"),
+                new EvidenceSourceExcerpt(evidenceId, sharedChunk, UUID.randomUUID(), 0, "중복 문단"),
+                new EvidenceSourceExcerpt(evidenceId, UUID.randomUUID(), UUID.randomUUID(), 1, "원문 둘째 문단"),
+                new EvidenceSourceExcerpt(evidenceId, UUID.randomUUID(), UUID.randomUUID(), 2, "원문 셋째 문단"),
+                new EvidenceSourceExcerpt(evidenceId, UUID.randomUUID(), UUID.randomUUID(), 3, "원문 넷째 문단"),
+                new EvidenceSourceExcerpt(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 0, "다른 근거")));
+
+        StepInput input = prepareV4WriterInput(fixture, new HashMap<>(), new HashMap<>());
+        WriteAnswerInputV4 payload = objectMapper.treeToValue(
+                input.gatewayPayload(), WriteAnswerInputV4.class);
+
+        assertThat(payload.targetCharacterCount()).isEqualTo(900);
+        assertThat(payload.minimumCharacterCount()).isEqualTo(700);
+        assertThat(payload.verifiedEvidence()).singleElement()
+                .satisfies(value -> assertThat(value.content()).hasSize(3_500));
+        assertThat(payload.evidenceSourceExcerpts()).singleElement().satisfies(value -> {
+            assertThat(value.evidenceId()).isEqualTo(evidenceId);
+            assertThat(value.truncated()).isFalse();
+            assertThat(value.maskedSourceText())
+                    .isEqualTo("원문 첫 문단\n\n원문 둘째 문단\n\n원문 셋째 문단")
+                    .doesNotContain("중복 문단", "원문 넷째 문단", "다른 근거");
+        });
+        assertThat(fixture.query().excerptRequests).containsExactly(List.of(evidenceId));
+        assertThat(input.sanitizedInputRefs().path("sourceExcerptCount").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void v4WriterRequestsExpansionOnlyForClearlyUnderfilledAnswer() {
+        Fixture fixture = v4SingleQuestionFixture(1_000, "Spring 서비스 경험을 정리했습니다.");
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        StepInput input = prepareV4WriterInput(fixture, upstream, ephemeral);
+        StepExecutionContext scoped = context(fixture.run(), upstream, ephemeral, input.scopeKey());
+        ExecutableWorkflowStep writer = v4Step(fixture, CoverLetterGenerationWorkflow.WRITE_ANSWER);
+
+        assertThatThrownBy(() -> validate(
+                        writer.executor(),
+                        objectMapper.writeValueAsString(answer(fixture, "가".repeat(699), List.of())),
+                        scoped))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure -> {
+                    assertThat(failure.safeCode()).isEqualTo("COVER_GENERATION_ANSWER_TOO_SHORT");
+                    assertThat(failure.failureKind()).isEqualTo(FailureKind.STRUCTURED_OUTPUT);
+                    assertThat(failure.retryable()).isTrue();
+                    assertThat(failure.correctionGuidance())
+                            .contains("at least 700")
+                            .doesNotContain(fixture.snapshot().questions().getFirst().questionText());
+                });
+        assertThatCode(() -> validate(
+                        writer.executor(),
+                        objectMapper.writeValueAsString(answer(fixture, "가".repeat(700), List.of())),
+                        scoped))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void v4AcceptsFactualWordingWithoutClaimsAndWarnsOnApply() {
+        Fixture fixture = v4SingleQuestionFixture(1_000, "Spring 서비스 경험을 정리했습니다.");
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        String text = "장애 대응 성과를 만들었습니다. " + "가".repeat(700);
+
+        runV4ThroughApply(fixture, upstream, ephemeral, answer(fixture, text, List.of()));
+
+        assertThat(fixture.command().commands).singleElement().satisfies(command -> {
+            assertThat(command.factCheck().status()).isEqualTo(VerificationStatus.WARNING);
+            assertThat(command.factCheck().issues()).singleElement().satisfies(issue -> {
+                assertThat(issue.code()).isEqualTo(VerificationIssueCode.UNVERIFIED_CLAIM);
+                assertThat(issue.severity()).isEqualTo(IssueSeverity.WARNING);
+            });
+        });
+    }
+
+    @Test
+    void v4SingleQuestionFactCheckReportsUnsupportedNumbersWithoutClaims() {
+        Fixture fixture = v4SingleQuestionFixture(1_000, "Spring 서비스 경험을 정리했습니다.");
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        String text = "응답 시간을 30% 줄였습니다. " + "가".repeat(700);
+
+        runV4ThroughApply(fixture, upstream, ephemeral, answer(fixture, text, List.of()));
+
+        FactCheckAnswerOutputV3 factCheck = (FactCheckAnswerOutputV3) ephemeral.get(
+                StepExecutionContext.outputKey(
+                        CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER,
+                        fixture.firstQuestionId().toString()));
+        assertThat(factCheck.issues()).singleElement().satisfies(issue -> {
+            assertThat(issue.code()).isEqualTo(VerificationIssueCode.UNVERIFIED_CLAIM);
+            assertThat(issue.severity()).isEqualTo(IssueSeverity.ERROR);
+            assertThat(issue.relatedText()).isEqualTo("30%");
+        });
+        assertThat(fixture.command().commands).singleElement()
+                .satisfies(command -> assertThat(command.factCheck().status())
+                        .isEqualTo(VerificationStatus.FAILED));
+    }
+
+    @Test
+    void v3WriterStillRejectsFactualWordingWithoutClaims() {
+        Fixture fixture = singleQuestionFixture();
+        AgentRunSnapshot run = runV3(fixture.snapshot, UUID.randomUUID());
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        for (ExecutableWorkflowStep executable : fixture.workflow.v3Contribution().steps()) {
+            if (executable.stepKey().equals(CoverLetterGenerationWorkflow.WRITE_ANSWER)) {
+                StepInput input = executable.executor()
+                        .prepareInputs(context(run, upstream, ephemeral, null))
+                        .getFirst();
+                assertStructuredOutputFailure(() -> validate(
+                        executable.executor(),
+                        objectMapper.writeValueAsString(answer(fixture, "장애 대응 성과를 만들었습니다.", List.of())),
+                        context(run, upstream, ephemeral, input.scopeKey())));
+                return;
+            }
+            executeWholeStepWithRun(fixture, run, executable, upstream, ephemeral);
+        }
+        throw new AssertionError("WRITE_ANSWER step was not found");
+    }
+
+    private StepInput prepareV4WriterInput(
+            Fixture fixture, Map<String, JsonNode> upstream, Map<String, Object> ephemeral) {
+        for (ExecutableWorkflowStep executable : fixture.workflow().v4Contribution().steps()) {
+            if (executable.stepKey().equals(CoverLetterGenerationWorkflow.WRITE_ANSWER)) {
+                return executable.executor()
+                        .prepareInputs(context(fixture.run(), upstream, ephemeral, null))
+                        .getFirst();
+            }
+            executeWholeStepWithRun(fixture, fixture.run(), executable, upstream, ephemeral);
+        }
+        throw new AssertionError("WRITE_ANSWER step was not found");
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void runV4ThroughApply(
+            Fixture fixture,
+            Map<String, JsonNode> upstream,
+            Map<String, Object> ephemeral,
+            WrittenAnswerOutputV3 written) {
+        StepInput input = prepareV4WriterInput(fixture, upstream, ephemeral);
+        StepExecutionContext scoped = context(fixture.run(), upstream, ephemeral, input.scopeKey());
+        ExecutableWorkflowStep writer = v4Step(fixture, CoverLetterGenerationWorkflow.WRITE_ANSWER);
+        Object output = validate(writer.executor(), objectMapper.writeValueAsString(written), scoped);
+        DomainStepCompletion completion = complete(
+                writer.executor(), output, minimal(writer.executor(), output), scoped);
+        String key = StepExecutionContext.outputKey(writer.stepKey(), input.scopeKey());
+        upstream.put(key, completion.minimalOutput());
+        ephemeral.put(key, ephemeral(writer.executor(), output));
+        executeWholeStepWithRun(
+                fixture, fixture.run(), v4Step(fixture, CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER),
+                upstream, ephemeral);
+        executeWholeStepWithRun(
+                fixture, fixture.run(), v4Step(fixture, CoverLetterGenerationWorkflow.APPLY_ANSWER_VERSION),
+                upstream, ephemeral);
+    }
+
+    private ExecutableWorkflowStep v4Step(Fixture fixture, String key) {
+        return fixture.workflow().v4Contribution().steps().stream()
+                .filter(value -> value.stepKey().equals(key))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private WrittenAnswerOutputV3 answer(
+            Fixture fixture, String text, List<EvidenceClaimDraftV3> claims) {
+        return new WrittenAnswerOutputV3(
+                "cover-generation-answer-output-v3",
+                fixture.firstQuestionId(),
+                providerDocument(text),
+                claims);
+    }
+
+    private Fixture v4SingleQuestionFixture(int maxLength, String evidenceContent) {
+        Fixture base = singleQuestionFixture();
+        GenerationSnapshot source = base.snapshot();
+        GenerationQuestion question = source.questions().getFirst();
+        VerifiedEvidence evidence = source.verifiedEvidence().getFirst();
+        GenerationSnapshot snapshot = new GenerationSnapshot(
+                source.userId(),
+                source.coverLetterId(),
+                source.coverLetterVersion(),
+                source.title(),
+                source.job(),
+                List.of(new GenerationQuestion(
+                        question.questionId(),
+                        question.questionOrder(),
+                        question.questionText(),
+                        maxLength,
+                        question.currentAnswerVersionId(),
+                        question.currentPlainText())),
+                List.of(new VerifiedEvidence(
+                        evidence.id(),
+                        evidence.sourceType(),
+                        evidence.sourceEntityId(),
+                        evidence.documentId(),
+                        evidence.evidenceCategory(),
+                        evidence.title(),
+                        evidenceContent,
+                        evidence.version())),
+                source.preferredEvidenceIds(),
+                source.avoidExperienceDuplication(),
+                null,
+                OpenAiChatModels.GPT_5_6_SOL,
+                source.snapshotHash());
+        FakeQuery query = new FakeQuery(snapshot);
+        FakeCommand command = new FakeCommand(snapshot.userId());
+        CoverLetterGenerationWorkflow workflow = new CoverLetterGenerationWorkflow(
+                query, command, new FakeEmbeddingPolicy(), objectMapper);
+        return new Fixture(
+                snapshot,
+                query,
+                command,
+                new FakeChat(objectMapper),
+                new FakeEmbedding(objectMapper),
+                workflow,
+                runV4(snapshot, UUID.randomUUID()),
+                question.questionId(),
+                null);
     }
 
     @Test
@@ -508,7 +737,9 @@ class CoverLetterGenerationWorkflowTest {
             StepExecutionContext context) {
         PromptRegistry registry =
                 CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION.equals(
-                                context.run().workflowVersion())
+                                        context.run().workflowVersion())
+                                || CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                                        context.run().workflowVersion())
                         ? v3Prompts
                         : CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                         context.run().workflowVersion())
@@ -1106,6 +1337,8 @@ class CoverLetterGenerationWorkflowTest {
 
         private final GenerationSnapshot snapshot;
         private final AtomicInteger snapshotLoads = new AtomicInteger();
+        private final List<EvidenceSourceExcerpt> sourceExcerpts = new ArrayList<>();
+        private final List<List<UUID>> excerptRequests = new ArrayList<>();
         private boolean rejectSnapshotLoads;
 
         private FakeQuery(GenerationSnapshot snapshot) {
@@ -1184,6 +1417,17 @@ class CoverLetterGenerationWorkflowTest {
                     UUID.randomUUID(),
                     "masked candidate",
                     0.1D));
+        }
+
+        @Override
+        public List<EvidenceSourceExcerpt> findEvidenceSourceExcerpts(
+                UUID userId, List<UUID> evidenceIds, int limit) {
+            assertThat(userId).isEqualTo(snapshot.userId());
+            excerptRequests.add(List.copyOf(evidenceIds));
+            return sourceExcerpts.stream()
+                    .filter(value -> evidenceIds.contains(value.evidenceId()))
+                    .limit(limit)
+                    .toList();
         }
     }
 

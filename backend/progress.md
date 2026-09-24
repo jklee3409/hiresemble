@@ -7,6 +7,22 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-24] Session Summary (자기소개서 v4 생성 품질 P0 개선)
+
+- What was done:
+  - v4 자기소개서 writer에 승인 근거의 원본 masked 발췌와 넓은 근거 content를 제공하고, 제한의 90% 목표·70% 하한, 채용 담당자 관점 작성 규칙을 적용했다.
+  - v4에서 claim 없는 사실 표현을 작성 단계에서 거부하지 않고 FactCheck/APPLY 경고로 전환했다. 세부는 `ai/workflow`, `ai/prompt`, `coverletter/application`, `document` 진행 기록에 있다.
+- Key decisions:
+  - v1~v3 재생 경로는 변경하지 않았고, 정량 사실 provenance는 `VERIFIED` content 경계를 유지한다. 명세 `functional.md` CL-003과 `tech_stack.md` 보안 절을 새 계약으로 갱신했다.
+- Issues encountered:
+  - Maven Central 429로 기본 의존성 해석이 실패해 세션 scratchpad의 Gradle init script로 Google Maven Central mirror를 사용했다. 저장소 build 설정은 바꾸지 않았다.
+  - 긴 답변으로 45초 chat timeout 위험이 커졌고, 별도 검증 workflow는 아직 원문 발췌를 받지 않는다.
+- Validation:
+  - 자기소개서 workflow·prompt·policy 집중 테스트 32건 통과(신규 v4 writer 원문 발췌·분량 목표/하한·claim 없는 사실 표현 경고·단일 문항 미지원 수치 ERROR·v3 기존 거부 유지·v4 prompt 계약·policy 경계 포함).
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider로 모델별 품질·timeout을 검증하고 P1(자유 서술 후 claim 연결, 회사 조사 연결, 자기 비평 수정)을 진행한다.
+
 ## [2026-08-10] Session Summary (GitHub 핵심 경험 추출과 canonical 경험 삭제 API)
 
 - What was done:

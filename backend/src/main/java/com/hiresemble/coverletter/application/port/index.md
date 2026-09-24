@@ -8,7 +8,7 @@
 
 - `CoverLetterQueryPort`: generation·verification owner/version snapshot
 - `CoverLetterCommandPort`: generated answer·verification의 원자적 apply와 실패 보상
-- `CoverLetterEvidenceSearchPort`: owner-scoped 현재 근거·masked candidate 검색
+- `CoverLetterEvidenceSearchPort`: owner-scoped 현재 근거·masked candidate 검색과 v4 writer용 `VERIFIED` 근거 원본 masked chunk 조회
 - [`progress.md`](progress.md): port 계약 상태
 
 ## 구성 요소 역할

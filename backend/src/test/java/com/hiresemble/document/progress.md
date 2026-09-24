@@ -4,6 +4,19 @@
 
 P4 Document HTTP·workflow port·storage·parser·embedding·outbox 통합 테스트를 구현했다.
 
+## [2026-09-24] Session Summary (근거 원본 chunk 조회 통합 검증)
+
+- What was done:
+  - 문서 파이프라인 통합 테스트에서 승인 근거의 원본 masked chunk 조회, 타 사용자 격리, 승인 해제 후 제외를 검증한다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-10] Session Summary (문서 canonical 경험 삭제 API 회귀)
 
 - What was done: 두 문서가 보강한 canonical 경험을 승인한 뒤 DELETE 204, 목록/상세/근거/분석 비노출을 HTTP와 PostgreSQL로 검증했다.

@@ -4,6 +4,19 @@
 
 com.hiresemble.document.domain.model package의 책임과 검증 상태를 추적한다. 이 package는 기존 Java 파일의 책임별 이동으로 생성됐으며 동작 계약은 변경하지 않았다.
 
+## [2026-09-24] Session Summary (근거 원본 chunk record)
+
+- What was done:
+  - `DocumentRecords.EvidenceSourceChunk` record를 추가했다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `./gradlew check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/703 tests 중 702 통과. 유일한 실패 `S3ObjectStorageAdapterTest`는 이 환경에서 Docker Hub가 `minio/minio:RELEASE.2025-09-07T16-13-09Z` pull을 거부한 초기화 오류로, 이번 변경과 무관하며 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-07-23] Session Summary (책임별 model package 분리)
 
 - What was done:
