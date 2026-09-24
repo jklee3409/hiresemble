@@ -14,6 +14,20 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5(P1) 구현)
+
+- What was done:
+  - Backend에 자기소개서 생성 v5(계획 겸 분석, 평문 초안, 채용 담당자 관점 검토·수정, claim 연결)와 공고 분석·회사 조사 작성 context를 추가하고, Frontend 단계 라벨·memo 안내와 명세를 갱신했다. 세부는 [`backend/progress.md`](backend/progress.md), [`frontend/progress.md`](frontend/progress.md)에 있다.
+- Key decisions:
+  - v1~v4는 durable 재생으로 유지하고 API·DB 계약은 바꾸지 않았다.
+- Issues encountered:
+  - 세션 환경에서 Maven Central 429, MinIO 이미지 pull 거부, Node 한국어 ICU 부재가 있었다.
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+  - Frontend: eslint·prettier·`vue-tsc -b`·`vite build` 통과, vitest 466건 중 465 통과. 실패 1건 `github/presentation.test.ts`의 `오전 10:02` 기대는 이 컨테이너 Node ICU에 한국어 로케일 데이터가 없어 `AM 10:02`로 포맷되는 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - 실제 provider로 v4 대비 품질을 비교하고 P7 Browser E2E를 로컬에서 실행한다.
+
 ## [2026-09-24] Session Summary (자기소개서 v4 생성 품질 P0 개선)
 
 - What was done:

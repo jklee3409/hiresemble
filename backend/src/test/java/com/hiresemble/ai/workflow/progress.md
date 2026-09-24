@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8, GitHub·Career Artifact workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5 테스트)
+
+- What was done:
+  - v5 전체 흐름, 초안 Markdown·분량 하한 거부, 근거 연결 excerpt·evidence 거부 테스트와 v5 prompt·10단계 계약 테스트를 추가하고 v4 테스트를 v4 상수로 옮겼다. registry 정의 수는 21개다.
+- Key decisions:
+  - 테스트 helper가 orchestrator처럼 context 기반 minimal·ephemeral 출력을 사용하도록 바꿨다.
+- Issues encountered:
+  - None
+- Validation:
+  - AI package 테스트 242건 통과(v5 단일 문항 계획→초안→검토→근거 연결→저장 전체 흐름, Markdown·분량 하한 거부, 근거 연결 excerpt·evidence 거부, v5 prompt 계약 포함).
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (자기소개서 v4 writer 품질 계약 테스트)
 
 - What was done:

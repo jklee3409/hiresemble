@@ -14,7 +14,7 @@ canonical workflow metadata와 실제 실행 contribution·step executor 경계�
 - `JobPostingExtractionFailureHandler`: 사용자 입력 필요와 기술 실패의 안전한 상태 반영
 - `JobAnalysisWorkflow`: P6 owner-scoped snapshot·active embedding policy route 기반 verified RAG·결정론적 score·command-only persist 8단계 contribution과 block ID·원문·ordinal만 소유하는 Provider requirements·eligibility·match output→서버 내부 DTO mapping
 - `JobRequirementNormalizationPolicy`: source requirement의 명확한 atomic 분할, section·required·support type·category·근무일 결정, 중복 제거와 source ordinal/text provenance를 소유하는 단일 canonical 정책
-- `CoverLetterGenerationWorkflow`: P7 generation v1~v3 durable contribution과 active v4 8단계 bounded fan-out, 선택 모델·사용자 memo·framework-neutral section plan·exact excerpt provenance·명시적 truncation·한국어 출력·cross-answer duplication 검증·partial apply
+- `CoverLetterGenerationWorkflow`: P7 generation v1~v4 durable contribution과 active v5 10단계(계획 겸 분석, 평문 초안, 검토·수정, claim 연결·TipTap 변환) bounded fan-out, 선택 모델·사용자 memo·framework-neutral section plan·exact excerpt provenance·명시적 truncation·한국어 출력·cross-answer duplication 검증·partial apply
 - `CoverLetterWorkflowV3Policy`: 문항 유형–framework–section, issue compatibility, bounded text hash/count, relevance evidence selection과 generation/verification 공용 duplication policy
 - `CoverLetterVerificationWorkflow`: P7 immutable answer verification v1~v3 durable contribution과 active v4 선택 모델·relevance evidence selection·exact claim grounding·한국어 fact/writing-quality·sibling truncation context를 포함한 6단계 contribution
 - `CoverLetterVerificationFailureHandler`: verify 실패·취소 PENDING 보상

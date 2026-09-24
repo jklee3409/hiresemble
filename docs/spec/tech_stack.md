@@ -317,7 +317,7 @@ LLM 전송 전 기본 마스킹 대상:
 - 외부 콘텐츠의 tool 지시·prompt injection을 실행하지 않고 step별 Tool allowlist와 호출 상한을 적용한다.
 - 승인 근거와 연결되지 않은 미승인 masked chunk는 evidence 후보 탐색·semantic 탐색·FactCheck 모순 확인에만 사용한다.
 - 미승인 chunk만으로 긍정 사실을 작성하거나 score·interview 질문의 근거로 쓰지 않으며 PASSED 대신 `WARNING + UNVERIFIED_CLAIM`으로 처리한다.
-- 예외적으로 자기소개서 생성 v4는 배분된 `VERIFIED` 근거의 원본 masked chunk를 owner·active document·활성 근거 조건으로 조회해 writer·FactCheck의 bounded 서술 맥락으로만 전달한다. 정량 사실과 claim provenance는 `VERIFIED` 근거 content 경계를 유지하고 chunk ID·document ID는 Provider에 보내지 않는다.
+- 예외적으로 자기소개서 생성 v4·v5는 배분된 `VERIFIED` 근거의 원본 masked chunk를 owner·active document·활성 근거 조건으로 조회해 writer·FactCheck의 bounded 서술 맥락으로만 전달한다. 정량 사실과 claim provenance는 `VERIFIED` 근거 content 경계를 유지하고 chunk ID·document ID는 Provider에 보내지 않는다.
 - Object key, 일반 log, analytics와 browser console에 사용자 filename·원문·전체 prompt/response를 남기지 않는다.
 - GitHub snapshot 전체와 source code excerpt는 downstream 생성 Context에 주입하지 않는다. Career Artifact의 생성 파일 연락처는 LLM Context 밖에서 renderer가 삽입한다.
 
@@ -332,7 +332,7 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 | `DOCUMENT_INGESTION`        | `LOAD_DOCUMENT_SOURCE → EXTRACT_OR_ACCEPT_TEXT → MASK_TEXT → CHUNK_TEXT → EMBED_CHUNKS → EXTRACT_EVIDENCE_CANDIDATES → APPLY_EVIDENCE_CANDIDATES → FINALIZE_DOCUMENT`                                                                                                                        |
 | `JOB_POSTING_EXTRACTION`    | `FETCH_JOB_PAGE → INSPECT_JOB_PAGE → FETCH_JOB_IMAGES → EXTRACT_JOB_IMAGE_TEXT → COMPOSE_JOB_SOURCE_TEXT → EXTRACT_JOB_FIELDS → MERGE_USER_OVERRIDES → VALIDATE_JOB_EXTRACTION → APPLY_JOB_EXTRACTION`                                                                                       |
 | `JOB_ANALYSIS`              | `BUILD_JOB_SNAPSHOT → EXTRACT_REQUIREMENTS → ASSESS_ELIGIBILITY → RETRIEVE_VERIFIED_EVIDENCE → MATCH_EVIDENCE → SCORE_FIT → VALIDATE_ANALYSIS → PERSIST_ANALYSIS`                                                                                                                            |
-| `COVER_LETTER_GENERATION`   | `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*] → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → WRITE_ANSWER[*] → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`                                                                                                           |
+| `COVER_LETTER_GENERATION`   | v5: `BUILD_GENERATION_CONTEXT → PLAN_QUESTIONS → ANALYZE_QUESTION[*](local) → RETRIEVE_EVIDENCE[*] → ALLOCATE_EXPERIENCES → DRAFT_ANSWER[*] → REVIEW_ANSWER[*] → WRITE_ANSWER[*](claim·TipTap) → FACT_CHECK_ANSWER[*] → APPLY_ANSWER_VERSION[*]`; durable v1~v4는 기존 8단계 |
 | `COVER_LETTER_VERIFICATION` | `LOAD_ANSWER_VERSION → BUILD_PROVENANCE_CONTEXT → CHECK_FACTS → CHECK_REQUIREMENTS_AND_LENGTH → AGGREGATE_VERIFICATION → PERSIST_VERIFICATION`                                                                                                                                               |
 | `INTERVIEW_PREPARATION`     | `VALIDATE_PREREQUISITES → BUILD_PUBLIC_SEARCH_PLAN → SEARCH_OFFICIAL_SOURCES → SEARCH_INTERVIEW_SOURCES → DEDUPE_CLASSIFY_SOURCES → ASSESS_SOURCE_COVERAGE → BUILD_QUESTION_CONTEXT → GENERATE_QUESTIONS → VALIDATE_QUESTION_PROVENANCE → PERSIST_RESEARCH_AND_QUESTION_SET`                 |
 | `INTERVIEW_ANSWER_FEEDBACK` | `LOAD_ANSWER_VERSION → BUILD_FEEDBACK_CONTEXT → ANALYZE_ANSWER → VALIDATE_FEEDBACK → PERSIST_FEEDBACK`                                                                                                                                                                                       |
@@ -384,7 +384,7 @@ Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPE
 
 ## 9. 모델 라우팅과 비용
 
-공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 exact model 선택 workflow를 제외한 AI 작업의 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 및 비용 집계 분류다. 현재 자기소개서 생성·검증 v4와 Resume/Portfolio는 서버 소유 OpenAI 모델 카탈로그에서 사용자가 고른 exact model ID를 run input에 고정하고 모든 chat step에 그대로 전달한다. GitHub extraction은 server policy가 model을 선택하며 사용자 model 입력을 받지 않는다. embedding step은 선택 chat model과 분리해 active embedding policy를 계속 사용한다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않지만 자기소개서와 Career Artifact model catalog·선택 UI는 명시적 예외다.
+공개 `AiQualityMode=ECONOMY|BALANCED|HIGH_QUALITY`는 exact model 선택 workflow를 제외한 AI 작업의 사용자 품질 의도이고 내부 `ModelTier=LOW_COST|BALANCED|HIGH_QUALITY`는 provider-independent routing 및 비용 집계 분류다. 현재 자기소개서 생성 v5·검증 v4(생성 v4 durable 재생 포함)와 Resume/Portfolio는 서버 소유 OpenAI 모델 카탈로그에서 사용자가 고른 exact model ID를 run input에 고정하고 모든 chat step에 그대로 전달한다. GitHub extraction은 server policy가 model을 선택하며 사용자 model 입력을 받지 않는다. embedding step은 선택 chat model과 분리해 active embedding policy를 계속 사용한다. 일반 API는 provider/model ID와 step별 tier를 노출하지 않지만 자기소개서와 Career Artifact model catalog·선택 UI는 명시적 예외다.
 
 `ModelTier`가 선택하는 Chat·image text product와 vector retrieval의 embedding product를 혼용하지 않는다. `RETRIEVE_VERIFIED_EVIDENCE`와 Cover Letter `RETRIEVE_EVIDENCE[*]`는 활성 embedding policy snapshot의 provider·product·dimension을 사용하고 policy version·generation·route identity를 step hash에 포함한다. Job Analysis는 criterion query를 embedding batch로 보내고 criterion별 hybrid retrieval을 수행하며, merged candidate에 허용 criterion index를 보존해 match 단계의 evidence 사용 범위를 검증한다.
 
@@ -396,7 +396,7 @@ Career Artifact Context는 사용자가 고른 active `VERIFIED` canonical `EXPE
 
 `HIGH_QUALITY`는 `highQualityEnabled=true`, 요청별 명시 선택, 비용 예약 성공을 모두 요구하며 면접 답변 feedback에서만 공개 선택한다. 자기소개서 신규 요청은 품질 모드를 받지 않고 선택한 exact model의 가격과 기존 예산 reserve/settle 정책을 적용한다. 공고 분석과 면접 준비는 `ECONOMY|BALANCED`, 문서·공고 추출은 내부 저비용 정책만 사용한다. 모의 면접 종합 feedback은 `BALANCED` 고정이다.
 
-중앙 exact model allowlist는 ID·표시명·설명·내부 비용 tier·추천 여부를 관리하며 `modelsFor(workflowType)`와 `requireModel(workflowType,model)`로 자기소개서·Resume·Portfolio를 지원하고 기존 cover-letter API wrapper를 유지한다. Resume/Portfolio API는 type별 catalog를 반환하고 서버는 접수·실행 양쪽에서 allowlist를 재검증한다. 선택 model은 idempotency hash, immutable Run input, 모든 chat step hash에 포함하며 retry에서 바꾸지 않는다. 자기소개서 신규 workflow version은 v4이고 기존 v1~v3 정의와 prompt는 이미 접수된 durable run 재생을 위해 읽기 호환으로 유지한다.
+중앙 exact model allowlist는 ID·표시명·설명·내부 비용 tier·추천 여부를 관리하며 `modelsFor(workflowType)`와 `requireModel(workflowType,model)`로 자기소개서·Resume·Portfolio를 지원하고 기존 cover-letter API wrapper를 유지한다. Resume/Portfolio API는 type별 catalog를 반환하고 서버는 접수·실행 양쪽에서 allowlist를 재검증한다. 선택 model은 idempotency hash, immutable Run input, 모든 chat step hash에 포함하며 retry에서 바꾸지 않는다. 자기소개서 신규 생성 workflow version은 v5이고 기존 v1~v4 정의와 prompt는 이미 접수된 durable run 재생을 위해 읽기 호환으로 유지한다. v5는 모든 문항을 선택 모델로 계획하고 그 계획에서 분석을 local로 파생하며, 자유 서술 초안·채용 담당자 관점 검토 후 1회 수정·claim 연결과 서버 TipTap 변환을 분리한다. 검토 점수는 원문 없이 criterion별 정수만 step checkpoint에 남긴다.
 
 ### 9.1 가격·reserve/settle
 

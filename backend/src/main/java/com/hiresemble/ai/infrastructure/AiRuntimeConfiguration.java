@@ -214,6 +214,7 @@ public class AiRuntimeConfiguration {
                         coverLetterGenerationWorkflow.v2Contribution(),
                         coverLetterGenerationWorkflow.v3Contribution(),
                         coverLetterGenerationWorkflow.v4Contribution(),
+                        coverLetterGenerationWorkflow.v5Contribution(),
                         coverLetterVerificationWorkflow.contribution(),
                         coverLetterVerificationWorkflow.v2Contribution(),
                         coverLetterVerificationWorkflow.v3Contribution(),

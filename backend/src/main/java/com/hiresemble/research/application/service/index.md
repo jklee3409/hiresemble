@@ -8,6 +8,7 @@
 
 - `ResearchApplicationService`: run·source owner 조회
 - `ResearchRetryApplicationService`: retry option·idempotency 조정
+- `ResearchCoverLetterContextAdapter`: 자기소개서 v5 작성용 최신 성공 회사 조사 요약과 공식·기술 블로그·뉴스 출처 조회 port 구현
 - [`progress.md`](progress.md): service 상태
 
 ## 구성 요소 역할

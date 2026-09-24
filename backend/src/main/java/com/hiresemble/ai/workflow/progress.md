@@ -4,6 +4,24 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5 초안·검토·근거 연결 분리)
+
+- What was done:
+  - `cover-letter-generation-v5` 10단계를 active canonical로 추가하고 v4를 durable 재생 전용으로 내렸다. v4·v5 모두 exact-model 경로를 타도록 `isExactModelCoverLetterGeneration`으로 판정을 통일했다.
+  - v5 `PLAN_QUESTIONS`는 단일 문항도 선택 모델로 계획하고, 계획이 분석을 겸해 `ANALYZE_QUESTION`은 local 파생(모델 호출 0)이다. framework 매핑·section 비중 합 100은 권장으로 완화했다.
+  - `DRAFT_ANSWER`는 평문 초안, `REVIEW_ANSWER`는 6개 criterion 1~5점 평가와 1회 수정, v5 `WRITE_ANSWER`는 claim만 연결하고 서버가 평문을 TipTap(첫 줄 대괄호 소제목은 bold)으로 변환해 기존 FactCheck·APPLY에 `WrittenAnswerOutputV3`로 넘긴다.
+  - 계획·초안·검토 입력에 공고 분석 강점·보완점과 최신 성공 회사 조사(공식·기술 블로그·뉴스)를 `WritingInsightsInput`으로 제공한다.
+- Key decisions:
+  - 별도 사용자 수정 요청 API를 만들지 않고 기존 답변이 있으면 문항 memo를 수정 지시로 적용한다. 자유 텍스트를 Run input에 저장하지 않는 context 규칙을 지키기 위해서다.
+  - 검토 점수는 원문 없이 criterion별 정수만 minimal checkpoint에 남겨 품질 관측에 쓴다.
+- Issues encountered:
+  - 문항당 모델 호출이 v4의 분석·작성 2회에서 초안·검토·근거 연결 3회로 늘어 비용과 지연이 증가한다. 45초 chat timeout은 그대로다.
+- Validation:
+  - AI package 테스트 242건 통과(v5 단일 문항 계획→초안→검토→근거 연결→저장 전체 흐름, Markdown·분량 하한 거부, 근거 연결 excerpt·evidence 거부, v5 prompt 계약 포함).
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider로 v4 대비 품질·비용·timeout을 비교하고, 검토 점수 분포를 관측한다.
+
 ## [2026-09-24] Session Summary (자기소개서 v4 writer 원문 발췌·분량 목표·사실 표현 경고 전환)
 
 - What was done:

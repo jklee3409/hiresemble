@@ -7,6 +7,19 @@
 - `/guide`, `/profile/experiences`, feature-gated `/integrations`(구 `/profile/github` redirect)·`/career-artifacts/**`, `/settings/account`, `/agent-runs`, `/documents`, `/jobs`, `/cover-letters`, `/interviews`와 관련 child route는 lazy route이며 responsive AppLayout에는 Progress Drawer가 연결되어 있다.
 - Frontend `check`는 102 files/466 tests로 통과했다. 공개 GitHub·경험 삭제 Chromium journey는 통과했고 Phase 5 journey는 마지막 탈퇴 후 login redirect 계약 1건이 재검증 대기다.
 
+## [2026-09-24] Session Summary (자기소개서 v5 진행 표시와 memo 안내)
+
+- What was done:
+  - Agent Run 단계 라벨과 문항 memo 안내를 생성 v5에 맞췄다. API 계약 변경은 없다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - 로컬 Node ICU에 한국어 로케일이 없어 시간 포맷 테스트 1건이 실패했다(변경 무관).
+- Validation:
+  - Frontend: eslint·prettier·`vue-tsc -b`·`vite build` 통과, vitest 466건 중 465 통과. 실패 1건 `github/presentation.test.ts`의 `오전 10:02` 기대는 이 컨테이너 Node ICU에 한국어 로케일 데이터가 없어 `AM 10:02`로 포맷되는 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - None
+
 ## [2026-08-10] Session Summary (경험 보관함 삭제 UI와 중단 작업 회수)
 
 - What was done:

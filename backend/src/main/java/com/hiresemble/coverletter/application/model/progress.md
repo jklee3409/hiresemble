@@ -4,6 +4,19 @@
 
 P7 API·generation·verification에 필요한 최소 immutable application record가 구현됐다.
 
+## [2026-09-24] Session Summary (작성 context model)
+
+- What was done:
+  - `WritingInsights`, `CompanyResearch`, `CompanyResearchSource` record를 추가했다. 이 값은 ephemeral AI context이며 provenance가 아니다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (근거 원본 발췌 model)
 
 - What was done:

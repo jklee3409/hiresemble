@@ -4,6 +4,19 @@
 
 P7 자기소개서 application use case와 generation·verification port가 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 v5 작성 context 조회)
+
+- What was done:
+  - `loadWritingInsights`가 run snapshot의 analysisId와 같은 최신 공고 분석일 때만 강점·보완점·요약을 반환하고, 회사 조사 port 결과를 함께 묶는다.
+- Key decisions:
+  - 분석이 바뀌었으면 강점·보완점을 비워 실행 중 context 불일치를 막는다.
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (근거 원본 masked chunk 조회 연결)
 
 - What was done:

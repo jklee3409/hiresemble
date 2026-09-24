@@ -105,6 +105,22 @@ public class ResearchStore {
                 .optional();
     }
 
+    public java.util.Optional<ResearchRunRow> latestSucceededForCoverLetter(
+            UUID userId, UUID coverLetterId) {
+        return jdbcClient.sql("""
+                        SELECT *, missing_coverage_topics::text AS missing_topics_text
+                        FROM research_runs
+                        WHERE user_id=:userId AND cover_letter_id=:coverLetterId
+                          AND status='SUCCEEDED'
+                        ORDER BY completed_at DESC NULLS LAST, created_at DESC, id DESC
+                        LIMIT 1
+                        """)
+                .param("userId", userId)
+                .param("coverLetterId", coverLetterId)
+                .query(this::run)
+                .optional();
+    }
+
     public java.util.Optional<ResearchRunRow> findByAgentRun(UUID userId, UUID agentRunId) {
         return jdbcClient.sql("""
                         SELECT *, missing_coverage_topics::text AS missing_topics_text

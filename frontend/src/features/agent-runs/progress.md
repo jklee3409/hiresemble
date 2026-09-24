@@ -4,6 +4,19 @@
 
 P3 Agent Run list/detail projection, drawer와 Document·Job·Job Analysis·Cover Letter·GitHub Source·Career Artifact snapshot-first SSE 복구 기반이 사용자용 `AI 작업` 용어로 구현됐다.
 
+## [2026-09-24] Session Summary (자기소개서 v5 단계 라벨)
+
+- What was done:
+  - `DRAFT_ANSWER`(자기소개서 초안 작성), `REVIEW_ANSWER`(채용 담당자 관점 검토·수정) 라벨을 추가하고 `WRITE_ANSWER`를 "답변 완성과 근거 연결"로 바꿨다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Frontend: eslint·prettier·`vue-tsc -b`·`vite build` 통과, vitest 466건 중 465 통과. 실패 1건 `github/presentation.test.ts`의 `오전 10:02` 기대는 이 컨테이너 Node ICU에 한국어 로케일 데이터가 없어 `AM 10:02`로 포맷되는 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - None
+
 ## [2026-08-09] Session Summary (safe error 문구 매핑 도입)
 
 - What was done:

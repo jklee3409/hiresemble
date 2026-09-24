@@ -429,6 +429,10 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
     static final class FakeP7ChatGateway implements ChatGateway {
 
         private static final String FAILURE_MARKER = "P7_FORCE_GENERATION_FAILURE";
+        private static final String V5_ANSWER =
+                "검증된 프로젝트에서 요구사항을 분석하고 맡은 API를 안정적으로 구현해 직무 역량을 입증했습니다.";
+        private static final String V5_TECHNICAL_ANSWER =
+                "기술 프로젝트에서 Spring Boot와 PostgreSQL의 트레이드오프를 검토해 안정적인 API를 구현했습니다.";
         private static final String WARNING_MARKER = "P7_FORCE_VERIFICATION_WARNING";
         private static final String PASSED_MARKER = "P7_FORCE_VERIFICATION_PASSED";
 
@@ -482,6 +486,12 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                         generatedAnswerFactCheckV2(request.input());
                 case "cover-generation-fact-check-output-v3" ->
                         generatedAnswerFactCheckV3(request.input());
+                case "cover-generation-draft-output-v1" ->
+                        draftAnswerV5(request.input());
+                case "cover-generation-review-output-v1" ->
+                        reviewAnswerV5(request.input());
+                case "cover-generation-grounding-output-v1" ->
+                        groundedAnswerV5(request.input());
                 case "cover-verification-facts-output-v1" ->
                         verificationFacts(request.input());
                 case "cover-verification-facts-output-v2" ->
@@ -1054,6 +1064,58 @@ class P7BrowserE2eTest extends PostgresIntegrationTest {
                             List.of(),
                             List.of(new TipTapNodeDto(
                                 "text", text, List.of(), List.of())))));
+        }
+
+        private Object draftAnswerV5(JsonNode input) {
+            UUID questionId = UUID.fromString(input.path("questionId").asText());
+            if (input.path("questionText").asText().contains(FAILURE_MARKER)
+                    && forcedFailureAttempts
+                                    .computeIfAbsent(questionId, ignored -> new AtomicInteger())
+                                    .incrementAndGet()
+                            <= 3) {
+                return "{\"schemaVersion\":\"cover-generation-draft-output-v1\"}";
+            }
+            boolean technical = "TECHNICAL_PROJECT".equals(
+                    input.path("plan").path("questionType").asText());
+            StringBuilder answer = new StringBuilder(technical ? V5_TECHNICAL_ANSWER : V5_ANSWER);
+            int target = input.path("targetCharacterCount").asInt(400);
+            String filler = " 검증된 근거 범위에서 제가 맡은 역할과 결과를 구체적으로 설명했습니다.";
+            while (answer.codePointCount(0, answer.length())
+                            + filler.codePointCount(0, filler.length())
+                    <= target) {
+                answer.append(filler);
+            }
+            return new com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.DraftAnswerOutputV5(
+                    "cover-generation-draft-output-v1", questionId, answer.toString());
+        }
+
+        private Object reviewAnswerV5(JsonNode input) {
+            return new com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.ReviewAnswerOutputV5(
+                    "cover-generation-review-output-v1",
+                    UUID.fromString(input.path("questionId").asText()),
+                    java.util.Arrays.stream(com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow
+                                    .ReviewCriterion.values())
+                            .map(value -> new com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow
+                                    .ReviewScoreV5(value, 4, "근거와 직무 연결이 분명합니다."))
+                            .toList(),
+                    List.of(),
+                    input.path("draftAnswerText").asText());
+        }
+
+        private Object groundedAnswerV5(JsonNode input) {
+            String answer = input.path("answerText").asText();
+            JsonNode firstEvidence = input.path("verifiedEvidence").get(0);
+            String sentence = answer.contains(V5_TECHNICAL_ANSWER) ? V5_TECHNICAL_ANSWER : V5_ANSWER;
+            List<EvidenceClaimDraftV3> claims = firstEvidence == null || !answer.contains(sentence)
+                    ? List.of()
+                    : List.of(new EvidenceClaimDraftV3(
+                            UUID.fromString(firstEvidence.path("id").asText()),
+                            sentence,
+                            ClaimType.ACHIEVEMENT));
+            return new com.hiresemble.ai.workflow.CoverLetterGenerationWorkflow.GroundedAnswerOutputV5(
+                    "cover-generation-grounding-output-v1",
+                    UUID.fromString(input.path("questionId").asText()),
+                    claims);
         }
 
         private ProviderTipTapDocumentOutput providerTipTap(String text) {

@@ -2161,7 +2161,13 @@ function coverLetterActionMessage(error: ApiClientError): string {
           </label>
           <label class="field">
             <span class="field__label">메모</span>
-            <textarea v-model="questionMemoDraft" class="control" rows="2" maxlength="2000" />
+            <textarea
+              v-model="questionMemoDraft"
+              class="control"
+              rows="2"
+              maxlength="2000"
+              placeholder="강조할 방향이나 수정 요청을 적어 두세요. 작성된 답변이 있으면 AI 초안이 이 요청대로 다듬어요."
+            />
           </label>
         </div>
         <div v-if="questionCount > 1" class="question-meta__order">

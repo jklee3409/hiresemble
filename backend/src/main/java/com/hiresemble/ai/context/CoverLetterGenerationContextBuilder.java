@@ -47,7 +47,7 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
     public ContextSnapshot build(ContextRequest request) {
         AgentRunSnapshot run = request.run();
         if (run.workflowType() != WorkflowType.COVER_LETTER_GENERATION
-                || (!CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                || (!CanonicalWorkflowDefinitions.isExactModelCoverLetterGeneration(
                                 run.workflowVersion())
                         && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                 run.workflowVersion())
@@ -247,7 +247,7 @@ public final class CoverLetterGenerationContextBuilder implements ContextBuilder
     }
 
     private boolean isExactModel(AgentRunSnapshot run) {
-        return CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+        return CanonicalWorkflowDefinitions.isExactModelCoverLetterGeneration(
                 run.workflowVersion());
     }
 

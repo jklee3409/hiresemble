@@ -26,6 +26,8 @@ public final class CanonicalWorkflowDefinitions {
             "job-posting-extraction-v1";
     public static final String JOB_ANALYSIS_VERSION = "job-analysis-v1";
     public static final String COVER_LETTER_GENERATION_VERSION =
+            "cover-letter-generation-v5";
+    public static final String COVER_LETTER_GENERATION_V4_VERSION =
             "cover-letter-generation-v4";
     public static final String COVER_LETTER_GENERATION_V3_VERSION =
             "cover-letter-generation-v3";
@@ -66,6 +68,7 @@ public final class CanonicalWorkflowDefinitions {
                 jobPostingExtractionLegacy(),
                 jobAnalysis(),
                 coverLetterGeneration(),
+                coverLetterGenerationV4(),
                 coverLetterGenerationV3(),
                 coverLetterGenerationV2(),
                 coverLetterGenerationLegacy(),
@@ -527,10 +530,51 @@ public final class CanonicalWorkflowDefinitions {
                                 weights.get(7))));
     }
 
+    /** Exact-model runs (v4 durable replay and active v5) use the selected model for every chat step. */
+    public static boolean isExactModelCoverLetterGeneration(String workflowVersion) {
+        return COVER_LETTER_GENERATION_VERSION.equals(workflowVersion)
+                || COVER_LETTER_GENERATION_V4_VERSION.equals(workflowVersion);
+    }
+
+    /**
+     * Active v5: planning also carries the per-question analysis, the writer drafts free prose,
+     * an HR-screener review revises it once, and WRITE_ANSWER only grounds claims and formats.
+     */
     private static WorkflowDefinition coverLetterGeneration() {
-        return coverLetterGeneration(
+        String input = "cover-letter-input-v5";
+        List<BigDecimal> weights = WorkflowRegistry.distributedWeights(10);
+        return new WorkflowDefinition(
+                WorkflowType.COVER_LETTER_GENERATION,
                 COVER_LETTER_GENERATION_VERSION,
                 true,
+                allQuality(),
+                List.of(
+                        coverLetterStep("BUILD_GENERATION_CONTEXT", "cover-generation-build-output-v1",
+                                input, Set.of(), 0, 1, Set.of(), ModelTier.LOW_COST, weights.get(0)),
+                        coverLetterStep("PLAN_QUESTIONS", "cover-generation-plan-output-v3",
+                                input, Set.of(), 1, 1, RETRYABLE, ModelTier.BALANCED, weights.get(1)),
+                        coverLetterStep("ANALYZE_QUESTION", "cover-generation-question-analysis-output-v3",
+                                input, Set.of(), 0, 20, Set.of(), ModelTier.LOW_COST, weights.get(2)),
+                        coverLetterStep("RETRIEVE_EVIDENCE", "cover-generation-retrieval-output-v1",
+                                input, Set.of("EMBEDDING"), 1, 20, RETRYABLE, ModelTier.LOW_COST, weights.get(3)),
+                        coverLetterStep("ALLOCATE_EXPERIENCES", "cover-generation-allocation-output-v2",
+                                input, Set.of(), 1, 1, RETRYABLE, ModelTier.LOW_COST, weights.get(4)),
+                        coverLetterStep("DRAFT_ANSWER", "cover-generation-draft-output-v1",
+                                input, Set.of(), 1, 20, RETRYABLE, ModelTier.BALANCED, weights.get(5)),
+                        coverLetterStep("REVIEW_ANSWER", "cover-generation-review-output-v1",
+                                input, Set.of(), 1, 20, RETRYABLE, ModelTier.BALANCED, weights.get(6)),
+                        coverLetterStep("WRITE_ANSWER", "cover-generation-grounding-output-v1",
+                                input, Set.of(), 1, 20, RETRYABLE, ModelTier.BALANCED, weights.get(7)),
+                        coverLetterStep("FACT_CHECK_ANSWER", "cover-generation-fact-check-output-v3",
+                                input, Set.of(), 1, 20, RETRYABLE, ModelTier.BALANCED, weights.get(8)),
+                        coverLetterStep("APPLY_ANSWER_VERSION", "cover-generation-apply-output-v1",
+                                input, Set.of(), 0, 20, Set.of(), ModelTier.LOW_COST, weights.get(9))));
+    }
+
+    private static WorkflowDefinition coverLetterGenerationV4() {
+        return coverLetterGeneration(
+                COVER_LETTER_GENERATION_V4_VERSION,
+                false,
                 "cover-letter-input-v4",
                 3);
     }

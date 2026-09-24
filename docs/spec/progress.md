@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/128·private 비활성 90/121·Career Artifact 비활성 81/110이다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5 계약)
+
+- What was done:
+  - CL-003 워크플로와 생성 규칙, 기술 명세 workflow 표·모델 선택 절에 v5 단계, 작성 context(공고 분석·회사 조사), 권장 framework, memo 수정 지시, 검토 점수 기록을 반영했다.
+- Key decisions:
+  - 신규 API·DB 변경 없이 기존 memo와 조회 경계로 구현한다.
+- Issues encountered:
+  - None
+- Validation:
+  - Markdown 변경만 수행했다. 구현 검증은 backend 기록을 따른다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (자기소개서 v4 writer 원문 발췌 계약)
 
 - What was done:

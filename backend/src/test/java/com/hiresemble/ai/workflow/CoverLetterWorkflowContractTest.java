@@ -8,6 +8,7 @@ import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.prompt.CoverLetterGenerationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterGenerationV2PromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterGenerationV3PromptDefinitions;
+import com.hiresemble.ai.prompt.CoverLetterGenerationV5PromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationPromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationV2PromptDefinitions;
 import com.hiresemble.ai.prompt.CoverLetterVerificationV3PromptDefinitions;
@@ -25,6 +26,8 @@ class CoverLetterWorkflowContractTest {
             CoverLetterGenerationWorkflow.ANALYZE_QUESTION,
             CoverLetterGenerationWorkflow.RETRIEVE_EVIDENCE,
             CoverLetterGenerationWorkflow.ALLOCATE_EXPERIENCES,
+            CoverLetterGenerationWorkflow.DRAFT_ANSWER,
+            CoverLetterGenerationWorkflow.REVIEW_ANSWER,
             CoverLetterGenerationWorkflow.WRITE_ANSWER,
             CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER,
             CoverLetterGenerationWorkflow.APPLY_ANSWER_VERSION);
@@ -38,7 +41,7 @@ class CoverLetterWorkflowContractTest {
             CoverLetterVerificationWorkflow.PERSIST_VERIFICATION);
 
     @Test
-    void generationUsesExactEightStepsAndBoundedQuestionFanOut() {
+    void generationUsesExactTenStepsAndBoundedQuestionFanOut() {
         var definition = definition(WorkflowType.COVER_LETTER_GENERATION);
 
         assertThat(definition.version())
@@ -58,6 +61,8 @@ class CoverLetterWorkflowContractTest {
                 .containsExactly(
                         CoverLetterGenerationWorkflow.ANALYZE_QUESTION,
                         CoverLetterGenerationWorkflow.RETRIEVE_EVIDENCE,
+                        CoverLetterGenerationWorkflow.DRAFT_ANSWER,
+                        CoverLetterGenerationWorkflow.REVIEW_ANSWER,
                         CoverLetterGenerationWorkflow.WRITE_ANSWER,
                         CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER,
                         CoverLetterGenerationWorkflow.APPLY_ANSWER_VERSION);
@@ -65,8 +70,15 @@ class CoverLetterWorkflowContractTest {
                 .filteredOn(step -> step.preferredTier() == ModelTier.BALANCED)
                 .extracting(WorkflowRegistry.StepDefinition::stepKey)
                 .containsExactly(
+                        CoverLetterGenerationWorkflow.PLAN_QUESTIONS,
+                        CoverLetterGenerationWorkflow.DRAFT_ANSWER,
+                        CoverLetterGenerationWorkflow.REVIEW_ANSWER,
                         CoverLetterGenerationWorkflow.WRITE_ANSWER,
                         CoverLetterGenerationWorkflow.FACT_CHECK_ANSWER);
+        assertThat(definition.steps())
+                .filteredOn(step -> step.stepKey().equals(CoverLetterGenerationWorkflow.ANALYZE_QUESTION))
+                .singleElement()
+                .satisfies(step -> assertThat(step.maxModelCalls()).isZero());
         assertThat(definition.steps().stream()
                         .filter(step -> step.stepKey()
                                 .equals(CoverLetterGenerationWorkflow
@@ -78,7 +90,7 @@ class CoverLetterWorkflowContractTest {
         assertThat(definition.steps().stream()
                         .mapToInt(step -> step.maxModelCalls() * step.maxFanOut())
                         .sum())
-                .isEqualTo(82);
+                .isEqualTo(102);
     }
 
     @Test
@@ -109,6 +121,7 @@ class CoverLetterWorkflowContractTest {
                 .extracting(WorkflowRegistry.WorkflowDefinition::version)
                 .containsExactly(
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION,
                         CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_LEGACY_VERSION);
@@ -125,6 +138,7 @@ class CoverLetterWorkflowContractTest {
                         CoverLetterGenerationPromptDefinitions.all(),
                         CoverLetterGenerationV2PromptDefinitions.all(),
                         CoverLetterGenerationV3PromptDefinitions.all(),
+                        CoverLetterGenerationV5PromptDefinitions.all(),
                         CoverLetterVerificationPromptDefinitions.all(),
                         CoverLetterVerificationV2PromptDefinitions.all(),
                         CoverLetterVerificationV3PromptDefinitions.all())
@@ -150,6 +164,7 @@ class CoverLetterWorkflowContractTest {
                         CoverLetterGenerationPromptDefinitions.all(),
                         CoverLetterGenerationV2PromptDefinitions.all(),
                         CoverLetterGenerationV3PromptDefinitions.all(),
+                        CoverLetterGenerationV5PromptDefinitions.all(),
                         CoverLetterVerificationPromptDefinitions.all(),
                         CoverLetterVerificationV2PromptDefinitions.all(),
                         CoverLetterVerificationV3PromptDefinitions.all())
@@ -175,13 +190,19 @@ class CoverLetterWorkflowContractTest {
         assertThat(prompts.require(
                                 WorkflowType.COVER_LETTER_GENERATION,
                                 CanonicalWorkflowDefinitions
-                                        .COVER_LETTER_GENERATION_VERSION,
+                                        .COVER_LETTER_GENERATION_V4_VERSION,
                                 CoverLetterGenerationWorkflow.WRITE_ANSWER)
                         .instructions())
                 .contains(
                         "current VERIFIED",
                         "currentAnswer",
                         "exactAnswerExcerpt");
+        assertThat(prompts.require(
+                                WorkflowType.COVER_LETTER_GENERATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                                CoverLetterGenerationWorkflow.WRITE_ANSWER)
+                        .instructions())
+                .contains("exactAnswerExcerpt", "Do not rewrite", "verifiedEvidence");
         assertThat(prompts.require(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions
@@ -238,7 +259,7 @@ class CoverLetterWorkflowContractTest {
         java.util.function.Function<String, PromptRegistry.PromptDefinition> v4 = step ->
                 new PromptRegistry(CoverLetterGenerationV3PromptDefinitions.all()).require(
                         WorkflowType.COVER_LETTER_GENERATION,
-                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                        CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION,
                         step);
 
         var writer = v4.apply(CoverLetterGenerationWorkflow.WRITE_ANSWER);
@@ -267,6 +288,40 @@ class CoverLetterWorkflowContractTest {
                 .isEqualTo(CoverLetterGenerationWorkflow.FactCheckAnswerInputV4.class);
         assertThat(factCheck.instructions())
                 .contains("evidenceSourceExcerpts", "only by verifiedEvidence");
+    }
+
+    @Test
+    void v5PromptsSeparateDraftReviewAndGrounding() {
+        PromptRegistry v5 = new PromptRegistry(CoverLetterGenerationV5PromptDefinitions.all());
+        java.util.function.Function<String, PromptRegistry.PromptDefinition> prompt = step -> v5.require(
+                WorkflowType.COVER_LETTER_GENERATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
+                step);
+
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.PLAN_QUESTIONS).instructions())
+                .contains("also the question analysis", "recommendation, not a template",
+                        "about 90 percent of", "writingInsights")
+                .doesNotContain("weights must total exactly 100");
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.DRAFT_ANSWER).instructions())
+                .contains("plain Korean prose", "hiring manager or HR screener",
+                        "targetCharacterCount is authoritative", "evidenceSourceExcerpts",
+                        "never from a source excerpt alone", "company research",
+                        "base draft", "Do not attach claims");
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.REVIEW_ANSWER).instructions())
+                .contains("QUESTION_FIT", "SPECIFICITY", "PERSONAL_CONTRIBUTION",
+                        "ROLE_COMPANY_FIT", "CREDIBILITY", "READABILITY", "revisedAnswerText",
+                        "never add new facts");
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.WRITE_ANSWER))
+                .satisfies(value -> {
+                    assertThat(value.outputType())
+                            .isEqualTo(CoverLetterGenerationWorkflow.GroundedAnswerOutputV5.class);
+                    assertThat(value.instructions()).contains("Do not rewrite", "verbatim");
+                });
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.ANALYZE_QUESTION).maxModelCalls())
+                .isZero();
+        assertThat(v5.definitions())
+                .extracting(PromptRegistry.PromptDefinition::promptVersion)
+                .allMatch(value -> value.startsWith("cover-letter-v5-"));
     }
 
     @Test

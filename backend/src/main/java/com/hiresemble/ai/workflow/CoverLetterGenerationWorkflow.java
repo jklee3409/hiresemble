@@ -28,6 +28,7 @@ import com.hiresemble.common.exception.BusinessException;
 import com.hiresemble.common.exception.ErrorCode;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAnswer;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.CompanyResearch;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceUse;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationQuestion;
@@ -37,6 +38,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.Verificati
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerificationResult;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerifiedClaim;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerifiedEvidence;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.WritingInsights;
 import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
 import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.coverletter.domain.CoverLetterEvidenceUsageType;
@@ -53,6 +55,7 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -118,6 +121,15 @@ public final class CoverLetterGenerationWorkflow {
     private static final String INPUT_SCHEMA_V2 = "cover-letter-input-v2";
     private static final String INPUT_SCHEMA_V3 = "cover-letter-input-v3";
     private static final String INPUT_SCHEMA_V4 = "cover-letter-input-v4";
+    private static final String INPUT_SCHEMA_V5 = "cover-letter-input-v5";
+    public static final String DRAFT_ANSWER = "DRAFT_ANSWER";
+    public static final String REVIEW_ANSWER = "REVIEW_ANSWER";
+    private static final String DRAFT_SCHEMA_V5 = "cover-generation-draft-output-v1";
+    private static final String REVIEW_SCHEMA_V5 = "cover-generation-review-output-v1";
+    private static final String GROUNDING_SCHEMA_V5 = "cover-generation-grounding-output-v1";
+    private static final Pattern MARKDOWN_SYNTAX =
+            Pattern.compile("(?m)(```|^\\s{0,3}#{1,6}\\s|\\*\\*|^\\s*[-*]\\s)");
+    private static final Pattern HEADING_LINE = Pattern.compile("\\[[^\\[\\]\\n]{1,80}\\]");
     private static final int MAX_EVIDENCE_PER_QUESTION = 12;
     private static final int MAX_PLANNING_EVIDENCE = 20;
     private static final int MAX_CHUNK_REFS = 8;
@@ -220,8 +232,31 @@ public final class CoverLetterGenerationWorkflow {
                         step(APPLY_ANSWER_VERSION, new V3ApplyAnswerExecutor())));
     }
 
-    /** Active v4 contribution with exact-model routing and memo-aware generation inputs. */
+    /** Durable v4 replay contribution with exact-model routing and memo-aware generation inputs. */
     public ExecutableWorkflowContribution v4Contribution() {
+        return new ExecutableWorkflowContribution(
+                WorkflowType.COVER_LETTER_GENERATION,
+                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION,
+                TerminalPartialPolicy.fail(
+                        "COVER_LETTER_GENERATION_PARTIAL_FAILURE",
+                        "일부 자기소개서 문항을 생성하지 못했습니다.",
+                        TerminalPartialPolicy.RetryPolicy.INHERIT_FAILURES),
+                List.of(
+                        step(BUILD_GENERATION_CONTEXT, new V3BuildContextExecutor()),
+                        step(PLAN_QUESTIONS, new V3PlanQuestionsExecutor()),
+                        step(ANALYZE_QUESTION, new V3AnalyzeQuestionExecutor()),
+                        step(RETRIEVE_EVIDENCE, new V3RetrieveEvidenceExecutor()),
+                        step(ALLOCATE_EXPERIENCES, new V3AllocateExperiencesExecutor()),
+                        step(WRITE_ANSWER, new V3WriteAnswerExecutor()),
+                        step(FACT_CHECK_ANSWER, new V3FactCheckAnswerExecutor()),
+                        step(APPLY_ANSWER_VERSION, new V3ApplyAnswerExecutor())));
+    }
+
+    /**
+     * Active v5: model planning carries the analysis, the writer drafts free prose, a hiring
+     * screener review revises it once, and WRITE_ANSWER only links claims and formats TipTap.
+     */
+    public ExecutableWorkflowContribution v5Contribution() {
         return new ExecutableWorkflowContribution(
                 WorkflowType.COVER_LETTER_GENERATION,
                 CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION,
@@ -235,7 +270,9 @@ public final class CoverLetterGenerationWorkflow {
                         step(ANALYZE_QUESTION, new V3AnalyzeQuestionExecutor()),
                         step(RETRIEVE_EVIDENCE, new V3RetrieveEvidenceExecutor()),
                         step(ALLOCATE_EXPERIENCES, new V3AllocateExperiencesExecutor()),
-                        step(WRITE_ANSWER, new V3WriteAnswerExecutor()),
+                        step(DRAFT_ANSWER, new V5DraftAnswerExecutor()),
+                        step(REVIEW_ANSWER, new V5ReviewAnswerExecutor()),
+                        step(WRITE_ANSWER, new V5GroundAnswerExecutor()),
                         step(FACT_CHECK_ANSWER, new V3FactCheckAnswerExecutor()),
                         step(APPLY_ANSWER_VERSION, new V3ApplyAnswerExecutor())));
     }
@@ -296,7 +333,7 @@ public final class CoverLetterGenerationWorkflow {
             if (context == null
                     || context.run().workflowType()
                             != WorkflowType.COVER_LETTER_GENERATION
-                    || (!CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                    || (!CanonicalWorkflowDefinitions.isExactModelCoverLetterGeneration(
                                     context.run().workflowVersion())
                             && !CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V2_VERSION.equals(
                                     context.run().workflowVersion())
@@ -363,7 +400,8 @@ public final class CoverLetterGenerationWorkflow {
                         context.run().id(),
                         requestedQuestionIds,
                         reused,
-                        embeddingPolicy);
+                        embeddingPolicy,
+                        context.run().workflowVersion());
             } catch (AiExecutionException exception) {
                 throw exception;
             } catch (BusinessException exception) {
@@ -770,7 +808,8 @@ public final class CoverLetterGenerationWorkflow {
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             PlanningInvocationInput input = planningInvocationInput(invocation);
-            if (input.questions().size() == 1) {
+            // v5 plans every question with the model; the plan also carries the analysis.
+            if (input.questions().size() == 1 && !isV5(invocation.executionContext().run())) {
                 QuestionPlanningInput question = input.questions().getFirst();
                 int target = isExactModel(invocation.executionContext().run())
                         ? CoverLetterWorkflowV3Policy.targetCharacterCount(question.maxLength(), 800)
@@ -834,7 +873,8 @@ public final class CoverLetterGenerationWorkflow {
                         "Set schemaVersion to cover-generation-plan-output-v3 and return exactly one nonempty plan for every supplied questionId in supplied order.");
             }
             ContextAvailabilityInput availability = contextAvailability(state(context));
-            output.plans().forEach(plan -> validateQuestionPlanV3(plan, availability));
+            boolean recommendedFramework = isV5(context.run());
+            output.plans().forEach(plan -> validateQuestionPlanV3(plan, availability, recommendedFramework));
         }
 
         @Override
@@ -914,7 +954,7 @@ public final class CoverLetterGenerationWorkflow {
         @Override
         public AiGatewayResponse invoke(GatewayInvocation invocation) {
             GenerationState state = state(invocation.executionContext());
-            if (state.snapshot().questions().size() == 1) {
+            if (state.snapshot().questions().size() == 1 || isV5(state)) {
                 AnalyzeQuestionInputV3 input = read(
                         invocation.input().gatewayPayload(), AnalyzeQuestionInputV3.class);
                 QuestionPlanV3 plan = input.plan();
@@ -973,8 +1013,12 @@ public final class CoverLetterGenerationWorkflow {
             requireTexts(output.requiredElements(), 20, 1_000);
             requireTexts(output.avoidContent(), 20, 1_000);
             requireTexts(output.requiredEvidenceTraits(), 20, 1_000);
-            CoverLetterWorkflowV3Policy.validateSections(
-                    output.narrativeFramework(), output.narrativeSections());
+            if (isV5(context.run())) {
+                CoverLetterWorkflowV3Policy.validateRecommendedSections(output.narrativeSections());
+            } else {
+                CoverLetterWorkflowV3Policy.validateSections(
+                        output.narrativeFramework(), output.narrativeSections());
+            }
             validateOptionalConnections(
                     output.roleConnection(), output.companyConnection(), contextAvailability(state(context)));
         }
@@ -1923,6 +1967,517 @@ public final class CoverLetterGenerationWorkflow {
                         "COVER_GENERATION_ANSWER_INVALID",
                         "자기소개서 답변의 구조와 승인 근거를 확인하지 못했습니다.");
             }
+        }
+    }
+
+    /** Shared v5 writing context for the draft and review steps of one question. */
+    private record V5WritingContext(
+            QuestionPlanV3 plan,
+            ExperienceAllocationV2 allocation,
+            DraftAnswerInputV5 input) {}
+
+    private V5WritingContext v5WritingContext(
+            StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+        PlanQuestionsOutputV3 plans = requiredEphemeral(context, PLAN_QUESTIONS, PlanQuestionsOutputV3.class);
+        QuestionPlanV3 plan = plans.plans().stream()
+                .filter(value -> value.questionId().equals(question.questionId()))
+                .findFirst()
+                .orElseThrow(this::configurationFailure);
+        QuestionAnalysisOutputV3 analysis = requiredScopedEphemeral(
+                context, ANALYZE_QUESTION, question.questionId(), QuestionAnalysisOutputV3.class);
+        ExperienceAllocationOutputV2 allocations = requiredEphemeral(
+                context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class);
+        ExperienceAllocationV2 allocation = allocations.allocations().stream()
+                .filter(value -> value.questionId().equals(question.questionId()))
+                .findFirst()
+                .orElseThrow(this::configurationFailure);
+        List<OtherQuestionStrategyInput> otherQuestions = plans.plans().stream()
+                .filter(value -> !value.questionId().equals(question.questionId()))
+                .map(value -> {
+                    ExperienceAllocationV2 sibling = allocations.allocations().stream()
+                            .filter(item -> item.questionId().equals(value.questionId()))
+                            .findFirst()
+                            .orElse(null);
+                    return new OtherQuestionStrategyInput(
+                            value.questionId(),
+                            value.coreMessage(),
+                            sibling == null ? List.of() : sibling.evidenceIds(),
+                            sibling == null ? null : sibling.distinctEmphasis());
+                })
+                .toList();
+        BoundedText current = CoverLetterWorkflowV3Policy.bound(
+                question.currentPlainText(),
+                question.maxLength() == null ? MAX_TEXT : Math.min(MAX_TEXT, question.maxLength()));
+        return new V5WritingContext(
+                plan,
+                allocation,
+                new DraftAnswerInputV5(
+                        INPUT_SCHEMA_V5,
+                        CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                        contextAvailability(state),
+                        question.questionId(),
+                        bounded(question.questionText(), 2_000),
+                        bounded(question.memo(), 2_000),
+                        question.maxLength(),
+                        CoverLetterWorkflowV3Policy.targetCharacterCount(
+                                question.maxLength(), plan.targetCharacterCount()),
+                        CoverLetterWorkflowV3Policy.minimumCharacterCount(question.maxLength()),
+                        plan,
+                        analysis,
+                        allocation.evidenceIds().stream()
+                                .map(id -> approvedEvidenceV4Writer(state, id))
+                                .toList(),
+                        sourceExcerpts(state, allocation.evidenceIds()),
+                        jobWritingContext(state),
+                        writingInsights(state),
+                        question.currentAnswerVersionId(),
+                        current,
+                        otherQuestions,
+                        plan.headingPolicy()));
+    }
+
+    private ObjectNode v5Refs(ObjectNode refs, GenerationQuestion question, DraftAnswerInputV5 input) {
+        refs.put("questionId", question.questionId().toString());
+        refs.put("sourceExcerptCount", input.evidenceSourceExcerpts().size());
+        refs.put("writingInsightsHash", stableHash(input.writingInsights()));
+        refs.put("currentAnswerFullTextHash", input.currentAnswer().fullTextHash());
+        return refs;
+    }
+
+    /** Plain text as persisted: paragraphs split on blank lines, single newlines kept as breaks. */
+    private ProviderTipTapDocumentOutput answerDocument(String text) {
+        String normalized = text == null
+                ? ""
+                : text.replace("\r\n", "\n").replace('\r', '\n').strip();
+        List<ProviderTipTapNodeOutput> paragraphs = new ArrayList<>();
+        for (String block : normalized.split("\\n\\s*\\n")) {
+            String paragraph = block.strip();
+            if (paragraph.isEmpty()) continue;
+            List<ProviderTipTapNodeOutput> inline = new ArrayList<>();
+            String[] lines = paragraph.split("\\n");
+            boolean heading = paragraphs.isEmpty()
+                    && lines.length == 1
+                    && HEADING_LINE.matcher(lines[0].strip()).matches();
+            for (int index = 0; index < lines.length; index++) {
+                String line = lines[index].strip();
+                if (line.isEmpty()) continue;
+                if (!inline.isEmpty()) {
+                    inline.add(new ProviderTipTapNodeOutput("hardBreak", null, List.of(), List.of()));
+                }
+                inline.add(new ProviderTipTapNodeOutput(
+                        "text",
+                        line,
+                        heading ? List.of(new ProviderTipTapMarkOutput("bold")) : List.of(),
+                        List.of()));
+            }
+            paragraphs.add(new ProviderTipTapNodeOutput("paragraph", null, List.of(), inline));
+        }
+        return new ProviderTipTapDocumentOutput("doc", paragraphs);
+    }
+
+    private String canonicalAnswerText(String text) {
+        return plainText(mapTipTap(answerDocument(text)));
+    }
+
+    private void validateV5AnswerText(String text) {
+        if (text == null || text.isBlank()) {
+            throw repairable(
+                    "COVER_GENERATION_V5_ANSWER_BLANK",
+                    "Return a nonblank Korean answer as plain text.");
+        }
+        if (MARKDOWN_SYNTAX.matcher(text).find()) {
+            throw repairable(
+                    "COVER_GENERATION_V5_ANSWER_MARKDOWN",
+                    "Return plain prose only. Do not use Markdown headings, bold markers, code fences, or bullet lists; separate paragraphs with one blank line.");
+        }
+        String canonical = canonicalAnswerText(text);
+        validateTipTap(mapTipTap(answerDocument(text)));
+        if (!KoreanUserFacingTextPolicy.containsKorean(canonical)
+                || canonical.codePointCount(0, canonical.length()) > MAX_TEXT) {
+            throw repairable(
+                    "COVER_GENERATION_V5_ANSWER_INVALID",
+                    "Return a natural Korean answer whose plain-text code-point count is at most 20000.");
+        }
+    }
+
+    private void validateV5AnswerLength(String text, GenerationQuestion question) {
+        String canonical = canonicalAnswerText(text);
+        int count = canonical.codePointCount(0, canonical.length());
+        if (question.maxLength() != null && count > question.maxLength()) {
+            throw repairable(
+                    ValidationPhase.WORKFLOW_CONTEXT,
+                    "COVER_GENERATION_ANSWER_LENGTH_INVALID",
+                    "Shorten the answer so its final plain-text code-point count is no greater than the supplied maxLength. Keep the direct answer and the most concrete verified details.");
+        }
+        Integer minimum = CoverLetterWorkflowV3Policy.minimumCharacterCount(question.maxLength());
+        if (minimum != null && count < minimum) {
+            throw repairable(
+                    ValidationPhase.WORKFLOW_CONTEXT,
+                    "COVER_GENERATION_ANSWER_TOO_SHORT",
+                    "Expand the answer so its final plain-text code-point count is at least "
+                            + minimum
+                            + ", close to the supplied targetCharacterCount and never above maxLength. Deepen the verified evidence and source excerpts with the concrete situation, the applicant's own decisions and actions, and the verified result. Do not pad, repeat, or add unsupported facts.");
+        }
+    }
+
+    private WritingInsightsInput writingInsights(GenerationState state) {
+        var job = state.snapshot().job();
+        WritingInsights insights = queryPort.loadWritingInsights(
+                state.snapshot().userId(),
+                job.jobId(),
+                job.analysisId(),
+                state.snapshot().coverLetterId());
+        CompanyResearch research = insights.companyResearch();
+        return new WritingInsightsInput(
+                boundedTexts(insights.strengths(), 10, 300),
+                boundedTexts(insights.gaps(), 10, 300),
+                blankToNull(bounded(insights.analysisSummary(), 1_500)),
+                research == null ? null : blankToNull(bounded(research.summary(), 2_000)),
+                research == null
+                        ? List.of()
+                        : research.sources().stream()
+                                .limit(8)
+                                .map(source -> new CompanyResearchSourceInput(
+                                        source.sourceType(),
+                                        blankToNull(bounded(source.title(), 300)),
+                                        blankToNull(bounded(source.snippet(), 600)),
+                                        bounded(source.reliabilityNotice(), 300)))
+                                .toList());
+    }
+
+    private List<String> boundedTexts(List<String> values, int maximumItems, int maximumLength) {
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .limit(maximumItems)
+                .map(value -> bounded(value.strip(), maximumLength))
+                .toList();
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    private final class V5DraftAnswerExecutor extends QuestionExecutor<DraftAnswerOutputV5> {
+        private V5DraftAnswerExecutor() {
+            super(DRAFT_ANSWER, DRAFT_SCHEMA_V5, DraftAnswerOutputV5.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            return context.ephemeral(ALLOCATE_EXPERIENCES) instanceof ExperienceAllocationOutputV2 allocation
+                    && context.ephemeral(ANALYZE_QUESTION, question.questionId().toString()) != null
+                    && allocation.allocations().stream()
+                            .anyMatch(item -> item.questionId().equals(question.questionId()));
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            V5WritingContext writing = v5WritingContext(context, state, question);
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    v5Refs(baseRefsV3(state), question, writing.input()),
+                    stableHash(writing.input()),
+                    tree(writing.input()));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(DraftAnswerOutputV5 output, ObjectMapper ignored) {
+            String text = canonicalAnswerText(output.answerText());
+            return objectMapper.createObjectNode()
+                    .put("schemaVersion", DRAFT_SCHEMA_V5)
+                    .put("questionId", output.questionId().toString())
+                    .put("answerHash", sha256(text))
+                    .put("characterCount", text.codePointCount(0, text.length()));
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(DraftAnswerOutputV5 output, StepExecutionContext context) {
+            if (!DRAFT_SCHEMA_V5.equals(output.schemaVersion()) || output.questionId() == null) {
+                throw repairable(
+                        "COVER_GENERATION_DRAFT_INVALID",
+                        "Set schemaVersion to cover-generation-draft-output-v1 and copy the supplied questionId.");
+            }
+            validateV5AnswerText(output.answerText());
+        }
+
+        @Override
+        protected void validateWorkflowOutput(DraftAnswerOutputV5 output, StepExecutionContext context) {
+            if (!output.questionId().toString().equals(context.scopeKey())) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_SCOPE_INVALID",
+                        "Copy the supplied questionId exactly and answer only that question.");
+            }
+            validateV5AnswerLength(output.answerText(), question(state(context), output.questionId()));
+        }
+    }
+
+    private final class V5ReviewAnswerExecutor extends QuestionExecutor<ReviewAnswerOutputV5> {
+        private V5ReviewAnswerExecutor() {
+            super(REVIEW_ANSWER, REVIEW_SCHEMA_V5, ReviewAnswerOutputV5.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            return context.ephemeral(DRAFT_ANSWER, question.questionId().toString()) != null;
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            DraftAnswerOutputV5 draft = requiredScopedEphemeral(
+                    context, DRAFT_ANSWER, question.questionId(), DraftAnswerOutputV5.class);
+            V5WritingContext writing = v5WritingContext(context, state, question);
+            String draftText = canonicalAnswerText(draft.answerText());
+            ObjectNode refs = v5Refs(baseRefsV3(state), question, writing.input());
+            refs.put("draftHash", sha256(draftText));
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    stableHash(writing.input()) + "|" + sha256(draftText),
+                    tree(new ReviewAnswerInputV5(
+                            INPUT_SCHEMA_V5,
+                            question.questionId(),
+                            writing.input(),
+                            draftText,
+                            draftText.codePointCount(0, draftText.length()))));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public JsonNode minimalOutput(ReviewAnswerOutputV5 output, ObjectMapper ignored) {
+            String text = canonicalAnswerText(output.revisedAnswerText());
+            ObjectNode result = objectMapper.createObjectNode()
+                    .put("schemaVersion", REVIEW_SCHEMA_V5)
+                    .put("questionId", output.questionId().toString())
+                    .put("answerHash", sha256(text))
+                    .put("characterCount", text.codePointCount(0, text.length()))
+                    .put("issueCount", output.issues().size());
+            ObjectNode scores = result.putObject("scores");
+            output.scores().forEach(score -> scores.put(score.criterion().name(), score.score()));
+            return result;
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(ReviewAnswerOutputV5 output, StepExecutionContext context) {
+            if (!REVIEW_SCHEMA_V5.equals(output.schemaVersion())
+                    || output.questionId() == null
+                    || output.scores() == null
+                    || output.issues() == null
+                    || output.issues().size() > 10) {
+                throw repairable(
+                        "COVER_GENERATION_REVIEW_INVALID",
+                        "Set schemaVersion to cover-generation-review-output-v1, copy the questionId, and return at most 10 issues.");
+            }
+            Set<ReviewCriterion> criteria = EnumSet.noneOf(ReviewCriterion.class);
+            for (ReviewScoreV5 score : output.scores()) {
+                if (score == null
+                        || score.criterion() == null
+                        || !criteria.add(score.criterion())
+                        || score.score() < 1
+                        || score.score() > 5
+                        || score.comment() == null
+                        || score.comment().isBlank()
+                        || score.comment().length() > 500
+                        || !KoreanUserFacingTextPolicy.containsKorean(score.comment())) {
+                    throw repairable(
+                            "COVER_GENERATION_REVIEW_SCORES_INVALID",
+                            "Return exactly one score from 1 to 5 for every review criterion, each with a nonblank Korean comment of at most 500 characters.");
+                }
+            }
+            if (criteria.size() != ReviewCriterion.values().length) {
+                throw repairable(
+                        "COVER_GENERATION_REVIEW_SCORES_INVALID",
+                        "Return exactly one score from 1 to 5 for every review criterion, each with a nonblank Korean comment of at most 500 characters.");
+            }
+            try {
+                requireTexts(output.issues(), 10, 500);
+            } catch (IllegalArgumentException exception) {
+                throw repairable(
+                        "COVER_GENERATION_REVIEW_ISSUES_INVALID",
+                        "Return at most 10 nonblank Korean issues, each at most 500 characters.");
+            }
+            validateV5AnswerText(output.revisedAnswerText());
+        }
+
+        @Override
+        protected void validateWorkflowOutput(ReviewAnswerOutputV5 output, StepExecutionContext context) {
+            if (!output.questionId().toString().equals(context.scopeKey())) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_SCOPE_INVALID",
+                        "Copy the supplied questionId exactly and review only that answer.");
+            }
+            validateV5AnswerLength(
+                    output.revisedAnswerText(), question(state(context), output.questionId()));
+        }
+    }
+
+    /**
+     * v5 WRITE_ANSWER links claims to the reviewed text only. It hands the same
+     * {@link WrittenAnswerOutputV3} downstream so fact check and apply stay unchanged.
+     */
+    private final class V5GroundAnswerExecutor extends QuestionExecutor<GroundedAnswerOutputV5> {
+        private V5GroundAnswerExecutor() {
+            super(WRITE_ANSWER, GROUNDING_SCHEMA_V5, GroundedAnswerOutputV5.class);
+        }
+
+        @Override
+        protected boolean eligibleQuestion(StepExecutionContext context, GenerationQuestion question) {
+            return context.ephemeral(REVIEW_ANSWER, question.questionId().toString()) != null
+                    && context.ephemeral(ALLOCATE_EXPERIENCES) instanceof ExperienceAllocationOutputV2;
+        }
+
+        @Override
+        protected StepInput prepareQuestion(
+                StepExecutionContext context, GenerationState state, GenerationQuestion question) {
+            String text = reviewedText(context, question.questionId());
+            List<UUID> evidenceIds = allowedEvidence(context, question.questionId());
+            List<EvidenceSourceExcerptInput> excerpts = sourceExcerpts(state, evidenceIds);
+            ObjectNode refs = baseRefsV3(state);
+            refs.put("questionId", question.questionId().toString());
+            refs.put("answerHash", sha256(text));
+            refs.put("sourceExcerptCount", excerpts.size());
+            return localInput(
+                    state,
+                    question.questionId().toString(),
+                    refs,
+                    sha256(text) + "|" + stableHash(excerpts),
+                    tree(new GroundAnswerInputV5(
+                            INPUT_SCHEMA_V5,
+                            CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                            question.questionId(),
+                            text,
+                            evidenceIds.stream().map(id -> approvedEvidenceV4Writer(state, id)).toList(),
+                            excerpts)));
+        }
+
+        @Override
+        public AiGatewayResponse invoke(GatewayInvocation invocation) {
+            return chat(invocation);
+        }
+
+        @Override
+        public Object ephemeralOutput(GroundedAnswerOutputV5 output, StepExecutionContext context) {
+            ReviewAnswerOutputV5 review = requiredScopedEphemeral(
+                    context, REVIEW_ANSWER, output.questionId(), ReviewAnswerOutputV5.class);
+            return new WrittenAnswerOutputV3(
+                    ANSWER_SCHEMA_V3,
+                    output.questionId(),
+                    answerDocument(review.revisedAnswerText()),
+                    output.claims());
+        }
+
+        @Override
+        public JsonNode minimalOutput(GroundedAnswerOutputV5 output, ObjectMapper ignored) {
+            ObjectNode result = objectMapper.createObjectNode()
+                    .put("schemaVersion", GROUNDING_SCHEMA_V5)
+                    .put("questionId", output.questionId().toString())
+                    .put("claimCount", output.claims().size());
+            var evidenceIds = result.putArray("evidenceIds");
+            output.claims().stream().map(EvidenceClaimDraftV3::evidenceId).distinct().sorted()
+                    .forEach(id -> evidenceIds.add(id.toString()));
+            return result;
+        }
+
+        @Override
+        public JsonNode minimalOutput(
+                GroundedAnswerOutputV5 output, ObjectMapper ignored, StepExecutionContext context) {
+            String text = reviewedText(context, output.questionId());
+            return ((ObjectNode) minimalOutput(output, ignored))
+                    .put("answerHash", sha256(write(mapTipTap(answerDocument(text)))))
+                    .put("characterCount", text.codePointCount(0, text.length()));
+        }
+
+        @Override
+        public boolean reusable() {
+            return false;
+        }
+
+        @Override
+        protected void validateJavaRecord(GroundedAnswerOutputV5 output, StepExecutionContext context) {
+            if (!GROUNDING_SCHEMA_V5.equals(output.schemaVersion())
+                    || output.questionId() == null
+                    || output.claims() == null) {
+                throw repairable(
+                        "COVER_GENERATION_GROUNDING_INVALID",
+                        "Set schemaVersion to cover-generation-grounding-output-v1, copy the questionId, and return a claims array.");
+            }
+            try {
+                CoverLetterWorkflowV3Policy.validateDistinctClaims(
+                        output.claims(), reviewedText(context, output.questionId()));
+            } catch (IllegalArgumentException exception) {
+                throw repairable(
+                        "COVER_GENERATION_GROUNDING_EXCERPT_INVALID",
+                        "Every claim exactAnswerExcerpt must be copied verbatim from answerText, at most 2000 characters, and unique per evidenceId. Remove any claim you cannot copy exactly.");
+            }
+        }
+
+        @Override
+        protected void validateWorkflowOutput(GroundedAnswerOutputV5 output, StepExecutionContext context) {
+            if (!output.questionId().toString().equals(context.scopeKey())) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_SCOPE_INVALID",
+                        "Copy the supplied questionId exactly.");
+            }
+            Set<UUID> allowed = Set.copyOf(allowedEvidence(context, output.questionId()));
+            if (output.claims().stream().map(EvidenceClaimDraftV3::evidenceId)
+                    .anyMatch(id -> !allowed.contains(id))) {
+                throw repairable(
+                        ValidationPhase.WORKFLOW_CONTEXT,
+                        "COVER_GENERATION_ANSWER_EVIDENCE_INVALID",
+                        "Use only evidenceId values supplied for this answer. Remove any claim that cannot use an allowed evidenceId.");
+            }
+        }
+
+        @Override
+        protected void validateDomainOutput(GroundedAnswerOutputV5 output, StepExecutionContext context) {
+            Set<UUID> allowed = Set.copyOf(allowedEvidence(context, output.questionId()));
+            if (!output.questionId().toString().equals(context.scopeKey())
+                    || output.claims().stream().map(EvidenceClaimDraftV3::evidenceId)
+                            .anyMatch(id -> !allowed.contains(id))) {
+                throw domainFailure(
+                        "COVER_GENERATION_ANSWER_INVALID",
+                        "자기소개서 답변의 구조와 승인 근거를 확인하지 못했습니다.");
+            }
+        }
+
+        private String reviewedText(StepExecutionContext context, UUID questionId) {
+            ReviewAnswerOutputV5 review = requiredScopedEphemeral(
+                    context, REVIEW_ANSWER, questionId, ReviewAnswerOutputV5.class);
+            return canonicalAnswerText(review.revisedAnswerText());
+        }
+
+        private List<UUID> allowedEvidence(StepExecutionContext context, UUID questionId) {
+            return requiredEphemeral(context, ALLOCATE_EXPERIENCES, ExperienceAllocationOutputV2.class)
+                    .allocations().stream()
+                    .filter(value -> value.questionId().equals(questionId))
+                    .flatMap(value -> value.evidenceIds().stream())
+                    .distinct()
+                    .toList();
         }
     }
 
@@ -4018,6 +4573,19 @@ public final class CoverLetterGenerationWorkflow {
                         value.maxLength(),
                         value.currentAnswerVersionId() != null))
                 .toList();
+        if (isV5(state)) {
+            return new PlanQuestionsInputV5(
+                    INPUT_SCHEMA_V5,
+                    CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
+                    contextAvailability(state),
+                    jobWritingContext(state),
+                    memoAwareQuestions,
+                    requirements,
+                    evidence,
+                    omitted,
+                    state.snapshot().avoidExperienceDuplication(),
+                    writingInsights(state));
+        }
         return new PlanQuestionsInputV4(
                 INPUT_SCHEMA_V4,
                 CoverLetterWorkflowV3Policy.OUTPUT_LOCALE,
@@ -4031,6 +4599,21 @@ public final class CoverLetterGenerationWorkflow {
     }
 
     private PlanningInvocationInput planningInvocationInput(GatewayInvocation invocation) {
+        if (isV5(invocation.executionContext().run())) {
+            PlanQuestionsInputV5 input = read(
+                    invocation.input().gatewayPayload(), PlanQuestionsInputV5.class);
+            return new PlanningInvocationInput(
+                    input.questions().stream()
+                            .map(value -> new QuestionPlanningInput(
+                                    value.questionId(),
+                                    value.questionOrder(),
+                                    value.questionText(),
+                                    value.maxLength(),
+                                    value.hasCurrentAnswer()))
+                            .toList(),
+                    input.requirements(),
+                    input.avoidExperienceDuplication());
+        }
         if (isExactModel(invocation.executionContext().run())) {
             PlanQuestionsInputV4 input = read(
                     invocation.input().gatewayPayload(), PlanQuestionsInputV4.class);
@@ -4102,13 +4685,13 @@ public final class CoverLetterGenerationWorkflow {
     }
 
     private String inputSchemaVersion(GenerationState state) {
-        return state.snapshot().model() == null ? INPUT_SCHEMA_V3 : INPUT_SCHEMA_V4;
+        if (state.snapshot().model() == null) return INPUT_SCHEMA_V3;
+        return isV5(state) ? INPUT_SCHEMA_V5 : INPUT_SCHEMA_V4;
     }
 
     private String contextPolicyVersion(GenerationState state) {
-        return state.snapshot().model() == null
-                ? CONTEXT_POLICY_VERSION_V3
-                : "cover-generation-context-v5";
+        if (state.snapshot().model() == null) return CONTEXT_POLICY_VERSION_V3;
+        return isV5(state) ? "cover-generation-context-v6" : "cover-generation-context-v5";
     }
 
     private String retrievalPolicyVersion(GenerationState state) {
@@ -4118,8 +4701,17 @@ public final class CoverLetterGenerationWorkflow {
     }
 
     private boolean isExactModel(AgentRunSnapshot run) {
+        return CanonicalWorkflowDefinitions.isExactModelCoverLetterGeneration(run.workflowVersion());
+    }
+
+    private boolean isV5(AgentRunSnapshot run) {
         return CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
                 run.workflowVersion());
+    }
+
+    private boolean isV5(GenerationState state) {
+        return CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(
+                state.workflowVersion());
     }
 
     private boolean validSelection(AgentRunSnapshot run) {
@@ -4314,7 +4906,7 @@ public final class CoverLetterGenerationWorkflow {
     }
 
     private void validateQuestionPlanV3(
-            QuestionPlanV3 plan, ContextAvailabilityInput availability) {
+            QuestionPlanV3 plan, ContextAvailabilityInput availability, boolean recommendedFramework) {
         if (plan == null
                 || plan.questionId() == null
                 || plan.questionType() == null
@@ -4341,8 +4933,10 @@ public final class CoverLetterGenerationWorkflow {
                     "Return nonblank coreMessage and objective. Text arrays may have at most 20 nonblank values, each at most 1000 characters.");
         }
         try {
-            CoverLetterWorkflowV3Policy.validateQuestionFramework(
-                    plan.questionType(), plan.narrativeFramework());
+            if (!recommendedFramework) {
+                CoverLetterWorkflowV3Policy.validateQuestionFramework(
+                        plan.questionType(), plan.narrativeFramework());
+            }
         } catch (IllegalArgumentException exception) {
             throw repairable(
                     "COVER_PLAN_FRAMEWORK_INVALID",
@@ -4356,8 +4950,12 @@ public final class CoverLetterGenerationWorkflow {
                     "Use null for an unavailable or unused role/company connection; otherwise use nonblank supplied context of at most 1000 characters.");
         }
         try {
-            CoverLetterWorkflowV3Policy.validateSections(
-                    plan.narrativeFramework(), plan.narrativeSections());
+            if (recommendedFramework) {
+                CoverLetterWorkflowV3Policy.validateRecommendedSections(plan.narrativeSections());
+            } else {
+                CoverLetterWorkflowV3Policy.validateSections(
+                        plan.narrativeFramework(), plan.narrativeSections());
+            }
         } catch (IllegalArgumentException exception) {
             throw repairable(
                     "COVER_PLAN_SECTIONS_INVALID",
@@ -5104,7 +5702,8 @@ public final class CoverLetterGenerationWorkflow {
             UUID agentRunId,
             List<UUID> requestedQuestionIds,
             List<UUID> reusedQuestionIds,
-            EmbeddingPolicySnapshot embeddingPolicy) {}
+            EmbeddingPolicySnapshot embeddingPolicy,
+            String workflowVersion) {}
 
     private record PlanningInvocationInput(
             List<QuestionPlanningInput> questions,
@@ -5618,6 +6217,123 @@ public final class CoverLetterGenerationWorkflow {
      */
     public record EvidenceSourceExcerptInput(
             UUID evidenceId, String maskedSourceText, boolean truncated) {}
+
+    public record CompanyResearchSourceInput(
+            String sourceType,
+            @ProviderNullable String title,
+            @ProviderNullable String snippet,
+            String reliabilityNotice) {}
+
+    /** Ephemeral writing context: analysis insights and company research, never provenance. */
+    public record WritingInsightsInput(
+            List<String> analysisStrengths,
+            List<String> analysisGaps,
+            @ProviderNullable String analysisSummary,
+            @ProviderNullable String companyResearchSummary,
+            List<CompanyResearchSourceInput> companyResearchSources) {
+        public WritingInsightsInput {
+            analysisStrengths = copy(analysisStrengths);
+            analysisGaps = copy(analysisGaps);
+            companyResearchSources = copy(companyResearchSources);
+        }
+    }
+
+    public record PlanQuestionsInputV5(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            JobWritingContextInput job,
+            List<QuestionPlanningInputV4> questions,
+            List<RequirementInput> requirements,
+            List<EvidencePlanningInput> evidenceCandidates,
+            int omittedEvidenceCount,
+            boolean avoidExperienceDuplication,
+            WritingInsightsInput writingInsights) {
+        public PlanQuestionsInputV5 {
+            questions = copy(questions);
+            requirements = copy(requirements);
+            evidenceCandidates = copy(evidenceCandidates);
+        }
+    }
+
+    public record DraftAnswerInputV5(
+            String schemaVersion,
+            String outputLocale,
+            ContextAvailabilityInput contextAvailability,
+            UUID questionId,
+            String questionText,
+            @ProviderNullable String questionMemo,
+            @ProviderNullable Integer maxLength,
+            int targetCharacterCount,
+            @ProviderNullable Integer minimumCharacterCount,
+            QuestionPlanV3 plan,
+            QuestionAnalysisOutputV3 analysis,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            List<EvidenceSourceExcerptInput> evidenceSourceExcerpts,
+            JobWritingContextInput job,
+            WritingInsightsInput writingInsights,
+            @ProviderNullable UUID currentAnswerVersionId,
+            BoundedText currentAnswer,
+            List<OtherQuestionStrategyInput> otherQuestions,
+            HeadingPolicy headingPolicy) {
+        public DraftAnswerInputV5 {
+            verifiedEvidence = copy(verifiedEvidence);
+            evidenceSourceExcerpts = copy(evidenceSourceExcerpts);
+            otherQuestions = copy(otherQuestions);
+        }
+    }
+
+    public record DraftAnswerOutputV5(String schemaVersion, UUID questionId, String answerText) {}
+
+    public record ReviewAnswerInputV5(
+            String schemaVersion,
+            UUID questionId,
+            DraftAnswerInputV5 writingContext,
+            String draftAnswerText,
+            int draftCharacterCount) {}
+
+    public enum ReviewCriterion {
+        QUESTION_FIT,
+        SPECIFICITY,
+        PERSONAL_CONTRIBUTION,
+        ROLE_COMPANY_FIT,
+        CREDIBILITY,
+        READABILITY
+    }
+
+    public record ReviewScoreV5(ReviewCriterion criterion, int score, String comment) {}
+
+    public record ReviewAnswerOutputV5(
+            String schemaVersion,
+            UUID questionId,
+            List<ReviewScoreV5> scores,
+            List<String> issues,
+            String revisedAnswerText) {
+        public ReviewAnswerOutputV5 {
+            scores = copy(scores);
+            issues = copy(issues);
+        }
+    }
+
+    public record GroundAnswerInputV5(
+            String schemaVersion,
+            String outputLocale,
+            UUID questionId,
+            String answerText,
+            List<ApprovedEvidenceInput> verifiedEvidence,
+            List<EvidenceSourceExcerptInput> evidenceSourceExcerpts) {
+        public GroundAnswerInputV5 {
+            verifiedEvidence = copy(verifiedEvidence);
+            evidenceSourceExcerpts = copy(evidenceSourceExcerpts);
+        }
+    }
+
+    public record GroundedAnswerOutputV5(
+            String schemaVersion, UUID questionId, List<EvidenceClaimDraftV3> claims) {
+        public GroundedAnswerOutputV5 {
+            claims = copy(claims);
+        }
+    }
 
     public record WrittenAnswerOutputV3(
             String schemaVersion,

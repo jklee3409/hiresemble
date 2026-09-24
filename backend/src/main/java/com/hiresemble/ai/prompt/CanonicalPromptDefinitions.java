@@ -18,6 +18,7 @@ public final class CanonicalPromptDefinitions {
         prompts.addAll(CoverLetterGenerationPromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationV2PromptDefinitions.all());
         prompts.addAll(CoverLetterGenerationV3PromptDefinitions.all());
+        prompts.addAll(CoverLetterGenerationV5PromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationPromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationV2PromptDefinitions.all());
         prompts.addAll(CoverLetterVerificationV3PromptDefinitions.all());

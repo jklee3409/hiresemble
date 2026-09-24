@@ -5,6 +5,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateC
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerificationSnapshot;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.WritingInsights;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,6 +69,11 @@ public interface CoverLetterQueryPort {
 
     List<CandidateChunk> searchEvidenceCandidates(
             UUID userId, List<Double> queryVector, int limit);
+
+    default WritingInsights loadWritingInsights(
+            UUID userId, UUID jobId, UUID analysisId, UUID coverLetterId) {
+        throw new UnsupportedOperationException("writing insights are not configured");
+    }
 
     default List<EvidenceSourceExcerpt> findEvidenceSourceExcerpts(
             UUID userId, List<UUID> evidenceIds, int limit) {

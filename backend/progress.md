@@ -7,6 +7,20 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5(P1) 구현)
+
+- What was done:
+  - 자기소개서 생성을 v5로 올려 분석 겸용 모델 계획, 평문 초안, 채용 담당자 관점 검토·1회 수정, claim 연결과 서버 TipTap 변환을 분리했다. 공고 분석 강점·보완점과 회사 조사를 작성 context로 연결했다.
+- Key decisions:
+  - v1~v4는 durable 재생 전용으로 유지하고 신규 실행만 v5를 쓴다. 사용자 수정 지시는 새 API 없이 문항 memo로 받는다.
+- Issues encountered:
+  - Maven Central 429 때문에 세션 전용 Gradle mirror init script를 썼고 저장소 build 설정은 바꾸지 않았다. MinIO 이미지 pull 거부로 S3 adapter 테스트 1건은 미검증이다.
+- Validation:
+  - AI package 테스트 242건 통과(v5 단일 문항 계획→초안→검토→근거 연결→저장 전체 흐름, Markdown·분량 하한 거부, 근거 연결 excerpt·evidence 거부, v5 prompt 계약 포함).
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider 품질 비교, P7 Browser E2E 실행, 검증 workflow에 원문 발췌·회사 조사 전달 여부를 결정한다.
+
 ## [2026-09-24] Session Summary (자기소개서 v4 생성 품질 P0 개선)
 
 - What was done:

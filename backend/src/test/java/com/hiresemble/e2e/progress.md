@@ -4,6 +4,19 @@
 
 P4 Document부터 P8 Interview까지 pipeline을 격리 PostgreSQL 18+pgvector·MinIO가 필요한 단계만 사용하고 Spring·Vue·Fake gateway·Chromium으로 검증한다.
 
+## [2026-09-24] Session Summary (P7 E2E fake v5 대응)
+
+- What was done:
+  - P7 fake chat gateway가 v5 초안·검토·근거 연결 schema를 처리하고, 강제 생성 실패 marker를 v5에서는 초안 단계에서 재현한다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - opt-in `p7BrowserE2eTest`는 Chromium·MinIO가 필요해 이 세션에서 실행하지 못했다.
+- Validation:
+  - 미실행(환경 제약).
+- Next steps:
+  - 로컬에서 `p7BrowserE2eTest`로 v5 흐름을 확인한다.
+
 ## [2026-08-06] Session Summary (P7 v4·legacy v3 재개 회귀)
 
 - What was done: P7 E2E fixture를 신규 v4와 durable v3 Run 계약에 맞춰 갱신했다.

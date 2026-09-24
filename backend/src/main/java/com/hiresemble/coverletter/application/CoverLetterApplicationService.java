@@ -25,6 +25,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.AppliedAns
 import com.hiresemble.coverletter.application.model.CoverLetterModels.CandidateChunk;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.Detail;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceSourceExcerpt;
+import com.hiresemble.coverletter.application.model.CoverLetterModels.WritingInsights;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.EvidenceUse;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationQuestion;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.GenerationSnapshot;
@@ -44,6 +45,7 @@ import com.hiresemble.coverletter.application.model.CoverLetterModels.Verificati
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerificationSnapshot;
 import com.hiresemble.coverletter.application.model.CoverLetterModels.VerifiedEvidence;
 import com.hiresemble.coverletter.application.port.CoverLetterCommandPort;
+import com.hiresemble.coverletter.application.port.CoverLetterCompanyResearchPort;
 import com.hiresemble.coverletter.application.port.CoverLetterEvidenceSearchPort;
 import com.hiresemble.coverletter.application.port.CoverLetterQueryPort;
 import com.hiresemble.coverletter.domain.AnswerCreatedBy;
@@ -110,6 +112,7 @@ public class CoverLetterApplicationService
     private final JobAnalysisApplicationService jobAnalysis;
     private final ProfileAnalysisQueryPort profileQuery;
     private final CoverLetterEvidenceSearchPort evidenceSearch;
+    private final CoverLetterCompanyResearchPort companyResearch;
     private final WorkflowLauncher workflowLauncher;
     private final AgentRunQueryPort runQuery;
     private final AiPreferenceQueryPort preferenceQuery;
@@ -130,6 +133,7 @@ public class CoverLetterApplicationService
             JobAnalysisApplicationService jobAnalysis,
             ProfileAnalysisQueryPort profileQuery,
             CoverLetterEvidenceSearchPort evidenceSearch,
+            CoverLetterCompanyResearchPort companyResearch,
             WorkflowLauncher workflowLauncher,
             AgentRunQueryPort runQuery,
             AiPreferenceQueryPort preferenceQuery,
@@ -142,6 +146,7 @@ public class CoverLetterApplicationService
         this.jobAnalysis = jobAnalysis;
         this.profileQuery = profileQuery;
         this.evidenceSearch = evidenceSearch;
+        this.companyResearch = companyResearch;
         this.workflowLauncher = workflowLauncher;
         this.runQuery = runQuery;
         this.preferenceQuery = preferenceQuery;
@@ -952,6 +957,19 @@ public class CoverLetterApplicationService
     public List<CandidateChunk> searchEvidenceCandidates(
             UUID userId, List<Double> queryVector, int limit) {
         return evidenceSearch.searchMaskedCandidates(userId, queryVector, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WritingInsights loadWritingInsights(
+            UUID userId, UUID jobId, UUID analysisId, UUID coverLetterId) {
+        JobAnalysisDetail analysis = jobAnalysis.latest(userId, jobId);
+        boolean sameAnalysis = analysisId != null && analysisId.equals(analysis.summary().id());
+        return new WritingInsights(
+                sameAnalysis ? analysis.strengths() : List.of(),
+                sameAnalysis ? analysis.gaps() : List.of(),
+                sameAnalysis ? analysis.analysisSummary() : null,
+                companyResearch.latestCompanyResearch(userId, coverLetterId).orElse(null));
     }
 
     @Override

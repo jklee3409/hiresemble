@@ -52,6 +52,8 @@ describe('AgentRunDetailPanel', () => {
       'ANALYZE_QUESTION',
       'RETRIEVE_EVIDENCE',
       'ALLOCATE_EXPERIENCES',
+      'DRAFT_ANSWER',
+      'REVIEW_ANSWER',
       'WRITE_ANSWER',
       'FACT_CHECK_ANSWER',
       'APPLY_ANSWER_VERSION',

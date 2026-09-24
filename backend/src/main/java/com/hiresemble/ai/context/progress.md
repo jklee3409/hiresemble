@@ -4,6 +4,19 @@
 
 P3 provenance-only ContextBuilder와 Document·Job·Cover Letter·Interview·Career Artifact owner/version/hash snapshot이 구현됐다.
 
+## [2026-09-24] Session Summary (생성 v5 context 버전 허용)
+
+- What was done:
+  - `CoverLetterGenerationContextBuilder`가 v4·v5를 exact-model 생성으로 함께 허용한다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-08] Session Summary (Career Artifact bounded context)
 
 - What was done:

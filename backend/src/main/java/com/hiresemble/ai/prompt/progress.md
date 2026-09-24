@@ -4,6 +4,21 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-09-24] Session Summary (자기소개서 생성 v5 prompt 정의)
+
+- What was done:
+  - `CoverLetterGenerationV5PromptDefinitions`를 추가해 분석 겸용 계획, 평문 초안, 채용 담당자 관점 검토·수정, verbatim claim 연결 prompt(`cover-letter-v5-*-prompt-v1`)를 등록했다. 초안·검토 입력 토큰 상한은 40,000, 근거 연결은 32,000이다.
+  - 기존 `CoverLetterGenerationV3PromptDefinitions`의 v4 식별은 `COVER_LETTER_GENERATION_V4_VERSION`으로 고정해 durable v4 prompt text를 유지했다.
+- Key decisions:
+  - 회사 사실은 공고와 회사 조사에서만 쓰고, 정량 사실은 `VERIFIED` content에서만 쓰는 경계를 초안·검토·FactCheck에 동일하게 적용했다.
+- Issues encountered:
+  - None
+- Validation:
+  - AI package 테스트 242건 통과(v5 단일 문항 계획→초안→검토→근거 연결→저장 전체 흐름, Markdown·분량 하한 거부, 근거 연결 excerpt·evidence 거부, v5 prompt 계약 포함).
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (자기소개서 v4 writer 채용 담당자 관점 prompt v7)
 
 - What was done:

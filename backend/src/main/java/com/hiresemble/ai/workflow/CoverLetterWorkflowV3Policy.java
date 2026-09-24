@@ -160,6 +160,26 @@ public final class CoverLetterWorkflowV3Policy {
         }
     }
 
+    /** v5 treats the framework as guidance: sections stay unique and bounded, weights need not sum. */
+    public static void validateRecommendedSections(List<NarrativeSectionPlan> sections) {
+        if (sections == null || sections.isEmpty() || sections.size() > 12) {
+            throw new IllegalArgumentException("narrative sections are invalid");
+        }
+        Set<NarrativeSectionType> unique = EnumSet.noneOf(NarrativeSectionType.class);
+        for (NarrativeSectionPlan section : sections) {
+            if (section == null
+                    || section.sectionType() == null
+                    || !unique.add(section.sectionType())
+                    || section.objective() == null
+                    || section.objective().isBlank()
+                    || section.objective().length() > 1_000
+                    || section.emphasisWeight() < 1
+                    || section.emphasisWeight() > 100) {
+                throw new IllegalArgumentException("narrative section is invalid");
+            }
+        }
+    }
+
     public static void validateQuestionFramework(
             CoverLetterGenerationWorkflow.QuestionType questionType,
             CoverLetterGenerationWorkflow.NarrativeFramework framework) {

@@ -23,7 +23,7 @@ class WorkflowRegistryTest {
     void canonicalRegistryCoversExactlyElevenTypesWithoutPretendingTheyAreExecutable() {
         WorkflowRegistry registry = new WorkflowRegistry(CanonicalWorkflowDefinitions.all(), List.of());
 
-        assertThat(registry.definitions()).hasSize(20);
+        assertThat(registry.definitions()).hasSize(21);
         assertThat(registry.definitions().stream().filter(WorkflowDefinition::canonical))
                 .extracting(WorkflowDefinition::type)
                 .containsExactlyInAnyOrder(WorkflowType.values());
@@ -37,7 +37,7 @@ class WorkflowRegistryTest {
             assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
         });
         assertThat(registry.definitions().stream().filter(definition -> !definition.canonical()))
-                .hasSize(9)
+                .hasSize(10)
                 .allSatisfy(definition -> {
                     assertThat(registry.executable(definition.type(), definition.version())).isEmpty();
                 })
@@ -61,6 +61,9 @@ class WorkflowRegistryTest {
                         org.assertj.core.groups.Tuple.tuple(
                                 WorkflowType.COVER_LETTER_GENERATION,
                                 CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WorkflowType.COVER_LETTER_GENERATION,
+                                CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION),
                         org.assertj.core.groups.Tuple.tuple(
                                 WorkflowType.COVER_LETTER_VERIFICATION,
                                 CanonicalWorkflowDefinitions.COVER_LETTER_VERIFICATION_LEGACY_VERSION),

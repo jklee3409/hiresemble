@@ -13,7 +13,8 @@ prompt version, typed input/output, schema, tool allowlist와 token/call cap met
 - `JobAnalysisPromptDefinitions`: P6 단계별 prompt identity·token policy, block ID·원문·ordinal만 반환하는 source requirement v6와 eligibility·matching Provider schema, 모델 소유 필드 규칙과 외부 공고 instruction 격리. 변경 없는 upstream `BUILD_SNAPSHOT`은 기존 v6 identity를 유지해 전환 시 불필요한 checkpoint 무효화를 막는다.
 - `CoverLetterGenerationPromptDefinitions`: durable generation v1 Run용 legacy prompt key와 record schema
 - `CoverLetterGenerationV2PromptDefinitions`: generation v2 단계별 plan·analysis·retrieval·allocation·write·quality prompt identity와 strict record schema
-- `CoverLetterGenerationV3PromptDefinitions`: durable generation v3와 active v4의 framework-neutral section·ko-KR·truncation metadata·사용자 memo·exact answer excerpt·issue matrix prompt identity와 strict record schema
+- `CoverLetterGenerationV3PromptDefinitions`: durable generation v3·v4의 framework-neutral section·ko-KR·truncation metadata·사용자 memo·exact answer excerpt·issue matrix prompt identity와 strict record schema
+- `CoverLetterGenerationV5PromptDefinitions`: active generation v5의 분석 겸용 계획·평문 초안·채용 담당자 관점 검토/수정·claim 연결 prompt identity와 strict record schema
 - `CoverLetterVerificationPromptDefinitions`: durable verification v1 Run용 legacy prompt key와 record schema
 - `CoverLetterVerificationV2PromptDefinitions`: explicit verification v2의 fact·writing-quality 단계별 prompt identity와 strict record schema
 - `CoverLetterVerificationV3PromptDefinitions`: durable verification v3와 active v4의 relevance selection·bounded sibling·positive exact claim·ko-KR issue/suggestion prompt identity와 strict record schema

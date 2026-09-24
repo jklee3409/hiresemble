@@ -4,6 +4,19 @@
 
 P7 generation·verification query/command와 owner-scoped evidence 검색 port가 구현됐다.
 
+## [2026-09-24] Session Summary (회사 조사·작성 context port)
+
+- What was done:
+  - `CoverLetterCompanyResearchPort`와 `CoverLetterQueryPort.loadWritingInsights`를 추가했다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 104 suites/713 tests 중 712 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (근거 원본 masked chunk 조회 port)
 
 - What was done:

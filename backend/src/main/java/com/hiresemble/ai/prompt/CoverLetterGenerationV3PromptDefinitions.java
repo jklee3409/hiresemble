@@ -17,7 +17,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     public static List<PromptDefinition> all() {
         List<PromptDefinition> prompts = new ArrayList<>();
         prompts.addAll(forVersion(CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V3_VERSION));
-        prompts.addAll(forVersion(CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION));
+        prompts.addAll(forVersion(CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION));
         return List.copyOf(prompts);
     }
 
@@ -48,7 +48,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     }
 
     private static String promptVersion(String workflowVersion, String stepKey) {
-        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(workflowVersion);
+        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION.equals(workflowVersion);
         if (CoverLetterGenerationWorkflow.PLAN_QUESTIONS.equals(stepKey)) {
             return v4 ? "cover-letter-plan-questions-prompt-v7" : "cover-letter-plan-questions-prompt-v5";
         }
@@ -63,7 +63,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     }
 
     private static Class<?> inputType(String workflowVersion, String stepKey) {
-        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(workflowVersion);
+        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION.equals(workflowVersion);
         return switch (stepKey) {
             case CoverLetterGenerationWorkflow.BUILD_GENERATION_CONTEXT ->
                     CoverLetterGenerationWorkflow.BuildGenerationContextInput.class;
@@ -114,7 +114,7 @@ public final class CoverLetterGenerationV3PromptDefinitions {
     }
 
     private static String instructions(String workflowVersion, String stepKey) {
-        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_VERSION.equals(workflowVersion);
+        boolean v4 = CanonicalWorkflowDefinitions.COVER_LETTER_GENERATION_V4_VERSION.equals(workflowVersion);
         String common = """
                 The output locale is ko-KR. User-facing answer prose, issue messages, and
                 suggestions must be natural professional Korean; preserve technical product names.

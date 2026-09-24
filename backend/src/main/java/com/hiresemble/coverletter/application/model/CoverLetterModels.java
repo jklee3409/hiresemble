@@ -330,6 +330,32 @@ public final class CoverLetterModels {
             String maskedContent,
             double distance) {}
 
+    /** Non-community company research source available to cover-letter writing. */
+    public record CompanyResearchSource(
+            String sourceType, String title, String snippet, String reliabilityNotice) {}
+
+    /** Latest succeeded company research linked to the cover letter. */
+    public record CompanyResearch(String summary, List<CompanyResearchSource> sources) {
+        public CompanyResearch {
+            sources = sources == null ? List.of() : List.copyOf(sources);
+        }
+    }
+
+    /**
+     * Read-only writing context beyond the generation snapshot: job analysis insights and the
+     * cover letter's latest company research. It is ephemeral AI context and never provenance.
+     */
+    public record WritingInsights(
+            List<String> strengths,
+            List<String> gaps,
+            String analysisSummary,
+            CompanyResearch companyResearch) {
+        public WritingInsights {
+            strengths = strengths == null ? List.of() : List.copyOf(strengths);
+            gaps = gaps == null ? List.of() : List.copyOf(gaps);
+        }
+    }
+
     /** Masked original chunk text behind a current VERIFIED evidence item. */
     public record EvidenceSourceExcerpt(
             UUID evidenceId,

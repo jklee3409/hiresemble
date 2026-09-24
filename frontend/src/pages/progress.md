@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-09-24] Session Summary (문항 memo 수정 요청 안내)
+
+- What was done:
+  - 자기소개서 편집의 문항 memo 입력에 작성된 답변이 있으면 AI 초안이 memo대로 다듬는다는 안내 placeholder를 추가했다. label은 유지했다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Frontend: eslint·prettier·`vue-tsc -b`·`vite build` 통과, vitest 466건 중 465 통과. 실패 1건 `github/presentation.test.ts`의 `오전 10:02` 기대는 이 컨테이너 Node ICU에 한국어 로케일 데이터가 없어 `AM 10:02`로 포맷되는 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - None
+
 ## [2026-08-10] Session Summary (경험 보관함 삭제와 GitHub 출처 표시 완료)
 
 - What was done:
