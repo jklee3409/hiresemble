@@ -14,6 +14,20 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-24] Session Summary (자기소개서 P2: 호출 정책과 A/B 품질 평가)
+
+- What was done:
+  - Backend 생성 v5에 모델별 reasoning·timeout·출력 상한을 적용하고, v5와 직접 입력 기준선을 비교하는 opt-in 품질 평가 도구를 추가했다. `.env.example`의 `AI_PROVIDER_TIMEOUT`을 180초로 바꿨다. 세부는 [`backend/progress.md`](backend/progress.md)와 [운영 문서](docs/operations/cover-letter-quality-evaluation.md)에 있다.
+- Key decisions:
+  - 유료 평가는 명시적 환경 변수와 비용 상한이 있을 때만 실행한다.
+- Issues encountered:
+  - 실제 provider 평가는 API key가 없어 아직 실행하지 않았다.
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 106 suites/718 tests 중 717 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+  - 환경 변수 없이 `coverLetterQualityEvaluation` 실행 시 태스크가 SKIPPED로 끝나 유료 호출이 없음을 확인했다. 실제 OpenAI 평가는 API key가 없어 실행하지 않았다(`IMPLEMENTED_NOT_LIVE_VERIFIED`).
+- Next steps:
+  - 실제 평가를 실행하고 결과로 추천 모델·prompt를 조정한다.
+
 ## [2026-09-24] Session Summary (자기소개서 생성 v5(P1) 구현)
 
 - What was done:

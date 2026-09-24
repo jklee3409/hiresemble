@@ -57,9 +57,15 @@ public final class CoverLetterGenerationV5PromptDefinitions {
         };
     }
 
+    /** Reasoning tokens count toward the completion cap, so writing steps get extra headroom. */
     private static int maxOutputTokens(StepDefinition step) {
         if (!step.requiresProvider()) return 1;
-        return CoverLetterGenerationWorkflow.REVIEW_ANSWER.equals(step.stepKey()) ? 10_000 : 8_000;
+        return switch (step.stepKey()) {
+            case CoverLetterGenerationWorkflow.DRAFT_ANSWER -> 16_000;
+            case CoverLetterGenerationWorkflow.REVIEW_ANSWER -> 20_000;
+            case CoverLetterGenerationWorkflow.PLAN_QUESTIONS -> 12_000;
+            default -> 8_000;
+        };
     }
 
     private static Class<?> inputType(String stepKey) {

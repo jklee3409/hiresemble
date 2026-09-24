@@ -7,6 +7,21 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-24] Session Summary (자기소개서 P2: 호출 정책과 A/B 품질 평가)
+
+- What was done:
+  - 생성 v5에 모델 tier별 reasoning·timeout 정책과 출력 상한 확대를 적용하고 provider timeout 상한을 180초로 올렸다.
+  - 가상 케이스로 v5 결과와 직접 입력 기준선을 블라인드 채점하는 평가 도구와 opt-in Gradle 태스크 `coverLetterQualityEvaluation`을 추가했다.
+- Key decisions:
+  - 유료 호출은 `COVER_LETTER_EVAL_ENABLED=true`와 API key가 있을 때만 일어나며 `test`에서 제외했다.
+- Issues encountered:
+  - 세션 중 dockerd가 재시작돼 다시 띄웠다. MinIO 이미지 pull 거부로 S3 adapter 테스트 1건은 여전히 미검증이다.
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 106 suites/718 tests 중 717 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+  - 환경 변수 없이 `coverLetterQualityEvaluation` 실행 시 태스크가 SKIPPED로 끝나 유료 호출이 없음을 확인했다. 실제 OpenAI 평가는 API key가 없어 실행하지 않았다(`IMPLEMENTED_NOT_LIVE_VERIFIED`).
+- Next steps:
+  - 실제 평가를 실행해 v5 품질과 비용을 기준선과 비교한다.
+
 ## [2026-09-24] Session Summary (자기소개서 생성 v5(P1) 구현)
 
 - What was done:

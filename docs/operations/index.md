@@ -7,6 +7,7 @@
 ## 주요 파일 및 하위 디렉터리
 
 - [`ai-provider-activation.md`](ai-provider-activation.md): local OpenAI/Tavily 활성화, offline 전환, 가격·검증 절차
+- [`cover-letter-quality-evaluation.md`](cover-letter-quality-evaluation.md): 자기소개서 v5와 직접 입력 기준선의 opt-in, 비용 상한 A/B 품질 평가
 - [`github-app-local-uat.md`](github-app-local-uat.md): private GitHub App 생성부터 artifact 다운로드·uninstall·회원 탈퇴까지의 local UI UAT (`USER_MANUAL_UI_VALIDATION_PENDING`)
 - [`usage-metering-and-backoffice.md`](usage-metering-and-backoffice.md): P8.5-V와 P8.6~P8.9 사용량·집계·실패·Backoffice 운영 계획
 - [`progress.md`](progress.md): 운영 문서 변경 이력

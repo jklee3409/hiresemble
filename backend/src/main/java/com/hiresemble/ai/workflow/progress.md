@@ -4,6 +4,20 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-24] Session Summary (생성 v5 단계별 reasoning·timeout 정책)
+
+- What was done:
+  - `CoverLetterCallPolicy`를 추가해 v5 초안·검토는 모델 tier별 `low`/`medium`/`high`와 90/150/180초, 계획은 `medium`/120초(저가 모델은 `low`/90초), 기계적 단계는 `low`/90초로 호출한다. v4 이하 재생 경로는 기존 45초·reasoning 미지정을 유지한다.
+- Key decisions:
+  - 출력 상한은 예산 예약에도 쓰이므로 호출 정책이 아니라 prompt 정의에 둔다.
+- Issues encountered:
+  - reasoning 강도가 높을수록 비용과 지연이 커진다. 실제 provider 지연은 아직 측정하지 않았다.
+- Validation:
+  - `CoverLetterCallPolicyTest`와 v5 흐름 테스트의 요청 reasoning·timeout 단언 통과.
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 106 suites/718 tests 중 717 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - 실제 provider로 tier별 지연과 timeout 여유를 측정한다.
+
 ## [2026-09-24] Session Summary (자기소개서 생성 v5 초안·검토·근거 연결 분리)
 
 - What was done:

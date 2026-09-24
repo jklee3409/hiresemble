@@ -6,6 +6,19 @@
 - AI chat/embedding/vector store 자동 구성은 provider 환경 변수의 기본값 `none`으로 비활성화되어 API key 없이 초기 부팅할 수 있다.
 - JDBC Session runtime schema 초기화는 꺼져 있고 V1~V30 migration이 P1~P8, public/private GitHub, Career Artifact와 terminal account deletion schema를 관리한다.
 
+## [2026-09-24] Session Summary (AI provider timeout 상한 180초)
+
+- What was done:
+  - `hiresemble.ai.provider-timeout` 기본값을 60초에서 180초로 올렸다. 요청 timeout의 상한으로만 쓰여 45초 이하를 요청하는 기존 workflow에는 영향이 없다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 106 suites/718 tests 중 717 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-08-09] Session Summary (GitHub App·scheduler·account deletion properties)
 
 - What was done: independent private flag, App credential/base URL/TTL/skew/scan, scheduler와 account deletion scan/cleanup typed 설정을 추가했다.

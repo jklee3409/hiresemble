@@ -473,6 +473,9 @@ class CoverLetterGenerationWorkflowTest {
                         "cover-generation-draft-output-v1",
                         "cover-generation-review-output-v1",
                         "cover-generation-grounding-output-v1");
+        assertThat(fixture.chat().requests.get(1).reasoningEffort()).isEqualTo("medium");
+        assertThat(fixture.chat().requests.get(1).timeout()).isEqualTo(java.time.Duration.ofSeconds(150));
+        assertThat(fixture.chat().requests.get(3).reasoningEffort()).isEqualTo("low");
         PlanQuestionsInputV5 plan = objectMapper.treeToValue(
                 fixture.chat().requests.get(0).input(), PlanQuestionsInputV5.class);
         assertThat(plan.writingInsights().analysisStrengths()).containsExactly("대규모 트래픽 장애 대응");

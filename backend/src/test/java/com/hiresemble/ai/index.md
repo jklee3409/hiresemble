@@ -8,6 +8,7 @@ P3 registry·orchestrator 기반과 P4 Document·P5 Job 실제 contribution을 F
 
 - [`workflow/`](workflow/index.md), [`model/`](model/index.md), [`validation/`](validation/index.md)
 - [`infrastructure/`](infrastructure/index.md): disabled gateway
+- [`evaluation/`](evaluation/index.md): 자기소개서 v5 대 직접 입력 기준선 A/B 품질 평가 도구(CI는 fake, 실제 호출은 opt-in)
 - [`orchestration/`](orchestration/index.md): Fake 3-step PostgreSQL integration
 - [`progress.md`](progress.md): AI 검증 이력
 

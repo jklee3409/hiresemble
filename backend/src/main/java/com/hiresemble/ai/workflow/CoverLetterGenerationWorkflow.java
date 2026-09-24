@@ -4531,6 +4531,10 @@ public final class CoverLetterGenerationWorkflow {
     }
 
     private AiGatewayResponse chat(GatewayInvocation invocation) {
+        CoverLetterCallPolicy.CallProfile profile = isV5(invocation.executionContext().run())
+                ? CoverLetterCallPolicy.v5(
+                        invocation.prompt().key().stepKey(), invocation.modelRoute().tier())
+                : new CoverLetterCallPolicy.CallProfile(CHAT_TIMEOUT, null);
         return invocation.chatGateway().chat(new ChatRequest(
                 invocation.modelRoute().providerKey(),
                 invocation.modelRoute().productKey(),
@@ -4540,10 +4544,12 @@ public final class CoverLetterGenerationWorkflow {
                 invocation.prompt().outputSchemaVersion(),
                 invocation.prompt().toolAllowlist(),
                 0,
-                CHAT_TIMEOUT,
+                profile.timeout(),
                 invocation.executionContext().run().priceVersion(),
                 invocation.prompt().maxOutputTokens(),
-                invocation.prompt().outputType()));
+                invocation.prompt().outputType(),
+                profile.reasoningEffort(),
+                null));
     }
 
     private Object planQuestionsInput(

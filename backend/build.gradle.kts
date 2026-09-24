@@ -93,6 +93,7 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     exclude("**/CodexRealProviderTest.class")
+    exclude("**/CoverLetterQualityEvaluationTest.class")
     exclude("**/P4BrowserE2eTest.class")
     exclude("**/P5BrowserE2eTest.class")
     exclude("**/P6BrowserE2eTest.class")
@@ -127,6 +128,26 @@ registerCodexRealProviderTask("codexRealOpenAiChatTest", "CHAT")
 registerCodexRealProviderTask("codexRealOpenAiEmbeddingTest", "EMBEDDING")
 registerCodexRealProviderTask("codexRealTavilySearchTest", "SEARCH")
 registerCodexRealProviderTask("codexRealProviderTest", "ALL")
+
+tasks.register<Test>("coverLetterQualityEvaluation") {
+    group = "verification"
+    description = "Runs the opt-in, cost-capped cover-letter A/B quality evaluation on synthetic cases."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/CoverLetterQualityEvaluationTest.class")
+    systemProperty("hiresemble.ai.provider", "openai")
+    systemProperty("hiresemble.search.provider", "none")
+    systemProperty("spring.ai.model.chat", "openai")
+    systemProperty("spring.ai.model.embedding", "openai")
+    systemProperty("spring.ai.vectorstore.type", "none")
+    systemProperty("hiresemble.ai.allow-test-provider", "false")
+    outputs.upToDateWhen { false }
+    onlyIf {
+        System.getenv("COVER_LETTER_EVAL_ENABLED")?.equals("true", ignoreCase = true) == true
+                && !System.getenv("AI_PROVIDER_API_KEY").isNullOrBlank()
+    }
+    shouldRunAfter(tasks.named("check"))
+}
 
 tasks.register<Test>("p4BrowserE2eTest") {
     group = "verification"

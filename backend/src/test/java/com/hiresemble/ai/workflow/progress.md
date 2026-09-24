@@ -4,6 +4,19 @@
 
 P3 Registry와 P4~P8, GitHub·Career Artifact workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-09-24] Session Summary (생성 v5 호출 정책 테스트)
+
+- What was done:
+  - `CoverLetterCallPolicyTest`를 추가하고 v5 흐름 테스트에 초안 `medium`/150초, 근거 연결 `low` 단언과 prompt 출력 상한 계약을 추가했다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`(세션 Gradle mirror init script, 로컬 dockerd): 106 suites/718 tests 중 717 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 초기화 오류이며 이번 변경과 무관해 미검증으로 남긴다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (자기소개서 생성 v5 테스트)
 
 - What was done:

@@ -170,7 +170,7 @@ hiresemble:
     batch-size: ${JOB_DEADLINE_SCHEDULER_BATCH_SIZE:100}
   ai:
     provider: ${AI_PROVIDER:none}
-    provider-timeout: ${AI_PROVIDER_TIMEOUT:60s}
+    provider-timeout: ${AI_PROVIDER_TIMEOUT:180s}
     model-low-cost: ${AI_MODEL_LOW_COST:}
     model-balanced: ${AI_MODEL_BALANCED:gpt-5-mini}
     model-high-quality: ${AI_MODEL_HIGH_QUALITY:}

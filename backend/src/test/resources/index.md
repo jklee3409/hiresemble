@@ -7,6 +7,7 @@ Backend 테스트 전용 정적 fixture를 보관한다.
 ## 주요 파일 및 하위 디렉터리
 
 - [`prompts/`](prompts/index.md): P3 Fake workflow prompt
+- [`cover-letter-eval/`](cover-letter-eval/index.md): 자기소개서 품질 A/B 평가용 가상 케이스
 - [`progress.md`](progress.md): fixture 변경 이력
 
 ## 구성 요소 역할

@@ -4,6 +4,19 @@
 
 외부 AI Provider의 로컬 활성화·offline 전환·사용자 P8.5-V 검증 절차, GitHub App private repository local UI UAT와 P8.6–P8.9 운영 계획이 문서화되어 있다.
 
+## [2026-09-24] Session Summary (자기소개서 품질 A/B 평가 절차)
+
+- What was done:
+  - `cover-letter-quality-evaluation.md`에 opt-in 실행 변수, 비용 상한, 리포트 위치, 해석 주의를 기록하고 `ai-provider-activation.md`의 timeout 예시를 180초로 바꿨다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - Markdown 변경만 수행했다.
+- Next steps:
+  - None
+
 ## [2026-08-09] Session Summary (GitHub App local UI UAT runbook)
 
 - What was done:

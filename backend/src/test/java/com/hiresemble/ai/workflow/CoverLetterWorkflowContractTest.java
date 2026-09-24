@@ -319,6 +319,10 @@ class CoverLetterWorkflowContractTest {
                 });
         assertThat(prompt.apply(CoverLetterGenerationWorkflow.ANALYZE_QUESTION).maxModelCalls())
                 .isZero();
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.DRAFT_ANSWER).maxOutputTokens())
+                .isEqualTo(16_000);
+        assertThat(prompt.apply(CoverLetterGenerationWorkflow.REVIEW_ANSWER).maxOutputTokens())
+                .isEqualTo(20_000);
         assertThat(v5.definitions())
                 .extracting(PromptRegistry.PromptDefinition::promptVersion)
                 .allMatch(value -> value.startsWith("cover-letter-v5-"));
