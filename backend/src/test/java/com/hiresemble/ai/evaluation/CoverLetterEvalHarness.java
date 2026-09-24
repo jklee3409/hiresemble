@@ -74,11 +74,14 @@ import tools.jackson.databind.node.ObjectNode;
  */
 public final class CoverLetterEvalHarness {
 
-    public static final String EVAL_VERSION = "cover-letter-eval-v1";
+    public static final String EVAL_VERSION = "cover-letter-eval-v2";
     public static final String BASELINE_SCHEMA = "cover-letter-eval-baseline-output-v1";
-    public static final String JUDGE_SCHEMA = "cover-letter-eval-judge-output-v1";
+    public static final String JUDGE_SCHEMA = "cover-letter-eval-judge-output-v2";
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
     private static final String SNAPSHOT_HASH = "e".repeat(64);
+    /** The judge always reasons at the highest effort; it runs twice per case with swapped order. */
+    private static final CoverLetterCallPolicy.CallProfile JUDGE_PROFILE =
+            new CoverLetterCallPolicy.CallProfile(java.time.Duration.ofSeconds(180), "high");
 
     public record Settings(String model, String judgeModel, long priceVersion, BigDecimal maxCostUsd) {
         public Settings {
@@ -88,9 +91,22 @@ public final class CoverLetterEvalHarness {
                 throw new IllegalArgumentException("evaluation settings are invalid");
             }
         }
+
+        /** Default judge differs from the writer to reduce self-preference bias. */
+        public static String defaultJudgeFor(String model) {
+            return OpenAiChatModels.GPT_5_6_SOL.equals(model)
+                    ? OpenAiChatModels.GPT_5_6_TERRA
+                    : OpenAiChatModels.GPT_5_6_SOL;
+        }
     }
 
     public enum JudgePreference { A, B, TIE }
+
+    public enum PreferenceMargin { SLIGHT, CLEAR, STRONG }
+
+    public static final List<String> CRITERIA = List.of(
+            "questionFit", "specificity", "personalContribution", "roleCompanyFit",
+            "credibility", "concision", "readability");
 
     public record JudgeAnswerScores(
             int questionFit,
@@ -98,13 +114,14 @@ public final class CoverLetterEvalHarness {
             int personalContribution,
             int roleCompanyFit,
             int credibility,
+            int concision,
             int readability,
             int unsupportedClaimCount,
             String strongestPoint,
             String weakestPoint) {
-        public double mean() {
-            return Math.round((questionFit + specificity + personalContribution + roleCompanyFit
-                            + credibility + readability) * 100.0 / 6) / 100.0;
+        public List<Integer> values() {
+            return List.of(questionFit, specificity, personalContribution, roleCompanyFit,
+                    credibility, concision, readability);
         }
     }
 
@@ -113,26 +130,68 @@ public final class CoverLetterEvalHarness {
             JudgeAnswerScores answerA,
             JudgeAnswerScores answerB,
             JudgePreference preferred,
+            PreferenceMargin margin,
             String rationale) {}
 
     public record BaselineAnswerOutput(String schemaVersion, String answerText) {}
 
+    /** One judge pass mapped back from A/B to the two systems. */
+    public record JudgePass(
+            boolean hiresembleShownAsA,
+            JudgeAnswerScores hiresemble,
+            JudgeAnswerScores baseline,
+            String preferred,
+            PreferenceMargin margin,
+            String rationale) {}
+
+    /** Criterion means over both passes, in {@link #CRITERIA} order. */
+    public record AveragedScores(List<Double> criteria, double mean, double unsupportedClaims) {
+        public AveragedScores {
+            criteria = List.copyOf(criteria);
+        }
+
+        static AveragedScores of(List<JudgeAnswerScores> passes) {
+            List<Double> criteria = new ArrayList<>();
+            for (int index = 0; index < CRITERIA.size(); index++) {
+                final int criterion = index;
+                criteria.add(round(passes.stream()
+                        .mapToInt(value -> value.values().get(criterion))
+                        .average()
+                        .orElse(0)));
+            }
+            return new AveragedScores(
+                    criteria,
+                    round(criteria.stream().mapToDouble(Double::doubleValue).average().orElse(0)),
+                    round(passes.stream().mapToInt(JudgeAnswerScores::unsupportedClaimCount).average().orElse(0)));
+        }
+
+        private static double round(double value) {
+            return Math.round(value * 100.0) / 100.0;
+        }
+    }
+
     public record CaseResult(
             String caseId,
             String label,
+            int repetition,
             String question,
             Integer maxLength,
+            String memo,
             String hiresembleAnswer,
             String baselineAnswer,
             AnswerMetrics hiresembleMetrics,
             AnswerMetrics baselineMetrics,
-            JudgeAnswerScores hiresembleScores,
-            JudgeAnswerScores baselineScores,
+            AveragedScores hiresembleScores,
+            AveragedScores baselineScores,
+            List<JudgePass> judgePasses,
+            boolean positionConsistent,
             String winner,
-            String judgeRationale,
-            boolean hiresembleShownAsA,
             BigDecimal costUsd,
-            String failure) {}
+            String failure) {
+        public CaseResult {
+            judgePasses = judgePasses == null ? List.of() : List.copyOf(judgePasses);
+        }
+    }
 
     private final ChatGateway chat;
     private final ObjectMapper objectMapper;
@@ -161,6 +220,14 @@ public final class CoverLetterEvalHarness {
     }
 
     public CaseResult run(EvalCase evalCase) {
+        return run(evalCase, 1);
+    }
+
+    /**
+     * Runs the workflow and baseline once, then judges twice with swapped A/B order. A system wins
+     * only when both passes prefer it; disagreement or any tie is reported as a TIE.
+     */
+    public CaseResult run(EvalCase evalCase, int repetition) {
         BigDecimal before = spent;
         List<String> evidenceTexts = evidenceTexts(evalCase);
         String hiresemble = null;
@@ -168,34 +235,50 @@ public final class CoverLetterEvalHarness {
         try {
             hiresemble = runWorkflow(evalCase);
             baseline = runBaseline(evalCase);
-            boolean hiresembleFirst = Math.floorMod(evalCase.id().hashCode(), 2) == 0;
-            JudgeOutput judged = judge(
-                    evalCase, hiresembleFirst ? hiresemble : baseline, hiresembleFirst ? baseline : hiresemble);
-            JudgeAnswerScores hiresembleScores = hiresembleFirst ? judged.answerA() : judged.answerB();
-            JudgeAnswerScores baselineScores = hiresembleFirst ? judged.answerB() : judged.answerA();
-            String winner = switch (judged.preferred()) {
-                case TIE -> "TIE";
-                case A -> hiresembleFirst ? "HIRESEMBLE" : "BASELINE";
-                case B -> hiresembleFirst ? "BASELINE" : "HIRESEMBLE";
-            };
+            List<JudgePass> passes = List.of(
+                    judgePass(evalCase, hiresemble, baseline, true),
+                    judgePass(evalCase, hiresemble, baseline, false));
+            boolean consistent = passes.get(0).preferred().equals(passes.get(1).preferred());
+            String winner = consistent ? passes.get(0).preferred() : "TIE";
             return new CaseResult(
-                    evalCase.id(), evalCase.label(), evalCase.question(), evalCase.maxLength(),
-                    hiresemble, baseline,
+                    evalCase.id(), evalCase.label(), repetition, evalCase.question(), evalCase.maxLength(),
+                    evalCase.memo(), hiresemble, baseline,
                     CoverLetterQualityRubric.measure(hiresemble, evalCase.maxLength(), evidenceTexts),
                     CoverLetterQualityRubric.measure(baseline, evalCase.maxLength(), evidenceTexts),
-                    hiresembleScores, baselineScores, winner, judged.rationale(), hiresembleFirst,
-                    spent.subtract(before), null);
+                    AveragedScores.of(passes.stream().map(JudgePass::hiresemble).toList()),
+                    AveragedScores.of(passes.stream().map(JudgePass::baseline).toList()),
+                    passes, consistent, winner, spent.subtract(before), null);
         } catch (RuntimeException exception) {
             String failure = exception instanceof AiExecutionException ai
                     ? ai.safeCode()
                     : exception.getClass().getSimpleName() + ": " + exception.getMessage();
             return new CaseResult(
-                    evalCase.id(), evalCase.label(), evalCase.question(), evalCase.maxLength(),
-                    hiresemble, baseline,
+                    evalCase.id(), evalCase.label(), repetition, evalCase.question(), evalCase.maxLength(),
+                    evalCase.memo(), hiresemble, baseline,
                     hiresemble == null ? null : CoverLetterQualityRubric.measure(hiresemble, evalCase.maxLength(), evidenceTexts),
                     baseline == null ? null : CoverLetterQualityRubric.measure(baseline, evalCase.maxLength(), evidenceTexts),
-                    null, null, "FAILED", null, false, spent.subtract(before), failure);
+                    null, null, List.of(), false, "FAILED", spent.subtract(before), failure);
         }
+    }
+
+    private JudgePass judgePass(
+            EvalCase evalCase, String hiresemble, String baseline, boolean hiresembleShownAsA) {
+        JudgeOutput judged = judge(
+                evalCase,
+                hiresembleShownAsA ? hiresemble : baseline,
+                hiresembleShownAsA ? baseline : hiresemble);
+        String preferred = switch (judged.preferred()) {
+            case TIE -> "TIE";
+            case A -> hiresembleShownAsA ? "HIRESEMBLE" : "BASELINE";
+            case B -> hiresembleShownAsA ? "BASELINE" : "HIRESEMBLE";
+        };
+        return new JudgePass(
+                hiresembleShownAsA,
+                hiresembleShownAsA ? judged.answerA() : judged.answerB(),
+                hiresembleShownAsA ? judged.answerB() : judged.answerA(),
+                preferred,
+                judged.margin(),
+                judged.rationale());
     }
 
     // ---- v5 workflow -----------------------------------------------------------------------
@@ -312,18 +395,19 @@ public final class CoverLetterEvalHarness {
         var facts = input.putArray("candidateFacts");
         evidenceTexts(evalCase).forEach(facts::add);
         input.put("companyFacts", companyInfo(evalCase));
+        input.put("applicantDirection", evalCase.memo());
         input.putObject("answerA")
                 .put("text", answerA)
                 .put("characterCount", answerA.codePointCount(0, answerA.length()));
         input.putObject("answerB")
                 .put("text", answerB)
                 .put("characterCount", answerB.codePointCount(0, answerB.length()));
-        var tier = OpenAiChatModels.requireCoverLetter(settings.judgeModel()).tier();
         JudgeOutput output = callStrict(
                 settings.judgeModel(), "EVAL_JUDGE", JUDGE_SCHEMA, JudgeOutput.class, input,
-                CoverLetterCallPolicy.v5(CoverLetterGenerationWorkflow.REVIEW_ANSWER, tier), 12_000);
+                JUDGE_PROFILE, 16_000);
         if (!JUDGE_SCHEMA.equals(output.schemaVersion())
                 || output.preferred() == null
+                || output.margin() == null
                 || !validScores(output.answerA())
                 || !validScores(output.answerB())) {
             throw new IllegalStateException("judge output is invalid");
@@ -333,9 +417,7 @@ public final class CoverLetterEvalHarness {
 
     private boolean validScores(JudgeAnswerScores scores) {
         return scores != null
-                && List.of(scores.questionFit(), scores.specificity(), scores.personalContribution(),
-                                scores.roleCompanyFit(), scores.credibility(), scores.readability())
-                        .stream().allMatch(value -> value >= 1 && value <= 5)
+                && scores.values().stream().allMatch(value -> value >= 1 && value <= 5)
                 && scores.unsupportedClaimCount() >= 0;
     }
 
@@ -408,20 +490,34 @@ public final class CoverLetterEvalHarness {
             """;
 
     static final String JUDGE_INSTRUCTIONS = """
-            Set schemaVersion to exactly cover-letter-eval-judge-output-v1. You are a senior hiring
-            manager and HR screener for the supplied company and job. Two anonymous Korean cover-letter
-            answers, answerA and answerB, respond to the same question; their order carries no meaning.
-            candidateFacts are the only true information about the applicant; company facts may come
-            only from jobPosting and companyFacts. Score each answer from 1 to 5 on questionFit (directly
-            answers the question), specificity (concrete situation, decisions, and results),
-            personalContribution (the applicant's own actions and judgment), roleCompanyFit (connection to
-            the requirements and supported company facts), credibility (no exaggeration and no claim
-            beyond candidateFacts), and readability (clear opening, flow, natural Korean). Count claims not
-            supported by candidateFacts in unsupportedClaimCount. An answer above maxLength is a severe
-            flaw: cap its credibility and readability at 2. An answer far below maxLength reads as low
-            effort, but never reward length alone. strongestPoint and weakestPoint are one Korean
-            sentence each. Choose preferred as the answer you would advance to an interview, TIE only when
-            they are genuinely equivalent, and explain in at most three Korean sentences in rationale.
+            Set schemaVersion to exactly cover-letter-eval-judge-output-v2. You are a demanding senior
+            hiring manager and HR screener for the supplied company and job who reads hundreds of
+            applications. Two anonymous Korean cover-letter answers, answerA and answerB, respond to the
+            same question; their order carries no meaning and must not influence you.
+            Facts: candidateFacts are the only true information about the applicant; company facts may
+            come only from jobPosting and companyFacts. applicantDirection, when present, is the
+            applicant's explicit instruction for this answer: judge each answer against it, reward
+            following it, and never penalize an answer for de-emphasizing material the direction told it
+            to set aside.
+            Score each answer on every criterion with this scale. 1: fails the criterion. 2: weak, with
+            problems a screener notices immediately. 3: acceptable but ordinary; clear room to improve.
+            4: strong; only minor issues a careful editor would still fix. 5: exceptional; nothing
+            meaningful left to improve. Most competent answers land at 3 or 4 on most criteria; give 5
+            rarely. A criterion named in weakestPoint cannot score 5.
+            Criteria: questionFit (answers exactly what was asked, early and directly); specificity
+            (concrete situation, decisions, trade-offs, and results rather than abstractions);
+            personalContribution (the applicant's own judgment and actions); roleCompanyFit (covers the
+            job requirements that matter and ties to supported company facts); credibility (no
+            exaggeration and nothing beyond candidateFacts); concision (no repetition, padding, or
+            restated points; every sentence earns its place); readability (clear opening, logical flow,
+            natural Korean). Count claims not supported by candidateFacts in unsupportedClaimCount.
+            Length: an answer above maxLength is a severe flaw, so cap its credibility and readability at
+            2. An answer far below maxLength may leave value unused, but longer is not better: filler
+            and repetition must lower concision.
+            strongestPoint and weakestPoint are one concrete Korean sentence each that cite the answer.
+            Choose preferred as the answer you would advance to an interview; use TIE only when you
+            cannot justify a preference. Set margin to SLIGHT, CLEAR, or STRONG for how decisive the
+            preference is (SLIGHT for a TIE), and explain in at most three Korean sentences in rationale.
             """;
 
     // ---- fixture ---------------------------------------------------------------------------

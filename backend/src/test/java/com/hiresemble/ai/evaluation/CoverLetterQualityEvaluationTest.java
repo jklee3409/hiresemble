@@ -50,10 +50,11 @@ class CoverLetterQualityEvaluationTest extends PostgresIntegrationTest {
         String model = env("COVER_LETTER_EVAL_MODEL", OpenAiChatModels.RECOMMENDED);
         Settings settings = new Settings(
                 model,
-                env("COVER_LETTER_EVAL_JUDGE_MODEL", model),
+                env("COVER_LETTER_EVAL_JUDGE_MODEL", Settings.defaultJudgeFor(model)),
                 Long.parseLong(env("COVER_LETTER_EVAL_PRICE_VERSION", "2026080601")),
                 new BigDecimal(env("COVER_LETTER_EVAL_MAX_COST_USD", "2.000000")));
         Set<String> selected = Set.of(env("COVER_LETTER_EVAL_CASES", "").split(","));
+        int repetitions = Math.max(1, Math.min(5, Integer.parseInt(env("COVER_LETTER_EVAL_REPEATS", "1"))));
 
         PromptRegistry prompts = new PromptRegistry(Stream.concat(
                         CoverLetterGenerationV5PromptDefinitions.all().stream(),
@@ -70,13 +71,15 @@ class CoverLetterQualityEvaluationTest extends PostgresIntegrationTest {
         List<CaseResult> results = new ArrayList<>();
         for (CoverLetterEvalCases.EvalCase evalCase : CoverLetterEvalCases.load(objectMapper)) {
             if (selected.contains("") || selected.contains(evalCase.id())) {
-                results.add(harness.run(evalCase));
+                for (int repetition = 1; repetition <= repetitions; repetition++) {
+                    results.add(harness.run(evalCase, repetition));
+                }
             }
         }
         CoverLetterEvalReport.Report report = CoverLetterEvalReport.write(
                 REPORT, settings, results, harness.spentUsd(), objectMapper);
 
-        assertThat(report.summary().caseCount()).isPositive();
+        assertThat(report.summary().resultCount()).isPositive();
         assertThat(harness.spentUsd()).isLessThanOrEqualTo(
                 settings.maxCostUsd().add(new BigDecimal("0.500000")));
     }

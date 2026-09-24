@@ -14,6 +14,19 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-24] Session Summary (자기소개서 품질 평가 심사 v2)
+
+- What was done:
+  - 평가 도구의 심사를 엄격화했다(세부: [`backend/progress.md`](backend/progress.md), [운영 문서](docs/operations/cover-letter-quality-evaluation.md)).
+- Key decisions:
+  - 승패는 A/B 순서를 바꾼 두 번의 심사가 일치할 때만 센다.
+- Issues encountered:
+  - None
+- Validation:
+  - Backend 전체 `check`: 106 suites/720 tests 중 719 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - v2 평가를 실제 provider로 다시 실행한다.
+
 ## [2026-09-24] Session Summary (자기소개서 P2: 호출 정책과 A/B 품질 평가)
 
 - What was done:

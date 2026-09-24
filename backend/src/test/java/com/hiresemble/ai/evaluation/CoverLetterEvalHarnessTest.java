@@ -6,7 +6,9 @@ import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.BaselineAnswerOutput;
 import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.CaseResult;
 import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.JudgeAnswerScores;
 import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.JudgeOutput;
+import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.JudgePass;
 import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.JudgePreference;
+import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.PreferenceMargin;
 import com.hiresemble.ai.evaluation.CoverLetterEvalHarness.Settings;
 import com.hiresemble.ai.evaluation.CoverLetterQualityRubric.AnswerMetrics;
 import com.hiresemble.ai.model.OpenAiChatModels;
@@ -50,8 +52,8 @@ class CoverLetterEvalHarnessTest {
     @TempDir Path reportDirectory;
 
     @Test
-    void everySyntheticCaseRunsWorkflowBaselineAndBlindJudge() throws Exception {
-        FakeGateway gateway = new FakeGateway(objectMapper);
+    void everySyntheticCaseRunsWorkflowBaselineAndTwoSwappedJudgePasses() throws Exception {
+        FakeGateway gateway = new FakeGateway(objectMapper, JudgeMode.PREFER_CONTENT);
         CoverLetterEvalHarness harness = new CoverLetterEvalHarness(gateway, objectMapper, settings("5.000000"));
         List<CoverLetterEvalCases.EvalCase> cases = CoverLetterEvalCases.load(objectMapper);
 
@@ -60,16 +62,27 @@ class CoverLetterEvalHarnessTest {
         assertThat(cases).hasSize(5);
         assertThat(results).allSatisfy(result -> {
             assertThat(result.failure()).isNull();
-            assertThat(result.winner())
-                    .isEqualTo(result.hiresembleShownAsA() ? "HIRESEMBLE" : "BASELINE");
+            assertThat(result.judgePasses()).extracting(JudgePass::hiresembleShownAsA).containsExactly(true, false);
+            assertThat(result.positionConsistent()).isTrue();
+            assertThat(result.winner()).isEqualTo("HIRESEMBLE");
+            assertThat(result.hiresembleScores().criteria()).hasSize(CoverLetterEvalHarness.CRITERIA.size());
+            assertThat(result.hiresembleScores().mean()).isEqualTo(4.0);
+            assertThat(result.baselineScores().mean()).isEqualTo(3.0);
             assertThat(result.hiresembleMetrics().withinLimit()).isTrue();
             assertThat(result.hiresembleMetrics().fillRatio()).isGreaterThanOrEqualTo(0.7);
             assertThat(result.baselineMetrics().clicheHits()).contains("어릴 때부터");
             assertThat(result.baselineMetrics().unsupportedNumbers()).contains("99%");
         });
-        assertThat(results).extracting(CaseResult::hiresembleShownAsA).contains(true, false);
-        assertThat(gateway.judgeInputs).allSatisfy(input -> assertThat(input.toString())
-                .doesNotContain("Hiresemble", "baseline", "HIRESEMBLE"));
+        assertThat(gateway.judgeInputs).hasSize(10).allSatisfy(input -> {
+            assertThat(input.toString()).doesNotContain("Hiresemble", "baseline", "HIRESEMBLE");
+            assertThat(input.has("applicantDirection")).isTrue();
+        });
+        assertThat(gateway.judgeInputs)
+                .anySatisfy(input -> assertThat(input.path("applicantDirection").asText()).contains("성능 개선"));
+        assertThat(gateway.judgeRequests).allSatisfy(request -> {
+            assertThat(request.productKey()).isEqualTo(OpenAiChatModels.GPT_5_6_SOL);
+            assertThat(request.reasoningEffort()).isEqualTo("high");
+        });
         assertThat(gateway.schemas).contains(
                 "cover-generation-plan-output-v3",
                 "cover-generation-draft-output-v1",
@@ -82,19 +95,52 @@ class CoverLetterEvalHarnessTest {
         CoverLetterEvalReport.Report report = CoverLetterEvalReport.write(
                 reportDirectory, settings("5.000000"), results, harness.spentUsd(), objectMapper);
         assertThat(report.summary().completedCount()).isEqualTo(5);
-        assertThat(report.summary().hiresembleWins() + report.summary().baselineWins()).isEqualTo(5);
+        assertThat(report.summary().hiresembleWins()).isEqualTo(5);
+        assertThat(report.summary().positionConsistencyRate()).isEqualTo(1.0);
+        assertThat(report.summary().scoreSaturationRate()).isZero();
+        assertThat(report.summary().criterionDeltas()).containsEntry("concision", 1.0);
         assertThat(report.summary().hiresembleMeanFillRatio())
                 .isGreaterThan(report.summary().baselineMeanFillRatio());
         assertThat(Files.readString(reportDirectory.resolve("report.md")))
-                .contains("Judge preference", "report.json");
+                .contains("Consistent verdicts", "Criterion deltas", "report.json")
+                .doesNotContain("Position consistency 0");
         assertThat(objectMapper.readTree(Files.readString(reportDirectory.resolve("report.json")))
                         .path("cases"))
                 .hasSize(5);
     }
 
     @Test
+    void positionBiasedAndSaturatedJudgeBecomesTieWithWarnings() {
+        FakeGateway gateway = new FakeGateway(objectMapper, JudgeMode.ALWAYS_A_ALL_FIVES);
+        Settings sameJudge = new Settings(
+                OpenAiChatModels.GPT_5_6_TERRA, OpenAiChatModels.GPT_5_6_TERRA, 2026080601L, new BigDecimal("5.000000"));
+        CoverLetterEvalHarness harness = new CoverLetterEvalHarness(gateway, objectMapper, sameJudge);
+
+        List<CaseResult> results = CoverLetterEvalCases.load(objectMapper).stream().map(harness::run).toList();
+        CoverLetterEvalReport.Summary summary =
+                CoverLetterEvalReport.summarize(sameJudge, results, harness.spentUsd());
+
+        assertThat(results).allSatisfy(result -> {
+            assertThat(result.positionConsistent()).isFalse();
+            assertThat(result.winner()).isEqualTo("TIE");
+        });
+        assertThat(summary.ties()).isEqualTo(5);
+        assertThat(summary.scoreSaturationRate()).isEqualTo(1.0);
+        assertThat(summary.warnings()).anySatisfy(value -> assertThat(value).contains("saturation"))
+                .anySatisfy(value -> assertThat(value).contains("Position consistency"))
+                .anySatisfy(value -> assertThat(value).contains("self-preference"))
+                .anySatisfy(value -> assertThat(value).contains("Fewer than 10"));
+    }
+
+    @Test
+    void defaultJudgeDiffersFromWorkflowModel() {
+        assertThat(Settings.defaultJudgeFor(OpenAiChatModels.GPT_5_6_TERRA)).isEqualTo(OpenAiChatModels.GPT_5_6_SOL);
+        assertThat(Settings.defaultJudgeFor(OpenAiChatModels.GPT_5_6_SOL)).isEqualTo(OpenAiChatModels.GPT_5_6_TERRA);
+    }
+
+    @Test
     void costCapStopsFurtherCasesWithoutHidingTheFailure() {
-        FakeGateway gateway = new FakeGateway(objectMapper);
+        FakeGateway gateway = new FakeGateway(objectMapper, JudgeMode.PREFER_CONTENT);
         CoverLetterEvalHarness harness = new CoverLetterEvalHarness(gateway, objectMapper, settings("0.004000"));
         List<CoverLetterEvalCases.EvalCase> cases = CoverLetterEvalCases.load(objectMapper);
 
@@ -127,14 +173,19 @@ class CoverLetterEvalHarnessTest {
                 OpenAiChatModels.GPT_5_6_TERRA, OpenAiChatModels.GPT_5_6_SOL, 2026080601L, new BigDecimal(maxCost));
     }
 
+    private enum JudgeMode { PREFER_CONTENT, ALWAYS_A_ALL_FIVES }
+
     private static final class FakeGateway implements ChatGateway {
         private final ObjectMapper mapper;
+        private final JudgeMode mode;
         private final List<String> schemas = new ArrayList<>();
         private final List<JsonNode> judgeInputs = new ArrayList<>();
+        private final List<ChatRequest> judgeRequests = new ArrayList<>();
         private int calls;
 
-        private FakeGateway(ObjectMapper mapper) {
+        private FakeGateway(ObjectMapper mapper, JudgeMode mode) {
             this.mapper = mapper;
+            this.mode = mode;
         }
 
         @Override
@@ -168,12 +219,21 @@ class CoverLetterEvalHarnessTest {
                         "저는 어릴 때부터 성실했고 성능을 99% 개선한 경험이 있습니다.");
                 case CoverLetterEvalHarness.JUDGE_SCHEMA -> {
                     judgeInputs.add(request.input());
+                    judgeRequests.add(request);
+                    if (mode == JudgeMode.ALWAYS_A_ALL_FIVES) {
+                        yield new JudgeOutput(
+                                CoverLetterEvalHarness.JUDGE_SCHEMA, scores(5), scores(5),
+                                JudgePreference.A, PreferenceMargin.SLIGHT, "A를 선택합니다.");
+                    }
+                    boolean hiresembleIsA = request.input().path("answerA").path("text").asText()
+                            .startsWith("제가 맡은 문제");
                     yield new JudgeOutput(
                             CoverLetterEvalHarness.JUDGE_SCHEMA,
-                            scores(4),
-                            scores(3),
-                            JudgePreference.A,
-                            "A가 질문에 더 직접적으로 답합니다.");
+                            scores(hiresembleIsA ? 4 : 3),
+                            scores(hiresembleIsA ? 3 : 4),
+                            hiresembleIsA ? JudgePreference.A : JudgePreference.B,
+                            PreferenceMargin.CLEAR,
+                            "구체적인 판단 과정이 드러난 답변을 선택합니다.");
                 }
                 default -> throw new AssertionError("unexpected schema " + request.outputSchemaVersion());
             };
@@ -230,7 +290,7 @@ class CoverLetterEvalHarnessTest {
 
         private JudgeAnswerScores scores(int value) {
             return new JudgeAnswerScores(
-                    value, value, value, value, value, value, 0, "직접적인 답변입니다.", "회사 연결이 약합니다.");
+                    value, value, value, value, value, value, value, 0, "직접적인 답변입니다.", "회사 연결이 약합니다.");
         }
     }
 }

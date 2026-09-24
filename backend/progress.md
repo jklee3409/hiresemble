@@ -7,6 +7,20 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-24] Session Summary (자기소개서 품질 평가 심사 v2)
+
+- What was done:
+  - 첫 실제 평가 결과를 바탕으로 심사를 순서 교차 이중 심사·고정 점수 기준·간결성 기준·memo 전달·다른 심사 모델 기본값으로 엄격화하고 리포트에 신뢰도 경고를 추가했다.
+- Key decisions:
+  - 첫 실제 실행(Terra 작성·Terra 심사, 5건, 0.38달러)은 Hiresemble 3승/기준선 2승, 평균 4.86 대 4.87이었으나 점수 대부분이 5점이었고, 직무역량 케이스는 심사 모델이 memo를 모른 채 memo를 따른 답변을 감점했다.
+- Issues encountered:
+  - None
+- Validation:
+  - `CoverLetterEvalHarnessTest` 5건 통과(순서 교차 이중 심사와 일관 판정, 순서 편향·포화 심사의 TIE 처리와 경고, 기본 심사 모델, 비용 상한, 지표 경계).
+  - Backend 전체 `check`: 106 suites/720 tests 중 719 통과. 실패 1건 `S3ObjectStorageAdapterTest`는 Docker Hub의 `minio/minio` 이미지 pull 거부로 인한 환경 문제이며 이번 변경과 무관하다.
+- Next steps:
+  - v2 평가를 실제 provider로 다시 실행한다.
+
 ## [2026-09-24] Session Summary (자기소개서 P2: 호출 정책과 A/B 품질 평가)
 
 - What was done:
