@@ -4,6 +4,32 @@
 
 P0 승인 제품 명세 5종, 전체 시스템 설계·구현 계획·승인 결정 기록, Codex 작업 규칙 6종과 최신순 Session 기반 계층형 추적 문서가 구성되어 있다. P0–P8은 완료됐고 P8.5는 `IMPLEMENTED_NOT_LIVE_VERIFIED`, P8.5-V는 사용자 검증 대기다. P8.6–P8.9-A는 P9 이전 운영 기반으로 계획됐고 P9는 이 선행 단계가 완료될 때까지 차단된다. GitHub·Career Artifact Gate 0–4는 `DONE`, Gate 5는 `IMPLEMENTED_NOT_VERIFIED`, 실제 GitHub App UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-25] Session Summary (이미지 공고 계약과 커밋 작성자 규칙)
+
+- What was done:
+  - [기능](spec/functional.md)·[기술](spec/tech_stack.md) 명세에 jobflex 공개 JSON 경로와 세로형 이미지 segment 판독을 반영하고, [작업 규칙](agent-rules/workflow.md)에 AI 공동 작성자 금지를 추가했다.
+- Key decisions:
+  - None
+- Issues encountered:
+  - None
+- Validation:
+  - 구현과 명세 문구를 대조했다.
+- Next steps:
+  - None
+
+## [2026-09-25] Session Summary (기능 검증용 유료 AI 3회 사전 승인)
+
+- What was done:
+  - AGENTS와 개발 규칙에 기능 수정·검증의 사용자 요청당 유료 AI 최대 3회 사전 승인을 반영했다. 상세 계수·실행 규칙은 [workflow.md](agent-rules/workflow.md)에 둔다.
+- Key decisions:
+  - 에이전트·재시도·fallback·임베딩을 합산하고 전송 직전 제한한다. 기본 테스트와 CI는 Fake를 유지한다.
+- Issues encountered:
+  - 기존 workflow의 외부 유료 API 검증 전면 금지 문구를 명시적 사용자 지시에 맞게 수정했다.
+- Validation:
+  - 관련 금지 문구와 규칙 링크를 대조하고 git diff --check를 실행했다. 이 문서 변경 단계의 유료 호출은 0회다.
+- Next steps:
+  - NH 이미지 공고 추출 수정과 실제 검증에 같은 요청의 총 3회 한도를 적용한다.
+
 ## [2026-08-09] Session Summary (공개 GitHub snapshot quota 경계 동기화)
 
 - What was done: GitHub 설계의 공개 content snapshot을 REST blob fan-out에서 bounded commit archive로 동기화했다.

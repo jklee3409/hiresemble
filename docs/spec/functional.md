@@ -389,14 +389,14 @@
 3. 기본 상태 `IN_PROGRESS`
 4. 사용 가능한 공고 본문을 직접 입력했다면 `MANUAL_INPUT_PROVIDED`로 저장하고 URL 추출 Agent Run을 만들지 않음
 5. 직접 입력 본문이 없다면 `QUEUED`로 URL 본문 비동기 추출
-6. HTTP header, BOM, HTML meta 순서로 문자셋을 strict decode하고 DOM 본문 품질을 검사
+6. HTTP header, BOM, HTML meta 순서로 문자셋을 strict decode하고 DOM 본문 품질을 검사. 본문을 JavaScript로만 렌더링하는 `*.recruiter.co.kr/career/jobs/{id}`(jobflex) 공고는 같은 SSRF 경계에서 공개 position JSON을 받아 제목·접수 기간·sanitize된 본문 HTML로 검사 대상을 구성하며, 응답에 공고가 없으면 원래 페이지 판정을 유지
 7. DOM 본문이 부족하고 공고 이미지 후보가 있으면 SSRF-safe bounded fetch와 이미지 텍스트 추출을 자동 실행
 8. DOM·이미지 텍스트를 출처별로 병합한 뒤 회사명·직무명·본문·마감일 후보 추출
 9. 회사명·직무명·마감일 사용자 입력값이 있으면 자동 추출값보다 우선
 10. semantic null·손상 문자·본문 품질 검증을 통과한 결과만 저장 및 사용자 확인
 11. usable 본문이 확보된 공고 revision은 durable 후속 의도를 저장하고 기본 `BALANCED` `JOB_ANALYSIS` run을 최대 한 번 자동 접수
 
-이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 각 reference는 Provider가 실제로 받는 단일 user message의 text에 명시하고 그 message에 해당 이미지 하나만 첨부한다. Spring AI 내부 `Media.id`나 `name`은 Provider 전달 계약으로 간주하지 않는다. 서버는 안전한 reference 형식과 요청 중복을 호출 전에 거부하고, output allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item도 거부한 뒤 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
+이미지 텍스트 추출 v3는 요청에서 서버가 부여한 `I1` 같은 local `imageRef`를 output item에 유지한다. 각 reference는 Provider가 실제로 받는 단일 user message의 text에 명시하고 그 message에 해당 이미지만 첨부한다. 높이가 너비의 2배를 넘는 세로형 이미지는 축소로 글자가 뭉개지지 않도록 같은 message 안에서 최대 8개의 겹치는 위→아래 segment로 나눠 첨부하고, 결과는 여전히 그 reference 하나의 item으로 받는다. Spring AI 내부 `Media.id`나 `name`은 Provider 전달 계약으로 간주하지 않는다. 서버는 안전한 reference 형식과 요청 중복을 호출 전에 거부하고, output allowlist에 없는 reference, 중복·blank reference와 입력 이미지 수를 넘는 item도 거부한 뒤 Provider 반환 순서와 무관하게 원래 입력 이미지 순서로 정렬한다. 판독하지 못해 빠진 이미지는 누락으로 유지하므로 이후 이미지의 reference가 앞으로 당겨지지 않는다.
 
 JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를 통과한 경우 자동 판독한다. 이미지 item은 meaningful character 20자부터 합산 후보가 되며, item 내부와 이미지 사이의 반복 line을 제거한 DOM·이미지 aggregate가 기존 본문 최소 120자를 충족할 때만 field extraction을 계속한다. 따라서 80자 이미지 두 장 또는 DOM 70자와 이미지 70자는 처리할 수 있지만, icon label·semantic null·손상 문자나 반복 header만으로 120자를 채운 경우는 `NEEDS_MANUAL_INPUT`으로 전환한다.
 

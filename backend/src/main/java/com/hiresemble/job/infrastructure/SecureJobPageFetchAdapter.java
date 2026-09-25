@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -71,6 +72,60 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
 
     @Override
     public FetchResult fetch(URI requestedUri) {
+        FetchResult page = fetchPage(requestedUri);
+        return RecruiterJobflexPosting.apiRequest(page.finalUri())
+                .flatMap(request -> fetchJobflexPosting(request, page))
+                .orElse(page);
+    }
+
+    /**
+     * Temporary remote failures stay retryable like the page fetch; a response that carries no
+     * usable posting keeps the original page classification.
+     */
+    private Optional<FetchResult> fetchJobflexPosting(
+            RecruiterJobflexPosting.ApiRequest request, FetchResult page) {
+        ResponseDeadline deadline = ResponseDeadline.start(properties.getResponseTimeout());
+        List<InetAddress> validatedAddresses = validateUriAndDns(request.uri());
+        TransportResponse response;
+        try {
+            response = transport.get(
+                    request.uri(), validatedAddresses, request.headers(), deadline);
+        } catch (HttpTimeoutException | SocketTimeoutException exception) {
+            throw failure("JOB_PAGE_TIMEOUT", true, exception);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw failure("JOB_PAGE_FETCH_INTERRUPTED", true, exception);
+        } catch (IOException exception) {
+            throw failure("JOB_PAGE_NETWORK_ERROR", true, exception);
+        }
+        int status = response.status();
+        if (status == 429 || status >= 500) {
+            close(response.body());
+            throw failure("JOB_PAGE_REMOTE_TEMPORARY_FAILURE", true, null);
+        }
+        String contentType = header(response.headers(), "content-type").orElse("");
+        long declaredLength = header(response.headers(), "content-length")
+                .flatMap(this::longValue)
+                .orElse(-1L);
+        if (status < 200 || status >= 300
+                || !contentType.toLowerCase(Locale.ROOT).startsWith("application/json")
+                || declaredLength > properties.getMaxResponseBytes()) {
+            close(response.body());
+            return Optional.empty();
+        }
+        byte[] content = readLimited(decodedBody(response), properties.getMaxResponseBytes(), deadline);
+        HtmlCharsetDecoder.DecodedHtml decoded;
+        try {
+            decoded = charsetDecoder.decode(content, contentType);
+        } catch (JobPageFetchException undecodable) {
+            return Optional.empty();
+        }
+        return RecruiterJobflexPosting.postingHtml(decoded.html(), page.finalUri())
+                .map(html -> new FetchResult(
+                        page.finalUri(), PageClassification.FETCHED, html, status, decoded.metadata()));
+    }
+
+    private FetchResult fetchPage(URI requestedUri) {
         URI current = requestedUri;
         ResponseDeadline deadline =
                 ResponseDeadline.start(properties.getResponseTimeout());
@@ -78,7 +133,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             List<InetAddress> validatedAddresses = validateUriAndDns(current);
             TransportResponse response;
             try {
-                response = transport.get(current, validatedAddresses, deadline);
+                response = transport.get(current, validatedAddresses, Map.of(), deadline);
             } catch (HttpTimeoutException exception) {
                 throw failure("JOB_PAGE_TIMEOUT", true, exception);
             } catch (InterruptedException exception) {
@@ -161,7 +216,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             List<InetAddress> validatedAddresses = validateUriAndDns(current);
             TransportResponse response;
             try {
-                response = transport.get(current, validatedAddresses, deadline);
+                response = transport.get(current, validatedAddresses, Map.of(), deadline);
             } catch (HttpTimeoutException | SocketTimeoutException exception) {
                 throw failure("JOB_IMAGE_TIMEOUT", true, exception);
             } catch (InterruptedException exception) {
@@ -555,6 +610,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
         TransportResponse get(
                 URI uri,
                 List<InetAddress> validatedAddresses,
+                Map<String, String> requestHeaders,
                 ResponseDeadline deadline)
                 throws IOException, InterruptedException;
     }
@@ -608,6 +664,9 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
 
         private static final int MAX_HEADER_BYTES = 64 * 1024;
         private static final int MAX_HEADER_COUNT = 100;
+        private static final Set<String> RESERVED_REQUEST_HEADERS =
+                Set.of("host", "connection", "accept-encoding", "user-agent", "content-length",
+                        "transfer-encoding");
         private final Duration connectTimeout;
         private final SocketConnector connector;
         private final SSLSocketFactory sslSocketFactory;
@@ -625,11 +684,13 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
         public TransportResponse get(
                 URI uri,
                 List<InetAddress> validatedAddresses,
+                Map<String, String> requestHeaders,
                 ResponseDeadline deadline)
                 throws IOException {
             if (validatedAddresses == null || validatedAddresses.isEmpty()) {
                 throw new IOException("validated DNS addresses are required");
             }
+            Map<String, String> headers = requestHeaders(requestHeaders);
             String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
             String host = tlsHost(uri);
             int port = uri.getPort() < 0
@@ -642,7 +703,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
                 }
                 DeadlineInputStream input =
                         new DeadlineInputStream(socket.getInputStream(), socket, deadline);
-                writeRequest(socket.getOutputStream(), uri, host, port, deadline);
+                writeRequest(socket.getOutputStream(), uri, host, port, headers, deadline);
                 HeaderBlock headerBlock = readHeaders(input, deadline);
                 InputStream body = responseBody(
                         headerBlock.status(), headerBlock.headers(), input, socket);
@@ -658,6 +719,25 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
                 closeSocket(socket, failure);
                 throw failure;
             }
+        }
+
+        /** Default Accept plus caller headers; framing and identity headers stay transport-owned. */
+        private Map<String, String> requestHeaders(Map<String, String> requested) {
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("Accept", "text/html,application/xhtml+xml,image/jpeg,image/png,image/webp");
+            if (requested == null) {
+                return headers;
+            }
+            requested.forEach((name, value) -> {
+                if (name == null || value == null || !validHeaderName(name)
+                        || containsControl(value)
+                        || RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+                    throw new IllegalArgumentException("request header is invalid");
+                }
+                headers.keySet().removeIf(existing -> existing.equalsIgnoreCase(name));
+                headers.put(name, value);
+            });
+            return headers;
         }
 
         private Socket connect(
@@ -727,6 +807,7 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
                 URI uri,
                 String host,
                 int port,
+                Map<String, String> headers,
                 ResponseDeadline deadline)
                 throws IOException {
             deadline.requireRemaining();
@@ -744,13 +825,14 @@ public final class SecureJobPageFetchAdapter implements JobPageFetchGateway, Job
             if (!defaultPort) {
                 hostValue += ":" + port;
             }
-            String request = "GET " + target + " HTTP/1.1\r\n"
-                    + "Host: " + hostValue + "\r\n"
-                    + "Accept: text/html,application/xhtml+xml,image/jpeg,image/png,image/webp\r\n"
-                    + "Accept-Encoding: gzip, deflate\r\n"
-                    + "User-Agent: HiresembleJobFetcher/1.0\r\n"
-                    + "Connection: close\r\n\r\n";
-            output.write(request.getBytes(StandardCharsets.US_ASCII));
+            StringBuilder request = new StringBuilder("GET ").append(target).append(" HTTP/1.1\r\n")
+                    .append("Host: ").append(hostValue).append("\r\n");
+            headers.forEach((name, value) ->
+                    request.append(name).append(": ").append(value).append("\r\n"));
+            request.append("Accept-Encoding: gzip, deflate\r\n")
+                    .append("User-Agent: HiresembleJobFetcher/1.0\r\n")
+                    .append("Connection: close\r\n\r\n");
+            output.write(request.toString().getBytes(StandardCharsets.US_ASCII));
             output.flush();
             deadline.requireRemaining();
         }

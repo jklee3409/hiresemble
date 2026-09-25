@@ -10,6 +10,7 @@ P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store, SSRF-s
 - `JobAnalysisStore`: owner-scoped immutable analysis·criteria·provenance·secondary Run link SQL
 - `JobAutoAnalysisStore`: revision unique enqueue, `SKIP LOCKED` lease claim과 결정적 Run 연결 SQL
 - `SecureJobPageFetchAdapter`: DNS 검증 주소 고정, redirect 재검사, bounded HTML/JPEG/PNG/WebP fetch와 magic·decode·pixel 검증
+- `RecruiterJobflexPosting`: JavaScript 전용 `*.recruiter.co.kr/career/jobs/{id}` 공고를 공개 position API 요청(tenant `prefix` header)으로 매핑하고 JSON을 sanitize된 공고 HTML로 변환(network 없음)
 - `HtmlCharsetDecoder`: header→BOM→meta→strict UTF-8→제한적 MS949 fallback과 Korean alias 정규화
 - `JobPageFetchProperties`, `JobDeadlineSchedulerProperties`, `JobAutoAnalysisProperties`: 검증된 설정
 - `JobInfrastructureConfiguration`: Clock과 Job infrastructure bean 조립
@@ -25,7 +26,7 @@ P5 Job JDBC store·Scheduler/fetch 설정과 P6 immutable Analysis store, SSRF-s
 
 ## 변경 시 주의사항
 
-모든 SQL에 `user_id`와 active 조건을 적용한다. DNS 검증 뒤 hostname을 다시 해석하는 transport를 사용하지 않는다.
+모든 SQL에 `user_id`와 active 조건을 적용한다. DNS 검증 뒤 hostname을 다시 해석하는 transport를 사용하지 않는다. transport의 추가 request header는 token 이름·control 문자 없는 값만 허용하고 Host·Connection·인코딩·User-Agent 등 framing header는 덮어쓸 수 없다. jobflex API의 일시 장애(429/5xx/timeout)는 재시도 가능 실패, 공고가 없는 응답은 원래 page 판정으로 처리한다.
 
 ## 관련 규칙 및 문서
 

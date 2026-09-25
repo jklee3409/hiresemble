@@ -237,6 +237,29 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
+    void textlessPostingWhoseOnlyBodyIsAnUnsizedImageIsExtractedFromImageText() {
+        pageGateway.html = """
+                <html><head><title>NH투자증권 2026년 하반기 대졸 신입사원 채용</title></head><body><main>
+                <h1>NH투자증권 2026년 하반기 대졸 신입사원 채용</h1>
+                <ul><li>신입/경력: 신입</li><li>접수 마감: 2026-09-28 17:00</li></ul>
+                <section><img src="https://nhqv.recruiter.co.kr/upload/90999/image/202609/posting.jpg"><p><br></p></section>
+                </main></body></html>
+                """;
+        JobCreationAccepted accepted = create(null, null, null);
+
+        execute(accepted.agentRunId());
+
+        AgentRunSnapshot completed = run(accepted.agentRunId());
+        assertThat(completed.status()).withFailMessage(completed::toString)
+                .isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(jobService.detail(userId, accepted.jobId()).extractionStatus())
+                .isEqualTo(JobExtractionStatus.EXTRACTED);
+        assertThat(imageFetchGateway.calls).hasValue(1);
+        assertThat(imageTextGateway.calls).hasValue(1);
+        assertThat(chatGateway.lastInput).contains("job_page_image_text");
+    }
+
+    @Test
     void imageOnlyPageWithEmptyImageTextWaitsForManualInputWithoutSavingBrokenText() {
         pageGateway.html = """
                 <html><body><nav>%s</nav><img src="/posting.png" width="1200" height="1800"></body></html>

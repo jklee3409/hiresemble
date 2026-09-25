@@ -7,6 +7,19 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-25] Session Summary (이미지 전용 공고 추출)
+
+- What was done:
+  - JavaScript 전용 jobflex 공고의 공개 position JSON fetch, 세로형 이미지 segment 판독, 이미지 판독 timeout 90초를 추가하고 opt-in `jobPostingLiveVerification` 태스크를 등록했다. 세부는 [job infrastructure](src/main/java/com/hiresemble/job/infrastructure/progress.md), [ai infrastructure](src/main/java/com/hiresemble/ai/infrastructure/progress.md), [평가 도구](src/test/java/com/hiresemble/ai/evaluation/progress.md)에 둔다.
+- Key decisions:
+  - workflow·prompt·DTO·DB 계약은 바꾸지 않았다. 새 태스크는 `test`/`check`에서 제외했다.
+- Issues encountered:
+  - 첫 `check` 실행은 도구 10분 제한으로 중단됐고 그 과정에서 `AccountDeletionWorkerIntegrationTest` 1건이 실패로 표시됐다. 단독 재실행한 전체 `check`에서는 6/6 통과해 재현되지 않았다.
+- Validation:
+  - `.\gradlew check` 통과: 107 suites/729 tests, 실패 0. 실제 NH 공고 검증 유료 호출 2회(gpt-5-mini, USD 0.011369) 통과.
+- Next steps:
+  - 추출 마감일의 Asia/Seoul 해석 보정.
+
 ## [2026-09-24] Session Summary (자기소개서 품질 평가 심사 v2)
 
 - What was done:

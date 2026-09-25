@@ -4,6 +4,20 @@
 
 P5 Job JDBC·Scheduler/fetch, P6 immutable Analysis JDBC·비용 설정과 자동 분석 claim store·reconciliation 설정이 구현됐다.
 
+## [2026-09-25] Session Summary (JavaScript 전용 jobflex 이미지 공고 fetch)
+
+- What was done:
+  - `RecruiterJobflexPosting`을 추가하고 `SecureJobPageFetchAdapter.fetch`가 `*.recruiter.co.kr/career/jobs/{id}` page fetch 뒤 공개 position API JSON을 받아 제목·접수 기간·sanitize된 본문 HTML(`<main>` 안 이미지 포함)로 FETCHED 결과를 만들게 했다.
+  - pinned transport에 검증된 추가 request header(`Accept`, `prefix`)를 전달하는 인자를 추가했다.
+- Key decisions:
+  - API host는 고정값이고 기존 DNS 검증·주소 고정·byte·deadline 경계를 그대로 쓴다. 429/5xx/timeout은 재시도 가능 실패, 4xx·비 JSON·공고 없는 응답은 원래 page 판정을 유지한다. 공고 HTML은 Jsoup `Safelist.relaxed`로 script·event handler를 제거하고 상대 이미지 URL을 절대화한다.
+- Issues encountered:
+  - NH투자증권 공고(`/career/jobs/128898`)의 정적 HTML은 Next.js shell뿐이라 본문 텍스트와 `<img>`가 없어 기존에는 `JAVASCRIPT_REQUIRED`로 수동 입력이 필요했다. 본문은 1000x4148 JPEG 한 장이다.
+- Validation:
+  - `SecureJobPageFetchAdapterTest` 18/18 통과(jobflex API·prefix header·sanitize, fallback/재시도, 대상 URL 한정, header injection 거부 추가). 실제 NH URL에서 FETCHED·본문 이미지 1장 fetch를 유료 호출 0회로 확인했다.
+- Next steps:
+  - 사용자 도메인에 jobflex를 붙인 공고는 대상에 포함하지 않았다. 필요 시 prefix 허용 여부를 확인한 뒤 확장한다.
+
 ## [2026-08-05] Session Summary (공고 기간 저장·조회 SQL)
 
 - What was done:

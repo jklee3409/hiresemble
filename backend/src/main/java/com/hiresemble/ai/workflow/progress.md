@@ -4,6 +4,20 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-25] Session Summary (공고 이미지 판독 timeout과 텍스트 없는 공고 회귀)
+
+- What was done:
+  - `EXTRACT_JOB_IMAGE_TEXT` 호출 timeout을 45초에서 90초로 늘렸다(다중 segment 판독). 필드 추출은 45초를 유지한다.
+  - 크기 속성 없는 이미지 한 장과 제목·접수 기간만 있는 공고가 이미지 텍스트로 추출되는 통합 회귀를 추가했다.
+- Key decisions:
+  - workflow·step·prompt 버전과 checkpoint 계약은 바꾸지 않았다.
+- Issues encountered:
+  - 실제 필드 추출 결과의 `deadlineAt`이 KST 17:00을 `17:00Z`로 반환했다. 이미지 경로와 무관한 기존 prompt 동작이라 별도 작업으로 분리했다.
+- Validation:
+  - `JobPostingExtractionOrchestratorIntegrationTest` 15/15 통과. 실제 필드 추출 1회(18.9초, input 1,833/output 2,875 token, USD 0.006209)로 회사명·제목·마감·본문 2,180자를 확인했다.
+- Next steps:
+  - 마감일 시간대(Asia/Seoul) 해석 보정.
+
 ## [2026-09-24] Session Summary (생성 v5 단계별 reasoning·timeout 정책)
 
 - What was done:

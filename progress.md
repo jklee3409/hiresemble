@@ -14,6 +14,33 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-25] Session Summary (이미지 전용 공고 분석과 AI 기여자 제거)
+
+- What was done:
+  - NH투자증권(`nhqv.recruiter.co.kr/career/jobs/128898`)처럼 본문이 JavaScript로 로드되는 이미지 한 장뿐인 공고를 공개 position JSON과 세로형 이미지 segment 판독으로 자동 추출하게 했다([backend](backend/progress.md)).
+  - GitHub contributors의 Claude는 원격 `claude/gifted-archimedes-3pv1sv` 브랜치의 Claude 작성 commit(`426803a`, main의 `a7bc2a2`와 동일 tree)에서 왔다. 해당 브랜치는 이미 원격에서 삭제돼 contributors API에는 `jklee3409`만 남았고, 재발 방지로 `.claude/settings.json` attribution 비활성과 커밋 작성자 규칙을 추가했다([agent-rules](docs/agent-rules/progress.md)).
+- Key decisions:
+  - 모든 커밋은 main에서 사용자 git 계정으로만 작성하고 AI trailer를 넣지 않는다.
+- Issues encountered:
+  - 실제 추출 마감일이 KST 시각을 UTC로 반환하는 기존 문제를 발견해 별도 작업으로 분리했다.
+- Validation:
+  - Backend `check` 107 suites/729 tests 통과. 이 요청의 유료 AI 호출은 2/3회(USD 0.011369)다.
+- Next steps:
+  - GitHub 웹 contributors 화면이 캐시로 Claude를 계속 보이면 GitHub 재계산을 기다린다.
+
+## [2026-09-25] Session Summary (기능 검증용 유료 AI 3회 사전 승인)
+
+- What was done:
+  - AGENTS와 개발 규칙에 기능 수정·검증의 사용자 요청당 유료 AI 최대 3회 사전 승인을 반영했다. 상세 계수·실행 규칙은 [workflow.md](docs/agent-rules/workflow.md)에 둔다.
+- Key decisions:
+  - 에이전트·재시도·fallback·임베딩을 합산하고 전송 직전 제한한다. 기본 테스트와 CI는 Fake를 유지한다.
+- Issues encountered:
+  - 기존 workflow의 외부 유료 API 검증 전면 금지 문구를 명시적 사용자 지시에 맞게 수정했다.
+- Validation:
+  - 관련 금지 문구와 규칙 링크를 대조하고 git diff --check를 실행했다. 이 문서 변경 단계의 유료 호출은 0회다.
+- Next steps:
+  - NH 이미지 공고 추출 수정과 실제 검증에 같은 요청의 총 3회 한도를 적용한다.
+
 ## [2026-09-24] Session Summary (자기소개서 품질 평가 심사 v2)
 
 - What was done:

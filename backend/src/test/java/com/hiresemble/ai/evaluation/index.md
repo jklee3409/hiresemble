@@ -1,8 +1,8 @@
-# 자기소개서 품질 평가 도구 안내
+# 실제 Provider opt-in 평가·검증 도구 안내
 
 ## 디렉터리 목적
 
-자기소개서 생성 v5 결과와 같은 자료를 일반 채팅 모델에 직접 넣은 기준선 결과를 같은 케이스로 비교한다.
+자기소개서 생성 v5 결과와 같은 자료를 일반 채팅 모델에 직접 넣은 기준선 결과를 같은 케이스로 비교하고, 이미지 전용 공고 URL의 실제 판독·필드 추출을 제한된 유료 호출로 확인한다.
 
 ## 주요 파일 및 하위 디렉터리
 
@@ -12,6 +12,7 @@
 - `CoverLetterEvalReport`: `report.json`(답변·두 심사·지표)과 `report.md`(순서 일관 승패·포화도·기준별 차이·경고) 작성
 - `CoverLetterEvalHarnessTest`: fake gateway로 전체 흐름·블라인드 매핑·지표·비용 상한 검증(CI 포함)
 - `CoverLetterQualityEvaluationTest`: 실제 OpenAI 호출 opt-in 평가(`coverLetterQualityEvaluation` 태스크 전용, `test`에서 제외)
+- `JobPostingImageLiveVerificationTest`: 실제 page·image fetch 뒤 이미지 판독 1회·필드 추출 1회를 호출 전 계수로 최대 3회(기본 2회) 제한해 실행하는 opt-in 검증(`jobPostingLiveVerification` 태스크 전용, `test`에서 제외, report는 `build/reports/job-posting-live/`)
 - [`progress.md`](progress.md): 변경 이력
 
 ## 구성 요소 역할
@@ -24,7 +25,7 @@
 
 ## 변경 시 주의사항
 
-실제 유료 호출은 `COVER_LETTER_EVAL_ENABLED=true`와 API key가 모두 있을 때만 일어난다. 이 조건을 `test`나 `check`로 옮기지 않는다. 심사 입력에 어느 답변이 Hiresemble인지 드러내지 않는다.
+실제 유료 호출은 `COVER_LETTER_EVAL_ENABLED=true` 또는 `JOB_POSTING_LIVE_VERIFY_ENABLED=true`와 API key가 모두 있을 때만 일어난다. 공고 검증은 `JOB_POSTING_LIVE_URL`, `JOB_POSTING_LIVE_MAX_CALLS`(최대 3)를 받는다. 이 조건을 `test`나 `check`로 옮기지 않는다. 심사 입력에 어느 답변이 Hiresemble인지 드러내지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -4,6 +4,19 @@
 
 local은 OpenAI Chat·Embedding과 Tavily Search를 실제 adapter로 활성화하고 local-offline/test는 capability별 disabled/Fake를 사용한다.
 
+## [2026-09-25] Session Summary (세로형 공고 이미지 분할 판독)
+
+- What was done:
+  - `VisionImageSegmenter`를 추가해 높이가 너비의 2배를 넘는 이미지를 80px 겹치는 PNG segment(최대 8개)로 나누고, image text adapter가 segment를 같은 reference의 한 user message에 순서대로 첨부하게 했다. 이미지 판독 호출에 reasoning `low`를 지정했다.
+- Key decisions:
+  - OpenAI vision 축소(2048 fit 후 짧은 변 768)로 1000x4148 이미지가 약 500px 폭이 되어 글자가 뭉개지는 문제를 adapter에서 해결하고 workflow·output 계약(reference당 item 1개)은 유지했다. decode 불가·일반 비율·segment 합계 20MiB 초과는 원본을 그대로 보낸다.
+- Issues encountered:
+  - None
+- Validation:
+  - `VisionImageSegmenterTest` 3/3, `SpringAiOpenAiGatewayTest` 12/12 통과. 실제 gpt-5-mini 이미지 판독 1회(15.1초, input 7,541/output 1,637 token, USD 0.005160)로 NH 공고 본문 2,149자를 판독했다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (생성 v5 contribution 등록)
 
 - What was done:

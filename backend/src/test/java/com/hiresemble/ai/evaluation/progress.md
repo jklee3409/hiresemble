@@ -4,6 +4,19 @@
 
 자기소개서 v5와 직접 입력 기준선의 A/B 품질 평가 도구가 구현됐다. CI는 fake gateway로만 검증하고 실제 평가는 opt-in이다.
 
+## [2026-09-25] Session Summary (이미지 전용 공고 opt-in 실제 검증)
+
+- What was done:
+  - `JobPostingImageLiveVerificationTest`와 `jobPostingLiveVerification` Gradle 태스크를 추가했다. 실제 page·image fetch 뒤 이미지 판독과 필드 추출을 호출하고 `build/reports/job-posting-live/report.md`에 시간·token·비용·추출 결과를 남긴다.
+- Key decisions:
+  - Provider 전송 전에 호출 수를 세어 `JOB_POSTING_LIVE_MAX_CALLS`(기본 2, 코드 상한 3)를 넘으면 전송하지 않는다. client·요청 retry는 0이다. `test`/`check`에서는 제외한다.
+- Issues encountered:
+  - None
+- Validation:
+  - 유료 0회 dry-run에서 NH URL FETCHED·이미지 1000x4148 확인 후 한도에서 중단됨을 확인했다. 유료 2회 실행(gpt-5-mini, 합계 USD 0.011369)이 통과했다. 이 요청의 누적 유료 호출은 2/3회다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (품질 평가 심사 v2 엄격화)
 
 - What was done:

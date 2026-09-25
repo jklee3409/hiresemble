@@ -225,6 +225,39 @@ class SpringAiOpenAiGatewayTest {
     }
 
     @Test
+    void tallImageIsSentAsOrderedSegmentsOfOneReferenceWithLowReasoning() throws Exception {
+        OpenAiChatModel model = mock(OpenAiChatModel.class);
+        when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(
+                        new AssistantMessage("{\"status\":\"ok\"}"),
+                        ChatGenerationMetadata.builder().finishReason("stop").build())),
+                ChatResponseMetadata.builder().build()));
+        var gateway = new SpringAiOpenAiImageTextExtractionGateway(
+                model, prices(), schemas(), Duration.ofSeconds(60));
+        byte[] tall = VisionImageSegmenterTest.encode(
+                VisionImageSegmenterTest.striped(1000, 4148), "jpg");
+
+        gateway.extract(imageRequest(List.of(
+                new ImageMedia("I1", "image/jpeg", tall, "a".repeat(64)))));
+
+        ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
+        verify(model).call(prompt.capture());
+        OpenAiChatOptions options = (OpenAiChatOptions) prompt.getValue().getOptions();
+        assertThat(options.getReasoningEffort()).isEqualTo("low");
+        assertThat(prompt.getValue().getInstructions().stream()
+                        .filter(UserMessage.class::isInstance)
+                        .map(UserMessage.class::cast))
+                .singleElement()
+                .satisfies(user -> {
+                    assertThat(user.getText()).contains(
+                            "Local image reference: I1", "3 attached images",
+                            "top-to-bottom segments");
+                    assertThat(user.getMedia()).hasSize(3).allSatisfy(media ->
+                            assertThat(media.getMimeType().toString()).isEqualTo("image/png"));
+                });
+    }
+
+    @Test
     void imageExtractionRejectsUnsafeOrDuplicateReferencesBeforeProviderCall() {
         OpenAiChatModel model = mock(OpenAiChatModel.class);
         var gateway = new SpringAiOpenAiImageTextExtractionGateway(

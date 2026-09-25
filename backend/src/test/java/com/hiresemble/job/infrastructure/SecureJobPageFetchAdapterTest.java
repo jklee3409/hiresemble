@@ -50,7 +50,7 @@ class SecureJobPageFetchAdapterTest {
                     dnsChecks.incrementAndGet();
                     return List.of(PUBLIC);
                 },
-                (uri, addresses, deadline) -> responses.remove());
+                (uri, addresses, headers, deadline) -> responses.remove());
 
         var fetched = adapter.fetch(URI.create("https://example.test/start"));
 
@@ -218,7 +218,7 @@ class SecureJobPageFetchAdapterTest {
         SecureJobPageFetchAdapter pixelLimited = new SecureJobPageFetchAdapter(
                 limited,
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of("Content-Type", List.of("image/webp")),
                         new ByteArrayInputStream(tooManyPixels)));
@@ -245,7 +245,7 @@ class SecureJobPageFetchAdapterTest {
         List<URI> requested = new ArrayList<>();
         SecureJobPageFetchAdapter redirected = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> {
+                (uri, addresses, headers, deadline) -> {
                     requested.add(uri);
                     return responses.remove();
                 });
@@ -263,7 +263,7 @@ class SecureJobPageFetchAdapterTest {
                 host -> host.equals("private.test")
                         ? List.of(address("10.0.0.7"))
                         : List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         302,
                         Map.of("Location", List.of("http://private.test/final.webp")),
                         ""));
@@ -276,7 +276,7 @@ class SecureJobPageFetchAdapterTest {
 
         SecureJobPageFetchAdapter timeout = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> {
+                (uri, addresses, headers, deadline) -> {
                     throw new HttpTimeoutException("image timeout fixture");
                 });
         assertThatThrownBy(() -> timeout.fetch(new ImageCandidate(
@@ -292,7 +292,7 @@ class SecureJobPageFetchAdapterTest {
         SecureJobPageFetchAdapter oversized = new SecureJobPageFetchAdapter(
                 oneKib,
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of(
                                 "Content-Type", List.of("image/webp"),
@@ -311,7 +311,7 @@ class SecureJobPageFetchAdapterTest {
         AtomicInteger calls = new AtomicInteger();
         SecureJobPageFetchAdapter loopback = adapter(
                 host -> List.of(address("127.0.0.1")),
-                (uri, addresses, deadline) -> {
+                (uri, addresses, headers, deadline) -> {
                     calls.incrementAndGet();
                     return html(200, jobHtml());
                 });
@@ -322,7 +322,7 @@ class SecureJobPageFetchAdapterTest {
                 host -> host.equals("private.test")
                         ? List.of(address("10.0.0.7"))
                         : List.of(PUBLIC),
-                (uri, addresses, deadline) -> {
+                (uri, addresses, headers, deadline) -> {
                     calls.incrementAndGet();
                     return response(
                             302,
@@ -338,7 +338,7 @@ class SecureJobPageFetchAdapterTest {
     void timeoutSizeAndContentTypeFailuresAreSafelyClassified() {
         SecureJobPageFetchAdapter timeout = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> {
+                (uri, addresses, headers, deadline) -> {
                     throw new HttpTimeoutException("test timeout");
                 });
         assertFetchFailure(timeout, "https://example.test/slow", "JOB_PAGE_TIMEOUT", true);
@@ -346,7 +346,7 @@ class SecureJobPageFetchAdapterTest {
         byte[] oversized = new byte[1025];
         SecureJobPageFetchAdapter tooLarge = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of("Content-Type", List.of("text/html")),
                         new ByteArrayInputStream(oversized)));
@@ -356,7 +356,7 @@ class SecureJobPageFetchAdapterTest {
         byte[] compressed = gzip(new byte[2048]);
         SecureJobPageFetchAdapter decompressedTooLarge = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of(
                                 "Content-Type", List.of("text/html"),
@@ -371,7 +371,7 @@ class SecureJobPageFetchAdapterTest {
 
         SecureJobPageFetchAdapter wrongType = adapter(
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of("Content-Type", List.of("application/json")),
                         "{}"));
@@ -435,6 +435,125 @@ class SecureJobPageFetchAdapterTest {
 
         assertThat(fetched.classification()).isEqualTo(PageClassification.FETCHED);
         assertThat(fetched.html()).contains("posting.png");
+    }
+
+    @Test
+    void recruiterJobflexShellUsesPublicPositionApiWithTenantPrefixAndSanitizedImageBody() {
+        List<URI> requested = new ArrayList<>();
+        List<Map<String, String>> requestHeaders = new ArrayList<>();
+        List<String> resolvedHosts = new ArrayList<>();
+        SecureJobPageFetchAdapter adapter = adapter(
+                host -> {
+                    resolvedHosts.add(host);
+                    return List.of(PUBLIC);
+                },
+                (uri, addresses, headers, deadline) -> {
+                    requested.add(uri);
+                    requestHeaders.add(headers);
+                    return uri.getHost().startsWith("api-")
+                            ? json(200, jobflexPositionJson())
+                            : html(200, jobflexShellHtml());
+                });
+
+        var fetched = adapter.fetch(URI.create("https://nhqv.recruiter.co.kr/career/jobs/128898"));
+
+        assertThat(requested).containsExactly(
+                URI.create("https://nhqv.recruiter.co.kr/career/jobs/128898"),
+                URI.create("https://api-recruiter.recruiter.co.kr/position/v2/jobflex/128898"));
+        assertThat(resolvedHosts).containsExactly(
+                "nhqv.recruiter.co.kr", "api-recruiter.recruiter.co.kr");
+        assertThat(requestHeaders.get(0)).isEmpty();
+        assertThat(requestHeaders.get(1)).containsEntry("prefix", "nhqv.recruiter.co.kr")
+                .containsEntry("Accept", "application/json");
+        assertThat(fetched.classification()).isEqualTo(PageClassification.FETCHED);
+        assertThat(fetched.finalUri())
+                .isEqualTo(URI.create("https://nhqv.recruiter.co.kr/career/jobs/128898"));
+        var document = org.jsoup.Jsoup.parse(fetched.html());
+        assertThat(document.title()).isEqualTo("NH투자증권 2026년 하반기 대졸 신입사원 채용");
+        assertThat(document.select("main li").eachText()).contains(
+                "신입/경력: 신입", "접수 마감: 2026-09-28 17:00");
+        assertThat(document.select("main img").attr("src"))
+                .isEqualTo("https://nhqv.recruiter.co.kr/upload/90999/image/202609/posting.jpg");
+        assertThat(fetched.html()).doesNotContain("<script", "onerror", "alert(");
+    }
+
+    @Test
+    void recruiterJobflexApiWithoutPostingKeepsShellClassificationAndTemporaryFailureRetries() {
+        String shell = jobflexShellHtml();
+        var unusable = adapter(host -> List.of(PUBLIC), (uri, addresses, headers, deadline) ->
+                        uri.getHost().startsWith("api-")
+                                ? json(200, "{\"code\":\"NOT_FOUND\"}")
+                                : html(200, shell))
+                .fetch(URI.create("https://nhqv.recruiter.co.kr/career/jobs/1"));
+        assertThat(unusable.classification()).isEqualTo(PageClassification.JAVASCRIPT_REQUIRED);
+
+        var rejected = adapter(host -> List.of(PUBLIC), (uri, addresses, headers, deadline) ->
+                        uri.getHost().startsWith("api-")
+                                ? response(404, Map.of(), "")
+                                : html(200, shell))
+                .fetch(URI.create("https://nhqv.recruiter.co.kr/career/jobs/1"));
+        assertThat(rejected.classification()).isEqualTo(PageClassification.JAVASCRIPT_REQUIRED);
+
+        assertFetchFailure(
+                adapter(host -> List.of(PUBLIC), (uri, addresses, headers, deadline) ->
+                        uri.getHost().startsWith("api-")
+                                ? response(503, Map.of(), "")
+                                : html(200, shell)),
+                "https://nhqv.recruiter.co.kr/career/jobs/1",
+                "JOB_PAGE_REMOTE_TEMPORARY_FAILURE",
+                true);
+    }
+
+    @Test
+    void positionApiIsOnlyUsedForRecruiterTenantJobPaths() {
+        for (String url : List.of(
+                "https://example.test/career/jobs/128898",
+                "https://nhqv.recruiter.co.kr/career/jobs",
+                "https://nhqv.recruiter.co.kr/career/jobs/128898/apply",
+                "http://nhqv.recruiter.co.kr/career/jobs/128898",
+                "https://api-recruiter.recruiter.co.kr/career/jobs/128898",
+                "https://nhqv.recruiter.co.kr.evil.test/career/jobs/128898")) {
+            List<URI> requested = new ArrayList<>();
+            adapter(host -> List.of(PUBLIC), (uri, addresses, headers, deadline) -> {
+                        requested.add(uri);
+                        return html(200, jobHtml());
+                    })
+                    .fetch(URI.create(url));
+            assertThat(requested).as(url).containsExactly(URI.create(url));
+        }
+    }
+
+    @Test
+    void pinnedTransportWritesValidatedExtraHeadersAndRejectsInjection() throws Exception {
+        CapturingSocket socket = socketResponse(
+                200, Map.of("Content-Type", List.of("application/json")), "{}");
+        JobPageFetchProperties properties = properties(Duration.ofMillis(500));
+        SecureJobPageFetchAdapter.JdkPinnedHttpTransport transport =
+                new SecureJobPageFetchAdapter.JdkPinnedHttpTransport(
+                        properties.getConnectTimeout(),
+                        (address, port, connectTimeout, deadline) -> socket,
+                        (SSLSocketFactory) SSLSocketFactory.getDefault());
+
+        transport.get(
+                URI.create("http://api.test/position/1"),
+                List.of(PUBLIC),
+                Map.of("Accept", "application/json", "prefix", "nhqv.recruiter.co.kr"),
+                SecureJobPageFetchAdapter.ResponseDeadline.start(Duration.ofMillis(500)));
+
+        assertThat(socket.requestText())
+                .contains("\r\nAccept: application/json\r\n", "\r\nprefix: nhqv.recruiter.co.kr\r\n")
+                .doesNotContain("text/html");
+        for (Map<String, String> unsafe : List.of(
+                Map.of("prefix", "a\r\nX-Injected: 1"),
+                Map.of("Host", "other.test"),
+                Map.of("bad header", "value"))) {
+            assertThatThrownBy(() -> transport.get(
+                            URI.create("http://api.test/position/1"),
+                            List.of(PUBLIC),
+                            unsafe,
+                            SecureJobPageFetchAdapter.ResponseDeadline.start(Duration.ofMillis(500))))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Test
@@ -521,7 +640,7 @@ class SecureJobPageFetchAdapterTest {
         SecureJobPageFetchAdapter adapter = new SecureJobPageFetchAdapter(
                 properties,
                 host -> List.of(PUBLIC),
-                (uri, addresses, deadline) -> response(
+                (uri, addresses, headers, deadline) -> response(
                         200,
                         Map.of("Content-Type", List.of("text/html; charset=UTF-8")),
                         slowBody));
@@ -533,7 +652,7 @@ class SecureJobPageFetchAdapterTest {
 
     private SecureJobPageFetchAdapter fixed(
             SecureJobPageFetchAdapter.TransportResponse response) {
-        return adapter(host -> List.of(PUBLIC), (uri, addresses, deadline) -> response);
+        return adapter(host -> List.of(PUBLIC), (uri, addresses, headers, deadline) -> response);
     }
 
     private SecureJobPageFetchAdapter adapter(
@@ -648,6 +767,29 @@ class SecureJobPageFetchAdapterTest {
         } catch (IOException exception) {
             throw new IllegalStateException(exception);
         }
+    }
+
+    private static SecureJobPageFetchAdapter.TransportResponse json(int status, String body) {
+        return response(status, Map.of("Content-Type", List.of("application/json")), body);
+    }
+
+    private String jobflexShellHtml() {
+        return """
+                <!DOCTYPE html><html><head><title>NH투자증권 채용</title>
+                <script src="/_next/static/chunks/main-app.js"></script>
+                <script>self.__next_f.push([1,"page"])</script></head><body></body></html>
+                """;
+    }
+
+    private String jobflexPositionJson() {
+        return """
+                {"title":"NH투자증권 2026년 하반기 대졸 신입사원 채용",
+                 "jobDescription":"<img src=\\"/upload/90999/image/202609/posting.jpg\\" style=\\"max-width:100%;\\" onerror=\\"alert(1)\\"><script>alert(2)</script><p><br></p>",
+                 "jobDescriptionType":"HTML","careerType":"NEW",
+                 "startDateTime":"2026-09-18T13:00:00","endDateTime":"2026-09-28T17:00:59",
+                 "classificationCode":"공채","tagList":[{"tagSn":1,"tagName":"공채"}],
+                 "applyUrl":"https://nhqv.recruiter.co.kr/app/applicant/registResume"}
+                """;
     }
 
     private String jobHtml() {

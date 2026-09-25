@@ -80,6 +80,7 @@ public final class JobPostingExtractionWorkflow {
     public static final int MAX_SANITIZED_CHARACTERS = 80_000;
     private static final int MAX_RAW_PAGE_CHARACTERS = 10 * 1024 * 1024;
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
+    private static final Duration IMAGE_TEXT_TIMEOUT = Duration.ofSeconds(90);
 
     private final JobWorkflowQueryPort queryPort;
     private final JobWorkflowCommandPort commandPort;
@@ -739,7 +740,7 @@ public final class JobPostingExtractionWorkflow {
                     input.assets().stream().map(asset -> new ImageMedia(
                             asset.imageRef(), asset.mimeType(), asset.bytes(), asset.contentHash())).toList(),
                     invocation.prompt().outputSchemaVersion(),
-                    CHAT_TIMEOUT,
+                    IMAGE_TEXT_TIMEOUT,
                     invocation.executionContext().run().priceVersion(),
                     invocation.prompt().maxOutputTokens(),
                     invocation.prompt().outputType()));
