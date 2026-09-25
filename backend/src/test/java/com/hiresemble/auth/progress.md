@@ -4,6 +4,19 @@
 
 인증 HTTP·OpenAPI와 Gate 5 password/account deletion worker 회귀의 상위 경계를 관리한다.
 
+## [2026-09-25] Session Summary (계정 삭제 worker 통합 테스트 시계 혼용 flaky 수정)
+
+- What was done:
+  - `AccountDeletionWorkerIntegrationTest`의 모든 fixture 시각(users·profile·document·GitHub connection insert, 만료 lease, outbox 완료 시각)을 DB `now()` 대신 application clock(`appNow()`)으로 바꿨다.
+- Key decisions:
+  - worker는 JVM clock으로 `updated_at`을 쓰므로 fixture도 같은 clock을 써야 한다. 운영 코드는 이미 app clock만 사용해 변경하지 않았다.
+- Issues encountered:
+  - Docker VM 시계가 Windows보다 조금이라도 앞서면 connection `created_at`(DB 시각) > `updated_at`(JVM 시각)이 되어 `github_app_connections_time_ck` 위반(`DataIntegrityViolationException`) → worker retry → connection이 `ACTIVE`로 남아 `githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered`가 간헐 실패했다. 이전 추정(`@Scheduled` 경쟁)이 아니었다.
+- Validation:
+  - 단독 3회 연속 6/6 통과, 전체 `check` 107 suites/733 tests 통과, 테스트 출력에 무결성 위반 retry 경고 0건.
+- Next steps:
+  - 다른 통합 테스트에도 DB `now()` fixture와 JVM clock worker를 섞는 곳이 있으면 같은 방식으로 정리한다.
+
 ## [2026-08-09] Session Summary (AUTH-004 회귀)
 
 - What was done: password/session rotation, delete 202/WITHDRAWN, crash·lease·outbox terminal gate·final purge 테스트를 추가했다.

@@ -9,6 +9,8 @@ import com.hiresemble.githubsource.infrastructure.GitHubAppConnectionStore;
 import java.time.Duration;
 import com.hiresemble.support.PostgresIntegrationTest;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,9 +110,9 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
 
         jdbcTemplate.update("""
                 UPDATE object_deletion_outbox
-                SET status='SUCCEEDED',completed_at=now(),claim_token=NULL,lease_expires_at=NULL
+                SET status='SUCCEEDED',completed_at=?,claim_token=NULL,lease_expires_at=NULL
                 WHERE document_id=?
-                """, documentId);
+                """, appNow(), documentId);
         makeTaskDue(taskId);
         worker.processDue();
 
@@ -133,10 +135,10 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
 
         jdbcTemplate.update("""
                 UPDATE object_deletion_outbox
-                SET status='DEAD',completed_at=now(),last_error_code='OBJECT_STORAGE_DELETE_FAILED',
+                SET status='DEAD',completed_at=?,last_error_code='OBJECT_STORAGE_DELETE_FAILED',
                     claim_token=NULL,lease_expires_at=NULL
                 WHERE document_id=?
-                """, documentId);
+                """, appNow(), documentId);
         makeTaskDue(taskId);
         worker.processDue();
 
@@ -166,16 +168,15 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
                   connected_at,verified_at,last_checked_at,disconnected_at,created_at,updated_at)
                 VALUES (?,?,74001,84001,'acme','ORGANIZATION','SELECTED','ACTIVE',
                         '{"metadata":"read","contents":"read"}',0,
-                        now(),now(),now(),NULL,now(),now())
-                """, connectionId, userId);
+                        ?,?,?,NULL,?,?)
+                """, connectionId, userId, appNow(), appNow(), appNow(), appNow(), appNow());
         UUID taskId = taskStore.enqueue(UUID.randomUUID(), userId, Instant.now());
         UUID staleClaim = UUID.randomUUID();
         jdbcTemplate.update("""
                 UPDATE account_deletion_tasks
-                SET status='RUNNING',attempt_count=1,claim_token=?,
-                    lease_expires_at=now()-interval '1 second'
+                SET status='RUNNING',attempt_count=1,claim_token=?,lease_expires_at=?
                 WHERE id=?
-                """, staleClaim, taskId);
+                """, staleClaim, appNow().minusSeconds(1), taskId);
 
         worker.processDue();
 
@@ -203,9 +204,9 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
 
         jdbcTemplate.update("""
                 UPDATE github_installation_revocation_outbox
-                SET status='SUCCEEDED',completed_at=now(),claim_token=NULL,lease_expires_at=NULL
+                SET status='SUCCEEDED',completed_at=?,claim_token=NULL,lease_expires_at=NULL
                 WHERE github_app_connection_id=?
-                """, connectionId);
+                """, appNow(), connectionId);
         makeTaskDue(taskId);
         worker.processDue();
 
@@ -225,15 +226,15 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
                 INSERT INTO users (
                   id,email,password_hash,display_name,role,status,terms_agreed_at,ai_consent_at,
                   withdrawn_at,created_at,updated_at)
-                VALUES (?,?,'fixture-hash','Deletion User','USER',?,now(),now(),
-                        CASE WHEN ?='WITHDRAWN' THEN now() ELSE NULL END,now(),now())
-                """, id, email, status, status);
+                VALUES (?,?,'fixture-hash','Deletion User','USER',?,?,?,?,?,?)
+                """, id, email, status, appNow(), appNow(),
+                "WITHDRAWN".equals(status) ? appNow() : null, appNow(), appNow());
         jdbcTemplate.update("""
                 INSERT INTO user_profiles (
                   id,user_id,legal_name,introduction,desired_roles,desired_industries,
                   desired_locations,expected_graduation_date,version,created_at,updated_at)
-                VALUES (?,?,NULL,NULL,'[]','[]','[]',NULL,0,now(),now())
-                """, UUID.randomUUID(), id);
+                VALUES (?,?,NULL,NULL,'[]','[]','[]',NULL,0,?,?)
+                """, UUID.randomUUID(), id, appNow(), appNow());
         return id;
     }
 
@@ -246,9 +247,18 @@ class AccountDeletionWorkerIntegrationTest extends PostgresIntegrationTest {
                   manual_text_provided,source_revision,version,uploaded_at,updated_at,deleted_at)
                 VALUES (?,?,'RESUME','fixture.pdf','Fixture document',?,
                         'application/pdf',1,repeat('a',64),'UPLOADED','NOT_STARTED',
-                        false,1,0,now(),now(),NULL)
-                """, id, userId, "users/" + userId + "/documents/" + id + "/content");
+                        false,1,0,?,?,NULL)
+                """, id, userId, "users/" + userId + "/documents/" + id + "/content",
+                appNow(), appNow());
         return id;
+    }
+
+    /**
+     * Fixture timestamps use the application clock like the worker does. Mixing in the
+     * container's {@code now()} breaks time-order checks whenever the Docker VM clock drifts.
+     */
+    private static OffsetDateTime appNow() {
+        return OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     private void makeTaskDue(UUID taskId) {

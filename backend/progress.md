@@ -7,6 +7,19 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-25] Session Summary (계정 삭제 통합 테스트 flaky 수정)
+
+- What was done:
+  - `AccountDeletionWorkerIntegrationTest` fixture가 DB 시각과 JVM 시각을 섞어 Docker 시계 drift 때 시간 순서 check 제약을 위반하던 문제를 고쳤다([auth 테스트](src/test/java/com/hiresemble/auth/progress.md)).
+- Key decisions:
+  - 테스트만 수정했다.
+- Issues encountered:
+  - 같은 날 공고 작업의 전체 `check`가 이 테스트로 green 미확인이었다.
+- Validation:
+  - 전체 `check` 107 suites/733 tests 통과(KST 마감 수정 포함 main 기준).
+- Next steps:
+  - None
+
 ## [2026-09-25] Session Summary (공고 마감 시각 KST 결정적 해석)
 
 - What was done:
