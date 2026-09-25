@@ -4,6 +4,32 @@
 
 저장소 공통, Session 기반 문서 추적, 백엔드·Controller OpenAPI/Swagger, 응답·예외, 프론트엔드, 인프라 규칙과 Codex 역할 위임 절차가 문서화되어 있다. 규칙은 루트 `AGENTS.md`의 라우팅 표를 통해 사용한다.
 
+## [2026-09-25] Session Summary (커밋 AI 공동 작성자 금지)
+
+- What was done:
+  - AGENTS 금지 사항과 [workflow.md](workflow.md) 작업 후 절차에 사용자 git 계정 단독 커밋, AI `Co-Authored-By`·세션 trailer와 AI 이름 원격 브랜치 금지, 커밋 전 작성자 확인을 추가했다.
+- Key decisions:
+  - Claude Code는 저장소 `.claude/settings.json`의 attribution 비활성으로 trailer 생성을 막는다.
+- Issues encountered:
+  - Claude 작성 commit이 원격 `claude/*` 브랜치로 push되어 GitHub contributors에 Claude가 표시됐다.
+- Validation:
+  - `git diff --check`로 whitespace를 확인했다.
+- Next steps:
+  - None
+
+## [2026-09-25] Session Summary (기능 검증용 유료 AI 3회 사전 승인)
+
+- What was done:
+  - AGENTS와 개발 규칙에 기능 수정·검증의 사용자 요청당 유료 AI 최대 3회 사전 승인을 반영했다. 상세 계수·실행 규칙은 [workflow.md](workflow.md)에 둔다.
+- Key decisions:
+  - 에이전트·재시도·fallback·임베딩을 합산하고 전송 직전 제한한다. 기본 테스트와 CI는 Fake를 유지한다.
+- Issues encountered:
+  - 기존 workflow의 외부 유료 API 검증 전면 금지 문구를 명시적 사용자 지시에 맞게 수정했다.
+- Validation:
+  - 관련 금지 문구와 규칙 링크를 대조하고 git diff --check를 실행했다. 이 문서 변경 단계의 유료 호출은 0회다.
+- Next steps:
+  - NH 이미지 공고 추출 수정과 실제 검증에 같은 요청의 총 3회 한도를 적용한다.
+
 ## [2026-07-23] Session Summary (backend 책임별 package 규칙 정립)
 
 - What was done:

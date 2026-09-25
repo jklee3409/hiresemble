@@ -10,6 +10,7 @@
 | ------------------------------ | ------------------------------------------------ |
 | [`AGENTS.md`](AGENTS.md)       | Codex가 모든 작업 전에 읽어야 하는 최상위 지침   |
 | [`.codex/`](.codex/)           | 저장소 범위 Codex 설정과 전문 서브 에이전트 역할 |
+| [`.claude/`](.claude/)         | Claude Code 공유 설정(커밋 AI attribution 비활성) |
 | [`.github/`](.github/)         | CI와 Dependabot 설정                             |
 | [`backend/`](backend/)         | Java/Spring Boot 모듈                            |
 | [`frontend/`](frontend/)       | Vue/TypeScript SPA 모듈                          |
@@ -43,6 +44,7 @@ AGENTS.md + docs/agent-rules + .codex ---> Codex 작업 절차와 역할 위임
 - `.env`와 비밀값은 커밋하지 않는다. 예시는 `.env.example`에만 안전한 값으로 관리한다.
 - `.git`, `.idea`, `.vscode`, `node_modules`, `build`, `dist`, `target`, `.gradle`, cache/temp, 자동 생성 코드와 외부 의존성 디렉터리는 문서 관리 대상에서 제외한다.
 - Gradle Wrapper의 `backend/gradle/`은 외부 도구 부트스트랩 영역이므로 `index.md`와 `progress.md`를 생성하지 않는다.
+- `.claude/`는 외부 도구 설정 디렉터리라 추적 문서를 두지 않는다. 개인 `settings.local.json`은 커밋하지 않는다.
 
 ## 관련 규칙 및 문서
 

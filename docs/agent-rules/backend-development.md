@@ -73,6 +73,8 @@
 
 기본 검증은 Windows에서 `backend\.\gradlew.bat check`에 해당하는 `Set-Location backend; .\gradlew.bat check`다. CI에서 실제 유료 AI/Search API를 호출하지 않는다.
 
+특정 기능의 실제 Provider 검증이 필요하면 [`workflow.md`](workflow.md)의 요청당 유료 AI 최대 3회 사전 승인 정책에 따라 별도 opt-in 로컬 검증을 실행한다. 기본 테스트는 계속 Fake/WireMock을 사용한다.
+
 ## 변경 시 주의사항
 
 - 현재 P1~P4의 `auth`, `profile`, `agentrun`, `document`가 구현되어 있다. P5 이후 `job`, `coverletter`, `research`, `interview`는 아직 없으며 문서의 목표 구조를 구현 완료로 간주하지 않는다.

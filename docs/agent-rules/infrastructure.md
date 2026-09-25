@@ -21,6 +21,7 @@
 - 새 변수는 root/backend/frontend consumer, Compose interpolation, README와 관련 index/progress를 함께 확인한다.
 - 실제 API key, session secret, 사용자 데이터, production endpoint를 문서나 log에 넣지 않는다.
 - 유료 AI/Search provider는 명시적으로 활성화해야 하며 기본 local boot/test는 호출하지 않아야 한다.
+- 특정 기능의 로컬 수동 검증은 [`workflow.md`](workflow.md)의 유료 AI 최대 3회 사전 승인 정책을 적용한다. 기본 활성화·CI·runtime 예산 정책을 이 예외로 변경하지 않는다.
 
 ## PostgreSQL과 Flyway
 
