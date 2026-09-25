@@ -14,7 +14,7 @@ import com.hiresemble.ai.orchestration.AgentOrchestrator;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway;
 import com.hiresemble.ai.port.ImageTextExtractionGateway;
-import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractedJobFields;
+import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractedJobFieldsOutput;
 import com.hiresemble.ai.workflow.WorkflowRegistry.FailureKind;
 import com.hiresemble.job.application.JobApplicationService;
 import com.hiresemble.job.application.model.JobApplicationResults.JobCreationAccepted;
@@ -401,6 +401,36 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
     }
 
     @Test
+    void unzonedPostingDeadlineIsStoredAsSeoulWallClockTime() {
+        chatGateway.output = chatGateway.successOutput("2026-09-28", "17:00", null);
+        JobCreationAccepted timed = create(null, null, null);
+        execute(timed.agentRunId());
+        JobRecord timedJob = jobService.detail(userId, timed.jobId());
+        assertThat(run(timed.agentRunId()).status()).isEqualTo(AgentRunStatus.SUCCEEDED);
+        assertThat(timedJob.deadlineAt()).isEqualTo(Instant.parse("2026-09-28T08:00:00Z"));
+        assertThat(timedJob.deadlineSource()).isEqualTo(DeadlineSource.AUTO_EXTRACTED);
+        assertThat(timedJob.deadlineConfidence()).isEqualByComparingTo("0.875");
+
+        chatGateway.output = chatGateway.successOutput("2026-09-28", null, null);
+        JobCreationAccepted dateOnly = create(null, null, null);
+        execute(dateOnly.agentRunId());
+        assertThat(jobService.detail(userId, dateOnly.jobId()).deadlineAt())
+                .isEqualTo(Instant.parse("2026-09-28T14:59:59Z"));
+
+        chatGateway.output = chatGateway.successOutput("2026-09-28", "17:00", "Z");
+        JobCreationAccepted explicitUtc = create(null, null, null);
+        execute(explicitUtc.agentRunId());
+        assertThat(jobService.detail(userId, explicitUtc.jobId()).deadlineAt())
+                .isEqualTo(Instant.parse("2026-09-28T17:00:00Z"));
+
+        chatGateway.output = chatGateway.successOutput("2026-09-28", "5pm", null);
+        JobCreationAccepted invalid = create(null, null, null);
+        execute(invalid.agentRunId());
+        assertThat(run(invalid.agentRunId()).status()).isEqualTo(AgentRunStatus.FAILED);
+        assertThat(jobService.detail(userId, invalid.jobId()).deadlineAt()).isNull();
+    }
+
+    @Test
     void terminalRetryUsesFreshV3InputInsteadOfPredecessorImageCheckpoint() {
         pageGateway.html = """
                 <html><body><nav>%s</nav><img src="/posting.png" width="1200" height="1800"></body></html>
@@ -711,6 +741,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
         final AtomicInteger calls = new AtomicInteger();
         final AtomicBoolean transactionObserved = new AtomicBoolean();
         volatile ChatMode mode = ChatMode.SUCCESS;
+        volatile ExtractedJobFieldsOutput output;
         volatile String lastInput = "";
         volatile Runnable afterCall = () -> {};
 
@@ -726,13 +757,16 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             lastInput = request.input().toString();
             afterCall.run();
             return switch (mode) {
-                case SUCCESS -> new AiGatewayResponse(json(successOutput(), true), java.util.List.of());
+                case SUCCESS -> new AiGatewayResponse(
+                        json(output == null ? successOutput() : output, true), java.util.List.of());
                 case INVALID_STRUCTURED -> new AiGatewayResponse(
-                        json(new ExtractedJobFields(
+                        json(new ExtractedJobFieldsOutput(
                                 "RAW_PROVIDER_RESPONSE_MARKER",
                                 "AI Posting Title",
                                 "AI Position",
                                 "",
+                                null,
+                                null,
                                 null,
                                 null,
                                 "SOFTWARE_ENGINEERING",
@@ -740,15 +774,16 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
                                 "Seoul"), true),
                         java.util.List.of());
                 case NULL_OPTIONAL -> new AiGatewayResponse(
-                        json(new ExtractedJobFields(
+                        json(new ExtractedJobFieldsOutput(
                                 "AI Company", " null ", "AI Position",
-                                successOutput().descriptionText(), null, null,
+                                successOutput().descriptionText(), null, null, null, null,
                                 "SOFTWARE_ENGINEERING", "FULL_TIME", "Seoul"), true),
                         java.util.List.of());
                 case NULL_DESCRIPTION -> new AiGatewayResponse(
-                        json(new ExtractedJobFields(
+                        json(new ExtractedJobFieldsOutput(
                                 "AI Company", "AI Posting Title", "AI Position", "null",
-                                null, null, "SOFTWARE_ENGINEERING", "FULL_TIME", "Seoul"), true),
+                                null, null, null, null,
+                                "SOFTWARE_ENGINEERING", "FULL_TIME", "Seoul"), true),
                         java.util.List.of());
                 case RETRYABLE_TIMEOUT -> throw AiExecutionException.retryable(
                         FailureKind.TIMEOUT,
@@ -761,13 +796,20 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             };
         }
 
-        ExtractedJobFields successOutput() {
-            return new ExtractedJobFields(
+        ExtractedJobFieldsOutput successOutput() {
+            return successOutput("2026-08-31", null, null);
+        }
+
+        ExtractedJobFieldsOutput successOutput(
+                String deadlineDate, String deadlineTime, String deadlineUtcOffset) {
+            return new ExtractedJobFieldsOutput(
                     "AI Company",
                     "AI Posting Title",
                     "AI Position",
                     "Build and operate reliable Spring services, design PostgreSQL data flows, review APIs, improve observability, respond to incidents, and maintain comprehensive automated tests with the product engineering team.",
-                    Instant.parse("2026-08-31T14:59:59Z"),
+                    deadlineDate,
+                    deadlineTime,
+                    deadlineUtcOffset,
                     new BigDecimal("0.875"),
                     "SOFTWARE_ENGINEERING",
                     "FULL_TIME",
@@ -778,6 +820,7 @@ class JobPostingExtractionOrchestratorIntegrationTest extends PostgresIntegratio
             calls.set(0);
             transactionObserved.set(false);
             mode = ChatMode.SUCCESS;
+            output = null;
             lastInput = "";
             afterCall = () -> {};
         }

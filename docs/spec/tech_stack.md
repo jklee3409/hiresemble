@@ -357,6 +357,8 @@ Agent class 이름은 구현 세부이며 실행 계약의 원천이 아니다. 
 
 OpenAI text Chat와 image text adapter는 service status/code/param, request ID, timeout/network, response cardinality, tool call, refusal와 finish reason을 같은 safe boundary에서 해석한다. 400 structured schema, credentials, model/endpoint, `insufficient_quota`, 일반 429, 5xx를 구분하며 quota는 자동 재시도하지 않는다. Provider usage를 읽은 뒤의 cardinality·refusal·finish·blank·parse·binding·workflow record 실패는 incurred usage를 보존한다. diagnostic에는 status와 safe code/param/request ID, schema name/version/hash, contract, capability만 남기고 body·prompt·OCR text·URL·image bytes는 기록하지 않는다.
 
+`EXTRACT_JOB_FIELDS`는 `job-posting-extraction-fields-prompt-v4`와 `job-fields-output-v4`를 사용한다(다른 extraction step은 prompt v3·image prompt v4 유지). Provider는 `deadlineAt` 대신 공고 현지 표기인 `deadlineDate`(`YYYY-MM-DD`), `deadlineTime`(`HH:mm`, 날짜만 있으면 null), 공고가 명시한 경우에만 `deadlineUtcOffset`(`±HH:MM`/`Z`)을 nullable로 반환하고 UTC 변환을 하지 않는다. `JobPostingExtractionWorkflow`가 offset이 없으면 `Asia/Seoul`, 날짜만 있으면 `23:59:59`, `24:00`은 다음 날 `00:00`으로 결정적으로 변환한 `ExtractedJobFields.deadlineAt`만 merge·validate·apply와 minimal output hash에 전달하므로 이후 단계와 DB·API 계약은 바뀌지 않는다. prompt·output schema version은 step input hash에 포함돼 v3 attempt 기록과 섞이지 않으며, workflow version은 `job-posting-extraction-v3`를 유지한다.
+
 동기 mock start/message는 WorkflowType이나 Agent Run이 아니며 bounded turn executor와 `mock_interview_turns`를 사용한다. 회원 탈퇴도 Agent Run이 아니라 독립 deletion task다.
 
 `AgentOrchestrator`는 `WorkflowStateStore`, `ContextBuilder`, `ModelRouter`, `BudgetGuard`, `PromptRegistry`, `AgentExecutor`, `ExecutionRecorder`를 조정한다. 기능 domain은 AI repository를 직접 쓰지 않고 owner·version을 다시 검증하는 query/command port를 제공한다.

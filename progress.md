@@ -14,6 +14,19 @@
 - 공개 Spring/OpenAPI는 Career Artifact off 81 paths/110 operations, on·private GitHub off 90 paths/121 operations, 둘 다 on 97 paths/128 operations다.
 - GitHub·Career Artifact Gate 0–4는 `DONE`이다. V29 GitHub App/private source와 V30 terminal account purge를 구현한 Gate 5는 최종 Chromium 재검증 전 `IMPLEMENTED_NOT_VERIFIED`, 실제 외부 UAT는 `USER_MANUAL_UI_VALIDATION_PENDING`이다.
 
+## [2026-09-25] Session Summary (공고 마감 시각 KST 해석)
+
+- What was done:
+  - 시간대 없는 공고 마감 시각을 `Asia/Seoul`로 결정적으로 해석하도록 Backend 공고 추출 출력 계약과 명세를 갱신했다.
+- Key decisions:
+  - 모델은 현지 표기만 반환하고 서버가 변환한다. workflow version·DB·API·Frontend 계약은 바뀌지 않는다.
+- Issues encountered:
+  - 기존 저장 마감일은 자동 보정하지 않았다.
+- Validation:
+  - Backend 집중 test(JobPostingExtraction contract 6·orchestrator 통합 15) 통과. rebase 후 `.\gradlew.bat check` 2회는 107 suites/733 tests 중 무관한 `AccountDeletionWorkerIntegrationTest.githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered` 1건(`@Scheduled` scan과 수동 `processDue` 경쟁 추정)으로 실패했고, 해당 suite 단독 실행은 6/6 통과해 전체 check green은 미확인이다. 실제 Provider 검증 유료 2회(USD 0.009305)로 NH 공고 마감 `2026-09-28T08:00:00Z`를 확인했다.
+- Next steps:
+  - 기존 `AUTO_EXTRACTED` 마감일 보정 필요 여부를 별도 판단한다.
+
 ## [2026-09-25] Session Summary (이미지 전용 공고 분석과 AI 기여자 제거)
 
 - What was done:

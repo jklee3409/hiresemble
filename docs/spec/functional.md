@@ -400,6 +400,8 @@
 
 JPEG·PNG·정적 WebP는 같은 SSRF·redirect·byte·pixel·deadline 경계를 통과한 경우 자동 판독한다. 이미지 item은 meaningful character 20자부터 합산 후보가 되며, item 내부와 이미지 사이의 반복 line을 제거한 DOM·이미지 aggregate가 기존 본문 최소 120자를 충족할 때만 field extraction을 계속한다. 따라서 80자 이미지 두 장 또는 DOM 70자와 이미지 70자는 처리할 수 있지만, icon label·semantic null·손상 문자나 반복 header만으로 120자를 채운 경우는 `NEEDS_MANUAL_INPUT`으로 전환한다.
 
+자동 추출 마감일은 공고에 적힌 현지 날짜·시각 그대로 받고 서버가 `Instant`로 변환한다. 공고가 시간대나 UTC offset을 명시하지 않으면 `Asia/Seoul` 시각으로 해석하므로 "9.28(월) 17:00"은 `2026-09-28T08:00:00Z`로 저장한다. 시각 없이 날짜만 있으면 그 날 `23:59:59`(`Asia/Seoul`), `24:00`은 다음 날 `00:00`이며, 공고가 명시한 offset만 그대로 적용한다. 해석할 수 없는 날짜·시각은 추측 보정 없이 structured output 검증 실패로 처리한다.
+
 공고 업무 상태는 항상 `IN_PROGRESS|SUBMITTED|CLOSED` 중 하나이며 URL 추출 상태와 분리한다.
 
 추출 상태:

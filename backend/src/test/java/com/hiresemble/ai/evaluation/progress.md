@@ -4,6 +4,19 @@
 
 자기소개서 v5와 직접 입력 기준선의 A/B 품질 평가 도구가 구현됐다. CI는 fake gateway로만 검증하고 실제 평가는 opt-in이다.
 
+## [2026-09-25] Session Summary (opt-in 공고 검증의 마감 시각 확인)
+
+- What was done:
+  - `JobPostingImageLiveVerificationTest`가 v4 출력의 현지 마감 필드와 서버 변환 `deadlineAt`을 report에 남기고, `JOB_POSTING_LIVE_EXPECTED_DEADLINE`이 있으면 변환 결과를 assert한다.
+- Key decisions:
+  - 기대 마감은 URL별로 다르므로 선택적 환경 변수로만 검사한다. 호출 한도·retry 0 정책은 유지한다.
+- Issues encountered:
+  - None
+- Validation:
+  - 유료 2회(gpt-5-mini, 이미지 판독 USD 0.003554 + 필드 추출 USD 0.005751 = USD 0.009305) `jobPostingLiveVerification`로 NH 공고(https://nhqv.recruiter.co.kr/career/jobs/128898)를 실행해 `deadlineDate=2026-09-28`, `deadlineTime=17:00`, `deadlineUtcOffset=null`, 변환 `2026-09-28T08:00:00Z`(17:00 KST)를 확인했다. 이 요청의 누적 유료 호출은 2/3회다.
+- Next steps:
+  - None
+
 ## [2026-09-25] Session Summary (이미지 전용 공고 opt-in 실제 검증)
 
 - What was done:

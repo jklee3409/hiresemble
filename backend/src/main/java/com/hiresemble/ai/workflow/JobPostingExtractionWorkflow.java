@@ -10,6 +10,7 @@ import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.ImageTextExtractionGateway;
 import com.hiresemble.ai.port.ImageTextExtractionGateway.ImageMedia;
 import com.hiresemble.ai.port.ImageTextExtractionGateway.ImageTextExtractionRequest;
+import com.hiresemble.ai.validation.ProviderNullable;
 import com.hiresemble.ai.validation.StructuredOutputValidationException.ValidationPhase;
 import com.hiresemble.ai.validation.StructuredOutputValidator.Contract;
 import com.hiresemble.ai.workflow.WorkflowRegistry.ExecutableWorkflowContribution;
@@ -40,8 +41,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -76,6 +83,11 @@ public final class JobPostingExtractionWorkflow {
     public static final String MERGE_USER_OVERRIDES = "MERGE_USER_OVERRIDES";
     public static final String VALIDATE_JOB_EXTRACTION = "VALIDATE_JOB_EXTRACTION";
     public static final String APPLY_JOB_EXTRACTION = "APPLY_JOB_EXTRACTION";
+
+    /** Zone for posting deadlines that state no explicit offset; postings are Korean by default. */
+    public static final ZoneId UNZONED_POSTING_TIME_ZONE = ZoneId.of("Asia/Seoul");
+    /** A date-only deadline stays open through the end of that local day. */
+    public static final LocalTime DATE_ONLY_DEADLINE_TIME = LocalTime.of(23, 59, 59);
 
     public static final int MAX_SANITIZED_CHARACTERS = 80_000;
     private static final int MAX_RAW_PAGE_CHARACTERS = 10 * 1024 * 1024;
@@ -940,13 +952,13 @@ public final class JobPostingExtractionWorkflow {
         }
     }
 
-    private final class ExtractJobFieldsExecutor extends JobExecutor<ExtractedJobFields> {
+    private final class ExtractJobFieldsExecutor extends JobExecutor<ExtractedJobFieldsOutput> {
 
         private ExtractJobFieldsExecutor() {
             super(
                     EXTRACT_JOB_FIELDS,
-                    "job-fields-output-v3",
-                    ExtractedJobFields.class,
+                    "job-fields-output-v4",
+                    ExtractedJobFieldsOutput.class,
                     fieldNames());
         }
 
@@ -993,8 +1005,13 @@ public final class JobPostingExtractionWorkflow {
         }
 
         @Override
-        public JsonNode minimalOutput(ExtractedJobFields output, ObjectMapper ignored) {
-            return safeFieldsReference(output);
+        public JsonNode minimalOutput(ExtractedJobFieldsOutput output, ObjectMapper ignored) {
+            return safeFieldsReference(resolveExtractedFields(output));
+        }
+
+        @Override
+        public Object ephemeralOutput(ExtractedJobFieldsOutput output) {
+            return resolveExtractedFields(output);
         }
 
         @Override
@@ -1004,8 +1021,8 @@ public final class JobPostingExtractionWorkflow {
 
         @Override
         protected void validateJavaRecord(
-                ExtractedJobFields output, StepExecutionContext context) {
-            validateFields(output);
+                ExtractedJobFieldsOutput output, StepExecutionContext context) {
+            validateFields(resolveExtractedFields(output));
         }
     }
 
@@ -1311,6 +1328,53 @@ public final class JobPostingExtractionWorkflow {
                 extracted.location()));
     }
 
+    private ExtractedJobFields resolveExtractedFields(ExtractedJobFieldsOutput output) {
+        if (output == null) throw new IllegalArgumentException("extracted job fields are invalid");
+        return new ExtractedJobFields(
+                output.companyName(),
+                output.title(),
+                output.positionName(),
+                output.descriptionText(),
+                resolvePostingDeadline(
+                        nullableValue(output.deadlineDate()),
+                        nullableValue(output.deadlineTime()),
+                        nullableValue(output.deadlineUtcOffset())),
+                output.deadlineConfidence(),
+                output.roleCategory(),
+                output.employmentType(),
+                output.location());
+    }
+
+    /**
+     * Resolves a model-reported posting deadline deterministically. Times without an explicit
+     * posting offset are {@link #UNZONED_POSTING_TIME_ZONE} wall-clock times, a missing time means
+     * {@link #DATE_ONLY_DEADLINE_TIME}, and {@code 24:00} is the start of the next day.
+     */
+    public static Instant resolvePostingDeadline(String date, String time, String utcOffset) {
+        if (date == null) {
+            if (time != null || utcOffset != null) {
+                throw new IllegalArgumentException("deadline time requires a deadline date");
+            }
+            return null;
+        }
+        try {
+            LocalDate localDate = LocalDate.parse(date.strip());
+            LocalDateTime local;
+            if (time == null) {
+                local = localDate.atTime(DATE_ONLY_DEADLINE_TIME);
+            } else if ("24:00".equals(time.strip())) {
+                local = localDate.plusDays(1).atStartOfDay();
+            } else {
+                local = localDate.atTime(LocalTime.parse(time.strip()));
+            }
+            return utcOffset == null
+                    ? local.atZone(UNZONED_POSTING_TIME_ZONE).toInstant()
+                    : local.toInstant(ZoneOffset.of(utcOffset.strip()));
+        } catch (DateTimeException exception) {
+            throw new IllegalArgumentException("deadline date-time is invalid", exception);
+        }
+    }
+
     private void validateFields(ExtractedJobFields fields) {
         if (fields == null
                 || !optionalScalar(fields.companyName(), 200)
@@ -1428,7 +1492,9 @@ public final class JobPostingExtractionWorkflow {
                 "title",
                 "positionName",
                 "descriptionText",
-                "deadlineAt",
+                "deadlineDate",
+                "deadlineTime",
+                "deadlineUtcOffset",
                 "deadlineConfidence",
                 "roleCategory",
                 "employmentType",
@@ -1928,6 +1994,23 @@ public final class JobPostingExtractionWorkflow {
             UUID jobId,
             String sourceText,
             boolean truncated) {}
+
+    /**
+     * Provider-owned job-fields-output-v4. The deadline stays as posting-local text so the server,
+     * not the model, decides the time zone of unzoned posting times.
+     */
+    public record ExtractedJobFieldsOutput(
+            @ProviderNullable String companyName,
+            @ProviderNullable String title,
+            @ProviderNullable String positionName,
+            String descriptionText,
+            @ProviderNullable String deadlineDate,
+            @ProviderNullable String deadlineTime,
+            @ProviderNullable String deadlineUtcOffset,
+            @ProviderNullable BigDecimal deadlineConfidence,
+            @ProviderNullable String roleCategory,
+            @ProviderNullable String employmentType,
+            @ProviderNullable String location) {}
 
     public record ExtractedJobFields(
             String companyName,

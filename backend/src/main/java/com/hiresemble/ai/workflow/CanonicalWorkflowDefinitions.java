@@ -398,7 +398,7 @@ public final class CanonicalWorkflowDefinitions {
                         jobStep(
                                 "EXTRACT_JOB_FIELDS",
                                 "job-fields-input-v3",
-                                "job-fields-output-v3",
+                                "job-fields-output-v4",
                                 1,
                                 RETRYABLE,
                                 weights.get(5)),

@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-09-25] Session Summary (공고 필드 추출 prompt v4 현지 마감 시각)
+
+- What was done:
+  - `EXTRACT_JOB_FIELDS`만 `job-posting-extraction-fields-prompt-v4`로 분리하고 output type을 `ExtractedJobFieldsOutput`/`job-fields-output-v4`로 바꿨다.
+- Key decisions:
+  - prompt는 마감일을 공고 현지 표기 그대로 반환하고 UTC 변환·offset 추측을 금지한다. 연도 생략은 요일·접수 기간 등 문맥으로만 추론한다. 다른 step은 prompt v3와 image prompt v4를 유지한다.
+- Issues encountered:
+  - None
+- Validation:
+  - prompt identity·schema nullable 계약 test 포함 집중 test(JobPostingExtraction contract 6·orchestrator 통합 15) 통과. rebase 후 `.\gradlew.bat check` 2회는 107 suites/733 tests 중 무관한 `AccountDeletionWorkerIntegrationTest.githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered` 1건(`@Scheduled` scan과 수동 `processDue` 경쟁 추정)으로 실패했고, 해당 suite 단독 실행은 6/6 통과해 전체 check green은 미확인이다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (생성 v5 출력 token 상한 확대)
 
 - What was done:

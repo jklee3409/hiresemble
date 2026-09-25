@@ -7,6 +7,20 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-25] Session Summary (공고 마감 시각 KST 결정적 해석)
+
+- What was done:
+  - 공고 필드 추출이 마감을 공고 현지 날짜·시각으로 받고 서버가 offset 미표기 시 `Asia/Seoul`로 변환하도록 `job-fields-output-v4`·fields prompt v4를 적용했다. 한국 공고 마감이 9시간 늦게 저장되던 문제를 고쳤다.
+- Key decisions:
+  - workflow v3·DB·API 유지, 해석 불가 값은 structured output 실패. 세부는 [AI workflow progress](src/main/java/com/hiresemble/ai/workflow/progress.md).
+- Issues encountered:
+  - 기존에 저장된 AI 추출 마감일은 자동 보정하지 않았다.
+- Validation:
+  - 집중 test(JobPostingExtraction contract 6·orchestrator 통합 15) 통과. rebase 후 `.\gradlew.bat check` 2회는 107 suites/733 tests 중 무관한 `AccountDeletionWorkerIntegrationTest.githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered` 1건(`@Scheduled` scan과 수동 `processDue` 경쟁 추정)으로 실패했고, 해당 suite 단독 실행은 6/6 통과해 전체 check green은 미확인이다.
+  - 유료 2회(gpt-5-mini, 이미지 판독 USD 0.003554 + 필드 추출 USD 0.005751 = USD 0.009305) `jobPostingLiveVerification`로 NH 공고(https://nhqv.recruiter.co.kr/career/jobs/128898)를 실행해 `deadlineDate=2026-09-28`, `deadlineTime=17:00`, `deadlineUtcOffset=null`, 변환 `2026-09-28T08:00:00Z`(17:00 KST)를 확인했다. 이 요청의 누적 유료 호출은 2/3회다.
+- Next steps:
+  - 기존 `AUTO_EXTRACTED` 마감일 보정 필요 여부를 별도 판단한다.
+
 ## [2026-09-25] Session Summary (이미지 전용 공고 추출)
 
 - What was done:

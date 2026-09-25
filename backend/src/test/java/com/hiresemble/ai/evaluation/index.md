@@ -25,7 +25,7 @@
 
 ## 변경 시 주의사항
 
-실제 유료 호출은 `COVER_LETTER_EVAL_ENABLED=true` 또는 `JOB_POSTING_LIVE_VERIFY_ENABLED=true`와 API key가 모두 있을 때만 일어난다. 공고 검증은 `JOB_POSTING_LIVE_URL`, `JOB_POSTING_LIVE_MAX_CALLS`(최대 3)를 받는다. 이 조건을 `test`나 `check`로 옮기지 않는다. 심사 입력에 어느 답변이 Hiresemble인지 드러내지 않는다.
+실제 유료 호출은 `COVER_LETTER_EVAL_ENABLED=true` 또는 `JOB_POSTING_LIVE_VERIFY_ENABLED=true`와 API key가 모두 있을 때만 일어난다. 공고 검증은 `JOB_POSTING_LIVE_URL`, `JOB_POSTING_LIVE_MAX_CALLS`(최대 3)와 서버 변환 마감을 비교할 선택적 `JOB_POSTING_LIVE_EXPECTED_DEADLINE`(ISO `Instant`)을 받는다. 이 조건을 `test`나 `check`로 옮기지 않는다. 심사 입력에 어느 답변이 Hiresemble인지 드러내지 않는다.
 
 ## 관련 규칙 및 문서
 

@@ -4,6 +4,20 @@
 
 P3 Registry와 P4~P8, GitHub·Career Artifact workflow 계약·orchestrator 통합 테스트가 구현됐다.
 
+## [2026-09-25] Session Summary (공고 마감 KST 해석 테스트)
+
+- What was done:
+  - contract test에 fields prompt v4 identity, strict schema의 nullable 현지 마감 field, KST·날짜만·`24:00`·명시 offset·형식 오류 변환 test를 추가했다.
+  - Orchestrator 통합 test Fake Chat을 v4 출력으로 바꾸고 `17:00` 미표기 → `08:00Z`, 날짜만 → `14:59:59Z`, `Z` 명시 → `17:00Z`, 잘못된 시각 → run `FAILED` 저장 계약을 추가했다. P5 browser E2E Fake도 v4로 갱신했다.
+- Key decisions:
+  - 실제 Provider 없이 Fake gateway로만 검증한다.
+- Issues encountered:
+  - None
+- Validation:
+  - 집중 test(JobPostingExtraction contract 6·orchestrator 통합 15) 통과. rebase 후 `.\gradlew.bat check` 2회는 107 suites/733 tests 중 무관한 `AccountDeletionWorkerIntegrationTest.githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered` 1건(`@Scheduled` scan과 수동 `processDue` 경쟁 추정)으로 실패했고, 해당 suite 단독 실행은 6/6 통과해 전체 check green은 미확인이다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (생성 v5 호출 정책 테스트)
 
 - What was done:

@@ -13,7 +13,6 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -250,14 +249,16 @@ class P5BrowserE2eTest extends PostgresIntegrationTest {
                 throw new AssertionError("Fake Job Chat requires non-empty source fixture text");
             }
             boolean remoteFixture = sourceText.contains("Backend Engineer");
-            var output = new JobPostingExtractionWorkflow.ExtractedJobFields(
+            var output = new JobPostingExtractionWorkflow.ExtractedJobFieldsOutput(
                     remoteFixture ? "Hiresemble Fixture" : null,
                     remoteFixture ? "Backend Engineer" : null,
                     remoteFixture ? "Backend Engineer" : null,
                     remoteFixture
                             ? "Spring Boot와 PostgreSQL 기반 API를 설계하고 운영하며 자동화 테스트, 코드 리뷰, 보안 점검, 관찰 가능성 개선, 장애 대응, 성능 분석과 기술 문서화를 제품 팀과 함께 수행합니다. 안정적인 배포와 유지보수 가능한 서비스 구조를 책임집니다."
                             : sourceText,
-                    Instant.parse("2026-12-31T15:00:00Z"),
+                    "2027-01-01",
+                    "00:00",
+                    null,
                     new java.math.BigDecimal("0.950"),
                     remoteFixture ? "BACKEND" : null,
                     remoteFixture ? "FULL_TIME" : null,

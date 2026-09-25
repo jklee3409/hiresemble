@@ -17,7 +17,7 @@ import com.hiresemble.ai.prompt.PromptRegistry.PromptDefinition;
 import com.hiresemble.ai.workflow.CanonicalWorkflowDefinitions;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractJobFieldsInput;
-import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractedJobFields;
+import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ExtractedJobFieldsOutput;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ImageTextItem;
 import com.hiresemble.ai.workflow.JobPostingExtractionWorkflow.ImageTextOutput;
 import com.hiresemble.job.application.port.JobImageFetchGateway;
@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,12 +118,18 @@ class JobPostingImageLiveVerificationTest extends PostgresIntegrationTest {
                         fieldsPrompt.outputSchemaVersion(), fieldsPrompt.toolAllowlist(), 0,
                         Duration.ofSeconds(45), PRICE_VERSION, fieldsPrompt.maxOutputTokens(),
                         fieldsPrompt.outputType())));
-        ExtractedJobFields fields = objectMapper.readValue(fieldsResponse.rawJson(), ExtractedJobFields.class);
+        ExtractedJobFieldsOutput fields =
+                objectMapper.readValue(fieldsResponse.rawJson(), ExtractedJobFieldsOutput.class);
+        Instant deadlineAt = JobPostingExtractionWorkflow.resolvePostingDeadline(
+                fields.deadlineDate(), fields.deadlineTime(), fields.deadlineUtcOffset());
         report.append("\n## Extracted fields\n\n")
                 .append("- companyName: ").append(fields.companyName())
                 .append("\n- title: ").append(fields.title())
                 .append("\n- positionName: ").append(fields.positionName())
-                .append("\n- deadlineAt: ").append(fields.deadlineAt())
+                .append("\n- deadlineDate: ").append(fields.deadlineDate())
+                .append("\n- deadlineTime: ").append(fields.deadlineTime())
+                .append("\n- deadlineUtcOffset: ").append(fields.deadlineUtcOffset())
+                .append("\n- resolved deadlineAt: ").append(deadlineAt)
                 .append("\n- roleCategory: ").append(fields.roleCategory())
                 .append("\n- employmentType: ").append(fields.employmentType())
                 .append("\n- location: ").append(fields.location())
@@ -133,6 +140,10 @@ class JobPostingImageLiveVerificationTest extends PostgresIntegrationTest {
         write(report);
         assertThat(fields.title()).isNotBlank();
         assertThat(fields.descriptionText()).hasSizeGreaterThanOrEqualTo(120);
+        String expectedDeadline = System.getenv("JOB_POSTING_LIVE_EXPECTED_DEADLINE");
+        if (expectedDeadline != null && !expectedDeadline.isBlank()) {
+            assertThat(deadlineAt).isEqualTo(Instant.parse(expectedDeadline));
+        }
     }
 
     private AiGatewayResponse paid(

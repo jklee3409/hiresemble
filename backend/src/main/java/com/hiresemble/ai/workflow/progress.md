@@ -4,6 +4,22 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-25] Session Summary (공고 마감 시각 KST 결정적 해석)
+
+- What was done:
+  - `EXTRACT_JOB_FIELDS` Provider 출력을 `ExtractedJobFieldsOutput`(`job-fields-output-v4`)로 분리해 `deadlineAt` 대신 공고 현지 `deadlineDate`·`deadlineTime`·명시 시에만 `deadlineUtcOffset`을 받는다.
+  - `JobPostingExtractionWorkflow.resolvePostingDeadline`이 offset 미표기 시 `Asia/Seoul`, 날짜만 있으면 23:59:59, `24:00`은 다음 날 00:00으로 변환해 기존 `ExtractedJobFields.deadlineAt`을 merge 이후 단계에 넘긴다.
+- Key decisions:
+  - 모델의 UTC 변환에 의존하지 않고 서버가 시간대를 결정한다. 해석할 수 없는 값은 보정 없이 structured output 검증 실패로 처리한다.
+  - workflow version `job-posting-extraction-v3`, merge/validate/apply 계약, minimal output hash 형식, DB·API는 유지한다. output schema v4와 prompt version은 step input hash에 포함돼 이전 attempt와 섞이지 않는다.
+- Issues encountered:
+  - 이 수정 이전에 저장된 AI 추출 마감일은 9시간 늦게 저장됐을 수 있으며 자동 보정하지 않았다.
+- Validation:
+  - 집중 test(JobPostingExtraction contract 6·orchestrator 통합 15) 통과. rebase 후 `.\gradlew.bat check` 2회는 107 suites/733 tests 중 무관한 `AccountDeletionWorkerIntegrationTest.githubUninstallMustReachSucceededAndExpiredTaskLeaseIsRecovered` 1건(`@Scheduled` scan과 수동 `processDue` 경쟁 추정)으로 실패했고, 해당 suite 단독 실행은 6/6 통과해 전체 check green은 미확인이다.
+  - 유료 2회(gpt-5-mini, 이미지 판독 USD 0.003554 + 필드 추출 USD 0.005751 = USD 0.009305) `jobPostingLiveVerification`로 NH 공고(https://nhqv.recruiter.co.kr/career/jobs/128898)를 실행해 `deadlineDate=2026-09-28`, `deadlineTime=17:00`, `deadlineUtcOffset=null`, 변환 `2026-09-28T08:00:00Z`(17:00 KST)를 확인했다. 이 요청의 누적 유료 호출은 2/3회다.
+- Next steps:
+  - 기존 `AUTO_EXTRACTED` 마감일 보정 필요 여부를 운영 데이터 기준으로 별도 판단한다.
+
 ## [2026-09-25] Session Summary (공고 이미지 판독 timeout과 텍스트 없는 공고 회귀)
 
 - What was done:
