@@ -489,7 +489,7 @@ usable 본문이 준비되면 최초 분석은 서버가 `BALANCED`로 자동 �
 
 주요 업무·지원 자격·우대 사항의 설명, 지원 가능 여부 근거, criterion 설명·미충족 사유, 강점·부족한 점과 분석 요약은 자연스러운 한국어로 제공한다. 공고가 다른 언어로 작성됐어도 고유명사·제품명·기술 용어는 보존하면서 설명을 한국어로 옮긴다. criterion 출처는 `null` 또는 `주요 업무`, `지원 자격`, `우대 사항` 같은 짧은 한국어 구역명이어야 하며 JSONPath·객체 경로·내부 필드명을 저장 결과에 노출하지 않는다.
 
-서버는 모델 호출 전에 공고 본문을 stable source block으로 나누고 각 block의 section을 `RESPONSIBILITY|REQUIRED_QUALIFICATION|PREFERRED_QUALIFICATION|ROLE_SUMMARY|OTHER`로 확정한다. 모델은 scorable section의 block ID와 원문만 선택하며 section·source text를 소유하지 않는다. `ROLE_SUMMARY|OTHER`는 criterion에서 제외한다. 화면용 주요 업무·필수·우대 목록은 원문 block 단위를 보존하고, 점수용 criterion만 서버 정책으로 독립 조건까지 원자화한다.
+서버는 모델 호출 전에 공고 본문을 stable source block으로 나누고 각 block의 section을 `RESPONSIBILITY|REQUIRED_QUALIFICATION|PREFERRED_QUALIFICATION|ROLE_SUMMARY|OTHER`로 확정한다. 모델은 scorable section의 block ID와 원문만 선택하며 section·source text를 소유하지 않는다. `ROLE_SUMMARY|OTHER`는 criterion에서 제외한다. 채용절차·일정, 복리후생·급여, 근무지·모집지역·모집인원, 유의사항, 문의, 회사 소개 heading은 이전 section을 끝내고 `OTHER`로 바꾸며, heading 단어로 시작하는 조건·업무 문장(예: `근무지 이동 가능자`)은 heading으로 보지 않는다. `모집직무`·`우대역량`처럼 알려진 label과 내용이 한 줄에 있는 `label: 내용`은 해당 section의 내용 block으로 만든다. 쉼표 목록이 `등`으로 끝나는 업무 문장은 하나의 criterion으로 유지한다. 화면용 주요 업무·필수·우대 목록은 원문 block 단위를 보존하고, 점수용 criterion만 서버 정책으로 독립 조건까지 원자화한다.
 
 승인 근거 검색의 embedding 요청은 Chat `ModelTier` route를 재사용하지 않고 활성 immutable embedding policy의 provider·product·dimension·version·generation을 하나의 typed route로 사용한다. 이 route identity는 retrieval step hash에 포함하며 Provider 호출 전 가격 catalog와 일치해야 한다. 모든 criterion query를 한 batch로 embedding하되 검색은 criterion별 hybrid semantic·lexical 검색으로 수행하고, 각 후보에는 허용 criterion index를 기록한다. 한 criterion에서 검색된 evidence를 다른 criterion의 근거로 전용하지 않는다.
 

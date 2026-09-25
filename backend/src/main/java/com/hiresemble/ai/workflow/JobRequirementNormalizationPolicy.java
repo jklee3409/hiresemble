@@ -26,6 +26,11 @@ public final class JobRequirementNormalizationPolicy {
 
     private static final Pattern LEADING_MARKER =
             Pattern.compile("^\\s*(?:[-*•▪◦]|\\d+[.)])\\s*");
+    /**
+     * "국내외 주식, 채권 매매, 결제 등" lists examples of one duty; splitting it on commas would
+     * turn nouns like "결제" into separate criteria.
+     */
+    private static final Pattern ENUMERATION_TAIL = Pattern.compile("\\S\\s*등\\s*[.。]?\\s*$");
     private static final Pattern WORK_DATE = Pattern.compile(
             "(?<!\\d)(?<year>20\\d{2})\\s*[년./-]\\s*(?<month>0?[1-9]|1[0-2])\\s*(?:월|[./-])?\\s*(?:(?<day>0?[1-9]|[12]\\d|3[01])\\s*일?)?");
 
@@ -91,6 +96,9 @@ public final class JobRequirementNormalizationPolicy {
     }
 
     private List<String> atomicClauses(String sourceText) {
+        if (ENUMERATION_TAIL.matcher(sourceText).find()) {
+            return List.of(clean(sourceText));
+        }
         List<String> clauses = splitTopLevel(sourceText);
         List<String> result = new ArrayList<>();
         for (String clause : clauses) {

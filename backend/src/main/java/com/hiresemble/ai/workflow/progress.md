@@ -4,6 +4,20 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-25] Session Summary (다직무 공고 분석 source section 보정)
+
+- What was done:
+  - `JobPostingSectionPolicy`가 채용절차·일정, 복리후생, 모집인원·근무지, 유의사항, 문의 등 heading에서 `OTHER`로 전환하고 `모집직무`·`우대역량` heading과 `label: 내용` 한 줄을 해당 section block으로 만든다.
+  - `JobRequirementNormalizationPolicy`는 `등`으로 끝나는 쉼표 업무 목록을 하나의 criterion으로 유지한다.
+- Key decisions:
+  - 비채점 heading은 짧고 heading 접미어(`및 일정`, `요약` 등)만 허용해 `근무지 이동 가능자`·`급여 정산 업무` 같은 조건·업무 문장이 section을 끊지 않게 했다. workflow·prompt·schema 버전은 바꾸지 않았다.
+- Issues encountered:
+  - 테스트 계정의 NH투자증권 분석(run `007bd61d`)이 `지원자격:` 뒤 모든 줄을 필수 자격으로 분류해 채용 일정·복리후생·유의사항까지 56개 criterion을 만들었고 `MATCH_EVIDENCE` 매핑 누락(`JOB_ANALYSIS_MATCH_CRITERION_MAPPING_INVALID`)으로 실패했다. 직무·우대역량 줄은 `OTHER`로 버려졌다.
+- Validation:
+  - 실제 저장 본문 probe(유료 호출 0회): 채점 block 19개, 최대 criterion 56 → 31, 비요건 줄 0개. `JobPostingSectionPolicyTest` 5/5, 전체 `check` 107 suites/736 tests 통과.
+- Next steps:
+  - 사용자 테스트 계정에서 새 분석 실행으로 실제 `MATCH_EVIDENCE` 성공 확인. 다직무 공고의 모든 직무 criterion이 함께 채점되는 문제는 별도 결정이 필요하다.
+
 ## [2026-09-25] Session Summary (공고 마감 시각 KST 결정적 해석)
 
 - What was done:
