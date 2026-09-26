@@ -594,11 +594,13 @@ API: `GET /career-artifacts/:id`, `GET /career-artifacts/:id/versions`, `POST /c
 - 적합도
 - 자기소개서·면접 준비 진행도
 - 상태 변경 Menu
+- 삭제 버튼: 확인 dialog 뒤 soft delete한다. 404는 이미 삭제된 것으로 정리하고, version 충돌은 목록을 새로 불러온 뒤 다시 선택하게 한다. 페이지의 마지막 공고를 지우면 이전 페이지로 이동한다.
 
 API:
 
 - `GET /jobs`
 - `PATCH /jobs/:id/status`
+- `DELETE /jobs/:id?version=`
 
 ### 상태 표시 규칙
 

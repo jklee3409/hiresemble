@@ -6,6 +6,19 @@
 - 기능 명세는 핵심 MVP 여정과 AC-01–AC-17, GH-AC-01–07, ART-AC-01–05와 AUTH-AC-04를 정의한다. 현재 기준선은 V30·11 WorkflowType·private 활성 97/128·private 비활성 90/121·Career Artifact 비활성 81/110이다.
 - 명세는 목표 계약이며 실제 비즈니스 기능 구현 완료를 의미하지 않는다. P0–P8은 완료됐고 P8.5 Chat strict output부터 문서 finalize까지 실제 run으로 검증됐다. terminal classification 보정은 offline 검증됐지만 live 재검증 전인 `IMPLEMENTED_NOT_LIVE_VERIFIED`다.
 
+## [2026-09-26] Session Summary (공고 목록 삭제 화면 계약)
+
+- What was done:
+  - `/jobs` Job Card에 확인 후 삭제 버튼과 `DELETE /jobs/:id?version=` API를 추가했다.
+- Key decisions:
+  - API 명세는 이미 soft delete를 정의해 변경하지 않았다.
+- Issues encountered:
+  - None
+- Validation:
+  - `JobListPage` 구현과 대조했다.
+- Next steps:
+  - None
+
 ## [2026-09-25] Session Summary (공고 분석 source section heading 규칙)
 
 - What was done:

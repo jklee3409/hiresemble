@@ -4,6 +4,19 @@
 
 공개 Landing과 P1 인증부터 P8 Interview, Gate 2/5 GitHub Source·App, Gate 4 Career Artifact, Gate 5 account settings, `/guide`, dashboard와 전용 404를 일관된 제품 UI로 관리한다.
 
+## [2026-09-26] Session Summary (공고 목록 행별 삭제)
+
+- What was done:
+  - `JobListPage` 각 공고 card에 `삭제` 버튼을 추가했다. 기존 `useDeleteJobMutation`과 상세 화면의 확인 문구·cache 정리·Agent Run stream 종료를 재사용한다.
+- Key decisions:
+  - API는 기존 `DELETE /jobs/{id}?version=`을 그대로 쓴다. 404는 삭제 완료로 정리하고, version 충돌은 목록을 무효화한 뒤 재선택을 안내하며, 페이지의 마지막 공고를 지우면 이전 페이지로 이동한다. 삭제 중에는 모든 행의 삭제 버튼과 해당 행 상태 변경을 잠근다.
+- Issues encountered:
+  - None
+- Validation:
+  - `jobPages.test.ts` 12/12(행 삭제 확인·취소, 409·404, 마지막 행 페이지 이동 추가), `corepack pnpm check` 통과(102 files/469 tests, Prettier, build). 로그인이 필요해 실제 브라우저 화면은 확인하지 못했다.
+- Next steps:
+  - None
+
 ## [2026-09-24] Session Summary (문항 memo 수정 요청 안내)
 
 - What was done:

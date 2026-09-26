@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { closeAgentRunStreamsForResource } from '@/features/agent-runs/stream'
+import { isJobVersionConflict } from '@/features/jobs/conflict'
 import {
   canonicalJobQuery,
   jobFiltersForPage,
@@ -16,9 +19,16 @@ import {
   jobCompanyLabel,
   jobDisplayTitle,
 } from '@/features/jobs/presentation'
-import { useJobListQuery, useUpdateJobStatusMutation } from '@/features/jobs/queries'
+import {
+  finalizeJobDeletion,
+  jobQueryKeys,
+  useDeleteJobMutation,
+  useJobListQuery,
+  useUpdateJobStatusMutation,
+} from '@/features/jobs/queries'
 import {
   JOB_STATUSES,
+  type JobSummaryDto,
   type JobPostingHalf,
   type JobExtractionStatus,
   type JobStatus,
@@ -30,6 +40,7 @@ import AppSelect, { type AppSelectOption } from '@/shared/ui/AppSelect.vue'
 import PaginationNav from '@/shared/ui/PaginationNav.vue'
 import StatePanel from '@/shared/ui/StatePanel.vue'
 import StatusBadge from '@/shared/ui/StatusBadge.vue'
+import { useNotifications } from '@/shared/ui/notifications'
 import { useAuthStore } from '@/stores/auth'
 
 const jobSortOptions: AppSelectOption[] = [
@@ -49,6 +60,10 @@ const userId = computed(() => authStore.currentUser?.id ?? '')
 const filters = computed(() => parseJobFilters(route.query))
 const jobs = useJobListQuery(userId, filters)
 const statusMutation = useUpdateJobStatusMutation(userId)
+const deleteMutation = useDeleteJobMutation(userId)
+const cache = useQueryClient()
+const notifications = useNotifications()
+const deletingJobId = ref<string>()
 
 const search = ref('')
 const postingStartFrom = ref('')
@@ -163,6 +178,47 @@ async function changeStatus(
         : apiError.message
     // 표시 값은 서버 상태(`job.status`)에만 묶여 있으므로 실패하면 저절로 이전 값으로 돌아온다.
   }
+}
+
+async function removeJob(job: JobSummaryDto): Promise<void> {
+  const confirmed = await notifications.confirm({
+    title: '관심 공고를 삭제할까요?',
+    message: `${jobDisplayTitle(job)} 공고와 연결된 분석·자기소개서 흐름에 영향을 줄 수 있어요. 삭제 후에는 목록에서 복구할 수 없습니다.`,
+    confirmLabel: '공고 삭제',
+  })
+  if (!confirmed) return
+  actionError.value = ''
+  message.value = ''
+  deletingJobId.value = job.id
+  const lastItemOnPage = jobs.data.value?.items.length === 1 && filters.value.page > 0
+  try {
+    await deleteMutation.mutateAsync({ jobId: job.id, version: job.version })
+    completeDeletion(job.id, lastItemOnPage)
+  } catch (error) {
+    const apiError = normalizeApiError(error)
+    if (apiError.status === 404) {
+      // 다른 곳에서 이미 삭제된 공고는 삭제 완료로 정리한다.
+      await finalizeJobDeletion(cache, userId.value, job.id)
+      completeDeletion(job.id, lastItemOnPage)
+      return
+    }
+    if (isJobVersionConflict(apiError)) {
+      await cache.invalidateQueries({ queryKey: jobQueryKeys.root(userId.value) })
+      actionError.value =
+        '공고가 다른 곳에서 변경됐어요. 목록을 새로 불러왔으니 삭제를 다시 선택해 주세요.'
+      return
+    }
+    actionError.value = apiError.message
+  } finally {
+    deletingJobId.value = undefined
+  }
+}
+
+function completeDeletion(jobId: string, lastItemOnPage: boolean): void {
+  closeAgentRunStreamsForResource(userId.value, 'JOB', jobId)
+  message.value = '공고를 삭제했어요.'
+  notifications.toast('공고를 삭제했어요.', 'success')
+  if (lastItemOnPage) updatePage(filters.value.page - 1)
 }
 
 function businessTone(value: JobStatus): 'brand' | 'info' | 'neutral' {
@@ -399,16 +455,28 @@ function currentSeoulDate(): string {
               />
             </div>
           </div>
-          <div class="field job-row__status-control">
-            <span class="field__label">상태 변경</span>
-            <AppSelect
-              :model-value="job.status"
-              :options="jobStatusOptions"
-              compact
-              :disabled="statusMutation.isPending.value"
-              :aria-label="`${jobDisplayTitle(job)} 지원 상태 변경`"
-              @update:model-value="changeStatus(job.id, job.version, job.status, $event)"
-            />
+          <div class="job-row__controls">
+            <div class="field job-row__status-control">
+              <span class="field__label">상태 변경</span>
+              <AppSelect
+                :model-value="job.status"
+                :options="jobStatusOptions"
+                compact
+                :disabled="statusMutation.isPending.value || deletingJobId === job.id"
+                :aria-label="`${jobDisplayTitle(job)} 지원 상태 변경`"
+                @update:model-value="changeStatus(job.id, job.version, job.status, $event)"
+              />
+            </div>
+            <button
+              type="button"
+              class="button button--danger button--compact job-row__delete"
+              data-testid="job-row-delete"
+              :disabled="deletingJobId !== undefined"
+              :aria-label="`${jobDisplayTitle(job)} 공고 삭제`"
+              @click="removeJob(job)"
+            >
+              {{ deletingJobId === job.id ? '삭제 중…' : '삭제' }}
+            </button>
           </div>
         </div>
       </li>
@@ -696,6 +764,13 @@ function currentSeoulDate(): string {
   margin-top: var(--space-3);
 }
 
+.job-row__controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
 .job-row__status-control {
   width: 9.5rem;
   flex: 0 0 auto;
@@ -746,8 +821,13 @@ function currentSeoulDate(): string {
     flex-direction: column;
   }
 
-  .job-row__status-control {
+  .job-row__controls {
     width: 100%;
+  }
+
+  .job-row__status-control {
+    flex: 1 1 auto;
+    width: auto;
   }
 }
 </style>

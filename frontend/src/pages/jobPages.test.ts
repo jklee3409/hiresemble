@@ -329,6 +329,70 @@ describe('P5 Job pages', () => {
     )
   })
 
+  it('deletes a job from its list row only after confirmation and refreshes the list', async () => {
+    vi.mocked(jobApi.listJobs)
+      .mockResolvedValueOnce(page([jobSummaryFixture()]))
+      .mockResolvedValue(page([]))
+    vi.mocked(jobApi.deleteJob).mockResolvedValue(undefined)
+    const { wrapper } = await mountList('/jobs?status=IN_PROGRESS&page=0')
+    const button = wrapper.get('[data-testid="job-row-delete"]')
+    expect(button.attributes('aria-label')).toBe(`${jobSummaryFixture().title} 공고 삭제`)
+
+    const cancelled = button.trigger('click')
+    useNotifications().resolveConfirmation(false)
+    await cancelled
+    await flushPromises()
+    expect(jobApi.deleteJob).not.toHaveBeenCalled()
+
+    const confirmed = button.trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await confirmed
+    await flushPromises()
+
+    expect(jobApi.deleteJob).toHaveBeenCalledWith(JOB_ID, 2)
+    expect(wrapper.get('[role="status"]').text()).toBe('공고를 삭제했어요.')
+    expect(vi.mocked(jobApi.listJobs).mock.calls.length).toBeGreaterThan(1)
+    expect(wrapper.text()).toContain('조건에 맞는 공고가 없어요.')
+  })
+
+  it('asks to retry a list deletion after a version conflict and treats 404 as deleted', async () => {
+    vi.mocked(jobApi.listJobs).mockResolvedValue(page([jobSummaryFixture()]))
+    vi.mocked(jobApi.deleteJob).mockRejectedValueOnce(
+      new ApiClientError({ status: 409, code: 'RESOURCE_VERSION_CONFLICT', message: 'stale' }),
+    )
+    const { wrapper } = await mountList('/jobs?status=IN_PROGRESS&page=0')
+
+    const conflicted = wrapper.get('[data-testid="job-row-delete"]').trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await conflicted
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('삭제를 다시 선택해 주세요')
+
+    vi.mocked(jobApi.deleteJob).mockRejectedValueOnce(
+      new ApiClientError({ status: 404, code: 'RESOURCE_NOT_FOUND', message: 'not found' }),
+    )
+    const missing = wrapper.get('[data-testid="job-row-delete"]').trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await missing
+    await flushPromises()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.get('[role="status"]').text()).toBe('공고를 삭제했어요.')
+  })
+
+  it('moves to the previous page after deleting the only job on a later page', async () => {
+    vi.mocked(jobApi.listJobs).mockResolvedValue(page([jobSummaryFixture()]))
+    vi.mocked(jobApi.deleteJob).mockResolvedValue(undefined)
+    const { wrapper, router } = await mountList('/jobs?status=IN_PROGRESS&page=1')
+
+    const deletion = wrapper.get('[data-testid="job-row-delete"]').trigger('click')
+    useNotifications().resolveConfirmation(true)
+    await deletion
+    await flushPromises()
+
+    // canonical query omits the default first page.
+    expect(router.currentRoute.value.query.page ?? '0').toBe('0')
+  })
+
   it('closes deletion as success when a subsequent delete returns 404', async () => {
     vi.mocked(jobApi.getJob).mockResolvedValue(jobDetailFixture())
     vi.mocked(jobApi.deleteJob).mockRejectedValue(
