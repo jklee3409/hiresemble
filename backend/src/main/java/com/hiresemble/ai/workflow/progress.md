@@ -4,6 +4,20 @@
 
 11개 canonical workflow definition과 Document·Job·Cover Letter·Interview·GitHub·Career Artifact executable contribution 분리가 구현됐다.
 
+## [2026-09-26] Session Summary (공고 분석 MATCH_EVIDENCE 분할 호출과 요건 원자화)
+
+- What was done:
+  - `MATCH_EVIDENCE`가 criterion 12개 초과 시 최대 3개의 균등 순서 묶음으로 나눠 묶음마다 호출하고, 요청 요건에 전역 `criterionIndex`를 명시하며 해당 묶음과 관련된 evidence 후보만 보낸다. 결과는 합친 뒤 기존 검증(전 criterion 1회 매핑·evidence subset·한국어)을 그대로 통과해야 한다. step `maxModelCalls`를 1→3으로 올렸다.
+  - `JobRequirementNormalizationPolicy`는 마침표 문장 단위로 먼저 나누고 `모집지역:`·`근무지:`·`고용형태:` 문장과 `(정규직)` 표기를 제외하며, 줄바꿈 분리를 유지한다. 두 policy의 목록 기호 패턴이 `3.5년`의 `3.`을 번호로 오인해 지우던 버그를 고쳤다.
+- Key decisions:
+  - fan-out(scope step)은 하위 step·재사용·보수적 fallback 계약을 바꾸므로 쓰지 않고, 한 step 안의 bounded 분할로 외부 계약(단일 merged output)을 유지했다. 재시도는 전체 묶음을 다시 호출한다. 강점·보완점은 묶음별 round-robin 최대 20개, 요약은 묶음 순서로 잇는다. 앞선 묶음의 사용량은 실패 시에도 기록한다.
+- Issues encountered:
+  - 2026-09-26 테스트 계정 NH 새 분석(run `9d9a2ddc`)은 추출 본문이 직무·지역·우대역량을 한 줄로 합쳐 32개 criterion이 되었고, 단일 MATCH 호출이 45초 timeout 후 매핑 누락 2회로 실패했다. 기존 성공 분석은 최대 18개였다.
+- Validation:
+  - `JobAnalysisWorkflowTest`(분할 경계·전역 index·병합·누락 묶음 검증 실패 추가), `JobPostingSectionPolicyTest`(합쳐진 직무 줄), contract test 통과. 전체 `check` 107 suites/740 tests 통과. 실제 Provider 검증은 분석 1회에 5회 이상 호출이 필요해 수행하지 않았다(이번 요청 유료 호출 0회).
+- Next steps:
+  - 사용자 테스트 계정의 NH 새 분석으로 실제 분할 호출 성공과 소요 시간을 확인한다.
+
 ## [2026-09-25] Session Summary (다직무 공고 분석 source section 보정)
 
 - What was done:

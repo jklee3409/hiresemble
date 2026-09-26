@@ -195,12 +195,98 @@ class JobAnalysisWorkflowTest {
     }
 
     @Test
+    void matchBatchesAreBalancedOrderedAndBoundedByThreeCalls() {
+        assertThat(JobAnalysisWorkflow.matchBatches(12)).hasSize(1);
+        assertThat(JobAnalysisWorkflow.matchBatches(32))
+                .extracting(List::size)
+                .containsExactly(11, 11, 10);
+        assertThat(JobAnalysisWorkflow.matchBatches(100))
+                .extracting(List::size)
+                .containsExactly(34, 33, 33);
+        assertThat(JobAnalysisWorkflow.matchBatches(32).stream().flatMap(List::stream).toList())
+                .isEqualTo(java.util.stream.IntStream.range(0, 32).boxed().toList());
+    }
+
+    @Test
+    void largeRequirementSetMatchesInBatchesWithExplicitGlobalIndexes() {
+        Fixture fixture = fixture(false, true);
+        fixture.chat.enqueue(
+                serviceRequirements(),
+                eligibility(Eligibility.UNKNOWN),
+                missingRange(0, 10),
+                missingRange(10, 20));
+
+        ExecutionResult result = execute(fixture);
+
+        assertThat(result.steps()).hasSize(8);
+        List<ChatGateway.ChatRequest> matchRequests = fixture.chat.requests.stream()
+                .filter(request -> request.outputType() == ProviderMatchOutput.class)
+                .toList();
+        assertThat(matchRequests).hasSize(2);
+        assertThat(matchRequests)
+                .extracting(request -> java.util.stream.StreamSupport
+                        .stream(request.input().path("requirements").spliterator(), false)
+                        .map(requirement -> requirement.path("criterionIndex").asInt())
+                        .toList())
+                .containsExactly(
+                        java.util.stream.IntStream.range(0, 10).boxed().toList(),
+                        java.util.stream.IntStream.range(10, 20).boxed().toList());
+        assertThat(matchRequests)
+                .extracting(request -> request.input().path("batchCount").asInt())
+                .containsExactly(2, 2);
+        assertThat(fixture.command.persisted.criteria()).hasSize(20);
+        assertThat(fixture.command.persisted.gaps()).hasSize(20);
+        var matchExecutor = fixture.workflow.contribution().steps().get(4).executor();
+        assertThat(matchExecutor.plannedModelCalls(new WorkflowStepExecutor.StepInput(
+                        "scope",
+                        objectMapper.createObjectNode(),
+                        "canonical",
+                        objectMapper.valueToTree(java.util.Map.of(
+                                "requirements",
+                                java.util.stream.IntStream.range(0, 20).boxed().toList())),
+                        null,
+                        0L)))
+                .isEqualTo(2);
+    }
+
+    @Test
+    void batchThatOmitsACriterionFailsTheMergedMappingValidation() {
+        Fixture fixture = fixture(false, true);
+        fixture.chat.enqueue(
+                serviceRequirements(),
+                eligibility(Eligibility.UNKNOWN),
+                missingRange(0, 10),
+                missingRange(10, 19));
+        StepExecutionContext context = initialContext(fixture);
+        Map<String, JsonNode> upstream = new HashMap<>();
+        Map<String, Object> ephemeral = new HashMap<>();
+        List<ExecutableWorkflowStep> steps = fixture.workflow.contribution().steps();
+        for (int index = 0; index < 4; index++) {
+            StepResult done = executeStep(
+                    fixture, steps.get(index), contextWith(fixture, upstream, ephemeral));
+            upstream.put(steps.get(index).stepKey(), done.minimal());
+            ephemeral.put(steps.get(index).stepKey(), done.ephemeral());
+        }
+        StepExecutionContext matchContext = contextWith(fixture, upstream, ephemeral);
+        var match = steps.get(4);
+        var response = match.executor().invoke(invocation(
+                fixture, match.stepKey(), match.executor().prepare(matchContext), matchContext));
+
+        assertThatThrownBy(() -> validate(match.executor(), response.rawJson(), matchContext))
+                .isInstanceOfSatisfying(AiExecutionException.class, failure ->
+                        assertThat(failure.safeCode())
+                                .isEqualTo("JOB_ANALYSIS_MATCH_CRITERION_MAPPING_INVALID"));
+        assertThat(context).isNotNull();
+    }
+
+    @Test
     void eligibilityUsesDedicatedLowOutputPolicyForProductionSizedRequirements() {
         Fixture fixture = fixture(false, true);
         fixture.chat.enqueue(
                 productionSizedRequirements(),
                 eligibility(Eligibility.UNKNOWN),
-                missingAll(18));
+                missingRange(0, 9),
+                missingRange(9, 18));
 
         execute(fixture);
 
@@ -1125,6 +1211,37 @@ class JobAnalysisWorkflowTest {
                 IT·데이터 관련 자격증 보유자
                 인턴십·대외활동 우수자, 어학 우수자, 디지털 프로젝트 경험자
                 """.formatted(services);
+    }
+
+    /** 20 scorable criteria: "Spring API 개발" plus 18 service lines and one qualification. */
+    private ProviderRequirementsOutput serviceRequirements() {
+        List<ProviderSourceRequirement> sources = new ArrayList<>();
+        sources.add(source("지원 자격", "관련 경력 3년 이상", 0));
+        sources.add(source("주요 업무", "Spring API 개발", 1));
+        for (int index = 1; index <= 18; index++) {
+            sources.add(source("주요 업무", "서비스 역량 항목 " + index, index + 1));
+        }
+        return new ProviderRequirementsOutput(
+                "job-analysis-requirements-source-output-v6", List.copyOf(sources));
+    }
+
+    private ProviderMatchOutput missingRange(int from, int to) {
+        return new ProviderMatchOutput(
+                "job-analysis-match-output-v3",
+                java.util.stream.IntStream.range(from, to)
+                        .mapToObj(index -> new ProviderMatchedCriterion(
+                                index,
+                                MatchLevel.MISSING,
+                                List.of(),
+                                "등록된 근거에서 확인하지 못했습니다.",
+                                "확인 가능한 근거가 없습니다."))
+                        .toList(),
+                List.of(),
+                java.util.stream.IntStream.range(from, to)
+                        .mapToObj(index -> new ProviderGapDraft(
+                                "추가 확인이 필요한 공고 조건 " + index + "번입니다.", index))
+                        .toList(),
+                "이 묶음의 요건은 등록된 근거로 확인하기 어렵습니다.");
     }
 
     private ProviderRequirementsOutput complexRequirements() {

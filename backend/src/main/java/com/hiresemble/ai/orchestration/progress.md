@@ -4,6 +4,19 @@
 
 fixed-sequence AgentOrchestrator와 checkpoint·multi-usage·apply, deterministic reuse·partial seed 및 atomic completion 경계가 구현됐다.
 
+## [2026-09-26] Session Summary (step 다중 호출 비용 예약)
+
+- What was done:
+  - `WorkflowStepExecutor.plannedModelCalls(StepInput)`(기본 1)를 추가하고 `AgentOrchestrator`가 호출 전 예약 비용을 그 배수로 잡게 했다. 계획이 step `maxModelCalls`를 넘으면 `AI_STEP_MODEL_CALL_PLAN_INVALID` 구성 오류다.
+- Key decisions:
+  - 기존 executor는 기본값으로 동작이 바뀌지 않는다.
+- Issues encountered:
+  - None
+- Validation:
+  - orchestration·workflow 테스트와 전체 `check` 통과. 배수 예약 자체를 직접 단언하는 orchestrator 테스트는 추가하지 않았다(`plannedModelCalls` 값은 workflow 테스트로 확인).
+- Next steps:
+  - None
+
 ## [2026-08-06] Session Summary (Run 고정 exact model 전달)
 
 - What was done: orchestrator가 자기소개서 v4 chat step에 requested model을 전달하도록 확장했다.

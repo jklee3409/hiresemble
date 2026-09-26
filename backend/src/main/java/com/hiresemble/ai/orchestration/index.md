@@ -6,7 +6,7 @@ registry가 정한 순서를 application port로 실행하는 bounded AgentOrche
 
 ## 주요 파일 및 하위 디렉터리
 
-- `AgentOrchestrator`: context→cancel→hash→reuse→budget→route→gateway→validate→usage→atomic checkpoint+apply
+- `AgentOrchestrator`: 호출 전 비용 예약은 executor `plannedModelCalls` 배수로 잡고 step `maxModelCalls` 초과 계획은 구성 오류로 거부; context→cancel→hash→reuse→budget→route→gateway→validate→usage→atomic checkpoint+apply
 - `StepCompletionTransaction`: 성공·재사용 checkpoint와 domain apply를 묶는 내부 transaction 경계
 - [`progress.md`](progress.md): orchestration 상태
 

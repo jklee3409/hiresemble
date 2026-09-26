@@ -4,6 +4,19 @@
 
 P3 versioned PromptRegistry에 P4 Document부터 P8 Interview, GitHub와 Career Artifact까지 structured prompt metadata가 구현됐고 canonical 목록이 runtime과 schema completeness 검사의 단일 열거 경계다.
 
+## [2026-09-26] Session Summary (MATCH_EVIDENCE prompt v7)
+
+- What was done:
+  - `job-analysis-match-evidence-v7`: 각 요건의 `criterionIndex`를 그대로 복사하고 목록 위치로 번호를 매기지 않도록 하며, `batchNumber`/`batchCount` 분할 입력에서는 받은 요건만 매핑하고 요약을 한두 문장으로 쓰게 했다.
+- Key decisions:
+  - output schema(`job-analysis-match-output-v3`)는 유지했다.
+- Issues encountered:
+  - None
+- Validation:
+  - `JobAnalysisWorkflowContractTest` 통과.
+- Next steps:
+  - None
+
 ## [2026-09-25] Session Summary (공고 필드 추출 prompt v4 현지 마감 시각)
 
 - What was done:

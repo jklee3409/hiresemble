@@ -500,7 +500,7 @@ public final class CanonicalWorkflowDefinitions {
                                 "MATCH_EVIDENCE",
                                 "job-analysis-match-output-v3",
                                 Set.of(),
-                                1,
+                                3,
                                 RETRYABLE,
                                 ModelTier.BALANCED,
                                 weights.get(4)),

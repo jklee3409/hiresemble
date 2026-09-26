@@ -4,6 +4,7 @@ import com.hiresemble.agentrun.application.port.AgentRunQueryPort;
 import com.hiresemble.agentrun.domain.model.AiQualityMode;
 import com.hiresemble.agentrun.domain.model.WorkflowType;
 import com.hiresemble.ai.execution.AiExecutionException;
+import com.hiresemble.ai.port.AiUsage;
 import com.hiresemble.ai.port.AiGatewayResponse;
 import com.hiresemble.ai.port.ChatGateway.ChatRequest;
 import com.hiresemble.ai.port.EmbeddingGateway.EmbeddingRequest;
@@ -100,6 +101,10 @@ public final class JobAnalysisWorkflow {
     private static final int MAX_JOB_CONTENT_CHARACTERS = 80_000;
     private static final int MAX_EVIDENCE_CONTEXT_CHARACTERS = 2_500;
     private static final Duration CHAT_TIMEOUT = Duration.ofSeconds(45);
+    private static final int MATCH_BATCH_TARGET_SIZE = 12;
+    /** Bounded by the MATCH_EVIDENCE step's maxModelCalls. */
+    private static final int MAX_MATCH_BATCHES = 3;
+    private static final int MAX_MATCH_DRAFTS = 20;
     private static final Duration EMBEDDING_TIMEOUT = Duration.ofSeconds(30);
     private static final Pattern HASH = Pattern.compile("[0-9a-f]{64}");
     private static final Pattern EMAIL = Pattern.compile(
@@ -1101,21 +1106,57 @@ public final class JobAnalysisWorkflow {
                         ExtractRequirementsOutput.class);
                 return localResponse(conservativeMatchOutput(requirements));
             }
-            return invocation.chatGateway().chat(new ChatRequest(
-                    invocation.modelRoute().providerKey(),
-                    invocation.modelRoute().productKey(),
-                    invocation.prompt().promptVersion(),
-                    invocation.prompt().instructions(),
-                    invocation.input().gatewayPayload(),
-                    invocation.prompt().outputSchemaVersion(),
-                    invocation.prompt().toolAllowlist(),
-                    0,
-                    CHAT_TIMEOUT,
-                    invocation.executionContext().run().priceVersion(),
-                    invocation.prompt().maxOutputTokens(),
-                    invocation.prompt().outputType(),
-                    "low",
-                    "low"));
+            MatchEvidenceInput full =
+                    read(invocation.input().gatewayPayload(), MatchEvidenceInput.class);
+            List<List<Integer>> batches = matchBatches(full.requirements().size());
+            List<AiUsage> usages = new ArrayList<>();
+            List<ProviderMatchOutput> parts = new ArrayList<>();
+            for (int batch = 0; batch < batches.size(); batch++) {
+                AiGatewayResponse response;
+                try {
+                    response = invocation.chatGateway().chat(new ChatRequest(
+                            invocation.modelRoute().providerKey(),
+                            invocation.modelRoute().productKey(),
+                            invocation.prompt().promptVersion(),
+                            invocation.prompt().instructions(),
+                            tree(matchBatchInput(
+                                    full, batches.get(batch), batch + 1, batches.size())),
+                            invocation.prompt().outputSchemaVersion(),
+                            invocation.prompt().toolAllowlist(),
+                            0,
+                            CHAT_TIMEOUT,
+                            invocation.executionContext().run().priceVersion(),
+                            invocation.prompt().maxOutputTokens(),
+                            invocation.prompt().outputType(),
+                            "low",
+                            "low"));
+                } catch (AiExecutionException failure) {
+                    List<AiUsage> incurred = new ArrayList<>(usages);
+                    incurred.addAll(failure.incurredUsages());
+                    throw failure.withIncurredUsages(List.copyOf(incurred));
+                }
+                if (batches.size() == 1) {
+                    return response;
+                }
+                usages.addAll(response.usages());
+                try {
+                    parts.add(objectMapper.readValue(response.rawJson(), ProviderMatchOutput.class));
+                } catch (Exception invalid) {
+                    throw AiExecutionException.repairableStructuredOutput(
+                                    "JOB_ANALYSIS_MATCH_OUTPUT_INVALID",
+                                    "AI 결과 형식을 확인하지 못했습니다.",
+                                    ValidationPhase.JSON_PARSE,
+                                    "Return exactly one job-analysis-match-output-v3 object for the supplied requirements.")
+                            .withIncurredUsages(List.copyOf(usages));
+                }
+            }
+            return new AiGatewayResponse(write(mergeMatchParts(parts)), List.copyOf(usages));
+        }
+
+        @Override
+        public int plannedModelCalls(StepInput input) {
+            JsonNode requirements = input.gatewayPayload().path("requirements");
+            return requirements.isArray() ? matchBatches(requirements.size()).size() : 1;
         }
 
         @Override
@@ -2200,6 +2241,90 @@ public final class JobAnalysisWorkflow {
         }
     }
 
+    /**
+     * Splits criteria into at most {@link #MAX_MATCH_BATCHES} balanced, ordered index groups. One
+     * provider call reliably maps about {@link #MATCH_BATCH_TARGET_SIZE} criteria; larger single
+     * calls timed out or silently omitted indexes.
+     */
+    static List<List<Integer>> matchBatches(int requirementCount) {
+        int count = requirementCount <= MATCH_BATCH_TARGET_SIZE
+                ? 1
+                : Math.min(
+                        MAX_MATCH_BATCHES,
+                        (requirementCount + MATCH_BATCH_TARGET_SIZE - 1) / MATCH_BATCH_TARGET_SIZE);
+        List<List<Integer>> batches = new ArrayList<>(count);
+        int start = 0;
+        for (int batch = 0; batch < count; batch++) {
+            int size = requirementCount / count + (batch < requirementCount % count ? 1 : 0);
+            List<Integer> indexes = new ArrayList<>(size);
+            for (int index = start; index < start + size; index++) {
+                indexes.add(index);
+            }
+            batches.add(List.copyOf(indexes));
+            start += size;
+        }
+        return List.copyOf(batches);
+    }
+
+    private MatchEvidenceBatchInput matchBatchInput(
+            MatchEvidenceInput full, List<Integer> indexes, int batchNumber, int batchCount) {
+        Set<Integer> selected = new LinkedHashSet<>(indexes);
+        List<RetrievedEvidenceCandidate> candidates = new ArrayList<>();
+        for (RetrievedEvidenceCandidate candidate : full.verifiedEvidenceCandidates()) {
+            Set<Integer> relevant = new LinkedHashSet<>(candidate.criterionIndexes());
+            relevant.retainAll(selected);
+            if (!relevant.isEmpty()) {
+                candidates.add(candidate.withCriterionIndexes(relevant));
+            }
+        }
+        return new MatchEvidenceBatchInput(
+                full.schemaVersion(),
+                batchNumber,
+                batchCount,
+                indexes.stream()
+                        .map(index -> new IndexedRequirement(index, full.requirements().get(index)))
+                        .toList(),
+                full.eligibility(),
+                List.copyOf(candidates),
+                full.structuredProfileFacts());
+    }
+
+    /**
+     * Joins batch outputs in batch order. Criteria keep their global indexes; strengths and gaps
+     * are taken round-robin so every batch stays represented within the output bound.
+     */
+    private ProviderMatchOutput mergeMatchParts(List<ProviderMatchOutput> parts) {
+        List<ProviderMatchedCriterion> criteria = new ArrayList<>();
+        List<String> summaries = new ArrayList<>();
+        for (ProviderMatchOutput part : parts) {
+            if (part.criteria() != null) criteria.addAll(part.criteria());
+            if (part.analysisSummary() != null && !part.analysisSummary().isBlank()) {
+                summaries.add(part.analysisSummary().trim());
+            }
+        }
+        return new ProviderMatchOutput(
+                MATCH_SCHEMA,
+                criteria,
+                roundRobin(parts.stream().map(ProviderMatchOutput::strengths).toList()),
+                roundRobin(parts.stream().map(ProviderMatchOutput::gaps).toList()),
+                summaries.isEmpty() ? null : String.join(" ", summaries));
+    }
+
+    private static <T> List<T> roundRobin(List<List<T>> groups) {
+        List<T> merged = new ArrayList<>();
+        for (int position = 0; merged.size() < MAX_MATCH_DRAFTS; position++) {
+            boolean added = false;
+            for (List<T> group : groups) {
+                if (group != null && position < group.size() && merged.size() < MAX_MATCH_DRAFTS) {
+                    merged.add(group.get(position));
+                    added = true;
+                }
+            }
+            if (!added) break;
+        }
+        return List.copyOf(merged);
+    }
+
     private StructuredOutputValidationException koreanOutputRequired() {
         return repairable(
                 ValidationPhase.JAVA_RECORD,
@@ -2783,6 +2908,18 @@ public final class JobAnalysisWorkflow {
             Eligibility eligibility,
             List<RetrievedEvidenceCandidate> verifiedEvidenceCandidates,
             List<StructuredFactDescriptor> structuredProfileFacts) {}
+
+    /** One provider call's share of MATCH_EVIDENCE with explicit global criterion indexes. */
+    public record MatchEvidenceBatchInput(
+            String schemaVersion,
+            int batchNumber,
+            int batchCount,
+            List<IndexedRequirement> requirements,
+            Eligibility eligibility,
+            List<RetrievedEvidenceCandidate> verifiedEvidenceCandidates,
+            List<StructuredFactDescriptor> structuredProfileFacts) {}
+
+    public record IndexedRequirement(int criterionIndex, RequirementCandidate requirement) {}
 
     public record StructuredFactDescriptor(
             String reference,

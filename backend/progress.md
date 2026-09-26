@@ -7,6 +7,19 @@
 - V1~V30 migration이 적용됐고 V29는 GitHub App/private repository·revocation, V30은 FK 없는 account deletion task를 소유한다.
 - 전체 `check`가 104 suites/696 tests로 통과했다. Backend 검증에서는 실제 OpenAI·GitHub·외부 S3 호출을 수행하지 않았다.
 
+## [2026-09-26] Session Summary (공고 분석 분할 매칭)
+
+- What was done:
+  - 다직무 공고 분석이 `MATCH_EVIDENCE` 단일 호출 한계로 실패하던 문제를 분할 호출·요건 원자화 개선으로 보정했다([workflow](src/main/java/com/hiresemble/ai/workflow/progress.md), [orchestration](src/main/java/com/hiresemble/ai/orchestration/progress.md)).
+- Key decisions:
+  - workflow 버전·output schema·DB 계약은 유지했다.
+- Issues encountered:
+  - None
+- Validation:
+  - 전체 `check` 107 suites/740 tests 통과.
+- Next steps:
+  - 실제 계정 새 분석으로 확인.
+
 ## [2026-09-25] Session Summary (계정 삭제 통합 테스트 flaky 수정)
 
 - What was done:

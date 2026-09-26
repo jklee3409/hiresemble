@@ -119,6 +119,33 @@ class JobPostingSectionPolicyTest {
     }
 
     @Test
+    void mergedRoleLinesSplitBySentenceAndDropLocationAndEmploymentTypeNotes() {
+        var blocks = policy.segment("""
+                모집직무 및 우대역량 (모집직무 간 중복지원 불가)
+                - PB: 개인, 법인 고객 대상 자산관리 서비스 등. 모집지역: 수도권, 대구·경북권, 광주·전라권. 금융시장 이해도 및 원활한 대고객 커뮤니케이션 능력.
+                - 글로벌사업: 글로벌사업 전략 수립 및 실행, 해외거점 관리 등. 비즈니스 영어 구사 능력, 글로벌 금융시장 이해도. (정규직)
+                - IT: 증권시스템 전산 개발·운영. 전산 관련 전공, 프로그래밍 언어 및 SQL 활용 능력, 3.5년 이상 운영 경험.
+                """);
+        var sources = blocks.stream()
+                .map(block -> new JobAnalysisWorkflow.ProviderSourceRequirement(
+                        block.sourceBlockId(), block.sourceText(), block.sourceOrdinal()))
+                .toList();
+
+        assertThat(new JobRequirementNormalizationPolicy().normalize(sources, blocks))
+                .extracting(criterion -> criterion.text())
+                .containsExactly(
+                        "PB: 개인, 법인 고객 대상 자산관리 서비스 등",
+                        "금융시장 이해도 및 원활한 대고객 커뮤니케이션 능력",
+                        "글로벌사업: 글로벌사업 전략 수립 및 실행, 해외거점 관리 등",
+                        "비즈니스 영어 구사 능력",
+                        "글로벌 금융시장 이해도",
+                        "IT: 증권시스템 전산 개발·운영",
+                        "전산 관련 전공",
+                        "프로그래밍 언어 및 SQL 활용 능력",
+                        "3.5년 이상 운영 경험");
+    }
+
+    @Test
     void conditionAndDutyLinesStartingWithHeadingWordsStayInTheirSection() {
         var blocks = policy.segment("""
                 자격요건

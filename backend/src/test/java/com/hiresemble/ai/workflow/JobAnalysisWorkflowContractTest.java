@@ -63,7 +63,7 @@ class JobAnalysisWorkflowContractTest {
         assertThat(definition.steps().stream()
                         .mapToInt(WorkflowRegistry.StepDefinition::maxModelCalls)
                         .sum())
-                .isEqualTo(4);
+                .isEqualTo(6);
     }
 
     @Test

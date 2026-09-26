@@ -609,7 +609,9 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 AgentRunSnapshot beforeCall = current(run.userId(), run.id());
                 budgetGuard.ensureNextCallCovered(
                         beforeCall,
-                        callCostEstimator.maximumCallCost(beforeCall, route, prompt, input),
+                        callCostEstimator.maximumCallCost(beforeCall, route, prompt, input)
+                                .multiply(BigDecimal.valueOf(
+                                        plannedModelCalls(executor, stepDefinition, input))),
                         clock.instant());
                 AiGatewayResponse response = leaseHeartbeatPort.maintain(
                         run.userId(), run.id(), claimed.claimToken(),
@@ -1054,6 +1056,15 @@ public final class AgentOrchestrator implements WorkflowExecutionPort {
                 FailureKind.CONFIGURATION,
                 "AI_DOMAIN_APPLY_FAILED",
                 "AI 결과를 안전하게 적용하지 못했습니다.");
+    }
+
+    private int plannedModelCalls(
+            WorkflowStepExecutor<?> executor, StepDefinition step, StepInput input) {
+        int planned = executor.plannedModelCalls(input);
+        if (planned < 1 || planned > Math.max(1, step.maxModelCalls())) {
+            throw new WorkflowConfigurationException("AI_STEP_MODEL_CALL_PLAN_INVALID");
+        }
+        return planned;
     }
 
     private void validatePromptContract(StepDefinition step, PromptDefinition prompt) {

@@ -37,6 +37,14 @@ public interface WorkflowStepExecutor<T> {
 
     AiGatewayResponse invoke(GatewayInvocation invocation);
 
+    /**
+     * Provider calls one {@link #invoke} makes for this input. The orchestrator reserves budget
+     * for all of them before invoking and rejects a plan above the step's {@code maxModelCalls}.
+     */
+    default int plannedModelCalls(StepInput input) {
+        return 1;
+    }
+
     Contract<T> outputContract();
 
     default Contract<T> outputContract(StepExecutionContext context) {

@@ -25,12 +25,19 @@ import java.util.regex.Pattern;
 public final class JobRequirementNormalizationPolicy {
 
     private static final Pattern LEADING_MARKER =
-            Pattern.compile("^\\s*(?:[-*•▪◦]|\\d+[.)])\\s*");
+            Pattern.compile("^\\s*(?:[-*•▪◦]|\\d+[.)](?!\\d))\\s*");
     /**
      * "국내외 주식, 채권 매매, 결제 등" lists examples of one duty; splitting it on commas would
      * turn nouns like "결제" into separate criteria.
      */
     private static final Pattern ENUMERATION_TAIL = Pattern.compile("\\S\\s*등\\s*[.。]?\\s*$");
+    /** A sentence-ending period (not a decimal point such as "3.5년") followed by a space. */
+    private static final Pattern SENTENCE_BOUNDARY = Pattern.compile("(?<!\\d)[.。]\\s+");
+    /** Merged posting lines often carry facts that are not qualifications. */
+    private static final Pattern NON_REQUIREMENT_LABEL = Pattern.compile(
+            "^(?:모집\\s?지역|근무\\s?지역|근무\\s?지|근무\\s?장소|모집\\s?인원|고용\\s?형태|근무\\s?형태|채용\\s?형태|급여|연봉)\\s*[:：]");
+    private static final Pattern EMPLOYMENT_TYPE_NOTE =
+            Pattern.compile("^\\(?(?:정규직|계약직|인턴|파견직|무기계약직)\\)?$");
     private static final Pattern WORK_DATE = Pattern.compile(
             "(?<!\\d)(?<year>20\\d{2})\\s*[년./-]\\s*(?<month>0?[1-9]|1[0-2])\\s*(?:월|[./-])?\\s*(?:(?<day>0?[1-9]|[12]\\d|3[01])\\s*일?)?");
 
@@ -96,9 +103,26 @@ public final class JobRequirementNormalizationPolicy {
     }
 
     private List<String> atomicClauses(String sourceText) {
-        if (ENUMERATION_TAIL.matcher(sourceText).find()) {
-            return List.of(clean(sourceText));
+        List<String> result = new ArrayList<>();
+        for (String sentence : SENTENCE_BOUNDARY.split(sourceText)) {
+            // Keep line breaks for comma/line splitting; only the probe is whitespace-normalized.
+            String trimmed = sentence.strip().replaceAll("[.。]+$", "").strip();
+            String probe = clean(trimmed);
+            if (probe.isBlank()
+                    || NON_REQUIREMENT_LABEL.matcher(probe).find()
+                    || EMPLOYMENT_TYPE_NOTE.matcher(probe).matches()) {
+                continue;
+            }
+            if (ENUMERATION_TAIL.matcher(probe).find()) {
+                result.add(probe);
+            } else {
+                result.addAll(commaClauses(trimmed));
+            }
         }
+        return result;
+    }
+
+    private List<String> commaClauses(String sourceText) {
         List<String> clauses = splitTopLevel(sourceText);
         List<String> result = new ArrayList<>();
         for (String clause : clauses) {

@@ -20,7 +20,7 @@ public final class JobAnalysisPromptDefinitions {
     public static final String RETRIEVE_EVIDENCE_PROMPT_VERSION =
             "job-analysis-retrieve-evidence-v3";
     public static final String MATCH_EVIDENCE_PROMPT_VERSION =
-            "job-analysis-match-evidence-v6";
+            "job-analysis-match-evidence-v7";
     public static final String SCORE_FIT_PROMPT_VERSION = "job-analysis-score-fit-v2";
     public static final String VALIDATE_ANALYSIS_PROMPT_VERSION =
             "job-analysis-validate-analysis-v2";
@@ -207,7 +207,12 @@ public final class JobAnalysisPromptDefinitions {
                     masked context is discovery context, not positive evidence by itself.
                     """;
             case JobAnalysisWorkflow.MATCH_EVIDENCE -> """
-                    Match every requirement exactly once by criterionIndex. Use only evidence IDs
+                    Each requirements[] item carries its own criterionIndex; copy that exact
+                    value and never renumber by list position. Match every supplied requirement
+                    exactly once, including every item in a long list. The input may be batch
+                    batchNumber of batchCount for one posting: then match only the supplied
+                    requirements and write analysisSummary as one or two sentences about them.
+                    Use only evidence IDs
                     copied from verifiedEvidenceCandidates[].evidenceId when the same candidate's
                     criterionIndexes contains that criterionIndex, and structured fact
                     references copied from structuredProfileFacts[].reference; never create, guess,

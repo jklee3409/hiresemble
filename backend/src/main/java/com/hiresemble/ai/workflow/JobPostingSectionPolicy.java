@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public final class JobPostingSectionPolicy {
 
     private static final Pattern LEADING_MARKER =
-            Pattern.compile("^\\s*(?:[-*•▪◦]|\\d+[.)])\\s*");
+            Pattern.compile("^\\s*(?:[-*•▪◦]|\\d+[.)](?!\\d))\\s*");
     /** {@code 우대역량: 금융시장 이해도} style lines: a short known label followed by its content. */
     private static final Pattern INLINE_LABEL =
             Pattern.compile("^[※*]?\\s*([^:：]{1,30})[:：]\\s*(\\S.*)$");
